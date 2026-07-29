@@ -160,7 +160,7 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.3.0のA/Bいずれについても実機成功を
+現時点のテンプレートは`pending`であり、BSP 0.3.1のA/Bいずれについても実機成功を
 未確認です。portable検証と両バリアントのRP2040ビルド成功は、実機成功とは別です。
 
 ## 文書

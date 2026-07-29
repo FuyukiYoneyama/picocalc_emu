@@ -13,6 +13,8 @@ namespace picocalc::display {
 namespace {
 
 constexpr float kPioClockDivider = 2.0f;
+constexpr int kMaxPixelsPerWindow = 160 * 160;
+static_assert(kMaxPixelsPerWindow == 25600, "PIO LCD window contract changed");
 constexpr size_t kMaxReadbackPixels = 16;
 PIO g_pio = pio0;
 uint g_sm = 0;
@@ -263,8 +265,16 @@ void write_pixels(const uint16_t* pixels, size_t count) {
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) return;
-    set_window_unclipped(x, y, w, h);
-    send_solid_pixels(rgb565, static_cast<size_t>(w) * static_cast<size_t>(h));
+    for (int tile_y = y; tile_y < y + h; tile_y += 160) {
+        const int tile_h = std::min(160, y + h - tile_y);
+        for (int tile_x = x; tile_x < x + w; tile_x += 160) {
+            const int tile_w = std::min(160, x + w - tile_x);
+            set_window_unclipped(tile_x, tile_y, tile_w, tile_h);
+            send_solid_pixels(
+                rgb565,
+                static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
+        }
+    }
 }
 
 void clear(uint16_t rgb565) { fill_rect(0, 0, width, height, rgb565); }

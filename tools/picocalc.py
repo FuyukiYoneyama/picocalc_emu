@@ -53,11 +53,11 @@ def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[st
         app_text = app_cmake.read_text(encoding="utf-8")
     except OSError:
         app_text = ""
-    if "0.3.0-pio-rgb565" in app_text and "0.3.0-hwspi-rgb888" in app_text:
+    if "0.3.1-pio-rgb565" in app_text and "0.3.1-hwspi-rgb888" in app_text:
         app_version = (
-            "0.3.0-pio-rgb565"
+            "0.3.1-pio-rgb565"
             if lcd_variant == "pio-rgb565"
-            else "0.3.0-hwspi-rgb888"
+            else "0.3.1-hwspi-rgb888"
         )
     return (bsp_version, app_version)
 
