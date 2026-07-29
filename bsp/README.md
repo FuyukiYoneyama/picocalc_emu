@@ -9,7 +9,7 @@
 * LCD: hardware SPI1、SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
 * LCD: uf2loader互換のST7365P/ILI9488初期化、`COLMOD 0x66`
 * LCD: 公開APIはRGB565、LCD配線へはRGB888（1 pixel = 3 bytes）へ変換
-* LCD: 160 pixelsは変換バッファ単位。各ピクセル転送チャンクごとにCSを再同期する
+* LCD: 160 pixelsは変換バッファ単位。RAMWRの1ウィンドウ全体ではCSを保持し、160 pixels単位は作業バッファの分割にだけ使う
 * LCD: `verify_pixels()`はRGB888の`RAMRD (0x2e)`をRGB565へ戻し、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22

@@ -183,12 +183,13 @@ OFF/ONするとノイズ画面になった。これは今回の試験で確認�
 
 - `spi_init(spi1, 25MHz)`より前にSPI機能へ切り替えていた
 - `DISPON`前にBSPの`clear()`を実行していた
-- 160ピクセル単位のCS再同期を行わず、全画面または大きな矩形を1回のCS保持で送っていた
+- RAMWRの1ウィンドウ全体をCS保持する資料実装に対し、画素列の途中でCSを再同期していた
 - 既存の動作コードを無改変で移植せず、uf2loaderとの部分比較から独自の送信状態機械を作っていた
 
 再構成版では、`general/lcd`のloader-style実装に合わせ、GPIO初期化、SPI初期化順序、
-LCD初期化末尾、`CASET/RASET/RAMWR`の独立トランザクション、RGB888転送、160ピクセル
-ごとのCS再同期、160×160タイル分割を採用した。これは資料と動作実績に基づく再構成で
+LCD初期化末尾、`CASET/RASET/RAMWR`の独立トランザクション、RGB888転送、160×160
+タイル分割を採用した。RAMWRの各ウィンドウではCSを保持し、160ピクセルは変換バッファ
+分割だけに使う。これは資料と動作実績に基づく再構成で
 あり、実機での表示成功はまだ確認していない。成功判定は、起動ログの版と画面写真、
 `[PICOCALC][LCD][VERIFY]`の結果を同時に確認して行う。
 
@@ -219,3 +220,15 @@ CPU停止ではない。SDのmount/write/read/compareも成功し、問題はLCD
 この経路は`general/01_DISPLAY_LCD.md`および`life`／`Picocalc_Clock`の実装に基づく。
 修正後の実機ログで、`transport=bitbang_sio`、色ごとのreadback `pass`、
 `[PICOCALC][LCD][VERIFY] app_status=pass`を確認するまで、LCD表示成功とは判定しない。
+
+## 追加修正（BSP 0.2.2）
+
+`pico20260729_231558.log`では、読み出し方式をbitbangへ変更しても
+`RDDID=0xffffff`、`RAMRD=0x202020`が変化しなかった。これは読み出しだけでなく、
+検証前のRAMWR書き込みが成立していない可能性を残す。
+
+直前版の`send_solid_pixels()`と`write_pixels()`は、RAMWRデータ列の160ピクセルごとに
+CSを解除していた。これはPIO系の長時間転送対策をhardware SPIへ誤って適用したもので、
+`general/lcd/src/main_hwspi_rgb888_probe.cpp`の実装（RAMWR開始後、矩形全体をCS保持）と
+異なる。BSP `0.2.2-loader-rgb888-held-cs`では、CSをRAMWRウィンドウ全体で保持し、
+160ピクセルはRGB888変換バッファの分割に限定した。
