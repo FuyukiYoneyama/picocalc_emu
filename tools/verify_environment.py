@@ -404,15 +404,23 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
     path = root / "templates/rp2040-basic/app/main.cpp"
     try:
         text = path.read_text(encoding="utf-8")
+        backlight_only = "mode=backlight-only" in text
         lcd_only = "mode=lcd-only" in text
         required = (
             [
+                "picocalc::init_backlight_only()",
+                "mode=backlight-only",
+            ]
+            if backlight_only
+            else (
+                [
                 "picocalc::init()",
                 "display::clear(0xf800)",
                 "display::verify_pixels(",
                 "[PICOCALC][LCD][VERIFY]",
                 "mode=lcd-only",
-            ]
+                ]
+            )
             if lcd_only
             else [
                 "picocalc::init()",
@@ -427,7 +435,8 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
             checks,
             "template-smoke",
             not missing,
-            mode="lcd-only" if lcd_only else "full-smoke",
+            mode=("backlight-only" if backlight_only else
+                  "lcd-only" if lcd_only else "full-smoke"),
             missing=missing,
         )
     except (OSError, UnicodeError) as error:

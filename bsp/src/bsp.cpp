@@ -51,4 +51,24 @@ bool init() {
     return true;
 }
 
+bool init_backlight_only() {
+    const uint32_t boot_ms = to_ms_since_boot(get_absolute_time());
+    if (!set_sys_clock_khz(board::kSystemClockKhz, true)) {
+        printf("[PICOCALC][BOOT][%lu ms] clock status=fail target_khz=%lu\n",
+               static_cast<unsigned long>(boot_ms),
+               static_cast<unsigned long>(board::kSystemClockKhz));
+        return false;
+    }
+    stdio_init_all();
+    printf("[PICOCALC][BOOT] bsp=%s git=%s build=%s compile=%s %s mode=backlight-only\n",
+           PICOCALC_BSP_VERSION, PICOCALC_BUILD_COMMIT,
+           PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
+    sleep_ms(200);
+    printf("[PICOCALC][BOOT] lcd_init status=skipped backlight_init=begin\n");
+    const bool ok = keyboard::init_backlight_only();
+    printf("[PICOCALC][BOOT] lcd_init status=skipped backlight_init=%s\n",
+           ok ? "ok" : "fail");
+    return ok;
+}
+
 }  // namespace picocalc

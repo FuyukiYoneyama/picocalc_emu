@@ -17,6 +17,7 @@ struct KeyEvent {
 };
 
 void init();
+bool init_backlight_only();
 bool read_event(KeyEvent* event);
 uint32_t read_count();
 uint32_t error_count();

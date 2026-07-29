@@ -46,7 +46,7 @@ bool set_backlight(uint8_t level) {
 
 }  // namespace
 
-void init() {
+bool init_backlight_only() {
     i2c_init(i2c1, board::kKeyboardHz);
     gpio_set_function(board::kKeyboardSda, GPIO_FUNC_I2C);
     gpio_set_function(board::kKeyboardScl, GPIO_FUNC_I2C);
@@ -62,6 +62,11 @@ void init() {
     }
     printf("[PICOCALC][BACKLIGHT] status=%s attempts=%d\n",
            backlight_ok ? "ok" : "fail", backlight_ok ? 1 : 6);
+    return backlight_ok;
+}
+
+void init() {
+    init_backlight_only();
 }
 
 bool read_event(KeyEvent* event) {
