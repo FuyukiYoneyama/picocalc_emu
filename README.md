@@ -115,7 +115,7 @@ python3 tools/picocalc.py verify \
 
 | 機能 | 実機基準 | 重要条件 |
 |---|---|---|
-| LCD | `picocalc-life`, `pico_skyace` | GP10–15、COLMOD `0x65`、MADCTL `0x48`、最大160 pixels/CS |
+| LCD | `uf2loader/common/lcdspi` | GP10–15、COLMOD `0x66`、MADCTL `0x48`、最大160 pixels/CS |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255 |

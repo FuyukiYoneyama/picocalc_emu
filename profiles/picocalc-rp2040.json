@@ -20,7 +20,7 @@
       "ram_cs": 21
     },
     "madctl": 72,
-    "colmod": 101,
+    "colmod": 102,
     "max_pixels_per_cs": 160,
     "pio_clock_divider": 4.0
   },

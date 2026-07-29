@@ -101,52 +101,48 @@ void require_equal(const std::vector<Transaction>& actual,
 int main() {
     FakeTransport transport;
     std::vector<uint32_t> delays;
-    bool clear_called_after_display_inversion = false;
+    bool clear_called_after_sleep_out = false;
 
     picocalc::detail::lcd::initialize_controller(
         transport,
         [&](uint32_t milliseconds) { delays.push_back(milliseconds); },
         [&]() {
-            clear_called_after_display_inversion =
+            clear_called_after_sleep_out =
                 !transport.transactions.empty() &&
                 !transport.transactions.back().data_mode &&
-                transport.transactions.back().bytes == std::vector<uint8_t>{0x21};
+                transport.transactions.back().bytes == std::vector<uint8_t>{0x11};
         });
 
     std::vector<Transaction> expected;
-    append_command(expected, 0xf0, {0xc3});
-    append_command(expected, 0xf0, {0x96});
-    append_command(expected, 0x36, {0x48});
-    append_command(expected, 0x3a, {0x65});
-    append_command(expected, 0xb1, {0xa0});
-    append_command(expected, 0xb4, {0x00});
-    append_command(expected, 0xb7, {0xc6});
-    append_command(expected, 0xb9, {0x02, 0xe0});
-    append_command(expected, 0xc0, {0x80, 0x06});
-    append_command(expected, 0xc1, {0x15});
-    append_command(expected, 0xc2, {0xa7});
-    append_command(expected, 0xc5, {0x04});
-    append_command(expected, 0xe8,
-                   {0x40, 0x8a, 0x00, 0x00, 0x29, 0x19, 0xaa, 0x33});
     append_command(expected, 0xe0,
-                   {0xf0, 0x06, 0x0f, 0x05, 0x04, 0x20, 0x37,
-                    0x33, 0x4c, 0x37, 0x13, 0x14, 0x2b, 0x31});
+                   {0x00, 0x03, 0x09, 0x08, 0x16, 0x0a, 0x3f,
+                    0x78, 0x4c, 0x09, 0x0a, 0x08, 0x16, 0x1a});
     append_command(expected, 0xe1,
-                   {0xf0, 0x11, 0x1b, 0x11, 0x0f, 0x0a, 0x37,
-                    0x43, 0x4c, 0x37, 0x13, 0x13, 0x2c, 0x32});
-    append_command(expected, 0xf0, {0x3c});
-    append_command(expected, 0xf0, {0x69});
-    append_command(expected, 0x35, {0x00});
-    append_command(expected, 0x11);
+                   {0x00, 0x16, 0x19, 0x03, 0x0f, 0x05, 0x32,
+                    0x45, 0x46, 0x04, 0x0e, 0x0d, 0x35, 0x37});
+    append_command(expected, 0xc0, {0x17, 0x15});
+    append_command(expected, 0xc1, {0x41});
+    append_command(expected, 0xc5, {0x00, 0x12, 0x80});
+    append_command(expected, 0x36, {0x48});
+    append_command(expected, 0x3a, {0x66});
+    append_command(expected, 0xb0, {0x00});
+    append_command(expected, 0xb1, {0xa0});
     append_command(expected, 0x21);
+    append_command(expected, 0xb4, {0x02});
+    append_command(expected, 0xb6, {0x02, 0x02, 0x3b});
+    append_command(expected, 0xb7, {0xc6});
+    append_command(expected, 0xe9, {0x00});
+    append_command(expected, 0xf7, {0xa9, 0x51, 0x2c, 0x82});
+    append_command(expected, 0x11);
     append_command(expected, 0x29);
+    append_command(expected, 0x36, {0x48});
 
     require_equal(transport.transactions, expected);
     if (delays != std::vector<uint32_t>{120, 120}) {
         fail("LCD delay sequence mismatch");
     }
-    if (!clear_called_after_display_inversion) {
-        fail("clear callback was not placed between commands 0x21 and 0x29");
+    if (!clear_called_after_sleep_out) {
+        fail("clear callback was not placed after command 0x11");
     }
 
     std::vector<size_t> chunks;

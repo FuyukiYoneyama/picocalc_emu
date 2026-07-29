@@ -84,6 +84,14 @@ BSP `0.1.4`ではRAMRDのCS Low区間中に`printf()`を実行していたため
 | 14 | BSP 0.1.8、実働多数派のリセット波形へ修正 | `598db1845e60a3b687fc998d45b83392b914564cda4807109ff9a75ccaf5da06` |
 | 15 | BSP 0.1.9、LCD単独モードへ変更 | `ab1e7664416d0d30b3191b8537a75fc6df3942d8747b201e5700a3cc186ac035` |
 | 16 | BSP 0.1.10、LCD初期化を停止しバックライトのみON | `4458f3bf1634b76093319f95c2e90c16ee1d37ba6d3a072d7d497ee9254215b8` |
+| 17 | BSP 0.1.11、uf2loader準拠LCD初期化・RGB888転送へ修正 | `60e41039660448d3f06d809feaa2e54d4d14baf1748349f914a980b31807696b` |
+
+## 追加調査（BSP 0.1.11）
+
+`/home/fuyuki/pico_dvl/uf2loader/common/lcdspi/lcdspi.c` とヘッダーを直接比較した。
+Canonical BSPは初期化コマンド列、`COLMOD`、および1ピクセルあたりの転送長がuf2loaderと一致していなかった。
+uf2loaderの実働列へ合わせ、`COLMOD=0x66`、ILI9488のRGB888（3バイト/ピクセル）転送、
+RGB888からRGB565へ戻す読み出し変換を実装する。
 
 ## 追加調査（BSP 0.1.10）
 

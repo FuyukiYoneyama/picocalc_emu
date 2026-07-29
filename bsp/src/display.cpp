@@ -213,17 +213,20 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     bitbang_write_byte(0x2e);  // RAMRD
     set_dc(true);
     const uint8_t dummy = bitbang_read_byte_falling();  // controller dummy byte
-    uint8_t raw_high[16] = {};
-    uint8_t raw_low[16] = {};
+    uint8_t raw_red[16] = {};
+    uint8_t raw_green[16] = {};
+    uint8_t raw_blue[16] = {};
 
     const int pixel_count = w * h;
     for (int i = 0; i < pixel_count; ++i) {
-        const uint8_t high = bitbang_read_byte_falling();
-        const uint8_t low = bitbang_read_byte_falling();
-        raw_high[i] = high;
-        raw_low[i] = low;
+        const uint8_t red = bitbang_read_byte_falling();
+        const uint8_t green = bitbang_read_byte_falling();
+        const uint8_t blue = bitbang_read_byte_falling();
+        raw_red[i] = red;
+        raw_green[i] = green;
+        raw_blue[i] = blue;
         output[i] = static_cast<uint16_t>(
-            (static_cast<uint16_t>(high) << 8) | low);
+            ((red >> 3) << 11) | ((green >> 2) << 5) | (blue >> 3));
     }
 
     deselect();
@@ -231,8 +234,8 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%d\n",
            dummy, w * h);
     for (int i = 0; i < pixel_count; ++i) {
-        printf("[PICOCALC][LCD][READ] pixel=%d raw=0x%02x%02x value=0x%04x\n",
-               i, raw_high[i], raw_low[i], output[i]);
+        printf("[PICOCALC][LCD][READ] pixel=%d raw=0x%02x%02x%02x value=0x%04x\n",
+               i, raw_red[i], raw_green[i], raw_blue[i], output[i]);
     }
     return true;
 }
@@ -255,17 +258,21 @@ bool clip_rect(int* x, int* y, int* w, int* h) {
 }
 
 void send_solid_pixels(uint16_t color, size_t count) {
-    uint8_t bytes[board::kLcdMaxPixelsPerCs * 2];
+    uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     for (int i = 0; i < board::kLcdMaxPixelsPerCs; ++i) {
-        bytes[i * 2] = static_cast<uint8_t>(color >> 8);
-        bytes[i * 2 + 1] = static_cast<uint8_t>(color);
+        const uint8_t red = static_cast<uint8_t>(((color >> 11) & 0x1f) << 3);
+        const uint8_t green = static_cast<uint8_t>(((color >> 5) & 0x3f) << 2);
+        const uint8_t blue = static_cast<uint8_t>((color & 0x1f) << 3);
+        bytes[i * 3] = red;
+        bytes[i * 3 + 1] = green;
+        bytes[i * 3 + 2] = blue;
     }
 
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t pixels) {
-            detail::lcd::write_data(g_transport, bytes, pixels * 2);
+            detail::lcd::write_data(g_transport, bytes, pixels * 3);
         });
 }
 
@@ -352,19 +359,22 @@ void write_pixels(const uint16_t* pixels, size_t count) {
         return;
     }
     count = std::min(count, g_window_pixels_remaining);
-    uint8_t bytes[board::kLcdMaxPixelsPerCs * 2];
+    uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     size_t offset = 0;
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t chunk) {
             for (size_t i = 0; i < chunk; ++i) {
-                bytes[i * 2] =
-                    static_cast<uint8_t>(pixels[offset + i] >> 8);
-                bytes[i * 2 + 1] =
-                    static_cast<uint8_t>(pixels[offset + i]);
+                const uint16_t pixel = pixels[offset + i];
+                bytes[i * 3] =
+                    static_cast<uint8_t>(((pixel >> 11) & 0x1f) << 3);
+                bytes[i * 3 + 1] =
+                    static_cast<uint8_t>(((pixel >> 5) & 0x3f) << 2);
+                bytes[i * 3 + 2] =
+                    static_cast<uint8_t>((pixel & 0x1f) << 3);
             }
-            detail::lcd::write_data(g_transport, bytes, chunk * 2);
+            detail::lcd::write_data(g_transport, bytes, chunk * 3);
             offset += chunk;
             g_window_pixels_remaining -= chunk;
         });
