@@ -232,3 +232,15 @@ CSを解除していた。これはPIO系の長時間転送対策をhardware SPI
 `general/lcd/src/main_hwspi_rgb888_probe.cpp`の実装（RAMWR開始後、矩形全体をCS保持）と
 異なる。BSP `0.2.2-loader-rgb888-held-cs`では、CSをRAMWRウィンドウ全体で保持し、
 160ピクセルはRGB888変換バッファの分割に限定した。
+
+## 追加修正（BSP 0.2.3）
+
+`pico20260729_232111.log`でも、BSP `0.2.1`／App `0.2.2-loader-rgb888-held-cs`の
+`cs=held_per_window`は確認できたが、`RDDID`、`RDDST`、RAMRDの値は前回と完全に同じで、
+全色のreadbackがfailした。
+
+公式`lcdspi.c`および`general/lcd/src/main_hwspi_rgb888_probe.cpp`を信号順序まで比較した
+結果、`lcd_protocol.h`のhardware-SPI取引がDCをCS Lowの後で設定していた。公式実装は
+DCを先に設定し、その後CSをLowにしてSPI送信する。BSP `0.2.3`ではこの順序を修正し、
+host transaction testもこの電気的な順序を検査するよう変更した。さらに公式GPIO初期化に
+合わせ、SPI機能設定前にSCK/MOSIを出力へ設定する。

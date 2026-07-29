@@ -46,8 +46,8 @@ void write_transaction(Transport& transport,
     if (bytes == nullptr || length == 0) {
         return;
     }
-    transport.select();
     transport.set_data_mode(data_mode);
+    transport.select();
     transport.write(bytes, length);
     transport.wait_idle();
     transport.deselect();

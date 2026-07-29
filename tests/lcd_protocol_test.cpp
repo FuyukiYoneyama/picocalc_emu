@@ -21,7 +21,6 @@ public:
     void select() {
         require(!selected_, "CS selected twice");
         selected_ = true;
-        mode_set_ = false;
         waited_ = false;
         current_.clear();
     }
@@ -36,7 +35,7 @@ public:
     }
 
     void set_data_mode(bool data_mode) {
-        require(selected_, "DC changed while CS was inactive");
+        require(!selected_, "DC changed while CS was active");
         data_mode_ = data_mode;
         mode_set_ = true;
     }
