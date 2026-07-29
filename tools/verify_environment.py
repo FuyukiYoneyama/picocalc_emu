@@ -481,6 +481,35 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "detail::lcd::write_command(g_transport, 0x2c",
         ],
     )
+    require_text(
+        checks,
+        root,
+        "bsp/src/display_pio_rgb565.cpp",
+        "lcd-pio-rgb565-wiring",
+        [
+            "lcd_spi_min_program_init(",
+            "kPioClockDivider = 2.0f",
+            "write_command1(0x3a, 0x65)",
+            "set_bitbang_mode(true)",
+            "pio_sm_set_enabled(g_pio, g_sm, false)",
+            "bitbang_read_byte_falling()",
+            "format=rgb565",
+            "PixelVerifyResult verify_pixels(",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/CMakeLists.txt",
+        "lcd-variant-selection",
+        [
+            'PICOCALC_LCD_VARIANT "hwspi-rgb888"',
+            "src/display.cpp",
+            "src/display_pio_rgb565.cpp",
+            "pico_generate_pio_header(",
+            "hardware_pio",
+        ],
+    )
     verify_lcd_transactions(checks, root)
     require_text(
         checks,

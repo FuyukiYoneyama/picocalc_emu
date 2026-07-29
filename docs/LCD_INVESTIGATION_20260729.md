@@ -244,3 +244,27 @@ CSを解除していた。これはPIO系の長時間転送対策をhardware SPI
 DCを先に設定し、その後CSをLowにしてSPI送信する。BSP `0.2.3`ではこの順序を修正し、
 host transaction testもこの電気的な順序を検査するよう変更した。さらに公式GPIO初期化に
 合わせ、SPI機能設定前にSCK/MOSIを出力へ設定する。
+
+## LCD BSPを二系統へ分離（BSP 0.3.0）
+
+0.2.xでは、hardware SPI1/RGB888の送信と、PIO系資料の考え方を一つの実装へ混ぜて
+しまっていた。そのため、どの既知動作コードを実機へ移植したUF2なのかを固定できず、
+LCD書込みが成立しない版を重ねる結果になった。
+
+0.3.0では、LCD実装を次の二つの独立BSPへ分離した。
+
+* A `hwspi-rgb888`: `general/lcd/src/main_hwspi_rgb888_probe.cpp`／uf2loader系。SPI1、
+  25 MHz、`COLMOD=0x66`、RGB888、RAMWRの各ウィンドウでCS保持。既存のhost transaction
+  検査とRGB888 RAMRD診断をこのファイルだけが使う。
+* B `pio-rgb565`: `general/lcd/src/lcd_rgb565_pio.cpp`のPIO0 blocking送信と、`life`の
+  RAMRD手順。`COLMOD=0x65`、RGB565、`lcd_spi_min.pio`、読出し時だけPIOを停止してSIOへ
+  切り替える。Aの`lcd_protocol.h`やhardware SPI送信処理は参照しない。
+
+共通化したのは公開API、物理ピン、SD/keyboard、版管理だけである。CMakeの
+`PICOCALC_LCD_VARIANT=hwspi-rgb888|pio-rgb565`で一方のソースだけをリンクする。
+どちらをビルドしても生成物は同じ`build/picocalc_app.uf2`であり、実機ログの先頭行の
+`variant`、`app`、`git`で識別する。UF2を別名保存して管理しない。
+
+この時点で確認できたのは、両バリアントのRP2040コンパイルとportable検証である。
+A/Bのどちらがこの個体のLCDを実機で駆動できるかは、各UF2を一度ずつ実機へ書き込み、
+画面写真と`[PICOCALC][LCD][VERIFY] app_status=pass`をログで確認して確定する。

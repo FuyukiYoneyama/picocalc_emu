@@ -35,7 +35,7 @@ def read_version(path: Path, variable: str) -> str:
     return "unknown"
 
 
-def build_versions(project: Path) -> Tuple[str, str]:
+def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[str, str]:
     bsp_file = project / "bsp/CMakeLists.txt"
     if not bsp_file.is_file():
         bsp_file = ROOT / "bsp/CMakeLists.txt"
@@ -44,10 +44,22 @@ def build_versions(project: Path) -> Tuple[str, str]:
         version_file = bsp_file.parent / "VERSION"
         if version_file.is_file():
             bsp_version = version_file.read_text(encoding="utf-8").strip()
-    return (
-        bsp_version,
-        read_version(project / "CMakeLists.txt", "PICOCALC_APP_VERSION"),
-    )
+    app_cmake = project / "CMakeLists.txt"
+    app_version = read_version(app_cmake, "PICOCALC_APP_VERSION")
+    # The template selects the default app sub-version in a CMake conditional,
+    # so a simple regex would always return the first branch. Keep build
+    # history aligned with the actual --lcd-variant selected by CMake.
+    try:
+        app_text = app_cmake.read_text(encoding="utf-8")
+    except OSError:
+        app_text = ""
+    if "0.3.0-pio-rgb565" in app_text and "0.3.0-hwspi-rgb888" in app_text:
+        app_version = (
+            "0.3.0-pio-rgb565"
+            if lcd_variant == "pio-rgb565"
+            else "0.3.0-hwspi-rgb888"
+        )
+    return (bsp_version, app_version)
 
 
 def source_commit() -> str:
@@ -158,6 +170,7 @@ def build_project(
     project: Path,
     sdk_value: Optional[str],
     picotool_value: Optional[str],
+    lcd_variant: str,
     jobs: int,
 ) -> int:
     project = project.resolve()
@@ -180,7 +193,7 @@ def build_project(
 
     build_dir = project / "build"
     build_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    bsp_version, app_version = build_versions(project)
+    bsp_version, app_version = build_versions(project, lcd_variant)
     # Keep the history outside build/ so a clean rebuild does not erase the
     # version-reuse warning evidence.
     history_path = project / ".picocalc-build-history.json"
@@ -190,11 +203,12 @@ def build_project(
         for item in history["successful_builds"]
         if item.get("bsp_version") == bsp_version
         and item.get("app_version") == app_version
+        and item.get("lcd_variant") == lcd_variant
     ]
     if previous:
         print(
-            "WARNING: regenerating same-version build #{}: bsp={} app={}.".format(
-                len(previous) + 1, bsp_version, app_version
+            "WARNING: regenerating same-version build #{}: bsp={} app={} variant={}.".format(
+                len(previous) + 1, bsp_version, app_version, lcd_variant
             ),
             file=sys.stderr,
         )
@@ -215,11 +229,13 @@ def build_project(
         "-DCMAKE_BUILD_TYPE=Release",
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
         "-DPICOCALC_BUILD_COMMIT={}".format(source_commit()),
+        "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
     ]
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:
         configure.append("-Dpicotool_DIR={}".format(picotool_config))
     print("SDK     {}".format(sdk))
+    print("LCD     {}".format(lcd_variant))
     if picotool_config is not None:
         print("picotool {}".format(picotool_config))
     if subprocess.run(configure, env=environment).returncode != 0:
@@ -244,6 +260,7 @@ def build_project(
             "built_at": build_timestamp,
             "bsp_version": bsp_version,
             "app_version": app_version,
+            "lcd_variant": lcd_variant,
             "uf2": str(uf2),
             "uf2_sha256": digest,
         },
@@ -332,6 +349,12 @@ def main() -> int:
         "--picotool-dir",
         help="directory containing picotoolConfig.cmake (or set PICOTOOL_DIR)",
     )
+    build_parser.add_argument(
+        "--lcd-variant",
+        choices=("hwspi-rgb888", "pio-rgb565"),
+        default="hwspi-rgb888",
+        help="independent LCD BSP to build (default: hwspi-rgb888)",
+    )
     build_parser.add_argument("--jobs", type=int, default=2)
 
     verify_parser = subparsers.add_parser(
@@ -375,6 +398,7 @@ def main() -> int:
             args.project,
             args.sdk,
             args.picotool_dir,
+            args.lcd_variant,
             max(1, args.jobs),
         )
     if args.command == "verify":

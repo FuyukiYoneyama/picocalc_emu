@@ -25,9 +25,9 @@ struct PixelVerifyResult {
     }
 };
 
-// Writes are sent as RGB888, so RAMRD is decoded as three bytes per pixel and
-// compared after conversion back to the public RGB565 representation. The
-// diagnostic intentionally limits the readback window to a small sample.
+// The public pixel type is RGB565. Each independent LCD BSP selects its own
+// proven wire format: A sends RGB888 and B sends RGB565. RAMRD is decoded by
+// that selected BSP and compared in this public RGB565 representation.
 PixelVerifyResult verify_pixels(int x, int y, int w, int h,
                                 const uint16_t* expected, size_t count);
 
