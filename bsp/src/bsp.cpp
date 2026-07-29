@@ -46,8 +46,7 @@ bool init() {
     display::init();
     printf("[PICOCALC][LCD][%lu ms] init status=ok\n",
            static_cast<unsigned long>(to_ms_since_boot(get_absolute_time())));
-    keyboard::init();
-    printf("[PICOCALC][BOOT][%lu ms] keyboard status=ok\n",
+    printf("[PICOCALC][BOOT][%lu ms] non_lcd_devices status=skipped\n",
            static_cast<unsigned long>(to_ms_since_boot(get_absolute_time())));
     return true;
 }
