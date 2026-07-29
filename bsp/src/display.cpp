@@ -321,7 +321,7 @@ void init() {
         },
         []() {
             printf("[PICOCALC][LCD] controller phase=clear begin\n");
-            clear(0x0000);
+            clear(0xf800);
             printf("[PICOCALC][LCD] controller phase=clear end\n");
         });
     printf("[PICOCALC][LCD] controller phase=commands end status=ok\n");
