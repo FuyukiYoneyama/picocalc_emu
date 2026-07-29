@@ -9,7 +9,7 @@
 namespace picocalc {
 
 bool init() {
-    if (!set_sys_clock_khz(board::kSystemClockKhz, true)) {
+    if (!set_sys_clock_khz(PICOCALC_LCD_SYSTEM_CLOCK_KHZ, true)) {
         return false;
     }
     stdio_init_all();
@@ -17,7 +17,7 @@ bool init() {
            PICOCALC_BSP_VERSION, PICOCALC_APP_VERSION, PICOCALC_LCD_VARIANT,
            PICOCALC_BUILD_COMMIT, PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
     printf("[PICOCALC][BOOT] clock status=ok target_khz=%lu actual_khz=%lu\n",
-           static_cast<unsigned long>(board::kSystemClockKhz),
+           static_cast<unsigned long>(PICOCALC_LCD_SYSTEM_CLOCK_KHZ),
            static_cast<unsigned long>(clock_get_hz(clk_sys) / 1000u));
     // UF2 loader can reset the RP2040 while the PicoCalc side remains powered.
     sleep_ms(100);

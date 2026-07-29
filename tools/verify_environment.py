@@ -489,6 +489,9 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         [
             "lcd_spi_min_program_init(",
             "kPioClockDivider = 2.0f",
+            "kMaxPixelsPerWindow = 160 * 160",
+            "for (int tile_y = y; tile_y < y + h; tile_y += 160)",
+            "for (int tile_x = x; tile_x < x + w; tile_x += 160)",
             "write_command1(0x3a, 0x65)",
             "set_bitbang_mode(true)",
             "pio_sm_set_enabled(g_pio, g_sm, false)",

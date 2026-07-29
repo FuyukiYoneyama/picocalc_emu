@@ -5,8 +5,10 @@ set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
 
 if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
     set(PICOCALC_DISPLAY_SOURCE src/display.cpp)
+    set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 125000)
 elseif(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
     set(PICOCALC_DISPLAY_SOURCE src/display_pio_rgb565.cpp)
+    set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 250000)
 else()
     message(FATAL_ERROR
         "PICOCALC_LCD_VARIANT must be hwspi-rgb888 or pio-rgb565")
@@ -69,6 +71,7 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BUILD_TIMESTAMP=\"${PICOCALC_BUILD_TIMESTAMP}\"
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
+        PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
 )
 
 target_compile_options(picocalc_bsp PRIVATE
