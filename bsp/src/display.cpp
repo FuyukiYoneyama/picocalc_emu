@@ -13,6 +13,7 @@ namespace picocalc::display {
 namespace {
 
 size_t g_window_pixels_remaining = 0;
+bool g_window_selected = false;
 constexpr size_t kMaxReadbackPixels = 16;
 constexpr uint32_t kReadbackSpiHz = 6000000;
 
@@ -86,10 +87,10 @@ void read_command_bytes(uint8_t command,
 
     uint8_t discarded = 0;
     for (size_t i = 0; i < dummy_bytes; ++i) {
-        spi_read_blocking(spi1, 0, &discarded, 1);
+        spi_read_blocking(spi1, 0xff, &discarded, 1);
     }
     if (output != nullptr && output_length > 0) {
-        spi_read_blocking(spi1, 0, output, output_length);
+        spi_read_blocking(spi1, 0xff, output, output_length);
     }
     wait_idle();
     deselect();
@@ -129,19 +130,30 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
         static_cast<uint8_t>(y >> 8), static_cast<uint8_t>(y),
         static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
     };
-    write_commandn(0x2a, columns, sizeof(columns));
-    write_commandn(0x2b, rows, sizeof(rows));
-
     const uint8_t ram_read = 0x2e;
     uint8_t raw[kMaxReadbackPixels * 3] = {};
     select();
+    set_dc(false);
+    const uint8_t column_command = 0x2a;
+    spi_write_blocking(spi1, &column_command, 1);
+    wait_idle();
+    set_dc(true);
+    spi_write_blocking(spi1, columns, sizeof(columns));
+    wait_idle();
+    set_dc(false);
+    const uint8_t row_command = 0x2b;
+    spi_write_blocking(spi1, &row_command, 1);
+    wait_idle();
+    set_dc(true);
+    spi_write_blocking(spi1, rows, sizeof(rows));
+    wait_idle();
     set_dc(false);
     spi_write_blocking(spi1, &ram_read, 1);
     wait_idle();
     set_dc(true);
     uint8_t dummy = 0;
-    spi_read_blocking(spi1, 0, &dummy, 1);
-    spi_read_blocking(spi1, 0, raw, pixel_count * 3);
+    spi_read_blocking(spi1, 0xff, &dummy, 1);
+    spi_read_blocking(spi1, 0xff, raw, pixel_count * 3);
     wait_idle();
     deselect();
 
@@ -198,7 +210,6 @@ void send_solid_pixels(uint16_t color, size_t count) {
     }
 
     set_dc(true);
-    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
@@ -207,6 +218,7 @@ void send_solid_pixels(uint16_t color, size_t count) {
         });
     wait_idle();
     deselect();
+    g_window_selected = false;
 }
 
 }  // namespace
@@ -248,6 +260,11 @@ void set_window(int x, int y, int w, int h) {
         return;
     }
 
+    if (g_window_selected) {
+        deselect();
+        g_window_selected = false;
+    }
+
     const int x1 = x + w - 1;
     const int y1 = y + h - 1;
     const uint8_t columns[] = {
@@ -262,21 +279,39 @@ void set_window(int x, int y, int w, int h) {
         static_cast<uint8_t>(y1 >> 8),
         static_cast<uint8_t>(y1),
     };
-    write_commandn(0x2a, columns, sizeof(columns));
-    write_commandn(0x2b, rows, sizeof(rows));
-    write_command(0x2c);
+    select();
+    g_window_selected = true;
+    set_dc(false);
+    const uint8_t column_command = 0x2a;
+    spi_write_blocking(spi1, &column_command, 1);
+    wait_idle();
+    set_dc(true);
+    spi_write_blocking(spi1, columns, sizeof(columns));
+    wait_idle();
+    set_dc(false);
+    const uint8_t row_command = 0x2b;
+    spi_write_blocking(spi1, &row_command, 1);
+    wait_idle();
+    set_dc(true);
+    spi_write_blocking(spi1, rows, sizeof(rows));
+    wait_idle();
+    set_dc(false);
+    const uint8_t memory_write = 0x2c;
+    spi_write_blocking(spi1, &memory_write, 1);
+    wait_idle();
+    set_dc(true);
     g_window_pixels_remaining = static_cast<size_t>(w) * static_cast<size_t>(h);
 }
 
 void write_pixels(const uint16_t* pixels, size_t count) {
-    if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0) {
+    if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0 ||
+        !g_window_selected) {
         return;
     }
     count = std::min(count, g_window_pixels_remaining);
     uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     size_t offset = 0;
     set_dc(true);
-    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
@@ -297,6 +332,7 @@ void write_pixels(const uint16_t* pixels, size_t count) {
         });
     wait_idle();
     deselect();
+    g_window_selected = false;
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {

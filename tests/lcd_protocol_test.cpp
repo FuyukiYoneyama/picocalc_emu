@@ -101,20 +101,16 @@ void require_equal(const std::vector<Transaction>& actual,
 int main() {
     FakeTransport transport;
     std::vector<uint32_t> delays;
-    bool clear_called_after_display_on = false;
+    bool clear_called_before_display_on = false;
 
     picocalc::detail::lcd::initialize_controller(
         transport,
         [&](uint32_t milliseconds) { delays.push_back(milliseconds); },
         [&]() {
-            clear_called_after_display_on =
-                transport.transactions.size() >= 2 &&
-                !transport.transactions[transport.transactions.size() - 2]
-                     .data_mode &&
-                transport.transactions[transport.transactions.size() - 2].bytes ==
-                    std::vector<uint8_t>{0x36} &&
-                transport.transactions.back().data_mode &&
-                transport.transactions.back().bytes == std::vector<uint8_t>{0x48};
+            clear_called_before_display_on =
+                !transport.transactions.empty() &&
+                !transport.transactions.back().data_mode &&
+                transport.transactions.back().bytes == std::vector<uint8_t>{0x11};
         });
 
     std::vector<Transaction> expected;
@@ -145,8 +141,8 @@ int main() {
     if (delays != std::vector<uint32_t>{120, 120}) {
         fail("LCD delay sequence mismatch");
     }
-    if (!clear_called_after_display_on) {
-        fail("clear callback was not placed after display-on orientation");
+    if (!clear_called_before_display_on) {
+        fail("clear callback was not placed before display-on");
     }
 
     std::vector<size_t> chunks;

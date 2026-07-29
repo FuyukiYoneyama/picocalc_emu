@@ -90,10 +90,10 @@ void initialize_controller(Transport& transport, Delay delay_ms, Clear clear) {
         }
     }
     delay_ms(120);
+    clear();
     write_command(transport, 0x29);
     delay_ms(120);
     write_command_data(transport, 0x36, board::kLcdMadctl);
-    clear();
 }
 
 template <typename Callback>

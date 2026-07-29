@@ -476,6 +476,8 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "const uint8_t ram_read = 0x2e",
             "rgb888_to_rgb565(",
             "PixelVerifyResult verify_pixels(",
+            "g_window_selected",
+            "const uint8_t memory_write = 0x2c",
         ],
     )
     verify_lcd_transactions(checks, root)
