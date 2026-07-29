@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.3.0）
+## 現在利用できるもの（BSP/template MVP 0.3.1）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -44,6 +44,13 @@ python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
 python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
 ```
 
+実機試験は同時に二つのUF2を扱わず、Aを合格させてからBへ進める。まず
+`hwspi-rgb888`だけを標準名`build/picocalc_app.uf2`へ生成して試験する。
+ログ先頭の`variant=hwspi-rgb888`と、LCDの
+`[PICOCALC][LCD][VERIFY] app_status=pass`および画面写真を確認できるまで、
+`pio-rgb565`のUF2は作成・提示しない。Aが合格した後、同じ場所・同じ名前へ
+Bを生成し、ログ先頭の`variant=pio-rgb565`で識別する。
+
 生成後に AI が通常変更する場所は `MyApp/app/` だけである。`MyApp/bsp/` は
 生成時点の既知動作版を固定したコピーであり、アプリ都合で初期化コードを
 作り直さない。
@@ -76,7 +83,7 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 
 生成した `picocalc_app.uf2` は、起動時に次を行う。
 
-1. 250 MHz、100 ms安定待ち、PSRAM CS inactive、キーボード、LCDを初期化する（バックライトの明るさは変更しない）
+1. 選択したBSPの基準クロック（A: 125 MHz、B: 250 MHz）、100 ms安定待ち、PSRAM CS inactive、キーボード、LCDを初期化する（バックライトの明るさは変更しない）
 2. LCD を黒・白・赤・緑・青で塗りつぶし、2x2 sampleを`RAMRD (0x2e)`で読み戻して一致比較する
 3. LCD に黒・白・RGB の既知パターンを描画し、2x2の書き込み／GRAM readback一致を確認する
 4. SD を mount し、`PICOTEST.TXT` を write/sync/close/read/compare する
@@ -126,13 +133,16 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
-調整した後、LCDを二系統へ分離した BSP 0.3.1 A/B は、次の実機試験で確認する。
-この BSP 自体を新しい基準実装として記録する。
+調整した後、LCDを二系統へ分離した BSP 0.3.1 は、現在A
+`hwspi-rgb888`を次の実機試験対象としている。Aが合格するまでBは試験対象に
+しない。A/Bそれぞれの実機結果は`hardware-validation/records/`へ個別に記録し、
+このBSP自体を新しい基準実装として確定する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.1ではバックライトの既定輝度、
-LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
+PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.1 Aではバックライトの既定輝度、
+LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。A合格後に、
+BのPIO転送と同じ項目を確認する。
 
 また、次の機能は今後のエミュレーター段階である。
 

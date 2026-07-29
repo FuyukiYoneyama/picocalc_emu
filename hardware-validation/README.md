@@ -34,6 +34,8 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 - SD: `mount/write/sync/read/compare/remove`の全段階
 - keyboard: 複数キーについてpress/releaseイベントとUARTログ
 
+実機試験はA（`hwspi-rgb888`）を先に行い、`app_status=pass`になるまでBを作成しない。
+A合格後に同じ`build/picocalc_app.uf2`へB（`pio-rgb565`）を生成する。
 `pending`テンプレートは成功証拠ではない。`records/`に追加した記録だけが
 Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義する。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、
