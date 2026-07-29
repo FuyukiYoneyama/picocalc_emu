@@ -53,6 +53,22 @@ python3 tools/picocalc.py build --project ../MyApp
 
 生成物は`../MyApp/build/picocalc_app.uf2`です。
 
+`tools/picocalc.py build`はビルド開始時刻を毎回UTCでUF2へ埋め込み、生成したUF2の
+SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録します。同じBSP版と
+アプリ版で過去に成功したビルドがある場合は警告しますが、再ビルドは禁止しません。
+同じ版を意図的に使う場合はそのまま続行できます。新しいリリースや実機検証対象を
+区別する場合だけ、テンプレートの版番号を更新してください。
+
+ビルドログには次の識別情報が出ます。
+
+```text
+[PICOCALC][BOOT] bsp=... git=... build=... compile=...
+[PICOCALC][APP] version=... compile=...
+```
+
+`build`はビルド開始時刻、`compile`はソースのコンパイル時刻です。UF2を実機へ
+書き込む前に、コマンドが出力するSHA-256と実機ログの版・時刻を記録してください。
+
 ## 検証レベル
 
 ### Portable
