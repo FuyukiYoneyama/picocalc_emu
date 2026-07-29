@@ -9,7 +9,7 @@ add_library(picocalc_bsp STATIC
     third_party/ChanFatFS/src/ffunicode.c
 )
 
-set(PICOCALC_BSP_VERSION "0.1.4")
+set(PICOCALC_BSP_VERSION "0.1.5")
 if(NOT PICOCALC_BUILD_TIMESTAMP)
     string(TIMESTAMP PICOCALC_BUILD_TIMESTAMP UTC "%Y-%m-%dT%H:%M:%SZ")
 endif()

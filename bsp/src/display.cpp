@@ -219,21 +219,27 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     bitbang_write_byte(0x2e);  // RAMRD
     set_dc(true);
     const uint8_t dummy = bitbang_read_byte_falling();  // controller dummy byte
-    printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%d\n",
-           dummy, w * h);
+    uint8_t raw_high[16] = {};
+    uint8_t raw_low[16] = {};
 
     const int pixel_count = w * h;
     for (int i = 0; i < pixel_count; ++i) {
         const uint8_t high = bitbang_read_byte_falling();
         const uint8_t low = bitbang_read_byte_falling();
+        raw_high[i] = high;
+        raw_low[i] = low;
         output[i] = static_cast<uint16_t>(
             (static_cast<uint16_t>(high) << 8) | low);
-        printf("[PICOCALC][LCD][READ] pixel=%d raw=0x%02x%02x value=0x%04x\n",
-               i, high, low, output[i]);
     }
 
     deselect();
     set_bitbang_mode(false);
+    printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%d\n",
+           dummy, w * h);
+    for (int i = 0; i < pixel_count; ++i) {
+        printf("[PICOCALC][LCD][READ] pixel=%d raw=0x%02x%02x value=0x%04x\n",
+               i, raw_high[i], raw_low[i], output[i]);
+    }
     return true;
 }
 
