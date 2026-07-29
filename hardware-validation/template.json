@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.1.0-YYYYMMDD-01",
+  "bsp_version": "0.1.0",
+  "repository_commit": null,
+  "validation_date": null,
+  "operator": "",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": ""
+  },
+  "software": {
+    "pico_sdk": "2.0.0",
+    "compiler": "",
+    "cmake": ""
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/picocalc_app.uf2",
+    "uf2_sha256": null,
+    "build_log": ""
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": []
+    }
+  },
+  "notes": ""
+}

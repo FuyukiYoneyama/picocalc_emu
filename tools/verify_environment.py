@@ -1,17 +1,35 @@
 #!/usr/bin/env python3
-"""Verify portable BSP fingerprints and optional hardware reference evidence."""
+"""Verify portable BSP contracts and optional hardware reference evidence."""
 
 import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+import generate_board_header
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
+Check = Dict[str, object]
+
+
+def add_check(checks: List[Check], name: str, passed: bool, **details: object) -> None:
+    check: Check = {"name": name, "status": "pass" if passed else "fail"}
+    check.update(details)
+    checks.append(check)
+
+
+def error_details(error: BaseException) -> Dict[str, str]:
+    return {
+        "error_type": type(error).__name__,
+        "error": str(error) or type(error).__name__,
+    }
 
 
 def sha256(path: Path) -> str:
@@ -23,13 +41,16 @@ def sha256(path: Path) -> str:
 
 
 def git_head(path: Path) -> str:
-    completed = subprocess.run(
-        ["git", "-C", str(path), "rev-parse", "HEAD"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
     return completed.stdout.strip() if completed.returncode == 0 else ""
 
 
@@ -38,151 +59,356 @@ def load_json(path: Path) -> Any:
         return json.load(source)
 
 
-def add_check(
-    checks: List[Dict[str, object]], name: str, passed: bool, **details: object
-) -> None:
-    check: Dict[str, object] = {
-        "name": name,
-        "status": "pass" if passed else "fail",
-    }
-    check.update(details)
-    checks.append(check)
-
-
 def require_text(
-    checks: List[Dict[str, object]],
+    checks: List[Check],
     root: Path,
     relative_path: str,
     label: str,
     required: List[str],
 ) -> None:
     path = root / relative_path
-    if not path.is_file():
+    try:
+        text = path.read_text(encoding="utf-8")
+        missing = [token for token in required if token not in text]
+        add_check(
+            checks,
+            "source-fingerprint:" + label,
+            not missing,
+            path=relative_path,
+            missing=missing,
+        )
+    except (OSError, UnicodeError) as error:
         add_check(
             checks,
             "source-fingerprint:" + label,
             False,
             path=relative_path,
-            error="missing",
+            **error_details(error),
         )
-        return
-    text = path.read_text(encoding="utf-8")
-    missing = [token for token in required if token not in text]
-    add_check(
-        checks,
-        "source-fingerprint:" + label,
-        not missing,
-        path=relative_path,
-        missing=missing,
-    )
 
 
-def board_constants(path: Path) -> Dict[str, object]:
-    text = path.read_text(encoding="utf-8")
-    pattern = re.compile(
-        r"constexpr\s+(?:uint(?:8|16|32)_t|unsigned|int|float)\s+"
-        r"(?P<name>[A-Za-z0-9_]+)\s*=\s*(?P<value>[^;]+);"
-    )
-    constants: Dict[str, object] = {}
-    for match in pattern.finditer(text):
-        raw = match.group("value").strip()
-        try:
-            hexadecimal = re.fullmatch(r"(0[xX][0-9a-fA-F]+)(?:[uUlL]+)?", raw)
-            if hexadecimal:
-                value: object = int(hexadecimal.group(1), 0)
-            elif "." in raw:
-                value = float(re.sub(r"[fF]$", "", raw))
-            else:
-                value = int(re.sub(r"[uUlL]+$", "", raw), 0)
-            constants[match.group("name")] = value
-        except ValueError:
-            continue
-    return constants
-
-
-def nested(data: Dict[str, Any], path: str) -> Any:
-    value: Any = data
-    for key in path.split("."):
-        value = value[key]
-    return value
-
-
-def verify_profile(checks: List[Dict[str, object]], root: Path) -> None:
+def verify_generated_board(checks: List[Check], root: Path) -> None:
     profile_path = root / "profiles/picocalc-rp2040.json"
-    board_path = root / "bsp/include/picocalc/board.h"
-    if not profile_path.is_file() or not board_path.is_file():
+    generated_path = root / "bsp/include/picocalc/board_generated.h"
+    try:
+        profile = load_json(profile_path)
+        expected = generate_board_header.render(profile, profile_path)
+        actual = generated_path.read_text(encoding="utf-8")
         add_check(
             checks,
-            "structured-profile:board",
+            "structured-profile:generated-board-header",
+            actual == expected,
+            profile=str(profile_path.relative_to(root)),
+            generated=str(generated_path.relative_to(root)),
+            stale=actual != expected,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(
+            checks,
+            "structured-profile:generated-board-header",
             False,
-            error="profile or board header missing",
+            profile="profiles/picocalc-rp2040.json",
+            generated="bsp/include/picocalc/board_generated.h",
+            **error_details(error),
+        )
+
+
+def verify_lcd_transactions(checks: List[Check], root: Path) -> None:
+    compiler = shutil.which("c++")
+    if compiler is None:
+        add_check(
+            checks,
+            "host-test:lcd-transactions",
+            False,
+            error="C++17 host compiler not found on PATH",
         )
         return
 
-    profile = load_json(profile_path)
-    constants = board_constants(board_path)
-    mappings = {
-        "system_clock_khz": "kSystemClockKhz",
-        "display.visible_width": "kDisplayWidth",
-        "display.visible_height": "kDisplayHeight",
-        "display.gram_width": "kDisplayGramWidth",
-        "display.gram_height": "kDisplayGramHeight",
-        "display.pins.sck": "kLcdSck",
-        "display.pins.mosi": "kLcdMosi",
-        "display.pins.miso": "kLcdMiso",
-        "display.pins.cs": "kLcdCs",
-        "display.pins.dc": "kLcdDc",
-        "display.pins.reset": "kLcdReset",
-        "display.max_pixels_per_cs": "kLcdMaxPixelsPerCs",
-        "display.pio_clock_divider": "kLcdPioClockDivider",
-        "keyboard.sda": "kKeyboardSda",
-        "keyboard.scl": "kKeyboardScl",
-        "keyboard.frequency_hz": "kKeyboardHz",
-        "keyboard.address": "kKeyboardAddress",
-        "sd.miso": "kSdMiso",
-        "sd.cs": "kSdCs",
-        "sd.sck": "kSdSck",
-        "sd.mosi": "kSdMosi",
-        "sd.detect": "kSdDetect",
-        "sd.init_hz": "kSdInitHz",
-        "sd.run_hz": "kSdRunHz",
-        "psram.cs": "kPsramCs",
-        "psram.sck": "kPsramSck",
-        "psram.mosi": "kPsramMosi",
-        "psram.miso": "kPsramMiso",
-        "audio.left": "kAudioLeft",
-        "audio.right": "kAudioRight",
-    }
-    mismatches = []
-    for profile_key, constant_name in mappings.items():
-        expected = nested(profile, profile_key)
-        actual = constants.get(constant_name, "missing")
-        if actual != expected:
-            mismatches.append(
-                {
-                    "profile": profile_key,
-                    "constant": constant_name,
-                    "expected": expected,
-                    "actual": actual,
-                }
+    source = root / "tests/lcd_protocol_test.cpp"
+    include = root / "bsp/include"
+    try:
+        with tempfile.TemporaryDirectory() as temporary:
+            executable = Path(temporary) / "lcd_protocol_test"
+            compiled = subprocess.run(
+                [
+                    compiler,
+                    "-std=c++17",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-I",
+                    str(include),
+                    str(source),
+                    "-o",
+                    str(executable),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
             )
-    add_check(
-        checks,
-        "structured-profile:board",
-        not mismatches,
-        profile="profiles/picocalc-rp2040.json",
-        mismatches=mismatches,
-    )
+            if compiled.returncode != 0:
+                add_check(
+                    checks,
+                    "host-test:lcd-transactions",
+                    False,
+                    stage="compile",
+                    returncode=compiled.returncode,
+                    stderr=compiled.stderr[-4000:],
+                )
+                return
+            executed = subprocess.run(
+                [str(executable)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+        add_check(
+            checks,
+            "host-test:lcd-transactions",
+            executed.returncode == 0,
+            stage="execute",
+            returncode=executed.returncode,
+            stdout=executed.stdout.strip(),
+            stderr=executed.stderr[-4000:],
+        )
+    except OSError as error:
+        add_check(
+            checks,
+            "host-test:lcd-transactions",
+            False,
+            stage="launch",
+            **error_details(error),
+        )
 
 
-def verify_portable(checks: List[Dict[str, object]], root: Path) -> None:
-    verify_profile(checks, root)
+def validation_shape_errors(record: Any, completed: bool) -> List[str]:
+    errors: List[str] = []
+    if not isinstance(record, dict):
+        return ["record must be a JSON object"]
+
+    required = [
+        "schema_version",
+        "validation_id",
+        "bsp_version",
+        "repository_commit",
+        "validation_date",
+        "operator",
+        "overall_status",
+        "hardware",
+        "software",
+        "sd_card",
+        "firmware",
+        "tests",
+        "notes",
+    ]
+    errors.extend("missing {}".format(key) for key in required if key not in record)
+    if errors:
+        return errors
+    if record["schema_version"] != 1:
+        errors.append("schema_version must be 1")
+    if record["overall_status"] not in ("pending", "pass", "fail"):
+        errors.append("invalid overall_status")
+
+    section_keys = {
+        "hardware": ("product", "board_revision", "mcu", "notes"),
+        "software": ("pico_sdk", "compiler", "cmake"),
+        "sd_card": ("manufacturer", "model", "capacity", "filesystem"),
+        "firmware": ("path", "uf2_sha256", "build_log"),
+    }
+    for section, keys in section_keys.items():
+        value = record.get(section)
+        if not isinstance(value, dict):
+            errors.append("{} must be an object".format(section))
+            continue
+        errors.extend(
+            "missing {}.{}".format(section, key) for key in keys if key not in value
+        )
+
+    tests = record.get("tests")
+    if not isinstance(tests, dict):
+        errors.append("tests must be an object")
+        return errors
+    for name in ("lcd", "sd", "keyboard"):
+        result = tests.get(name)
+        if not isinstance(result, dict):
+            errors.append("missing tests.{}".format(name))
+            continue
+        if result.get("status") not in ("pending", "pass", "fail"):
+            errors.append("invalid tests.{}.status".format(name))
+        if not isinstance(result.get("observed"), str):
+            errors.append("tests.{}.observed must be a string".format(name))
+        evidence = result.get("evidence_files")
+        if not isinstance(evidence, list) or not all(
+            isinstance(item, str) and item for item in evidence
+        ):
+            errors.append("tests.{}.evidence_files must be string array".format(name))
+
+    if completed and record["overall_status"] == "pass":
+        if not re.fullmatch(r"[0-9a-f]{40}", record.get("repository_commit") or ""):
+            errors.append("passing record requires full repository_commit")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", record.get("validation_date") or ""):
+            errors.append("passing record requires validation_date")
+        if not record.get("operator"):
+            errors.append("passing record requires operator")
+        if not record.get("validation_id") or not record.get("bsp_version"):
+            errors.append("passing record requires validation_id and bsp_version")
+        for section, keys in {
+            "hardware": ("product", "board_revision", "mcu"),
+            "software": ("pico_sdk", "compiler", "cmake"),
+            "sd_card": ("manufacturer", "model", "capacity", "filesystem"),
+        }.items():
+            value = record.get(section, {})
+            for key in keys:
+                if not isinstance(value, dict) or not value.get(key):
+                    errors.append(
+                        "passing record requires {}.{}".format(section, key)
+                    )
+        firmware = record.get("firmware")
+        digest = firmware.get("uf2_sha256") if isinstance(firmware, dict) else None
+        if not re.fullmatch(r"[0-9a-f]{64}", digest or ""):
+            errors.append("passing record requires UF2 SHA-256")
+        for name in ("lcd", "sd", "keyboard"):
+            result = tests.get(name, {})
+            if result.get("status") != "pass":
+                errors.append("passing record requires tests.{}=pass".format(name))
+            if not result.get("evidence_files"):
+                errors.append(
+                    "passing record requires tests.{} evidence".format(name)
+                )
+    return errors
+
+
+def verify_hardware_validation(checks: List[Check], root: Path) -> None:
+    directory = root / "hardware-validation"
+    try:
+        schema = load_json(directory / "schema.json")
+        template = load_json(directory / "template.json")
+        schema_valid = (
+            schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema"
+            and schema.get("type") == "object"
+            and isinstance(schema.get("required"), list)
+            and isinstance(schema.get("$defs"), dict)
+        )
+        template_errors = validation_shape_errors(template, completed=False)
+        add_check(
+            checks,
+            "hardware-validation:schema-and-template",
+            schema_valid and not template_errors,
+            schema_valid=schema_valid,
+            template_errors=template_errors,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as error:
+        add_check(
+            checks,
+            "hardware-validation:schema-and-template",
+            False,
+            **error_details(error),
+        )
+        return
+
+    records_dir = directory / "records"
+    try:
+        record_paths = sorted(records_dir.glob("*.json"))
+        invalid: List[Dict[str, object]] = []
+        passing = 0
+        for path in record_paths:
+            try:
+                record = load_json(path)
+                errors = validation_shape_errors(record, completed=True)
+                if isinstance(record, dict) and record.get("overall_status") == "pass":
+                    evidence_paths: List[str] = []
+                    tests = record.get("tests", {})
+                    if isinstance(tests, dict):
+                        for name in ("lcd", "sd", "keyboard"):
+                            result = tests.get(name, {})
+                            if isinstance(result, dict):
+                                evidence = result.get("evidence_files", [])
+                                if isinstance(evidence, list):
+                                    evidence_paths.extend(
+                                        item for item in evidence if isinstance(item, str)
+                                    )
+                    firmware = record.get("firmware", {})
+                    if isinstance(firmware, dict):
+                        build_log = firmware.get("build_log")
+                        if isinstance(build_log, str) and build_log:
+                            evidence_paths.append(build_log)
+                        else:
+                            errors.append("passing record requires firmware.build_log")
+                    for relative in evidence_paths:
+                        candidate = (root / relative).resolve()
+                        try:
+                            candidate.relative_to(root.resolve())
+                        except ValueError:
+                            errors.append(
+                                "evidence path escapes repository: {}".format(relative)
+                            )
+                            continue
+                        if not candidate.is_file():
+                            errors.append(
+                                "evidence file missing: {}".format(relative)
+                            )
+                if record.get("overall_status") == "pass" and not errors:
+                    passing += 1
+                if errors:
+                    invalid.append({"path": str(path.relative_to(root)), "errors": errors})
+            except (OSError, UnicodeError, ValueError, TypeError) as error:
+                invalid.append(
+                    {
+                        "path": str(path.relative_to(root)),
+                        **error_details(error),
+                    }
+                )
+        add_check(
+            checks,
+            "hardware-validation:records",
+            not invalid,
+            records=len(record_paths),
+            passing_records=passing,
+            invalid=invalid,
+        )
+    except OSError as error:
+        add_check(
+            checks,
+            "hardware-validation:records",
+            False,
+            **error_details(error),
+        )
+
+
+def verify_catalog(checks: List[Check], root: Path) -> None:
+    try:
+        catalog = load_json(root / "reference-projects/catalog.json")
+        projects = catalog.get("projects", [])
+        invalid = [
+            project.get("name", "unnamed")
+            for project in projects
+            if not isinstance(project, dict)
+            or not project.get("git_url")
+            or not project.get("commit")
+            or not project.get("evidence")
+        ]
+        valid = (
+            catalog.get("schema_version") == 1
+            and isinstance(projects, list)
+            and bool(projects)
+            and not invalid
+        )
+        add_check(checks, "catalog-schema", valid, invalid_projects=invalid)
+    except (OSError, UnicodeError, ValueError, TypeError, AttributeError) as error:
+        add_check(checks, "catalog-schema", False, **error_details(error))
+
+
+def verify_portable(checks: List[Check], root: Path) -> None:
+    verify_generated_board(checks, root)
     require_text(
         checks,
         root,
         "bsp/include/picocalc/board.h",
         "board-static-asserts",
         [
+            '#include "picocalc/board_generated.h"',
             "static_assert(kLcdSck == 10",
             "static_assert(kSdMiso == 16",
             "static_assert(kKeyboardSda == 6",
@@ -194,16 +420,14 @@ def verify_portable(checks: List[Dict[str, object]], root: Path) -> None:
         checks,
         root,
         "bsp/src/display.cpp",
-        "lcd-known-good-sequence",
+        "lcd-protocol-wiring",
         [
-            "write_command1(0x3a, 0x65)",
-            "write_command1(0x36, 0x48)",
-            "write_command(0x11)",
-            "write_command(0x21)",
-            "write_command(0x29)",
+            "detail::lcd::initialize_controller(",
+            "detail::lcd::for_each_chunk(",
             "board::kLcdMaxPixelsPerCs",
         ],
     )
+    verify_lcd_transactions(checks, root)
     require_text(
         checks,
         root,
@@ -248,62 +472,102 @@ def verify_portable(checks: List[Dict[str, object]], root: Path) -> None:
             "[PICOCALC][SMOKE]",
         ],
     )
-
-    catalog_path = root / "reference-projects/catalog.json"
-    try:
-        catalog = load_json(catalog_path)
-        invalid = [
-            project.get("name", "unnamed")
-            for project in catalog.get("projects", [])
-            if not project.get("git_url")
-            or not project.get("commit")
-            or not project.get("evidence")
-        ]
-        valid = catalog.get("schema_version") == 1 and not invalid
-        add_check(
-            checks,
-            "catalog-schema",
-            valid,
-            invalid_projects=invalid,
-        )
-    except (OSError, ValueError, TypeError) as error:
-        add_check(checks, "catalog-schema", False, error=str(error))
+    verify_catalog(checks, root)
+    verify_hardware_validation(checks, root)
 
 
 def verify_references(
-    checks: List[Dict[str, object]],
+    checks: List[Check],
     root: Path,
     reference_root: Path,
     strict_commit: bool,
 ) -> None:
-    catalog = load_json(root / "reference-projects/catalog.json")
-    for project in catalog["projects"]:
-        project_dir = reference_root / project["workspace_path"]
-        head = git_head(project_dir) if project_dir.is_dir() else ""
-        commit_ok = head == project["commit"]
-        add_check(
-            checks,
-            "reference-commit:" + project["name"],
-            commit_ok or bool(head and not strict_commit),
-            expected=project["commit"],
-            actual=head or "missing",
-            strict=strict_commit,
-            git_url=project["git_url"],
-        )
-        for evidence in project["evidence"]:
-            path = project_dir / evidence["path"]
-            actual = sha256(path) if path.is_file() else "missing"
+    try:
+        catalog = load_json(root / "reference-projects/catalog.json")
+        projects = catalog["projects"]
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(checks, "reference-catalog", False, **error_details(error))
+        return
+
+    for project in projects:
+        try:
+            name = project["name"]
+            project_dir = reference_root / project["workspace_path"]
+            head = git_head(project_dir) if project_dir.is_dir() else ""
+            commit_ok = head == project["commit"]
             add_check(
                 checks,
-                "reference-file:" + project["name"] + ":" + evidence["path"],
-                actual == evidence["sha256"],
-                expected=evidence["sha256"],
-                actual=actual,
+                "reference-commit:" + name,
+                commit_ok or bool(head and not strict_commit),
+                expected=project["commit"],
+                actual=head or "missing",
+                strict=strict_commit,
+                git_url=project["git_url"],
+            )
+            for evidence in project["evidence"]:
+                path = project_dir / evidence["path"]
+                actual = sha256(path) if path.is_file() else "missing"
+                add_check(
+                    checks,
+                    "reference-file:" + name + ":" + evidence["path"],
+                    actual == evidence["sha256"],
+                    expected=evidence["sha256"],
+                    actual=actual,
+                )
+        except (OSError, UnicodeError, TypeError, KeyError) as error:
+            add_check(
+                checks,
+                "reference-project:{}".format(project.get("name", "invalid")),
+                False,
+                **error_details(error),
             )
 
 
+def make_report(checks: List[Check], mode: str) -> Dict[str, object]:
+    failed = [check for check in checks if check["status"] != "pass"]
+    return {
+        "schema_version": 1,
+        "mode": mode,
+        "status": "pass" if not failed else "fail",
+        "passed": len(checks) - len(failed),
+        "failed": len(failed),
+        "checks": checks,
+    }
+
+
+def emit_report(report: Dict[str, object], json_only: bool) -> None:
+    if json_only:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
+    checks = report["checks"]
+    assert isinstance(checks, list)
+    for check in checks:
+        assert isinstance(check, dict)
+        print("[{}] {}".format(str(check["status"]).upper(), check["name"]))
+        if check["status"] != "pass":
+            print("       {}".format(json.dumps(check, ensure_ascii=False)))
+    print(
+        "RESULT mode={} status={} passed={} failed={}".format(
+            report["mode"],
+            report["status"],
+            report["passed"],
+            report["failed"],
+        )
+    )
+
+
+class ReportArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        if "--json" in sys.argv[1:]:
+            checks: List[Check] = []
+            add_check(checks, "invocation:arguments", False, error=message)
+            print(json.dumps(make_report(checks, "invalid"), indent=2))
+            self.exit(2)
+        super().error(message)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = ReportArgumentParser()
     parser.add_argument(
         "--references",
         action="store_true",
@@ -327,44 +591,41 @@ def main() -> int:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
-    if (args.strict_commit or args.reference_root is not None) and not args.references:
-        parser.error("--strict-commit/--reference-root require --references")
+    mode = "portable+references" if args.references else "portable"
+    checks: List[Check] = []
 
-    root = args.project_root.resolve()
-    reference_root = (
-        args.reference_root.resolve()
-        if args.reference_root is not None
-        else root.parent
-    )
-    checks: List[Dict[str, object]] = []
-    verify_portable(checks, root)
-    if args.references:
-        verify_references(checks, root, reference_root, args.strict_commit)
-    failed = [check for check in checks if check["status"] != "pass"]
-    report = {
-        "schema_version": 1,
-        "mode": "portable+references" if args.references else "portable",
-        "status": "pass" if not failed else "fail",
-        "passed": len(checks) - len(failed),
-        "failed": len(failed),
-        "checks": checks,
-    }
-    if args.json:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-    else:
-        for check in checks:
-            print("[{}] {}".format(check["status"].upper(), check["name"]))
-            if check["status"] != "pass":
-                print("       {}".format(json.dumps(check, ensure_ascii=False)))
-        print(
-            "RESULT mode={} status={} passed={} failed={}".format(
-                report["mode"],
-                report["status"],
-                report["passed"],
-                report["failed"],
-            )
+    if (args.strict_commit or args.reference_root is not None) and not args.references:
+        add_check(
+            checks,
+            "invocation:arguments",
+            False,
+            error="--strict-commit/--reference-root require --references",
         )
-    return 0 if not failed else 1
+        report = make_report(checks, "invalid")
+        emit_report(report, args.json)
+        return 2
+
+    try:
+        root = args.project_root.resolve()
+        reference_root = (
+            args.reference_root.resolve()
+            if args.reference_root is not None
+            else root.parent
+        )
+        verify_portable(checks, root)
+        if args.references:
+            verify_references(checks, root, reference_root, args.strict_commit)
+    except Exception as error:  # Last-resort normalization for machine consumers.
+        add_check(
+            checks,
+            "internal:verification",
+            False,
+            **error_details(error),
+        )
+
+    report = make_report(checks, mode)
+    emit_report(report, args.json)
+    return 0 if report["status"] == "pass" else 1
 
 
 if __name__ == "__main__":

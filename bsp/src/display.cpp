@@ -6,6 +6,7 @@
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "picocalc/board.h"
+#include "picocalc/detail/lcd_protocol.h"
 #include "lcd_spi_min.pio.h"
 
 namespace picocalc::display {
@@ -38,33 +39,37 @@ void wait_idle() {
     lcd_spi_min_wait_idle(g_pio, g_sm);
 }
 
-void write_command(uint8_t command) {
-    select();
-    set_dc(false);
-    write_bytes_raw(&command, 1);
-    wait_idle();
-    deselect();
-}
-
-void write_data(const uint8_t* data, size_t len) {
-    if (data == nullptr || len == 0) {
-        return;
+class PioTransport {
+public:
+    void select() {
+        picocalc::display::select();
     }
-    select();
-    set_dc(true);
-    write_bytes_raw(data, len);
-    wait_idle();
-    deselect();
-}
 
-void write_command1(uint8_t command, uint8_t value) {
-    write_command(command);
-    write_data(&value, 1);
+    void deselect() {
+        picocalc::display::deselect();
+    }
+
+    void set_data_mode(bool data) {
+        set_dc(data);
+    }
+
+    void write(const uint8_t* data, size_t len) {
+        write_bytes_raw(data, len);
+    }
+
+    void wait_idle() {
+        picocalc::display::wait_idle();
+    }
+};
+
+PioTransport g_transport;
+
+void write_command(uint8_t command) {
+    detail::lcd::write_command(g_transport, command);
 }
 
 void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
-    write_command(command);
-    write_data(values, len);
+    detail::lcd::write_command_data(g_transport, command, values, len);
 }
 
 void reset_panel() {
@@ -100,16 +105,12 @@ void send_solid_pixels(uint16_t color, size_t count) {
         bytes[i * 2 + 1] = static_cast<uint8_t>(color);
     }
 
-    while (count > 0) {
-        const size_t pixels =
-            std::min(count, static_cast<size_t>(board::kLcdMaxPixelsPerCs));
-        select();
-        set_dc(true);
-        write_bytes_raw(bytes, pixels * 2);
-        wait_idle();
-        deselect();
-        count -= pixels;
-    }
+    detail::lcd::for_each_chunk(
+        count,
+        static_cast<size_t>(board::kLcdMaxPixelsPerCs),
+        [&](size_t pixels) {
+            detail::lcd::write_data(g_transport, bytes, pixels * 2);
+        });
 }
 
 }  // namespace
@@ -138,39 +139,10 @@ void init() {
 
     reset_panel();
 
-    static const uint8_t b9[] = {0x02, 0xe0};
-    static const uint8_t c0[] = {0x80, 0x06};
-    static const uint8_t e8[] = {0x40, 0x8a, 0x00, 0x00, 0x29, 0x19, 0xaa, 0x33};
-    static const uint8_t e0[] = {0xf0, 0x06, 0x0f, 0x05, 0x04, 0x20, 0x37,
-                                 0x33, 0x4c, 0x37, 0x13, 0x14, 0x2b, 0x31};
-    static const uint8_t e1[] = {0xf0, 0x11, 0x1b, 0x11, 0x0f, 0x0a, 0x37,
-                                 0x43, 0x4c, 0x37, 0x13, 0x13, 0x2c, 0x32};
-
-    // This sequence and COLMOD=0x65 come from the working PicoCalc projects.
-    write_command1(0xf0, 0xc3);
-    write_command1(0xf0, 0x96);
-    write_command1(0x36, 0x48);
-    write_command1(0x3a, 0x65);
-    write_command1(0xb1, 0xa0);
-    write_command1(0xb4, 0x00);
-    write_command1(0xb7, 0xc6);
-    write_commandn(0xb9, b9, sizeof(b9));
-    write_commandn(0xc0, c0, sizeof(c0));
-    write_command1(0xc1, 0x15);
-    write_command1(0xc2, 0xa7);
-    write_command1(0xc5, 0x04);
-    write_commandn(0xe8, e8, sizeof(e8));
-    write_commandn(0xe0, e0, sizeof(e0));
-    write_commandn(0xe1, e1, sizeof(e1));
-    write_command1(0xf0, 0x3c);
-    write_command1(0xf0, 0x69);
-    write_command1(0x35, 0x00);
-    write_command(0x11);
-    sleep_ms(120);
-    write_command(0x21);
-    clear(0x0000);
-    write_command(0x29);
-    sleep_ms(120);
+    detail::lcd::initialize_controller(
+        g_transport,
+        [](uint32_t milliseconds) { sleep_ms(milliseconds); },
+        []() { clear(0x0000); });
 }
 
 void set_window(int x, int y, int w, int h) {
@@ -205,22 +177,21 @@ void write_pixels(const uint16_t* pixels, size_t count) {
     }
     count = std::min(count, g_window_pixels_remaining);
     uint8_t bytes[board::kLcdMaxPixelsPerCs * 2];
-    while (count > 0) {
-        const size_t chunk =
-            std::min(count, static_cast<size_t>(board::kLcdMaxPixelsPerCs));
-        for (size_t i = 0; i < chunk; ++i) {
-            bytes[i * 2] = static_cast<uint8_t>(pixels[i] >> 8);
-            bytes[i * 2 + 1] = static_cast<uint8_t>(pixels[i]);
-        }
-        select();
-        set_dc(true);
-        write_bytes_raw(bytes, chunk * 2);
-        wait_idle();
-        deselect();
-        pixels += chunk;
-        count -= chunk;
-        g_window_pixels_remaining -= chunk;
-    }
+    size_t offset = 0;
+    detail::lcd::for_each_chunk(
+        count,
+        static_cast<size_t>(board::kLcdMaxPixelsPerCs),
+        [&](size_t chunk) {
+            for (size_t i = 0; i < chunk; ++i) {
+                bytes[i * 2] =
+                    static_cast<uint8_t>(pixels[offset + i] >> 8);
+                bytes[i * 2 + 1] =
+                    static_cast<uint8_t>(pixels[offset + i]);
+            }
+            detail::lcd::write_data(g_transport, bytes, chunk * 2);
+            offset += chunk;
+            g_window_pixels_remaining -= chunk;
+        });
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {

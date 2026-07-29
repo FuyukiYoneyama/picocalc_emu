@@ -15,3 +15,12 @@
 * audio: GP26/27（48 kHz PWM/DMA stream API は次版で取り込む）
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
+
+ピン定義と周波数は`profiles/picocalc-rp2040.json`を唯一の入力源とし、
+`tools/generate_board_header.py`が`include/picocalc/board_generated.h`を生成する。
+`board_generated.h`は直接編集しない。`board.h`には契約を守る`static_assert`だけを
+置く。
+
+LCD初期化列は`include/picocalc/detail/lcd_protocol.h`にあり、実機PIO transportと
+host SPI fakeが同じ関数を実行する。hostテストはコマンド、データ、順序、DC、
+CS開閉、idle待ち、最大160 pixel単位の分割を比較する。

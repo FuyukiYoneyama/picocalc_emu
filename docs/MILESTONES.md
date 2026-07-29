@@ -5,7 +5,10 @@
 - 実働プロジェクトを根拠にしたLCD・keyboard・SD/FatFS BSP
 - アプリ変更を`app/`に限定するRP2040テンプレート
 - portable source fingerprint check
+- host SPI fakeによるLCD初期化・CS分割transaction test
+- JSON profileからのboard header一方向生成
 - reference commit/SHA-256 evidence check
+- Canonical BSP実機検証schema・pending template
 - LCD pattern、SD read/write、keyboardログの実機スモーク
 - PythonテストとRP2040 compile CI
 

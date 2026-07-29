@@ -11,7 +11,10 @@
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
 - `profiles/picocalc-rp2040.json`: 機械可読なboard contract
+- `bsp/include/picocalc/board_generated.h`: profileから生成したC++定数
+- `tests/lcd_protocol_test.cpp`: SPI fakeによるLCD transaction検査
 - `reference-projects/catalog.json`: 実機成功根拠と SHA-256
+- `hardware-validation/`: Canonical BSP自身の実機検証schemaと台帳
 - `tests/test_tools.py`: 検証器と生成器の回帰テスト
 
 既存の実働プロジェクトは変更せず、次を Canonical BSP の根拠にしている。
@@ -68,9 +71,11 @@ SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 - Canonical BSP とテンプレートは `arm-none-eabi-gcc 9.2.1`、
   Pico SDK 2.0.0 でコンパイル済み
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
-- clone単体のportable検証7件が合格
-- 基準プロジェクト3件と証拠ファイル13件を含む完全検証23件が合格
-- 生成器・検証器・異常系のPython回帰テスト11件が合格
+- clone単体のportable検証10件が合格
+- 基準プロジェクト3件と証拠ファイル13件を含む完全検証26件が合格
+- 生成器・検証器・異常系のPython回帰テスト19件が合格
+- LCD初期化とCS分割は実行可能なhost transactionテストで検査
+- `--json`は入力ファイル破損・不正引数でも構造化された失敗を返す
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で新しい BSP 0.1.0 の LCD/SD/keyboard スモークを確認した時点で、

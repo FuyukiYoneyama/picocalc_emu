@@ -9,8 +9,6 @@
 namespace picocalc::keyboard {
 namespace {
 
-constexpr uint8_t kRegKey = 0x04;
-constexpr uint8_t kRegFifo = 0x09;
 uint32_t g_read_count = 0;
 uint32_t g_error_count = 0;
 uint32_t g_empty_count = 0;
@@ -46,7 +44,7 @@ bool read_event(KeyEvent* event) {
         return false;
     }
     uint8_t key_info[2] = {};
-    if (!read_reg(kRegKey, key_info, sizeof(key_info))) {
+    if (!read_reg(board::kKeyboardStatusRegister, key_info, sizeof(key_info))) {
         return false;
     }
     if ((key_info[0] & 0x1f) == 0) {
@@ -54,7 +52,7 @@ bool read_event(KeyEvent* event) {
         return false;
     }
     uint8_t fifo_item[2] = {};
-    if (!read_reg(kRegFifo, fifo_item, sizeof(fifo_item))) {
+    if (!read_reg(board::kKeyboardFifoRegister, fifo_item, sizeof(fifo_item))) {
         return false;
     }
     event->state = static_cast<KeyState>(fifo_item[0]);

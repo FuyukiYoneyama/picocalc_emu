@@ -2,6 +2,7 @@
   "schema_version": 1,
   "profile": "picocalc-rp2040",
   "system_clock_khz": 250000,
+  "uart_baud_rate": 115200,
   "display": {
     "controller": "ST7365P",
     "command_compatibility": "ILI9488-subset",

@@ -1,5 +1,7 @@
 # PicoCalc Verified BSP & Emulator Development Kit
 
+[![CI](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml)
+
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボードの初期化を毎回
 作り直さないための開発基盤です。
 
@@ -12,9 +14,12 @@ PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード�
 
 - 実機で動作したLCD・キーボード・SD/FatFS実装を固定して再利用する
 - AIの通常の変更範囲を生成プロジェクトの`app/`へ限定する
-- LCD、SD、keyboard、audio pinのsource fingerprintを検査する
+- LCD初期化とCS分割をhost SPI fakeで実トランザクション検査する
+- JSON board profileからC++定数を一方向生成し、差分をCI検査する
+- SD、keyboard、audio pinのsource fingerprintを検査する
 - SDのmount/write/sync/read/compare/removeスモークテストを実機で実行する
 - 基準プロジェクトのcommitと証拠ファイルSHA-256を完全照合する
+- Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
 
 ## 現在できないこと
@@ -29,8 +34,8 @@ PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード�
 
 ## 30秒で試す
 
-必要条件はPython 3.8以降です。clone単体で動くportable検証にはPico SDKは
-不要です。
+必要条件はPython 3.8以降とC++17 host compilerです。clone単体で動くportable
+検証にはPico SDKは不要です。
 
 ```sh
 python3 tools/picocalc.py verify
@@ -52,8 +57,8 @@ python3 tools/picocalc.py build --project ../MyApp
 
 ### Portable
 
-cloneしたこのリポジトリだけで実行します。構造化board profile、BSP source
-fingerprint、テンプレート、メタデータを検査します。
+cloneしたこのリポジトリだけで実行します。生成board header、LCD
+transaction、BSP source fingerprint、実機台帳、テンプレートを検査します。
 
 ```sh
 python3 tools/picocalc.py verify
@@ -102,6 +107,14 @@ python3 tools/picocalc.py verify \
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。
 
+## Canonical BSP自身の実機記録
+
+参照プロジェクトの証拠と、抽出後BSP自身の証拠は分離しています。実機検証時は
+[hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
+revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
+
+現時点のテンプレートは`pending`であり、BSP 0.1.0の実機成功を主張しません。
+
 ## 文書
 
 - [現在の実装状況](docs/IMPLEMENTATION_STATUS.md)
@@ -109,6 +122,7 @@ reference evidence照合、実機相関確認が必要です。
 - [将来のエミュレーター設計](docs/DESIGN.md)
 - [要求仕様](REQUIREMENTS.md)
 - [Canonical BSP](bsp/README.md)
+- [実機検証台帳](hardware-validation/README.md)
 
 ## プロジェクトの位置付け
 

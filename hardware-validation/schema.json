@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/FuyukiYoneyama/picocalc_emu/hardware-validation/schema.json",
+  "title": "PicoCalc Canonical BSP hardware validation record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "validation_id",
+    "bsp_version",
+    "repository_commit",
+    "validation_date",
+    "operator",
+    "overall_status",
+    "hardware",
+    "software",
+    "sd_card",
+    "firmware",
+    "tests",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "validation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bsp_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "validation_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "operator": {
+      "type": "string"
+    },
+    "overall_status": {
+      "$ref": "#/$defs/status"
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "board_revision",
+        "mcu",
+        "notes"
+      ],
+      "properties": {
+        "product": {
+          "const": "PicoCalc"
+        },
+        "board_revision": {
+          "type": "string"
+        },
+        "mcu": {
+          "enum": [
+            "RP2040",
+            "RP2350",
+            "unknown"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pico_sdk",
+        "compiler",
+        "cmake"
+      ],
+      "properties": {
+        "pico_sdk": {
+          "type": "string"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "cmake": {
+          "type": "string"
+        }
+      }
+    },
+    "sd_card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manufacturer",
+        "model",
+        "capacity",
+        "filesystem"
+      ],
+      "properties": {
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "capacity": {
+          "type": "string"
+        },
+        "filesystem": {
+          "type": "string"
+        }
+      }
+    },
+    "firmware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "uf2_sha256",
+        "build_log"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "uf2_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "build_log": {
+          "type": "string"
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lcd",
+        "sd",
+        "keyboard"
+      ],
+      "properties": {
+        "lcd": {
+          "$ref": "#/$defs/testResult"
+        },
+        "sd": {
+          "$ref": "#/$defs/testResult"
+        },
+        "keyboard": {
+          "$ref": "#/$defs/testResult"
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "status": {
+      "enum": [
+        "pending",
+        "pass",
+        "fail"
+      ]
+    },
+    "testResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "observed",
+        "evidence_files"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "observed": {
+          "type": "string"
+        },
+        "evidence_files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
