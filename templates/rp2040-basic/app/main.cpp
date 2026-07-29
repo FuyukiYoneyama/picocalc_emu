@@ -22,11 +22,14 @@ const char* key_state_name(picocalc::keyboard::KeyState state) {
     return "unknown";
 }
 
-void show_storage_result(const picocalc::filesystem::SmokeResult& result) {
-    const bool ok = result.ok();
+void show_storage_result(bool lcd_ok,
+                         const picocalc::filesystem::SmokeResult& result) {
+    const bool sd_ok = result.ok();
+    const bool ok = lcd_ok && sd_ok;
     picocalc::display::fill_rect(16, 184, 288, 48, ok ? 0x07e0 : 0xf800);
-    printf("[PICOCALC][SMOKE] lcd=ok sd=%s stage=%s detail=%lu status_region=%s\n",
-           ok ? "ok" : "fail",
+    printf("[PICOCALC][SMOKE] lcd=%s sd=%s stage=%s detail=%lu status_region=%s\n",
+           lcd_ok ? "ok" : "fail",
+           sd_ok ? "ok" : "fail",
            picocalc::filesystem::stage_name(result.stage),
            static_cast<unsigned long>(result.detail),
            ok ? "green" : "red");
@@ -97,7 +100,7 @@ int main() {
            storage.ok() ? "ok" : "fail",
            picocalc::filesystem::stage_name(storage.stage),
            static_cast<unsigned long>(storage.detail));
-    show_storage_result(storage);
+    show_storage_result(lcd_verify_ok, storage);
 
     printf("[PICOCALC][KEY][VERIFY] stage=waiting requirement=multiple_press_release_events\n");
     printf("[PICOCALC][VERIFY] stage=ready lcd=%s sd=%s keyboard=waiting\n",

@@ -14,7 +14,6 @@ namespace {
 
 size_t g_window_pixels_remaining = 0;
 constexpr size_t kMaxReadbackPixels = 16;
-constexpr uint32_t kReadbackSpiHz = 6000000;
 
 void select() {
     gpio_put(board::kLcdCs, 0);
@@ -66,51 +65,73 @@ uint16_t rgb888_to_rgb565(const uint8_t* rgb888) {
         static_cast<uint16_t>(rgb888[2] >> 3));
 }
 
-void read_command_bytes(uint8_t command,
-                        size_t dummy_bytes,
-                        uint8_t* output,
-                        size_t output_length) {
-    select();
-    set_dc(false);
-    spi_write_blocking(spi1, &command, 1);
-    wait_idle();
-    set_dc(true);
-
-    uint8_t discarded = 0;
-    for (size_t i = 0; i < dummy_bytes; ++i) {
-        spi_read_blocking(spi1, 0xff, &discarded, 1);
-    }
-    if (output != nullptr && output_length > 0) {
-        spi_read_blocking(spi1, 0xff, output, output_length);
-    }
-    wait_idle();
-    deselect();
+void read_io_delay() {
+    busy_wait_us_32(1);
 }
 
-bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
-    const size_t pixel_count = static_cast<size_t>(w) * static_cast<size_t>(h);
-    if (w <= 0 || h <= 0 || output == nullptr || pixel_count > kMaxReadbackPixels ||
-        x < 0 || y < 0 || x + w > width || y + h > height) {
-        return false;
+void set_bitbang_mode(bool enabled) {
+    if (enabled) {
+        spi_deinit(spi1);
+        gpio_set_function(board::kLcdSck, GPIO_FUNC_SIO);
+        gpio_set_function(board::kLcdMosi, GPIO_FUNC_SIO);
+        gpio_set_function(board::kLcdMiso, GPIO_FUNC_SIO);
+        gpio_set_dir(board::kLcdSck, GPIO_OUT);
+        gpio_set_dir(board::kLcdMosi, GPIO_OUT);
+        gpio_set_dir(board::kLcdMiso, GPIO_IN);
+        gpio_disable_pulls(board::kLcdMiso);
+        gpio_put(board::kLcdSck, 0);
+        gpio_put(board::kLcdMosi, 0);
+        return;
     }
 
-    const uint32_t actual_read_hz = spi_set_baudrate(spi1, kReadbackSpiHz);
-    const int idle_samples[] = {gpio_get(board::kLcdMiso) ? 1 : 0,
-                                gpio_get(board::kLcdMiso) ? 1 : 0,
-                                gpio_get(board::kLcdMiso) ? 1 : 0};
-    printf("[PICOCALC][LCD][READ] transport=hardware_spi1 read_hz=%lu "
-           "miso_idle=%d,%d,%d\n",
-           static_cast<unsigned long>(actual_read_hz),
-           idle_samples[0], idle_samples[1], idle_samples[2]);
+    spi_init(spi1, board::kLcdSpiHz);
+    gpio_set_function(board::kLcdSck, GPIO_FUNC_SPI);
+    gpio_set_function(board::kLcdMosi, GPIO_FUNC_SPI);
+    gpio_set_function(board::kLcdMiso, GPIO_FUNC_SPI);
+    gpio_set_input_hysteresis_enabled(board::kLcdMiso, true);
+}
 
-    uint8_t id[3] = {};
-    uint8_t status[4] = {};
-    read_command_bytes(0x04, 1, id, sizeof(id));
-    read_command_bytes(0x09, 1, status, sizeof(status));
-    printf("[PICOCALC][LCD][READ] rddid=0x%02x%02x%02x "
-           "rddst=0x%02x%02x%02x%02x\n",
-           id[0], id[1], id[2], status[0], status[1], status[2], status[3]);
+void bitbang_write_byte(uint8_t value) {
+    for (int bit = 7; bit >= 0; --bit) {
+        gpio_put(board::kLcdSck, 0);
+        gpio_put(board::kLcdMosi, (value >> bit) & 1u);
+        read_io_delay();
+        gpio_put(board::kLcdSck, 1);
+        read_io_delay();
+    }
+    gpio_put(board::kLcdSck, 0);
+}
 
+uint8_t bitbang_read_byte_falling() {
+    uint8_t value = 0;
+    for (int bit = 7; bit >= 0; --bit) {
+        gpio_put(board::kLcdSck, 0);
+        read_io_delay();
+        if (gpio_get(board::kLcdMiso)) {
+            value |= static_cast<uint8_t>(1u << bit);
+        }
+        gpio_put(board::kLcdSck, 1);
+        read_io_delay();
+    }
+    gpio_put(board::kLcdSck, 0);
+    return value;
+}
+
+void bitbang_write_command_data(uint8_t command,
+                                const uint8_t* data,
+                                size_t length) {
+    set_dc(false);
+    bitbang_write_byte(command);
+    if (data == nullptr || length == 0) {
+        return;
+    }
+    set_dc(true);
+    while (length-- > 0) {
+        bitbang_write_byte(*data++);
+    }
+}
+
+void bitbang_set_read_window(int x, int y, int w, int h) {
     const int x1 = x + w - 1;
     const int y1 = y + h - 1;
     const uint8_t columns[] = {
@@ -121,34 +142,62 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
         static_cast<uint8_t>(y >> 8), static_cast<uint8_t>(y),
         static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
     };
-    const uint8_t ram_read = 0x2e;
-    uint8_t raw[kMaxReadbackPixels * 3] = {};
+    bitbang_write_command_data(0x2a, columns, sizeof(columns));
+    bitbang_write_command_data(0x2b, rows, sizeof(rows));
+}
+
+void bitbang_read_command(uint8_t command,
+                          size_t dummy_bytes,
+                          uint8_t* output,
+                          size_t output_length) {
     select();
     set_dc(false);
-    const uint8_t column_command = 0x2a;
-    spi_write_blocking(spi1, &column_command, 1);
-    wait_idle();
+    bitbang_write_byte(command);
     set_dc(true);
-    spi_write_blocking(spi1, columns, sizeof(columns));
-    wait_idle();
-    set_dc(false);
-    const uint8_t row_command = 0x2b;
-    spi_write_blocking(spi1, &row_command, 1);
-    wait_idle();
-    set_dc(true);
-    spi_write_blocking(spi1, rows, sizeof(rows));
-    wait_idle();
-    set_dc(false);
-    spi_write_blocking(spi1, &ram_read, 1);
-    wait_idle();
-    set_dc(true);
-    uint8_t dummy = 0;
-    spi_read_blocking(spi1, 0xff, &dummy, 1);
-    spi_read_blocking(spi1, 0xff, raw, pixel_count * 3);
-    wait_idle();
+    while (dummy_bytes-- > 0) {
+        (void)bitbang_read_byte_falling();
+    }
+    while (output_length-- > 0) {
+        *output++ = bitbang_read_byte_falling();
+    }
     deselect();
+}
 
-    spi_set_baudrate(spi1, board::kLcdSpiHz);
+bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
+    const size_t pixel_count = static_cast<size_t>(w) * static_cast<size_t>(h);
+    if (w <= 0 || h <= 0 || output == nullptr || pixel_count > kMaxReadbackPixels ||
+        x < 0 || y < 0 || x + w > width || y + h > height) {
+        return false;
+    }
+
+    set_bitbang_mode(true);
+    const int idle_samples[] = {gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0};
+    printf("[PICOCALC][LCD][READ] transport=bitbang_sio read_hz=~500k "
+           "miso_idle=%d,%d,%d\n",
+           idle_samples[0], idle_samples[1], idle_samples[2]);
+
+    uint8_t id[3] = {};
+    uint8_t status[4] = {};
+    bitbang_read_command(0x04, 1, id, sizeof(id));
+    bitbang_read_command(0x09, 1, status, sizeof(status));
+    printf("[PICOCALC][LCD][READ] rddid=0x%02x%02x%02x "
+           "rddst=0x%02x%02x%02x%02x\n",
+           id[0], id[1], id[2], status[0], status[1], status[2], status[3]);
+
+    uint8_t raw[kMaxReadbackPixels * 3] = {};
+    select();
+    bitbang_set_read_window(x, y, w, h);
+    set_dc(false);
+    bitbang_write_byte(0x2e);
+    set_dc(true);
+    const uint8_t dummy = bitbang_read_byte_falling();
+    for (size_t i = 0; i < pixel_count * 3; ++i) {
+        raw[i] = bitbang_read_byte_falling();
+    }
+    deselect();
+    set_bitbang_mode(false);
     printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%lu format=rgb888\n",
            dummy, static_cast<unsigned long>(pixel_count));
     for (size_t i = 0; i < pixel_count; ++i) {
