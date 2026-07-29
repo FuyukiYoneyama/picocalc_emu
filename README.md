@@ -150,7 +150,7 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.2.1の実機成功を主張しません。
+現時点のテンプレートは`pending`であり、BSP 0.2.3の実機成功を主張しません。
 
 ## 文書
 

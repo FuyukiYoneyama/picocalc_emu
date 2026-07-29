@@ -273,6 +273,8 @@ void init() {
     gpio_set_dir(board::kLcdCs, GPIO_OUT);
     gpio_set_dir(board::kLcdDc, GPIO_OUT);
     gpio_set_dir(board::kLcdReset, GPIO_OUT);
+    gpio_set_dir(board::kLcdSck, GPIO_OUT);
+    gpio_set_dir(board::kLcdMosi, GPIO_OUT);
     gpio_disable_pulls(board::kLcdMiso);
     gpio_put(board::kLcdCs, 1);
     gpio_put(board::kLcdDc, 1);
