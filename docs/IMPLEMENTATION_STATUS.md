@@ -58,13 +58,23 @@ Pico SDK は `--sdk` または `PICO_SDK_PATH` で明示する。picotool は
 主要ログは次の形式なので、人だけでなく AI も失敗段階を判定できる。
 
 ```text
+[PICOCALC][LCD][VERIFY] stage=end status=drawn top=0x07e0 bottom=0x001f white=0xffff inset=0x0000 red=0xf800 green=0x07e0 blue=0x001f
+[PICOCALC][SD][SMOKE] stage=begin path=0:/PICOTEST.TXT sequence=mount,write,sync,close_write,read,compare,close_read,remove
+[PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
 [PICOCALC][SD] component=init status=ok detail=1
-[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0
+[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0 status_region=green
+[PICOCALC][KEY][VERIFY] stage=waiting requirement=multiple_press_release_events
+[PICOCALC][KEY][VERIFY] stage=event count=1 state=1 code=0x..
 [PICOCALC][READY] keyboard=waiting
 ```
 
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
+
+検証用UF2はアプリ版 `0.2.2-validation` として識別する。LCDの`stage=end`は
+既知の色パターン描画呼び出し完了、SDの`result_stage`は失敗箇所、キーの`count`は
+実機で取得したイベント数を表す。LCDの色・向き・ノイズの有無はログだけでは判定
+できないため、画面写真と合わせて記録する。
 
 ## 検証済み範囲
 
