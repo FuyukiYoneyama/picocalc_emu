@@ -216,14 +216,18 @@ void send_solid_pixels(uint16_t color, size_t count) {
 }  // namespace
 
 void init() {
+    gpio_init(board::kLcdSck);
+    gpio_init(board::kLcdMosi);
+    gpio_init(board::kLcdMiso);
     gpio_init(board::kLcdCs);
     gpio_init(board::kLcdDc);
     gpio_init(board::kLcdReset);
-    gpio_init(board::kLcdMiso);
+    gpio_set_dir(board::kLcdSck, GPIO_OUT);
+    gpio_set_dir(board::kLcdMosi, GPIO_OUT);
+    gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_set_dir(board::kLcdCs, GPIO_OUT);
     gpio_set_dir(board::kLcdDc, GPIO_OUT);
     gpio_set_dir(board::kLcdReset, GPIO_OUT);
-    gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_disable_pulls(board::kLcdMiso);
     gpio_put(board::kLcdCs, 1);
     gpio_put(board::kLcdDc, 1);
@@ -237,6 +241,7 @@ void init() {
     gpio_set_function(board::kLcdMiso, GPIO_FUNC_SPI);
     gpio_set_input_hysteresis_enabled(board::kLcdMiso, true);
     spi_init(spi1, board::kLcdSpiHz);
+    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     reset_panel();
 
