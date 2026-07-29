@@ -3,3 +3,4 @@ build-ci/
 __pycache__/
 *.pyc
 artifacts/
+.picocalc-build-history.json

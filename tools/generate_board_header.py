@@ -23,6 +23,7 @@ MAPPINGS: List[Mapping] = [
     ("display.pins.cs", "unsigned", "kLcdCs"),
     ("display.pins.dc", "unsigned", "kLcdDc"),
     ("display.pins.reset", "unsigned", "kLcdReset"),
+    ("display.pins.ram_cs", "unsigned", "kLcdRamCs"),
     ("display.madctl", "uint8_t", "kLcdMadctl"),
     ("display.colmod", "uint8_t", "kLcdColmod"),
     ("sd.miso", "unsigned", "kSdMiso"),

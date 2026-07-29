@@ -21,7 +21,7 @@
 
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
-| LCD | `picocalc-life`, `pico_skyace` | GP10〜15、PIO0、COLMOD `0x65`、MADCTL `0x48`、最大160 pixelごとにCSを解放 |
+| LCD | `uf2loader/common/lcdspi` | GP10〜15、PIO0、COLMOD `0x66`、MADCTL `0x48`、最大160 pixelごとにCSを解放 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
