@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "validation_id": "bsp-0.1.0-YYYYMMDD-01",
-  "bsp_version": "0.1.0",
+  "validation_id": "bsp-0.2.1-YYYYMMDD-01",
+  "bsp_version": "0.2.1",
   "repository_commit": null,
   "validation_date": null,
   "operator": "",

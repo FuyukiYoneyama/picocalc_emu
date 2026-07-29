@@ -9,6 +9,7 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(picocalc_app C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+set(PICOCALC_APP_VERSION "0.2.1")
 
 pico_sdk_init()
 
@@ -26,6 +27,10 @@ add_executable(picocalc_app
 )
 
 target_link_libraries(picocalc_app PRIVATE picocalc_bsp)
+
+target_compile_definitions(picocalc_app PRIVATE
+    PICOCALC_APP_VERSION=\"${PICOCALC_APP_VERSION}\"
+)
 
 pico_enable_stdio_usb(picocalc_app 1)
 pico_enable_stdio_uart(picocalc_app 1)

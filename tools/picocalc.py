@@ -39,10 +39,39 @@ def build_versions(project: Path) -> Tuple[str, str]:
     bsp_file = project / "bsp/CMakeLists.txt"
     if not bsp_file.is_file():
         bsp_file = ROOT / "bsp/CMakeLists.txt"
+    bsp_version = read_version(bsp_file, "PICOCALC_BSP_VERSION")
+    if bsp_version == "unknown":
+        version_file = bsp_file.parent / "VERSION"
+        if version_file.is_file():
+            bsp_version = version_file.read_text(encoding="utf-8").strip()
     return (
-        read_version(bsp_file, "PICOCALC_BSP_VERSION"),
+        bsp_version,
         read_version(project / "CMakeLists.txt", "PICOCALC_APP_VERSION"),
     )
+
+
+def source_commit() -> str:
+    """Return the source repository commit used to produce a copied project."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "--short=12", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return "untracked"
+    commit = completed.stdout.strip() if completed.returncode == 0 else ""
+    if not commit:
+        return "untracked"
+    dirty = subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--quiet"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode != 0
+    return commit + ("-dirty" if dirty else "")
 
 
 def load_build_history(path: Path) -> dict:
@@ -185,6 +214,7 @@ def build_project(
         "-DPICO_BOARD=pico",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
+        "-DPICOCALC_BUILD_COMMIT={}".format(source_commit()),
     ]
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:

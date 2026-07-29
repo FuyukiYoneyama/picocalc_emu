@@ -19,9 +19,11 @@
       "reset": 15
     },
     "madctl": 72,
-    "colmod": 101,
+    "colmod": 102,
     "max_pixels_per_cs": 160,
-    "pio_clock_divider": 2.0
+    "transport": "hardware_spi1",
+    "wire_format": "rgb888",
+    "spi_hz": 25000000
   },
   "keyboard": {
     "bus": "i2c1",

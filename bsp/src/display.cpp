@@ -3,18 +3,14 @@
 #include <algorithm>
 
 #include "hardware/gpio.h"
-#include "hardware/pio.h"
+#include "hardware/spi.h"
 #include "pico/stdlib.h"
 #include "picocalc/board.h"
 #include "picocalc/detail/lcd_protocol.h"
-#include "lcd_spi_min.pio.h"
 
 namespace picocalc::display {
 namespace {
 
-PIO g_pio = pio0;
-uint g_sm = 0;
-uint g_offset = 0;
 size_t g_window_pixels_remaining = 0;
 
 void select() {
@@ -29,17 +25,13 @@ void set_dc(bool data) {
     gpio_put(board::kLcdDc, data ? 1 : 0);
 }
 
-void write_bytes_raw(const uint8_t* data, size_t len) {
-    while (len-- > 0) {
-        lcd_spi_min_put(g_pio, g_sm, *data++);
+void wait_idle() {
+    while (spi_is_busy(spi1)) {
+        tight_loop_contents();
     }
 }
 
-void wait_idle() {
-    lcd_spi_min_wait_idle(g_pio, g_sm);
-}
-
-class PioTransport {
+class HardwareSpiTransport {
 public:
     void select() {
         picocalc::display::select();
@@ -54,7 +46,7 @@ public:
     }
 
     void write(const uint8_t* data, size_t len) {
-        write_bytes_raw(data, len);
+        spi_write_blocking(spi1, data, len);
     }
 
     void wait_idle() {
@@ -62,7 +54,7 @@ public:
     }
 };
 
-PioTransport g_transport;
+HardwareSpiTransport g_transport;
 
 void write_command(uint8_t command) {
     detail::lcd::write_command(g_transport, command);
@@ -74,11 +66,11 @@ void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
 
 void reset_panel() {
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(1);
+    sleep_ms(10);
     gpio_put(board::kLcdReset, 0);
     sleep_ms(10);
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(10);
+    sleep_ms(200);
 }
 
 bool clip_rect(int* x, int* y, int* w, int* h) {
@@ -99,18 +91,29 @@ bool clip_rect(int* x, int* y, int* w, int* h) {
 }
 
 void send_solid_pixels(uint16_t color, size_t count) {
-    uint8_t bytes[board::kLcdMaxPixelsPerCs * 2];
+    uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
+    const uint8_t r5 = static_cast<uint8_t>((color >> 11) & 0x1f);
+    const uint8_t g6 = static_cast<uint8_t>((color >> 5) & 0x3f);
+    const uint8_t b5 = static_cast<uint8_t>(color & 0x1f);
+    const uint8_t red = static_cast<uint8_t>((r5 << 3) | (r5 >> 2));
+    const uint8_t green = static_cast<uint8_t>((g6 << 2) | (g6 >> 4));
+    const uint8_t blue = static_cast<uint8_t>((b5 << 3) | (b5 >> 2));
     for (int i = 0; i < board::kLcdMaxPixelsPerCs; ++i) {
-        bytes[i * 2] = static_cast<uint8_t>(color >> 8);
-        bytes[i * 2 + 1] = static_cast<uint8_t>(color);
+        bytes[i * 3] = red;
+        bytes[i * 3 + 1] = green;
+        bytes[i * 3 + 2] = blue;
     }
 
+    set_dc(true);
+    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t pixels) {
-            detail::lcd::write_data(g_transport, bytes, pixels * 2);
+            spi_write_blocking(spi1, bytes, pixels * 3);
         });
+    wait_idle();
+    deselect();
 }
 
 }  // namespace
@@ -129,13 +132,14 @@ void init() {
     gpio_put(board::kLcdDc, 1);
     gpio_put(board::kLcdReset, 1);
 
-    g_offset = pio_add_program(g_pio, &lcd_spi_min_program);
-    lcd_spi_min_program_init(g_pio,
-                             g_sm,
-                             g_offset,
-                             board::kLcdMosi,
-                             board::kLcdSck,
-                             board::kLcdPioClockDivider);
+    gpio_set_drive_strength(board::kLcdCs, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_set_drive_strength(board::kLcdDc, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_set_drive_strength(board::kLcdReset, GPIO_DRIVE_STRENGTH_12MA);
+    gpio_set_function(board::kLcdSck, GPIO_FUNC_SPI);
+    gpio_set_function(board::kLcdMosi, GPIO_FUNC_SPI);
+    gpio_set_function(board::kLcdMiso, GPIO_FUNC_SPI);
+    gpio_set_input_hysteresis_enabled(board::kLcdMiso, true);
+    spi_init(spi1, board::kLcdSpiHz);
 
     reset_panel();
 
@@ -176,22 +180,30 @@ void write_pixels(const uint16_t* pixels, size_t count) {
         return;
     }
     count = std::min(count, g_window_pixels_remaining);
-    uint8_t bytes[board::kLcdMaxPixelsPerCs * 2];
+    uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     size_t offset = 0;
+    set_dc(true);
+    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t chunk) {
             for (size_t i = 0; i < chunk; ++i) {
-                bytes[i * 2] =
-                    static_cast<uint8_t>(pixels[offset + i] >> 8);
-                bytes[i * 2 + 1] =
-                    static_cast<uint8_t>(pixels[offset + i]);
+                const uint16_t color = pixels[offset + i];
+                const uint8_t r5 = static_cast<uint8_t>((color >> 11) & 0x1f);
+                const uint8_t g6 = static_cast<uint8_t>((color >> 5) & 0x3f);
+                const uint8_t b5 = static_cast<uint8_t>(color & 0x1f);
+                bytes[i * 3] = static_cast<uint8_t>((r5 << 3) | (r5 >> 2));
+                bytes[i * 3 + 1] =
+                    static_cast<uint8_t>((g6 << 2) | (g6 >> 4));
+                bytes[i * 3 + 2] = static_cast<uint8_t>((b5 << 3) | (b5 >> 2));
             }
-            detail::lcd::write_data(g_transport, bytes, chunk * 2);
+            spi_write_blocking(spi1, bytes, chunk * 3);
             offset += chunk;
             g_window_pixels_remaining -= chunk;
         });
+    wait_idle();
+    deselect();
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {

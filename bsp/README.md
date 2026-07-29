@@ -6,10 +6,11 @@
 
 固定する重要条件:
 
-* LCD: PIO0、GP10/11、CS GP13、DC GP14、RESET GP15
-* LCD: ST7365P/ILI9488 互換初期化、`COLMOD 0x65`、RGB565
-* LCD: 一回の CS Low で最大 160 pixels（320 bytes）
-* keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`
+* LCD: hardware SPI1、SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
+* LCD: uf2loader互換のST7365P/ILI9488初期化、`COLMOD 0x66`
+* LCD: 公開APIはRGB565、LCD配線へはRGB888（1 pixel = 3 bytes）へ変換
+* LCD: 160 pixelsは変換バッファ単位。長い画面転送中はCSを保持する
+* keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
 * audio: GP26/27（48 kHz PWM/DMA stream API は次版で取り込む）
@@ -21,6 +22,6 @@
 `board_generated.h`は直接編集しない。`board.h`には契約を守る`static_assert`だけを
 置く。
 
-LCD初期化列は`include/picocalc/detail/lcd_protocol.h`にあり、実機PIO transportと
-host SPI fakeが同じ関数を実行する。hostテストはコマンド、データ、順序、DC、
-CS開閉、idle待ち、最大160 pixel単位の分割を比較する。
+LCD初期化列は`include/picocalc/detail/lcd_protocol.h`にあり、実機hardware-SPI
+transportとhost SPI fakeが同じ関数を実行する。hostテストはコマンド、データ、順序、
+DC、CS開閉、idle待ち、RGB888契約を比較する。

@@ -5,7 +5,7 @@
 
 ## 検証セッションの作成
 
-1. `template.json`を`records/bsp-0.1.0-YYYYMMDD-01.json`へコピーする。
+1. `template.json`を`records/bsp-0.2.1-YYYYMMDD-01.json`へコピーする。
 2. 対象コミット、PicoCalc revision、toolchain、SDカード情報を記入する。
 3. UF2をビルドし、`sha256sum build/picocalc_app.uf2`を記録する。
 4. UART/USB CDCログ、LCD写真、必要なら動画やlogic analyzer traceを

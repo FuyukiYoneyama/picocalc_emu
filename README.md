@@ -115,7 +115,7 @@ python3 tools/picocalc.py verify \
 
 | 機能 | 実機基準 | 重要条件 |
 |---|---|---|
-| LCD | `uf2loader/common/lcdspi` | GP10–15、COLMOD `0x66`、MADCTL `0x48`、最大160 pixels/CS |
+| LCD | `uf2loader/common/lcdspi` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255 |
@@ -129,7 +129,7 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.1.0の実機成功を主張しません。
+現時点のテンプレートは`pending`であり、BSP 0.2.1の実機成功を主張しません。
 
 ## 文書
 
