@@ -117,7 +117,7 @@ class ToolTests(unittest.TestCase):
             protocol.write_text(
                 protocol.read_text(encoding="utf-8").replace(
                     "{0x3a, {board::kLcdColmod}, 1}",
-                    "{0x3a, {0x66}, 1}",
+                    "{0x3a, {0x65}, 1}",
                 ),
                 encoding="utf-8",
             )

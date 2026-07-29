@@ -400,6 +400,49 @@ def verify_catalog(checks: List[Check], root: Path) -> None:
         add_check(checks, "catalog-schema", False, **error_details(error))
 
 
+def verify_template_smoke(checks: List[Check], root: Path) -> None:
+    path = root / "templates/rp2040-basic/app/main.cpp"
+    try:
+        text = path.read_text(encoding="utf-8")
+        backlight_only = "mode=backlight-only" in text
+        lcd_only = "mode=lcd-only" in text
+        required = (
+            [
+                "picocalc::init_backlight_only()",
+                "mode=backlight-only",
+            ]
+            if backlight_only
+            else (
+                [
+                "picocalc::init()",
+                "display::clear(0xf800)",
+                "display::verify_pixels(",
+                "[PICOCALC][LCD][VERIFY]",
+                "mode=lcd-only",
+                ]
+            )
+            if lcd_only
+            else [
+                "picocalc::init()",
+                "draw_test_pattern()",
+                "filesystem::smoke_test()",
+                "keyboard::read_event(",
+                "[PICOCALC][SMOKE]",
+            ]
+        )
+        missing = [token for token in required if token not in text]
+        add_check(
+            checks,
+            "template-smoke",
+            not missing,
+            mode=("backlight-only" if backlight_only else
+                  "lcd-only" if lcd_only else "full-smoke"),
+            missing=missing,
+        )
+    except (OSError, UnicodeError) as error:
+        add_check(checks, "template-smoke", False, **error_details(error))
+
+
 def verify_portable(checks: List[Check], root: Path) -> None:
     verify_generated_board(checks, root)
     require_text(
@@ -459,19 +502,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "f_unlink(",
         ],
     )
-    require_text(
-        checks,
-        root,
-        "templates/rp2040-basic/app/main.cpp",
-        "template-smoke",
-        [
-            "picocalc::init()",
-            "draw_test_pattern()",
-            "filesystem::smoke_test()",
-            "keyboard::read_event(",
-            "[PICOCALC][SMOKE]",
-        ],
-    )
+    verify_template_smoke(checks, root)
     verify_catalog(checks, root)
     verify_hardware_validation(checks, root)
 

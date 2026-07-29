@@ -2,6 +2,8 @@
 """Create and build PicoCalc projects from the hardware-proven template."""
 
 import argparse
+from datetime import datetime, timezone
+import hashlib
 import json
 import os
 import re
@@ -9,13 +11,63 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates/rp2040-basic"
 BSP = ROOT / "bsp"
 CATALOG = ROOT / "reference-projects/catalog.json"
+
+
+def read_version(path: Path, variable: str) -> str:
+    if not path.is_file():
+        return "unknown"
+    text = path.read_text(encoding="utf-8")
+    patterns = (
+        r"set\s*\(\s*" + re.escape(variable) + r"\s+\"([^\"]+)\"",
+        re.escape(variable) + r"=\\?\"([A-Za-z0-9_.-]+)\\?\"",
+    )
+    for expression in patterns:
+        match = re.search(expression, text)
+        if match:
+            return match.group(1)
+    return "unknown"
+
+
+def build_versions(project: Path) -> Tuple[str, str]:
+    bsp_file = project / "bsp/CMakeLists.txt"
+    if not bsp_file.is_file():
+        bsp_file = ROOT / "bsp/CMakeLists.txt"
+    return (
+        read_version(bsp_file, "PICOCALC_BSP_VERSION"),
+        read_version(project / "CMakeLists.txt", "PICOCALC_APP_VERSION"),
+    )
+
+
+def load_build_history(path: Path) -> dict:
+    if not path.is_file():
+        return {"schema_version": 1, "successful_builds": []}
+    try:
+        history = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        print("warning: build history is unreadable: {}".format(path), file=sys.stderr)
+        return {"schema_version": 1, "successful_builds": []}
+    if not isinstance(history, dict) or not isinstance(
+        history.get("successful_builds"), list
+    ):
+        print("warning: build history has an invalid format: {}".format(path), file=sys.stderr)
+        return {"schema_version": 1, "successful_builds": []}
+    return history
+
+
+def append_build_history(path: Path, entry: dict) -> None:
+    history = load_build_history(path)
+    history.setdefault("schema_version", 1)
+    history.setdefault("successful_builds", []).append(entry)
+    path.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def valid_name(value: str) -> str:
@@ -98,6 +150,30 @@ def build_project(
         return 2
 
     build_dir = project / "build"
+    build_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    bsp_version, app_version = build_versions(project)
+    # Keep the history outside build/ so a clean rebuild does not erase the
+    # version-reuse warning evidence.
+    history_path = project / ".picocalc-build-history.json"
+    history = load_build_history(history_path)
+    previous = [
+        item
+        for item in history["successful_builds"]
+        if item.get("bsp_version") == bsp_version
+        and item.get("app_version") == app_version
+    ]
+    if previous:
+        print(
+            "WARNING: regenerating same-version build #{}: bsp={} app={}.".format(
+                len(previous) + 1, bsp_version, app_version
+            ),
+            file=sys.stderr,
+        )
+        print(
+            "         The UF2 will be generated. Increment the version only for a new release.",
+            file=sys.stderr,
+        )
+    build_dir.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
     environment["PICO_SDK_PATH"] = str(sdk)
     configure = [
@@ -108,6 +184,7 @@ def build_project(
         str(build_dir),
         "-DPICO_BOARD=pico",
         "-DCMAKE_BUILD_TYPE=Release",
+        "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
     ]
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:
@@ -117,10 +194,34 @@ def build_project(
         print("picotool {}".format(picotool_config))
     if subprocess.run(configure, env=environment).returncode != 0:
         return 1
-    return subprocess.run(
+    built = subprocess.run(
         ["cmake", "--build", str(build_dir), "-j", str(jobs)],
         env=environment,
-    ).returncode
+    )
+    if built.returncode != 0:
+        return built.returncode
+    uf2 = build_dir / "picocalc_app.uf2"
+    if not uf2.is_file():
+        print(
+            "error: build succeeded but UF2 was not generated: {}".format(uf2),
+            file=sys.stderr,
+        )
+        return 1
+    digest = hashlib.sha256(uf2.read_bytes()).hexdigest()
+    append_build_history(
+        history_path,
+        {
+            "built_at": build_timestamp,
+            "bsp_version": bsp_version,
+            "app_version": app_version,
+            "uf2": str(uf2),
+            "uf2_sha256": digest,
+        },
+    )
+    print("UF2     {}".format(uf2))
+    print("SHA256  {}".format(digest))
+    print("history {}".format(history_path))
+    return 0
 
 
 def verify(references: bool, strict_commit: bool, reference_root: Optional[Path]) -> int:
