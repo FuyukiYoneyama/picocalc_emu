@@ -191,3 +191,31 @@ LCD初期化末尾、`CASET/RASET/RAMWR`の独立トランザクション、RGB8
 ごとのCS再同期、160×160タイル分割を採用した。これは資料と動作実績に基づく再構成で
 あり、実機での表示成功はまだ確認していない。成功判定は、起動ログの版と画面写真、
 `[PICOCALC][LCD][VERIFY]`の結果を同時に確認して行う。
+
+## `pico20260729_230811.log` の判定とRAMRD経路の修正
+
+実機ログの先頭は、UF2が意図したコミットから生成されたことを示している。
+`bsp=0.2.1`、`app=0.2.1-loader-rgb888`、`git=4ad2251`であり、UF2取り違えや
+CPU停止ではない。SDのmount/write/read/compareも成功し、問題はLCD検証へ限定できる。
+
+ただし、次の結果からLCDのGRAM読み出しは成立していない。
+
+* `RDDID=0xffffff`、`RDDST=0x19920000`で、コントローラ応答として不自然
+* `RAMRD`の全ピクセルが`0x202020`で、書き込んだ色と一致しない
+* solid fill 5色とpattern readbackがすべてfailし、`app_status=fail`
+
+また、アプリの`[PICOCALC][SMOKE] lcd=ok`はLCD検証結果を参照せず、SD結果だけで
+表示していたため、`lcd=fail`を正しく出すよう修正した。
+
+原因候補を一般化した独自SPI読み出しから、資料に記録された実働コードへ戻した。
+書き込みは従来どおりhardware SPI1の25 MHzを使い、読み出し時だけ次の手順にする。
+
+1. SPI1を停止する。
+2. SCK/MOSI/MISOをGPIO SIOへ切り替え、SCK/MOSIを出力、MISOを入力にする。
+3. CSを保持したままCASET、PASET、RAMRDをビットバンで送る。
+4. falling側のサンプリングでダミー1バイトとRGB888の3バイト/ピクセルを読む。
+5. 読み出し後にSPI1とSPI機能を復元する。
+
+この経路は`general/01_DISPLAY_LCD.md`および`life`／`Picocalc_Clock`の実装に基づく。
+修正後の実機ログで、`transport=bitbang_sio`、色ごとのreadback `pass`、
+`[PICOCALC][LCD][VERIFY] app_status=pass`を確認するまで、LCD表示成功とは判定しない。
