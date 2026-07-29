@@ -60,14 +60,6 @@ public:
 
 HardwareSpiTransport g_transport;
 
-void write_command(uint8_t command) {
-    detail::lcd::write_command(g_transport, command);
-}
-
-void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
-    detail::lcd::write_command_data(g_transport, command, values, len);
-}
-
 uint16_t rgb888_to_rgb565(const uint8_t* rgb888) {
     return static_cast<uint16_t>(
         (static_cast<uint16_t>(rgb888[0] >> 3) << 11) |
