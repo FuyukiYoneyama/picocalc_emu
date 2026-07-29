@@ -71,7 +71,7 @@ Pico SDK は `--sdk` または `PICO_SDK_PATH` で明示する。picotool は
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
 
-検証用UF2はアプリ版 `0.2.2-validation` として識別する。LCDの`stage=end`は
+UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`stage=end`は
 既知の色パターン描画呼び出し完了、SDの`result_stage`は失敗箇所、キーの`count`は
 実機で取得したイベント数と押下／リリース数を表す。LCDの色・向き・ノイズの有無はログだけでは判定
 できないため、画面写真と合わせて記録する。
