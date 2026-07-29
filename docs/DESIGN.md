@@ -7,7 +7,7 @@ BSP・テンプレート・実働プロジェクトの扱いは
 
 > **実装状況:** Canonical BSP（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
-> Canonical BSP MVP 0.3.0 として実装済み。利用方法と未実装のエミュレーター範囲は
+> Canonical BSP MVP 0.3.1 として実装済み。利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
 
 ## 1. 目的

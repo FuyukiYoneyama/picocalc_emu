@@ -284,3 +284,23 @@ probeが`set_sys_clock_khz(125000, true)`なのにBSP全体を250MHzで動かし
 
 0.3.1では、Aを125MHz、Bを160×160以下のタイル転送へ修正した。これはA/Bを再び一つへ
 混ぜる変更ではなく、各参照実装の実機条件をそれぞれのBSPへ戻す修正である。
+
+## Aを先に実機検証する運用（2026-07-29）
+
+実機では同時に二つのUF2を管理できないため、0.3.1の検証順を固定した。最初はA
+`hwspi-rgb888`だけを作成し、標準の`build/picocalc_app.uf2`としてSDカードへコピーする。
+Aのログ先頭で`variant=hwspi-rgb888`を確認し、LCDの
+`[PICOCALC][LCD][VERIFY] app_status=pass`と画面写真を取得するまで、BのUF2は
+作成・提示しない。Aが合格した後に、同じ場所・同じファイル名へBを生成する。
+
+今回Aの実機試験用に生成したUF2は、ソースコミット`51380fa`
+（BSP/App `0.3.1-hwspi-rgb888`）から作成した。UF2は保存・コミットせず、必要なら
+このコミットから再生成する。
+
+| 項目 | 値 |
+|---|---|
+| UF2 | `build/picocalc_app.uf2` |
+| variant | `hwspi-rgb888` |
+| source commit | `51380fa` |
+| UF2 SHA-256 | `ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f` |
+| 実機判定 | 未確認（次回Aを試験） |
