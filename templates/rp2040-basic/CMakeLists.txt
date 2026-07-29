@@ -9,7 +9,15 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(picocalc_app C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(PICOCALC_APP_VERSION "0.2.3-loader-rgb888-dc-before-cs")
+set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
+    "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
+if(NOT DEFINED PICOCALC_APP_VERSION)
+    if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
+        set(PICOCALC_APP_VERSION "0.3.0-pio-rgb565")
+    else()
+        set(PICOCALC_APP_VERSION "0.3.0-hwspi-rgb888")
+    endif()
+endif()
 
 pico_sdk_init()
 

@@ -1,12 +1,12 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.2.3）
+## 現在利用できるもの（BSP/template MVP 0.3.0）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
 あり、現在の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
 
-- `bsp/`: 実働プロジェクトを基準にした LCD・キーボード・SD/FatFS BSP
+- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS BSP
 - `templates/rp2040-basic/`: BSP を利用する最小アプリと CMake
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
@@ -21,7 +21,8 @@
 
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
-| LCD | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
+| LCD A | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
+| LCD B | `general/lcd` / `life` | PIO0 blocking、COLMOD `0x65`、RGB565、RAMRD時のみSIO |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
@@ -34,6 +35,13 @@
 python3 tools/picocalc.py verify
 python3 tools/picocalc.py new MyApp --output ../MyApp
 python3 tools/picocalc.py build --project ../MyApp --sdk /path/to/pico-sdk
+```
+
+LCD BSPはA/Bを混ぜず、ビルド時に一方を選ぶ。生成物名は常に同じである。
+
+```sh
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
 ```
 
 生成後に AI が通常変更する場所は `MyApp/app/` だけである。`MyApp/bsp/` は
@@ -59,7 +67,7 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 起動時の最初の機械可読ログは次の形式でなければならない。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... git=... build=... compile=...
+[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=... compile=...
 ```
 
 この1行を実機ログの版判定に使う。UF2ファイル名を版識別に使ってはならない。
@@ -118,12 +126,12 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
-調整した後、LCDのhardware-SPI取引順序を修正した BSP 0.2.3 は、次のUF2で再確認する。
+調整した後、LCDを二系統へ分離した BSP 0.3.0 A/B は、次の実機試験で確認する。
 この BSP 自体を新しい基準実装として記録する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.2.3ではバックライトの既定輝度、
+PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.0ではバックライトの既定輝度、
 LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
 
 また、次の機能は今後のエミュレーター段階である。

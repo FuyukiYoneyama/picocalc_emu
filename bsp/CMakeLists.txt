@@ -1,6 +1,20 @@
+set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
+    "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
+set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
+    hwspi-rgb888 pio-rgb565)
+
+if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
+    set(PICOCALC_DISPLAY_SOURCE src/display.cpp)
+elseif(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
+    set(PICOCALC_DISPLAY_SOURCE src/display_pio_rgb565.cpp)
+else()
+    message(FATAL_ERROR
+        "PICOCALC_LCD_VARIANT must be hwspi-rgb888 or pio-rgb565")
+endif()
+
 add_library(picocalc_bsp STATIC
     src/bsp.cpp
-    src/display.cpp
+    ${PICOCALC_DISPLAY_SOURCE}
     src/fatfs_diskio.cpp
     src/filesystem.cpp
     src/keyboard.cpp
@@ -8,6 +22,8 @@ add_library(picocalc_bsp STATIC
     third_party/ChanFatFS/src/ff.c
     third_party/ChanFatFS/src/ffunicode.c
 )
+
+pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/src/lcd_spi_min.pio)
 
 file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" PICOCALC_BSP_VERSION)
 string(STRIP "${PICOCALC_BSP_VERSION}" PICOCALC_BSP_VERSION)
@@ -52,6 +68,7 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_APP_VERSION=\"${PICOCALC_APP_VERSION}\"
         PICOCALC_BUILD_TIMESTAMP=\"${PICOCALC_BUILD_TIMESTAMP}\"
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
+        PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
 )
 
 target_compile_options(picocalc_bsp PRIVATE
@@ -67,4 +84,5 @@ target_link_libraries(picocalc_bsp
         hardware_gpio
         hardware_i2c
         hardware_spi
+        hardware_pio
 )

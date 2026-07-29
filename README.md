@@ -54,6 +54,16 @@ python3 tools/picocalc.py build --project ../MyApp
 
 生成物は`../MyApp/build/picocalc_app.uf2`です。
 
+LCDは実績のある二種類を別BSPとして選択できます。ファイル名はどちらも同じです。
+
+```sh
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
+```
+
+前者はSPI1/RGB888、後者はPIO0/RGB565です。選択した版はUF2の名前ではなく、起動ログ
+先頭行の`variant`とソースコミットで識別します。
+
 ### UF2と版管理の運用規約
 
 PicoCalcではUF2をSDカードへコピーして使うため、同じプロジェクト内でUF2の
@@ -83,7 +93,7 @@ SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録し�
 ビルドログには次の識別情報が出ます。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... git=... build=... compile=...
+[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=... compile=...
 [PICOCALC][APP] version=... compile=...
 ```
 
@@ -150,7 +160,8 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.2.3の実機成功を主張しません。
+現時点のテンプレートは`pending`であり、BSP 0.3.0のA/Bいずれについても実機成功を
+未確認です。portable検証と両バリアントのRP2040ビルド成功は、実機成功とは別です。
 
 ## 文書
 

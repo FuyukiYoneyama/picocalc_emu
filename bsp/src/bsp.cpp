@@ -13,9 +13,9 @@ bool init() {
         return false;
     }
     stdio_init_all();
-    printf("[PICOCALC][BOOT] bsp=%s app=%s git=%s build=%s compile=%s %s\n",
-           PICOCALC_BSP_VERSION, PICOCALC_APP_VERSION, PICOCALC_BUILD_COMMIT,
-           PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
+    printf("[PICOCALC][BOOT] bsp=%s app=%s variant=%s git=%s build=%s compile=%s %s\n",
+           PICOCALC_BSP_VERSION, PICOCALC_APP_VERSION, PICOCALC_LCD_VARIANT,
+           PICOCALC_BUILD_COMMIT, PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
     printf("[PICOCALC][BOOT] clock status=ok target_khz=%lu actual_khz=%lu\n",
            static_cast<unsigned long>(board::kSystemClockKhz),
            static_cast<unsigned long>(clock_get_hz(clk_sys) / 1000u));
@@ -32,10 +32,7 @@ bool init() {
     keyboard::init();
     printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
 
-    printf("[PICOCALC][LCD] transport=hardware_spi1 hz=%lu colmod=0x%02x "
-           "wire=rgb888 cs=held_per_window\n",
-           static_cast<unsigned long>(board::kLcdSpiHz),
-           static_cast<unsigned>(board::kLcdColmod));
+    printf("[PICOCALC][LCD] variant=%s\n", PICOCALC_LCD_VARIANT);
     display::init();
     printf("[PICOCALC][LCD] init status=ok\n");
     return true;
