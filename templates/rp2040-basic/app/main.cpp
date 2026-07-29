@@ -34,6 +34,14 @@ int main() {
     printf("[PICOCALC][APP] version=%s compile=%s %s\n",
            PICOCALC_APP_VERSION, __DATE__, __TIME__);
 
+    // The controller's initialization clear occurs before display-on (0x29)
+    // and is immediately overwritten by the smoke pattern. Hold a visible
+    // post-init red frame so the clear transport can be checked by eye.
+    printf("[PICOCALC][LCD] visible_clear phase=begin color=0xf800 hold_ms=3000\n");
+    picocalc::display::clear(0xf800);
+    printf("[PICOCALC][LCD] visible_clear phase=end status=ok\n");
+    sleep_ms(3000);
+
     picocalc::display::draw_test_pattern();
     const uint16_t verify_pattern[] = {0xf800, 0x07e0, 0x001f, 0xffff};
     picocalc::display::set_window(32, 72, 2, 2);
