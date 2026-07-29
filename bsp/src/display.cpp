@@ -1,6 +1,7 @@
 #include "picocalc/display.h"
 
 #include <algorithm>
+#include <stdio.h>
 
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
@@ -73,12 +74,128 @@ void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
 }
 
 void reset_panel() {
+    printf("[PICOCALC][LCD] reset phase=assert_high delay_ms=1\n");
     gpio_put(board::kLcdReset, 1);
     sleep_ms(1);
+    printf("[PICOCALC][LCD] reset phase=low delay_ms=10\n");
     gpio_put(board::kLcdReset, 0);
     sleep_ms(10);
+    printf("[PICOCALC][LCD] reset phase=release delay_ms=10\n");
     gpio_put(board::kLcdReset, 1);
     sleep_ms(10);
+    // The working Clock, ClockCalc, ment, and BVWCVolleyball projects all
+    // leave the panel reset released for 200 ms before sending controller
+    // commands.  The pre-LCD 200 ms system settle is not a substitute for
+    // this panel-specific post-reset delay.
+    printf("[PICOCALC][LCD] reset phase=post_release_settle delay_ms=200\n");
+    sleep_ms(200);
+}
+
+void read_io_delay() {
+    busy_wait_us_32(1);
+}
+
+void set_bitbang_mode(bool enabled) {
+    if (enabled) {
+        pio_sm_set_enabled(g_pio, g_sm, false);
+        gpio_set_function(board::kLcdSck, GPIO_FUNC_SIO);
+        gpio_set_function(board::kLcdMosi, GPIO_FUNC_SIO);
+        gpio_set_function(board::kLcdMiso, GPIO_FUNC_SIO);
+        gpio_set_dir(board::kLcdSck, GPIO_OUT);
+        gpio_set_dir(board::kLcdMosi, GPIO_OUT);
+        gpio_set_dir(board::kLcdMiso, GPIO_IN);
+        gpio_disable_pulls(board::kLcdMiso);
+        gpio_put(board::kLcdSck, 0);
+        gpio_put(board::kLcdMosi, 0);
+        return;
+    }
+
+    gpio_set_function(board::kLcdSck, GPIO_FUNC_PIO0);
+    gpio_set_function(board::kLcdMosi, GPIO_FUNC_PIO0);
+    gpio_set_function(board::kLcdMiso, GPIO_FUNC_SIO);
+    gpio_set_dir(board::kLcdMiso, GPIO_IN);
+    gpio_disable_pulls(board::kLcdMiso);
+    pio_sm_set_enabled(g_pio, g_sm, true);
+}
+
+void bitbang_write_byte(uint8_t value) {
+    for (int bit = 7; bit >= 0; --bit) {
+        gpio_put(board::kLcdSck, 0);
+        gpio_put(board::kLcdMosi, (value >> bit) & 1u);
+        read_io_delay();
+        gpio_put(board::kLcdSck, 1);
+        read_io_delay();
+    }
+    gpio_put(board::kLcdSck, 0);
+}
+
+uint8_t bitbang_read_byte_falling() {
+    uint8_t value = 0;
+    for (int bit = 7; bit >= 0; --bit) {
+        gpio_put(board::kLcdSck, 0);
+        read_io_delay();
+        if (gpio_get(board::kLcdMiso)) {
+            value |= static_cast<uint8_t>(1u << bit);
+        }
+        gpio_put(board::kLcdSck, 1);
+        read_io_delay();
+    }
+    gpio_put(board::kLcdSck, 0);
+    return value;
+}
+
+void bitbang_write_commandn_held(uint8_t command,
+                                 const uint8_t* data,
+                                 size_t length) {
+    set_dc(false);
+    bitbang_write_byte(command);
+    set_dc(true);
+    while (length-- > 0) {
+        bitbang_write_byte(*data++);
+    }
+}
+
+void set_read_window_held(int x, int y, int w, int h) {
+    const int x1 = x + w - 1;
+    const int y1 = y + h - 1;
+    const uint8_t columns[] = {
+        static_cast<uint8_t>(x >> 8), static_cast<uint8_t>(x),
+        static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
+    };
+    const uint8_t rows[] = {
+        static_cast<uint8_t>(y >> 8), static_cast<uint8_t>(y),
+        static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
+    };
+    bitbang_write_commandn_held(0x2a, columns, sizeof(columns));
+    bitbang_write_commandn_held(0x2b, rows, sizeof(rows));
+}
+
+bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
+    if (w <= 0 || h <= 0 || output == nullptr ||
+        x < 0 || y < 0 || x + w > width || y + h > height) {
+        return false;
+    }
+
+    wait_idle();
+    set_bitbang_mode(true);
+    select();
+    set_read_window_held(x, y, w, h);
+    set_dc(false);
+    bitbang_write_byte(0x2e);  // RAMRD
+    set_dc(true);
+    (void)bitbang_read_byte_falling();  // controller dummy byte
+
+    const int pixel_count = w * h;
+    for (int i = 0; i < pixel_count; ++i) {
+        const uint8_t high = bitbang_read_byte_falling();
+        const uint8_t low = bitbang_read_byte_falling();
+        output[i] = static_cast<uint16_t>(
+            (static_cast<uint16_t>(high) << 8) | low);
+    }
+
+    deselect();
+    set_bitbang_mode(false);
+    return true;
 }
 
 bool clip_rect(int* x, int* y, int* w, int* h) {
@@ -116,19 +233,28 @@ void send_solid_pixels(uint16_t color, size_t count) {
 }  // namespace
 
 void init() {
+    printf("[PICOCALC][LCD] gpio status=begin cs=%u dc=%u reset=%u ram_cs=%u sck=%u mosi=%u miso=%u\n",
+           board::kLcdCs, board::kLcdDc, board::kLcdReset, board::kLcdRamCs,
+           board::kLcdSck, board::kLcdMosi, board::kLcdMiso);
     gpio_init(board::kLcdCs);
     gpio_init(board::kLcdDc);
     gpio_init(board::kLcdReset);
+    gpio_init(board::kLcdRamCs);
     gpio_init(board::kLcdMiso);
     gpio_set_dir(board::kLcdCs, GPIO_OUT);
     gpio_set_dir(board::kLcdDc, GPIO_OUT);
     gpio_set_dir(board::kLcdReset, GPIO_OUT);
+    gpio_set_dir(board::kLcdRamCs, GPIO_OUT);
     gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_disable_pulls(board::kLcdMiso);
     gpio_put(board::kLcdCs, 1);
     gpio_put(board::kLcdDc, 1);
     gpio_put(board::kLcdReset, 1);
+    gpio_put(board::kLcdRamCs, 1);
+    printf("[PICOCALC][LCD] gpio status=ok cs=1 dc=1 reset=1 ram_cs=1\n");
 
+    printf("[PICOCALC][LCD] pio status=begin divider=%.1f\n",
+           static_cast<double>(board::kLcdPioClockDivider));
     g_offset = pio_add_program(g_pio, &lcd_spi_min_program);
     lcd_spi_min_program_init(g_pio,
                              g_sm,
@@ -136,13 +262,24 @@ void init() {
                              board::kLcdMosi,
                              board::kLcdSck,
                              board::kLcdPioClockDivider);
+    printf("[PICOCALC][LCD] pio status=ok\n");
 
     reset_panel();
+    printf("[PICOCALC][LCD] controller phase=commands begin\n");
 
     detail::lcd::initialize_controller(
         g_transport,
-        [](uint32_t milliseconds) { sleep_ms(milliseconds); },
-        []() { clear(0x0000); });
+        [](uint32_t milliseconds) {
+            printf("[PICOCALC][LCD] controller phase=delay ms=%lu\n",
+                   static_cast<unsigned long>(milliseconds));
+            sleep_ms(milliseconds);
+        },
+        []() {
+            printf("[PICOCALC][LCD] controller phase=clear begin\n");
+            clear(0x0000);
+            printf("[PICOCALC][LCD] controller phase=clear end\n");
+        });
+    printf("[PICOCALC][LCD] controller phase=commands end status=ok\n");
 }
 
 void set_window(int x, int y, int w, int h) {
@@ -198,10 +335,14 @@ void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) {
         return;
     }
+    printf("[PICOCALC][LCD] fill phase=begin x=%d y=%d w=%d h=%d color=0x%04x\n",
+           x, y, w, h, rgb565);
     set_window(x, y, w, h);
     const size_t count = static_cast<size_t>(w) * static_cast<size_t>(h);
     send_solid_pixels(rgb565, count);
     g_window_pixels_remaining = 0;
+    printf("[PICOCALC][LCD] fill phase=end status=ok pixels=%lu\n",
+           static_cast<unsigned long>(count));
 }
 
 void clear(uint16_t rgb565) {
@@ -209,6 +350,7 @@ void clear(uint16_t rgb565) {
 }
 
 void draw_test_pattern() {
+    printf("[PICOCALC][LCD] test_pattern phase=begin\n");
     clear(0x0000);
     fill_rect(0, 0, width, 24, 0x07e0);
     fill_rect(0, height - 24, width, 24, 0x001f);
@@ -217,6 +359,36 @@ void draw_test_pattern() {
     fill_rect(32, 72, 80, 80, 0xf800);
     fill_rect(120, 72, 80, 80, 0x07e0);
     fill_rect(208, 72, 80, 80, 0x001f);
+    printf("[PICOCALC][LCD] test_pattern phase=end status=ok\n");
+}
+
+bool verify_pixels(int x, int y, int w, int h,
+                   const uint16_t* expected, size_t count) {
+    if (expected == nullptr || count != static_cast<size_t>(w * h)) {
+        printf("[PICOCALC][LCD][VERIFY] status=invalid\n");
+        return false;
+    }
+
+    uint16_t actual[16] = {};
+    if (count > 16 || !readback_pixels(x, y, w, h, actual)) {
+        printf("[PICOCALC][LCD][VERIFY] status=readback_failed x=%d y=%d w=%d h=%d\n",
+               x, y, w, h);
+        return false;
+    }
+
+    size_t mismatches = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (actual[i] != expected[i]) {
+            ++mismatches;
+            printf("[PICOCALC][LCD][VERIFY] mismatch index=%lu expected=0x%04x actual=0x%04x\n",
+                   static_cast<unsigned long>(i), expected[i], actual[i]);
+        }
+    }
+    printf("[PICOCALC][LCD][VERIFY] status=%s pixels=%lu mismatches=%lu\n",
+           mismatches == 0 ? "pass" : "fail",
+           static_cast<unsigned long>(count),
+           static_cast<unsigned long>(mismatches));
+    return mismatches == 0;
 }
 
 }  // namespace picocalc::display
