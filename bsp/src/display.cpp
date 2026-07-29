@@ -170,6 +170,40 @@ void set_read_window_held(int x, int y, int w, int h) {
     bitbang_write_commandn_held(0x2b, rows, sizeof(rows));
 }
 
+void read_command_bytes(uint8_t command,
+                        int dummy_bytes,
+                        uint8_t* output,
+                        size_t output_length) {
+    set_dc(false);
+    bitbang_write_byte(command);
+    set_dc(true);
+    for (int i = 0; i < dummy_bytes; ++i) {
+        (void)bitbang_read_byte_falling();
+    }
+    for (size_t i = 0; i < output_length; ++i) {
+        output[i] = bitbang_read_byte_falling();
+    }
+}
+
+void log_readback_bus_diagnostics() {
+    const int idle_samples[] = {gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0};
+    printf("[PICOCALC][LCD][READ] bus mode=bitbang miso_idle=%d,%d,%d\n",
+           idle_samples[0], idle_samples[1], idle_samples[2]);
+
+    uint8_t id[3] = {};
+    uint8_t status[4] = {};
+    select();
+    read_command_bytes(0x04, 1, id, sizeof(id));
+    deselect();
+    select();
+    read_command_bytes(0x09, 1, status, sizeof(status));
+    deselect();
+    printf("[PICOCALC][LCD][READ] rddid=0x%02x%02x%02x rddst=0x%02x%02x%02x%02x\n",
+           id[0], id[1], id[2], status[0], status[1], status[2], status[3]);
+}
+
 bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     if (w <= 0 || h <= 0 || output == nullptr ||
         x < 0 || y < 0 || x + w > width || y + h > height) {
@@ -178,12 +212,15 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
 
     wait_idle();
     set_bitbang_mode(true);
+    log_readback_bus_diagnostics();
     select();
     set_read_window_held(x, y, w, h);
     set_dc(false);
     bitbang_write_byte(0x2e);  // RAMRD
     set_dc(true);
-    (void)bitbang_read_byte_falling();  // controller dummy byte
+    const uint8_t dummy = bitbang_read_byte_falling();  // controller dummy byte
+    printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%d\n",
+           dummy, w * h);
 
     const int pixel_count = w * h;
     for (int i = 0; i < pixel_count; ++i) {
@@ -191,6 +228,8 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
         const uint8_t low = bitbang_read_byte_falling();
         output[i] = static_cast<uint16_t>(
             (static_cast<uint16_t>(high) << 8) | low);
+        printf("[PICOCALC][LCD][READ] pixel=%d raw=0x%02x%02x value=0x%04x\n",
+               i, high, low, output[i]);
     }
 
     deselect();
