@@ -249,16 +249,16 @@ void send_solid_pixels(uint16_t color, size_t count) {
         bytes[i * 3 + 2] = blue;
     }
 
+    set_dc(true);
+    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t pixels) {
-            set_dc(true);
-            select();
             spi_write_blocking(spi1, bytes, pixels * 3);
-            wait_idle();
-            deselect();
         });
+    wait_idle();
+    deselect();
 }
 
 }  // namespace
@@ -326,6 +326,8 @@ void write_pixels(const uint16_t* pixels, size_t count) {
     count = std::min(count, g_window_pixels_remaining);
     uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     size_t offset = 0;
+    set_dc(true);
+    select();
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
@@ -340,14 +342,12 @@ void write_pixels(const uint16_t* pixels, size_t count) {
                     static_cast<uint8_t>((g6 << 2) | (g6 >> 4));
                 bytes[i * 3 + 2] = static_cast<uint8_t>((b5 << 3) | (b5 >> 2));
             }
-            set_dc(true);
-            select();
             spi_write_blocking(spi1, bytes, chunk * 3);
-            wait_idle();
-            deselect();
             offset += chunk;
             g_window_pixels_remaining -= chunk;
         });
+    wait_idle();
+    deselect();
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {

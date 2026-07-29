@@ -32,7 +32,8 @@ bool init() {
     keyboard::init();
     printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
 
-    printf("[PICOCALC][LCD] transport=hardware_spi1 hz=%lu colmod=0x%02x wire=rgb888\n",
+    printf("[PICOCALC][LCD] transport=hardware_spi1 hz=%lu colmod=0x%02x "
+           "wire=rgb888 cs=held_per_window\n",
            static_cast<unsigned long>(board::kLcdSpiHz),
            static_cast<unsigned>(board::kLcdColmod));
     display::init();
