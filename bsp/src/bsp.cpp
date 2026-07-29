@@ -13,8 +13,8 @@ bool init() {
         return false;
     }
     stdio_init_all();
-    printf("[PICOCALC][BOOT] bsp=%s git=%s build=%s compile=%s %s\n",
-           PICOCALC_BSP_VERSION, PICOCALC_BUILD_COMMIT,
+    printf("[PICOCALC][BOOT] bsp=%s app=%s git=%s build=%s compile=%s %s\n",
+           PICOCALC_BSP_VERSION, PICOCALC_APP_VERSION, PICOCALC_BUILD_COMMIT,
            PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
     printf("[PICOCALC][BOOT] clock status=ok target_khz=%lu actual_khz=%lu\n",
            static_cast<unsigned long>(board::kSystemClockKhz),

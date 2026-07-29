@@ -10,6 +10,7 @@
 * LCD: uf2loader互換のST7365P/ILI9488初期化、`COLMOD 0x66`
 * LCD: 公開APIはRGB565、LCD配線へはRGB888（1 pixel = 3 bytes）へ変換
 * LCD: 160 pixelsは変換バッファ単位。長い画面転送中はCSを保持する
+* LCD: `verify_pixels()`はRGB888の`RAMRD (0x2e)`をRGB565へ戻し、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz

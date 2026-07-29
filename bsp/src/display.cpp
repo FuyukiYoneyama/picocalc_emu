@@ -1,6 +1,7 @@
 #include "picocalc/display.h"
 
 #include <algorithm>
+#include <stdio.h>
 
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
@@ -12,6 +13,8 @@ namespace picocalc::display {
 namespace {
 
 size_t g_window_pixels_remaining = 0;
+constexpr size_t kMaxReadbackPixels = 16;
+constexpr uint32_t kReadbackSpiHz = 6000000;
 
 void select() {
     gpio_put(board::kLcdCs, 0);
@@ -62,6 +65,96 @@ void write_command(uint8_t command) {
 
 void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
     detail::lcd::write_command_data(g_transport, command, values, len);
+}
+
+uint16_t rgb888_to_rgb565(const uint8_t* rgb888) {
+    return static_cast<uint16_t>(
+        (static_cast<uint16_t>(rgb888[0] >> 3) << 11) |
+        (static_cast<uint16_t>(rgb888[1] >> 2) << 5) |
+        static_cast<uint16_t>(rgb888[2] >> 3));
+}
+
+void read_command_bytes(uint8_t command,
+                        size_t dummy_bytes,
+                        uint8_t* output,
+                        size_t output_length) {
+    select();
+    set_dc(false);
+    spi_write_blocking(spi1, &command, 1);
+    wait_idle();
+    set_dc(true);
+
+    uint8_t discarded = 0;
+    for (size_t i = 0; i < dummy_bytes; ++i) {
+        spi_read_blocking(spi1, 0, &discarded, 1);
+    }
+    if (output != nullptr && output_length > 0) {
+        spi_read_blocking(spi1, 0, output, output_length);
+    }
+    wait_idle();
+    deselect();
+}
+
+bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
+    const size_t pixel_count = static_cast<size_t>(w) * static_cast<size_t>(h);
+    if (w <= 0 || h <= 0 || output == nullptr || pixel_count > kMaxReadbackPixels ||
+        x < 0 || y < 0 || x + w > width || y + h > height) {
+        return false;
+    }
+
+    const uint32_t actual_read_hz = spi_set_baudrate(spi1, kReadbackSpiHz);
+    const int idle_samples[] = {gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0,
+                                gpio_get(board::kLcdMiso) ? 1 : 0};
+    printf("[PICOCALC][LCD][READ] transport=hardware_spi1 read_hz=%lu "
+           "miso_idle=%d,%d,%d\n",
+           static_cast<unsigned long>(actual_read_hz),
+           idle_samples[0], idle_samples[1], idle_samples[2]);
+
+    uint8_t id[3] = {};
+    uint8_t status[4] = {};
+    read_command_bytes(0x04, 1, id, sizeof(id));
+    read_command_bytes(0x09, 1, status, sizeof(status));
+    printf("[PICOCALC][LCD][READ] rddid=0x%02x%02x%02x "
+           "rddst=0x%02x%02x%02x%02x\n",
+           id[0], id[1], id[2], status[0], status[1], status[2], status[3]);
+
+    const int x1 = x + w - 1;
+    const int y1 = y + h - 1;
+    const uint8_t columns[] = {
+        static_cast<uint8_t>(x >> 8), static_cast<uint8_t>(x),
+        static_cast<uint8_t>(x1 >> 8), static_cast<uint8_t>(x1),
+    };
+    const uint8_t rows[] = {
+        static_cast<uint8_t>(y >> 8), static_cast<uint8_t>(y),
+        static_cast<uint8_t>(y1 >> 8), static_cast<uint8_t>(y1),
+    };
+    write_commandn(0x2a, columns, sizeof(columns));
+    write_commandn(0x2b, rows, sizeof(rows));
+
+    const uint8_t ram_read = 0x2e;
+    uint8_t raw[kMaxReadbackPixels * 3] = {};
+    select();
+    set_dc(false);
+    spi_write_blocking(spi1, &ram_read, 1);
+    wait_idle();
+    set_dc(true);
+    uint8_t dummy = 0;
+    spi_read_blocking(spi1, 0, &dummy, 1);
+    spi_read_blocking(spi1, 0, raw, pixel_count * 3);
+    wait_idle();
+    deselect();
+
+    spi_set_baudrate(spi1, board::kLcdSpiHz);
+    printf("[PICOCALC][LCD][READ] ramrd dummy=0x%02x pixels=%lu format=rgb888\n",
+           dummy, static_cast<unsigned long>(pixel_count));
+    for (size_t i = 0; i < pixel_count; ++i) {
+        output[i] = rgb888_to_rgb565(&raw[i * 3]);
+        printf("[PICOCALC][LCD][READ] pixel=%lu raw=0x%02x%02x%02x value=0x%04x\n",
+               static_cast<unsigned long>(i), raw[i * 3], raw[i * 3 + 1],
+               raw[i * 3 + 2], output[i]);
+    }
+    return true;
 }
 
 void reset_panel() {
@@ -229,6 +322,39 @@ void draw_test_pattern() {
     fill_rect(32, 72, 80, 80, 0xf800);
     fill_rect(120, 72, 80, 80, 0x07e0);
     fill_rect(208, 72, 80, 80, 0x001f);
+}
+
+PixelVerifyResult verify_pixels(int x, int y, int w, int h,
+                                const uint16_t* expected, size_t count) {
+    const size_t pixel_count = static_cast<size_t>(w) * static_cast<size_t>(h);
+    if (expected == nullptr || w <= 0 || h <= 0 || count != pixel_count ||
+        count > kMaxReadbackPixels) {
+        printf("[PICOCALC][LCD][VERIFY] status=invalid x=%d y=%d w=%d h=%d count=%lu\n",
+               x, y, w, h, static_cast<unsigned long>(count));
+        return {false, 0, 0};
+    }
+
+    uint16_t actual[kMaxReadbackPixels] = {};
+    if (!readback_pixels(x, y, w, h, actual)) {
+        printf("[PICOCALC][LCD][VERIFY] status=readback_failed x=%d y=%d w=%d h=%d\n",
+               x, y, w, h);
+        return {false, pixel_count, 0};
+    }
+
+    size_t mismatches = 0;
+    for (size_t i = 0; i < pixel_count; ++i) {
+        if (actual[i] != expected[i]) {
+            ++mismatches;
+            printf("[PICOCALC][LCD][VERIFY] mismatch index=%lu expected=0x%04x "
+                   "actual=0x%04x\n",
+                   static_cast<unsigned long>(i), expected[i], actual[i]);
+        }
+    }
+    printf("[PICOCALC][LCD][VERIFY] status=%s pixels=%lu mismatches=%lu\n",
+           mismatches == 0 ? "pass" : "fail",
+           static_cast<unsigned long>(pixel_count),
+           static_cast<unsigned long>(mismatches));
+    return {true, pixel_count, mismatches};
 }
 
 }  // namespace picocalc::display
