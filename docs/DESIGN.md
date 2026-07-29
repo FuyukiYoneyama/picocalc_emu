@@ -7,7 +7,7 @@ BSP・テンプレート・実働プロジェクトの扱いは
 
 > **実装状況:** Canonical BSP、RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
-> MVP 0.1.0 として実装済み。利用方法と未実装のエミュレーター範囲は
+> Canonical BSP MVP 0.2.1 として実装済み。利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
 
 ## 1. 目的
@@ -88,7 +88,7 @@ Pico SDK の依存部分をインターフェース化し、PC 用実装へリ�
 
 ### 3.3 LCD モデル
 
-初期プロファイルは `controller: ST7365P`、`command_compatibility: ILI9488-subset`、`gram: 320x480`、`viewport: 320x320` とする。コントローラーの全コマンドを最初から実装せず、既存コードが使う `MADCTL`、`CASET`、`PASET`、`RAMWR`、`COLMOD`、リセット、表示 ON/OFF、RGB565/18-bit 書き込みを優先する。
+初期プロファイルは `controller: ST7365P`、`command_compatibility: ILI9488-subset`、`gram: 320x480`、`viewport: 320x320` とする。コントローラーの全コマンドを最初から実装せず、既存コードが使う `MADCTL`、`CASET`、`PASET`、`RAMWR`、`COLMOD`、リセット、表示 ON/OFF、RGB565 APIからの18-bit wire書き込みを優先する。
 
 内部では 320x480 の GRAM と、そこから切り出される 320x320 の可視 framebuffer を分ける。回転、開始座標、オフセット、RGB/BGR 順、範囲外アクセスはプロファイルに従って処理する。出力用 framebuffer は RGBA8888 に正規化する。
 

@@ -1,5 +1,7 @@
 #include "picocalc/bsp.h"
 
+#include <stdio.h>
+
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
@@ -11,6 +13,15 @@ bool init() {
         return false;
     }
     stdio_init_all();
+    printf("[PICOCALC][BOOT] bsp=%s git=%s build=%s compile=%s %s\n",
+           PICOCALC_BSP_VERSION, PICOCALC_BUILD_COMMIT,
+           PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
+    printf("[PICOCALC][BOOT] clock status=ok target_khz=%lu actual_khz=%lu\n",
+           static_cast<unsigned long>(board::kSystemClockKhz),
+           static_cast<unsigned long>(clock_get_hz(clk_sys) / 1000u));
+    // UF2 loader can reset the RP2040 while the PicoCalc side remains powered.
+    sleep_ms(100);
+    printf("[PICOCALC][BOOT] settle status=ok delay_ms=100\n");
 
     // PSRAM is not part of the LCD bus. Keep its real CS (GP20) inactive so
     // applications that do not use PSRAM cannot accidentally select it.
@@ -18,8 +29,14 @@ bool init() {
     gpio_set_dir(board::kPsramCs, GPIO_OUT);
     gpio_put(board::kPsramCs, 1);
 
-    display::init();
     keyboard::init();
+    printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
+
+    printf("[PICOCALC][LCD] transport=hardware_spi1 hz=%lu colmod=0x%02x wire=rgb888\n",
+           static_cast<unsigned long>(board::kLcdSpiHz),
+           static_cast<unsigned>(board::kLcdColmod));
+    display::init();
+    printf("[PICOCALC][LCD] init status=ok\n");
     return true;
 }
 

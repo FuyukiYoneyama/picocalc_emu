@@ -16,7 +16,8 @@ constexpr unsigned kLcdCs = 13;
 constexpr unsigned kLcdDc = 14;
 constexpr unsigned kLcdReset = 15;
 constexpr uint8_t kLcdMadctl = 0x48;
-constexpr uint8_t kLcdColmod = 0x65;
+constexpr uint8_t kLcdColmod = 0x66;
+constexpr uint32_t kLcdSpiHz = 25000000;
 constexpr unsigned kSdMiso = 16;
 constexpr unsigned kSdCs = 17;
 constexpr unsigned kSdSck = 18;
@@ -43,6 +44,5 @@ constexpr int kDisplayHeight = 320;
 constexpr int kDisplayGramWidth = 320;
 constexpr int kDisplayGramHeight = 480;
 constexpr int kLcdMaxPixelsPerCs = 160;
-constexpr float kLcdPioClockDivider = 2.0f;
 
 }  // namespace picocalc::board

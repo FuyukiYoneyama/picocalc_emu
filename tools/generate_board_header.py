@@ -23,9 +23,9 @@ MAPPINGS: List[Mapping] = [
     ("display.pins.cs", "unsigned", "kLcdCs"),
     ("display.pins.dc", "unsigned", "kLcdDc"),
     ("display.pins.reset", "unsigned", "kLcdReset"),
-    ("display.pins.ram_cs", "unsigned", "kLcdRamCs"),
     ("display.madctl", "uint8_t", "kLcdMadctl"),
     ("display.colmod", "uint8_t", "kLcdColmod"),
+    ("display.spi_hz", "uint32_t", "kLcdSpiHz"),
     ("sd.miso", "unsigned", "kSdMiso"),
     ("sd.cs", "unsigned", "kSdCs"),
     ("sd.sck", "unsigned", "kSdSck"),
@@ -56,7 +56,6 @@ MAPPINGS: List[Mapping] = [
     ("display.gram_width", "int", "kDisplayGramWidth"),
     ("display.gram_height", "int", "kDisplayGramHeight"),
     ("display.max_pixels_per_cs", "int", "kLcdMaxPixelsPerCs"),
-    ("display.pio_clock_divider", "float", "kLcdPioClockDivider"),
 ]
 
 

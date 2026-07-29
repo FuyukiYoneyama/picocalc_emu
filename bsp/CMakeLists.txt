@@ -9,9 +9,32 @@ add_library(picocalc_bsp STATIC
     third_party/ChanFatFS/src/ffunicode.c
 )
 
-pico_generate_pio_header(picocalc_bsp
-    ${CMAKE_CURRENT_LIST_DIR}/src/lcd_spi_min.pio
-)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" PICOCALC_BSP_VERSION)
+string(STRIP "${PICOCALC_BSP_VERSION}" PICOCALC_BSP_VERSION)
+if(NOT PICOCALC_BUILD_TIMESTAMP)
+    string(TIMESTAMP PICOCALC_BUILD_TIMESTAMP UTC "%Y-%m-%dT%H:%M:%SZ")
+endif()
+if(NOT PICOCALC_BUILD_COMMIT)
+    execute_process(
+        COMMAND git rev-parse --short=12 HEAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
+        OUTPUT_VARIABLE PICOCALC_BUILD_COMMIT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(NOT PICOCALC_BUILD_COMMIT)
+        set(PICOCALC_BUILD_COMMIT "untracked")
+    else()
+        execute_process(
+            COMMAND git diff --quiet
+            WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
+            RESULT_VARIABLE PICOCALC_GIT_DIFF_RESULT
+        )
+        if(NOT PICOCALC_GIT_DIFF_RESULT EQUAL 0)
+            set(PICOCALC_BUILD_COMMIT "${PICOCALC_BUILD_COMMIT}-dirty")
+        endif()
+    endif()
+endif()
 
 target_include_directories(picocalc_bsp
     PUBLIC
@@ -22,6 +45,9 @@ target_include_directories(picocalc_bsp
 target_compile_definitions(picocalc_bsp
     PUBLIC
         PICOCALC_BSP_ENABLE_SD_WRITE=1
+        PICOCALC_BSP_VERSION=\"${PICOCALC_BSP_VERSION}\"
+        PICOCALC_BUILD_TIMESTAMP=\"${PICOCALC_BUILD_TIMESTAMP}\"
+        PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
 )
 
 target_compile_options(picocalc_bsp PRIVATE
@@ -36,6 +62,5 @@ target_link_libraries(picocalc_bsp
         hardware_clocks
         hardware_gpio
         hardware_i2c
-        hardware_pio
         hardware_spi
 )

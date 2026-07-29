@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.1.0）
+## 現在利用できるもの（BSP/template MVP 0.2.1）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -21,7 +21,7 @@
 
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
-| LCD | `uf2loader/common/lcdspi` | GP10〜15、PIO0、COLMOD `0x66`、MADCTL `0x48`、最大160 pixelごとにCSを解放 |
+| LCD | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
@@ -48,7 +48,7 @@ Pico SDK は `--sdk` または `PICO_SDK_PATH` で明示する。picotool は
 
 生成した `picocalc_app.uf2` は、起動時に次を行う。
 
-1. 250 MHz、PSRAM CS inactive、LCD、キーボードを初期化する
+1. 250 MHz、100 ms安定待ち、PSRAM CS inactive、キーボード、LCDを初期化する（バックライトの明るさは変更しない）
 2. LCD に黒・白・RGB の既知パターンを描画する
 3. SD を mount し、`PICOTEST.TXT` を write/sync/close/read/compare する
 4. テストファイルを削除する
@@ -68,8 +68,8 @@ SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 
 ## 検証済み範囲
 
-- Canonical BSP とテンプレートは `arm-none-eabi-gcc 9.2.1`、
-  Pico SDK 2.0.0 でコンパイル済み
+- Canonical BSP とテンプレートは `arm-none-eabi-gcc 13.2.1`、
+  Pico SDK 2.x 系でコンパイル可能
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
 - clone単体のportable検証10件が合格
 - 基準プロジェクト3件と証拠ファイル13件を含む完全検証26件が合格
@@ -78,13 +78,14 @@ SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 - `--json`は入力ファイル破損・不正引数でも構造化された失敗を返す
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
-実機で新しい BSP 0.1.0 の LCD/SD/keyboard スモークを確認した時点で、
+実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
+調整した BSP 0.2.1 は、次のUF2で再確認する。
 この BSP 自体を新しい基準実装として記録する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.1.0 の最初の1回は実機確認が
-必要である。特に LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを確認する。
+PC ビルド合格は電気的な動作を証明しないため、BSP 0.2.1ではバックライトの既定輝度、
+LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
 
 また、次の機能は今後のエミュレーター段階である。
 

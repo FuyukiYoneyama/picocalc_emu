@@ -25,7 +25,14 @@ void show_storage_result(const picocalc::filesystem::SmokeResult& result) {
 
 int main() {
     picocalc::sdcard::set_log_callback(sd_log);
-    picocalc::init();
+    if (!picocalc::init()) {
+        printf("[PICOCALC][APP] status=halt reason=bsp_init_failed\n");
+        while (true) {
+            sleep_ms(1000);
+        }
+    }
+    printf("[PICOCALC][APP] version=%s compile=%s %s\n",
+           PICOCALC_APP_VERSION, __DATE__, __TIME__);
 
     picocalc::display::draw_test_pattern();
     const auto storage = picocalc::filesystem::smoke_test();
