@@ -1,7 +1,6 @@
 #include "picocalc/keyboard.h"
 
 #include <stddef.h>
-#include <stdio.h>
 
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
@@ -13,9 +12,6 @@ namespace {
 uint32_t g_read_count = 0;
 uint32_t g_error_count = 0;
 uint32_t g_empty_count = 0;
-
-constexpr uint8_t kBacklightRegister = 0x05;
-constexpr uint8_t kWriteMask = 0x80;
 
 bool read_reg(uint8_t reg, uint8_t* data, size_t len) {
     const int written =
@@ -33,40 +29,14 @@ bool read_reg(uint8_t reg, uint8_t* data, size_t len) {
     return true;
 }
 
-bool set_backlight(uint8_t level) {
-    const uint8_t data[] = {
-        static_cast<uint8_t>(kBacklightRegister | kWriteMask), level};
-    const int written = i2c_write_blocking(
-        i2c1, board::kKeyboardAddress, data, sizeof(data), false);
-    const bool ok = written == static_cast<int>(sizeof(data));
-    printf("[PICOCALC][BACKLIGHT] set level=%u status=%s\n",
-           level, ok ? "ok" : "fail");
-    return ok;
-}
-
 }  // namespace
 
-bool init_backlight_only() {
+void init() {
     i2c_init(i2c1, board::kKeyboardHz);
     gpio_set_function(board::kKeyboardSda, GPIO_FUNC_I2C);
     gpio_set_function(board::kKeyboardScl, GPIO_FUNC_I2C);
     gpio_pull_up(board::kKeyboardSda);
     gpio_pull_up(board::kKeyboardScl);
-
-    bool backlight_ok = set_backlight(220);
-    for (int retry = 1; !backlight_ok && retry <= 5; ++retry) {
-        sleep_ms(50);
-        backlight_ok = set_backlight(220);
-        printf("[PICOCALC][BACKLIGHT] retry=%d status=%s\n",
-               retry, backlight_ok ? "ok" : "fail");
-    }
-    printf("[PICOCALC][BACKLIGHT] status=%s attempts=%d\n",
-           backlight_ok ? "ok" : "fail", backlight_ok ? 1 : 6);
-    return backlight_ok;
-}
-
-void init() {
-    init_backlight_only();
 }
 
 bool read_event(KeyEvent* event) {

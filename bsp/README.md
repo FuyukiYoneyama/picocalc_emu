@@ -7,7 +7,7 @@
 固定する重要条件:
 
 * LCD: PIO0、GP10/11、CS GP13、DC GP14、RESET GP15
-* LCD: uf2loader準拠のST7365P/ILI9488互換初期化、`COLMOD 0x66`、RGB565
+* LCD: ST7365P/ILI9488 互換初期化、`COLMOD 0x65`、RGB565
 * LCD: 一回の CS Low で最大 160 pixels（320 bytes）
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22

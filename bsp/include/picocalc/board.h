@@ -12,9 +12,7 @@ static_assert(kLcdSck == 10 && kLcdMosi == 11 && kLcdMiso == 12,
               "Canonical PicoCalc LCD data pins changed");
 static_assert(kLcdCs == 13 && kLcdDc == 14 && kLcdReset == 15,
               "Canonical PicoCalc LCD control pins changed");
-static_assert(kLcdRamCs == 21,
-              "Canonical PicoCalc LCD RAM-CS pin changed");
- static_assert(kLcdMadctl == 0x48 && kLcdColmod == 0x66,
+static_assert(kLcdMadctl == 0x48 && kLcdColmod == 0x65,
               "Canonical PicoCalc LCD register contract changed");
 static_assert(kSdMiso == 16 && kSdCs == 17 && kSdSck == 18 &&
                   kSdMosi == 19 && kSdDetect == 22,

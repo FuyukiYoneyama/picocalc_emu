@@ -27,10 +27,6 @@ add_executable(picocalc_app
 
 target_link_libraries(picocalc_app PRIVATE picocalc_bsp)
 
-target_compile_definitions(picocalc_app PRIVATE
-    PICOCALC_APP_VERSION=\"0.1.9-backlight-only\"
-)
-
 pico_enable_stdio_usb(picocalc_app 1)
 pico_enable_stdio_uart(picocalc_app 1)
 pico_add_extra_outputs(picocalc_app)

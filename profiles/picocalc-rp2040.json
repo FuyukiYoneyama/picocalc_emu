@@ -16,13 +16,12 @@
       "miso": 12,
       "cs": 13,
       "dc": 14,
-      "reset": 15,
-      "ram_cs": 21
+      "reset": 15
     },
     "madctl": 72,
-    "colmod": 102,
+    "colmod": 101,
     "max_pixels_per_cs": 160,
-    "pio_clock_divider": 4.0
+    "pio_clock_divider": 2.0
   },
   "keyboard": {
     "bus": "i2c1",

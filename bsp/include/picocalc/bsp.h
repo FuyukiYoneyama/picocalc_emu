@@ -9,6 +9,5 @@
 namespace picocalc {
 
 bool init();
-bool init_backlight_only();
 
 }  // namespace picocalc
