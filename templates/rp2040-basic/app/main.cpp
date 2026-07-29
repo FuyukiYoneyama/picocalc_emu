@@ -12,6 +12,16 @@ void sd_log(const char* component, const char* status, uint32_t detail) {
            static_cast<unsigned long>(detail));
 }
 
+const char* key_state_name(picocalc::keyboard::KeyState state) {
+    switch (state) {
+        case picocalc::keyboard::KeyState::Idle: return "idle";
+        case picocalc::keyboard::KeyState::Pressed: return "pressed";
+        case picocalc::keyboard::KeyState::Hold: return "hold";
+        case picocalc::keyboard::KeyState::Released: return "released";
+    }
+    return "unknown";
+}
+
 void show_storage_result(const picocalc::filesystem::SmokeResult& result) {
     const bool ok = result.ok();
     picocalc::display::fill_rect(16, 184, 288, 48, ok ? 0x07e0 : 0xf800);
@@ -38,8 +48,11 @@ int main() {
     printf("[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard\n");
     printf("[PICOCALC][LCD][VERIFY] stage=begin pattern=known_regions width=320 height=320\n");
     picocalc::display::draw_test_pattern();
-    printf("[PICOCALC][LCD][VERIFY] stage=end status=drawn top=0x07e0 bottom=0x001f "
-           "white=0xffff inset=0x0000 red=0xf800 green=0x07e0 blue=0x001f\n");
+    printf("[PICOCALC][LCD][VERIFY] stage=end status=drawn "
+           "regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),"
+           "inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),"
+           "blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,"
+           "inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f\n");
 
     constexpr const char* kSmokePath = "0:/PICOTEST.TXT";
     printf("[PICOCALC][SD][SMOKE] stage=begin path=%s "
@@ -57,17 +70,28 @@ int main() {
            storage.ok() ? "ok" : "fail");
     printf("[PICOCALC][READY] keyboard=waiting\n");
     uint32_t key_events = 0;
+    uint32_t pressed_events = 0;
+    uint32_t released_events = 0;
     while (true) {
         picocalc::keyboard::KeyEvent event{};
         if (picocalc::keyboard::read_event(&event)) {
             ++key_events;
+            if (event.state == picocalc::keyboard::KeyState::Pressed) {
+                ++pressed_events;
+            } else if (event.state == picocalc::keyboard::KeyState::Released) {
+                ++released_events;
+            }
             printf("[PICOCALC][KEY] state=%u code=0x%02x\n",
                    static_cast<unsigned>(event.state),
                    event.key);
-            printf("[PICOCALC][KEY][VERIFY] stage=event count=%lu state=%u code=0x%02x\n",
+            printf("[PICOCALC][KEY][VERIFY] stage=event count=%lu state=%s state_code=%u "
+                   "code=0x%02x pressed_count=%lu released_count=%lu\n",
                    static_cast<unsigned long>(key_events),
+                   key_state_name(event.state),
                    static_cast<unsigned>(event.state),
-                   event.key);
+                   event.key,
+                   static_cast<unsigned long>(pressed_events),
+                   static_cast<unsigned long>(released_events));
             picocalc::display::fill_rect(
                 16,
                 248,
