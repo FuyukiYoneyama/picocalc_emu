@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "policy": "Working hardware projects are evidence. Canonical BSP code is changed only with a new hardware-correlated result.",
+  "projects": [
+    {
+      "name": "picocalc-life",
+      "workspace_path": "picocalc-life",
+      "commit": "0d677d07cb0a037ee9cf331106400052622603ee",
+      "hardware_verified": [
+        "lcd",
+        "keyboard",
+        "sd-fatfs-read-write"
+      ],
+      "evidence": [
+        {
+          "path": "src/platform/picocalc_display.cpp",
+          "sha256": "f7fab0d2bcdb5e76b53327a526c575b03df789922fb74e84a58bd40be80d299e"
+        },
+        {
+          "path": "src/platform/lcd_spi_min.pio",
+          "sha256": "7cb582720919a3743ee4e0db7bc6a64cea727bf1ac233572ef01c670a127f4b2"
+        },
+        {
+          "path": "src/platform/picocalc_keyboard.cpp",
+          "sha256": "906429bab013d0d26d234fd47f4e6f8bba479ebc9652a18fc98fae793e368941"
+        },
+        {
+          "path": "src/platform/sd/picocalc_sdcard.cpp",
+          "sha256": "8282d76dc2a07dfdefed0a971055a8a15508ce3547cd802b4452ac5b6dae6ce2"
+        },
+        {
+          "path": "src/platform/sd/picocalc_sdcard.h",
+          "sha256": "1de55ef3f17e965ea362d2d8dd9b5c253e92e1843534659b2025b3bb9cded3ab"
+        },
+        {
+          "path": "src/platform/sd/fatfs_diskio.cpp",
+          "sha256": "6cde789625917757d049fc4f3399dfc3a3f37ca3732c6f6e9dcfa06f9a340bbd"
+        }
+      ]
+    },
+    {
+      "name": "pico_skyace",
+      "workspace_path": "pico_skyace",
+      "commit": "4c599e6b13b846927dfa97d37ea7fd0bd8c46062",
+      "hardware_verified": [
+        "lcd-long-transfer-root-cause",
+        "lcd-160-pixel-cs-boundary"
+      ],
+      "evidence": [
+        {
+          "path": "src/platform/lcd_rgb565_pio.cpp",
+          "sha256": "d4013f26f7a49350a354d716e825ac516e952857e2f3578cd414ac50c1e88920"
+        },
+        {
+          "path": "docs/LCD_BRINGUP_HISTORY.md",
+          "sha256": "31da0afb90f11915f9db18b44c1b7fefc62fe7ca74bf3690834c3423b1db7cfe"
+        }
+      ]
+    },
+    {
+      "name": "Picocalc_ment",
+      "workspace_path": "Picocalc_ment",
+      "commit": "a4095f5d5c38a7f9fe137b2811814f5ff144dfe7",
+      "hardware_verified": [
+        "pwm-audio-gp26-gp27",
+        "audio-48khz-dma-stream",
+        "fixed-sine-listening-comparison",
+        "pwm-wrap-255-error-diffusion-100-percent"
+      ],
+      "evidence": [
+        {
+          "path": "src/platform/picocalc_audio_pwm.cpp",
+          "sha256": "b6abbbe77389d864a663fd8c3c932502ab876885cb1708233c258681be83a5f5"
+        },
+        {
+          "path": "src/platform/picocalc_audio_pwm.h",
+          "sha256": "b4a548579fc6d2d3339f0d24caa53d50dae01b8ee49cf106f7b3290794162c8b"
+        },
+        {
+          "path": "src/config/board_config.h",
+          "sha256": "d028b5cb96908f51861d0aea30184382de64c305c36dc84245ff59e1ec1a997f"
+        },
+        {
+          "path": "docs/DEVELOPMENT.md",
+          "sha256": "811c0845179e688567c00caba02f6d55685173a3982cea94ca99072bd0dd8e08"
+        },
+        {
+          "path": "docs/HISTORY.md",
+          "sha256": "ba475a1e643278fffc244c8fd971ac6005c9d536de3722e04538a7f424a0a87f"
+        }
+      ]
+    }
+  ]
+}

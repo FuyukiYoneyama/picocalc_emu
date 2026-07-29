@@ -1,0 +1,58 @@
+; Canonical PicoCalc BSP.
+; Copyright (c) 2026 Fuyuki Yoneyama
+; SPDX-License-Identifier: MIT
+;
+; Minimal LCD byte shifter for PicoCalc.
+;
+; This is deliberately smaller than a general SPI driver.  The CPU controls
+; CS and DC with GPIO, sets the LCD command/data state, and then feeds bytes to
+; this state machine.  The state machine shifts one MOSI bit and toggles SCK
+; low/high for each PIO instruction pair.  RX is not implemented here; the
+; optional screenshot build temporarily disables this state machine and uses
+; CPU bit-banging for LCD RAM readback.
+
+.program lcd_spi_min
+.side_set 1 opt
+
+.wrap_target
+    out pins, 1    side 0
+    nop            side 1
+.wrap
+
+% c-sdk {
+static inline void lcd_spi_min_program_init(PIO pio,
+                                            uint sm,
+                                            uint offset,
+                                            uint mosi_pin,
+                                            uint sck_pin,
+                                            float clk_div) {
+    pio_gpio_init(pio, mosi_pin);
+    pio_gpio_init(pio, sck_pin);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, mosi_pin, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, sck_pin, 1, true);
+
+    pio_sm_config c = lcd_spi_min_program_get_default_config(offset);
+    sm_config_set_out_pins(&c, mosi_pin, 1);
+    sm_config_set_sideset_pins(&c, sck_pin);
+    sm_config_set_out_shift(&c, false, true, 8);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, clk_div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+static inline void lcd_spi_min_put(PIO pio, uint sm, uint8_t value) {
+    while (pio_sm_is_tx_fifo_full(pio, sm)) {
+    }
+    *(volatile uint8_t *)&pio->txf[sm] = value;
+}
+
+static inline void lcd_spi_min_wait_idle(PIO pio, uint sm) {
+    uint32_t stall_mask = 1u << (sm + PIO_FDEBUG_TXSTALL_LSB);
+    pio->fdebug = stall_mask;
+    while (!(pio->fdebug & stall_mask)) {
+    }
+}
+%}

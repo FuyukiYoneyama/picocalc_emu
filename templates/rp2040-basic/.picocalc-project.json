@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "template": "rp2040-basic",
+  "target": "picocalc-rp2040",
+  "bsp_version": "0.1.0",
+  "application_sources": [
+    "app/main.cpp"
+  ],
+  "verification": {
+    "build_target": "picocalc_app",
+    "required_smoke_markers": [
+      "[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok",
+      "[PICOCALC][READY] keyboard=waiting"
+    ]
+  }
+}
