@@ -101,17 +101,10 @@ void require_equal(const std::vector<Transaction>& actual,
 int main() {
     FakeTransport transport;
     std::vector<uint32_t> delays;
-    bool clear_called_before_display_on = false;
 
     picocalc::detail::lcd::initialize_controller(
         transport,
-        [&](uint32_t milliseconds) { delays.push_back(milliseconds); },
-        [&]() {
-            clear_called_before_display_on =
-                !transport.transactions.empty() &&
-                !transport.transactions.back().data_mode &&
-                transport.transactions.back().bytes == std::vector<uint8_t>{0x11};
-        });
+        [&](uint32_t milliseconds) { delays.push_back(milliseconds); });
 
     std::vector<Transaction> expected;
     append_command(expected, 0xe0,
@@ -141,10 +134,6 @@ int main() {
     if (delays != std::vector<uint32_t>{120, 120}) {
         fail("LCD delay sequence mismatch");
     }
-    if (!clear_called_before_display_on) {
-        fail("clear callback was not placed before display-on");
-    }
-
     std::vector<size_t> chunks;
     picocalc::detail::lcd::for_each_chunk(
         321, 160, [&](size_t chunk) { chunks.push_back(chunk); });

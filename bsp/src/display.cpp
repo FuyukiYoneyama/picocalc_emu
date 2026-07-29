@@ -13,7 +13,6 @@ namespace picocalc::display {
 namespace {
 
 size_t g_window_pixels_remaining = 0;
-bool g_window_selected = false;
 constexpr size_t kMaxReadbackPixels = 16;
 constexpr uint32_t kReadbackSpiHz = 6000000;
 
@@ -201,16 +200,16 @@ void send_solid_pixels(uint16_t color, size_t count) {
         bytes[i * 3 + 2] = blue;
     }
 
-    set_dc(true);
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
         [&](size_t pixels) {
+            set_dc(true);
+            select();
             spi_write_blocking(spi1, bytes, pixels * 3);
+            wait_idle();
+            deselect();
         });
-    wait_idle();
-    deselect();
-    g_window_selected = false;
 }
 
 }  // namespace
@@ -222,9 +221,6 @@ void init() {
     gpio_init(board::kLcdCs);
     gpio_init(board::kLcdDc);
     gpio_init(board::kLcdReset);
-    gpio_set_dir(board::kLcdSck, GPIO_OUT);
-    gpio_set_dir(board::kLcdMosi, GPIO_OUT);
-    gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_set_dir(board::kLcdCs, GPIO_OUT);
     gpio_set_dir(board::kLcdDc, GPIO_OUT);
     gpio_set_dir(board::kLcdReset, GPIO_OUT);
@@ -236,30 +232,22 @@ void init() {
     gpio_set_drive_strength(board::kLcdCs, GPIO_DRIVE_STRENGTH_12MA);
     gpio_set_drive_strength(board::kLcdDc, GPIO_DRIVE_STRENGTH_12MA);
     gpio_set_drive_strength(board::kLcdReset, GPIO_DRIVE_STRENGTH_12MA);
+    spi_init(spi1, board::kLcdSpiHz);
     gpio_set_function(board::kLcdSck, GPIO_FUNC_SPI);
     gpio_set_function(board::kLcdMosi, GPIO_FUNC_SPI);
     gpio_set_function(board::kLcdMiso, GPIO_FUNC_SPI);
     gpio_set_input_hysteresis_enabled(board::kLcdMiso, true);
-    spi_init(spi1, board::kLcdSpiHz);
-    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     reset_panel();
 
     detail::lcd::initialize_controller(
-        g_transport,
-        [](uint32_t milliseconds) { sleep_ms(milliseconds); },
-        []() { clear(0x0000); });
+        g_transport, [](uint32_t milliseconds) { sleep_ms(milliseconds); });
 }
 
 void set_window(int x, int y, int w, int h) {
     if (!clip_rect(&x, &y, &w, &h)) {
         g_window_pixels_remaining = 0;
         return;
-    }
-
-    if (g_window_selected) {
-        deselect();
-        g_window_selected = false;
     }
 
     const int x1 = x + w - 1;
@@ -276,39 +264,19 @@ void set_window(int x, int y, int w, int h) {
         static_cast<uint8_t>(y1 >> 8),
         static_cast<uint8_t>(y1),
     };
-    select();
-    g_window_selected = true;
-    set_dc(false);
-    const uint8_t column_command = 0x2a;
-    spi_write_blocking(spi1, &column_command, 1);
-    wait_idle();
-    set_dc(true);
-    spi_write_blocking(spi1, columns, sizeof(columns));
-    wait_idle();
-    set_dc(false);
-    const uint8_t row_command = 0x2b;
-    spi_write_blocking(spi1, &row_command, 1);
-    wait_idle();
-    set_dc(true);
-    spi_write_blocking(spi1, rows, sizeof(rows));
-    wait_idle();
-    set_dc(false);
-    const uint8_t memory_write = 0x2c;
-    spi_write_blocking(spi1, &memory_write, 1);
-    wait_idle();
-    set_dc(true);
+    detail::lcd::write_command_data(g_transport, 0x2a, columns, sizeof(columns));
+    detail::lcd::write_command_data(g_transport, 0x2b, rows, sizeof(rows));
+    detail::lcd::write_command(g_transport, 0x2c);
     g_window_pixels_remaining = static_cast<size_t>(w) * static_cast<size_t>(h);
 }
 
 void write_pixels(const uint16_t* pixels, size_t count) {
-    if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0 ||
-        !g_window_selected) {
+    if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0) {
         return;
     }
     count = std::min(count, g_window_pixels_remaining);
     uint8_t bytes[board::kLcdMaxPixelsPerCs * 3];
     size_t offset = 0;
-    set_dc(true);
     detail::lcd::for_each_chunk(
         count,
         static_cast<size_t>(board::kLcdMaxPixelsPerCs),
@@ -323,23 +291,32 @@ void write_pixels(const uint16_t* pixels, size_t count) {
                     static_cast<uint8_t>((g6 << 2) | (g6 >> 4));
                 bytes[i * 3 + 2] = static_cast<uint8_t>((b5 << 3) | (b5 >> 2));
             }
+            set_dc(true);
+            select();
             spi_write_blocking(spi1, bytes, chunk * 3);
+            wait_idle();
+            deselect();
             offset += chunk;
             g_window_pixels_remaining -= chunk;
         });
-    wait_idle();
-    deselect();
-    g_window_selected = false;
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) {
         return;
     }
-    set_window(x, y, w, h);
-    const size_t count = static_cast<size_t>(w) * static_cast<size_t>(h);
-    send_solid_pixels(rgb565, count);
-    g_window_pixels_remaining = 0;
+    constexpr int kTileWidth = 160;
+    constexpr int kTileHeight = 160;
+    for (int tile_y = y; tile_y < y + h; tile_y += kTileHeight) {
+        const int tile_h = std::min(kTileHeight, y + h - tile_y);
+        for (int tile_x = x; tile_x < x + w; tile_x += kTileWidth) {
+            const int tile_w = std::min(kTileWidth, x + w - tile_x);
+            set_window(tile_x, tile_y, tile_w, tile_h);
+            send_solid_pixels(
+                rgb565, static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
+            g_window_pixels_remaining = 0;
+        }
+    }
 }
 
 void clear(uint16_t rgb565) {
