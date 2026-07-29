@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "profile": "picocalc-rp2040",
+  "system_clock_khz": 250000,
+  "display": {
+    "controller": "ST7365P",
+    "command_compatibility": "ILI9488-subset",
+    "visible_width": 320,
+    "visible_height": 320,
+    "gram_width": 320,
+    "gram_height": 480,
+    "pins": {
+      "sck": 10,
+      "mosi": 11,
+      "miso": 12,
+      "cs": 13,
+      "dc": 14,
+      "reset": 15
+    },
+    "madctl": 72,
+    "colmod": 101,
+    "max_pixels_per_cs": 160,
+    "pio_clock_divider": 2.0
+  },
+  "keyboard": {
+    "bus": "i2c1",
+    "sda": 6,
+    "scl": 7,
+    "frequency_hz": 400000,
+    "address": 31,
+    "status_register": 4,
+    "fifo_register": 9,
+    "requires_repeated_start": true
+  },
+  "sd": {
+    "bus": "spi0",
+    "miso": 16,
+    "cs": 17,
+    "sck": 18,
+    "mosi": 19,
+    "detect": 22,
+    "init_hz": 400000,
+    "run_hz": 12000000
+  },
+  "psram": {
+    "cs": 20,
+    "sck": 21,
+    "mosi": 2,
+    "miso": 3
+  },
+  "audio": {
+    "left": 26,
+    "right": 27,
+    "reference_sample_rate_hz": 48000,
+    "reference_pwm_wrap": 255
+  }
+}

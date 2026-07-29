@@ -4,6 +4,7 @@
   "projects": [
     {
       "name": "picocalc-life",
+      "git_url": "https://github.com/FuyukiYoneyama/picocalc-life.git",
       "workspace_path": "picocalc-life",
       "commit": "0d677d07cb0a037ee9cf331106400052622603ee",
       "hardware_verified": [
@@ -40,6 +41,7 @@
     },
     {
       "name": "pico_skyace",
+      "git_url": "https://github.com/FuyukiYoneyama/pico_skyace.git",
       "workspace_path": "pico_skyace",
       "commit": "4c599e6b13b846927dfa97d37ea7fd0bd8c46062",
       "hardware_verified": [
@@ -59,6 +61,7 @@
     },
     {
       "name": "Picocalc_ment",
+      "git_url": "https://github.com/FuyukiYoneyama/Picocalc_ment.git",
       "workspace_path": "Picocalc_ment",
       "commit": "a4095f5d5c38a7f9fe137b2811814f5ff144dfe7",
       "hardware_verified": [

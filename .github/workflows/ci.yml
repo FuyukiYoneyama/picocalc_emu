@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Verify portable fingerprints
+        run: python tools/verify_environment.py
+      - name: Run Python tests
+        run: python -m unittest discover -s tests -v
+
+  rp2040-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi
+      - name: Fetch Pico SDK 2.0.0
+        run: |
+          git clone --branch 2.0.0 --depth 1 \
+            https://github.com/raspberrypi/pico-sdk.git /tmp/pico-sdk
+          git -C /tmp/pico-sdk submodule update --init --depth 1
+      - name: Configure RP2040 template
+        env:
+          PICO_SDK_PATH: /tmp/pico-sdk
+        run: |
+          cmake -S templates/rp2040-basic -B build-ci \
+            -DPICO_BOARD=pico \
+            -DPICO_NO_PICOTOOL=1 \
+            -DCMAKE_BUILD_TYPE=Release
+      - name: Compile RP2040 template
+        run: cmake --build build-ci -j2

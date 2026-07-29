@@ -9,7 +9,8 @@
 - `bsp/`: 実働プロジェクトを基準にした LCD・キーボード・SD/FatFS BSP
 - `templates/rp2040-basic/`: BSP を利用する最小アプリと CMake
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
-- `tools/verify_environment.py`: 基準コミット、証拠ファイル、BSP 契約の検査
+- `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
+- `profiles/picocalc-rp2040.json`: 機械可読なboard contract
 - `reference-projects/catalog.json`: 実機成功根拠と SHA-256
 - `tests/test_tools.py`: 検証器と生成器の回帰テスト
 
@@ -29,15 +30,16 @@
 ```sh
 python3 tools/picocalc.py verify
 python3 tools/picocalc.py new MyApp --output ../MyApp
-python3 tools/picocalc.py build --project ../MyApp
+python3 tools/picocalc.py build --project ../MyApp --sdk /path/to/pico-sdk
 ```
 
 生成後に AI が通常変更する場所は `MyApp/app/` だけである。`MyApp/bsp/` は
 生成時点の既知動作版を固定したコピーであり、アプリ都合で初期化コードを
 作り直さない。
 
-ローカル環境では Pico SDK 2.0.0 と picotool 2.0.0 の組み合わせを自動検出する。
-別の SDK を使う場合は `--sdk /path/to/pico-sdk` を指定する。
+Pico SDK は `--sdk` または `PICO_SDK_PATH` で明示する。picotool は
+`--picotool-dir`、`PICOTOOL_DIR`、または `PATH` 上の実行ファイルから探索する。
+作者固有の絶対パスには依存しない。
 
 ## 起動時スモークテスト
 
@@ -66,8 +68,10 @@ SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 - Canonical BSP とテンプレートは `arm-none-eabi-gcc 9.2.1`、
   Pico SDK 2.0.0 でコンパイル済み
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
-- 基準プロジェクト3件、証拠ファイル13件、BSP契約6件の計22検査が合格
-- 生成器と検証器の Python 回帰テスト2件が合格
+- clone単体のportable検証7件が合格
+- 基準プロジェクト3件と証拠ファイル13件を含む完全検証23件が合格
+- 生成器・検証器・異常系のPython回帰テスト11件が合格
+- GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で新しい BSP 0.1.0 の LCD/SD/keyboard スモークを確認した時点で、
 この BSP 自体を新しい基準実装として記録する。
