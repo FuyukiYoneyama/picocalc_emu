@@ -15,7 +15,8 @@ cmake --build build -j
 SD の mount/write/sync/read/compare/remove、キーボード待受を順に実行します。
 
 SD 成功時は LCD 中央下部が緑、失敗時は赤になります。UART/USB CDC には
-`[PICOCALC]` で始まる機械可読ログを出力します。
+`[PICOCALC]` で始まる機械可読ログを出力します。検証用ログには LCD の期待色・領域、
+SD の実行シーケンスと失敗段階、キーボードイベントの通番が含まれます。
 
 ## 開発規約
 
