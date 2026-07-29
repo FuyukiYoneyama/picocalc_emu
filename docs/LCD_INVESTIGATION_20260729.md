@@ -32,3 +32,16 @@ LCDへのピクセル転送処理は最後まで実行された。しかし、`R
 
 この修正後のUF2を実機へ書き込み、LCD画面と`[PICOCALC][LCD][VERIFY]`を再確認する。
 `app_status=pass`になるまでBSP完成とは判定しない。
+
+## 検証用UF2ビルド記録
+
+今回の検証用UF2は、ビルド履歴上の**通算2回目の成功ビルド**であり、
+BSP `0.1.3`／App `0.1.2-lcd-reset-timing`という版の組み合わせでは**1回目**である。
+
+| 項目 | 値 |
+|---|---|
+| ビルド日時（UTC） | `2026-07-29T08:37:12Z` |
+| BSP | `0.1.3` |
+| App | `0.1.2-lcd-reset-timing` |
+| UF2 SHA-256 | `783ac18d9360c6b6907c67f7185370a237c055a8986781cb3d097ef990abb8d4` |
+| 履歴ファイル | `templates/rp2040-basic/.picocalc-build-history.json` |
