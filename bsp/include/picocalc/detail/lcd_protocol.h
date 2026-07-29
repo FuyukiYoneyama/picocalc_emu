@@ -79,8 +79,8 @@ void write_command_data(Transport& transport, uint8_t command, uint8_t value) {
 
 // This is the executable form of the hardware-proven ST7365P/ILI9488-compatible
 // controller sequence. Both the RP2040 BSP and host transaction test call it.
-template <typename Transport, typename Delay, typename Clear>
-void initialize_controller(Transport& transport, Delay delay_ms, Clear clear) {
+template <typename Transport, typename Delay>
+void initialize_controller(Transport& transport, Delay delay_ms) {
     for (const InitStep& step : kControllerInitSequence) {
         if (step.data_length == 0) {
             write_command(transport, step.command);
@@ -90,7 +90,6 @@ void initialize_controller(Transport& transport, Delay delay_ms, Clear clear) {
         }
     }
     delay_ms(120);
-    clear();
     write_command(transport, 0x29);
     delay_ms(120);
     write_command_data(transport, 0x36, board::kLcdMadctl);
