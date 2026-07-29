@@ -59,7 +59,7 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 起動時の最初の機械可読ログは次の形式でなければならない。
 
 ```text
-[PICOCALC][BOOT] bsp=... git=... build=... compile=...
+[PICOCALC][BOOT] bsp=... app=... git=... build=... compile=...
 ```
 
 この1行を実機ログの版判定に使う。UF2ファイル名を版識別に使ってはならない。
@@ -69,25 +69,34 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 生成した `picocalc_app.uf2` は、起動時に次を行う。
 
 1. 250 MHz、100 ms安定待ち、PSRAM CS inactive、キーボード、LCDを初期化する（バックライトの明るさは変更しない）
-2. LCD に黒・白・RGB の既知パターンを描画する
-3. SD を mount し、`PICOTEST.TXT` を write/sync/close/read/compare する
-4. テストファイルを削除する
-5. 成功時は画面のステータス領域を緑、失敗時は赤にする
-6. キーボード FIFO をポーリングし、キーイベントを UART/USB CDC に記録する
+2. LCD を黒・白・赤・緑・青で塗りつぶし、2x2 sampleを`RAMRD (0x2e)`で読み戻して一致比較する
+3. LCD に黒・白・RGB の既知パターンを描画し、2x2の書き込み／GRAM readback一致を確認する
+4. SD を mount し、`PICOTEST.TXT` を write/sync/close/read/compare する
+5. テストファイルを削除する
+6. 成功時は画面のステータス領域を緑、失敗時は赤にする
+7. キーボード FIFO をポーリングし、キーイベントを UART/USB CDC に記録する
 
 主要ログは次の形式なので、人だけでなく AI も失敗段階を判定できる。
 
 ```text
 [PICOCALC][LCD][VERIFY] stage=end status=drawn regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f
+[PICOCALC][LCD][READ] ramrd dummy=0x.. pixels=4 format=rgb888
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=pattern_readback status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] app_status=pass
 [PICOCALC][SD][SMOKE] stage=begin path=0:/PICOTEST.TXT sequence=mount,write,sync,close_write,read,compare,close_read,remove
 [PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
 [PICOCALC][SD] component=init status=ok detail=1
 [PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0 status_region=green
 [PICOCALC][KEY][VERIFY] stage=waiting requirement=multiple_press_release_events
 [PICOCALC][KEY][VERIFY] stage=event count=1 state=pressed state_code=1 code=0x.. pressed_count=1 released_count=0
+[PICOCALC][VERIFY] stage=ready lcd=ok sd=ok keyboard=waiting
 [PICOCALC][READY] keyboard=waiting
 ```
 
+LCDの`[LCD][VERIFY] app_status=pass`は、塗りつぶしとパターンの書き込み後に
+GRAMを`RAMRD`で読み出し、RGB888からRGB565へ戻した値が一致したことを表す。
+`[LCD][READ]`にはMISOアイドル、RDDID/RDDST、RAMRDダミー、各pixelの生バイト列を出す。
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
 

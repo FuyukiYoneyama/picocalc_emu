@@ -18,6 +18,7 @@ PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード�
 - JSON board profileからC++定数を一方向生成し、差分をCI検査する
 - SD、keyboard、audio pinのsource fingerprintを検査する
 - SDのmount/write/sync/read/compare/removeスモークテストを実機で実行する
+- LCDのsolid fillとRAMRDによるGRAM readback一致検証を実機で実行する
 - 基準プロジェクトのcommitと証拠ファイルSHA-256を完全照合する
 - Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
@@ -82,7 +83,7 @@ SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録し�
 ビルドログには次の識別情報が出ます。
 
 ```text
-[PICOCALC][BOOT] bsp=... git=... build=... compile=...
+[PICOCALC][BOOT] bsp=... app=... git=... build=... compile=...
 [PICOCALC][APP] version=... compile=...
 ```
 

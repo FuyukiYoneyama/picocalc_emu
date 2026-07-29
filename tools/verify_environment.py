@@ -425,6 +425,9 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
             else [
                 "picocalc::init()",
                 "draw_test_pattern()",
+                "display::clear(color)",
+                "display::verify_pixels(",
+                "[PICOCALC][LCD][VERIFY] app_status=",
                 "filesystem::smoke_test()",
                 "keyboard::read_event(",
                 "[PICOCALC][SMOKE]",
@@ -468,6 +471,11 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "detail::lcd::initialize_controller(",
             "detail::lcd::for_each_chunk(",
             "board::kLcdMaxPixelsPerCs",
+            "spi_read_blocking(",
+            "spi_set_baudrate(spi1, kReadbackSpiHz)",
+            "const uint8_t ram_read = 0x2e",
+            "rgb888_to_rgb565(",
+            "PixelVerifyResult verify_pixels(",
         ],
     )
     verify_lcd_transactions(checks, root)

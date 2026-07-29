@@ -11,7 +11,7 @@ UF2ファイルは保存せず、試験対象のソースコミットから必�
 
 版の識別には、ブランチ、ソースコミット、BSP版、アプリ版またはビルドサブコメント、
 UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
-`[PICOCALC][BOOT] bsp=... git=... build=... compile=...`を最初に確認し、
+`[PICOCALC][BOOT] bsp=... app=... git=... build=... compile=...`を最初に確認し、
 その後のLCD・SD・keyboardの結果と結び付ける。検証版の識別情報を変更する場合は、
 先にソースをコミットしてからUF2を作る。
 
@@ -29,7 +29,8 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 
 ## 必須判定
 
-- LCD: 320x320表示、向き、RGB色、白黒領域、表示崩れの有無
+- LCD: 320x320表示、向き、RGB色、白黒領域、表示崩れの有無、solid fillとGRAM readback一致
+- LCDログ: `[PICOCALC][LCD][VERIFY] app_status=pass`、`RAMRD`の生バイト列、mismatch `0`
 - SD: `mount/write/sync/read/compare/remove`の全段階
 - keyboard: 複数キーについてpress/releaseイベントとUARTログ
 
