@@ -74,20 +74,14 @@ void write_commandn(uint8_t command, const uint8_t* values, size_t len) {
 }
 
 void reset_panel() {
-    printf("[PICOCALC][LCD] reset phase=assert_high delay_ms=1\n");
+    printf("[PICOCALC][LCD] reset phase=assert_high delay_ms=10\n");
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(1);
+    sleep_ms(10);
     printf("[PICOCALC][LCD] reset phase=low delay_ms=10\n");
     gpio_put(board::kLcdReset, 0);
     sleep_ms(10);
-    printf("[PICOCALC][LCD] reset phase=release delay_ms=10\n");
+    printf("[PICOCALC][LCD] reset phase=release delay_ms=200\n");
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(10);
-    // The working Clock, ClockCalc, ment, and BVWCVolleyball projects all
-    // leave the panel reset released for 200 ms before sending controller
-    // commands.  The pre-LCD 200 ms system settle is not a substitute for
-    // this panel-specific post-reset delay.
-    printf("[PICOCALC][LCD] reset phase=post_release_settle delay_ms=200\n");
     sleep_ms(200);
 }
 

@@ -81,6 +81,15 @@ BSP `0.1.4`ではRAMRDのCS Low区間中に`printf()`を実行していたため
 | 11 | BSP 0.1.5、読み出しログ位置修正・バックライト強制点灯後 | `ba96d318cd3b501a26fa15645b1fbc04a0262e10e27e129f5eb100ae5ef541e3` |
 | 12 | BSP 0.1.6、LCD初期化クリアを赤`0xf800`へ変更後 | `65ea0e8684b730822cf6ad649af5fd93d6d88115801ebf47fb4b93a77d8331bc` |
 | 13 | BSP 0.1.7、表示ON後の赤クリアを3秒保持 | `270412c88da27c5a8a854c5689c444c02dde7576f5c8446fb6ebaf8c1761e3ff` |
+| 14 | BSP 0.1.8、実働多数派のリセット波形へ修正 | `598db1845e60a3b687fc998d45b83392b914564cda4807109ff9a75ccaf5da06` |
+
+## 追加調査（BSP 0.1.8）
+
+`tt260729190949.log`では赤クリア転送は実行され、バックライト設定も成功していたが、
+画面は黒いままだった。全実働プロジェクトを再確認した結果、Canonical BSPのリセット
+波形だけが、実働多数派の`High 10ms → Low 10ms → High保持200ms`ではなく、
+`High 1ms → Low 10ms → High 10ms → 待機200ms`になっていた。BSP `0.1.8`では、
+実働`Picocalc_Clock`／`ClockCalc`／`ment`／`BVWCVolleyball`に合わせた。
 
 ### 実機検証ログの通番
 

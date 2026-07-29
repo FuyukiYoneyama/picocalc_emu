@@ -28,7 +28,7 @@ add_executable(picocalc_app
 target_link_libraries(picocalc_app PRIVATE picocalc_bsp)
 
 target_compile_definitions(picocalc_app PRIVATE
-    PICOCALC_APP_VERSION=\"0.1.6-red-clear-hold\"
+    PICOCALC_APP_VERSION=\"0.1.7-reset-waveform\"
 )
 
 pico_enable_stdio_usb(picocalc_app 1)
