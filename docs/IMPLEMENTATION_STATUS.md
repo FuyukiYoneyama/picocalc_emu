@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.3.1）
+## 現在利用できるもの（BSP/template MVP 0.3.2、B転送契約修正版）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -22,7 +22,7 @@
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
 | LCD A | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
-| LCD B | `life` / `pico_rescue` | PIO0 blocking、clkdiv `4.0`、COLMOD `0x65`、RGB565、RAMRD時のみSIO |
+| LCD B | `life` / `pico_skyace` | PIO0 blocking、clkdiv `4.0`、COLMOD `0x65`、RGB565、リセット解除後200ms、ウィンドウ160×160以下、RAMWRデータは160ピクセルごとにCS解放、RAMRD時のみSIO |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
@@ -113,6 +113,12 @@ GRAMを`RAMRD`で読み出し、RGB888からRGB565へ戻した値が一致した
 `[LCD][READ]`にはMISOアイドル、RDDID/RDDST、RAMRDダミー、各pixelの生バイト列を出す。
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
+
+B（`pio-rgb565`）のRAMRD検証では、書込み直後の読出しが書込み結果を巻き込まないよう、
+PIOのidle確認とCS非選択の後に200msのリカバリ待ちを置く。ログには
+`[PICOCALC][LCD][RECOVERY] phase=write_to_read wait_ms=200`を出す。これは
+`wait_idle()`だけではLCD側のGRAM受理完了を保証できないためであり、書込み結果と
+RAMRD経路を分離して判定するための検証条件である。
 
 UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`stage=end`は
 既知の色パターン描画呼び出し完了、SDの`result_stage`は失敗箇所、キーの`count`は

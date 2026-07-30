@@ -14,14 +14,31 @@ namespace {
 
 // This is the blocking PIO/RGB565 path used by the proven life/pico_rescue
 // projects. It remains independent from the hardware-SPI/RGB888 transport.
+//
+// Electrical contract. Each line is taken from a project that displayed on real
+// hardware; do not mix in a different value without a new hardware record.
+//   * sysclk 250 MHz and clkdiv 4.0 -> 31.25 MHz SCK (life).
+//   * reset: High 10 ms -> Low 10 ms -> High 200 ms, then send commands
+//     (life, Picocalc_Clock, Picocalc_ment, Picocalc_BVWCVolleyball).
+//   * CASET/RASET/RAMWR once per window, window limited to 160x160, and RAMWR
+//     data sent in 160 pixel (320 byte) units with CS released between units
+//     (pico_skyace, general/lcd main_pio_blocking_rgb565). general/01_DISPLAY_LCD.md
+//     section 8.1 records that holding CS across a long burst corrupts the panel
+//     while the same window size with short CS units works.
 constexpr float kPioClockDivider = 4.0f;
-constexpr size_t kLineBufferBytes = static_cast<size_t>(width) * 2;
+constexpr uint32_t kResetHighBeforeMs = 10;
+constexpr uint32_t kResetLowMs = 10;
+constexpr uint32_t kResetSettleMs = 200;
+constexpr uint32_t kWriteToReadRecoveryMs = 200;
+constexpr size_t kPixelsPerCs = static_cast<size_t>(board::kLcdMaxPixelsPerCs);
+constexpr int kWindowTileSide = board::kLcdMaxPixelsPerCs;
+constexpr size_t kChunkBufferBytes = kPixelsPerCs * 2;
 constexpr size_t kMaxReadbackPixels = 16;
 PIO g_pio = pio0;
 uint g_sm = 0;
 uint g_program_offset = 0;
 size_t g_window_pixels_remaining = 0;
-uint8_t g_line_buffer[kLineBufferBytes] = {};
+uint8_t g_chunk_buffer[kChunkBufferBytes] = {};
 
 void select() { gpio_put(board::kLcdCs, 0); }
 void deselect() { gpio_put(board::kLcdCs, 1); }
@@ -63,12 +80,15 @@ void write_command_data(uint8_t command, const uint8_t* data, size_t length) {
 }
 
 void reset_panel() {
+    // life/Clock/ment/BVWCVolleyball all hold reset high 10 ms, low 10 ms, then
+    // wait 200 ms before the first command. A 10 ms settle is not enough for this
+    // panel to accept the initialization sequence.
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(1);
+    sleep_ms(kResetHighBeforeMs);
     gpio_put(board::kLcdReset, 0);
-    sleep_ms(10);
+    sleep_ms(kResetLowMs);
     gpio_put(board::kLcdReset, 1);
-    sleep_ms(10);
+    sleep_ms(kResetSettleMs);
 }
 
 void initialize_controller() {
@@ -129,30 +149,39 @@ void set_window_unclipped(int x, int y, int w, int h) {
     g_window_pixels_remaining = static_cast<size_t>(w) * static_cast<size_t>(h);
 }
 
-void send_solid_pixels(uint16_t color, size_t count) {
-    const size_t pixels_per_row =
-        std::min(count, static_cast<size_t>(width));
-    const uint8_t hi = static_cast<uint8_t>(color >> 8);
-    const uint8_t lo = static_cast<uint8_t>(color & 0xff);
-    for (size_t i = 0; i < pixels_per_row; ++i) {
-        g_line_buffer[i * 2] = hi;
-        g_line_buffer[i * 2 + 1] = lo;
-    }
-    const size_t rows = pixels_per_row == 0 ? 0 : count / pixels_per_row;
+// One RAMWR data unit: assert CS, stream at most 160 pixels, wait for the PIO to
+// drain, release CS. The GRAM address pointer keeps counting across units, so the
+// window commands are not resent here.
+void send_pixel_chunk(const uint8_t* bytes, size_t pixels) {
     select();
     set_dc(true);
-    for (size_t row = 0; row < rows; ++row) {
-        write_bytes(g_line_buffer, pixels_per_row * 2);
-    }
+    write_bytes(bytes, pixels * 2);
     wait_idle();
     deselect();
-    g_window_pixels_remaining = 0;
+    g_window_pixels_remaining =
+        g_window_pixels_remaining > pixels ? g_window_pixels_remaining - pixels : 0;
+}
+
+void send_solid_pixels(uint16_t color, size_t count) {
+    const uint8_t hi = static_cast<uint8_t>(color >> 8);
+    const uint8_t lo = static_cast<uint8_t>(color & 0xff);
+    for (size_t i = 0; i < kPixelsPerCs; ++i) {
+        g_chunk_buffer[i * 2] = hi;
+        g_chunk_buffer[i * 2 + 1] = lo;
+    }
+    while (count > 0) {
+        const size_t chunk = std::min(count, kPixelsPerCs);
+        send_pixel_chunk(g_chunk_buffer, chunk);
+        count -= chunk;
+    }
 }
 
 void read_io_delay() { busy_wait_us_32(1); }
 
 void set_bitbang_mode(bool enabled) {
     if (enabled) {
+        // Callers drain the shifter through wait_for_write_to_read_recovery()
+        // before switching pin ownership.
         pio_sm_set_enabled(g_pio, g_sm, false);
         gpio_set_function(board::kLcdSck, GPIO_FUNC_SIO);
         gpio_set_function(board::kLcdMosi, GPIO_FUNC_SIO);
@@ -170,6 +199,13 @@ void set_bitbang_mode(bool enabled) {
     gpio_set_function(board::kLcdMiso, GPIO_FUNC_SIO);
     gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_disable_pulls(board::kLcdMiso);
+    // Disabling the state machine keeps its FIFO, OSR and shift counter. Restart
+    // the byte engine from a known state so a readback cannot leave later writes
+    // shifted by a partial byte.
+    pio_sm_clear_fifos(g_pio, g_sm);
+    pio_sm_restart(g_pio, g_sm);
+    pio_sm_clkdiv_restart(g_pio, g_sm);
+    pio_sm_exec(g_pio, g_sm, pio_encode_jmp(g_program_offset));
     pio_sm_set_enabled(g_pio, g_sm, true);
 }
 
@@ -212,10 +248,22 @@ void bitbang_set_read_window(int x, int y, int w, int h) {
     set_dc(false); bitbang_write_byte(0x2b); set_dc(true); write_bytes_sio(rows, sizeof(rows));
 }
 
+void wait_for_write_to_read_recovery() {
+    // PIO idle only proves that the RP2040 has shifted the last byte. Keep CS
+    // inactive and give the panel time to finish accepting the GRAM write
+    // before changing SCK/MOSI/MISO ownership for RAMRD.
+    wait_idle();
+    deselect();
+    printf("[PICOCALC][LCD][RECOVERY] phase=write_to_read wait_ms=%lu\n",
+           static_cast<unsigned long>(kWriteToReadRecoveryMs));
+    sleep_ms(kWriteToReadRecoveryMs);
+}
+
 bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     const size_t pixel_count = static_cast<size_t>(w) * static_cast<size_t>(h);
     if (output == nullptr || w <= 0 || h <= 0 || pixel_count > kMaxReadbackPixels ||
         x < 0 || y < 0 || x + w > width || y + h > height) return false;
+    wait_for_write_to_read_recovery();
     set_bitbang_mode(true);
     select();
     bitbang_set_read_window(x, y, w, h);
@@ -254,8 +302,14 @@ void init() {
                              kPioClockDivider);
     initialize_controller();
     printf("[PICOCALC][LCD][PIO] transport=pio0_blocking sm=0 clkdiv=%.2f "
-           "hz=31250000 colmod=0x65 wire=rgb565 reference=life-pico_rescue\n",
-           static_cast<double>(kPioClockDivider));
+           "hz=31250000 colmod=0x65 wire=rgb565 reference=life-pico_rescue "
+           "reset_ms=%lu/%lu/%lu window_max=%dx%d cs=released_per_%lu_pixels\n",
+           static_cast<double>(kPioClockDivider),
+           static_cast<unsigned long>(kResetHighBeforeMs),
+           static_cast<unsigned long>(kResetLowMs),
+           static_cast<unsigned long>(kResetSettleMs),
+           kWindowTileSide, kWindowTileSide,
+           static_cast<unsigned long>(kPixelsPerCs));
 }
 
 void set_window(int x, int y, int w, int h) {
@@ -266,22 +320,33 @@ void set_window(int x, int y, int w, int h) {
 void write_pixels(const uint16_t* pixels, size_t count) {
     if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0) return;
     count = std::min(count, g_window_pixels_remaining);
-    select();
-    set_dc(true);
-    for (size_t i = 0; i < count; ++i) {
-        g_line_buffer[i * 2] = static_cast<uint8_t>(pixels[i] >> 8);
-        g_line_buffer[i * 2 + 1] = static_cast<uint8_t>(pixels[i] & 0xff);
+    size_t offset = 0;
+    while (offset < count) {
+        const size_t chunk = std::min(count - offset, kPixelsPerCs);
+        for (size_t i = 0; i < chunk; ++i) {
+            const uint16_t pixel = pixels[offset + i];
+            g_chunk_buffer[i * 2] = static_cast<uint8_t>(pixel >> 8);
+            g_chunk_buffer[i * 2 + 1] = static_cast<uint8_t>(pixel & 0xff);
+        }
+        send_pixel_chunk(g_chunk_buffer, chunk);
+        offset += chunk;
     }
-    write_bytes(g_line_buffer, count * 2);
-    wait_idle();
-    deselect();
-    g_window_pixels_remaining -= count;
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) return;
-    set_window_unclipped(x, y, w, h);
-    send_solid_pixels(rgb565, static_cast<size_t>(w) * static_cast<size_t>(h));
+    // One window per 160x160 tile, exactly like the quadrant pattern of
+    // main_pio_blocking_rgb565.cpp / pico_skyace.
+    for (int tile_y = y; tile_y < y + h; tile_y += kWindowTileSide) {
+        const int tile_h = std::min(kWindowTileSide, y + h - tile_y);
+        for (int tile_x = x; tile_x < x + w; tile_x += kWindowTileSide) {
+            const int tile_w = std::min(kWindowTileSide, x + w - tile_x);
+            set_window_unclipped(tile_x, tile_y, tile_w, tile_h);
+            send_solid_pixels(
+                rgb565, static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
+        }
+    }
+    g_window_pixels_remaining = 0;
 }
 
 void clear(uint16_t rgb565) { fill_rect(0, 0, width, height, rgb565); }
