@@ -418,3 +418,14 @@ CS下げっぱなしで送る。これは`general/01_DISPLAY_LCD.md`§0の禁止
 判定は画面写真（どの象限に色が出たか）で行う。ログの`readback_match`は参考値である。
 
 `PICOCALC_LCD_PIO_BRINGUP`は既定OFFであり、通常ビルドの動作は0.3.2と同じである。
+
+### 0.3.3 bring-up計測用UF2
+
+| 項目 | 値 |
+|---|---|
+| UF2 | `templates/rp2040-basic/build/picocalc_app.uf2` |
+| variant | `pio-rgb565`（`PICOCALC_LCD_PIO_BRINGUP=ON`） |
+| BSP / App | `0.3.3` / `0.3.3-pio-bringup-stages` |
+| source commit | `76e837960c57` |
+| UF2 SHA-256 | `52cb46b28db79cf1580f8f1d068befdec3e58e3201a9febcc68872fa609988ea` |
+| 実機判定 | 未確認（計測用。表示成功を判定するUF2ではない） |
