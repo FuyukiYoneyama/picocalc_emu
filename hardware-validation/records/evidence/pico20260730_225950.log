@@ -1,0 +1,367 @@
+[PICOCALC][BOOT] bsp=0.4.0 app=0.4.0-hwspi-rgb888-vendored-driver variant=hwspi-rgb888 git=e2d53ad55afa build=2026-07-30T13:52:10Z compile=Jul 30 2026 22:52:12
+[PICOCALC][BOOT] clock status=ok target_khz=125000 actual_khz=125000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=hwspi-rgb888
+LCD loader-style init sequence sent 0x3A=0x66 RGB888
+[PICOCALC][LCD][SPI] transport=hardware_spi1 driver=vendor/lcd_hwspi_rgb888.cpp reference=general-lcd-hwspi-rgb888-probe+picocalc-helloworld hz=25000000 read_hz=6000000 colmod=0x66 wire=rgb888 window_cs=held_from_caset_through_ramwr
+[PICOCALC][LCD] init status=ok
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][APP] version=0.4.0-hwspi-rgb888-vendored-driver compile=Jul 30 2026 22:52:16
+[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard
+[PICOCALC][LCD][VERIFY] stage=solid_fill_begin samples=8,8:2x2 colors=0x0000,0xffff,0xf800,0x07e0,0x001f
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0x20 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x000000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x0000 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0x00 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=1 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=2 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=3 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xffff status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0xff format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xfc0000 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xfc0000 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xfc0000 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xfc0000 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xf800 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0x00 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00fc00 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x00fc00 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x00fc00 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x00fc00 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x07e0 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0xc0 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000fc value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000fc value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000fc value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000fc value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x001f status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=pattern_begin pattern=known_regions width=320 height=320
+[PICOCALC][LCD][VERIFY] stage=end status=drawn regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f
+[PICOCALC][LCD][SPI] readback_hz=6000000
+[PICOCALC][LCD][READ] transport=hardware_spi1 reference=picocalc_helloworld read_hz=6000000 miso=spi rddid=0xfffffe rddst=0x31920000 ramrd_dummy=0x3f format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xfc0000 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0x00fc00 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000fc value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=pattern_readback status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] app_status=pass
+[PICOCALC][SD][SMOKE] stage=begin path=0:/PICOTEST.TXT sequence=mount,write,sync,close_write,read,compare,close_read,remove
+[PICOCALC][SD] component=detect status=present detail=0
+[PICOCALC][SD] component=init status=begin detail=0
+[PICOCALC][SD] component=init status=ok detail=1
+[PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
+[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0 status_region=green
+[PICOCALC][KEY][VERIFY] stage=waiting requirement=multiple_press_release_events
+[PICOCALC][VERIFY] stage=ready lcd=ok sd=ok keyboard=waiting
+[PICOCALC][READY] keyboard=waiting
+[PICOCALC][KEY] state=1 code=0x31
+[PICOCALC][KEY][VERIFY] stage=event count=1 state=pressed state_code=1 code=0x31 pressed_count=1 released_count=0
+[PICOCALC][KEY] state=3 code=0x31
+[PICOCALC][KEY][VERIFY] stage=event count=2 state=released state_code=3 code=0x31 pressed_count=1 released_count=1
+[PICOCALC][KEY] state=1 code=0x32
+[PICOCALC][KEY][VERIFY] stage=event count=3 state=pressed state_code=1 code=0x32 pressed_count=2 released_count=1
+[PICOCALC][KEY] state=3 code=0x32
+[PICOCALC][KEY][VERIFY] stage=event count=4 state=released state_code=3 code=0x32 pressed_count=2 released_count=2
+[PICOCALC][KEY] state=1 code=0x33
+[PICOCALC][KEY][VERIFY] stage=event count=5 state=pressed state_code=1 code=0x33 pressed_count=3 released_count=2
+[PICOCALC][KEY] state=3 code=0x33
+[PICOCALC][KEY][VERIFY] stage=event count=6 state=released state_code=3 code=0x33 pressed_count=3 released_count=3
+[PICOCALC][KEY] state=1 code=0x34
+[PICOCALC][KEY][VERIFY] stage=event count=7 state=pressed state_code=1 code=0x34 pressed_count=4 released_count=3
+[PICOCALC][KEY] state=3 code=0x34
+[PICOCALC][KEY][VERIFY] stage=event count=8 state=released state_code=3 code=0x34 pressed_count=4 released_count=4
+[PICOCALC][KEY] state=1 code=0x35
+[PICOCALC][KEY][VERIFY] stage=event count=9 state=pressed state_code=1 code=0x35 pressed_count=5 released_count=4
+[PICOCALC][KEY] state=3 code=0x35
+[PICOCALC][KEY][VERIFY] stage=event count=10 state=released state_code=3 code=0x35 pressed_count=5 released_count=5
+[PICOCALC][KEY] state=1 code=0x36
+[PICOCALC][KEY][VERIFY] stage=event count=11 state=pressed state_code=1 code=0x36 pressed_count=6 released_count=5
+[PICOCALC][KEY] state=3 code=0x36
+[PICOCALC][KEY][VERIFY] stage=event count=12 state=released state_code=3 code=0x36 pressed_count=6 released_count=6
+[PICOCALC][KEY] state=1 code=0x37
+[PICOCALC][KEY][VERIFY] stage=event count=13 state=pressed state_code=1 code=0x37 pressed_count=7 released_count=6
+[PICOCALC][KEY] state=3 code=0x37
+[PICOCALC][KEY][VERIFY] stage=event count=14 state=released state_code=3 code=0x37 pressed_count=7 released_count=7
+[PICOCALC][KEY] state=1 code=0x38
+[PICOCALC][KEY][VERIFY] stage=event count=15 state=pressed state_code=1 code=0x38 pressed_count=8 released_count=7
+[PICOCALC][KEY] state=3 code=0x38
+[PICOCALC][KEY][VERIFY] stage=event count=16 state=released state_code=3 code=0x38 pressed_count=8 released_count=8
+[PICOCALC][KEY] state=1 code=0x39
+[PICOCALC][KEY][VERIFY] stage=event count=17 state=pressed state_code=1 code=0x39 pressed_count=9 released_count=8
+[PICOCALC][KEY] state=3 code=0x39
+[PICOCALC][KEY][VERIFY] stage=event count=18 state=released state_code=3 code=0x39 pressed_count=9 released_count=9
+[PICOCALC][KEY] state=1 code=0x30
+[PICOCALC][KEY][VERIFY] stage=event count=19 state=pressed state_code=1 code=0x30 pressed_count=10 released_count=9
+[PICOCALC][KEY] state=3 code=0x30
+[PICOCALC][KEY][VERIFY] stage=event count=20 state=released state_code=3 code=0x30 pressed_count=10 released_count=10
+[PICOCALC][KEY] state=1 code=0x71
+[PICOCALC][KEY][VERIFY] stage=event count=21 state=pressed state_code=1 code=0x71 pressed_count=11 released_count=10
+[PICOCALC][KEY] state=3 code=0x71
+[PICOCALC][KEY][VERIFY] stage=event count=22 state=released state_code=3 code=0x71 pressed_count=11 released_count=11
+[PICOCALC][KEY] state=1 code=0x77
+[PICOCALC][KEY][VERIFY] stage=event count=23 state=pressed state_code=1 code=0x77 pressed_count=12 released_count=11
+[PICOCALC][KEY] state=3 code=0x77
+[PICOCALC][KEY][VERIFY] stage=event count=24 state=released state_code=3 code=0x77 pressed_count=12 released_count=12
+[PICOCALC][KEY] state=1 code=0x65
+[PICOCALC][KEY][VERIFY] stage=event count=25 state=pressed state_code=1 code=0x65 pressed_count=13 released_count=12
+[PICOCALC][KEY] state=3 code=0x65
+[PICOCALC][KEY][VERIFY] stage=event count=26 state=released state_code=3 code=0x65 pressed_count=13 released_count=13
+[PICOCALC][KEY] state=1 code=0x72
+[PICOCALC][KEY][VERIFY] stage=event count=27 state=pressed state_code=1 code=0x72 pressed_count=14 released_count=13
+[PICOCALC][KEY] state=3 code=0x72
+[PICOCALC][KEY][VERIFY] stage=event count=28 state=released state_code=3 code=0x72 pressed_count=14 released_count=14
+[PICOCALC][KEY] state=1 code=0x74
+[PICOCALC][KEY][VERIFY] stage=event count=29 state=pressed state_code=1 code=0x74 pressed_count=15 released_count=14
+[PICOCALC][KEY] state=3 code=0x74
+[PICOCALC][KEY][VERIFY] stage=event count=30 state=released state_code=3 code=0x74 pressed_count=15 released_count=15
+[PICOCALC][KEY] state=1 code=0x79
+[PICOCALC][KEY][VERIFY] stage=event count=31 state=pressed state_code=1 code=0x79 pressed_count=16 released_count=15
+[PICOCALC][KEY] state=3 code=0x79
+[PICOCALC][KEY][VERIFY] stage=event count=32 state=released state_code=3 code=0x79 pressed_count=16 released_count=16
+[PICOCALC][KEY] state=1 code=0x75
+[PICOCALC][KEY][VERIFY] stage=event count=33 state=pressed state_code=1 code=0x75 pressed_count=17 released_count=16
+[PICOCALC][KEY] state=3 code=0x75
+[PICOCALC][KEY][VERIFY] stage=event count=34 state=released state_code=3 code=0x75 pressed_count=17 released_count=17
+[PICOCALC][KEY] state=1 code=0x69
+[PICOCALC][KEY][VERIFY] stage=event count=35 state=pressed state_code=1 code=0x69 pressed_count=18 released_count=17
+[PICOCALC][KEY] state=3 code=0x69
+[PICOCALC][KEY][VERIFY] stage=event count=36 state=released state_code=3 code=0x69 pressed_count=18 released_count=18
+[PICOCALC][KEY] state=1 code=0x6f
+[PICOCALC][KEY][VERIFY] stage=event count=37 state=pressed state_code=1 code=0x6f pressed_count=19 released_count=18
+[PICOCALC][KEY] state=3 code=0x6f
+[PICOCALC][KEY][VERIFY] stage=event count=38 state=released state_code=3 code=0x6f pressed_count=19 released_count=19
+[PICOCALC][KEY] state=1 code=0x70
+[PICOCALC][KEY][VERIFY] stage=event count=39 state=pressed state_code=1 code=0x70 pressed_count=20 released_count=19
+[PICOCALC][KEY] state=3 code=0x70
+[PICOCALC][KEY][VERIFY] stage=event count=40 state=released state_code=3 code=0x70 pressed_count=20 released_count=20
+[PICOCALC][KEY] state=1 code=0x61
+[PICOCALC][KEY][VERIFY] stage=event count=41 state=pressed state_code=1 code=0x61 pressed_count=21 released_count=20
+[PICOCALC][KEY] state=3 code=0x61
+[PICOCALC][KEY][VERIFY] stage=event count=42 state=released state_code=3 code=0x61 pressed_count=21 released_count=21
+[PICOCALC][KEY] state=1 code=0x73
+[PICOCALC][KEY][VERIFY] stage=event count=43 state=pressed state_code=1 code=0x73 pressed_count=22 released_count=21
+[PICOCALC][KEY] state=3 code=0x73
+[PICOCALC][KEY][VERIFY] stage=event count=44 state=released state_code=3 code=0x73 pressed_count=22 released_count=22
+[PICOCALC][KEY] state=1 code=0x64
+[PICOCALC][KEY][VERIFY] stage=event count=45 state=pressed state_code=1 code=0x64 pressed_count=23 released_count=22
+[PICOCALC][KEY] state=3 code=0x64
+[PICOCALC][KEY][VERIFY] stage=event count=46 state=released state_code=3 code=0x64 pressed_count=23 released_count=23
+[PICOCALC][KEY] state=1 code=0x66
+[PICOCALC][KEY][VERIFY] stage=event count=47 state=pressed state_code=1 code=0x66 pressed_count=24 released_count=23
+[PICOCALC][KEY] state=3 code=0x66
+[PICOCALC][KEY][VERIFY] stage=event count=48 state=released state_code=3 code=0x66 pressed_count=24 released_count=24
+[PICOCALC][KEY] state=1 code=0x67
+[PICOCALC][KEY][VERIFY] stage=event count=49 state=pressed state_code=1 code=0x67 pressed_count=25 released_count=24
+[PICOCALC][KEY] state=1 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=50 state=pressed state_code=1 code=0x62 pressed_count=26 released_count=24
+[PICOCALC][KEY] state=3 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=51 state=released state_code=3 code=0x62 pressed_count=26 released_count=25
+[PICOCALC][KEY] state=1 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=52 state=pressed state_code=1 code=0x62 pressed_count=27 released_count=25
+[PICOCALC][KEY] state=3 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=53 state=released state_code=3 code=0x62 pressed_count=27 released_count=26
+[PICOCALC][KEY] state=3 code=0x67
+[PICOCALC][KEY][VERIFY] stage=event count=54 state=released state_code=3 code=0x67 pressed_count=27 released_count=27
+[PICOCALC][KEY] state=1 code=0x68
+[PICOCALC][KEY][VERIFY] stage=event count=55 state=pressed state_code=1 code=0x68 pressed_count=28 released_count=27
+[PICOCALC][KEY] state=3 code=0x68
+[PICOCALC][KEY][VERIFY] stage=event count=56 state=released state_code=3 code=0x68 pressed_count=28 released_count=28
+[PICOCALC][KEY] state=1 code=0x6a
+[PICOCALC][KEY][VERIFY] stage=event count=57 state=pressed state_code=1 code=0x6a pressed_count=29 released_count=28
+[PICOCALC][KEY] state=3 code=0x6a
+[PICOCALC][KEY][VERIFY] stage=event count=58 state=released state_code=3 code=0x6a pressed_count=29 released_count=29
+[PICOCALC][KEY] state=1 code=0x6b
+[PICOCALC][KEY][VERIFY] stage=event count=59 state=pressed state_code=1 code=0x6b pressed_count=30 released_count=29
+[PICOCALC][KEY] state=3 code=0x6b
+[PICOCALC][KEY][VERIFY] stage=event count=60 state=released state_code=3 code=0x6b pressed_count=30 released_count=30
+[PICOCALC][KEY] state=1 code=0x6c
+[PICOCALC][KEY][VERIFY] stage=event count=61 state=pressed state_code=1 code=0x6c pressed_count=31 released_count=30
+[PICOCALC][KEY] state=3 code=0x6c
+[PICOCALC][KEY][VERIFY] stage=event count=62 state=released state_code=3 code=0x6c pressed_count=31 released_count=31
+[PICOCALC][KEY] state=1 code=0x7a
+[PICOCALC][KEY][VERIFY] stage=event count=63 state=pressed state_code=1 code=0x7a pressed_count=32 released_count=31
+[PICOCALC][KEY] state=3 code=0x7a
+[PICOCALC][KEY][VERIFY] stage=event count=64 state=released state_code=3 code=0x7a pressed_count=32 released_count=32
+[PICOCALC][KEY] state=1 code=0x78
+[PICOCALC][KEY][VERIFY] stage=event count=65 state=pressed state_code=1 code=0x78 pressed_count=33 released_count=32
+[PICOCALC][KEY] state=3 code=0x78
+[PICOCALC][KEY][VERIFY] stage=event count=66 state=released state_code=3 code=0x78 pressed_count=33 released_count=33
+[PICOCALC][KEY] state=1 code=0x63
+[PICOCALC][KEY][VERIFY] stage=event count=67 state=pressed state_code=1 code=0x63 pressed_count=34 released_count=33
+[PICOCALC][KEY] state=3 code=0x63
+[PICOCALC][KEY][VERIFY] stage=event count=68 state=released state_code=3 code=0x63 pressed_count=34 released_count=34
+[PICOCALC][KEY] state=1 code=0x76
+[PICOCALC][KEY][VERIFY] stage=event count=69 state=pressed state_code=1 code=0x76 pressed_count=35 released_count=34
+[PICOCALC][KEY] state=3 code=0x76
+[PICOCALC][KEY][VERIFY] stage=event count=70 state=released state_code=3 code=0x76 pressed_count=35 released_count=35
+[PICOCALC][KEY] state=1 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=71 state=pressed state_code=1 code=0x62 pressed_count=36 released_count=35
+[PICOCALC][KEY] state=3 code=0x62
+[PICOCALC][KEY][VERIFY] stage=event count=72 state=released state_code=3 code=0x62 pressed_count=36 released_count=36
+[PICOCALC][KEY] state=1 code=0x6e
+[PICOCALC][KEY][VERIFY] stage=event count=73 state=pressed state_code=1 code=0x6e pressed_count=37 released_count=36
+[PICOCALC][KEY] state=3 code=0x6e
+[PICOCALC][KEY][VERIFY] stage=event count=74 state=released state_code=3 code=0x6e pressed_count=37 released_count=37
+[PICOCALC][KEY] state=1 code=0x6d
+[PICOCALC][KEY][VERIFY] stage=event count=75 state=pressed state_code=1 code=0x6d pressed_count=38 released_count=37
+[PICOCALC][KEY] state=3 code=0x6d
+[PICOCALC][KEY][VERIFY] stage=event count=76 state=released state_code=3 code=0x6d pressed_count=38 released_count=38
+[PICOCALC][KEY] state=1 code=0x2c
+[PICOCALC][KEY][VERIFY] stage=event count=77 state=pressed state_code=1 code=0x2c pressed_count=39 released_count=38
+[PICOCALC][KEY] state=3 code=0x2c
+[PICOCALC][KEY][VERIFY] stage=event count=78 state=released state_code=3 code=0x2c pressed_count=39 released_count=39
+[PICOCALC][KEY] state=1 code=0x2e
+[PICOCALC][KEY][VERIFY] stage=event count=79 state=pressed state_code=1 code=0x2e pressed_count=40 released_count=39
+[PICOCALC][KEY] state=1 code=0x0a
+[PICOCALC][KEY][VERIFY] stage=event count=80 state=pressed state_code=1 code=0x0a pressed_count=41 released_count=39
+[PICOCALC][KEY] state=3 code=0x0a
+[PICOCALC][KEY][VERIFY] stage=event count=81 state=released state_code=3 code=0x0a pressed_count=41 released_count=40
+[PICOCALC][KEY] state=3 code=0x2e
+[PICOCALC][KEY][VERIFY] stage=event count=82 state=released state_code=3 code=0x2e pressed_count=41 released_count=41
+[PICOCALC][KEY] state=1 code=0x0a
+[PICOCALC][KEY][VERIFY] stage=event count=83 state=pressed state_code=1 code=0x0a pressed_count=42 released_count=41
+[PICOCALC][KEY] state=3 code=0x0a
+[PICOCALC][KEY][VERIFY] stage=event count=84 state=released state_code=3 code=0x0a pressed_count=42 released_count=42
+[PICOCALC][KEY] state=1 code=0x60
+[PICOCALC][KEY][VERIFY] stage=event count=85 state=pressed state_code=1 code=0x60 pressed_count=43 released_count=42
+[PICOCALC][KEY] state=3 code=0x60
+[PICOCALC][KEY][VERIFY] stage=event count=86 state=released state_code=3 code=0x60 pressed_count=43 released_count=43
+[PICOCALC][KEY] state=1 code=0x2f
+[PICOCALC][KEY][VERIFY] stage=event count=87 state=pressed state_code=1 code=0x2f pressed_count=44 released_count=43
+[PICOCALC][KEY] state=3 code=0x2f
+[PICOCALC][KEY][VERIFY] stage=event count=88 state=released state_code=3 code=0x2f pressed_count=44 released_count=44
+[PICOCALC][KEY] state=1 code=0x5c
+[PICOCALC][KEY][VERIFY] stage=event count=89 state=pressed state_code=1 code=0x5c pressed_count=45 released_count=44
+[PICOCALC][KEY] state=3 code=0x5c
+[PICOCALC][KEY][VERIFY] stage=event count=90 state=released state_code=3 code=0x5c pressed_count=45 released_count=45
+[PICOCALC][KEY] state=1 code=0x2d
+[PICOCALC][KEY][VERIFY] stage=event count=91 state=pressed state_code=1 code=0x2d pressed_count=46 released_count=45
+[PICOCALC][KEY] state=3 code=0x2d
+[PICOCALC][KEY][VERIFY] stage=event count=92 state=released state_code=3 code=0x2d pressed_count=46 released_count=46
+[PICOCALC][KEY] state=1 code=0x3d
+[PICOCALC][KEY][VERIFY] stage=event count=93 state=pressed state_code=1 code=0x3d pressed_count=47 released_count=46
+[PICOCALC][KEY] state=3 code=0x3d
+[PICOCALC][KEY][VERIFY] stage=event count=94 state=released state_code=3 code=0x3d pressed_count=47 released_count=47
+[PICOCALC][KEY] state=1 code=0x5b
+[PICOCALC][KEY][VERIFY] stage=event count=95 state=pressed state_code=1 code=0x5b pressed_count=48 released_count=47
+[PICOCALC][KEY] state=3 code=0x5b
+[PICOCALC][KEY][VERIFY] stage=event count=96 state=released state_code=3 code=0x5b pressed_count=48 released_count=48
+[PICOCALC][KEY] state=1 code=0x5d
+[PICOCALC][KEY][VERIFY] stage=event count=97 state=pressed state_code=1 code=0x5d pressed_count=49 released_count=48
+[PICOCALC][KEY] state=3 code=0x5d
+[PICOCALC][KEY][VERIFY] stage=event count=98 state=released state_code=3 code=0x5d pressed_count=49 released_count=49
+[PICOCALC][KEY] state=1 code=0xb1
+[PICOCALC][KEY][VERIFY] stage=event count=99 state=pressed state_code=1 code=0xb1 pressed_count=50 released_count=49
+[PICOCALC][KEY] state=3 code=0xb1
+[PICOCALC][KEY][VERIFY] stage=event count=100 state=released state_code=3 code=0xb1 pressed_count=50 released_count=50
+[PICOCALC][KEY] state=1 code=0x09
+[PICOCALC][KEY][VERIFY] stage=event count=101 state=pressed state_code=1 code=0x09 pressed_count=51 released_count=50
+[PICOCALC][KEY] state=3 code=0x09
+[PICOCALC][KEY][VERIFY] stage=event count=102 state=released state_code=3 code=0x09 pressed_count=51 released_count=51
+[PICOCALC][KEY] state=1 code=0xc1
+[PICOCALC][KEY][VERIFY] stage=event count=103 state=pressed state_code=1 code=0xc1 pressed_count=52 released_count=51
+[PICOCALC][KEY] state=1 code=0x2d
+[PICOCALC][KEY][VERIFY] stage=event count=104 state=pressed state_code=1 code=0x2d pressed_count=53 released_count=51
+[PICOCALC][KEY] state=3 code=0x2d
+[PICOCALC][KEY][VERIFY] stage=event count=105 state=released state_code=3 code=0x2d pressed_count=53 released_count=52
+[PICOCALC][KEY] state=3 code=0xc1
+[PICOCALC][KEY][VERIFY] stage=event count=106 state=released state_code=3 code=0xc1 pressed_count=53 released_count=53
+[PICOCALC][KEY] state=1 code=0xd4
+[PICOCALC][KEY][VERIFY] stage=event count=107 state=pressed state_code=1 code=0xd4 pressed_count=54 released_count=53
+[PICOCALC][KEY] state=3 code=0xd4
+[PICOCALC][KEY][VERIFY] stage=event count=108 state=released state_code=3 code=0xd4 pressed_count=54 released_count=54
+[PICOCALC][KEY] state=1 code=0x08
+[PICOCALC][KEY][VERIFY] stage=event count=109 state=pressed state_code=1 code=0x08 pressed_count=55 released_count=54
+[PICOCALC][KEY] state=1 code=0x5d
+[PICOCALC][KEY][VERIFY] stage=event count=110 state=pressed state_code=1 code=0x5d pressed_count=56 released_count=54
+[PICOCALC][KEY] state=3 code=0x5d
+[PICOCALC][KEY][VERIFY] stage=event count=111 state=released state_code=3 code=0x5d pressed_count=56 released_count=55
+[PICOCALC][KEY] state=3 code=0x08
+[PICOCALC][KEY][VERIFY] stage=event count=112 state=released state_code=3 code=0x08 pressed_count=56 released_count=56
+[PICOCALC][KEY] state=1 code=0x85
+[PICOCALC][KEY][VERIFY] stage=event count=113 state=pressed state_code=1 code=0x85 pressed_count=57 released_count=56
+[PICOCALC][KEY] state=3 code=0x85
+[PICOCALC][KEY][VERIFY] stage=event count=114 state=released state_code=3 code=0x85 pressed_count=57 released_count=57
+[PICOCALC][KEY] state=1 code=0x84
+[PICOCALC][KEY][VERIFY] stage=event count=115 state=pressed state_code=1 code=0x84 pressed_count=58 released_count=57
+[PICOCALC][KEY] state=1 code=0xd4
+[PICOCALC][KEY][VERIFY] stage=event count=116 state=pressed state_code=1 code=0xd4 pressed_count=59 released_count=57
+[PICOCALC][KEY] state=3 code=0xd4
+[PICOCALC][KEY][VERIFY] stage=event count=117 state=released state_code=3 code=0xd4 pressed_count=59 released_count=58
+[PICOCALC][KEY] state=3 code=0x84
+[PICOCALC][KEY][VERIFY] stage=event count=118 state=released state_code=3 code=0x84 pressed_count=59 released_count=59
+[PICOCALC][KEY] state=1 code=0x83
+[PICOCALC][KEY][VERIFY] stage=event count=119 state=pressed state_code=1 code=0x83 pressed_count=60 released_count=59
+[PICOCALC][KEY] state=3 code=0x83
+[PICOCALC][KEY][VERIFY] stage=event count=120 state=released state_code=3 code=0x83 pressed_count=60 released_count=60
+[PICOCALC][KEY] state=1 code=0x82
+[PICOCALC][KEY][VERIFY] stage=event count=121 state=pressed state_code=1 code=0x82 pressed_count=61 released_count=60
+[PICOCALC][KEY] state=3 code=0x82
+[PICOCALC][KEY][VERIFY] stage=event count=122 state=released state_code=3 code=0x82 pressed_count=61 released_count=61
+[PICOCALC][KEY] state=1 code=0x81
+[PICOCALC][KEY][VERIFY] stage=event count=123 state=pressed state_code=1 code=0x81 pressed_count=62 released_count=61
+[PICOCALC][KEY] state=3 code=0x81
+[PICOCALC][KEY][VERIFY] stage=event count=124 state=released state_code=3 code=0x81 pressed_count=62 released_count=62
+[PICOCALC][KEY] state=1 code=0xb5
+[PICOCALC][KEY][VERIFY] stage=event count=125 state=pressed state_code=1 code=0xb5 pressed_count=63 released_count=62
+[PICOCALC][KEY] state=3 code=0xb5
+[PICOCALC][KEY][VERIFY] stage=event count=126 state=released state_code=3 code=0xb5 pressed_count=63 released_count=63
+[PICOCALC][KEY] state=1 code=0xb7
+[PICOCALC][KEY][VERIFY] stage=event count=127 state=pressed state_code=1 code=0xb7 pressed_count=64 released_count=63
+[PICOCALC][KEY] state=3 code=0xb7
+[PICOCALC][KEY][VERIFY] stage=event count=128 state=released state_code=3 code=0xb7 pressed_count=64 released_count=64
+[PICOCALC][KEY] state=1 code=0xb6
+[PICOCALC][KEY][VERIFY] stage=event count=129 state=pressed state_code=1 code=0xb6 pressed_count=65 released_count=64
+[PICOCALC][KEY] state=3 code=0xb6
+[PICOCALC][KEY][VERIFY] stage=event count=130 state=released state_code=3 code=0xb6 pressed_count=65 released_count=65
+[PICOCALC][KEY] state=1 code=0xb4
+[PICOCALC][KEY][VERIFY] stage=event count=131 state=pressed state_code=1 code=0xb4 pressed_count=66 released_count=65
+[PICOCALC][KEY] state=1 code=0xb6
+[PICOCALC][KEY][VERIFY] stage=event count=132 state=pressed state_code=1 code=0xb6 pressed_count=67 released_count=65
+[PICOCALC][KEY] state=3 code=0xb6
+[PICOCALC][KEY][VERIFY] stage=event count=133 state=released state_code=3 code=0xb6 pressed_count=67 released_count=66
+[PICOCALC][KEY] state=3 code=0xb4
+[PICOCALC][KEY][VERIFY] stage=event count=134 state=released state_code=3 code=0xb4 pressed_count=67 released_count=67
+[PICOCALC][KEY] state=1 code=0xa2
+[PICOCALC][KEY][VERIFY] stage=event count=135 state=pressed state_code=1 code=0xa2 pressed_count=68 released_count=67
+[PICOCALC][KEY] state=3 code=0xa2
+[PICOCALC][KEY][VERIFY] stage=event count=136 state=released state_code=3 code=0xa2 pressed_count=68 released_count=68
+[PICOCALC][KEY] state=1 code=0xa5
+[PICOCALC][KEY][VERIFY] stage=event count=137 state=pressed state_code=1 code=0xa5 pressed_count=69 released_count=68
+[PICOCALC][KEY] state=3 code=0xa5
+[PICOCALC][KEY][VERIFY] stage=event count=138 state=released state_code=3 code=0xa5 pressed_count=69 released_count=69
+[PICOCALC][KEY] state=1 code=0xa1
+[PICOCALC][KEY][VERIFY] stage=event count=139 state=pressed state_code=1 code=0xa1 pressed_count=70 released_count=69
+[PICOCALC][KEY] state=3 code=0xa1
+[PICOCALC][KEY][VERIFY] stage=event count=140 state=released state_code=3 code=0xa1 pressed_count=70 released_count=70
+[PICOCALC][KEY] state=1 code=0xa3
+[PICOCALC][KEY][VERIFY] stage=event count=141 state=pressed state_code=1 code=0xa3 pressed_count=71 released_count=70
+[PICOCALC][KEY] state=3 code=0xa3
+[PICOCALC][KEY][VERIFY] stage=event count=142 state=released state_code=3 code=0xa3 pressed_count=71 released_count=71
+[PICOCALC][KEY] state=1 code=0x20
+[PICOCALC][KEY][VERIFY] stage=event count=143 state=pressed state_code=1 code=0x20 pressed_count=72 released_count=71
+[PICOCALC][KEY] state=3 code=0x20
+[PICOCALC][KEY][VERIFY] stage=event count=144 state=released state_code=3 code=0x20 pressed_count=72 released_count=72
+[PICOCALC][KEY] state=1 code=0x3b
+[PICOCALC][KEY][VERIFY] stage=event count=145 state=pressed state_code=1 code=0x3b pressed_count=73 released_count=72
+[PICOCALC][KEY] state=3 code=0x3b
+[PICOCALC][KEY][VERIFY] stage=event count=146 state=released state_code=3 code=0x3b pressed_count=73 released_count=73
+[PICOCALC][KEY] state=1 code=0x27
+[PICOCALC][KEY][VERIFY] stage=event count=147 state=pressed state_code=1 code=0x27 pressed_count=74 released_count=73
+[PICOCALC][KEY] state=3 code=0x27
+[PICOCALC][KEY][VERIFY] stage=event count=148 state=released state_code=3 code=0x27 pressed_count=74 released_count=74

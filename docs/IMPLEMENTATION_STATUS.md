@@ -130,7 +130,7 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - Canonical BSP とテンプレートは `arm-none-eabi-gcc 13.2.1`、
   Pico SDK 2.x 系でコンパイル可能
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
-- clone単体のportable検証10件が合格
+- clone単体のportable検証15件が合格
 - 基準プロジェクト3件と証拠ファイル13件を含む完全検証26件が合格
 - 生成器・検証器・異常系のPython回帰テスト19件が合格
 - LCD初期化とCS分割は実行可能なhost transactionテストで検査
@@ -138,21 +138,23 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。その後LCDを二系統へ分離し、
-Bの転送を無改変コピーへ置き換えた BSP 0.4.0 で、**B（`pio-rgb565`）が実機表示に成功した**
-（2026-07-30、commit `f763b91eae95`、`hardware-validation/records/bsp-0.4.0-20260730-01.json`）。
-LCDは既知パターン表示とRAMRD全色一致で`pass`、SDスモークも`pass`、キーボードは未実施。
-A（`hwspi-rgb888`）は専用vendorドライバ化とARMビルドまで完了したが、個別の実機合格は
-まだ未記録である。Bの成功はAの代替にならないため、Aも`app_status=pass`と画面写真で
-個別に確定する。
-A/Bそれぞれの実機結果は`hardware-validation/records/`へ個別に記録し、両方が合格した
-時点でこのBSP自体を新しい基準実装として確定する。
+Bの転送を無改変コピー、Aの転送を専用vendorドライバへ固定した BSP 0.4.0 で、**A/B両方の
+LCDが実機表示に成功した**（2026-07-30）。
+
+- A（`hwspi-rgb888`）：commit `e2d53ad55afa`、LCD/SD/keyboard合格。キーボードは148イベント
+  （pressed/released各74）。記録は`bsp-0.4.0-20260730-02.json`。
+- B（`pio-rgb565`）：commit `f763b91eae95`、LCD/SD合格。記録は
+  `bsp-0.4.0-20260730-01.json`。キーボードはこの記録では未試験。
+
+両記録とも基板revisionとSDカード識別情報が未記入のため、台帳の`overall_status`は
+`pending`にしている。LCD A/Bの実機合格自体は、各ログの`app_status=pass`、GRAM readback
+全色一致、写真で個別に確定している。
 
 ## まだ実機確認が必要な点
 
-B（`pio-rgb565`）は0.4.0で実機表示とSDスモークに合格したが、キーボードのイベント確認、
-基板revision、SDカード識別が未記入である。この3点を埋めれば実機記録を
-`overall_status=pass`へ更新できる。A（`hwspi-rgb888`）はバックライトの既定輝度、
-LCDの色・向き、USB CDC初期化待ちを含めて個別に実機確認する。
+B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント確認、基板revision、SDカード
+識別が未記入である。A（`hwspi-rgb888`）はLCD/SD/keyboardに合格した。装置情報3点だけが
+台帳上の未完了項目である。
 
 また、次の機能は今後のエミュレーター段階である。
 

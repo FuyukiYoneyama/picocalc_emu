@@ -17,14 +17,15 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 
 ## 検証セッションの作成
 
-1. `template.json`を`records/bsp-0.2.1-YYYYMMDD-01.json`へコピーする。
+1. `template.json`を`records/<bsp-version>-<YYYYMMDD>-<sequence>.json`へコピーする。
 2. 対象コミット、PicoCalc revision、toolchain、SDカード情報を記入する。
 3. UF2をビルドし、`sha256sum build/picocalc_app.uf2`を記録する。
 4. UART/USB CDCログ、LCD写真、必要なら動画やlogic analyzer traceを
    `records/<validation_id>/`へ保存する。
 5. LCD、SD、keyboardを個別判定する。
-6. 3項目がすべて成功し、証拠ファイルを登録した場合だけ
-   `overall_status`を`pass`にする。
+6. 3項目がすべて成功し、証拠ファイルと装置情報を登録した場合だけ
+   `overall_status`を`pass`にする。装置情報が未確定なら、個別テストの`pass`を保持した
+   まま`overall_status`は`pending`にする。
 7. `python3 tools/verify_environment.py`で台帳を検査する。
 
 ## 必須判定
@@ -35,8 +36,9 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 - keyboard: 複数キーについてpress/releaseイベントとUARTログ
 
 実機試験はA（`hwspi-rgb888`）とB（`pio-rgb565`）を同じ標準UF2名で一つずつ行う。
-片方の不合格はもう片方を廃棄する理由にならない。両方が`app_status=pass`になるまで
-Canonical BSPのLCD検証を完了としない。
+片方の不合格はもう片方を廃棄する理由にならない。両方が`app_status=pass`になったため、
+Canonical BSPのLCD検証は完了している。現在はBのキーボード試験と、両セッションの基板
+revision／SDカード識別情報が未記入である。
 `pending`テンプレートは成功証拠ではない。`records/`に追加した記録だけが
 Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義する。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、

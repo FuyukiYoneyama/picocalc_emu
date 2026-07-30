@@ -146,7 +146,8 @@ python3 tools/picocalc.py verify \
 
 | 機能 | 実機基準 | 重要条件 |
 |---|---|---|
-| LCD | `uf2loader/common/lcdspi` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
+| LCD A | `bsp/vendor/lcd_hwspi_rgb888.cpp` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48`、window transaction中CS保持 |
+| LCD B | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0、clkdiv `2.0`、COLMOD `0x65`、RGB565、RAMRD時はSIOへ切替 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255 |
@@ -160,14 +161,17 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-**B（`pio-rgb565`）はBSP 0.4.0で実機表示に成功しました。** 2026-07-30、commit
-`f763b91eae95`のUF2で、既知パターンの表示とRAMRDによる全色一致
-（`app_status=pass`）、SDスモークの成功を確認しています。記録は
-[bsp-0.4.0-20260730-01.json](hardware-validation/records/bsp-0.4.0-20260730-01.json)で、
-LCDとSDは`pass`、キーボードは未実施のため`pending`です。A（`hwspi-rgb888`）は
-まだ個別の実機合格が未記録で、Bの成功はAの代替になりません。実機では一度に一方だけを
-`build/picocalc_app.uf2`へ生成して検証します。portable検証とRP2040ビルド成功は、
-実機成功とは別です。
+**A（`hwspi-rgb888`）とB（`pio-rgb565`）のLCD転送は、BSP 0.4.0で実機合格しました。**
+2026-07-30、Aはcommit `e2d53ad55afa`、Bはcommit `f763b91eae95`のUF2で、既知パターンの
+表示とRAMRDによる全色一致（`app_status=pass`）を確認しています。AはさらにSDスモークと
+キーボード148イベント（pressed/released各74）も合格しています。記録は
+[Aの台帳](hardware-validation/records/bsp-0.4.0-20260730-02.json)と
+[Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
+
+なお、Bの記録はキーボードを未試験、A/Bとも基板revisionとSDカード識別情報が未記入のため、
+台帳の`overall_status`は`pending`にしています。LCD A/Bの合格と、AのSD/キーボード合格を
+実機証拠として確定し、未記入の装置情報だけを残しています。実機では一度に一方だけを
+`build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、各ソースコミットから再生成します。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
 `general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに

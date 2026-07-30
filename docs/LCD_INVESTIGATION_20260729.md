@@ -505,4 +505,22 @@ CSを保持する」契約を呼び出し側で保証していなかった。
 
 この版はARMビルドとportable検証までは合格している。実機合格条件は従来どおり、ログ先頭の
 `variant=hwspi-rgb888`確認、5色solid readback、4色pattern readback、
-`[PICOCALC][LCD][VERIFY] app_status=pass`、および画面写真である。実機確認前にAを合格とは記録しない。
+`[PICOCALC][LCD][VERIFY] app_status=pass`、および画面写真である。
+
+## A（`hwspi-rgb888`）実機成功（2026-07-30）
+
+ログ：`hardware-validation/records/evidence/pico20260730_225950.log`
+写真：`hardware-validation/records/evidence/IMG_8842.JPG`
+
+BSP `0.4.0`／App `0.4.0-hwspi-rgb888-vendored-driver`／commit
+`e2d53ad55afa`でAが実機合格した。
+
+* 5色solid（黒・白・赤・緑・青）のGRAM readbackがすべて`mismatches=0`
+* 赤・緑・青・白の2×2 pattern readbackが`status=pass`
+* `[PICOCALC][LCD][VERIFY] app_status=pass`
+* SD smokeが`result_stage=ok`
+* キーボードが148イベント（pressed/released各74）
+
+写真でも緑の上端帯、青の下端帯、白枠、RGBの3色ブロック、緑のステータス領域を確認できる。
+これでLCD A/Bの実機検証は完了した。Bのキーボードは未試験であり、A/Bの基板revisionと
+SDカード識別情報も未記入のため、台帳の`overall_status`は`pending`に保つ。
