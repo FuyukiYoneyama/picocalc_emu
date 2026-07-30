@@ -15,7 +15,7 @@
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
 * audio: GP26/27、`Picocalc_ment`準拠の48 kHz PWM/DMA stream API、PWM wrap 255、128 sample DMA half、512 sample ring
-* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3、`fudge`必須。250 MHzでは実績に基づきclkdiv 1.5/2/3/4だけを試し、1.0/1.2は試さない
+* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。250 MHzでは`fudge=true`かつclkdiv 1.5/2/3/4だけを試し、1.0/1.2は試さない。125 MHz側は実働サンプルどおり`fudge=false`でclkdiv 1/1.5/2/3/4を試す
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。

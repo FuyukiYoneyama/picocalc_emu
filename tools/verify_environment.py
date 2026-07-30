@@ -550,8 +550,11 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         [
             "kMaxSystemClockKhz = 250000u",
             "kSafeClkdivAt250Mhz = 1.5f",
+            "kSafeClkdivAt125Mhz = 1.0f",
             "PSRAM][POLICY]",
-            "candidates[candidate_count++]",
+            "low_speed_fudge=disabled",
+            "candidates[candidate_count++] = {kSafeClkdivAt125Mhz, false}",
+            "g_info.system_clock_khz > 125000u",
             "self_test()",
             "max_transfer_chunk_bytes",
             "reason=sysclk_above_safe_limit",

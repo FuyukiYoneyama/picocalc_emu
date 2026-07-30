@@ -35,7 +35,8 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 - SD: `mount/write/sync/read/compare/remove`の全段階
 - keyboard: 複数キーについてpress/releaseイベントとUARTログ
 - PSRAM: `[PICOCALC][PSRAM][POLICY]`、安全な`[PSRAM][PROBE]`、`[PSRAM][VERIFY] status=pass`、
-  8 MiB範囲のread/write利用可否。250 MHzではclkdiv 1.0/1.2を試していないこと
+  8 MiB範囲のread/write利用可否。250 MHzではfudge=trueのclkdiv 1.0/1.2を試していないこと、
+  125 MHz側ではfudge=falseを使ったこと
 - audio: `[PICOCALC][VERIFY] audio=ok`、48 kHz、PWM wrap 255、carrier、DMA half/ringを確認し、
   実際にPCMを投入した音声出力を別途記録
 

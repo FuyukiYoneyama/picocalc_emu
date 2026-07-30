@@ -153,7 +153,7 @@ python3 tools/picocalc.py verify \
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255 |
-| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、fudge必須、250 MHzではclkdiv 1.5以上、24-byte chunk |
+| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、250 MHzはfudge+clkdiv 1.5以上、125 MHz側はfudge=false、24-byte chunk |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。

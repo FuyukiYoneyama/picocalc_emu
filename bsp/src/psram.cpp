@@ -17,6 +17,11 @@ constexpr float kSafeClkdivAt250Mhz = 1.5f;
 constexpr float kSafeClkdivAt125Mhz = 1.0f;
 constexpr float kFallbackClkdivs[] = {1.5f, 2.0f, 3.0f, 4.0f};
 
+struct Candidate {
+    float clkdiv;
+    bool fudge;
+};
+
 psram_spi_inst_t g_psram = {};
 Info g_info = {};
 bool g_initialized = false;
@@ -66,13 +71,13 @@ void read_raw(uint32_t address, uint8_t* destination, size_t bytes) {
     }
 }
 
-bool try_config(float clkdiv) {
+bool try_config(float clkdiv, bool fudge) {
     uninit();
     g_psram = psram_spi_init_clkdiv(pio1, -1, clkdiv, true);
     g_initialized = true;
     g_info.clkdiv = clkdiv;
     g_info.spi_hz = spi_hz_for(clkdiv);
-    g_info.fudge = true;
+    g_info.fudge = fudge;
     memset(g_info.id, 0, sizeof(g_info.id));
     read_id(g_info.id);
 
@@ -102,7 +107,8 @@ bool init() {
     g_info = {};
     g_info.system_clock_khz = clock_get_hz(clk_sys) / 1000u;
     printf("[PICOCALC][PSRAM][POLICY] sysclk_khz=%lu max_sysclk_khz=%lu "
-           "pins=cs20,sck21,mosi2,miso3 driver=pio1 fudge=required\n",
+           "pins=cs20,sck21,mosi2,miso3 driver=pio1 "
+           "fudge=required_at_or_above_83mhz low_speed_fudge=disabled\n",
            static_cast<unsigned long>(g_info.system_clock_khz),
            static_cast<unsigned long>(kMaxSystemClockKhz));
 
@@ -113,23 +119,28 @@ bool init() {
 
     // The 250 MHz / clkdiv 1.0 and 1.2 configurations are deliberately not
     // attempted: the reference hardware logs show READ8 failures there.
-    float candidates[sizeof(kFallbackClkdivs) / sizeof(kFallbackClkdivs[0]) + 1] = {};
-    size_t candidate_count = 0;
+    Candidate candidates[sizeof(kFallbackClkdivs) / sizeof(kFallbackClkdivs[0]) + 1] = {};
+    size_t candidate_count = 0u;
     if (g_info.system_clock_khz <= 125000u) {
-        candidates[candidate_count++] = kSafeClkdivAt125Mhz;
+        // The reference PIO driver samples on the normal edge below the
+        // high-speed threshold. pico_rescue probes these low-speed settings
+        // with fudge=false; retaining that distinction is required on A.
+        candidates[candidate_count++] = {kSafeClkdivAt125Mhz, false};
     }
     for (const float candidate : kFallbackClkdivs) {
         bool duplicate = false;
         for (size_t i = 0; i < candidate_count; ++i) {
-            duplicate = duplicate || candidates[i] == candidate;
+            duplicate = duplicate ||
+                        (candidates[i].clkdiv == candidate &&
+                         candidates[i].fudge == (g_info.system_clock_khz > 125000u));
         }
         if (!duplicate) {
-            candidates[candidate_count++] = candidate;
+            candidates[candidate_count++] = {candidate, g_info.system_clock_khz > 125000u};
         }
     }
 
     for (size_t i = 0; i < candidate_count; ++i) {
-        if (try_config(candidates[i])) {
+        if (try_config(candidates[i].clkdiv, candidates[i].fudge)) {
             g_info.initialized = true;
             printf("[PICOCALC][PSRAM] status=ok capacity=%lu clkdiv=%.2f "
                    "spi_hz=%lu self_test=pass\n",
@@ -155,13 +166,17 @@ const Info& info() {
 }
 
 VerifyResult self_test() {
-    constexpr uint32_t kTestAddress = 0x00010000u;
-    constexpr size_t kTestBytes = 256u;
-    uint8_t pattern[kTestBytes] = {};
+    // This is the exact 24-byte probe used by pico_rescue: it exercises the
+    // proven generic psram_write()/psram_read() path without inventing a new
+    // transaction shape for the BSP self-test.
+    constexpr uint32_t kTestAddress = 320u * 320u + 64u;
+    const uint8_t pattern[] = {
+        0x00, 0x55, 0xaa, 0xff, 0x3c, 0xc3, 0x12, 0x87,
+        0x5a, 0xa5, 0x0f, 0xf0, 0x33, 0xcc, 0x69, 0x96,
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+    };
+    constexpr size_t kTestBytes = sizeof(pattern);
     uint8_t readback[kTestBytes] = {};
-    for (size_t i = 0; i < kTestBytes; ++i) {
-        pattern[i] = static_cast<uint8_t>((i * 37u) ^ (i >> 1u) ^ 0xa5u);
-    }
 
     if (!g_initialized || !range_valid(kTestAddress, kTestBytes)) {
         return {false, kTestAddress, kTestBytes, kTestBytes};
