@@ -102,7 +102,7 @@ class ToolTests(unittest.TestCase):
             for check in report["checks"]
             if check["name"].startswith("reference-commit:")
         ]
-        self.assertEqual(len(missing), 3)
+        self.assertEqual(len(missing), 4)
         self.assertTrue(all(check["actual"] == "missing" for check in missing))
 
     def test_strict_commit_requires_reference_mode(self):
@@ -406,7 +406,7 @@ class ToolTests(unittest.TestCase):
                 "--dry-run",
             )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertEqual(completed.stdout.count("fetch https://github.com/"), 3)
+        self.assertEqual(completed.stdout.count("fetch https://github.com/"), 4)
         self.assertIn("0d677d07cb0a037ee9cf331106400052622603ee", completed.stdout)
 
     def test_reference_fetch_refuses_existing_destination(self):
