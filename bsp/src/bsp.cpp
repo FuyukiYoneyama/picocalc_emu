@@ -1,6 +1,7 @@
 #include "picocalc/bsp.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
@@ -29,12 +30,21 @@ bool init() {
     gpio_set_dir(board::kPsramCs, GPIO_OUT);
     gpio_put(board::kPsramCs, 1);
 
-    keyboard::init();
+    const bool pio_lcd = strcmp(PICOCALC_LCD_VARIANT, "pio-rgb565") == 0;
+    if (pio_lcd) {
+        // The proven PIO applications initialize the LCD before the keyboard
+        // I2C peripheral. Keep this ordering local to the PIO BSP path.
+        printf("[PICOCALC][LCD] variant=%s\n", PICOCALC_LCD_VARIANT);
+        display::init();
+        printf("[PICOCALC][LCD] init status=ok\n");
+        keyboard::init();
+    } else {
+        keyboard::init();
+        printf("[PICOCALC][LCD] variant=%s\n", PICOCALC_LCD_VARIANT);
+        display::init();
+        printf("[PICOCALC][LCD] init status=ok\n");
+    }
     printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
-
-    printf("[PICOCALC][LCD] variant=%s\n", PICOCALC_LCD_VARIANT);
-    display::init();
-    printf("[PICOCALC][LCD] init status=ok\n");
     return true;
 }
 
