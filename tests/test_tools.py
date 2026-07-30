@@ -330,7 +330,7 @@ class ToolTests(unittest.TestCase):
                 (destination / ".picocalc-project.json").read_text(encoding="utf-8")
             )
             self.assertEqual(metadata["project_name"], "Demo_App-1")
-            self.assertEqual(metadata["bsp_version"], "0.2.1")
+            self.assertEqual(metadata["bsp_version"], "0.5.0")
 
     def test_project_generator_rejects_invalid_name(self):
         completed = run(PICOCALC, "new", "../bad")

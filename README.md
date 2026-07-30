@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml)
 
-PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボードの初期化を毎回
-作り直さないための開発基盤です。
+PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
+初期化を毎回作り直さないための開発基盤です。
 
-現在は **Milestone 0: Canonical BSP** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.5.0** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -19,6 +19,8 @@ PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード�
 - SD、keyboard、audio pinのsource fingerprintを検査する
 - SDのmount/write/sync/read/compare/removeスモークテストを実機で実行する
 - LCDのsolid fillとRAMRDによるGRAM readback一致検証を実機で実行する
+- Picocalc_ment実績ベースの48 kHz PWM/DMA音声ストリームを提供する
+- PicoCalc V2の8 MiB PSRAMをPIO1で初期化し、実績のあるクロック範囲だけをprobe/read/write検証する
 - 基準プロジェクトのcommitと証拠ファイルSHA-256を完全照合する
 - Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
@@ -151,6 +153,7 @@ python3 tools/picocalc.py verify \
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255 |
+| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、fudge必須、250 MHzではclkdiv 1.5以上、24-byte chunk |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。
@@ -172,6 +175,12 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 台帳の`overall_status`は`pending`にしています。LCD A/Bの合格と、AのSD/キーボード合格を
 実機証拠として確定し、未記入の装置情報だけを残しています。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、各ソースコミットから再生成します。
+
+BSP 0.5.0では、音声とPSRAMを「動作済みプロジェクトから固定した共通機能」として
+テンプレートへ取り込みました。起動ログの`[PICOCALC][VERIFY] psram=`と
+`[PICOCALC][VERIFY] audio=`で初期化結果を確認できます。0.5.0の音声・PSRAMは
+このソース時点でビルド検証済みですが、実機の合否はまだ台帳へ記録していません。
+実機ではA/Bを一度に一方だけ検証し、PSRAMのprobe/read/writeと音声出力を個別に確認します。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
 `general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに
