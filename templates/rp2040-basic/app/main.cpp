@@ -54,11 +54,18 @@ int main() {
            static_cast<unsigned long>(psram_info.system_clock_khz),
            static_cast<double>(psram_info.clkdiv),
            static_cast<unsigned long>(psram_info.spi_hz));
+    sleep_ms(250);
     const auto audio_stats = picocalc::audio::stats();
-    printf("[PICOCALC][VERIFY] audio=%s rate=48000 pwm_wrap=255 carrier_hz=%lu "
+    printf("[PICOCALC][AUDIO][VERIFY] mode=reference-fixed-sine status=%s "
+           "rate=48000 tone=1000 amp_db=-6 carrier_hz=%lu irq=%lu "
+           "refill=%lu sample_index=%lu underruns=%lu pwm_wrap=255 "
            "dma_half=128 ring=%lu\n",
            audio_stats.ring_capacity != 0u ? "ok" : "unavailable",
            static_cast<unsigned long>(audio_stats.carrier_hz),
+           static_cast<unsigned long>(audio_stats.irq_count),
+           static_cast<unsigned long>(audio_stats.refill_count),
+           static_cast<unsigned long>(audio_stats.sample_index),
+           static_cast<unsigned long>(audio_stats.underrun_count),
            static_cast<unsigned long>(audio_stats.ring_capacity));
 
     printf("[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard\n");
