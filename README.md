@@ -161,9 +161,10 @@ reference evidence照合、実機相関確認が必要です。
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
 現時点のテンプレートは`pending`であり、BSP 0.3.1のA/Bいずれについても実機成功を
-未確認です。次の実機試験対象はA（`hwspi-rgb888`）だけです。Aが合格するまでBの
-UF2は作成・提示せず、A合格後に同じ`build/picocalc_app.uf2`へBを生成します。
-portable検証とRP2040ビルド成功は、実機成功とは別です。
+未確認です。A（`hwspi-rgb888`）とB（`pio-rgb565`）はどちらも合格させる対象で、
+実機では一度に一方だけを`build/picocalc_app.uf2`へ生成して検証します。Aの結果で
+Bを廃棄せず、Bも同じ手順で個別に確認します。portable検証とRP2040ビルド成功は、
+実機成功とは別です。
 
 ## 文書
 

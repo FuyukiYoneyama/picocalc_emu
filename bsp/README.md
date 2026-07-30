@@ -18,9 +18,10 @@
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
 
-実機試験ではAを先に確認する。Aの`variant=hwspi-rgb888`と
-`[PICOCALC][LCD][VERIFY] app_status=pass`を確認してから、同じ
-`build/picocalc_app.uf2`へBを生成する。A/BのUF2を別名保存しない。
+実機試験ではA/Bを同時に扱わず、一度に一方だけを同じ
+`build/picocalc_app.uf2`へ生成する。Aの合否にかかわらずBも独立して検証し、
+両方の`variant`と`[PICOCALC][LCD][VERIFY] app_status=pass`を確認する。
+A/BのUF2を別名保存しない。
 
 ピン定義と周波数は`profiles/picocalc-rp2040.json`を唯一の入力源とし、
 `tools/generate_board_header.py`が`include/picocalc/board_generated.h`を生成する。

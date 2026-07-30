@@ -356,18 +356,9 @@ void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) {
         return;
     }
-    constexpr int kTileWidth = 160;
-    constexpr int kTileHeight = 160;
-    for (int tile_y = y; tile_y < y + h; tile_y += kTileHeight) {
-        const int tile_h = std::min(kTileHeight, y + h - tile_y);
-        for (int tile_x = x; tile_x < x + w; tile_x += kTileWidth) {
-            const int tile_w = std::min(kTileWidth, x + w - tile_x);
-            set_window(tile_x, tile_y, tile_w, tile_h);
-            send_solid_pixels(
-                rgb565, static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
-            g_window_pixels_remaining = 0;
-        }
-    }
+    set_window(x, y, w, h);
+    send_solid_pixels(rgb565, static_cast<size_t>(w) * static_cast<size_t>(h));
+    g_window_pixels_remaining = 0;
 }
 
 void clear(uint16_t rgb565) {

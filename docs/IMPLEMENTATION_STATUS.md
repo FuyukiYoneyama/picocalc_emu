@@ -44,12 +44,11 @@ python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
 python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
 ```
 
-実機試験は同時に二つのUF2を扱わず、Aを合格させてからBへ進める。まず
-`hwspi-rgb888`だけを標準名`build/picocalc_app.uf2`へ生成して試験する。
-ログ先頭の`variant=hwspi-rgb888`と、LCDの
-`[PICOCALC][LCD][VERIFY] app_status=pass`および画面写真を確認できるまで、
-`pio-rgb565`のUF2は作成・提示しない。Aが合格した後、同じ場所・同じ名前へ
-Bを生成し、ログ先頭の`variant=pio-rgb565`で識別する。
+実機試験は同時に二つのUF2を扱わず、一度に一方だけを標準名
+`build/picocalc_app.uf2`へ生成する。A（`hwspi-rgb888`）とB（`pio-rgb565`）は
+どちらも独立した合格対象であり、Aの結果でBを廃棄しない。各ログ先頭の
+`variant`と、LCDの`[PICOCALC][LCD][VERIFY] app_status=pass`および画面写真を
+個別に確認する。
 
 生成後に AI が通常変更する場所は `MyApp/app/` だけである。`MyApp/bsp/` は
 生成時点の既知動作版を固定したコピーであり、アプリ都合で初期化コードを
@@ -133,16 +132,15 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
-調整した後、LCDを二系統へ分離した BSP 0.3.1 は、現在A
-`hwspi-rgb888`を次の実機試験対象としている。Aが合格するまでBは試験対象に
-しない。A/Bそれぞれの実機結果は`hardware-validation/records/`へ個別に記録し、
-このBSP自体を新しい基準実装として確定する。
+調整した後、LCDを二系統へ分離した BSP 0.3.1 は、A/Bをそれぞれ個別に実機確認する
+段階にある。片方の不合格はもう片方を廃棄する理由にならない。A/Bそれぞれの実機結果は
+`hardware-validation/records/`へ個別に記録し、両方が合格した時点でこのBSP自体を
+新しい基準実装として確定する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.1 Aではバックライトの既定輝度、
-LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。A合格後に、
-BのPIO転送と同じ項目を確認する。
+PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.1 A/Bそれぞれでバックライトの
+既定輝度、LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
 
 また、次の機能は今後のエミュレーター段階である。
 

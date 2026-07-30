@@ -130,12 +130,19 @@ void set_window_unclipped(int x, int y, int w, int h) {
 void send_solid_pixels(uint16_t color, size_t count) {
     const uint8_t bytes[] = {static_cast<uint8_t>(color >> 8),
                              static_cast<uint8_t>(color & 0xff)};
-    select();
-    set_dc(true);
-    while (count-- > 0) write_bytes(bytes, sizeof(bytes));
-    wait_idle();
-    deselect();
-    g_window_pixels_remaining = 0;
+    while (count > 0) {
+        const size_t chunk = std::min(
+            count, static_cast<size_t>(board::kLcdMaxPixelsPerCs));
+        select();
+        set_dc(true);
+        for (size_t i = 0; i < chunk; ++i) {
+            write_bytes(bytes, sizeof(bytes));
+        }
+        wait_idle();
+        deselect();
+        count -= chunk;
+        g_window_pixels_remaining -= chunk;
+    }
 }
 
 void read_io_delay() { busy_wait_us_32(1); }
