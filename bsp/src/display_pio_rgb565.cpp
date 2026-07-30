@@ -15,6 +15,11 @@ namespace {
 constexpr float kPioClockDivider = 2.0f;
 constexpr int kMaxPixelsPerWindow = 160 * 160;
 static_assert(kMaxPixelsPerWindow == 25600, "PIO LCD window contract changed");
+// This is the blocking PIO/RGB565 transfer unit used by the proven
+// pico_skyace/general-lcd path.  It is deliberately local to this BSP
+// variant; the hardware-SPI/RGB888 buffer size is not a PIO contract.
+constexpr size_t kPioPixelsPerWrite = 160;
+static_assert(kPioPixelsPerWrite == 160, "PIO LCD write contract changed");
 constexpr size_t kMaxReadbackPixels = 16;
 PIO g_pio = pio0;
 uint g_sm = 0;
@@ -132,7 +137,7 @@ void send_solid_pixels(uint16_t color, size_t count) {
                              static_cast<uint8_t>(color & 0xff)};
     while (count > 0) {
         const size_t chunk = std::min(
-            count, static_cast<size_t>(board::kLcdMaxPixelsPerCs));
+            count, kPioPixelsPerWrite);
         select();
         set_dc(true);
         for (size_t i = 0; i < chunk; ++i) {
@@ -261,13 +266,22 @@ void set_window(int x, int y, int w, int h) {
 void write_pixels(const uint16_t* pixels, size_t count) {
     if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0) return;
     count = std::min(count, g_window_pixels_remaining);
-    select(); set_dc(true);
-    for (size_t i = 0; i < count; ++i) {
-        const uint8_t bytes[] = {static_cast<uint8_t>(pixels[i] >> 8),
-                                 static_cast<uint8_t>(pixels[i] & 0xff)};
-        write_bytes(bytes, sizeof(bytes));
+    size_t offset = 0;
+    while (offset < count) {
+        const size_t chunk = std::min(count - offset, kPioPixelsPerWrite);
+        select();
+        set_dc(true);
+        for (size_t i = 0; i < chunk; ++i) {
+            const uint16_t pixel = pixels[offset + i];
+            const uint8_t bytes[] = {static_cast<uint8_t>(pixel >> 8),
+                                     static_cast<uint8_t>(pixel & 0xff)};
+            write_bytes(bytes, sizeof(bytes));
+        }
+        wait_idle();
+        deselect();
+        offset += chunk;
+        g_window_pixels_remaining -= chunk;
     }
-    wait_idle(); deselect(); g_window_pixels_remaining -= count;
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
