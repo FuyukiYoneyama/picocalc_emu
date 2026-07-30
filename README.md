@@ -160,18 +160,23 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.3.2のA/Bいずれについても実機成功を
+現時点のテンプレートは`pending`であり、BSP 0.4.0のA/Bいずれについても実機成功を
 未確認です。A（`hwspi-rgb888`）とB（`pio-rgb565`）はどちらも合格させる対象で、
 実機では一度に一方だけを`build/picocalc_app.uf2`へ生成して検証します。Aの結果で
 Bを廃棄せず、Bも同じ手順で個別に確認します。portable検証とRP2040ビルド成功は、
 実機成功とは別です。
 
-BSP 0.3.2ではB（`pio-rgb565`）の電気的契約を実働プロジェクトへ戻しました。リセット
-解除後200ms、`CASET/RASET/RAMWR`はウィンドウごとに1回、ウィンドウは160×160以下、
-RAMWRデータは160ピクセルごとにCS解放です。詳細と根拠は
-[LCD調査記録](docs/LCD_INVESTIGATION_20260729.md)にあります。この個体では`RAMRD`が
-A/Bとも意味のある値を返さないため、Bの合否は画面写真で判定し、
-`[PICOCALC][LCD][VERIFY] app_status`は参考値として扱います。
+BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
+`general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに
+しました。`bsp/src/display_pio_rgb565.cpp`は`game/pico_skyace`と同じ呼び出し粒度
+（160×160のウィンドウごとに`set_window`1回、画素は160ピクセル単位）に徹する薄い
+アダプタです。`verify`は`vendor-lcd-pio-unmodified`でコピーのSHA-256を照合し、
+アダプタ側に転送処理が戻っていないことも検査します。経緯は
+[LCD調査記録](docs/LCD_INVESTIGATION_20260729.md)にあります。
+
+RAMRDはこの実機で正常に動作します（`life`のスクリーンショット取得ビルドが同じ手順で
+正しい画像を出力しています）。BのRAMRDは`life`の手順をそのまま使い、読み値が期待と
+違う場合はパネルではなく書き込み経路を疑います。
 
 ## 文書
 
