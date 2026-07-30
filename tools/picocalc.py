@@ -53,12 +53,15 @@ def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[st
         app_text = app_cmake.read_text(encoding="utf-8")
     except OSError:
         app_text = ""
-    if "0.3.1-pio-rgb565" in app_text and "0.3.1-hwspi-rgb888" in app_text:
-        app_version = (
-            "0.3.1-pio-rgb565"
-            if lcd_variant == "pio-rgb565"
-            else "0.3.1-hwspi-rgb888"
-        )
+    branches = re.findall(
+        r"set\s*\(\s*PICOCALC_APP_VERSION\s+\"([^\"]+)\"\s*\)", app_text
+    )
+    if len(branches) > 1:
+        marker = lcd_variant or "hwspi-rgb888"
+        for candidate in branches:
+            if marker in candidate:
+                app_version = candidate
+                break
     return (bsp_version, app_version)
 
 

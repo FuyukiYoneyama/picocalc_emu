@@ -160,11 +160,18 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.3.1のA/Bいずれについても実機成功を
+現時点のテンプレートは`pending`であり、BSP 0.3.2のA/Bいずれについても実機成功を
 未確認です。A（`hwspi-rgb888`）とB（`pio-rgb565`）はどちらも合格させる対象で、
 実機では一度に一方だけを`build/picocalc_app.uf2`へ生成して検証します。Aの結果で
 Bを廃棄せず、Bも同じ手順で個別に確認します。portable検証とRP2040ビルド成功は、
 実機成功とは別です。
+
+BSP 0.3.2ではB（`pio-rgb565`）の電気的契約を実働プロジェクトへ戻しました。リセット
+解除後200ms、`CASET/RASET/RAMWR`はウィンドウごとに1回、ウィンドウは160×160以下、
+RAMWRデータは160ピクセルごとにCS解放です。詳細と根拠は
+[LCD調査記録](docs/LCD_INVESTIGATION_20260729.md)にあります。この個体では`RAMRD`が
+A/Bとも意味のある値を返さないため、Bの合否は画面写真で判定し、
+`[PICOCALC][LCD][VERIFY] app_status`は参考値として扱います。
 
 ## 文書
 
