@@ -181,8 +181,9 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 
 0.6.0は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
-`PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の`app=0.6.0-a-bsp-reference`
-または`app=0.6.0-b-bsp-reference`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+`PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
+`app=0.6.0-a-hwspi-rgb888-bsp-reference`または
+`app=0.6.0-b-pio-rgb565-bsp-reference`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。ソース検査とA/Bビルドを先に実施し、0.6.0の実機検証は最後に行う。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、

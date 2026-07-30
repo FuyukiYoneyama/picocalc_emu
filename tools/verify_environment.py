@@ -615,8 +615,8 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "template-audio-mode-selection",
         [
             "PICOCALC_AUDIO_REFERENCE_TONE",
-            "0.6.0-a-bsp-reference",
-            "0.6.0-b-bsp-reference",
+            "0.6.0-a-hwspi-rgb888-bsp-reference",
+            "0.6.0-b-pio-rgb565-bsp-reference",
         ],
     )
     for example in ("lcd.cpp", "keyboard.cpp", "sd.cpp", "psram.cpp", "audio_stream.cpp"):
