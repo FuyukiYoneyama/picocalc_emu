@@ -19,12 +19,13 @@ struct Stats {
     uint32_t clip_count;
 };
 
-// Reference baseline: initializes and starts the Picocalc_ment fixed -6 dBFS
-// 1 kHz PWM/DMA tone. This is intentionally the copied hardware test path;
-// the streaming producer is added only after this path passes on hardware.
+// Initializes the copied Picocalc_ment PWM/DMA stream without starting it.
+// The application fills it with PCM samples and then calls start().
 bool init();
-// Reserved for the later streaming producer; the reference tone is started by
-// init() exactly as in Picocalc_ment.
+// Initializes and starts the copied Picocalc_ment fixed -6 dBFS 1 kHz tone.
+// This is the standalone reference-hardware path used by the template when
+// PICOCALC_AUDIO_REFERENCE_TONE is enabled.
+bool init_reference_tone();
 void start();
 void stop();
 bool write_sample(int16_t left, int16_t right);

@@ -3,6 +3,9 @@ set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
 set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
     hwspi-rgb888 pio-rgb565)
 
+option(PICOCALC_AUDIO_REFERENCE_TONE
+    "Use the copied Picocalc_ment fixed-sine reference path" ON)
+
 if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
     # A follows the hardware-proven loader/helloworld SPI contract. The
     # transport and its CS-held window transaction live in the vendor driver;
@@ -102,6 +105,7 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
         PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
+        PICOCALC_AUDIO_REFERENCE_TONE=$<BOOL:${PICOCALC_AUDIO_REFERENCE_TONE}>
         PSRAM_PIN_CS=${PICOCALC_PSRAM_CS}
         PSRAM_PIN_SCK=${PICOCALC_PSRAM_SCK}
         PSRAM_PIN_MOSI=${PICOCALC_PSRAM_MOSI}

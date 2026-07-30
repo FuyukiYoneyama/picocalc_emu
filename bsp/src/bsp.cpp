@@ -36,9 +36,19 @@ bool init() {
     psram::init();
     keyboard::init();
     printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
+#if PICOCALC_AUDIO_REFERENCE_TONE
+    const bool audio_ok = audio::init_reference_tone();
+    const char* const audio_mode = "reference-fixed-sine";
+    const char* const audio_output = "1khz";
+#else
     const bool audio_ok = audio::init();
-    printf("[PICOCALC][AUDIO] status=%s mode=reference-fixed-sine output=1khz\n",
-           audio_ok ? "ok" : "unavailable");
+    const char* const audio_mode = "stream";
+    const char* const audio_output = "stopped-until-start";
+#endif
+    printf("[PICOCALC][AUDIO] status=%s mode=%s output=%s\n",
+           audio_ok ? "ok" : "unavailable",
+           audio_mode,
+           audio_output);
     return true;
 }
 

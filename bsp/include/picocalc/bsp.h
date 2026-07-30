@@ -6,6 +6,7 @@
 #include "picocalc/filesystem.h"
 #include "picocalc/keyboard.h"
 #include "picocalc/psram.h"
+#include "picocalc/psram_buffer.h"
 #include "picocalc/sdcard.h"
 
 namespace picocalc {

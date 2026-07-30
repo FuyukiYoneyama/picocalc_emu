@@ -37,17 +37,17 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 - PSRAM: `[PICOCALC][PSRAM][POLICY]`、安全な`[PSRAM][PROBE]`、`[PSRAM][VERIFY] status=pass`、
   8 MiB範囲のread/write利用可否。250 MHzではfudge=trueのclkdiv 1.0/1.2を試していないこと、
   125 MHz側ではfudge=falseを使ったこと
-- audio: `[PICOCALC][VERIFY] audio=ok`、48 kHz、PWM wrap 255、carrier、DMA half/ringを確認し、
-  実際にPCMを投入した音声出力を別途記録
+- audio: `[PICOCALC][AUDIO][VERIFY] mode=... status=ok`、48 kHz、PWM wrap 255、carrier、
+  DMA half/ring、underrunを確認する。reference-fixed-sineでは連続1 kHz音、streamでは
+  PCM投入後の出力を別途記録する
 
 実機試験はA（`hwspi-rgb888`）とB（`pio-rgb565`）を同じ標準UF2名で一つずつ行う。
 片方の不合格はもう片方を廃棄する理由にならない。両方が`app_status=pass`になったため、
 Canonical BSPのLCD検証は完了している。現在はBのキーボード試験と、両セッションの基板
 revision／SDカード識別情報が未記入である。
 
-BSP 0.5.0のPSRAMと音声はソースとRP2040ビルドまで確認済みだが、実機記録は未作成である。
-したがって、これらを`pass`と記載した検証台帳を先に作ってはならない。Aの実機検証を行い、
-その後同じ標準UF2名でBを検証する。
+BSP 0.6.0の音声とPSRAMは、ソース検査とA/BのRP2040ビルドを先に確認する。
+実機記録はその後に作成し、Aの実機検証を行った後、同じ標準UF2名でBを検証する。
 `pending`テンプレートは成功証拠ではない。`records/`に追加した記録だけが
 Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義する。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、
