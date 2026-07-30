@@ -238,18 +238,16 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
 }  // namespace
 
 void init() {
-    // SCK/MOSI are initialized by lcd_spi_min_program_init(), exactly as in
-    // the working life/pico_rescue drivers. Only the CPU-controlled pins and
-    // MISO are initialized here.
-    gpio_init(board::kLcdMiso);
+    // Match pico_rescue: SCK/MOSI are initialized by the PIO helper, while
+    // the real PSRAM CS (GP20) is held inactive. GP21 is PSRAM SCK, not CS.
     gpio_init(board::kLcdCs); gpio_init(board::kLcdDc); gpio_init(board::kLcdReset);
-    gpio_init(board::kPsramSck);
+    gpio_init(board::kPsramCs); gpio_init(board::kLcdMiso);
     gpio_set_dir(board::kLcdCs, GPIO_OUT); gpio_set_dir(board::kLcdDc, GPIO_OUT);
-    gpio_set_dir(board::kLcdReset, GPIO_OUT); gpio_set_dir(board::kLcdMiso, GPIO_IN);
-    gpio_set_dir(board::kPsramSck, GPIO_OUT);
+    gpio_set_dir(board::kLcdReset, GPIO_OUT); gpio_set_dir(board::kPsramCs, GPIO_OUT);
+    gpio_set_dir(board::kLcdMiso, GPIO_IN);
     gpio_disable_pulls(board::kLcdMiso);
     gpio_put(board::kLcdCs, 1); gpio_put(board::kLcdDc, 1);
-    gpio_put(board::kLcdReset, 1); gpio_put(board::kPsramSck, 1);
+    gpio_put(board::kLcdReset, 1); gpio_put(board::kPsramCs, 1);
     g_program_offset = pio_add_program(g_pio, &lcd_spi_min_program);
     lcd_spi_min_program_init(g_pio, g_sm, g_program_offset,
                              board::kLcdMosi, board::kLcdSck,

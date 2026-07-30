@@ -492,6 +492,8 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "kLineBufferBytes = static_cast<size_t>(width) * 2",
             "uint8_t g_line_buffer[kLineBufferBytes] = {}",
             "write_bytes(g_line_buffer, pixels_per_row * 2)",
+            "gpio_init(board::kPsramCs)",
+            "gpio_put(board::kPsramCs, 1)",
             "reference=life-pico_rescue",
             "write_command1(0x3a, 0x65)",
             "set_bitbang_mode(true)",
