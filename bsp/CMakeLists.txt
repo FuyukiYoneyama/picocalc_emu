@@ -3,6 +3,13 @@ set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
 set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
     hwspi-rgb888 pio-rgb565)
 
+# Bring-up diagnostic for the PIO variant. It paints one quadrant per transport,
+# reads each one back and then halts, so a single UF2 separates "PIO does not
+# drive the pins" from "the panel rejects this clock". Never enable it for a
+# normal application build.
+set(PICOCALC_LCD_PIO_BRINGUP OFF CACHE BOOL
+    "Run the PIO LCD transport bring-up stages instead of the normal app flow")
+
 if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
     set(PICOCALC_DISPLAY_SOURCE src/display.cpp)
     set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 125000)
@@ -72,6 +79,7 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
         PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
+        PICOCALC_LCD_PIO_BRINGUP=$<BOOL:${PICOCALC_LCD_PIO_BRINGUP}>
 )
 
 target_compile_options(picocalc_bsp PRIVATE

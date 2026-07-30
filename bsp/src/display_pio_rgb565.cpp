@@ -9,6 +9,15 @@
 #include "picocalc/board.h"
 #include "lcd_spi_min.pio.h"
 
+#ifndef PICOCALC_LCD_PIO_BRINGUP
+#define PICOCALC_LCD_PIO_BRINGUP 0
+#endif
+
+#if PICOCALC_LCD_PIO_BRINGUP
+#include "hardware/structs/iobank0.h"
+#include "hardware/structs/padsbank0.h"
+#endif
+
 namespace picocalc::display {
 namespace {
 
@@ -283,6 +292,149 @@ bool readback_pixels(int x, int y, int w, int h, uint16_t* output) {
     return true;
 }
 
+#if PICOCALC_LCD_PIO_BRINGUP
+// Bring-up build only. These stages exist to separate three questions that the
+// normal smoke test cannot separate on a panel whose RAMRD returns the retained
+// image: does PIO0 drive SCK/MOSI at all, does the panel accept GRAM writes over
+// bit-banged SIO, and does it accept them over PIO at 15.6 MHz and at 31.25 MHz.
+// Each stage paints one 160x160 quadrant, so the screen alone reports the result.
+constexpr float kBringupSlowClockDivider = 12500.0f;  // 250 MHz -> ~10 kHz SCK
+constexpr float kBringupInSpecClockDivider = 8.0f;    // 250 MHz -> 15.625 MHz SCK
+
+void bringup_report_registers(const char* phase) {
+    printf("[PICOCALC][LCD][BRINGUP] phase=%s sck_funcsel=%lu mosi_funcsel=%lu "
+           "sck_pad=0x%08lx mosi_pad=0x%08lx\n",
+           phase,
+           static_cast<unsigned long>(iobank0_hw->io[board::kLcdSck].ctrl &
+                                      IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS),
+           static_cast<unsigned long>(iobank0_hw->io[board::kLcdMosi].ctrl &
+                                      IO_BANK0_GPIO0_CTRL_FUNCSEL_BITS),
+           static_cast<unsigned long>(padsbank0_hw->io[board::kLcdSck]),
+           static_cast<unsigned long>(padsbank0_hw->io[board::kLcdMosi]));
+    printf("[PICOCALC][LCD][BRINGUP] phase=%s pio_ctrl=0x%08lx flevel=0x%08lx "
+           "fdebug=0x%08lx pinctrl=0x%08lx shiftctrl=0x%08lx execctrl=0x%08lx "
+           "clkdiv=0x%08lx addr=%lu offset=%lu\n",
+           phase,
+           static_cast<unsigned long>(g_pio->ctrl),
+           static_cast<unsigned long>(g_pio->flevel),
+           static_cast<unsigned long>(g_pio->fdebug),
+           static_cast<unsigned long>(g_pio->sm[g_sm].pinctrl),
+           static_cast<unsigned long>(g_pio->sm[g_sm].shiftctrl),
+           static_cast<unsigned long>(g_pio->sm[g_sm].execctrl),
+           static_cast<unsigned long>(g_pio->sm[g_sm].clkdiv),
+           static_cast<unsigned long>(g_pio->sm[g_sm].addr),
+           static_cast<unsigned long>(g_program_offset));
+}
+
+// Stage 0: does PIO0 actually move SCK/MOSI? Runs with CS inactive so the panel
+// ignores the traffic. The state machine is slowed to ~10 kHz so a CPU polling
+// loop can count pad transitions; one byte must produce 16 SCK edges.
+void bringup_check_pio_pins() {
+    bringup_report_registers("pins_before");
+    pio_sm_set_clkdiv(g_pio, g_sm, kBringupSlowClockDivider);
+    pio_sm_clkdiv_restart(g_pio, g_sm);
+    deselect();
+    set_dc(true);
+    unsigned sck_edges = 0;
+    unsigned mosi_edges = 0;
+    int last_sck = gpio_get(board::kLcdSck) ? 1 : 0;
+    int last_mosi = gpio_get(board::kLcdMosi) ? 1 : 0;
+    const int idle_sck = last_sck;
+    const uint8_t probe = 0xa5;
+    lcd_spi_min_put(g_pio, g_sm, probe);
+    const absolute_time_t deadline = make_timeout_time_ms(50);
+    while (!time_reached(deadline)) {
+        const int sck = gpio_get(board::kLcdSck) ? 1 : 0;
+        const int mosi = gpio_get(board::kLcdMosi) ? 1 : 0;
+        if (sck != last_sck) { ++sck_edges; last_sck = sck; }
+        if (mosi != last_mosi) { ++mosi_edges; last_mosi = mosi; }
+    }
+    printf("[PICOCALC][LCD][BRINGUP] stage=0 name=pio_pin_edges probe=0x%02x "
+           "idle_sck=%d sck_edges=%u mosi_edges=%u expect_sck_edges=16 verdict=%s\n",
+           probe, idle_sck, sck_edges, mosi_edges,
+           sck_edges >= 16 ? "pio_drives_pins" : "pio_output_missing");
+    bringup_report_registers("pins_after");
+    pio_sm_set_clkdiv(g_pio, g_sm, kPioClockDivider);
+    pio_sm_clkdiv_restart(g_pio, g_sm);
+}
+
+void bitbang_write_window(int x, int y, int w, int h) {
+    bitbang_set_read_window(x, y, w, h);
+    set_dc(false);
+    bitbang_write_byte(0x2c);
+    set_dc(true);
+}
+
+// Stage 2: fill through the bit-banged SIO path, which is the same path that
+// already reaches this panel during RAMRD.
+void bringup_fill_rect_sio(int x, int y, int w, int h, uint16_t color) {
+    const uint8_t bytes[] = {static_cast<uint8_t>(color >> 8),
+                             static_cast<uint8_t>(color & 0xff)};
+    wait_idle();
+    deselect();
+    set_bitbang_mode(true);
+    select();
+    bitbang_write_window(x, y, w, h);
+    for (int pixel = 0; pixel < w * h; ++pixel) {
+        write_bytes_sio(bytes, sizeof(bytes));
+    }
+    deselect();
+    set_bitbang_mode(false);
+}
+
+void bringup_fill_rect_pio(int x, int y, int w, int h, uint16_t color,
+                           float clock_divider) {
+    pio_sm_set_clkdiv(g_pio, g_sm, clock_divider);
+    pio_sm_clkdiv_restart(g_pio, g_sm);
+    for (int tile_y = y; tile_y < y + h; tile_y += kWindowTileSide) {
+        const int tile_h = std::min(kWindowTileSide, y + h - tile_y);
+        for (int tile_x = x; tile_x < x + w; tile_x += kWindowTileSide) {
+            const int tile_w = std::min(kWindowTileSide, x + w - tile_x);
+            set_window_unclipped(tile_x, tile_y, tile_w, tile_h);
+            send_solid_pixels(color,
+                              static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
+        }
+    }
+    pio_sm_set_clkdiv(g_pio, g_sm, kPioClockDivider);
+    pio_sm_clkdiv_restart(g_pio, g_sm);
+}
+
+void bringup_report_stage(int stage, const char* name, const char* transport,
+                          double mhz, int x, int y, uint16_t expected) {
+    uint16_t actual[kMaxReadbackPixels] = {};
+    const bool read_ok = readback_pixels(x, y, 1, 1, actual);
+    // RAMRD on this panel has never returned trustworthy data, so the quadrant
+    // colours on screen are the verdict and readback_match is only a hint.
+    printf("[PICOCALC][LCD][BRINGUP] stage=%d name=%s transport=%s sck_mhz=%.2f "
+           "probe=%d,%d expected=0x%04x actual=0x%04x read=%s readback_match=%s "
+           "judge=screen_quadrant\n",
+           stage, name, transport, mhz, x, y, expected, actual[0],
+           read_ok ? "ok" : "invalid",
+           (read_ok && actual[0] == expected) ? "yes" : "no");
+}
+
+void run_bringup_stages() {
+    printf("[PICOCALC][LCD][BRINGUP] mode=quadrant_stages "
+           "layout=tl:sio_red,tr:pio_15mhz_green,bl:pio_31mhz_blue\n");
+    bringup_fill_rect_sio(0, 0, kWindowTileSide, kWindowTileSide, 0xf800);
+    bringup_report_stage(2, "sio_bitbang_fill", "bitbang_sio", 0.5, 8, 8, 0xf800);
+    bringup_fill_rect_pio(kWindowTileSide, 0, kWindowTileSide, kWindowTileSide,
+                          0x07e0, kBringupInSpecClockDivider);
+    bringup_report_stage(3, "pio_fill_in_spec", "pio0_blocking", 15.625,
+                         kWindowTileSide + 8, 8, 0x07e0);
+    bringup_fill_rect_pio(0, kWindowTileSide, kWindowTileSide, kWindowTileSide,
+                          0x001f, kPioClockDivider);
+    bringup_report_stage(4, "pio_fill_current", "pio0_blocking", 31.25, 8,
+                         kWindowTileSide + 8, 0x001f);
+    printf("[PICOCALC][LCD][BRINGUP] stage=end action=halt "
+           "read_screen=tl_red_means_sio_ok,tr_green_means_pio_15mhz_ok,"
+           "bl_blue_means_pio_31mhz_ok\n");
+    while (true) {
+        tight_loop_contents();
+    }
+}
+#endif  // PICOCALC_LCD_PIO_BRINGUP
+
 }  // namespace
 
 void init() {
@@ -300,6 +452,9 @@ void init() {
     lcd_spi_min_program_init(g_pio, g_sm, g_program_offset,
                              board::kLcdMosi, board::kLcdSck,
                              kPioClockDivider);
+#if PICOCALC_LCD_PIO_BRINGUP
+    bringup_check_pio_pins();
+#endif
     initialize_controller();
     printf("[PICOCALC][LCD][PIO] transport=pio0_blocking sm=0 clkdiv=%.2f "
            "hz=31250000 colmod=0x65 wire=rgb565 reference=life-pico_rescue "
@@ -310,6 +465,9 @@ void init() {
            static_cast<unsigned long>(kResetSettleMs),
            kWindowTileSide, kWindowTileSide,
            static_cast<unsigned long>(kPixelsPerCs));
+#if PICOCALC_LCD_PIO_BRINGUP
+    run_bringup_stages();
+#endif
 }
 
 void set_window(int x, int y, int w, int h) {
