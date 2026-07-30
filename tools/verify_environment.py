@@ -553,6 +553,8 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "kSafeClkdivAt125Mhz = 1.0f",
             "PSRAM][POLICY]",
             "low_speed_fudge=disabled",
+            "psram_spi_init_clkdiv(pio1, -1, clkdiv, fudge)",
+            "fudge=%u",
             "candidates[candidate_count++] = {kSafeClkdivAt125Mhz, false}",
             "g_info.system_clock_khz > 125000u",
             "self_test()",
