@@ -1,12 +1,12 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.4.0、LCD A/Bを独立vendor化）
+## 現在利用できるもの（BSP/template 0.5.0、LCD A/B・音声・PSRAMを固定）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
 あり、現在の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
 
-- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS BSP。Aはloader-style SPI/RGB888転送を専用vendorドライバへ固定し、BはPIO/RGB565の無改変vendorコピーを使う
+- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。Aはloader-style SPI/RGB888転送を専用vendorドライバへ固定し、BはPIO/RGB565の無改変vendorコピーを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリと CMake
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
@@ -26,6 +26,7 @@
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
+| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、fudge、250 MHz時clkdiv 1.5以上、24 byte chunk、read/write自己検証 |
 
 ## 新規プロジェクト
 
@@ -162,12 +163,13 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 - SPI/I2C デバイスモデルと LCD framebuffer/PNG
 - FAT イメージを使う仮想 SD と故障注入
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
-- PIO/DMA、multicore、PSRAM を使う既存アプリ
+- PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-音声については `Picocalc_ment` を実機基準として証拠台帳へ登録済みだが、
-共通BSPの音声APIとホスト音声モデルはまだ未実装である。実装時には音源合成器
-そのものと出力経路を分離し、固定1 kHz診断、ring underrun、sample pacing、
-GP26/27 PWM出力を別々に検証する。
+音声とPSRAMは0.5.0で共通BSPへ取り込んだ。音声は`Picocalc_ment`のPWM/DMA実装を
+固定し、PSRAMは既存PIOドライバを固定したうえで、250 MHz時の既知のREAD8失敗条件
+（clkdiv 1.0/1.2）を候補から除外している。いずれもソースとRP2040ビルドは確認済みだが、
+この版の実機合否はまだ記録していない。実機ではログのpolicy/probe/self-testと、
+PCM投入時の音声出力を別々に検証する。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、
 および最初の実機試験で「どこが失敗したか」を一度で観測可能にすることである。

@@ -427,8 +427,10 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
                 "draw_test_pattern()",
                 "display::clear(color)",
                 "display::verify_pixels(",
-                "[PICOCALC][LCD][VERIFY] app_status=",
-                "filesystem::smoke_test()",
+            "[PICOCALC][LCD][VERIFY] app_status=",
+            "[PICOCALC][VERIFY] psram=",
+            "[PICOCALC][VERIFY] audio=",
+            "filesystem::smoke_test()",
                 "keyboard::read_event(",
                 "[PICOCALC][SMOKE]",
             ]
@@ -538,6 +540,71 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "vendor::lcd_hwspi_rgb888::readback_rgb888(",
             "rgb888_to_rgb565(",
             "PixelVerifyResult verify_pixels(",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/src/psram.cpp",
+        "psram-safe-clock-policy",
+        [
+            "kMaxSystemClockKhz = 250000u",
+            "kSafeClkdivAt250Mhz = 1.5f",
+            "PSRAM][POLICY]",
+            "candidates[candidate_count++]",
+            "self_test()",
+            "max_transfer_chunk_bytes",
+            "reason=sysclk_above_safe_limit",
+            "reason=no_safe_configuration",
+        ],
+    )
+    require_absent(
+        checks,
+        root,
+        "bsp/src/psram.cpp",
+        "psram-no-unsafe-250mhz-candidates",
+        [
+            "candidates[candidate_count++] = 1.0f",
+            "candidates[candidate_count++] = 1.2f",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/src/audio.cpp",
+        "audio-public-adapter",
+        [
+            '#include "picocalc/audio.h"',
+            "picoment::audio_pwm::init_stream();",
+            "picoment::audio_pwm::start_stream();",
+            "picoment::audio_pwm::stop_stream();",
+            "picoment::audio_pwm::write_sample(",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp",
+        "audio-proven-reference",
+        [
+            "constexpr uint32_t kHalfSamples = 128",
+            "constexpr uint32_t kRingSamples = 512",
+            "kErrorDiffusionPercent = 100",
+            "dma_timer_set_fraction(",
+            "hardware/pwm.h",
+            "hardware/dma.h",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/vendor/rp2040-psram/psram_spi.c",
+        "psram-vendored-pio-driver",
+        [
+            "psram_spi_init_clkdiv",
+            "0x66u",
+            "0x99u",
+            "pio_spi_write_read_dma_blocking",
         ],
     )
     require_text(

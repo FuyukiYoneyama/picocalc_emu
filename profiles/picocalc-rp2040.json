@@ -49,12 +49,22 @@
     "cs": 20,
     "sck": 21,
     "mosi": 2,
-    "miso": 3
+    "miso": 3,
+    "capacity_bytes": 8388608,
+    "transport": "pio1_spi",
+    "fudge_required": true,
+    "max_system_clock_khz": 250000,
+    "safe_clkdiv_at_250mhz": 1.5,
+    "transfer_chunk_bytes": 24,
+    "policy": "probe_read_write_and_reject_unsafe_clock"
   },
   "audio": {
     "left": 26,
     "right": 27,
     "reference_sample_rate_hz": 48000,
-    "reference_pwm_wrap": 255
+    "reference_pwm_wrap": 255,
+    "dma_half_samples": 128,
+    "ring_samples": 512,
+    "error_diffusion_percent": 100
   }
 }

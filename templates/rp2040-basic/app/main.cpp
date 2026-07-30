@@ -48,6 +48,19 @@ int main() {
     printf("[PICOCALC][APP] version=%s compile=%s %s\n",
            PICOCALC_APP_VERSION, __DATE__, __TIME__);
 
+    const auto psram_info = picocalc::psram::info();
+    printf("[PICOCALC][VERIFY] psram=%s sysclk_khz=%lu clkdiv=%.2f spi_hz=%lu\n",
+           picocalc::psram::available() ? "ok" : "unavailable",
+           static_cast<unsigned long>(psram_info.system_clock_khz),
+           static_cast<double>(psram_info.clkdiv),
+           static_cast<unsigned long>(psram_info.spi_hz));
+    const auto audio_stats = picocalc::audio::stats();
+    printf("[PICOCALC][VERIFY] audio=%s rate=48000 pwm_wrap=255 carrier_hz=%lu "
+           "dma_half=128 ring=%lu\n",
+           audio_stats.ring_capacity != 0u ? "ok" : "unavailable",
+           static_cast<unsigned long>(audio_stats.carrier_hz),
+           static_cast<unsigned long>(audio_stats.ring_capacity));
+
     printf("[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard\n");
 
     const uint16_t solid_colors[] = {0x0000, 0xffff, 0xf800, 0x07e0, 0x001f};

@@ -29,6 +29,7 @@ bool init() {
     gpio_init(board::kPsramCs);
     gpio_set_dir(board::kPsramCs, GPIO_OUT);
     gpio_put(board::kPsramCs, 1);
+    psram::init();
 
     const bool pio_lcd = strcmp(PICOCALC_LCD_VARIANT, "pio-rgb565") == 0;
     if (pio_lcd) {
@@ -45,6 +46,9 @@ bool init() {
         printf("[PICOCALC][LCD] init status=ok\n");
     }
     printf("[PICOCALC][BACKLIGHT] mode=unchanged status=ok\n");
+    const bool audio_ok = audio::init();
+    printf("[PICOCALC][AUDIO] status=%s mode=initialized output=midpoint\n",
+           audio_ok ? "ok" : "unavailable");
     return true;
 }
 

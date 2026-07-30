@@ -2,7 +2,7 @@
   "schema_version": 1,
   "template": "rp2040-basic",
   "target": "picocalc-rp2040",
-  "bsp_version": "0.2.1",
+  "bsp_version": "0.5.0",
   "application_sources": [
     "app/main.cpp"
   ],

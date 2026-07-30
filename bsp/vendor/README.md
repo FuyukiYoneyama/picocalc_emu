@@ -31,6 +31,29 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 同一である。`general/01_DISPLAY_LCD.md`§0と§8.1は、独自実装ではなくこのファイルを
 そのまま使うことを指示している。
 
+## Audio: `audio_picoment`
+
+`audio_picoment/platform/picocalc_audio_pwm.cpp/.h`は、実機で音声出力を確認した
+`synth/Picocalc_ment/src/platform/`のPWM/DMA経路をBSP向けに固定したもの。PRA32-Uなどの
+音源生成は含めず、PCMを受け取る出力経路だけを提供する。
+
+- GP26/27、sysclk 250 MHz基準、PWM wrap 255、約976 kHz carrier
+- 48 kHz、DMA timer、128 sample half-buffer、512 sample ring
+- 16-bit PCMからPWMへの量子化誤差拡散100%、DMA IRQのunderrun/drop統計
+- 初期化時は発音せずPWM midpoint。アプリが`write_sample()`して`start()`する
+
+## PSRAM: `rp2040-psram`
+
+`rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを
+固定したもの（MIT License）。`game/pico_rescue`でも同じドライバが使われている。
+ヘッダの仕様どおりCS/CLKは連続GPIOが必要なため、PicoCalc V2ではCS20/SCK21、MOSI2、
+MISO3を固定する。`fudge`を常時有効にし、read/writeはDMA blocking APIを使う。
+
+クロック制約はドライバの一般的な上限ではなく、PicoCalc実機の記録を優先する。
+250 MHz時のclkdiv 1.0/1.2はREAD8失敗実績があるため候補に入れず、1.5/2/3/4を
+read/write自己検証して合格した設定だけを採用する。PSRAMは揮発性なので永続ログや
+セーブ領域には使わない。
+
 ## 規約
 
 - **このディレクトリのファイルを編集しない。** 修正が必要なら取得元を直し、コピーを

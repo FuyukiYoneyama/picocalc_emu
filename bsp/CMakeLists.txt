@@ -25,16 +25,32 @@ endif()
 
 add_library(picocalc_bsp STATIC
     src/bsp.cpp
+    src/audio.cpp
     ${PICOCALC_DISPLAY_SOURCE}
     src/fatfs_diskio.cpp
     src/filesystem.cpp
     src/keyboard.cpp
+    src/psram.cpp
     src/sdcard.cpp
     third_party/ChanFatFS/src/ff.c
     third_party/ChanFatFS/src/ffunicode.c
+    vendor/audio_picoment/platform/picocalc_audio_pwm.cpp
+    vendor/rp2040-psram/psram_spi.c
 )
 
 pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/lcd_spi_min.pio)
+pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/rp2040-psram/psram_spi.pio)
+
+# These pins are also generated into board_generated.h from the JSON profile.
+# Keep the vendored C driver on the same fixed PicoCalc V2 wiring.
+set(PICOCALC_PSRAM_CS 20)
+set(PICOCALC_PSRAM_SCK 21)
+set(PICOCALC_PSRAM_MOSI 2)
+set(PICOCALC_PSRAM_MISO 3)
+set_source_files_properties(
+    vendor/rp2040-psram/psram_spi.c
+    PROPERTIES COMPILE_OPTIONS "-Wno-format;-Wno-unused-variable"
+)
 
 file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" PICOCALC_BSP_VERSION)
 string(STRIP "${PICOCALC_BSP_VERSION}" PICOCALC_BSP_VERSION)
@@ -74,6 +90,7 @@ target_include_directories(picocalc_bsp
         # Lets the adapter include "vendor/lcd_rgb565_pio.h" without editing the
         # vendored copy.
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/vendor/audio_picoment
 )
 
 target_compile_definitions(picocalc_bsp
@@ -85,6 +102,12 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
         PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
+        PSRAM_PIN_CS=${PICOCALC_PSRAM_CS}
+        PSRAM_PIN_SCK=${PICOCALC_PSRAM_SCK}
+        PSRAM_PIN_MOSI=${PICOCALC_PSRAM_MOSI}
+        PSRAM_PIN_MISO=${PICOCALC_PSRAM_MISO}
+        PSRAM_MUTEX=1
+        PSRAM_WAITDMA=1
 )
 
 target_compile_options(picocalc_bsp PRIVATE
@@ -102,4 +125,6 @@ target_link_libraries(picocalc_bsp
         hardware_spi
         hardware_pio
         hardware_dma
+        hardware_irq
+        hardware_pwm
 )
