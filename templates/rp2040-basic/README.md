@@ -13,9 +13,9 @@ cmake --build build -j
 
 書き込み対象は `build/picocalc_app.uf2` です。起動すると LCD テストパターン、
 SD の mount/write/sync/read/compare/remove、キーボード待受を順に実行します。
-加えて、8 MiB PSRAMの安全クロックprobe/read/write自己検証と、48 kHz PWM/DMA音声
-ストリームの初期化を行います。音声は初期化時には発音せず、PCMを投入してから
-`picocalc::audio::start()`を呼びます。
+加えて、8 MiB PSRAMのread/write自己検証と、`Picocalc_ment`からコピーした
+固定1 kHz/-6 dBFS PWM/DMA音声試験を起動します。これは改造前の参照経路です。
+この経路が実機で合格してから、PCMストリームAPIへ段階的に接続します。
 
 SD 成功時は LCD 中央下部が緑、失敗時は赤になります。UART/USB CDC には
 `[PICOCALC]` で始まる機械可読ログを出力します。検証用ログには LCD の期待色・領域、
@@ -24,10 +24,10 @@ SD の実行シーケンスと失敗段階、キーボードイベントの通�
 LCD A（`hwspi-rgb888`）はloader-style SPI1/RGB888の専用vendorドライバ、LCD B
 （`pio-rgb565`）は実機動作済みPIO/RGB565ドライバを使用します。選択した版はログ先頭の
 `variant`、`app`、`git`で識別します。
-PSRAMの安全方針は、250 MHz時に`fudge=true`のclkdiv 1.5/2/3/4のみを試し、既知の
-READ8失敗条件である1.0/1.2を試さないことです。125 MHz側は実働サンプルと同じく
-`fudge=false`を使います。起動ログの`[PICOCALC][PSRAM][POLICY]`、
-`[PICOCALC][PSRAM][VERIFY]`、`[PICOCALC][PSRAM][PROBE]`を確認してください。
+PSRAMは`pico_rescue`の候補順（`fudge=true`のclkdiv 1/1.5/2/3/4、続いて
+`fudge=false`の同じ候補）をそのまま使用します。起動ログの
+`reference=pico_rescue`、`[PICOCALC][PSRAM][VERIFY]`、`[PICOCALC][PSRAM][PROBE]`
+を確認してください。
 
 ## 開発規約
 

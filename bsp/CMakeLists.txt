@@ -106,8 +106,6 @@ target_compile_definitions(picocalc_bsp
         PSRAM_PIN_SCK=${PICOCALC_PSRAM_SCK}
         PSRAM_PIN_MOSI=${PICOCALC_PSRAM_MOSI}
         PSRAM_PIN_MISO=${PICOCALC_PSRAM_MISO}
-        PSRAM_MUTEX=1
-        PSRAM_WAITDMA=1
 )
 
 target_compile_options(picocalc_bsp PRIVATE

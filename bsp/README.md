@@ -14,8 +14,8 @@
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
-* audio: GP26/27、`Picocalc_ment`準拠の48 kHz PWM/DMA stream API、PWM wrap 255、128 sample DMA half、512 sample ring
-* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。250 MHzでは`fudge=true`かつclkdiv 1.5/2/3/4だけを試し、1.0/1.2は試さない。125 MHz側は実働サンプルどおり`fudge=false`でclkdiv 1/1.5/2/3/4を試す
+* audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFSの48 kHz PWM/DMA参照試験。PWM wrap 255、128 sample DMA half、512 sample ring
+* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。Aの参照試験は`pico_rescue`の候補順（fudge=trueのclkdiv 1/1.5/2/3/4、続いてfudge=falseの同じ候補）をそのまま使う
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
@@ -25,11 +25,10 @@
 両方の`variant`と`[PICOCALC][LCD][VERIFY] app_status=pass`を確認する。
 A/BのUF2を別名保存しない。
 
-0.5.0で音声とPSRAMの共通APIを追加した。これは`Picocalc_ment`のPWM/DMA実装と、
-`picocalc_helloworld`/`pico_rescue`のPIO PSRAMドライバをBSPの固定部へ取り込んだもの。
-音声は`picocalc::audio::write_sample()`へPCMを投入してから`start()`する。PSRAMは
-`picocalc::psram::available()`を確認してからread/writeする。音声・PSRAMの0.5.0実機合否は
-まだ記録していないため、既存の0.4.0 LCD/SD/keyboard記録を遡って書き換えない。
+0.5.0-Aでは、まず動作実績コードのコピペ経路を実機で検証する。音声は
+`Picocalc_ment`の固定サイン試験を`init()`から即時開始し、PSRAMは`pico_rescue`の
+初期化・候補順・24 byte以下のread/write検証を使う。これらの実機合格前にPCM生成や
+汎用APIへの改造を行わない。既存の0.4.0 LCD/SD/keyboard記録は遡って書き換えない。
 
 実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard

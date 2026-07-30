@@ -12,11 +12,6 @@
 namespace picocalc::psram {
 namespace {
 
-constexpr uint32_t kMaxSystemClockKhz = 250000u;
-constexpr float kSafeClkdivAt250Mhz = 1.5f;
-constexpr float kSafeClkdivAt125Mhz = 1.0f;
-constexpr float kFallbackClkdivs[] = {1.5f, 2.0f, 3.0f, 4.0f};
-
 struct Candidate {
     float clkdiv;
     bool fudge;
@@ -107,41 +102,20 @@ bool init() {
 
     g_info = {};
     g_info.system_clock_khz = clock_get_hz(clk_sys) / 1000u;
-    printf("[PICOCALC][PSRAM][POLICY] sysclk_khz=%lu max_sysclk_khz=%lu "
-           "pins=cs20,sck21,mosi2,miso3 driver=pio1 "
-           "fudge=required_at_or_above_83mhz low_speed_fudge=disabled\n",
-           static_cast<unsigned long>(g_info.system_clock_khz),
-           static_cast<unsigned long>(kMaxSystemClockKhz));
+    printf("[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=%lu "
+           "pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates="
+           "1.00/1,1.50/1,2.00/1,3.00/1,4.00/1,1.00/0,1.50/0,2.00/0,3.00/0,4.00/0\n",
+           static_cast<unsigned long>(g_info.system_clock_khz));
 
-    if (g_info.system_clock_khz > kMaxSystemClockKhz) {
-        printf("[PICOCALC][PSRAM] status=unavailable reason=sysclk_above_safe_limit\n");
-        return false;
-    }
+    // Exact candidate order copied from pico_rescue. Do not infer a clock
+    // policy here; the read-back test selects the first working combination.
+    constexpr Candidate candidates[] = {
+        {1.0f, true},  {1.5f, true},  {2.0f, true},  {3.0f, true},  {4.0f, true},
+        {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
+    };
 
-    // The 250 MHz / clkdiv 1.0 and 1.2 configurations are deliberately not
-    // attempted: the reference hardware logs show READ8 failures there.
-    Candidate candidates[sizeof(kFallbackClkdivs) / sizeof(kFallbackClkdivs[0]) + 1] = {};
-    size_t candidate_count = 0u;
-    if (g_info.system_clock_khz <= 125000u) {
-        // The reference PIO driver samples on the normal edge below the
-        // high-speed threshold. pico_rescue probes these low-speed settings
-        // with fudge=false; retaining that distinction is required on A.
-        candidates[candidate_count++] = {kSafeClkdivAt125Mhz, false};
-    }
-    for (const float candidate : kFallbackClkdivs) {
-        bool duplicate = false;
-        for (size_t i = 0; i < candidate_count; ++i) {
-            duplicate = duplicate ||
-                        (candidates[i].clkdiv == candidate &&
-                         candidates[i].fudge == (g_info.system_clock_khz > 125000u));
-        }
-        if (!duplicate) {
-            candidates[candidate_count++] = {candidate, g_info.system_clock_khz > 125000u};
-        }
-    }
-
-    for (size_t i = 0; i < candidate_count; ++i) {
-        if (try_config(candidates[i].clkdiv, candidates[i].fudge)) {
+    for (const Candidate& candidate : candidates) {
+        if (try_config(candidate.clkdiv, candidate.fudge)) {
             g_info.initialized = true;
             printf("[PICOCALC][PSRAM] status=ok capacity=%lu clkdiv=%.2f "
                    "spi_hz=%lu self_test=pass\n",
@@ -182,8 +156,12 @@ VerifyResult self_test() {
     if (!g_initialized || !range_valid(kTestAddress, kTestBytes)) {
         return {false, kTestAddress, kTestBytes, kTestBytes};
     }
+    const uint32_t write_begin = time_us_32();
     write_raw(kTestAddress, pattern, sizeof(pattern));
+    const uint32_t write_us = time_us_32() - write_begin;
+    const uint32_t read_begin = time_us_32();
     read_raw(kTestAddress, readback, sizeof(readback));
+    const uint32_t read_us = time_us_32() - read_begin;
     size_t mismatches = 0;
     for (size_t i = 0; i < kTestBytes; ++i) {
         if (pattern[i] != readback[i]) {
@@ -191,11 +169,13 @@ VerifyResult self_test() {
         }
     }
     printf("[PICOCALC][PSRAM][VERIFY] status=%s address=0x%06lx bytes=%lu "
-           "mismatches=%lu\n",
+           "mismatches=%lu write_us=%lu read_us=%lu\n",
            mismatches == 0u ? "pass" : "fail",
            static_cast<unsigned long>(kTestAddress),
            static_cast<unsigned long>(kTestBytes),
-           static_cast<unsigned long>(mismatches));
+           static_cast<unsigned long>(mismatches),
+           static_cast<unsigned long>(write_us),
+           static_cast<unsigned long>(read_us));
     return {mismatches == 0u, kTestAddress, kTestBytes, mismatches};
 }
 

@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template 0.5.0、LCD A/B・音声・PSRAMを固定）
+## 現在利用できるもの（BSP/template 0.5.0-A、LCD A・参照音声・参照PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -25,8 +25,8 @@
 | LCD B | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、clkdiv `2.0`、COLMOD `0x65`、RGB565）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
-| Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
-| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、250 MHz時はfudge+clkdiv 1.5以上、125 MHz側はfudge=false、24 byte chunk、read/write自己検証 |
+| Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。現段階は固定1 kHz/-6 dBFS参照試験を即時開始 |
+| PSRAM | `pico_rescue` | 8 MiB、PIO1、実績コードの候補順（fudge=trueのclkdiv 1/1.5/2/3/4、続いてfalse）、24 byte chunk、read/write自己検証 |
 
 ## 新規プロジェクト
 
@@ -83,7 +83,7 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 
 生成した `picocalc_app.uf2` は、起動時に次を行う。
 
-1. 選択したBSPの基準クロック（A: 125 MHz、B: 250 MHz）、100 ms安定待ち、PSRAM CS inactive、キーボード、LCDを初期化する（バックライトの明るさは変更しない）
+1. 選択したBSPの基準クロック（A: 125 MHz、B: 250 MHz）、100 ms安定待ち、LCD、PSRAM、キーボードを初期化する（バックライトの明るさは変更しない）
 2. LCD を黒・白・赤・緑・青で塗りつぶし、2x2 sampleを`RAMRD (0x2e)`で読み戻して一致比較する
 3. LCD に黒・白・RGB の既知パターンを描画し、2x2の書き込み／GRAM readback一致を確認する
 4. SD を mount し、`PICOTEST.TXT` を write/sync/close/read/compare する
@@ -165,11 +165,11 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-音声とPSRAMは0.5.0で共通BSPへ取り込んだ。音声は`Picocalc_ment`のPWM/DMA実装を
-固定し、PSRAMは既存PIOドライバを固定したうえで、250 MHz時の既知のREAD8失敗条件
-（clkdiv 1.0/1.2）を候補から除外している。いずれもソースとRP2040ビルドは確認済みだが、
-この版の実機合否はまだ記録していない。実機ではログのpolicy/probe/self-testと、
-PCM投入時の音声出力を別々に検証する。
+0.5.0-Aは実機で動作実績のあるコードを先に成立させるための参照版である。音声は
+`Picocalc_ment`の固定サイン経路、PSRAMは`pico_rescue`の初期化・候補順・read/write
+検証をコピーしている。ログ1行目の`app=0.5.0-a-reference-copy-fixed-sine-pico-rescue-psram`
+と、音声の`mode=reference-fixed-sine`、PSRAMの`reference=pico_rescue`を照合する。
+この版の実機合否はまだ記録していない。合格後にだけBSPのPCM生成APIへ改造する。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、
 および最初の実機試験で「どこが失敗したか」を一度で観測可能にすることである。

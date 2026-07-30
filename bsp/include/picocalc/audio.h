@@ -19,9 +19,12 @@ struct Stats {
     uint32_t clip_count;
 };
 
-// Initializes the proven Picocalc_ment PWM/DMA stream without starting audio.
-// The output remains at the PWM midpoint until start() is called.
+// Reference baseline: initializes and starts the Picocalc_ment fixed -6 dBFS
+// 1 kHz PWM/DMA tone. This is intentionally the copied hardware test path;
+// the streaming producer is added only after this path passes on hardware.
 bool init();
+// Reserved for the later streaming producer; the reference tone is started by
+// init() exactly as in Picocalc_ment.
 void start();
 void stop();
 bool write_sample(int16_t left, int16_t right);

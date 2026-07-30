@@ -15,7 +15,7 @@ if(NOT DEFINED PICOCALC_APP_VERSION)
     if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
         set(PICOCALC_APP_VERSION "0.5.0-pio-vendored-driver-audio-psram")
     else()
-        set(PICOCALC_APP_VERSION "0.5.0-hwspi-rgb888-vendored-driver-audio-psram")
+        set(PICOCALC_APP_VERSION "0.5.0-a-reference-copy-fixed-sine-pico-rescue-psram")
     endif()
 endif()
 

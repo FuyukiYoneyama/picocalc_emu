@@ -13,15 +13,17 @@ bool init() {
     if (g_initialized) {
         return true;
     }
-    picoment::audio_pwm::init_stream();
+    // Reference baseline: this is the exact Picocalc_ment fixed-sine path.
+    // It starts the PWM/DMA output immediately, so this test cannot report a
+    // false-positive "initialized" state while producing silence.
+    picoment::audio_pwm::init_fixed_sine();
     g_initialized = picoment::audio_pwm::stats().ring_capacity != 0u;
     return g_initialized;
 }
 
 void start() {
-    if (g_initialized) {
-        picoment::audio_pwm::start_stream();
-    }
+    // The reference fixed-sine path is started by init_fixed_sine().
+    static_cast<void>(g_initialized);
 }
 
 void stop() {
