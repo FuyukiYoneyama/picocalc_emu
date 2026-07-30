@@ -12,19 +12,16 @@
 namespace picocalc::display {
 namespace {
 
-constexpr float kPioClockDivider = 2.0f;
-constexpr int kMaxPixelsPerWindow = 160 * 160;
-static_assert(kMaxPixelsPerWindow == 25600, "PIO LCD window contract changed");
-// This is the blocking PIO/RGB565 transfer unit used by the proven
-// pico_skyace/general-lcd path.  It is deliberately local to this BSP
-// variant; the hardware-SPI/RGB888 buffer size is not a PIO contract.
-constexpr size_t kPioPixelsPerWrite = 160;
-static_assert(kPioPixelsPerWrite == 160, "PIO LCD write contract changed");
+// This is the blocking PIO/RGB565 path used by the proven life/pico_rescue
+// projects. It remains independent from the hardware-SPI/RGB888 transport.
+constexpr float kPioClockDivider = 4.0f;
+constexpr size_t kLineBufferBytes = static_cast<size_t>(width) * 2;
 constexpr size_t kMaxReadbackPixels = 16;
 PIO g_pio = pio0;
 uint g_sm = 0;
 uint g_program_offset = 0;
 size_t g_window_pixels_remaining = 0;
+uint8_t g_line_buffer[kLineBufferBytes] = {};
 
 void select() { gpio_put(board::kLcdCs, 0); }
 void deselect() { gpio_put(board::kLcdCs, 1); }
@@ -133,21 +130,23 @@ void set_window_unclipped(int x, int y, int w, int h) {
 }
 
 void send_solid_pixels(uint16_t color, size_t count) {
-    const uint8_t bytes[] = {static_cast<uint8_t>(color >> 8),
-                             static_cast<uint8_t>(color & 0xff)};
-    while (count > 0) {
-        const size_t chunk = std::min(
-            count, kPioPixelsPerWrite);
-        select();
-        set_dc(true);
-        for (size_t i = 0; i < chunk; ++i) {
-            write_bytes(bytes, sizeof(bytes));
-        }
-        wait_idle();
-        deselect();
-        count -= chunk;
-        g_window_pixels_remaining -= chunk;
+    const size_t pixels_per_row =
+        std::min(count, static_cast<size_t>(width));
+    const uint8_t hi = static_cast<uint8_t>(color >> 8);
+    const uint8_t lo = static_cast<uint8_t>(color & 0xff);
+    for (size_t i = 0; i < pixels_per_row; ++i) {
+        g_line_buffer[i * 2] = hi;
+        g_line_buffer[i * 2 + 1] = lo;
     }
+    const size_t rows = pixels_per_row == 0 ? 0 : count / pixels_per_row;
+    select();
+    set_dc(true);
+    for (size_t row = 0; row < rows; ++row) {
+        write_bytes(g_line_buffer, pixels_per_row * 2);
+    }
+    wait_idle();
+    deselect();
+    g_window_pixels_remaining = 0;
 }
 
 void read_io_delay() { busy_wait_us_32(1); }
@@ -254,7 +253,7 @@ void init() {
                              kPioClockDivider);
     initialize_controller();
     printf("[PICOCALC][LCD][PIO] transport=pio0_blocking sm=0 clkdiv=%.2f "
-           "hz=62500000 colmod=0x65 wire=rgb565\n",
+           "hz=31250000 colmod=0x65 wire=rgb565 reference=life-pico_rescue\n",
            static_cast<double>(kPioClockDivider));
 }
 
@@ -266,36 +265,22 @@ void set_window(int x, int y, int w, int h) {
 void write_pixels(const uint16_t* pixels, size_t count) {
     if (pixels == nullptr || count == 0 || g_window_pixels_remaining == 0) return;
     count = std::min(count, g_window_pixels_remaining);
-    size_t offset = 0;
-    while (offset < count) {
-        const size_t chunk = std::min(count - offset, kPioPixelsPerWrite);
-        select();
-        set_dc(true);
-        for (size_t i = 0; i < chunk; ++i) {
-            const uint16_t pixel = pixels[offset + i];
-            const uint8_t bytes[] = {static_cast<uint8_t>(pixel >> 8),
-                                     static_cast<uint8_t>(pixel & 0xff)};
-            write_bytes(bytes, sizeof(bytes));
-        }
-        wait_idle();
-        deselect();
-        offset += chunk;
-        g_window_pixels_remaining -= chunk;
+    select();
+    set_dc(true);
+    for (size_t i = 0; i < count; ++i) {
+        g_line_buffer[i * 2] = static_cast<uint8_t>(pixels[i] >> 8);
+        g_line_buffer[i * 2 + 1] = static_cast<uint8_t>(pixels[i] & 0xff);
     }
+    write_bytes(g_line_buffer, count * 2);
+    wait_idle();
+    deselect();
+    g_window_pixels_remaining -= count;
 }
 
 void fill_rect(int x, int y, int w, int h, uint16_t rgb565) {
     if (!clip_rect(&x, &y, &w, &h)) return;
-    for (int tile_y = y; tile_y < y + h; tile_y += 160) {
-        const int tile_h = std::min(160, y + h - tile_y);
-        for (int tile_x = x; tile_x < x + w; tile_x += 160) {
-            const int tile_w = std::min(160, x + w - tile_x);
-            set_window_unclipped(tile_x, tile_y, tile_w, tile_h);
-            send_solid_pixels(
-                rgb565,
-                static_cast<size_t>(tile_w) * static_cast<size_t>(tile_h));
-        }
-    }
+    set_window_unclipped(x, y, w, h);
+    send_solid_pixels(rgb565, static_cast<size_t>(w) * static_cast<size_t>(h));
 }
 
 void clear(uint16_t rgb565) { fill_rect(0, 0, width, height, rgb565); }

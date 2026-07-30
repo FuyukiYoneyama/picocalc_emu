@@ -8,7 +8,7 @@
 
 * LCD共通: SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
 * LCD A `hwspi-rgb888`: uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB888、RAMWRウィンドウ中CS保持
-* LCD B `pio-rgb565`: 250 MHz、`general/lcd`互換PIO0 blocking送信、160×160以下のタイル、`COLMOD 0x65`、RGB565、PIO停止後SIOでRAMRD
+* LCD B `pio-rgb565`: 250 MHz、`life`/`pico_rescue`互換PIO0 blocking送信（clkdiv 4.0、約31.25 MHz）、`COLMOD 0x65`、RGB565、PIO停止後SIOでRAMRD
 * LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする
 * LCD: `verify_pixels()`は選択したBSPのRAMRD形式をRGB565へそろえ、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
