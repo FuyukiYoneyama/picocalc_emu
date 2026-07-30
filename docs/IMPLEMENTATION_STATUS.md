@@ -1,12 +1,12 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.4.0、B転送は無改変コピー）
+## 現在利用できるもの（BSP/template MVP 0.4.0、LCD A/Bを独立vendor化）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
 あり、現在の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
 
-- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS BSP
+- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS BSP。Aはloader-style SPI/RGB888転送を専用vendorドライバへ固定し、BはPIO/RGB565の無改変vendorコピーを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリと CMake
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
@@ -21,7 +21,7 @@
 
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
-| LCD A | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
+| LCD A | `general/lcd/src/main_hwspi_rgb888_probe.cpp` + `PicoCalc/Code/picocalc_helloworld/lcdspi` | `bsp/vendor/lcd_hwspi_rgb888.cpp`、SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、CASET/RASET/RAMWRから画素列までCS保持、RAMRDは6 MHz |
 | LCD B | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、clkdiv `2.0`、COLMOD `0x65`、RGB565）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
@@ -141,7 +141,9 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 Bの転送を無改変コピーへ置き換えた BSP 0.4.0 で、**B（`pio-rgb565`）が実機表示に成功した**
 （2026-07-30、commit `f763b91eae95`、`hardware-validation/records/bsp-0.4.0-20260730-01.json`）。
 LCDは既知パターン表示とRAMRD全色一致で`pass`、SDスモークも`pass`、キーボードは未実施。
-A（`hwspi-rgb888`）は個別の実機合格が未記録であり、Bの成功はAの代替にならない。
+A（`hwspi-rgb888`）は専用vendorドライバ化とARMビルドまで完了したが、個別の実機合格は
+まだ未記録である。Bの成功はAの代替にならないため、Aも`app_status=pass`と画面写真で
+個別に確定する。
 A/Bそれぞれの実機結果は`hardware-validation/records/`へ個別に記録し、両方が合格した
 時点でこのBSP自体を新しい基準実装として確定する。
 

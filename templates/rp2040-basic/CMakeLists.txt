@@ -15,7 +15,7 @@ if(NOT DEFINED PICOCALC_APP_VERSION)
     if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
         set(PICOCALC_APP_VERSION "0.4.0-pio-vendored-driver")
     else()
-        set(PICOCALC_APP_VERSION "0.4.0-hwspi-rgb888")
+        set(PICOCALC_APP_VERSION "0.4.0-hwspi-rgb888-vendored-driver")
     endif()
 endif()
 

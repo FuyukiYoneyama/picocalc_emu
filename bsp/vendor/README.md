@@ -1,4 +1,22 @@
-# Vendored LCD driver (do not edit)
+# Vendored LCD drivers (do not edit)
+
+LCDの転送本体は、実機動作が記録されている参照プロジェクトの契約を保つため、
+BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`へ書き戻してはならない。
+
+## A: `hwspi-rgb888`
+
+`lcd_hwspi_rgb888.cpp/.h`は、`general/lcd/src/main_hwspi_rgb888_probe.cpp`のloader-style
+初期化と、実機動作している`PicoCalc/Code/picocalc_helloworld/lcdspi/lcdspi.c`の
+ウィンドウ／RAMRD契約をBSPから直接呼べる形へ固定したドライバである。
+
+- SPI1、25 MHz、`COLMOD=0x66`、RGB888 3 bytes/pixel
+- リセット解除後200 ms、`0x11`/`0x29`前後の120 ms待機
+- `CASET`、`RASET`、`RAMWR`、画素列を一つのCS Low区間で送信
+- RAMRDはSPI1を6 MHzへ落とし、RGB888 3 bytes/pixelを読み、終了後25 MHzへ復帰
+- `bsp/src/display.cpp`はRGB565公開API、変換、比較ログだけを担当
+
+参照元はstandalone probeと実働プロジェクトに分かれているため、Bのような単一ファイルの
+バイト単位コピーではなく、両者の転送契約を専用vendorドライバへ固定している。
 
 `pio-rgb565`（LCD BSP B）の転送処理は、実機動作が記録されている実装の**無改変コピー**を
 使う。ここにあるファイルは書き写し・再実装ではなく、バイト単位の複製である。

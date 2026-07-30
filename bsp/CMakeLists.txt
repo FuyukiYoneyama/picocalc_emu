@@ -4,7 +4,12 @@ set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
     hwspi-rgb888 pio-rgb565)
 
 if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
-    set(PICOCALC_DISPLAY_SOURCE src/display.cpp)
+    # A follows the hardware-proven loader/helloworld SPI contract. The
+    # transport and its CS-held window transaction live in the vendor driver;
+    # src/display.cpp is only the public RGB565 adapter and verifier.
+    set(PICOCALC_DISPLAY_SOURCE
+        src/display.cpp
+        vendor/lcd_hwspi_rgb888.cpp)
     set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 125000)
 elseif(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
     # B links the unmodified vendored driver plus a thin adapter. The 250 MHz
