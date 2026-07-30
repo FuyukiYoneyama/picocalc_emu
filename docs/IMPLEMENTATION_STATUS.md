@@ -137,16 +137,20 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - `--json`は入力ファイル破損・不正引数でも構造化された失敗を返す
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
-実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
-調整した後、LCDを二系統へ分離し、Bの転送を無改変コピーへ置き換えた BSP 0.4.0 は、
-A/Bをそれぞれ個別に実機確認する段階にある。片方の不合格はもう片方を廃棄する理由にならない。A/Bそれぞれの実機結果は
-`hardware-validation/records/`へ個別に記録し、両方が合格した時点でこのBSP自体を
-新しい基準実装として確定する。
+実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。その後LCDを二系統へ分離し、
+Bの転送を無改変コピーへ置き換えた BSP 0.4.0 で、**B（`pio-rgb565`）が実機表示に成功した**
+（2026-07-30、commit `f763b91eae95`、`hardware-validation/records/bsp-0.4.0-20260730-01.json`）。
+LCDは既知パターン表示とRAMRD全色一致で`pass`、SDスモークも`pass`、キーボードは未実施。
+A（`hwspi-rgb888`）は個別の実機合格が未記録であり、Bの成功はAの代替にならない。
+A/Bそれぞれの実機結果は`hardware-validation/records/`へ個別に記録し、両方が合格した
+時点でこのBSP自体を新しい基準実装として確定する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.4.0 A/Bそれぞれでバックライトの
-既定輝度、LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
+B（`pio-rgb565`）は0.4.0で実機表示とSDスモークに合格したが、キーボードのイベント確認、
+基板revision、SDカード識別が未記入である。この3点を埋めれば実機記録を
+`overall_status=pass`へ更新できる。A（`hwspi-rgb888`）はバックライトの既定輝度、
+LCDの色・向き、USB CDC初期化待ちを含めて個別に実機確認する。
 
 また、次の機能は今後のエミュレーター段階である。
 

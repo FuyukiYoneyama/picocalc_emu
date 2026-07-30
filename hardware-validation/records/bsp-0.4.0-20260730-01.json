@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.4.0-20260730-01",
+  "bsp_version": "0.4.0",
+  "repository_commit": "f763b91eae950b99430aedf7fc38bfd58d33b1ad",
+  "validation_date": "2026-07-30",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "LCD BSP variant B (pio-rgb565). Same unit that runs Picocalc_NESco, pico_skyace, Picocalc_BVWCVolleyball, Picocalc_ClockCalc, Picocalc_Clock, Picocalc_InfoNES, pico_rescue, picocalc-life, Picocalc_scicalc and Picocalc_ment."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1 20231009",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "templates/rp2040-basic/build/picocalc_app.uf2",
+    "uf2_sha256": "3d6a59f3b7992080e8516d9a360f2538c1aaeb49984cd7d698d571d7fcbe53e2",
+    "build_log": "hardware-validation/records/evidence/pico20260730_223142.log"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pass",
+      "observed": "Test pattern displayed correctly: green top band, blue bottom band, white frame, red/green/blue 80x80 squares in order, green SD status band. RAMRD readback matched every solid fill (0x0000, 0xffff, 0xf800, 0x07e0, 0x001f) and the 2x2 pattern with zero mismatches, so app_status=pass. Operator photo taken 2026-07-30 22:31 confirms the screen; the photo file is not stored in this repository yet.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_223142.log"
+      ]
+    },
+    "sd": {
+      "status": "pass",
+      "observed": "detect=present, init ok, and the mount/write/sync/close/read/compare/close/remove smoke test finished with result_stage=ok.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_223142.log"
+      ]
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Reached [PICOCALC][READY] keyboard=waiting. No key press or release events were exercised in this run.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_223142.log"
+      ]
+    }
+  },
+  "notes": "First hardware success for LCD BSP variant B. The transport is the unmodified vendored copy of general/lcd/src/lcd_rgb565_pio.cpp with the pico_skyace call granularity; earlier hand-written transports did not display. overall_status stays pending because the keyboard was not exercised and because board_revision and the SD card identification are not recorded yet. Fill those three in and the record can move to pass."
+}

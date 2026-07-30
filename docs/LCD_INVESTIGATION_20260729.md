@@ -450,4 +450,30 @@ vendorファイルではなくアダプタの呼び出し粒度である。
 | BSP / App | `0.4.0` / `0.4.0-pio-vendored-driver` |
 | source commit | `f763b91eae95` |
 | UF2 SHA-256 | `3d6a59f3b7992080e8516d9a360f2538c1aaeb49984cd7d698d571d7fcbe53e2` |
-| 実機判定 | 未確認 |
+| 実機判定 | **合格**（`pico20260730_223142.log`、画面写真） |
+
+## B（`pio-rgb565`）実機成功（2026-07-30）
+
+ログ：`pico20260730_223142.log`（`hardware-validation/records/evidence/`へ保存）
+
+BSP `0.4.0`／App `0.4.0-pio-vendored-driver`／commit `f763b91eae95`で、Bが実機表示に
+成功した。この一連の調査で初めての表示成功である。
+
+* 画面：上端緑帯、下端青帯、白枠、赤・緑・青の80×80が順に並び、SDステータス帯は緑
+* `RAMRD`：黒`0x0000`、白`0xffff`、赤`0xf800`、緑`0x07e0`、青`0x001f`のすべてが
+  一致し、2×2パターンも`0xf800`/`0x07e0`/`0x001f`/`0xffff`で一致
+* `[PICOCALC][LCD][VERIFY] app_status=pass`
+* SD：detect、init、mount/write/sync/read/compare/removeが成功
+* キーボード：`[PICOCALC][READY] keyboard=waiting`まで到達（キー入力は未実施）
+
+RAMRDが全色で一致したことは、読み出しが正常であることと、以前の不一致が
+「書き込みが成立していなかった」ことの証拠でもある。
+
+確定した結論は次の一点である。**PIO/RGB565の転送は書き写さず、実機動作が記録された
+ファイルの無改変コピーを使い、`pico_skyace`と同じ粒度で呼ぶ。** 0.3.x以前の
+不表示は、リセット待ち・CS粒度・タイル分割のいずれか単独の問題ではなく、
+転送処理を手で書き直していたこと自体が原因だった。
+
+実機記録は`hardware-validation/records/bsp-0.4.0-20260730-01.json`。LCDとSDは`pass`、
+keyboardは未実施のため`pending`、`overall_status`は基板revisionとSDカード識別が
+未記入のため`pending`のままとする。
