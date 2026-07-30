@@ -13,9 +13,9 @@ set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
     "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
 if(NOT DEFINED PICOCALC_APP_VERSION)
     if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
-        set(PICOCALC_APP_VERSION "0.3.2-pio-rgb565-reset200ms-cs160")
+        set(PICOCALC_APP_VERSION "0.3.3-pio-bringup-stages")
     else()
-        set(PICOCALC_APP_VERSION "0.3.2-hwspi-rgb888")
+        set(PICOCALC_APP_VERSION "0.3.3-hwspi-rgb888")
     endif()
 endif()
 
