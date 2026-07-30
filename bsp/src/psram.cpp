@@ -73,7 +73,7 @@ void read_raw(uint32_t address, uint8_t* destination, size_t bytes) {
 
 bool try_config(float clkdiv, bool fudge) {
     uninit();
-    g_psram = psram_spi_init_clkdiv(pio1, -1, clkdiv, true);
+    g_psram = psram_spi_init_clkdiv(pio1, -1, clkdiv, fudge);
     g_initialized = true;
     g_info.clkdiv = clkdiv;
     g_info.spi_hz = spi_hz_for(clkdiv);
@@ -83,12 +83,13 @@ bool try_config(float clkdiv, bool fudge) {
 
     const VerifyResult result = self_test();
     printf("[PICOCALC][PSRAM][PROBE] status=%s pio=1 sm=%d sysclk_khz=%lu "
-           "clkdiv=%.2f spi_hz=%lu fudge=1 id=%02x%02x%02x%02x%02x%02x%02x%02x\n",
+           "clkdiv=%.2f spi_hz=%lu fudge=%u id=%02x%02x%02x%02x%02x%02x%02x%02x\n",
            result.ok ? "pass" : "fail",
            g_psram.sm,
            static_cast<unsigned long>(g_info.system_clock_khz),
            static_cast<double>(g_info.clkdiv),
            static_cast<unsigned long>(g_info.spi_hz),
+           fudge ? 1u : 0u,
            g_info.id[0], g_info.id[1], g_info.id[2], g_info.id[3],
            g_info.id[4], g_info.id[5], g_info.id[6], g_info.id[7]);
     if (!result.ok) {
