@@ -440,3 +440,14 @@ CS下げっぱなしで送る。これは`general/01_DISPLAY_LCD.md`§0の禁止
 
 これでBの転送は「書き写し」ではなくなった。今後Bで表示が出ない場合、疑うのは
 vendorファイルではなくアダプタの呼び出し粒度である。
+
+### 0.4.0 B検証用UF2
+
+| 項目 | 値 |
+|---|---|
+| UF2 | `templates/rp2040-basic/build/picocalc_app.uf2` |
+| variant | `pio-rgb565` |
+| BSP / App | `0.4.0` / `0.4.0-pio-vendored-driver` |
+| source commit | `f763b91eae95` |
+| UF2 SHA-256 | `3d6a59f3b7992080e8516d9a360f2538c1aaeb49984cd7d698d571d7fcbe53e2` |
+| 実機判定 | 未確認 |
