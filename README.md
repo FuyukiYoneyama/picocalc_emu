@@ -160,10 +160,13 @@ reference evidence照合、実機相関確認が必要です。
 [hardware-validation](hardware-validation/README.md)のテンプレートへPicoCalc
 revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録します。
 
-現時点のテンプレートは`pending`であり、BSP 0.4.0のA/Bいずれについても実機成功を
-未確認です。A（`hwspi-rgb888`）とB（`pio-rgb565`）はどちらも合格させる対象で、
-実機では一度に一方だけを`build/picocalc_app.uf2`へ生成して検証します。Aの結果で
-Bを廃棄せず、Bも同じ手順で個別に確認します。portable検証とRP2040ビルド成功は、
+**B（`pio-rgb565`）はBSP 0.4.0で実機表示に成功しました。** 2026-07-30、commit
+`f763b91eae95`のUF2で、既知パターンの表示とRAMRDによる全色一致
+（`app_status=pass`）、SDスモークの成功を確認しています。記録は
+[bsp-0.4.0-20260730-01.json](hardware-validation/records/bsp-0.4.0-20260730-01.json)で、
+LCDとSDは`pass`、キーボードは未実施のため`pending`です。A（`hwspi-rgb888`）は
+まだ個別の実機合格が未記録で、Bの成功はAの代替になりません。実機では一度に一方だけを
+`build/picocalc_app.uf2`へ生成して検証します。portable検証とRP2040ビルド成功は、
 実機成功とは別です。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
