@@ -9,13 +9,15 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(picocalc_app C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+option(PICOCALC_AUDIO_REFERENCE_TONE
+    "Use the copied Picocalc_ment fixed-sine reference path" ON)
 set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
     "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
 if(NOT DEFINED PICOCALC_APP_VERSION)
     if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
-        set(PICOCALC_APP_VERSION "0.5.0-pio-vendored-driver-audio-psram")
+        set(PICOCALC_APP_VERSION "0.6.0-b-bsp-reference")
     else()
-        set(PICOCALC_APP_VERSION "0.5.0-a-reference-copy-fixed-sine-pico-rescue-psram")
+        set(PICOCALC_APP_VERSION "0.6.0-a-bsp-reference")
     endif()
 endif()
 

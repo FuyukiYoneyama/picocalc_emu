@@ -92,6 +92,27 @@
           "sha256": "ba475a1e643278fffc244c8fd971ac6005c9d536de3722e04538a7f424a0a87f"
         }
       ]
+    },
+    {
+      "name": "pico_rescue",
+      "git_url": "https://github.com/FuyukiYoneyama/pico_rescue.git",
+      "workspace_path": "pico_rescue",
+      "commit": "f4d43078a0ae77ed879164025504e32e1b4cd309",
+      "hardware_verified": [
+        "psram-pio1-read-write",
+        "psram-24-byte-transfer-chunk",
+        "pico-rescue-psram-candidate-order"
+      ],
+      "evidence": [
+        {
+          "path": "src/main.cpp",
+          "sha256": "58c1ad63ab691cbc9e57d23288beca24d6a880c07cba95e906c1fc60340a6613"
+        },
+        {
+          "path": "src/config/board_config.h",
+          "sha256": "e84135505554d60ea025aa7b601a22b77ddfe9c92bcb3ef75cb917c2cdad5ba4"
+        }
+      ]
     }
   ]
 }

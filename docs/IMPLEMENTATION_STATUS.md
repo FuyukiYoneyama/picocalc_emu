@@ -1,13 +1,13 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template 0.5.0-A、LCD A・参照音声・参照PSRAM）
+## 現在利用できるもの（BSP/template 0.6.0、LCD A/B・音声・PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
 あり、現在の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。Aはloader-style SPI/RGB888転送を専用vendorドライバへ固定し、BはPIO/RGB565の無改変vendorコピーを使う
-- `templates/rp2040-basic/`: BSP を利用する最小アプリと CMake
+- `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
 - `profiles/picocalc-rp2040.json`: 機械可読なboard contract
@@ -25,8 +25,8 @@
 | LCD B | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、clkdiv `2.0`、COLMOD `0x65`、RGB565）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
-| Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。現段階は固定1 kHz/-6 dBFS参照試験を即時開始 |
-| PSRAM | `pico_rescue` | 8 MiB、PIO1、実績コードの候補順（fudge=trueのclkdiv 1/1.5/2/3/4、続いてfalse）、24 byte chunk、read/write自己検証 |
+| Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。固定サイン参照とPCM streamを切替可能 |
+| PSRAM | `pico_rescue` | 8 MiB、PIO1、実績コードの候補順（fudge=trueのclkdiv 1/1.5/2/3/4、続いてfalse）、24 byte chunk、read/write自己検証、Buffer API |
 
 ## 新規プロジェクト
 
@@ -58,6 +58,20 @@ python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
 Pico SDK は `--sdk` または `PICO_SDK_PATH` で明示する。picotool は
 `--picotool-dir`、`PICOTOOL_DIR`、または `PATH` 上の実行ファイルから探索する。
 作者固有の絶対パスには依存しない。
+
+音声モードはCMakeで選ぶ。
+
+```sh
+# 動作実績コードをそのまま鳴らす参照経路（既定値）
+cmake -S . -B build -DPICO_BOARD=pico -DPICOCALC_AUDIO_REFERENCE_TONE=ON
+# AIアプリがPCMを投入する汎用経路
+cmake -S . -B build -DPICO_BOARD=pico -DPICOCALC_AUDIO_REFERENCE_TONE=OFF
+```
+
+`OFF`では`picocalc::audio::init()`、`write_sample()`、`start()`を使う。
+最小コードは`templates/rp2040-basic/examples/audio_stream.cpp`にある。
+PSRAMの実用例は`examples/psram.cpp`で、`picocalc::psram::Buffer`が領域境界と
+24 byte以下への分割をBSP側で担当する。
 
 ## UF2と実機検証の版管理規約
 
@@ -165,11 +179,11 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.5.0-Aは実機で動作実績のあるコードを先に成立させるための参照版である。音声は
-`Picocalc_ment`の固定サイン経路、PSRAMは`pico_rescue`の初期化・候補順・read/write
-検証をコピーしている。ログ1行目の`app=0.5.0-a-reference-copy-fixed-sine-pico-rescue-psram`
-と、音声の`mode=reference-fixed-sine`、PSRAMの`reference=pico_rescue`を照合する。
-この版の実機合否はまだ記録していない。合格後にだけBSPのPCM生成APIへ改造する。
+0.6.0は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
+同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
+`PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の`app=0.6.0-a-bsp-reference`
+または`app=0.6.0-b-bsp-reference`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+を照合する。ソース検査とA/Bビルドを先に実施し、0.6.0の実機検証は最後に行う。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、
 および最初の実機試験で「どこが失敗したか」を一度で観測可能にすることである。

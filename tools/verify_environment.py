@@ -429,7 +429,7 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
                 "display::verify_pixels(",
             "[PICOCALC][LCD][VERIFY] app_status=",
             "[PICOCALC][VERIFY] psram=",
-            "[PICOCALC][AUDIO][VERIFY] mode=reference-fixed-sine",
+            "[PICOCALC][AUDIO][VERIFY] mode=%s status=%s",
             "filesystem::smoke_test()",
                 "keyboard::read_event(",
                 "[PICOCALC][SMOKE]",
@@ -577,11 +577,56 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "audio-public-adapter",
         [
             '#include "picocalc/audio.h"',
+            "picoment::audio_pwm::init_stream();",
             "picoment::audio_pwm::init_fixed_sine();",
+            "picoment::audio_pwm::start_stream();",
             "picoment::audio_pwm::stop_stream();",
             "picoment::audio_pwm::write_sample(",
         ],
     )
+    require_text(
+        checks,
+        root,
+        "bsp/include/picocalc/psram_buffer.h",
+        "psram-bounds-buffer-api",
+        [
+            "class Buffer",
+            "capacity_bytes",
+            "return psram::read(",
+            "return psram::write(",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/src/bsp.cpp",
+        "audio-mode-selection",
+        [
+            "PICOCALC_AUDIO_REFERENCE_TONE",
+            "audio::init_reference_tone()",
+            "audio::init()",
+            "mode=%s output=%s",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "templates/rp2040-basic/CMakeLists.txt",
+        "template-audio-mode-selection",
+        [
+            "PICOCALC_AUDIO_REFERENCE_TONE",
+            "0.6.0-a-bsp-reference",
+            "0.6.0-b-bsp-reference",
+        ],
+    )
+    for example in ("lcd.cpp", "keyboard.cpp", "sd.cpp", "psram.cpp", "audio_stream.cpp"):
+        require_text(
+            checks,
+            root,
+            "templates/rp2040-basic/examples/" + example,
+            "copyable-example-" + example[:-4],
+            ["copy_"],
+        )
     require_text(
         checks,
         root,

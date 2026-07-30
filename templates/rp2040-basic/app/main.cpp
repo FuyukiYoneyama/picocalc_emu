@@ -5,6 +5,22 @@
 
 namespace {
 
+#if !PICOCALC_AUDIO_REFERENCE_TONE
+uint32_t g_stream_phase = 0;
+
+void service_audio_stream() {
+    // Minimal copyable PCM producer: a centered square wave keeps the generic
+    // stream path observable without pulling a synthesizer into the BSP.
+    while (picocalc::audio::writable_samples() != 0u) {
+        const int16_t sample = ((g_stream_phase / 24u) & 1u) != 0u ? 10000 : -10000;
+        if (!picocalc::audio::write_sample(sample, sample)) {
+            break;
+        }
+        ++g_stream_phase;
+    }
+}
+#endif
+
 void sd_log(const char* component, const char* status, uint32_t detail) {
     printf("[PICOCALC][SD] component=%s status=%s detail=%lu\n",
            component,
@@ -48,6 +64,12 @@ int main() {
     printf("[PICOCALC][APP] version=%s compile=%s %s\n",
            PICOCALC_APP_VERSION, __DATE__, __TIME__);
 
+#if !PICOCALC_AUDIO_REFERENCE_TONE
+    service_audio_stream();
+    picocalc::audio::start();
+    printf("[PICOCALC][AUDIO] stream status=started waveform=square amplitude=10000\n");
+#endif
+
     const auto psram_info = picocalc::psram::info();
     printf("[PICOCALC][VERIFY] psram=%s sysclk_khz=%lu clkdiv=%.2f spi_hz=%lu\n",
            picocalc::psram::available() ? "ok" : "unavailable",
@@ -56,10 +78,15 @@ int main() {
            static_cast<unsigned long>(psram_info.spi_hz));
     sleep_ms(250);
     const auto audio_stats = picocalc::audio::stats();
-    printf("[PICOCALC][AUDIO][VERIFY] mode=reference-fixed-sine status=%s "
-           "rate=48000 tone=1000 amp_db=-6 carrier_hz=%lu irq=%lu "
+    printf("[PICOCALC][AUDIO][VERIFY] mode=%s status=%s "
+           "rate=48000 carrier_hz=%lu irq=%lu "
            "refill=%lu sample_index=%lu underruns=%lu pwm_wrap=255 "
            "dma_half=128 ring=%lu\n",
+#if PICOCALC_AUDIO_REFERENCE_TONE
+           "reference-fixed-sine",
+#else
+           "stream",
+#endif
            audio_stats.ring_capacity != 0u ? "ok" : "unavailable",
            static_cast<unsigned long>(audio_stats.carrier_hz),
            static_cast<unsigned long>(audio_stats.irq_count),
@@ -157,6 +184,9 @@ int main() {
                 32,
                 static_cast<uint16_t>(0x001f ^ (event.key << 8)));
         }
+#if !PICOCALC_AUDIO_REFERENCE_TONE
+        service_audio_stream();
+#endif
         sleep_ms(10);
     }
 }
