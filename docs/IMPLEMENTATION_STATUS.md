@@ -26,7 +26,7 @@
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
-| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、fudge、250 MHz時clkdiv 1.5以上、24 byte chunk、read/write自己検証 |
+| PSRAM | `picocalc_helloworld` / `pico_rescue` / `Picocalc_NESco` | 8 MiB、PIO1、250 MHz時はfudge+clkdiv 1.5以上、125 MHz側はfudge=false、24 byte chunk、read/write自己検証 |
 
 ## 新規プロジェクト
 

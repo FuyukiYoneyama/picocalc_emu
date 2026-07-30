@@ -50,8 +50,9 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 MISO3を固定する。`fudge`を常時有効にし、read/writeはDMA blocking APIを使う。
 
 クロック制約はドライバの一般的な上限ではなく、PicoCalc実機の記録を優先する。
-250 MHz時のclkdiv 1.0/1.2はREAD8失敗実績があるため候補に入れず、1.5/2/3/4を
-read/write自己検証して合格した設定だけを採用する。PSRAMは揮発性なので永続ログや
+250 MHz時のclkdiv 1.0/1.2はREAD8失敗実績があるため候補に入れず、`fudge=true`の
+1.5/2/3/4をread/write自己検証して合格した設定だけを採用する。125 MHz側は
+`fudge=false`の1/1.5/2/3/4を使う。PSRAMは揮発性なので永続ログや
 セーブ領域には使わない。
 
 ## 規約

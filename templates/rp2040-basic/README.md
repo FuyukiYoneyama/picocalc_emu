@@ -24,8 +24,9 @@ SD の実行シーケンスと失敗段階、キーボードイベントの通�
 LCD A（`hwspi-rgb888`）はloader-style SPI1/RGB888の専用vendorドライバ、LCD B
 （`pio-rgb565`）は実機動作済みPIO/RGB565ドライバを使用します。選択した版はログ先頭の
 `variant`、`app`、`git`で識別します。
-PSRAMの安全方針は、250 MHz時にclkdiv 1.5/2/3/4のみを試し、既知のREAD8失敗条件である
-1.0/1.2を試さないことです。起動ログの`[PICOCALC][PSRAM][POLICY]`、
+PSRAMの安全方針は、250 MHz時に`fudge=true`のclkdiv 1.5/2/3/4のみを試し、既知の
+READ8失敗条件である1.0/1.2を試さないことです。125 MHz側は実働サンプルと同じく
+`fudge=false`を使います。起動ログの`[PICOCALC][PSRAM][POLICY]`、
 `[PICOCALC][PSRAM][VERIFY]`、`[PICOCALC][PSRAM][PROBE]`を確認してください。
 
 ## 開発規約
