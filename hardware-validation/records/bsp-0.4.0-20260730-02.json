@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.4.0-20260730-02",
+  "bsp_version": "0.4.0",
+  "repository_commit": "e2d53ad55afac8f7b063d9ade28c2cee485b0432",
+  "validation_date": "2026-07-30",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "LCD BSP variant A (hwspi-rgb888). Same unit used for the B validation record bsp-0.4.0-20260730-01."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1 20231009",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "templates/rp2040-basic/build/picocalc_app.uf2",
+    "uf2_sha256": "196cf8db7c6054a74fa6ba1ba9ec02d56aea142a30bc1ccfde47886c21fafb12",
+    "build_log": "hardware-validation/records/evidence/pico20260730_225950.log"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pass",
+      "observed": "A hwspi-rgb888 boot identity matched commit e2d53ad. SPI1 25 MHz RGB888 initialization completed. Black, white, red, green and blue solid fills all matched RAMRD readback with zero mismatches. The 2x2 red/green/blue/white pattern also matched with zero mismatches and app_status=pass. The operator photo shows the expected green top band, blue bottom band, white frame and RGB squares.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_225950.log",
+        "hardware-validation/records/evidence/IMG_8842.JPG"
+      ]
+    },
+    "sd": {
+      "status": "pass",
+      "observed": "detect=present, init ok, and mount/write/sync/close/read/compare/close/remove completed with result_stage=ok. The LCD status region was green.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_225950.log"
+      ]
+    },
+    "keyboard": {
+      "status": "pass",
+      "observed": "The run recorded 148 key events: 74 pressed and 74 released events, including numeric, alphabetic, symbol and special-key codes. The final event counts were pressed_count=74 and released_count=74.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260730_225950.log"
+      ]
+    }
+  },
+  "notes": "A LCD, SD and keyboard tests pass on the same PicoCalc unit used for the B LCD/SD validation. overall_status remains pending until board_revision and SD-card identification are recorded. The UF2 is intentionally not archived; it is reproducible from repository commit e2d53ad and the standard build/picocalc_app.uf2 path."
+}

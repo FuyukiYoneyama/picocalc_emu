@@ -23,6 +23,10 @@
 両方の`variant`と`[PICOCALC][LCD][VERIFY] app_status=pass`を確認する。
 A/BのUF2を別名保存しない。
 
+実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
+pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
+未試験）である。
+
 ピン定義と周波数は`profiles/picocalc-rp2040.json`を唯一の入力源とし、
 `tools/generate_board_header.py`が`include/picocalc/board_generated.h`を生成する。
 `board_generated.h`は直接編集しない。`board.h`には契約を守る`static_assert`だけを

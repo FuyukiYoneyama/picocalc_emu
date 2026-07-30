@@ -31,9 +31,10 @@
   "tests": {
     "lcd": {
       "status": "pass",
-      "observed": "Test pattern displayed correctly: green top band, blue bottom band, white frame, red/green/blue 80x80 squares in order, green SD status band. RAMRD readback matched every solid fill (0x0000, 0xffff, 0xf800, 0x07e0, 0x001f) and the 2x2 pattern with zero mismatches, so app_status=pass. Operator photo taken 2026-07-30 22:31 confirms the screen; the photo file is not stored in this repository yet.",
+      "observed": "Test pattern displayed correctly: green top band, blue bottom band, white frame, red/green/blue 80x80 squares in order, green SD status band. RAMRD readback matched every solid fill (0x0000, 0xffff, 0xf800, 0x07e0, 0x001f) and the 2x2 pattern with zero mismatches, so app_status=pass. Operator photo taken 2026-07-30 22:31 confirms the screen.",
       "evidence_files": [
-        "hardware-validation/records/evidence/pico20260730_223142.log"
+        "hardware-validation/records/evidence/pico20260730_223142.log",
+        "hardware-validation/records/evidence/IMG_8841.JPG"
       ]
     },
     "sd": {
