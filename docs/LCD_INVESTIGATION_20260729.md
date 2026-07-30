@@ -364,3 +364,18 @@ CS下げっぱなしで送る。これは`general/01_DISPLAY_LCD.md`§0の禁止
 `cs=released_per_160_pixels`が出ることを確認し、そのうえで画面を見る。この個体では
 `RAMRD`がAで`0x202020`、Bで`0x0000`を返し続けており、`app_status`は表示成否の判定に
 使えない。0.3.2のB判定は画面写真で行い、`app_status`は参考値として扱う。
+
+期待する画面は`draw_test_pattern()`の結果である。上端24pxが緑、下端24pxが青、内側に
+白枠、その中に赤・緑・青の80×80が横並び、最後にSDスモーク結果の帯（成功で緑、失敗で赤）。
+
+### 0.3.2 B検証用UF2
+
+| 項目 | 値 |
+|---|---|
+| UF2 | `templates/rp2040-basic/build/picocalc_app.uf2` |
+| variant | `pio-rgb565` |
+| BSP / App | `0.3.2` / `0.3.2-pio-rgb565-reset200ms-cs160` |
+| source commit | `6b2718d055c1` |
+| build（UTC） | `2026-07-30T12:52:44Z` |
+| UF2 SHA-256 | `16ccb91178bac9f3b2d18b0a2e67cdef9e6cc94a299cf9a69e4c3dc9d302f0f4` |
+| 実機判定 | 未確認（次回Bを試験） |
