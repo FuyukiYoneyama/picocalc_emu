@@ -446,6 +446,68 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
         add_check(checks, "template-smoke", False, **error_details(error))
 
 
+def require_absent(
+    checks: List[Check],
+    root: Path,
+    relative_path: str,
+    label: str,
+    forbidden: List[str],
+) -> None:
+    path = root / relative_path
+    try:
+        text = path.read_text(encoding="utf-8")
+        present = [token for token in forbidden if token in text]
+        add_check(
+            checks,
+            "source-fingerprint:" + label,
+            not present,
+            path=relative_path,
+            present=present,
+        )
+    except (OSError, UnicodeError) as error:
+        add_check(
+            checks,
+            "source-fingerprint:" + label,
+            False,
+            path=relative_path,
+            **error_details(error),
+        )
+
+
+VENDORED_LCD_PIO_FILES = {
+    "bsp/vendor/lcd_rgb565_pio.cpp":
+        "d4013f26f7a49350a354d716e825ac516e952857e2f3578cd414ac50c1e88920",
+    "bsp/vendor/lcd_rgb565_pio.h":
+        "350aafa3ffb28ac8a31b6e1adcdef551e0177428ee67f9896978c1714e0978f9",
+    "bsp/vendor/lcd_spi_min.pio":
+        "618d4be87efb71a24422aa74d156d13db32e027cbfd5679cef21aa6d14b82fac",
+}
+
+
+def verify_vendored_lcd_pio(checks: List[Check], root: Path) -> None:
+    """The PIO LCD transport must stay a byte-identical copy, not a rewrite."""
+    modified: List[str] = []
+    details: Dict[str, Any] = {}
+    for relative_path, expected in VENDORED_LCD_PIO_FILES.items():
+        path = root / relative_path
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError as error:
+            modified.append(relative_path)
+            details[relative_path] = error_details(error)
+            continue
+        if digest != expected:
+            modified.append(relative_path)
+            details[relative_path] = {"expected": expected, "actual": digest}
+    add_check(
+        checks,
+        "vendor-lcd-pio-unmodified",
+        not modified,
+        modified=modified,
+        **details,
+    )
+
+
 def verify_portable(checks: List[Check], root: Path) -> None:
     verify_generated_board(checks, root)
     require_text(
@@ -487,29 +549,37 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "bsp/src/display_pio_rgb565.cpp",
         "lcd-pio-rgb565-wiring",
         [
-            "lcd_spi_min_program_init(",
-            "kPioClockDivider = 4.0f",
-            "kResetSettleMs = 200",
-            "sleep_ms(kResetSettleMs)",
-            "kPixelsPerCs = static_cast<size_t>(board::kLcdMaxPixelsPerCs)",
-            "kWindowTileSide = board::kLcdMaxPixelsPerCs",
-            "uint8_t g_chunk_buffer[kChunkBufferBytes] = {}",
-            "void send_pixel_chunk(const uint8_t* bytes, size_t pixels)",
-            "write_bytes(bytes, pixels * 2)",
-            "tile_y += kWindowTileSide",
-            "pio_sm_restart(g_pio, g_sm)",
-            "pio_encode_jmp(g_program_offset)",
-            "gpio_init(board::kPsramCs)",
-            "gpio_put(board::kPsramCs, 1)",
-            "reference=life-pico_rescue",
-            "write_command1(0x3a, 0x65)",
+            # B must stay an adapter over the vendored driver. These tokens fail
+            # the moment transport logic is written back into this file.
+            '#include "vendor/lcd_rgb565_pio.h"',
+            "lcd_rgb565_pio_init(false)",
+            "lcd_rgb565_pio_set_window(",
+            "lcd_rgb565_pio_write_blocking(",
+            "kTileSide = board::kLcdMaxPixelsPerCs",
+            "kPixelsPerCall = static_cast<size_t>(board::kLcdMaxPixelsPerCs)",
+            "tile_y += kTileSide",
+            "driver=vendor/lcd_rgb565_pio.cpp",
             "set_bitbang_mode(true)",
-            "pio_sm_set_enabled(g_pio, g_sm, false)",
+            "pio_sm_set_enabled(pio0, kSm, false)",
             "bitbang_read_byte_falling()",
+            "bitbang_set_read_window(",
             "format=rgb565",
             "PixelVerifyResult verify_pixels(",
         ],
     )
+    require_absent(
+        checks,
+        root,
+        "bsp/src/display_pio_rgb565.cpp",
+        "lcd-pio-rgb565-no-local-transport",
+        [
+            "lcd_spi_min_program_init(",
+            "pio_add_program(",
+            "reset_panel(",
+            "write_command1(",
+        ],
+    )
+    verify_vendored_lcd_pio(checks, root)
     require_text(
         checks,
         root,
@@ -519,8 +589,10 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             'PICOCALC_LCD_VARIANT "hwspi-rgb888"',
             "src/display.cpp",
             "src/display_pio_rgb565.cpp",
-            "pico_generate_pio_header(",
+            "vendor/lcd_rgb565_pio.cpp",
+            "pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/lcd_spi_min.pio)",
             "hardware_pio",
+            "hardware_dma",
         ],
     )
     verify_lcd_transactions(checks, root)

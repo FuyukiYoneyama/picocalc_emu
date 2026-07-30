@@ -361,9 +361,7 @@ CS下げっぱなしで送る。これは`general/01_DISPLAY_LCD.md`§0の禁止
 ### 判定方法
 
 起動ログの`[PICOCALC][LCD][PIO]`行に`reset_ms=10/10/200`、`window_max=160x160`、
-`cs=released_per_160_pixels`が出ることを確認し、そのうえで画面を見る。この個体では
-`RAMRD`がAで`0x202020`、Bで`0x0000`を返し続けており、`app_status`は表示成否の判定に
-使えない。0.3.2のB判定は画面写真で行い、`app_status`は参考値として扱う。
+`cs=released_per_160_pixels`が出ることを確認し、そのうえで画面を見る。
 
 期待する画面は`draw_test_pattern()`の結果である。上端24pxが緑、下端24pxが青、内側に
 白枠、その中に赤・緑・青の80×80が横並び、最後にSDスモーク結果の帯（成功で緑、失敗で赤）。
@@ -402,30 +400,43 @@ CS下げっぱなしで送る。これは`general/01_DISPLAY_LCD.md`§0の禁止
 `RAMWR`が効かない理由を推測でこれ以上潰さないため、次のUF2は表示修正ではなく計測に
 使う。
 
-## PIO転送のbring-up計測ビルド（BSP 0.3.3）
+## RAMRDに関する誤った記述の訂正（2026-07-30）
 
-`bsp/CMakeLists.txt`の`PICOCALC_LCD_PIO_BRINGUP=ON`でBだけをbring-upモードにする。
-通常のアプリ経路は実行せず、次の段階を実行して停止する。
+0.3.2と0.3.3の記述で「この個体のRAMRDは信頼できない」と書いたのは誤りである。
 
-| stage | 内容 | 判定 |
-|---:|---|---|
-| 0 | GP10/GP11のfuncsel・pad、PIOの`ctrl`/`flevel`/`fdebug`/`pinctrl`/`shiftctrl`/`execctrl`/`clkdiv`/`addr`をダンプ。clkdivを12500（約10kHz）へ落として1バイト送り、CS非選択のままCPUでパッドのエッジを実測 | `sck_edges>=16`ならPIOはピンを駆動している |
-| 2 | ビットバンSIOで左上160×160を赤`0xf800`に塗る | 画面左上が赤ならSIO書込みはパネルへ届く |
-| 3 | PIOをclkdiv 8.0（15.625MHz、データシート上限内）にして右上160×160を緑`0x07e0` | 右上が緑ならPIOは動き、31.25MHzが速すぎただけ |
-| 4 | PIOをclkdiv 4.0（31.25MHz、現行値）で左下160×160を青`0x001f` | 左下が青なら現行クロックでも動く |
+`life/src/platform/picocalc_display.cpp`の`readback_rect_rgb565()`は、同じ手順
+（PIO停止→SCK/MOSI/MISOをSIOへ→CS保持で`CASET`/`RASET`/`RAMRD`→ダミー1バイト→
+2バイト/ピクセルをfallingでサンプル）でこの実機からスクリーンショットを正しく取得して
+いる。`Picocalc_NESco`、`pico_skyace`、`Picocalc_BVWCVolleyball`、`Picocalc_ClockCalc`、
+`Picocalc_Clock`、`Picocalc_InfoNES`、`pico_rescue`、`picocalc-life`、`Picocalc_scicalc`、
+`Picocalc_ment`はいずれもこの実機で動作している。したがってRAMRDは正常であり、
+読み値が期待と違うのは読み出しではなく**書き込みが成立していない**ことを正しく示していた。
+原因を実機側へ帰属させた記述は撤回する。
 
-各stageの後に1ピクセルを読み戻してログへ出すが、この個体の`RAMRD`は信頼できないため、
-判定は画面写真（どの象限に色が出たか）で行う。ログの`readback_match`は参考値である。
+さらに、`life`の実機動作バイナリとpicocalc_emuのバイナリを逆アセンブルして比較した
+結果、PIO TX FIFOへの書き込みはどちらも`strb r, [0x50200010]`で同一だった。PIOの
+バイトエンジンには差がない。差が残っていたのは、私が手で書き写したBSP側の
+初期化・転送コードだけである。
 
-`PICOCALC_LCD_PIO_BRINGUP`は既定OFFであり、通常ビルドの動作は0.3.2と同じである。
+## Bの転送処理を無改変コピーへ置き換える（BSP 0.4.0、2026-07-30）
 
-### 0.3.3 bring-up計測用UF2
+0.3.3で用意したbring-up計測ビルドは撤回した。計測対象のコード自体を残さない方針に
+したためである。`general/01_DISPLAY_LCD.md`§0が最初から指示していた方法、すなわち
+「独自実装より`general/lcd/src/lcd_rgb565_pio.cpp`をそのまま使う」に従う。これは
+`game/pico_skyace`が2026-07-04に実機動作させた方法と同一である。
 
-| 項目 | 値 |
-|---|---|
-| UF2 | `templates/rp2040-basic/build/picocalc_app.uf2` |
-| variant | `pio-rgb565`（`PICOCALC_LCD_PIO_BRINGUP=ON`） |
-| BSP / App | `0.3.3` / `0.3.3-pio-bringup-stages` |
-| source commit | `76e837960c57` |
-| UF2 SHA-256 | `52cb46b28db79cf1580f8f1d068befdec3e58e3201a9febcc68872fa609988ea` |
-| 実機判定 | 未確認（計測用。表示成功を判定するUF2ではない） |
+* `bsp/vendor/lcd_rgb565_pio.cpp`、`lcd_rgb565_pio.h`、`lcd_spi_min.pio`を
+  `general/lcd/src/`（commit `f5517829f1bc`）からバイト単位で複製した
+* `bsp/src/display_pio_rgb565.cpp`は薄いアダプタにした。GPIO初期化、PIO初期化、
+  リセット波形、初期化コマンド列、`CASET/RASET/RAMWR`、CS操作、clkdivはすべて
+  vendorファイル側にあり、アダプタには存在しない
+* 呼び出し粒度は`pico_skyace/src/platform/picocalc_display.cpp`と同じにした。
+  160×160のウィンドウごとに`lcd_rgb565_pio_set_window()`を1回、画素は
+  `lcd_rgb565_pio_write_blocking()`を160ピクセル単位で呼ぶ
+* RAMRDは`life`のキャプチャビルドの手順をそのまま使う
+* `tools/picocalc.py verify`に2件追加した。`vendor-lcd-pio-unmodified`はコピーの
+  SHA-256を照合し、`lcd-pio-rgb565-no-local-transport`はアダプタへ転送処理
+  （`pio_add_program`、`reset_panel`、`write_command1`など）が戻っていないことを検査する
+
+これでBの転送は「書き写し」ではなくなった。今後Bで表示が出ない場合、疑うのは
+vendorファイルではなくアダプタの呼び出し粒度である。

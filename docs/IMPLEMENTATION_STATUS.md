@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template MVP 0.3.2、B転送契約修正版）
+## 現在利用できるもの（BSP/template MVP 0.4.0、B転送は無改変コピー）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -22,7 +22,7 @@
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
 | LCD A | `uf2loader/common/lcdspi` | SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48` |
-| LCD B | `life` / `pico_skyace` | PIO0 blocking、clkdiv `4.0`、COLMOD `0x65`、RGB565、リセット解除後200ms、ウィンドウ160×160以下、RAMWRデータは160ピクセルごとにCS解放、RAMRD時のみSIO |
+| LCD B | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、clkdiv `2.0`、COLMOD `0x65`、RGB565）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring、error diffusion 100% |
@@ -114,11 +114,11 @@ GRAMを`RAMRD`で読み出し、RGB888からRGB565へ戻した値が一致した
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
 
-B（`pio-rgb565`）のRAMRD検証では、書込み直後の読出しが書込み結果を巻き込まないよう、
-PIOのidle確認とCS非選択の後に200msのリカバリ待ちを置く。ログには
-`[PICOCALC][LCD][RECOVERY] phase=write_to_read wait_ms=200`を出す。これは
-`wait_idle()`だけではLCD側のGRAM受理完了を保証できないためであり、書込み結果と
-RAMRD経路を分離して判定するための検証条件である。
+B（`pio-rgb565`）のRAMRDは`life`のスクリーンショット取得ビルドと同じ手順である。
+PIOステートマシンを停止してSCK/MOSI/MISOをSIOへ移し、CS保持で`CASET`/`RASET`/`RAMRD`を
+送り、ダミー1バイトの後に2バイト/ピクセルをfallingでサンプルし、ピンをPIOへ戻す。
+`life`はこの手順で実機のスクリーンショットを正しく取得しているため、読み値が期待と
+異なる場合はRAMRDではなく書き込み経路を疑う。
 
 UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`stage=end`は
 既知の色パターン描画呼び出し完了、SDの`result_stage`は失敗箇所、キーの`count`は
@@ -138,14 +138,14 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
 実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。バックライト動作を
-調整した後、LCDを二系統へ分離した BSP 0.3.1 は、A/Bをそれぞれ個別に実機確認する
-段階にある。片方の不合格はもう片方を廃棄する理由にならない。A/Bそれぞれの実機結果は
+調整した後、LCDを二系統へ分離し、Bの転送を無改変コピーへ置き換えた BSP 0.4.0 は、
+A/Bをそれぞれ個別に実機確認する段階にある。片方の不合格はもう片方を廃棄する理由にならない。A/Bそれぞれの実機結果は
 `hardware-validation/records/`へ個別に記録し、両方が合格した時点でこのBSP自体を
 新しい基準実装として確定する。
 
 ## まだ実機確認が必要な点
 
-PC ビルド合格は電気的な動作を証明しないため、BSP 0.3.1 A/Bそれぞれでバックライトの
+PC ビルド合格は電気的な動作を証明しないため、BSP 0.4.0 A/Bそれぞれでバックライトの
 既定輝度、LCD の色・向き、SD カード個体差、USB CDC 初期化待ちを再確認する。
 
 また、次の機能は今後のエミュレーター段階である。

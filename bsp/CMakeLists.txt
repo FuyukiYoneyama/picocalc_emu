@@ -3,18 +3,15 @@ set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
 set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
     hwspi-rgb888 pio-rgb565)
 
-# Bring-up diagnostic for the PIO variant. It paints one quadrant per transport,
-# reads each one back and then halts, so a single UF2 separates "PIO does not
-# drive the pins" from "the panel rejects this clock". Never enable it for a
-# normal application build.
-set(PICOCALC_LCD_PIO_BRINGUP OFF CACHE BOOL
-    "Run the PIO LCD transport bring-up stages instead of the normal app flow")
-
 if(PICOCALC_LCD_VARIANT STREQUAL "hwspi-rgb888")
     set(PICOCALC_DISPLAY_SOURCE src/display.cpp)
     set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 125000)
 elseif(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
-    set(PICOCALC_DISPLAY_SOURCE src/display_pio_rgb565.cpp)
+    # B links the unmodified vendored driver plus a thin adapter. The 250 MHz
+    # system clock is the clock its clkdiv 2.0 was measured at.
+    set(PICOCALC_DISPLAY_SOURCE
+        src/display_pio_rgb565.cpp
+        vendor/lcd_rgb565_pio.cpp)
     set(PICOCALC_LCD_SYSTEM_CLOCK_KHZ 250000)
 else()
     message(FATAL_ERROR
@@ -32,7 +29,7 @@ add_library(picocalc_bsp STATIC
     third_party/ChanFatFS/src/ffunicode.c
 )
 
-pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/src/lcd_spi_min.pio)
+pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/lcd_spi_min.pio)
 
 file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" PICOCALC_BSP_VERSION)
 string(STRIP "${PICOCALC_BSP_VERSION}" PICOCALC_BSP_VERSION)
@@ -68,6 +65,10 @@ target_include_directories(picocalc_bsp
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
         ${CMAKE_CURRENT_LIST_DIR}/third_party/ChanFatFS/include
+    PRIVATE
+        # Lets the adapter include "vendor/lcd_rgb565_pio.h" without editing the
+        # vendored copy.
+        ${CMAKE_CURRENT_LIST_DIR}
 )
 
 target_compile_definitions(picocalc_bsp
@@ -79,7 +80,6 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
         PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
-        PICOCALC_LCD_PIO_BRINGUP=$<BOOL:${PICOCALC_LCD_PIO_BRINGUP}>
 )
 
 target_compile_options(picocalc_bsp PRIVATE
@@ -96,4 +96,5 @@ target_link_libraries(picocalc_bsp
         hardware_i2c
         hardware_spi
         hardware_pio
+        hardware_dma
 )
