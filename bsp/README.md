@@ -7,8 +7,8 @@
 固定する重要条件（LCDは二つの独立BSPから選ぶ）:
 
 * LCD共通: SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
-* LCD A `hwspi-rgb888`: uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB888、RAMWRウィンドウ中CS保持
-* LCD B `pio-rgb565`: 250 MHz、`life`/`pico_rescue`互換PIO0 blocking送信（clkdiv 4.0、約31.25 MHz）、`COLMOD 0x65`、RGB565、PIO停止後SIOでRAMRD
+* LCD A `hwspi-rgb888`: `bsp/vendor/lcd_hwspi_rgb888.cpp`、uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB888、CASET/RASET/RAMWRから画素列までRAMWRウィンドウ中CS保持
+* LCD B `pio-rgb565`: 250 MHz、`general/lcd`/`pico_skyace`互換PIO0 blocking送信（clkdiv 2.0、約62.5 MHz）、`COLMOD 0x65`、RGB565、PIO停止後SIOでRAMRD
 * LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする
 * LCD: `verify_pixels()`は選択したBSPのRAMRD形式をRGB565へそろえ、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
@@ -28,6 +28,6 @@ A/BのUF2を別名保存しない。
 `board_generated.h`は直接編集しない。`board.h`には契約を守る`static_assert`だけを
 置く。
 
-LCD Aの初期化列は`include/picocalc/detail/lcd_protocol.h`にあり、実機hardware-SPI
-transportとhost SPI fakeが同じ関数を実行する。LCD Bは`src/display_pio_rgb565.cpp`
+LCD Aの初期化・転送列は`vendor/lcd_hwspi_rgb888.cpp`にあり、`src/display.cpp`は
+公開APIとRGB565/RGB888変換だけを担当する。LCD Bは`src/display_pio_rgb565.cpp`
 と`src/lcd_spi_min.pio`に独立して保持し、Aのprotocol helperを参照しない。

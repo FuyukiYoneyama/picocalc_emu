@@ -477,3 +477,32 @@ RAMRDが全色で一致したことは、読み出しが正常であることと
 実機記録は`hardware-validation/records/bsp-0.4.0-20260730-01.json`。LCDとSDは`pass`、
 keyboardは未実施のため`pending`、`overall_status`は基板revisionとSDカード識別が
 未記入のため`pending`のままとする。
+
+## Aの転送処理を専用vendorドライバへ固定（BSP 0.4.0、2026-07-30）
+
+Bで実機成功した「実績ソースを転送本体にし、BSP側を薄いアダプタにする」方針をAにも
+適用した。Aの参照はstandaloneな`general/lcd/src/main_hwspi_rgb888_probe.cpp`と、
+実機動作している`PicoCalc/Code/picocalc_helloworld/lcdspi/lcdspi.c`に分かれているため、
+Aは単一ファイルの無改変コピーではなく、両参照のloader-style SPI契約を
+`bsp/vendor/lcd_hwspi_rgb888.cpp`へ固定した。
+
+旧Aの0.3.1では、単色塗りつぶしは読み出し一致した一方、最後の4色パターン書込みが
+赤一色として読み出され、`app_status=fail`だった。旧実装はAのwindow transactionを
+共通`lcd_protocol.h`へ分解しており、実働loader系の「CASET/RASET/RAMWRから画素列まで
+CSを保持する」契約を呼び出し側で保証していなかった。
+
+新Aでは次をvendorドライバ内へ固定した。
+
+* SPI1 25 MHz、125 MHz system clock、`COLMOD=0x66`、RGB888
+* リセット解除後200 ms、Sleep Out/Display On後120 ms
+* `CASET`、`RASET`、`RAMWR`、画素列を一つのCS Low区間で送信
+* RGB565公開APIからRGB888へ160 pixel変換バッファ単位で変換するが、CSは区切らない
+* RAMRDは実働helloworld系と同じSPI1 6 MHzのRGB888読出し、完了後25 MHzへ復帰
+
+`bsp/src/display.cpp`はBと同じく、公開API、座標クリップ、RGB565変換、検証ログだけを
+担当する。`tools/verify_environment.py`にはA adapter/vendor transportの静的検査を追加し、
+転送本体を再びアダプタへ書き戻した場合に検出する。
+
+この版はARMビルドとportable検証までは合格している。実機合格条件は従来どおり、ログ先頭の
+`variant=hwspi-rgb888`確認、5色solid readback、4色pattern readback、
+`[PICOCALC][LCD][VERIFY] app_status=pass`、および画面写真である。実機確認前にAを合格とは記録しない。
