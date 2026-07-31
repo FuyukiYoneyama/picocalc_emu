@@ -615,8 +615,9 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "template-audio-mode-selection",
         [
             "PICOCALC_AUDIO_REFERENCE_TONE",
-            "0.6.0-a-hwspi-rgb888-bsp-reference",
-            "0.6.0-b-pio-rgb565-bsp-reference",
+            'PICOCALC_LCD_VARIANT "pio-rgb565"',
+            "0.7.0-a-hwspi-rgb888-rgb666-compat",
+            "0.7.0-b-pio-rgb565-default",
         ],
     )
     for example in ("lcd.cpp", "keyboard.cpp", "sd.cpp", "psram.cpp", "audio_stream.cpp"):
@@ -711,13 +712,24 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "bsp/CMakeLists.txt",
         "lcd-variant-selection",
         [
-            'PICOCALC_LCD_VARIANT "hwspi-rgb888"',
+            'PICOCALC_LCD_VARIANT "pio-rgb565"',
             "src/display.cpp",
             "src/display_pio_rgb565.cpp",
             "vendor/lcd_rgb565_pio.cpp",
             "pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/lcd_spi_min.pio)",
             "hardware_pio",
             "hardware_dma",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "tools/picocalc.py",
+        "lcd-cli-default-pio-rgb565",
+        [
+            'marker = lcd_variant or "pio-rgb565"',
+            'default="pio-rgb565"',
+            "default: pio-rgb565",
         ],
     )
     verify_lcd_transactions(checks, root)

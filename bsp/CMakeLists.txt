@@ -1,4 +1,4 @@
-set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
+set(PICOCALC_LCD_VARIANT "pio-rgb565" CACHE STRING
     "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
 set_property(CACHE PICOCALC_LCD_VARIANT PROPERTY STRINGS
     hwspi-rgb888 pio-rgb565)

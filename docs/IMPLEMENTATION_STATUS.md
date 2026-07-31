@@ -1,12 +1,12 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template 0.6.0、LCD A/B・音声・PSRAM）
+## 現在利用できるもの（BSP/template 0.7.0、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
 あり、現在の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
 
-- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。Aはloader-style SPI/RGB888転送を専用vendorドライバへ固定し、BはPIO/RGB565の無改変vendorコピーを使う
+- `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
@@ -21,8 +21,8 @@
 
 | 機能 | 基準 | 固定した成功条件 |
 |---|---|---|
-| LCD A | `general/lcd/src/main_hwspi_rgb888_probe.cpp` + `PicoCalc/Code/picocalc_helloworld/lcdspi` | `bsp/vendor/lcd_hwspi_rgb888.cpp`、SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB888、CASET/RASET/RAMWRから画素列までCS保持、RAMRDは6 MHz |
-| LCD B | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、clkdiv `2.0`、COLMOD `0x65`、RGB565）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
+| LCD A（互換・診断） | `general/lcd/src/main_hwspi_rgb888_probe.cpp` + `PicoCalc/Code/picocalc_helloworld/lcdspi` | `bsp/vendor/lcd_hwspi_rgb888.cpp`、SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB666を3-byte RGB888 containerで送信、CASET/RASET/RAMWRから画素列までCS保持、RAMRDは6 MHz |
+| LCD B（推奨デフォルト） | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、LCD DMA OFF、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。固定サイン参照とPCM streamを切替可能 |
@@ -37,6 +37,8 @@ python3 tools/picocalc.py verify
 python3 tools/picocalc.py new MyApp --output ../MyApp
 python3 tools/picocalc.py build --project ../MyApp --sdk /path/to/pico-sdk
 ```
+
+引数を省略した場合はB（`pio-rgb565`）をビルドする。
 
 LCD BSPはA/Bを混ぜず、ビルド時に一方を選ぶ。生成物名は常に同じである。
 
@@ -109,7 +111,7 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 
 ```text
 [PICOCALC][LCD][VERIFY] stage=end status=drawn regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f
-[PICOCALC][LCD][READ] ramrd dummy=0x.. pixels=4 format=rgb888
+[PICOCALC][LCD][READ] ramrd dummy=0x.. pixels=4 format=rgb565
 [PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
 [PICOCALC][LCD][VERIFY] stage=pattern_readback status=pass pixels=4 mismatches=0
 [PICOCALC][LCD][VERIFY] app_status=pass
@@ -124,7 +126,8 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 ```
 
 LCDの`[LCD][VERIFY] app_status=pass`は、塗りつぶしとパターンの書き込み後に
-GRAMを`RAMRD`で読み出し、RGB888からRGB565へ戻した値が一致したことを表す。
+GRAMを`RAMRD`で読み出し、公開APIのRGB565値と一致したことを表す。BはRGB565の
+2-byte読出し、AはRGB666の3-byte containerをRGB565へ変換して比較する。
 `[LCD][READ]`にはMISOアイドル、RDDID/RDDST、RAMRDダミー、各pixelの生バイト列を出す。
 SD エラーは `mount`, `open_write`, `write`, `sync`, `open_read`, `read`,
 `compare`, `remove` のどこで発生したかを出力する。
@@ -179,12 +182,13 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.6.0は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
+0.7.0は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
-`app=0.6.0-a-hwspi-rgb888-bsp-reference`または
-`app=0.6.0-b-pio-rgb565-bsp-reference`、音声の`mode=`、PSRAMの`reference=pico_rescue`
-を照合する。ソース検査とA/Bビルドを先に実施し、0.6.0の実機検証は最後に行う。
+`app=0.7.0-b-pio-rgb565-default`または
+`app=0.7.0-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
+ソース検査とA/Bビルドを先に実施し、0.7.0の実機検証は最後に行う。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、
 および最初の実機試験で「どこが失敗したか」を一度で観測可能にすることである。

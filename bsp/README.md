@@ -4,11 +4,11 @@
 `pico_skyace` の LCD bring-up 記録を基準にしている。音声機能の実機基準は
 `Picocalc_ment` とする。
 
-固定する重要条件（LCDは二つの独立BSPから選ぶ）:
+固定する重要条件（LCDは二つの独立BSPから選び、Bを推奨デフォルトとする）:
 
 * LCD共通: SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
-* LCD A `hwspi-rgb888`: `bsp/vendor/lcd_hwspi_rgb888.cpp`、uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB888、CASET/RASET/RAMWRから画素列までRAMWRウィンドウ中CS保持
-* LCD B `pio-rgb565`: 250 MHz、`general/lcd`/`pico_skyace`互換PIO0 blocking送信（clkdiv 2.0、約62.5 MHz）、`COLMOD 0x65`、RGB565、PIO停止後SIOでRAMRD
+* LCD A `hwspi-rgb888`（互換・診断）: `bsp/vendor/lcd_hwspi_rgb888.cpp`、uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB666をR/G/B各1バイトの3-byte containerで送信、CASET/RASET/RAMWRから画素列までRAMWRウィンドウ中CS保持
+* LCD B `pio-rgb565`（推奨デフォルト）: 250 MHz、`general/lcd`/`pico_skyace`互換PIO0 blocking送信（LCD DMA OFF、clkdiv 2.0、約62.5 MHz）、`COLMOD 0x65`、RGB565を2 bytes/pixelで送信、PIO停止後SIOでRAMRD
 * LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする
 * LCD: `verify_pixels()`は選択したBSPのRAMRD形式をRGB565へそろえ、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
@@ -30,6 +30,9 @@ A/BのUF2を別名保存しない。
 `audio::init()`→`write_sample()`→`start()`のPCM経路になる。PSRAMは生APIに加えて
 `psram::Buffer`でアドレス範囲を管理できる。個別のコピペ例は
 `templates/rp2040-basic/examples/`に置く。実機検証はこの準備が終わった最後に行う。
+
+0.7.0では、公開APIのRGB565をプロジェクト標準画素形式とし、CMakeとビルドCLIの
+引数なしデフォルトをBへ変更した。A/Bのドライバは引き続き独立しており、Aを削除・統合しない。
 
 実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
