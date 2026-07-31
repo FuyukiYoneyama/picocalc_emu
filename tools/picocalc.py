@@ -57,7 +57,7 @@ def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[st
         r"set\s*\(\s*PICOCALC_APP_VERSION\s+\"([^\"]+)\"\s*\)", app_text
     )
     if len(branches) > 1:
-        marker = lcd_variant or "hwspi-rgb888"
+        marker = lcd_variant or "pio-rgb565"
         for candidate in branches:
             if marker in candidate:
                 app_version = candidate
@@ -355,8 +355,8 @@ def main() -> int:
     build_parser.add_argument(
         "--lcd-variant",
         choices=("hwspi-rgb888", "pio-rgb565"),
-        default="hwspi-rgb888",
-        help="independent LCD BSP to build (default: hwspi-rgb888)",
+        default="pio-rgb565",
+        help="independent LCD BSP to build (default: pio-rgb565)",
     )
     build_parser.add_argument("--jobs", type=int, default=2)
 

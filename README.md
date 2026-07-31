@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.6.0** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.7.0** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -55,17 +55,20 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 python3 tools/picocalc.py build --project ../MyApp
 ```
 
-生成物は`../MyApp/build/picocalc_app.uf2`です。
+生成物は`../MyApp/build/picocalc_app.uf2`です。引数を省略した推奨表示デフォルトは
+`pio-rgb565`（RGB565、PIO blocking、LCD DMAなし）です。
 
 LCDは実績のある二種類を別BSPとして選択できます。ファイル名はどちらも同じです。
 
 ```sh
-python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
 python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
 ```
 
-前者はSPI1/RGB888、後者はPIO0/RGB565です。選択した版はUF2の名前ではなく、起動ログ
-先頭行の`variant`とソースコミットで識別します。
+前者は推奨デフォルトのPIO0/RGB565、後者は互換・診断用のSPI1/
+`COLMOD=0x66`です。AのLCDバスはRGB666をR/G/B各1バイトの3-byte containerで送るため、
+既存variant名は`hwspi-rgb888`のまま維持します。選択した版はUF2の名前ではなく、
+起動ログ先頭行の`variant`とソースコミットで識別します。
 
 ### UF2と版管理の運用規約
 
@@ -149,8 +152,8 @@ python3 tools/picocalc.py verify \
 
 | 機能 | 実機基準 | 重要条件 |
 |---|---|---|
-| LCD A | `bsp/vendor/lcd_hwspi_rgb888.cpp` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB888、MADCTL `0x48`、window transaction中CS保持 |
-| LCD B | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0、clkdiv `2.0`、COLMOD `0x65`、RGB565、RAMRD時はSIOへ切替 |
+| LCD A（互換・診断） | `bsp/vendor/lcd_hwspi_rgb888.cpp` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB666を3-byte RGB888 containerで送信、MADCTL `0x48`、window transaction中CS保持 |
+| LCD B（推奨デフォルト） | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0 blocking、LCD DMAなし、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信、RAMRD時はSIOへ切替 |
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer |
@@ -182,6 +185,10 @@ BSP 0.6.0では、動作済みプロジェクトを先にコピーした参照�
 `Picocalc_ment`の固定サイン、`OFF`はPCM stream APIを使います。PSRAMには
 `picocalc::psram::Buffer`を追加しました。いずれもソースとA/Bのビルドを確認し、
 この版の実機合否は最後にA/Bを個別に確認します。
+
+BSP 0.7.0では、アプリ／LCDラッパーの標準画素形式をRGB565と明記し、引数なしの
+推奨表示デフォルトをB（`pio-rgb565`、PIO blocking、DMA OFF）へ変更しました。
+A（`hwspi-rgb888`）は公式互換・bring-up・診断経路として削除せず、明示指定で利用できます。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
 `general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに

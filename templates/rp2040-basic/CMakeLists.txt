@@ -11,13 +11,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 option(PICOCALC_AUDIO_REFERENCE_TONE
     "Use the copied Picocalc_ment fixed-sine reference path" ON)
-set(PICOCALC_LCD_VARIANT "hwspi-rgb888" CACHE STRING
+set(PICOCALC_LCD_VARIANT "pio-rgb565" CACHE STRING
     "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
 if(NOT DEFINED PICOCALC_APP_VERSION)
     if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
-        set(PICOCALC_APP_VERSION "0.6.0-b-pio-rgb565-bsp-reference")
+        set(PICOCALC_APP_VERSION "0.7.0-b-pio-rgb565-default")
     else()
-        set(PICOCALC_APP_VERSION "0.6.0-a-hwspi-rgb888-bsp-reference")
+        set(PICOCALC_APP_VERSION "0.7.0-a-hwspi-rgb888-rgb666-compat")
     endif()
 endif()
 
