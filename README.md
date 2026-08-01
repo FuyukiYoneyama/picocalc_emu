@@ -168,7 +168,7 @@ python3 tools/picocalc.py verify \
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer |
-| PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、候補順はpico_rescue準拠 |
+| PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は1.5/1→2/0→3/0、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。

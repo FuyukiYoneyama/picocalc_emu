@@ -17,6 +17,26 @@ struct Candidate {
     bool fudge;
 };
 
+struct CandidateList {
+    const Candidate* values;
+    size_t count;
+    const char* description;
+};
+
+constexpr Candidate kAllCandidates[] = {
+    {1.0f, true},  {1.5f, true},  {2.0f, true},  {3.0f, true},  {4.0f, true},
+    {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
+};
+
+// These are the hardware-validated normal-operation candidates. The
+// exhaustive list above remains available only to the coexistence sweep.
+constexpr Candidate k250MHzCandidates[] = {
+    {1.5f, true}, {2.0f, false}, {3.0f, false},
+};
+constexpr Candidate k125MHzCandidates[] = {
+    {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
+};
+
 psram_spi_inst_t g_psram = {};
 Info g_info = {};
 bool g_initialized = false;
@@ -122,6 +142,17 @@ bool coexistence_roundtrip(uint32_t frame, size_t* mismatches) {
     return count == 0;
 }
 
+CandidateList normal_candidates(uint32_t system_clock_khz) {
+    if (system_clock_khz == 250000u) {
+        return {k250MHzCandidates,
+                sizeof(k250MHzCandidates) / sizeof(k250MHzCandidates[0]),
+                "1.50/1,2.00/0,3.00/0"};
+    }
+    return {k125MHzCandidates,
+            sizeof(k125MHzCandidates) / sizeof(k125MHzCandidates[0]),
+            "1.00/0,1.50/0,2.00/0,3.00/0,4.00/0"};
+}
+
 }  // namespace
 
 bool init() {
@@ -131,19 +162,19 @@ bool init() {
 
     g_info = {};
     g_info.system_clock_khz = clock_get_hz(clk_sys) / 1000u;
+    const CandidateList policy = normal_candidates(g_info.system_clock_khz);
     printf("[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=%lu "
            "pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates="
-           "1.00/1,1.50/1,2.00/1,3.00/1,4.00/1,1.00/0,1.50/0,2.00/0,3.00/0,4.00/0\n",
-           static_cast<unsigned long>(g_info.system_clock_khz));
+           "%s\n",
+           static_cast<unsigned long>(g_info.system_clock_khz),
+           policy.description);
 
-    // Exact candidate order copied from pico_rescue. Do not infer a clock
-    // policy here; the read-back test selects the first working combination.
-    constexpr Candidate candidates[] = {
-        {1.0f, true},  {1.5f, true},  {2.0f, true},  {3.0f, true},  {4.0f, true},
-        {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
-    };
+    // The candidate order is now limited to the hardware-validated policy for
+    // the active system clock. The coexistence test uses kAllCandidates to
+    // measure the rejected combinations explicitly.
 
-    for (const Candidate& candidate : candidates) {
+    for (size_t index = 0; index < policy.count; ++index) {
+        const Candidate& candidate = policy.values[index];
         if (try_config(candidate.clkdiv, candidate.fudge)) {
             g_info.initialized = true;
             printf("[PICOCALC][PSRAM] status=ok capacity=%lu clkdiv=%.2f "
@@ -226,17 +257,19 @@ bool write(uint32_t address, const void* source, size_t bytes) {
 
 CoexistenceResult probe_lcd_coexistence(CoexistenceDisplayStep display_step,
                                         uint32_t frames_per_candidate) {
-    constexpr Candidate candidates[] = {
-        {1.0f, true},  {1.5f, true},  {2.0f, true},  {3.0f, true},  {4.0f, true},
-        {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
-    };
     if (frames_per_candidate == 0u) frames_per_candidate = 1u;
 
     const uint32_t sysclk_khz = clock_get_hz(clk_sys) / 1000u;
+    const CandidateList sweep = {
+        kAllCandidates,
+        sizeof(kAllCandidates) / sizeof(kAllCandidates[0]),
+        "1.00/1,1.50/1,2.00/1,3.00/1,4.00/1,1.00/0,1.50/0,2.00/0,3.00/0,4.00/0",
+    };
     uint32_t passed = 0;
     Candidate selected = {};
     bool have_selected = false;
-    for (const Candidate& candidate : candidates) {
+    for (size_t index = 0; index < sweep.count; ++index) {
+        const Candidate& candidate = sweep.values[index];
         configure_candidate(candidate.clkdiv, candidate.fudge);
         const uint32_t begin = time_us_32();
         uint32_t display_steps = 0;
@@ -289,13 +322,13 @@ CoexistenceResult probe_lcd_coexistence(CoexistenceDisplayStep display_step,
     }
     printf("[PICOCALC][PSRAM][COEX] summary candidates=%lu passed=%lu "
            "restored=%s status=%s\n",
-           static_cast<unsigned long>(sizeof(candidates) / sizeof(candidates[0])),
+           static_cast<unsigned long>(sweep.count),
            static_cast<unsigned long>(passed),
            restored ? "ok" : "fail",
            passed != 0u && restored ? "pass" : "fail");
     return {
         passed != 0u && restored,
-        static_cast<uint32_t>(sizeof(candidates) / sizeof(candidates[0])),
+        static_cast<uint32_t>(sweep.count),
         passed,
         restored,
     };

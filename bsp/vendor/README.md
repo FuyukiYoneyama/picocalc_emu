@@ -47,12 +47,13 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 `rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを
 固定したもの（MIT License）。`game/pico_rescue`でも同じドライバが使われている。
 ヘッダの仕様どおりCS/CLKは連続GPIOが必要なため、PicoCalc V2ではCS20/SCK21、MOSI2、
-MISO3を固定する。`fudge`を常時有効にし、read/writeはDMA blocking APIを使う。
+MISO3を固定する。read/writeはDMA blocking APIを使い、`fudge`は実測済み候補だけで選ぶ。
 
 クロック制約はドライバの一般的な上限ではなく、PicoCalc実機の記録を優先する。
-250 MHz時のclkdiv 1.0/1.2はREAD8失敗実績があるため候補に入れず、`fudge=true`の
-1.5/2/3/4をread/write自己検証して合格した設定だけを採用する。125 MHz側は
-`fudge=false`の1/1.5/2/3/4を使う。PSRAMは揮発性なので永続ログや
+250 MHz通常起動時は実機合格済みの`fudge=true, clkdiv=1.5`、続いて
+`fudge=false, clkdiv=2/3`だけをread/write自己検証する。125 MHz側は
+`fudge=false`の1/1.5/2/3/4を使う。共存検証モードだけは全候補を測定する。
+PSRAMは揮発性なので永続ログや
 セーブ領域には使わない。
 
 2026-08-01のLCD共存実機検証では、250 MHz system clockで`fudge=true, clkdiv=1.5`

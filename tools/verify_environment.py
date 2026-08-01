@@ -550,7 +550,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         [
             "reference=pico_rescue",
             "candidates=",
-            "1.00/1,1.50/1,2.00/1,3.00/1,4.00/1",
+            "1.50/1,2.00/0,3.00/0",
             "1.00/0,1.50/0,2.00/0,3.00/0,4.00/0",
             "psram_spi_init_clkdiv(pio1, -1, clkdiv, fudge)",
             "fudge=%u",
