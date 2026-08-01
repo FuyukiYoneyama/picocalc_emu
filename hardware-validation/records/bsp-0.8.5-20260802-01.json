@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.5-20260802-01",
+  "bsp_version": "0.8.5",
+  "repository_commit": "ea0557328aa3b5fbf7bf335db5939680b5fc2b25",
+  "validation_date": "2026-08-02",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "Prepared for the next MusicPlayer playback evidence log. Board revision and SD identification are not recorded yet. BSP 0.8.5 adds cross-core-safe PCM ring accounting, quantizer state clamping, and EOF drain APIs; the shared MusicPlayer playback log is the planned audio evidence."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/PicoCalc_MusicPlayer.uf2",
+    "uf2_sha256": "c8859cfeeb469d8887caf78c3d35713044133be19ae8a2c71b8fa529b2a36346",
+    "build_log": ""
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log; the intermittent LCD readback result remains a separate known BSP issue.",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log.",
+      "evidence_files": []
+    }
+  },
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. The next MusicPlayer playback log must record underrun, clip, drop, min_ring_level, max_supply_gap_us, EOF drain completion, the Phase 9 cross-core invariant, and the audible result. App version: 0.3.19-v1-core0-ring-exact. Build timestamp: 2026-08-01T00:00:00Z."
+}
