@@ -53,6 +53,11 @@ PCMを受け取る出力経路だけを提供する。
 短いDMA tailをcenter-duty silenceで完了させる。いずれもcore1 decoderとcore0 DMA
 producer/consumer構成で必要な差分であり、取得元との差分として記録する。
 
+0.8.6では、EOF drainのDMA half切り替えを修正した。最後に補充したhalfを、反対側の
+half完了後に一度開始してから停止し、曲末の1〜128サンプルを捨てない。停止時には
+PWMをcenter dutyへ戻す。これは`audio_picoment/platform/picocalc_audio_pwm.cpp`の
+drain状態遷移だけの差分である。
+
 ## PSRAM: `rp2040-psram`
 
 `rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを

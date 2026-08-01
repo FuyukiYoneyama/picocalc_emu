@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.5` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.6` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -44,6 +44,11 @@ core1から`write_sample()`を呼ぶ場合、core0のDMA IRQに対する割り�
 同版では、曲末に残るソフトウェアリングと2つのDMA half-bufferを
 `request_drain()` / `drain_complete()`で意図的なcenter-duty silenceとして排出する。
 EOFの通常終了をDMA underrunとして数えず、既に投入済みのPCMを捨てないためのAPIである。
+
+## 0.8.6 audio drain sequencing
+
+最後に補充したDMA halfを、反対側のhalfの完了後に実際に開始してから停止する。
+これにより曲末の1〜128サンプルを捨てず、停止時にはPWM出力をcenter dutyへ戻す。
 
 ## Read-only filesystem API
 

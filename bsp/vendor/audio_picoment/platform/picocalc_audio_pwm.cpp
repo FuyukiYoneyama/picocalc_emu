@@ -66,8 +66,10 @@ int32_t g_quant_error_left = 0;
 int32_t g_quant_error_right = 0;
 bool g_live = false;
 volatile bool g_drain_requested = false;
+volatile bool g_drain_final_pending = false;
 volatile bool g_drain_stop_pending = false;
 volatile bool g_drain_complete = true;
+volatile uint8_t g_drain_final_half = 0;
 #if PICOMENT_FIXED_SINE_TEST
 bool g_stream_mode = false;
 #endif
@@ -280,17 +282,21 @@ void __not_in_flash_func(refill_half)(uint half) {
     ++g_refill_count;
 }
 
-void __not_in_flash_func(refill_drain_half)(uint half) {
+uint32_t __not_in_flash_func(refill_drain_half)(uint half) {
     // EOF is a normal end condition, not an audio underrun.  Complete the
     // final DMA half with queued samples and intentional center-duty silence
     // for any short tail, without incrementing the underrun counter.
+    uint32_t copied = 0;
     for (uint32_t i = 0; i < kHalfSamples; ++i) {
         uint32_t packed = pack_pwm(kPwmCenter, kPwmCenter);
-        ring_pop(&packed);
+        if (ring_pop(&packed)) {
+            ++copied;
+        }
         g_dma_buffer[half][i] = packed;
         ++g_sample_index;
     }
     ++g_refill_count;
+    return copied;
 }
 
 void __not_in_flash_func(start_half)(uint half) {
@@ -317,11 +323,33 @@ void __isr __not_in_flash_func(dma_irq0_handler)() {
             __dmb();
             dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), false);
             irq_set_enabled(DMA_IRQ_0, false);
-            pwm_set_enabled(static_cast<uint>(g_pwm_slice), false);
+            pwm_set_chan_level(static_cast<uint>(g_pwm_slice), g_left_channel, kPwmCenter);
+            pwm_set_chan_level(static_cast<uint>(g_pwm_slice), g_right_channel, kPwmCenter);
             return;
         }
-        refill_drain_half(g_active_half);
-        g_drain_stop_pending = AudioRing::empty(g_ring_write, g_ring_read);
+        if (g_drain_final_pending) {
+            // The opposite DMA half has just completed. Start the half that
+            // was filled with the final queued PCM, then stop on its IRQ.
+            start_half(g_drain_final_half);
+            g_drain_final_pending = false;
+            g_drain_stop_pending = true;
+            ++g_irq_count;
+            return;
+        }
+        const uint32_t copied = refill_drain_half(g_active_half);
+        if (AudioRing::empty(g_ring_write, g_ring_read)) {
+            if (copied == 0u) {
+                // No final PCM was needed in the completed half. The other
+                // half already contains the last real samples.
+                g_drain_stop_pending = true;
+            } else {
+                // Keep the just-filled half alive until the already-running
+                // opposite half completes, then start it for one final DMA
+                // interval before stopping.
+                g_drain_final_half = static_cast<uint8_t>(g_active_half);
+                g_drain_final_pending = true;
+            }
+        }
         start_half(next_half);
         ++g_irq_count;
         return;
@@ -381,8 +409,10 @@ void init_common(bool stream_mode, bool start_immediately) {
     g_quant_error_left = 0;
     g_quant_error_right = 0;
     g_drain_requested = false;
+    g_drain_final_pending = false;
     g_drain_stop_pending = false;
     g_drain_complete = true;
+    g_drain_final_half = 0;
 #if PICOMENT_FIXED_SINE_TEST
     g_stream_mode = stream_mode;
 #else
@@ -459,8 +489,10 @@ void init_stream() {
 
 void start_stream() {
     g_drain_requested = false;
+    g_drain_final_pending = false;
     g_drain_stop_pending = false;
     g_drain_complete = false;
+    g_drain_final_half = 0;
     refill_half(0);
     refill_half(1);
     start_output();
@@ -469,16 +501,23 @@ void start_stream() {
 void stop_stream() {
     if (!g_live) {
         g_drain_requested = false;
+        g_drain_final_pending = false;
         g_drain_stop_pending = false;
         g_drain_complete = true;
+        if (g_pwm_slice >= 0) {
+            pwm_set_chan_level(static_cast<uint>(g_pwm_slice), g_left_channel, kPwmCenter);
+            pwm_set_chan_level(static_cast<uint>(g_pwm_slice), g_right_channel, kPwmCenter);
+        }
         return;
     }
 
     irq_set_enabled(DMA_IRQ_0, false);
     g_live = false;
     g_drain_requested = false;
+    g_drain_final_pending = false;
     g_drain_stop_pending = false;
     g_drain_complete = true;
+    g_drain_final_half = 0;
     __dmb();
 
     dma_channel_abort(static_cast<uint>(g_dma_channel));
@@ -498,7 +537,9 @@ void request_drain() {
         return;
     }
     g_drain_stop_pending = false;
+    g_drain_final_pending = false;
     g_drain_complete = false;
+    g_drain_final_half = 0;
     __dmb();
     g_drain_requested = true;
 }
