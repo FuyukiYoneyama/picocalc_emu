@@ -2,7 +2,7 @@
   "schema_version": 1,
   "validation_id": "bsp-0.8.4-20260801-01",
   "bsp_version": "0.8.4",
-  "repository_commit": "827cc281deee4286ad70c6fa42d89193db5ee814",
+  "repository_commit": "8f3d3cbac641ff5febfefeabc5426878857b4e11",
   "validation_date": "2026-08-01",
   "operator": "Fuyuki Yoneyama",
   "overall_status": "pending",
@@ -25,7 +25,7 @@
   },
   "firmware": {
     "path": "build/PicoCalc_MusicPlayer.uf2",
-    "uf2_sha256": "e41fa1bbe4e01e543c6ca3ea273d88c851231e467b5314a0ac231ff58a595ee6",
+    "uf2_sha256": "f469da10f5583a8171eed883c53943366552bf18e7b5aa3c63e0dd94d6601131",
     "build_log": ""
   },
   "tests": {
@@ -45,5 +45,5 @@
       "evidence_files": []
     }
   },
-  "notes": "The next MusicPlayer playback log must record the 0.8.4 PCM stream path, including underrun, clip, drop, ring level, the Phase 9 cross-core invariant, and the audible result. Audio evidence remains in notes rather than the canonical BSP tests schema. App version: 0.3.15-v1-bsp084-audio-invariant-acquire. Build timestamp: 2026-08-01T00:00:00Z."
+  "notes": "The next MusicPlayer playback log must record the 0.8.4 PCM stream path, including underrun, clip, drop, ring level, the Phase 9 cross-core invariant, and the audible result. Audio evidence remains in notes rather than the canonical BSP tests schema. App version: 0.3.16-v1-bsp084-audio-invariant-stop. Build timestamp: 2026-08-01T00:00:00Z."
 }
