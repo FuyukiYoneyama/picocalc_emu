@@ -34,8 +34,8 @@ class ToolTests(unittest.TestCase):
         project = ROOT / "templates/rp2040-basic"
         _, standard = module.build_versions(project, "pio-rgb565", False)
         _, coexistence = module.build_versions(project, "pio-rgb565", True)
-        self.assertEqual(standard, "0.8.2-b-pio-rgb565-default")
-        self.assertEqual(coexistence, "0.8.2-b-pio-rgb565-psram-lcd-coexist")
+        self.assertEqual(standard, "0.8.3-b-pio-rgb565-default")
+        self.assertEqual(coexistence, "0.8.3-b-pio-rgb565-psram-lcd-coexist")
 
     def copy_project(self, temporary):
         project = Path(temporary) / "project"
@@ -337,6 +337,8 @@ class ToolTests(unittest.TestCase):
                     / "bsp/include/picocalc/board_generated.h"
                 ).is_file()
             )
+            self.assertFalse((destination / "build").exists())
+            self.assertFalse((destination / ".picocalc-build-history.json").exists())
             metadata = json.loads(
                 (destination / ".picocalc-project.json").read_text(encoding="utf-8")
             )

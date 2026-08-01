@@ -13,15 +13,18 @@ uint32_t g_read_count = 0;
 uint32_t g_error_count = 0;
 uint32_t g_empty_count = 0;
 
-bool read_reg(uint8_t reg, uint8_t* data, size_t len) {
+bool read_reg(uint8_t reg, uint8_t* data, size_t len, int* write_result = nullptr,
+             int* read_result = nullptr) {
     const int written =
         i2c_write_blocking(i2c1, board::kKeyboardAddress, &reg, 1, true);
+    if (write_result != nullptr) *write_result = written;
     if (written != 1) {
         ++g_error_count;
         return false;
     }
     const int read =
         i2c_read_blocking(i2c1, board::kKeyboardAddress, data, len, false);
+    if (read_result != nullptr) *read_result = read;
     if (read != static_cast<int>(len)) {
         ++g_error_count;
         return false;
@@ -59,6 +62,19 @@ bool read_event(KeyEvent* event) {
     event->key = fifo_item[1];
     ++g_read_count;
     return event->key != 0;
+}
+
+bool read_diagnostic(DiagnosticSample* sample) {
+    if (sample == nullptr) return false;
+    *sample = {};
+    const bool status_ok = read_reg(board::kKeyboardStatusRegister, sample->status,
+                                    sizeof(sample->status), &sample->status_write_result,
+                                    &sample->status_read_result);
+    if (!status_ok) return false;
+    if ((sample->status[0] & 0x1f) == 0) return true;
+    sample->fifo_read_attempted = true;
+    return read_reg(board::kKeyboardFifoRegister, sample->fifo, sizeof(sample->fifo),
+                    &sample->fifo_write_result, &sample->fifo_read_result);
 }
 
 uint32_t read_count() {

@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.2` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.3` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -23,6 +23,19 @@
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
+
+## Read-only filesystem API
+
+`picocalc/filesystem.h` は、音楽アプリなどの長寿命 read-only 利用向けに、次の
+opaque API を公開する。`FATFS`、`FIL`、`DIR`、`FRESULT` は app の include 面へ出ない。
+
+- `mount()` / `unmount()` / `mounted()`
+- `open_read()` / `read()` / `seek()` / `tell()` / `size()` / `close()`
+- `open_dir()` / `next_dir()` / `close_dir()`
+
+BSP 内では `FATFS` を1個だけ所有し、read file と directory は同時に開けない。
+directory 列挙を再生開始前に完了してから、file handle を開く。`smoke_test()`も同じ
+mountを再利用するため、app側で別の `FATFS` を mount しない。
 
 実機試験ではA/Bを同時に扱わず、一度に一方だけを同じ
 `build/picocalc_app.uf2`へ生成する。Aの合否にかかわらずBも独立して検証し、

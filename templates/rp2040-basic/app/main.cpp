@@ -108,8 +108,8 @@ int main() {
             sleep_ms(1000);
         }
     }
-    printf("[PICOCALC][APP] version=%s compile=%s %s\n",
-           PICOCALC_APP_VERSION, __DATE__, __TIME__);
+    printf("[PICOCALC][APP] version=%s build=%s\n",
+           PICOCALC_APP_VERSION, PICOCALC_BUILD_TIMESTAMP);
 
 #if PICOCALC_PSRAM_LCD_COEXIST_TEST
     return run_coexistence_test();

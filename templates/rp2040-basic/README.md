@@ -21,6 +21,10 @@ cmake --build build -j
 python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
 ```
 
+`tools/picocalc.py new` は template 作業ツリーの `build/` と
+`.picocalc-build-history.json` を生成先へコピーしません。生成先の build cache と
+UF2履歴は、新規プロジェクト自身のものだけを記録します。
+
 LCD variantを省略して推測しません。Aを使うときだけ`hwspi-rgb888`を明示します。
 
 書き込み対象は `build/picocalc_app.uf2` です。起動すると LCD テストパターン、

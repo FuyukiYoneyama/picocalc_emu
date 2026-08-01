@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.8.2** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.3** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -82,14 +82,18 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`です。
+このモードの起動ログ先頭は`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
 PicoCalcではUF2をSDカードへコピーして使うため、同じプロジェクト内でUF2の
 ファイル名を変更しない。生成物の名前は常に`build/picocalc_app.uf2`とし、
 検証版・分岐版でもこの名前を維持する。UF2自体はリポジトリやプロジェクトの
-成果物として保存せず、必要なときに対象コミットから同じ名前で再生成する。
+成果物として保存せず、必要なときに対象コミットから生成する。通常ビルドは
+ビルド時刻を埋め込むためSHA-256が変わり得る。実機記録など再現性が必要な
+証拠ビルドでは、`--build-timestamp YYYY-MM-DDTHH:MM:SSZ`を指定し、同じ
+ソース、BSP、SDK、ツールチェーン、ビルド設定を揃えた場合に限り同一成果物を
+再生成できる。
 
 版の識別はファイル名ではなく、次の組み合わせで行う。
 
@@ -99,12 +103,13 @@ PicoCalcではUF2をSDカードへコピーして使うため、同じプロジ�
 - UF2のSHA-256
 
 起動ログの1行目は必ず次の`[PICOCALC][BOOT]`行とし、BSP版、ソースコミット、
-ビルド時刻、コンパイル時刻を出力する。実機検証ではこの1行を読んでから、画面・
+ビルド時刻を出力する。実機検証ではこの1行を読んでから、画面・
 SD・キーボードの動作を判定する。特別な検証を行う場合は版番号またはビルド
 サブコメントをソースへ反映してコミットし、そのコミットからUF2を作る。
 
-`tools/picocalc.py build`はビルド開始時刻を毎回UTCでUF2へ埋め込み、生成したUF2の
-SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録します。同じBSP版と
+`tools/picocalc.py build`は既定ではビルド開始時刻をUTCでUF2へ埋め込み、生成したUF2の
+SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録します。再現性が必要な
+場合は`--build-timestamp`で固定値を指定します。同じBSP版と
 アプリ版で過去に成功したビルドがある場合は警告しますが、再ビルドは禁止しません。
 同じ版を意図的に使う場合はそのまま続行できます。新しいリリースや実機検証対象を
 区別する場合だけ、テンプレートの版番号またはビルドサブコメントを更新し、先に
@@ -113,8 +118,8 @@ SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録し�
 ビルドログには次の識別情報が出ます。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=... compile=...
-[PICOCALC][APP] version=... compile=...
+[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=...
+[PICOCALC][APP] version=... build=...
 ```
 
 `build`はビルド開始時刻、`compile`はソースのコンパイル時刻です。UF2を実機へ
@@ -190,10 +195,11 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 [Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
 
 この台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
-`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.2、commit
+`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.3、commit
 `2360487f70ee`）は、別途取得した実機ログでLCD/GRAM readback、SD、キーボード、
 LCD検証後の音声停止まで確認済みです。実機では一度に一方だけを
-`build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、各ソースコミットから再生成します。
+`build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
+コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 
 ## 変更履歴の要点（過去の経緯。現在の利用手順ではない）
 

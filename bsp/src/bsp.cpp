@@ -13,9 +13,9 @@ bool init() {
         return false;
     }
     stdio_init_all();
-    printf("[PICOCALC][BOOT] bsp=%s app=%s variant=%s git=%s build=%s compile=%s %s\n",
+    printf("[PICOCALC][BOOT] bsp=%s app=%s variant=%s bsp_git=%s app_git=%s build=%s\n",
            PICOCALC_BSP_VERSION, PICOCALC_APP_VERSION, PICOCALC_LCD_VARIANT,
-           PICOCALC_BUILD_COMMIT, PICOCALC_BUILD_TIMESTAMP, __DATE__, __TIME__);
+           PICOCALC_BSP_GIT, PICOCALC_APP_GIT, PICOCALC_BUILD_TIMESTAMP);
     printf("[PICOCALC][BOOT] clock status=ok target_khz=%lu actual_khz=%lu\n",
            static_cast<unsigned long>(PICOCALC_LCD_SYSTEM_CLOCK_KHZ),
            static_cast<unsigned long>(clock_get_hz(clk_sys) / 1000u));

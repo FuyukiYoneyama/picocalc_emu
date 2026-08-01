@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template 0.8.2、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
+## 現在利用できるもの（BSP 0.8.3、template、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -9,6 +9,7 @@
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
+- `picocalc.py build --build-timestamp ...`: 実機記録用に UTC build timestamp を固定した evidence build
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
 - `profiles/picocalc-rp2040.json`: 機械可読なboard contract
 - `bsp/include/picocalc/board_generated.h`: profileから生成したC++定数
@@ -47,7 +48,7 @@ python3 tools/picocalc.py build --project . \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-起動ログの`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`と、各候補の
+起動ログの`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`と、各候補の
 `[PICOCALC][PSRAM][COEX]`行を記録する。`display_failures=0`かつ
 `psram_failures=0`のcandidateがLCD更新と共存できたPSRAM速度である。
 
@@ -101,13 +102,16 @@ PicoCalcのUF2はSDカードへコピーして使用するため、プロジェ�
 版を区別するときは、対象ブランチのソースコミット、BSP版、アプリ版または
 ビルドサブコメント、UF2のSHA-256を記録する。特別な実機試験を行う場合も、
 版番号／サブコメントをソースへ反映してコミットしてからUF2を生成する。
-これにより、実機ログの先頭行に出る識別情報を使って対象を確定でき、必要なら
-そのコミットへ戻って同じ`build/picocalc_app.uf2`を再生成できる。
+これにより、実機ログの先頭行に出る識別情報を使って対象を確定できる。通常ビルドは
+ビルド時刻によりSHA-256が変わり得るため、同一成果物の再生成が必要な実機記録では
+`tools/picocalc.py build --build-timestamp YYYY-MM-DDTHH:MM:SSZ`を使う。同じソース、
+BSP、SDK、ツールチェーン、ビルド設定を揃えた場合に限り、対象コミットから同じ
+`build/picocalc_app.uf2`を再生成できる。
 
 起動時の最初の機械可読ログは次の形式でなければならない。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=... compile=...
+[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=...
 ```
 
 この1行を実機ログの版判定に使う。UF2ファイル名を版識別に使ってはならない。
@@ -186,7 +190,7 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 
 ## 最新標準テンプレートの実機確認
 
-標準B（`pio-rgb565`）のBSP/template `0.8.2`は、起動ログ先頭の
+標準B（`pio-rgb565`）のBSP/template `0.8.3`は、起動ログ先頭の
 `git=2360487f70ee`を持つUF2で次を確認済みである。
 
 - LCD固体色5色、既知パターン、GRAM readback: `app_status=pass`
@@ -206,14 +210,14 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.8.2は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
+0.8.3は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
-`app=0.8.2-b-pio-rgb565-default`、
-`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`、または
-`app=0.8.2-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+`app=0.8.3-b-pio-rgb565-default`、
+`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`、または
+`app=0.8.3-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを先に実施し、0.8.2の実機検証まで完了している。標準アプリは
+ソース検査とA/Bビルドを先に実施し、0.8.3の実機検証まで完了している。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

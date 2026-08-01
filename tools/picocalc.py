@@ -98,6 +98,22 @@ def source_commit() -> str:
     return commit + ("-dirty" if dirty else "")
 
 
+def project_commit(project: Path) -> str:
+    """Return the app repository commit, or untracked for a source directory."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(project), "rev-parse", "--short=12", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return "untracked"
+    commit = completed.stdout.strip() if completed.returncode == 0 else ""
+    return commit or "untracked"
+
+
 def load_build_history(path: Path) -> dict:
     if not path.is_file():
         return {"schema_version": 1, "successful_builds": []}
@@ -137,7 +153,15 @@ def create_project(name: str, output: Path) -> int:
         print("error: destination already exists: {}".format(destination), file=sys.stderr)
         return 2
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(TEMPLATE, destination)
+    # The checked-in template may contain a local build directory and its
+    # historical build ledger. Neither belongs in a generated project: the
+    # former carries an absolute CMakeCache path and the latter contains UF2
+    # hashes from unrelated template builds.
+    shutil.copytree(
+        TEMPLATE,
+        destination,
+        ignore=shutil.ignore_patterns("build", ".picocalc-build-history.json"),
+    )
     shutil.copytree(BSP, destination / "bsp")
     metadata = destination / ".picocalc-project.json"
     with metadata.open("r", encoding="utf-8") as source:
@@ -185,6 +209,7 @@ def build_project(
     lcd_variant: str,
     jobs: int,
     coexistence_test: bool,
+    build_timestamp_value: Optional[str] = None,
 ) -> int:
     project = project.resolve()
     if not (project / "CMakeLists.txt").is_file():
@@ -205,7 +230,15 @@ def build_project(
         return 2
 
     build_dir = project / "build"
-    build_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    build_timestamp = build_timestamp_value or datetime.now(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", build_timestamp):
+        print(
+            "error: --build-timestamp must be UTC ISO-8601 YYYY-MM-DDTHH:MM:SSZ",
+            file=sys.stderr,
+        )
+        return 2
     bsp_version, app_version = build_versions(project, lcd_variant, coexistence_test)
     # Keep the history outside build/ so a clean rebuild does not erase the
     # version-reuse warning evidence.
@@ -242,7 +275,8 @@ def build_project(
         "-DPICO_BOARD=pico",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
-        "-DPICOCALC_BUILD_COMMIT={}".format(source_commit()),
+        "-DPICOCALC_BSP_GIT={}".format(source_commit()),
+        "-DPICOCALC_APP_GIT={}".format(project_commit(project)),
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
         "-DPICOCALC_PSRAM_LCD_COEXIST_TEST={}".format(
             "ON" if coexistence_test else "OFF"
@@ -264,7 +298,16 @@ def build_project(
     )
     if built.returncode != 0:
         return built.returncode
-    uf2 = build_dir / "picocalc_app.uf2"
+    artifact_name = "picocalc_app"
+    cache_file = build_dir / "CMakeCache.txt"
+    if cache_file.is_file():
+        cache_text = cache_file.read_text(encoding="utf-8")
+        match = re.search(
+            r"^PICOCALC_UF2_NAME(?::[^=]+)?=(.+)$", cache_text, re.MULTILINE
+        )
+        if match:
+            artifact_name = match.group(1).strip()
+    uf2 = build_dir / (artifact_name + ".uf2")
     if not uf2.is_file():
         print(
             "error: build succeeded but UF2 was not generated: {}".format(uf2),
@@ -284,6 +327,7 @@ def build_project(
             "uf2_sha256": digest,
         },
     )
+    print("PRODUCT {}".format(artifact_name))
     print("UF2     {}".format(uf2))
     print("SHA256  {}".format(digest))
     print("history {}".format(history_path))
@@ -376,6 +420,10 @@ def main() -> int:
     )
     build_parser.add_argument("--jobs", type=int, default=2)
     build_parser.add_argument(
+        "--build-timestamp",
+        help="fixed UTC build timestamp for reproducible evidence builds (YYYY-MM-DDTHH:MM:SSZ)",
+    )
+    build_parser.add_argument(
         "--psram-lcd-coexist-test",
         action="store_true",
         help="build the PSRAM clock/LCD update coexistence test (PIO RGB565 only)",
@@ -425,6 +473,7 @@ def main() -> int:
             args.lcd_variant,
             max(1, args.jobs),
             args.psram_lcd_coexist_test,
+            args.build_timestamp,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

@@ -41,6 +41,14 @@ add_library(picocalc_bsp STATIC
     vendor/rp2040-psram/psram_spi.c
 )
 
+# ChanFatFS is a vendored C dependency. GCC 13 reports a false-positive in
+# its long-file-name collision helper; keep the diagnostic suppression local
+# to that source and do not weaken warnings for BSP or application code.
+set_source_files_properties(
+    third_party/ChanFatFS/src/ff.c
+    PROPERTIES COMPILE_OPTIONS "-Wno-stringop-overflow"
+)
+
 pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/lcd_spi_min.pio)
 pico_generate_pio_header(picocalc_bsp ${CMAKE_CURRENT_LIST_DIR}/vendor/rp2040-psram/psram_spi.pio)
 
@@ -63,16 +71,16 @@ endif()
 if(NOT PICOCALC_BUILD_TIMESTAMP)
     string(TIMESTAMP PICOCALC_BUILD_TIMESTAMP UTC "%Y-%m-%dT%H:%M:%SZ")
 endif()
-if(NOT PICOCALC_BUILD_COMMIT)
+if(NOT PICOCALC_BSP_GIT)
     execute_process(
         COMMAND git rev-parse --short=12 HEAD
         WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
-        OUTPUT_VARIABLE PICOCALC_BUILD_COMMIT
+        OUTPUT_VARIABLE PICOCALC_BSP_GIT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
-    if(NOT PICOCALC_BUILD_COMMIT)
-        set(PICOCALC_BUILD_COMMIT "untracked")
+    if(NOT PICOCALC_BSP_GIT)
+        set(PICOCALC_BSP_GIT "untracked")
     else()
         execute_process(
             COMMAND git diff --quiet
@@ -80,16 +88,19 @@ if(NOT PICOCALC_BUILD_COMMIT)
             RESULT_VARIABLE PICOCALC_GIT_DIFF_RESULT
         )
         if(NOT PICOCALC_GIT_DIFF_RESULT EQUAL 0)
-            set(PICOCALC_BUILD_COMMIT "${PICOCALC_BUILD_COMMIT}-dirty")
+            set(PICOCALC_BSP_GIT "${PICOCALC_BSP_GIT}-dirty")
         endif()
     endif()
+endif()
+if(NOT DEFINED PICOCALC_APP_GIT)
+    set(PICOCALC_APP_GIT "untracked")
 endif()
 
 target_include_directories(picocalc_bsp
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
-        ${CMAKE_CURRENT_LIST_DIR}/third_party/ChanFatFS/include
     PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/third_party/ChanFatFS/include
         # Lets the adapter include "vendor/lcd_rgb565_pio.h" without editing the
         # vendored copy.
         ${CMAKE_CURRENT_LIST_DIR}
@@ -102,7 +113,8 @@ target_compile_definitions(picocalc_bsp
         PICOCALC_BSP_VERSION=\"${PICOCALC_BSP_VERSION}\"
         PICOCALC_APP_VERSION=\"${PICOCALC_APP_VERSION}\"
         PICOCALC_BUILD_TIMESTAMP=\"${PICOCALC_BUILD_TIMESTAMP}\"
-        PICOCALC_BUILD_COMMIT=\"${PICOCALC_BUILD_COMMIT}\"
+        PICOCALC_BSP_GIT=\"${PICOCALC_BSP_GIT}\"
+        PICOCALC_APP_GIT=\"${PICOCALC_APP_GIT}\"
         PICOCALC_LCD_VARIANT=\"${PICOCALC_LCD_VARIANT}\"
         PICOCALC_LCD_SYSTEM_CLOCK_KHZ=${PICOCALC_LCD_SYSTEM_CLOCK_KHZ}
         PICOCALC_AUDIO_REFERENCE_TONE=$<BOOL:${PICOCALC_AUDIO_REFERENCE_TONE}>

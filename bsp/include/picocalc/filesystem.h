@@ -1,8 +1,65 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace picocalc::filesystem {
+
+enum class Error : uint8_t {
+    Ok = 0,
+    InvalidArgument,
+    NotMounted,
+    Busy,
+    MountFailed,
+    OpenFailed,
+    ReadFailed,
+    SeekFailed,
+    CloseFailed,
+    DirectoryFailed,
+    EndOfDirectory,
+};
+
+const char* error_name(Error error);
+
+// The handles are intentionally opaque. The implementation owns the single
+// FATFS/FIL and fixed directory-frame pool, so application code never includes ff.h.
+struct FileHandle {
+    uint32_t token = 0;
+};
+
+struct DirectoryHandle {
+    uint32_t token = 0;
+};
+
+struct ReadResult {
+    size_t bytes = 0;
+    Error error = Error::Ok;
+
+    bool ok() const {
+        return error == Error::Ok;
+    }
+};
+
+struct DirectoryEntry {
+    char name[128]{};
+    uint32_t size = 0;
+    bool is_dir = false;
+};
+
+Error mount();
+Error unmount();
+bool mounted();
+
+Error open_read(const char* path, FileHandle* handle);
+ReadResult read(FileHandle* handle, void* destination, size_t bytes);
+Error seek(FileHandle* handle, uint32_t offset);
+Error tell(const FileHandle* handle, uint32_t* offset);
+Error size(const FileHandle* handle, uint32_t* bytes);
+Error close(FileHandle* handle);
+
+Error open_dir(const char* path, DirectoryHandle* handle);
+Error next_dir(DirectoryHandle* handle, DirectoryEntry* entry);
+Error close_dir(DirectoryHandle* handle);
 
 enum class SmokeStage : uint8_t {
     Ok = 0,
