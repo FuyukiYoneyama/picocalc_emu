@@ -17,6 +17,9 @@ SD の mount/write/sync/read/compare/remove、キーボード待受を順に実�
 `Picocalc_ment`からコピーした固定1 kHz/-6 dBFS PWM/DMA参照試験です。
 `-DPICOCALC_AUDIO_REFERENCE_TONE=OFF`にすると、PCMを投入して開始する汎用stream経路を
 使います。どちらもログの先頭行と`[PICOCALC][AUDIO][VERIFY] mode=`で識別できます。
+LCDの塗りつぶし・パターン・GRAM readback検証が完了すると音声を停止し、SD検証と
+キーボード待受では発音しません。停止ログは
+`[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`です。
 
 推奨表示デフォルトはLCD B（`pio-rgb565`）です。アプリ／LCDラッパーはRGB565、
 LCDバスは2 bytes/pixel、転送はPIO0 blockingで、LCD DMAは使用しません。

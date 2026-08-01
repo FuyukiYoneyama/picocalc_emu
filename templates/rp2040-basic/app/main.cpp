@@ -7,6 +7,7 @@ namespace {
 
 #if !PICOCALC_AUDIO_REFERENCE_TONE
 uint32_t g_stream_phase = 0;
+bool g_audio_running = true;
 
 void service_audio_stream() {
     // Minimal copyable PCM producer: a centered square wave keeps the generic
@@ -88,6 +89,8 @@ int run_coexistence_test() {
            static_cast<unsigned long>(result.passed),
            result.restored ? "ok" : "fail",
            result.ok ? "green" : "red");
+    picocalc::audio::stop();
+    printf("[PICOCALC][AUDIO] status=stopped reason=lcd_coexistence_complete\n");
     while (true) sleep_ms(1000);
 }
 #endif
@@ -181,6 +184,11 @@ int main() {
            static_cast<unsigned long>(pattern_result.mismatches));
     printf("[PICOCALC][LCD][VERIFY] app_status=%s\n",
            lcd_verify_ok ? "pass" : "fail");
+    picocalc::audio::stop();
+#if !PICOCALC_AUDIO_REFERENCE_TONE
+    g_audio_running = false;
+#endif
+    printf("[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete\n");
 
     constexpr const char* kSmokePath = "0:/PICOTEST.TXT";
     printf("[PICOCALC][SD][SMOKE] stage=begin path=%s "
@@ -229,7 +237,7 @@ int main() {
                 static_cast<uint16_t>(0x001f ^ (event.key << 8)));
         }
 #if !PICOCALC_AUDIO_REFERENCE_TONE
-        service_audio_stream();
+        if (g_audio_running) service_audio_stream();
 #endif
         sleep_ms(10);
     }

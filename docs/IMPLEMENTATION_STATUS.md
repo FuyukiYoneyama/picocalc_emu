@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP/template 0.8.1、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
+## 現在利用できるもの（BSP/template 0.8.2、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -47,7 +47,7 @@ python3 tools/picocalc.py build --project . \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-起動ログの`app=0.8.1-b-pio-rgb565-psram-lcd-coexist`と、各候補の
+起動ログの`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`と、各候補の
 `[PICOCALC][PSRAM][COEX]`行を記録する。`display_failures=0`かつ
 `psram_failures=0`のcandidateがLCD更新と共存できたPSRAM速度である。
 
@@ -199,14 +199,16 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.8.1は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
+0.8.2は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
-`app=0.8.1-b-pio-rgb565-default`、
-`app=0.8.1-b-pio-rgb565-psram-lcd-coexist`、または
-`app=0.8.1-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+`app=0.8.2-b-pio-rgb565-default`、
+`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`、または
+`app=0.8.2-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを先に実施し、0.8.1の実機検証は最後に行う。
+ソース検査とA/Bビルドを先に実施し、0.8.2の実機検証は最後に行う。標準アプリは
+`[PICOCALC][LCD][VERIFY] app_status=`の直後に
+`[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 
 したがって現時点の価値は、LCD と SD を毎回 AI が再実装する問題を止めること、
 および最初の実機試験で「どこが失敗したか」を一度で観測可能にすることである。

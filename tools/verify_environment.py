@@ -428,6 +428,8 @@ def verify_template_smoke(checks: List[Check], root: Path) -> None:
                 "display::clear(color)",
                 "display::verify_pixels(",
             "[PICOCALC][LCD][VERIFY] app_status=",
+            "audio::stop()",
+            "reason=lcd_verify_complete",
             "[PICOCALC][VERIFY] psram=",
             "[PICOCALC][AUDIO][VERIFY] mode=%s status=%s",
             "filesystem::smoke_test()",
@@ -617,9 +619,9 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "PICOCALC_AUDIO_REFERENCE_TONE",
             'PICOCALC_LCD_VARIANT "pio-rgb565"',
             "PICOCALC_PSRAM_LCD_COEXIST_TEST",
-            "0.8.1-a-hwspi-rgb888-rgb666-compat",
-            "0.8.1-b-pio-rgb565-default",
-            "0.8.1-b-pio-rgb565-psram-lcd-coexist",
+            "0.8.2-a-hwspi-rgb888-rgb666-compat",
+            "0.8.2-b-pio-rgb565-default",
+            "0.8.2-b-pio-rgb565-psram-lcd-coexist",
         ],
     )
     require_text(
