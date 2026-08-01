@@ -25,7 +25,7 @@
   },
   "firmware": {
     "path": "build/PicoCalc_MusicPlayer.uf2",
-    "uf2_sha256": "f469da10f5583a8171eed883c53943366552bf18e7b5aa3c63e0dd94d6601131",
+    "uf2_sha256": "abab2474f23c3206d19e951cfae776fa92e868e147427fb3c4a39c65c6c8fb97",
     "build_log": ""
   },
   "tests": {
@@ -45,5 +45,5 @@
       "evidence_files": []
     }
   },
-  "notes": "The next MusicPlayer playback log must record the 0.8.4 PCM stream path, including underrun, clip, drop, ring level, the Phase 9 cross-core invariant, and the audible result. Audio evidence remains in notes rather than the canonical BSP tests schema. App version: 0.3.16-v1-bsp084-audio-invariant-stop. Build timestamp: 2026-08-01T00:00:00Z."
+  "notes": "The next MusicPlayer playback log must record the 0.8.4 PCM stream path, including underrun, clip, drop, ring level, the Phase 9 cross-core invariant, and the audible result. Audio evidence remains in notes rather than the canonical BSP tests schema. App version: 0.3.18-v1-core0-ring-prefill. Build timestamp: 2026-08-01T00:00:00Z."
 }
