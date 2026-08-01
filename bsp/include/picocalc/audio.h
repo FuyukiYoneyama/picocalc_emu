@@ -27,6 +27,8 @@ bool init();
 // PICOCALC_AUDIO_REFERENCE_TONE is enabled.
 bool init_reference_tone();
 void start();
+// Stops PWM/DMA output. Call this when a diagnostic tone or PCM stream is no
+// longer wanted; stopping does not make the BSP unusable for a later init.
 void stop();
 bool write_sample(int16_t left, int16_t right);
 uint32_t writable_samples();

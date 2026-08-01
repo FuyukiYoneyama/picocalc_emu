@@ -1,5 +1,9 @@
 # Canonical PicoCalc BSP
 
+現在版は `VERSION` の `0.8.2` です。このBSPはAIが通常編集する場所ではありません。
+アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
+初期化を再実装しません。
+
 この BSP は、`picocalc-life` の実機確認済み LCD/keyboard/SD 実装と、
 `pico_skyace` の LCD bring-up 記録を基準にしている。音声機能の実機基準は
 `Picocalc_ment` とする。
@@ -9,7 +13,7 @@
 * LCD共通: SCK/MOSI/MISO GP10/11/12、CS GP13、DC GP14、RESET GP15
 * LCD A `hwspi-rgb888`（互換・診断）: `bsp/vendor/lcd_hwspi_rgb888.cpp`、uf2loader互換初期化、125 MHz、SPI1 25 MHz、`COLMOD 0x66`、RGB666をR/G/B各1バイトの3-byte containerで送信、CASET/RASET/RAMWRから画素列までRAMWRウィンドウ中CS保持
 * LCD B `pio-rgb565`（推奨デフォルト）: 250 MHz、`general/lcd`/`pico_skyace`互換PIO0 blocking送信（LCD DMA OFF、clkdiv 2.0、約62.5 MHz）、`COLMOD 0x65`、RGB565を2 bytes/pixelで送信、PIO停止後SIOでRAMRD
-* LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする
+* LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする。AはSPI1 blocking/RGB666の3 bytes/pixel、BはPIO0 blocking/RGB565の2 bytes/pixelで、LCD DMAは使わない
 * LCD: `verify_pixels()`は選択したBSPのRAMRD形式をRGB565へそろえ、最大16 pixelを比較する診断API
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
@@ -24,6 +28,22 @@
 `build/picocalc_app.uf2`へ生成する。Aの合否にかかわらずBも独立して検証し、
 両方の`variant`と`[PICOCALC][LCD][VERIFY] app_status=pass`を確認する。
 A/BのUF2を別名保存しない。
+
+## 現在のAI向け契約
+
+`display`の画素形式は常にRGB565である。wire形式の違いは選択したLCD BSP内部に
+閉じ込める。`display::verify_pixels()`の`app_status=pass`は、GRAM readbackと
+期待値の一致まで確認したことを表す。
+
+PSRAM通常起動の250 MHz第一候補は`clkdiv=2.0/fudge=false`（62.5 MHz）である。
+`max_transfer_chunk_bytes`は24であり、これを超える転送をBSP外で直接発行しない。
+高速候補の追加は、共存検証と実機根拠を伴うBSP変更である。
+
+音声の既定参照経路は`PICOCALC_AUDIO_REFERENCE_TONE=ON`で固定1 kHz音を開始する。
+標準テンプレートはLCD検証完了後に`audio::stop()`を呼ぶ。PCMアプリは`OFF`を選び、
+`audio::init()`、サンプル投入、`audio::start()`、終了時`audio::stop()`の順に使う。
+
+## 変更履歴（現在の契約ではない）
 
 0.6.0では、動作実績コードをコピーした参照経路を残したまま、AIが使う汎用経路も
 用意した。音声は`PICOCALC_AUDIO_REFERENCE_TONE=ON`で固定サイン、`OFF`で
@@ -47,9 +67,9 @@ A/BのUF2を別名保存しない。
 フォールバックした。したがって通常運用の推奨は`clkdiv=2.0/fudge=false`とし、
 83.3 MHzは自動フォールバック候補に残す。
 
-実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
+過去の台帳記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
-未試験）である。
+未試験）である。最新の標準Bの実機確認結果は、起動ログの`git`と`app_status`を基準にする。
 
 ピン定義と周波数は`profiles/picocalc-rp2040.json`を唯一の入力源とし、
 `tools/generate_board_header.py`が`include/picocalc/board_generated.h`を生成する。

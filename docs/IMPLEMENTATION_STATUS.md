@@ -165,16 +165,15 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 - Canonical BSP とテンプレートは `arm-none-eabi-gcc 13.2.1`、
   Pico SDK 2.x 系でコンパイル可能
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
-- clone単体のportable検証15件が合格
-- 基準プロジェクト3件と証拠ファイル13件を含む完全検証26件が合格
-- 生成器・検証器・異常系のPython回帰テスト19件が合格
+- clone単体のportable検証32件が合格
+- 生成器・検証器・異常系のPython回帰テスト20件が合格
 - LCD初期化とCS分割は実行可能なhost transactionテストで検査
 - `--json`は入力ファイル破損・不正引数でも構造化された失敗を返す
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
 
-実機で BSP 0.2.0 の LCD/SD/keyboard スモークを確認した。その後LCDを二系統へ分離し、
-Bの転送を無改変コピー、Aの転送を専用vendorドライバへ固定した BSP 0.4.0 で、**A/B両方の
-LCDが実機表示に成功した**（2026-07-30）。
+実機でBSP 0.2.0のLCD/SD/keyboardスモークを確認した。その後LCDを二系統へ分離し、
+Bの転送を無改変コピー、Aの転送を専用vendorドライバへ固定したBSP 0.4.0で、**A/B両方の
+LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその時点の履歴である。
 
 - A（`hwspi-rgb888`）：commit `e2d53ad55afa`、LCD/SD/keyboard合格。キーボードは148イベント
   （pressed/released各74）。記録は`bsp-0.4.0-20260730-02.json`。
@@ -185,11 +184,19 @@ LCDが実機表示に成功した**（2026-07-30）。
 `pending`にしている。LCD A/Bの実機合格自体は、各ログの`app_status=pass`、GRAM readback
 全色一致、写真で個別に確定している。
 
-## まだ実機確認が必要な点
+## 最新標準テンプレートの実機確認
 
-B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント確認、基板revision、SDカード
-識別が未記入である。A（`hwspi-rgb888`）はLCD/SD/keyboardに合格した。装置情報3点だけが
-台帳上の未完了項目である。
+標準B（`pio-rgb565`）のBSP/template `0.8.2`は、起動ログ先頭の
+`git=2360487f70ee`を持つUF2で次を確認済みである。
+
+- LCD固体色5色、既知パターン、GRAM readback: `app_status=pass`
+- PSRAM: `clkdiv=2.00`、self-test `pass`
+- SD: mount/write/sync/read/compare/remove `status=ok`
+- キーボード: Pressed/Releasedイベント
+- 音声: LCD検証直後の`reason=lcd_verify_complete`で停止
+
+この標準Bログはユーザー提供の実機ログで確認した結果である。基板revisionやSDカード
+識別情報を正式台帳へ登録する作業は別の記録整備であり、BSPの機能合格とは分けて扱う。
 
 また、次の機能は今後のエミュレーター段階である。
 
@@ -206,7 +213,7 @@ B（`pio-rgb565`）はLCD/SDに合格したが、キーボードのイベント�
 `app=0.8.2-b-pio-rgb565-psram-lcd-coexist`、または
 `app=0.8.2-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを先に実施し、0.8.2の実機検証は最後に行う。標準アプリは
+ソース検査とA/Bビルドを先に実施し、0.8.2の実機検証まで完了している。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

@@ -98,6 +98,9 @@ int run_coexistence_test() {
 }  // namespace
 
 int main() {
+    // This file is the executable smoke-test contract for the template. An AI
+    // application normally replaces app/main.cpp but keeps picocalc::init()
+    // and calls the public picocalc/* APIs instead of copying BSP internals.
     picocalc::sdcard::set_log_callback(sd_log);
     if (!picocalc::init()) {
         printf("[PICOCALC][APP] status=halt reason=bsp_init_failed\n");
@@ -184,6 +187,8 @@ int main() {
            static_cast<unsigned long>(pattern_result.mismatches));
     printf("[PICOCALC][LCD][VERIFY] app_status=%s\n",
            lcd_verify_ok ? "pass" : "fail");
+    // The reference tone proves the audio path during LCD bring-up only. The
+    // remainder of the smoke test is intentionally silent.
     picocalc::audio::stop();
 #if !PICOCALC_AUDIO_REFERENCE_TONE
     g_audio_running = false;
