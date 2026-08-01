@@ -24,6 +24,15 @@ struct VerifyResult {
     size_t mismatches;
 };
 
+using CoexistenceDisplayStep = bool (*)(uint32_t frame);
+
+struct CoexistenceResult {
+    bool ok;
+    uint32_t candidates;
+    uint32_t passed;
+    bool restored;
+};
+
 // PSRAM is optional for applications. Failure leaves it unavailable and is
 // reported in the boot log; it must never be silently treated as SRAM.
 bool init();
@@ -32,5 +41,11 @@ const Info& info();
 VerifyResult self_test();
 bool read(uint32_t address, void* destination, size_t bytes);
 bool write(uint32_t address, const void* source, size_t bytes);
+
+// Probe every documented PIO1 PSRAM clock candidate while the caller updates
+// the LCD between PSRAM write/read operations. The first passing configuration
+// is kept active before returning.
+CoexistenceResult probe_lcd_coexistence(CoexistenceDisplayStep display_step,
+                                        uint32_t frames_per_candidate = 120);
 
 }  // namespace picocalc::psram

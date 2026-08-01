@@ -93,6 +93,35 @@ bool try_config(float clkdiv, bool fudge) {
     return result.ok;
 }
 
+bool configure_candidate(float clkdiv, bool fudge) {
+    uninit();
+    g_psram = psram_spi_init_clkdiv(pio1, -1, clkdiv, fudge);
+    g_initialized = true;
+    g_info.clkdiv = clkdiv;
+    g_info.spi_hz = spi_hz_for(clkdiv);
+    g_info.fudge = fudge;
+    memset(g_info.id, 0, sizeof(g_info.id));
+    read_id(g_info.id);
+    return true;
+}
+
+bool coexistence_roundtrip(uint32_t frame, size_t* mismatches) {
+    constexpr uint32_t kTestAddress = 320u * 320u + 128u;
+    uint8_t pattern[max_transfer_chunk_bytes] = {};
+    uint8_t readback[max_transfer_chunk_bytes] = {};
+    for (size_t i = 0; i < sizeof(pattern); ++i) {
+        pattern[i] = static_cast<uint8_t>((frame * 13u + i * 29u) & 0xffu);
+    }
+    write_raw(kTestAddress, pattern, sizeof(pattern));
+    read_raw(kTestAddress, readback, sizeof(readback));
+    size_t count = 0;
+    for (size_t i = 0; i < sizeof(pattern); ++i) {
+        if (pattern[i] != readback[i]) ++count;
+    }
+    if (mismatches != nullptr) *mismatches = count;
+    return count == 0;
+}
+
 }  // namespace
 
 bool init() {
@@ -193,6 +222,83 @@ bool write(uint32_t address, const void* source, size_t bytes) {
     }
     write_raw(address, static_cast<const uint8_t*>(source), bytes);
     return true;
+}
+
+CoexistenceResult probe_lcd_coexistence(CoexistenceDisplayStep display_step,
+                                        uint32_t frames_per_candidate) {
+    constexpr Candidate candidates[] = {
+        {1.0f, true},  {1.5f, true},  {2.0f, true},  {3.0f, true},  {4.0f, true},
+        {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
+    };
+    if (frames_per_candidate == 0u) frames_per_candidate = 1u;
+
+    const uint32_t sysclk_khz = clock_get_hz(clk_sys) / 1000u;
+    uint32_t passed = 0;
+    Candidate selected = {};
+    bool have_selected = false;
+    for (const Candidate& candidate : candidates) {
+        configure_candidate(candidate.clkdiv, candidate.fudge);
+        const uint32_t begin = time_us_32();
+        uint32_t display_steps = 0;
+        uint32_t display_failures = 0;
+        uint32_t psram_failures = 0;
+        for (uint32_t frame = 0; frame < frames_per_candidate; ++frame) {
+            if (display_step != nullptr) {
+                ++display_steps;
+                if (!display_step(frame)) ++display_failures;
+            }
+            size_t mismatches = 0;
+            if (!coexistence_roundtrip(frame, &mismatches)) {
+                psram_failures += static_cast<uint32_t>(mismatches == 0u ? 1u : mismatches);
+            }
+        }
+        const bool ok = display_failures == 0u && psram_failures == 0u;
+        if (ok) {
+            ++passed;
+            if (!have_selected) {
+                selected = candidate;
+                have_selected = true;
+            }
+        }
+        printf("[PICOCALC][PSRAM][COEX] sysclk_khz=%lu clkdiv=%.2f "
+               "spi_hz=%lu fudge=%u frames=%lu display_steps=%lu "
+               "display_failures=%lu psram_failures=%lu elapsed_us=%lu status=%s\n",
+               static_cast<unsigned long>(sysclk_khz),
+               static_cast<double>(candidate.clkdiv),
+               static_cast<unsigned long>(spi_hz_for(candidate.clkdiv)),
+               candidate.fudge ? 1u : 0u,
+               static_cast<unsigned long>(frames_per_candidate),
+               static_cast<unsigned long>(display_steps),
+               static_cast<unsigned long>(display_failures),
+               static_cast<unsigned long>(psram_failures),
+               static_cast<unsigned long>(time_us_32() - begin),
+               ok ? "pass" : "fail");
+        uninit();
+    }
+
+    bool restored = false;
+    if (have_selected) {
+        configure_candidate(selected.clkdiv, selected.fudge);
+        g_info.initialized = true;
+        restored = true;
+        printf("[PICOCALC][PSRAM][COEX] selected clkdiv=%.2f spi_hz=%lu "
+               "fudge=%u reason=first_coexistence_pass\n",
+               static_cast<double>(selected.clkdiv),
+               static_cast<unsigned long>(spi_hz_for(selected.clkdiv)),
+               selected.fudge ? 1u : 0u);
+    }
+    printf("[PICOCALC][PSRAM][COEX] summary candidates=%lu passed=%lu "
+           "restored=%s status=%s\n",
+           static_cast<unsigned long>(sizeof(candidates) / sizeof(candidates[0])),
+           static_cast<unsigned long>(passed),
+           restored ? "ok" : "fail",
+           passed != 0u && restored ? "pass" : "fail");
+    return {
+        passed != 0u && restored,
+        static_cast<uint32_t>(sizeof(candidates) / sizeof(candidates[0])),
+        passed,
+        restored,
+    };
 }
 
 }  // namespace picocalc::psram

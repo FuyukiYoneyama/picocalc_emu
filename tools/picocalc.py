@@ -35,7 +35,11 @@ def read_version(path: Path, variable: str) -> str:
     return "unknown"
 
 
-def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[str, str]:
+def build_versions(
+    project: Path,
+    lcd_variant: Optional[str] = None,
+    coexistence_test: bool = False,
+) -> Tuple[str, str]:
     bsp_file = project / "bsp/CMakeLists.txt"
     if not bsp_file.is_file():
         bsp_file = ROOT / "bsp/CMakeLists.txt"
@@ -57,7 +61,7 @@ def build_versions(project: Path, lcd_variant: Optional[str] = None) -> Tuple[st
         r"set\s*\(\s*PICOCALC_APP_VERSION\s+\"([^\"]+)\"\s*\)", app_text
     )
     if len(branches) > 1:
-        marker = lcd_variant or "pio-rgb565"
+        marker = "psram-lcd-coexist" if coexistence_test else (lcd_variant or "pio-rgb565")
         for candidate in branches:
             if marker in candidate:
                 app_version = candidate
@@ -175,6 +179,7 @@ def build_project(
     picotool_value: Optional[str],
     lcd_variant: str,
     jobs: int,
+    coexistence_test: bool,
 ) -> int:
     project = project.resolve()
     if not (project / "CMakeLists.txt").is_file():
@@ -196,7 +201,7 @@ def build_project(
 
     build_dir = project / "build"
     build_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    bsp_version, app_version = build_versions(project, lcd_variant)
+    bsp_version, app_version = build_versions(project, lcd_variant, coexistence_test)
     # Keep the history outside build/ so a clean rebuild does not erase the
     # version-reuse warning evidence.
     history_path = project / ".picocalc-build-history.json"
@@ -207,6 +212,7 @@ def build_project(
         if item.get("bsp_version") == bsp_version
         and item.get("app_version") == app_version
         and item.get("lcd_variant") == lcd_variant
+        and item.get("coexistence_test", False) == coexistence_test
     ]
     if previous:
         print(
@@ -233,12 +239,16 @@ def build_project(
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
         "-DPICOCALC_BUILD_COMMIT={}".format(source_commit()),
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
+        "-DPICOCALC_PSRAM_LCD_COEXIST_TEST={}".format(
+            "ON" if coexistence_test else "OFF"
+        ),
     ]
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:
         configure.append("-Dpicotool_DIR={}".format(picotool_config))
     print("SDK     {}".format(sdk))
     print("LCD     {}".format(lcd_variant))
+    print("MODE    {}".format("psram-lcd-coexist" if coexistence_test else "standard"))
     if picotool_config is not None:
         print("picotool {}".format(picotool_config))
     if subprocess.run(configure, env=environment).returncode != 0:
@@ -264,6 +274,7 @@ def build_project(
             "bsp_version": bsp_version,
             "app_version": app_version,
             "lcd_variant": lcd_variant,
+            "coexistence_test": coexistence_test,
             "uf2": str(uf2),
             "uf2_sha256": digest,
         },
@@ -359,6 +370,11 @@ def main() -> int:
         help="independent LCD BSP to build (default: pio-rgb565)",
     )
     build_parser.add_argument("--jobs", type=int, default=2)
+    build_parser.add_argument(
+        "--psram-lcd-coexist-test",
+        action="store_true",
+        help="build the PSRAM clock/LCD update coexistence test (PIO RGB565 only)",
+    )
 
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
@@ -403,6 +419,7 @@ def main() -> int:
             args.picotool_dir,
             args.lcd_variant,
             max(1, args.jobs),
+            args.psram_lcd_coexist_test,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

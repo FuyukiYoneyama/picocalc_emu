@@ -51,6 +51,47 @@ void show_storage_result(bool lcd_ok,
            ok ? "green" : "red");
 }
 
+#if PICOCALC_PSRAM_LCD_COEXIST_TEST
+bool coexist_display_step(uint32_t frame) {
+    constexpr uint16_t colors[] = {0xf800, 0x07e0, 0x001f, 0xffe0};
+    const uint16_t color = colors[frame % (sizeof(colors) / sizeof(colors[0]))];
+    const int x = static_cast<int>((frame * 24u) % 288u);
+    const int y = 48 + static_cast<int>((frame * 16u) % 224u);
+    picocalc::display::fill_rect(0, 0, 320, 24, color);
+    picocalc::display::fill_rect(x, y, 32, 32, color);
+
+    // RAMRD is deliberately sampled during the moving display workload. Most
+    // frames only update the panel; every 16th frame also proves the written
+    // rectangle is still readable while PSRAM is being exercised.
+    if ((frame % 16u) != 0u) return true;
+    const uint16_t expected[4] = {color, color, color, color};
+    const auto result = picocalc::display::verify_pixels(
+        x + 8, y + 8, 2, 2, expected, 4);
+    printf("[PICOCALC][PSRAM][COEX][LCD] frame=%lu x=%d y=%d color=0x%04x status=%s\n",
+           static_cast<unsigned long>(frame), x, y, color,
+           result.ok() ? "pass" : "fail");
+    return result.ok();
+}
+
+int run_coexistence_test() {
+    picocalc::display::clear(0x0000);
+    printf("[PICOCALC][PSRAM][COEX] mode=pio-rgb565_lcd-update "
+           "frames_per_candidate=120 transaction=write24/read24\n");
+    const auto result = picocalc::psram::probe_lcd_coexistence(
+        coexist_display_step, 120);
+    picocalc::display::fill_rect(
+        0, 296, 320, 24, result.ok ? 0x07e0 : 0xf800);
+    printf("[PICOCALC][PSRAM][COEX] app_status=%s candidates=%lu passed=%lu "
+           "restored=%s status_region=%s\n",
+           result.ok ? "pass" : "fail",
+           static_cast<unsigned long>(result.candidates),
+           static_cast<unsigned long>(result.passed),
+           result.restored ? "ok" : "fail",
+           result.ok ? "green" : "red");
+    while (true) sleep_ms(1000);
+}
+#endif
+
 }  // namespace
 
 int main() {
@@ -64,6 +105,9 @@ int main() {
     printf("[PICOCALC][APP] version=%s compile=%s %s\n",
            PICOCALC_APP_VERSION, __DATE__, __TIME__);
 
+#if PICOCALC_PSRAM_LCD_COEXIST_TEST
+    return run_coexistence_test();
+#else
 #if !PICOCALC_AUDIO_REFERENCE_TONE
     service_audio_stream();
     picocalc::audio::start();
@@ -189,4 +233,5 @@ int main() {
 #endif
         sleep_ms(10);
     }
+#endif
 }

@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.7.0** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.0** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -69,6 +69,17 @@ python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
 `COLMOD=0x66`です。AのLCDバスはRGB666をR/G/B各1バイトの3-byte containerで送るため、
 既存variant名は`hwspi-rgb888`のまま維持します。選択した版はUF2の名前ではなく、
 起動ログ先頭行の`variant`とソースコミットで識別します。
+
+PSRAMとLCDの共存クロックを実機で測る場合は、標準UF2名のまま専用モードを
+ビルドします。B（PIO/RGB565）でLCDを動かしながら、PSRAMの候補clkdivを全て
+検証し、ログの`[PICOCALC][PSRAM][COEX]`を比較します。
+
+```sh
+python3 tools/picocalc.py build --project ../MyApp \
+  --lcd-variant pio-rgb565 --psram-lcd-coexist-test
+```
+
+このモードの起動ログ先頭は`app=0.8.0-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
@@ -189,6 +200,10 @@ BSP 0.6.0では、動作済みプロジェクトを先にコピーした参照�
 BSP 0.7.0では、アプリ／LCDラッパーの標準画素形式をRGB565と明記し、引数なしの
 推奨表示デフォルトをB（`pio-rgb565`、PIO blocking、DMA OFF）へ変更しました。
 A（`hwspi-rgb888`）は公式互換・bring-up・診断経路として削除せず、明示指定で利用できます。
+
+BSP 0.8.0では、BのLCD更新とPSRAM PIO1アクセスを交互に実行する共存クロック
+検証モードを追加しました。LCD DMAは引き続き使用せず、PSRAM側はPIO＋DMA
+blocking APIを使用します。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
 `general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに

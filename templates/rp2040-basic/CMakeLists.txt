@@ -11,13 +11,22 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 option(PICOCALC_AUDIO_REFERENCE_TONE
     "Use the copied Picocalc_ment fixed-sine reference path" ON)
+option(PICOCALC_PSRAM_LCD_COEXIST_TEST
+    "Run the PSRAM clock/LCD update coexistence test" OFF)
 set(PICOCALC_LCD_VARIANT "pio-rgb565" CACHE STRING
     "LCD BSP variant: hwspi-rgb888 or pio-rgb565")
+if(PICOCALC_PSRAM_LCD_COEXIST_TEST AND
+   NOT PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
+    message(FATAL_ERROR
+        "PICOCALC_PSRAM_LCD_COEXIST_TEST requires PICOCALC_LCD_VARIANT=pio-rgb565")
+endif()
 if(NOT DEFINED PICOCALC_APP_VERSION)
-    if(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
-        set(PICOCALC_APP_VERSION "0.7.0-b-pio-rgb565-default")
+    if(PICOCALC_PSRAM_LCD_COEXIST_TEST)
+        set(PICOCALC_APP_VERSION "0.8.0-b-pio-rgb565-psram-lcd-coexist")
+    elseif(PICOCALC_LCD_VARIANT STREQUAL "pio-rgb565")
+        set(PICOCALC_APP_VERSION "0.8.0-b-pio-rgb565-default")
     else()
-        set(PICOCALC_APP_VERSION "0.7.0-a-hwspi-rgb888-rgb666-compat")
+        set(PICOCALC_APP_VERSION "0.8.0-a-hwspi-rgb888-rgb666-compat")
     endif()
 endif()
 
@@ -37,6 +46,9 @@ add_executable(picocalc_app
 )
 
 target_link_libraries(picocalc_app PRIVATE picocalc_bsp)
+
+target_compile_definitions(picocalc_app PRIVATE
+    PICOCALC_PSRAM_LCD_COEXIST_TEST=$<BOOL:${PICOCALC_PSRAM_LCD_COEXIST_TEST}>)
 
 pico_enable_stdio_usb(picocalc_app 1)
 pico_enable_stdio_uart(picocalc_app 1)
