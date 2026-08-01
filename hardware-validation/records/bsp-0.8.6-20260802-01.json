@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.6-20260802-01",
+  "bsp_version": "0.8.6",
+  "repository_commit": "3c02db7888c1e5ab456f7bf4a1a3aa3e31faff68",
+  "validation_date": "2026-08-02",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "Prepared for the next MusicPlayer playback evidence log. Board revision and SD identification are not recorded yet. BSP 0.8.6 changes only the EOF DMA drain sequencing: the final populated DMA half is started before stopping, and PWM is returned to center duty."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/PicoCalc_MusicPlayer.uf2",
+    "uf2_sha256": "33e5f414c497c85c472a6866ca9d656a3d47ab5fbb49671e1f494dbfc1a595ef",
+    "build_log": "picocalc.py build --project ../music/PicoCalc_MusicPlayer --sdk /home/fuyuki/pico_dvl/codex/pico-sdk --lcd-variant pio-rgb565 --build-timestamp 2026-08-01T00:00:00Z"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log; the intermittent LCD readback result remains a separate known BSP issue.",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log.",
+      "evidence_files": []
+    }
+  },
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. The playback log must record underrun, clip, drop, min_ring_level, max_supply_gap_us, EOF drain completion, the audible result, and the control path result. Host exact DMA-drain model: produced=played=125400 for mono/stereo, intentional EOF silence=40 samples. App version: 0.3.20-v1-core0-ring-drain. Build timestamp: 2026-08-01T00:00:00Z."
+}
