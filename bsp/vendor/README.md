@@ -57,9 +57,9 @@ PSRAMは揮発性なので永続ログや
 セーブ領域には使わない。
 
 2026-08-01のLCD共存実機検証では、250 MHz system clockで`fudge=true, clkdiv=1.5`
-（約83.3 MHz）が最高の合格設定だった。`fudge=false, clkdiv=2.0/3.0`も合格したが、
-`fudge=true, clkdiv=1.0`、`2.0`、`3.0`、`4.0`は失敗した。実際の候補選択は起動時の
-write/read検証結果に従う。
+（約83.3 MHz）、`fudge=false, clkdiv=2.0/3.0`が合格した。その後の標準スモーク起動で
+83.3 MHzに1 byte不一致が出たため、通常起動は`fudge=false, clkdiv=2.0/3.0`を優先し、
+`1.5/true`をフォールバックとする。実際の候補選択は起動時のwrite/read検証結果に従う。
 
 ## 規約
 

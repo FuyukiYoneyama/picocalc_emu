@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.0-20260801-standard-b",
+  "bsp_version": "0.8.0",
+  "repository_commit": "3673bfcabc80c0ac904ed86a5614fa4e9d8e830f",
+  "validation_date": "2026-08-01",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "LCD BSP B標準スモーク。基板revisionは未記入。"
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "",
+    "cmake": ""
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": ""
+  },
+  "firmware": {
+    "path": "templates/rp2040-basic/build/picocalc_app.uf2",
+    "uf2_sha256": "aef4ce95d7e23762ac1507a4b295f550e81fae2bd9801a8d148c222e8d5ab5dd",
+    "build_log": "hardware-validation/records/evidence/pico20260801_102118_standard_b.md"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pass",
+      "observed": "RGB565のsolid fill 5色と既知2x2 patternのRAMRD readbackが全てpassし、app_status=pass。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_102118_standard_b.md"
+      ]
+    },
+    "sd": {
+      "status": "pass",
+      "observed": "detect present、init ok、mount/write/sync/close/read/compare/removeがresult_stage=ok。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_102118_standard_b.md"
+      ]
+    },
+    "keyboard": {
+      "status": "pass",
+      "observed": "12イベントを取得し、pressed 7、released 5。複数キーのpress/releaseを確認。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_102118_standard_b.md"
+      ]
+    }
+  },
+  "notes": "Audioはfixed sine、48 kHz、underruns=0。PSRAMは83.3 MHz（clkdiv=1.5/fudge=true）で1 byte不一致となり、62.5 MHz（clkdiv=2.0/fudge=false）へ自動フォールバックしてpass。元ログは /home/fuyuki/pico_dvl/codex/log/pico20260801_102118.log。"
+}

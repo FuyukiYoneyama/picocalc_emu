@@ -15,7 +15,7 @@
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
 * audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFS参照試験と、同じPWM/DMAの48 kHz PCM stream API。PWM wrap 255、128 sample DMA half、512 sample ring
-* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。通常起動の候補は250 MHzでは`1.5/true → 2.0/false → 3.0/false`、125 MHzでは`1.0/false → 1.5/false → 2.0/false → 3.0/false → 4.0/false`。全候補スイープは共存検証モードだけで行う
+* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。通常起動の候補は250 MHzでは`2.0/false → 3.0/false → 1.5/true`、125 MHzでは`1.0/false → 1.5/false → 2.0/false → 3.0/false → 4.0/false`。全候補スイープは共存検証モードだけで行う
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
@@ -40,8 +40,12 @@ A/BのUF2を別名保存しない。
 
 2026-08-01のPicoCalc実機（250 MHz）では、LCD更新を止めずに共存できたPSRAM設定は
 `clkdiv=1.5/fudge=true`（約83.3 MHz）、`clkdiv=2.0/fudge=false`（62.5 MHz）、
-`clkdiv=3.0/fudge=false`（約41.7 MHz）だった。推奨は最高速度の前者とし、
+`clkdiv=3.0/fudge=false`（約41.7 MHz）だった。共存スイープ上の最高速度は前者で、
 検証記録は`hardware-validation/records/bsp-0.8.0-20260801-psram-coexist.json`に置く。
+
+その後の標準BSPスモーク起動では83.3 MHzで1 byte不一致が発生し、62.5 MHzへ
+フォールバックした。したがって通常運用の推奨は`clkdiv=2.0/fudge=false`とし、
+83.3 MHzは自動フォールバック候補に残す。
 
 実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard

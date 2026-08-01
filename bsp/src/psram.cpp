@@ -31,7 +31,9 @@ constexpr Candidate kAllCandidates[] = {
 // These are the hardware-validated normal-operation candidates. The
 // exhaustive list above remains available only to the coexistence sweep.
 constexpr Candidate k250MHzCandidates[] = {
-    {1.5f, true}, {2.0f, false}, {3.0f, false},
+    // 62.5 MHz is the first normal-operation choice after the 83.3 MHz
+    // candidate showed one startup mismatch in the standard smoke test.
+    {2.0f, false}, {3.0f, false}, {1.5f, true},
 };
 constexpr Candidate k125MHzCandidates[] = {
     {1.0f, false}, {1.5f, false}, {2.0f, false}, {3.0f, false}, {4.0f, false},
@@ -146,7 +148,7 @@ CandidateList normal_candidates(uint32_t system_clock_khz) {
     if (system_clock_khz == 250000u) {
         return {k250MHzCandidates,
                 sizeof(k250MHzCandidates) / sizeof(k250MHzCandidates[0]),
-                "1.50/1,2.00/0,3.00/0"};
+                "2.00/0,3.00/0,1.50/1"};
     }
     return {k125MHzCandidates,
             sizeof(k125MHzCandidates) / sizeof(k125MHzCandidates[0]),
