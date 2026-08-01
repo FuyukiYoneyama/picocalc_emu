@@ -2,7 +2,7 @@
   "schema_version": 1,
   "validation_id": "bsp-0.8.4-20260801-01",
   "bsp_version": "0.8.4",
-  "repository_commit": "8f3d3cbac641ff5febfefeabc5426878857b4e11",
+  "repository_commit": "d8722b49be11eabef9d471fb84e36b254ac7b058",
   "validation_date": "2026-08-01",
   "operator": "Fuyuki Yoneyama",
   "overall_status": "pending",
@@ -25,7 +25,7 @@
   },
   "firmware": {
     "path": "build/PicoCalc_MusicPlayer.uf2",
-    "uf2_sha256": "abab2474f23c3206d19e951cfae776fa92e868e147427fb3c4a39c65c6c8fb97",
+    "uf2_sha256": "631bcfd71ab86890bd61c56c8c42d28f83c367b554d3f67700def89cf231ed42",
     "build_log": ""
   },
   "tests": {
