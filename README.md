@@ -10,6 +10,9 @@ PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード�
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
 
+AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.md) を読みます。
+本書は全体説明、`AI_START_HERE.md`は変更範囲・A/B選択・ログ判定を含む正規手順です。
+
 ## 現在できること
 
 - 実機で動作したLCD・キーボード・SD/FatFS実装を固定して再利用する
@@ -148,7 +151,7 @@ python3 tools/picocalc.py verify \
 
 取得元URL、commit、証拠SHA-256は
 [reference-projects/catalog.json](reference-projects/catalog.json)にあります。
-参照プロジェクトがまだない場合は、空の出力ディレクトリ名を指定して固定commitを
+参照プロジェクトがまだ手元にない場合は、空の出力ディレクトリ名を指定して固定commitを
 自動取得できます。
 
 ```sh
@@ -186,10 +189,13 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 [Aの台帳](hardware-validation/records/bsp-0.4.0-20260730-02.json)と
 [Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
 
-なお、Bの記録はキーボードを未試験、A/Bとも基板revisionとSDカード識別情報が未記入のため、
-台帳の`overall_status`は`pending`にしています。LCD A/Bの合格と、AのSD/キーボード合格を
-実機証拠として確定し、未記入の装置情報だけを残しています。実機では一度に一方だけを
+この台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
+`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.2、commit
+`2360487f70ee`）は、別途取得した実機ログでLCD/GRAM readback、SD、キーボード、
+LCD検証後の音声停止まで確認済みです。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、各ソースコミットから再生成します。
+
+## 変更履歴の要点（過去の経緯。現在の利用手順ではない）
 
 BSP 0.6.0では、動作済みプロジェクトを先にコピーした参照経路と、AIが利用する
 汎用経路を分離しました。`PICOCALC_AUDIO_REFERENCE_TONE=ON`（既定値）は
@@ -234,5 +240,5 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 現時点では「PicoCalcエミュレーター完成品」ではなく、
 **PicoCalc向け検証済みBSPスターターキット兼エミュレーター開発基盤**です。
-Host device modelを主経路とし、RP2040JSによるfirmware backendは、
-同一バイナリ確認が必要な範囲に限定します。
+現在使える主経路はRP2040実機向けBSP/templateであり、Host device modelと
+RP2040JSによるfirmware backendは将来計画です。

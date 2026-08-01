@@ -25,7 +25,7 @@ struct PixelVerifyResult {
     }
 };
 
-// The public pixel type is RGB565. Each independent LCD BSP selects its own
+// Public application pixel data is always RGB565. Each independent LCD BSP selects its own
 // proven wire format: A sends RGB888 and B sends RGB565. RAMRD is decoded by
 // that selected BSP and compared in this public RGB565 representation.
 PixelVerifyResult verify_pixels(int x, int y, int w, int h,

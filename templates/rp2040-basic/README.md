@@ -2,14 +2,26 @@
 
 このテンプレートは、実機で動作した LCD・SD・キーボード処理を
 `bsp/` に固定し、通常のアプリ開発を `app/` 内に限定するためのものです。
+リポジトリ全体から使い始めるAIは、リポジトリrootの`AI_START_HERE.md`を先に
+読んでください。生成後のプロジェクトへコピーされたこのREADMEからrootへの相対
+リンクは作らず、生成先でも壊れない説明にしています。
 
 ## Build
 
 ```sh
 export PICO_SDK_PATH=/path/to/pico-sdk
-cmake -S . -B build -DPICO_BOARD=pico
+cmake -S . -B build -DPICO_BOARD=pico -DPICOCALC_LCD_VARIANT=pio-rgb565
 cmake --build build -j
 ```
+
+リポジトリのrootから生成・ビルドするときは、次のラッパーが版情報とUF2 SHA-256を
+記録します。
+
+```sh
+python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
+```
+
+LCD variantを省略して推測しません。Aを使うときだけ`hwspi-rgb888`を明示します。
 
 書き込み対象は `build/picocalc_app.uf2` です。起動すると LCD テストパターン、
 SD の mount/write/sync/read/compare/remove、キーボード待受を順に実行します。
@@ -52,6 +64,9 @@ PSRAMは実機検証済みの通常候補を使用します。250 MHzでは`clkd
 個別機能の最小コピペ例は`examples/`にあります。LCD、キーボード、SD、PSRAM Buffer、
 PCM音声をそれぞれ単独でアプリへ追加できます。例は既定ターゲットへ自動リンクせず、
 テンプレートのスモークテストを壊さないようにしています。
+
+通常のアプリ変更では`bsp/`、`profiles/`、`CMakeLists.txt`の版選択を変更しません。
+変更が必要なら、BSP変更として検証・コミットしてからUF2を生成します。
 
 ## 開発規約
 

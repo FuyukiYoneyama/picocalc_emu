@@ -11,6 +11,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 option(PICOCALC_AUDIO_REFERENCE_TONE
     "Use the copied Picocalc_ment fixed-sine reference path" ON)
+# Keep the LCD paths independent. Do not combine A and B transport code in an
+# application; select one complete, hardware-proven BSP at configure time.
 option(PICOCALC_PSRAM_LCD_COEXIST_TEST
     "Run the PSRAM clock/LCD update coexistence test" OFF)
 set(PICOCALC_LCD_VARIANT "pio-rgb565" CACHE STRING

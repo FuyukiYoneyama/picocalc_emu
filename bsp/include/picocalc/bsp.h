@@ -11,6 +11,10 @@
 
 namespace picocalc {
 
+// Initializes the selected, hardware-proven BSP. Applications must call this
+// once before using display, keyboard, filesystem, audio, or PSRAM APIs.
+// The selected LCD wire protocol is an implementation detail of the build
+// variant; application pixels remain RGB565.
 bool init();
 
 }  // namespace picocalc

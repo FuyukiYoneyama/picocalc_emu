@@ -1,5 +1,9 @@
 # Milestones
 
+Milestone 0 は現在のBSPスターターキットとして完了しています。Milestone 1以降は
+PC上のエミュレーターを実装する将来作業であり、現在のRP2040実機ビルド手順と
+混同しないでください。
+
 ## Milestone 0: Canonical BSP — implemented
 
 - 実働プロジェクトを根拠にしたLCD・keyboard・SD/FatFS BSP

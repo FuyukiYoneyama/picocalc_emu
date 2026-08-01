@@ -1,13 +1,18 @@
 # picocalc_emu 将来設計
 
+> **将来設計:** 本書は未実装のPCエミュレーターとシナリオ実行基盤の設計です。
+> 現在利用できる実装とAI向けの使い方は、先に
+> [`AI_START_HERE.md`](../AI_START_HERE.md)と
+> [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)を参照してください。
+
 AI に PicoCalc 向けアプリを開発させるための利用者要求、標準開発フロー、
 BSP・テンプレート・実働プロジェクトの扱いは
 [REQUIREMENTS.md](../REQUIREMENTS.md) に定義する。本書は、その要求を実現する
 将来のエミュレーターと検証基盤の技術構成を定義する。
 
-> **実装状況:** Canonical BSP（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
+> **実装状況:** Canonical BSP 0.8.2（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
-> Canonical BSP MVP 0.3.1 として実装済み。利用方法と未実装のエミュレーター範囲は
+> 実機向けBSPの現在版として実装済み。利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
 
 ## 1. 目的
