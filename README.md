@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.8.1** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.2** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -79,7 +79,7 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`app=0.8.1-b-pio-rgb565-psram-lcd-coexist`です。
+このモードの起動ログ先頭は`app=0.8.2-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
