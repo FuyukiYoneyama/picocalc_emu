@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.3-20260801-01",
+  "bsp_version": "0.8.3",
+  "repository_commit": "92aa7eb78a3d187cbff83b035a33843ff31656c3",
+  "validation_date": "2026-08-01",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "PicoCalc MusicPlayer UF2 #3 evidence. Board revision and SD identification are not recorded yet. The canonical BSP tree is committed at repository_commit above; the tested UF2 was built before that commit and its boot line reported bsp_git=untracked, so this provenance limitation is retained explicitly."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "hardware-validation/records/evidence/PicoCalc_MusicPlayer-uf2-3-e3b9a675.uf2",
+    "uf2_sha256": "e3b9a675562f96135dc0da870463a03109ad0a07ebd82f59f7c10d8d4c083a8b",
+    "build_log": "hardware-validation/records/evidence/pico20260801_180401.log"
+  },
+  "tests": {
+    "lcd": {
+      "status": "fail",
+      "observed": "The evidence log contains three boots. Boots 1 and 3 passed the five RGB565 solid-color readbacks and known 2x2 pattern; boot 2 failed after its first readback, returning 0x0000 for the remaining patterns while display tile timing remained normal. The RAMRD/readback cause is unresolved. Product drawing does not use RAMRD, but the BSP readback acceptance criterion is intermittent.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_180401.log"
+      ]
+    },
+    "sd": {
+      "status": "pass",
+      "observed": "The complete third boot passed filesystem smoke, nested directory enumeration, full MP3 read, and MIDI read. No formatting or destructive SD preparation was performed.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_180401.log"
+      ]
+    },
+    "keyboard": {
+      "status": "pass",
+      "observed": "The complete third boot passed early and late input probes. Up 0xb5, Down 0xb6, Enter 0x0a, and Escape 0xb1 each had pressed=1 and released=1; status_fail=0, invalid_states=0, and unexpected_events=0. Earlier missed-key attempts remain in the evidence log.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_180401.log"
+      ]
+    }
+  },
+  "notes": "Additional app evidence is kept in the MusicPlayer project TEST_REPORT. The same log records PSRAM 8MiB self-test pass, 1kHz PCM stream for 3s with underrun=0/clip=0/drop=0, Helix silent decode timing, and MIDI parsing; these are intentionally not added as BSP test keys. Tested app was 0.2.0-helix-uf2-3 with build timestamp 2026-08-01T00:00:00Z. Evidence log SHA-256=4a24859689214d1536d6ba98898be85ff080881c528abc26840f811cb75d321b. The record remains pending because board/SD identity is missing and LCD readback is intermittent."
+}

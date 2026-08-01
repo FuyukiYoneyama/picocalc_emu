@@ -1,0 +1,491 @@
+[PICOCALC][BOOT] bsp=0.8.3 app=0.2.0-helix-uf2-3 variant=pio-rgb565 bsp_git=untracked app_git=untracked build=2026-08-01T00:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=9
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=stream rate=48000 pwm_wrap=255 carrier=976562 dma_half=128 ring=512 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=stream output=stopped-until-start
+[MUSIC_BOOT] version=0.2.0-helix-uf2-3 product=PicoCalc_MusicPlayer target=PicoCalc_MusicPlayer stage=uf2-3 bsp=0.8.3 bsp_git=untracked app_git=untracked variant=pio-rgb565 sysclk=250000 uart=115200
+[PHASE10] begin name=keyboard_early
+[PHASE10] probe=keyboard_early duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_early 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_early countdown=3 uptime_ms=544
+[HUMAN] probe=keyboard_early countdown=2 uptime_ms=1549
+[HUMAN] probe=keyboard_early countdown=1 uptime_ms=2554
+[HUMAN] probe=keyboard_early START uptime_ms=3559
+[PHASE10] raw probe=keyboard_early index=0 status_wr=1 status_rd=2 status=0x0300 fifo_count=3 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b4
+[PHASE10] raw probe=keyboard_early index=1 status_wr=1 status_rd=2 status=0x0200 fifo_count=2 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b4
+[PHASE10] raw probe=keyboard_early index=2 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_early index=3 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_early index=4 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b7
+[PHASE10] raw probe=keyboard_early index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b7
+[PHASE10] raw probe=keyboard_early index=6 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_early index=7 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_early index=8 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_early index=9 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_early elapsed_ms=5007 polls=481 status_ok=481 status_fail=0 status_nonempty=10 fifo_attempts=10 fifo_ok=10 fifo_events=10 expected_events=6 unexpected_events=4 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb7 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb7 count=1
+[PHASE10] expected_code probe=keyboard_early name=up code=0xb5 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=enter code=0x0a pressed=0 released=0 hold=0
+[PHASE10] expected_code probe=keyboard_early name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=fail detail=keyboard_input_missing_or_anomalous
+[PHASE1] begin name=lcd_readback
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x20 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x0000 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=1 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=2 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0xffff status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xf800 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0xf800 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x07e0 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xc1 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x001f value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x001f status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] known_2x2 status=pass mismatches=0
+[PHASE1] result=pass
+[KEYPROBE] after=phase1 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE2] begin name=lcd_tile_timing
+[PHASE2] iterations=8 tile=160x160 min_us=6618 avg_us=6619 max_us=6627
+[PHASE2] result=pass
+[KEYPROBE] after=phase2 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE3] begin name=psram
+[PHASE3] available=yes capacity=8388608 clkdiv=2.00 spi_hz=62500000
+[PHASE3] result=pass
+[KEYPROBE] after=phase3 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE4] begin name=sd_smoke
+[PHASE4] status=pass stage=ok detail=0
+[PHASE4] result=pass
+[KEYPROBE] after=phase4 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE5] begin name=music_directory
+[PHASE5] entries=3 io_errors=0 directory_limit=0 path_limit=0 mp3_count=2 mp3=0:/MUSIC/diagnostic_mono_64k.mp3 midi=0:/MUSIC/MIDI/2p-inv1.mid
+[PHASE5] result=pass detail=nested_directory_ok
+[KEYPROBE] after=phase5 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE6] begin name=mp3_read
+[PHASE6] path=0:/MUSIC/diagnostic_mono_64k.mp3 bytes=32644/32644 elapsed_us=52835 read_calls=8 read_bytes=32644 kbps=603
+[PHASE6] result=pass
+[KEYPROBE] after=phase6 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE7] begin name=mp3_decode_stereo_mono
+[PHASE7] profile=mono path=0:/MUSIC/diagnostic_mono_64k.mp3 sample_rate=44100 channels=1 bitrate_kbps=64000 frames=100/100 audio_us=2612244 elapsed_us=780122 realtime_factor_x1000=298 frame_min_us=7198 frame_avg_us=7792 frame_max_us=30816 sd_read_us=22962 decode_compute_us=757160 sd_read_calls=1 sd_read_bytes=14418 decoder_frames=101 eof=0 error=0
+[PHASE7] profile=stereo path=0:/MUSIC/MP3/00 80_MIkkuMikuni.mp3 sample_rate=44100 channels=2 bitrate_kbps=128000 frames=100/100 audio_us=2612244 elapsed_us=1738733 realtime_factor_x1000=665 frame_min_us=15094 frame_avg_us=17379 frame_max_us=41815 sd_read_us=48289 decode_compute_us=1690444 sd_read_calls=2 sd_read_bytes=29257 decoder_frames=101 eof=0 error=0
+[PHASE7] required=stereo+mono stereo=pass mono=pass
+[PHASE7] result=pass detail=stereo_mono_timing_recorded
+[KEYPROBE] after=phase7 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE8] begin name=midi_parse
+[PHASE8] path=0:/MUSIC/MIDI/2p-inv1.mid format=1 tracks=6 ppqn=120 events=1033 elapsed_us=35816 us_per_event=34 read_calls=49 seek_calls=49 read_bytes=3654 eof=1
+[PHASE8] result=pass
+[KEYPROBE] after=phase8 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE9] begin name=pcm_stream_1khz
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PHASE9] duration_ms=3000 samples=144384 ring=512 underruns=0 clips=0 drops=0
+[PHASE9] result=pass
+[KEYPROBE] after=phase9 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE10] begin name=keyboard_late
+[PHASE10] probe=keyboard_late duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_late 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_late countdown=3 uptime_ms=15521
+[HUMAN] probe=keyboard_late countdown=2 uptime_ms=16526
+[HUMAN] probe=keyboard_late countdown=1 uptime_ms=17531
+[HUMAN] probe=keyboard_late START uptime_ms=18536
+[PHASE10] raw probe=keyboard_late index=0 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b4
+[PHASE10] raw probe=keyboard_late index=1 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b4
+[PHASE10] raw probe=keyboard_late index=2 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_late index=3 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_late index=4 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_late index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b7
+[PHASE10] raw probe=keyboard_late index=6 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b7
+[PHASE10] raw probe=keyboard_late index=7 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_late index=8 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_late index=9 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_late index=10 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_late elapsed_ms=5009 polls=480 status_ok=480 status_fail=0 status_nonempty=11 fifo_attempts=11 fifo_ok=11 fifo_events=11 expected_events=7 unexpected_events=4 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb5 count=2
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb7 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb7 count=1
+[PHASE10] expected_code probe=keyboard_late name=up code=0xb5 pressed=2 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=enter code=0x0a pressed=0 released=0 hold=0
+[PHASE10] expected_code probe=keyboard_late name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=fail detail=keyboard_input_missing_or_anomalous
+[VERDICT] phase1=pass phase2=pass phase3=pass phase4=pass phase5=pass phase6=pass phase7=pass phase8=pass phase9=pass phase10_early=fail phase10_late=fail phase10=fail overall=fail
+[PICOCALC][BOOT] bsp=0.8.3 app=0.2.0-helix-uf2-3 variant=pio-rgb565 bsp_git=untracked app_git=untracked build=2026-08-01T00:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=10
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=stream rate=48000 pwm_wrap=255 carrier=976562 dma_half=128 ring=512 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=stream output=stopped-until-start
+[MUSIC_BOOT] version=0.2.0-helix-uf2-3 product=PicoCalc_MusicPlayer target=PicoCalc_MusicPlayer stage=uf2-3 bsp=0.8.3 bsp_git=untracked app_git=untracked variant=pio-rgb565 sysclk=250000 uart=115200
+[PHASE10] begin name=keyboard_early
+[PHASE10] probe=keyboard_early duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_early 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_early countdown=3 uptime_ms=544
+[HUMAN] probe=keyboard_early countdown=2 uptime_ms=1549
+[HUMAN] probe=keyboard_early countdown=1 uptime_ms=2554
+[HUMAN] probe=keyboard_early START uptime_ms=3559
+[PHASE10] raw probe=keyboard_early index=0 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_early index=1 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_early index=2 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_early index=3 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_early index=4 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_early index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_early elapsed_ms=5007 polls=486 status_ok=486 status_fail=0 status_nonempty=6 fifo_attempts=6 fifo_ok=6 fifo_events=6 expected_events=6 unexpected_events=0 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb6 count=1
+[PHASE10] expected_code probe=keyboard_early name=up code=0xb5 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=enter code=0x0a pressed=0 released=0 hold=0
+[PHASE10] expected_code probe=keyboard_early name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=fail detail=keyboard_input_missing_or_anomalous
+[PHASE1] begin name=lcd_readback
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x20 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x0000 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0xffff actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0xffff actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0xffff actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0xffff actual=0x0000
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PHASE1] color=0xffff status=fail mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0xf800 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0xf800 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0xf800 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0xf800 actual=0x0000
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PHASE1] color=0xf800 status=fail mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0x07e0 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x07e0 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x07e0 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0x07e0 actual=0x0000
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PHASE1] color=0x07e0 status=fail mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0x001f actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x001f actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x001f actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0x001f actual=0x0000
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PHASE1] color=0x001f status=fail mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0xf800 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x07e0 actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x001f actual=0x0000
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0xffff actual=0x0000
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PHASE1] known_2x2 status=fail mismatches=4
+[PHASE1] result=fail
+[KEYPROBE] after=phase1 polls=10 status=0200,0100,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=2 fifo_reads=2
+[PHASE2] begin name=lcd_tile_timing
+[PHASE2] iterations=8 tile=160x160 min_us=6618 avg_us=6620 max_us=6629
+[PHASE2] result=pass
+[KEYPROBE] after=phase2 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE3] begin name=psram
+[PHASE3] available=yes capacity=8388608 clkdiv=2.00 spi_hz=62500000
+[PHASE3] result=pass
+[KEYPROBE] after=phase3 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE4] begin name=sd_smoke
+[PHASE4] status=pass stage=ok detail=0
+[PHASE4] result=pass
+[KEYPROBE] after=phase4 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE5] begin name=music_directory
+[PHASE5] entries=3 io_errors=0 directory_limit=0 path_limit=0 mp3_count=2 mp3=0:/MUSIC/diagnostic_mono_64k.mp3 midi=0:/MUSIC/MIDI/2p-inv1.mid
+[PHASE5] result=pass detail=nested_directory_ok
+[KEYPROBE] after=phase5 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE6] begin name=mp3_read
+[PHASE6] path=0:/MUSIC/diagnostic_mono_64k.mp3 bytes=32644/32644 elapsed_us=52833 read_calls=8 read_bytes=32644 kbps=603
+[PHASE6] result=pass
+[KEYPROBE] after=phase6 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE7] begin name=mp3_decode_stereo_mono
+[PHASE7] profile=mono path=0:/MUSIC/diagnostic_mono_64k.mp3 sample_rate=44100 channels=1 bitrate_kbps=64000 frames=100/100 audio_us=2612244 elapsed_us=779590 realtime_factor_x1000=298 frame_min_us=7208 frame_avg_us=7787 frame_max_us=30800 sd_read_us=22956 decode_compute_us=756634 sd_read_calls=1 sd_read_bytes=14418 decoder_frames=101 eof=0 error=0
+[PHASE7] profile=stereo path=0:/MUSIC/MP3/00 80_MIkkuMikuni.mp3 sample_rate=44100 channels=2 bitrate_kbps=128000 frames=100/100 audio_us=2612244 elapsed_us=1738365 realtime_factor_x1000=665 frame_min_us=15049 frame_avg_us=17375 frame_max_us=41841 sd_read_us=48269 decode_compute_us=1690096 sd_read_calls=2 sd_read_bytes=29257 decoder_frames=101 eof=0 error=0
+[PHASE7] required=stereo+mono stereo=pass mono=pass
+[PHASE7] result=pass detail=stereo_mono_timing_recorded
+[KEYPROBE] after=phase7 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE8] begin name=midi_parse
+[PHASE8] path=0:/MUSIC/MIDI/2p-inv1.mid format=1 tracks=6 ppqn=120 events=1033 elapsed_us=35811 us_per_event=34 read_calls=49 seek_calls=49 read_bytes=3654 eof=1
+[PHASE8] result=pass
+[KEYPROBE] after=phase8 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE9] begin name=pcm_stream_1khz
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PHASE9] duration_ms=3000 samples=144384 ring=512 underruns=0 clips=0 drops=0
+[PHASE9] result=pass
+[KEYPROBE] after=phase9 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE10] begin name=keyboard_late
+[PHASE10] probe=keyboard_late duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_late 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_late countdown=3 uptime_ms=15622
+[HUMAN] probe=keyboard_late countdown=2 uptime_ms=16627
+[HUMAN] probe=keyboard_late countdown=1 uptime_ms=17632
+[HUMAN] probe=keyboard_late START uptime_ms=18637
+[PHASE10] raw probe=keyboard_late index=0 status_wr=1 status_rd=2 status=0x0600 fifo_count=6 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_late index=1 status_wr=1 status_rd=2 status=0x0500 fifo_count=5 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_late index=2 status_wr=1 status_rd=2 status=0x0400 fifo_count=4 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_late index=3 status_wr=1 status_rd=2 status=0x0300 fifo_count=3 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b4
+[PHASE10] raw probe=keyboard_late index=4 status_wr=1 status_rd=2 status=0x0200 fifo_count=2 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b4
+[PHASE10] raw probe=keyboard_late index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_late index=6 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x010a
+[PHASE10] raw probe=keyboard_late index=7 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x030a
+[PHASE10] raw probe=keyboard_late index=8 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_late index=9 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_late elapsed_ms=5006 polls=481 status_ok=481 status_fail=0 status_nonempty=10 fifo_attempts=10 fifo_ok=10 fifo_events=10 expected_events=8 unexpected_events=2 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_late state=1 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb4 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb6 count=1
+[PHASE10] expected_code probe=keyboard_late name=up code=0xb5 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=enter code=0x0a pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=pass detail=keyboard_input_verified
+[VERDICT] phase1=fail phase2=pass phase3=pass phase4=pass phase5=pass phase6=pass phase7=pass phase8=pass phase9=pass phase10_early=fail phase10_late=pass phase10=fail overall=fail
+[PICOCALC][BOOT] bsp=0.8.3 app=0.2.0-helix-uf2-3 variant=pio-rgb565 bsp_git=untracked app_git=untracked build=2026-08-01T00:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=9
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=stream rate=48000 pwm_wrap=255 carrier=976562 dma_half=128 ring=512 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=stream output=stopped-until-start
+[MUSIC_BOOT] version=0.2.0-helix-uf2-3 product=PicoCalc_MusicPlayer target=PicoCalc_MusicPlayer stage=uf2-3 bsp=0.8.3 bsp_git=untracked app_git=untracked variant=pio-rgb565 sysclk=250000 uart=115200
+[PHASE10] begin name=keyboard_early
+[PHASE10] probe=keyboard_early duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_early 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_early countdown=3 uptime_ms=544
+[HUMAN] probe=keyboard_early countdown=2 uptime_ms=1549
+[HUMAN] probe=keyboard_early countdown=1 uptime_ms=2554
+[HUMAN] probe=keyboard_early START uptime_ms=3559
+[PHASE10] raw probe=keyboard_early index=0 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_early index=1 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_early index=2 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_early index=3 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_early index=4 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x010a
+[PHASE10] raw probe=keyboard_early index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x030a
+[PHASE10] raw probe=keyboard_early index=6 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_early index=7 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_early elapsed_ms=5002 polls=483 status_ok=483 status_fail=0 status_nonempty=8 fifo_attempts=8 fifo_ok=8 fifo_events=8 expected_events=8 unexpected_events=0 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_early state=1 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_early state=3 code=0xb6 count=1
+[PHASE10] expected_code probe=keyboard_early name=up code=0xb5 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=enter code=0x0a pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_early name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=pass detail=keyboard_input_verified
+[PHASE1] begin name=lcd_readback
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x20 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x0000 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=1 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=2 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0xffff status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xf800 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0xf800 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x07e0 status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xc1 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x001f value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] color=0x001f status=pass mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PHASE1] known_2x2 status=pass mismatches=0
+[PHASE1] result=pass
+[KEYPROBE] after=phase1 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE2] begin name=lcd_tile_timing
+[PHASE2] iterations=8 tile=160x160 min_us=6618 avg_us=6620 max_us=6629
+[PHASE2] result=pass
+[KEYPROBE] after=phase2 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE3] begin name=psram
+[PHASE3] available=yes capacity=8388608 clkdiv=2.00 spi_hz=62500000
+[PHASE3] result=pass
+[KEYPROBE] after=phase3 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE4] begin name=sd_smoke
+[PHASE4] status=pass stage=ok detail=0
+[PHASE4] result=pass
+[KEYPROBE] after=phase4 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE5] begin name=music_directory
+[PHASE5] entries=3 io_errors=0 directory_limit=0 path_limit=0 mp3_count=2 mp3=0:/MUSIC/diagnostic_mono_64k.mp3 midi=0:/MUSIC/MIDI/2p-inv1.mid
+[PHASE5] result=pass detail=nested_directory_ok
+[KEYPROBE] after=phase5 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE6] begin name=mp3_read
+[PHASE6] path=0:/MUSIC/diagnostic_mono_64k.mp3 bytes=32644/32644 elapsed_us=52788 read_calls=8 read_bytes=32644 kbps=603
+[PHASE6] result=pass
+[KEYPROBE] after=phase6 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE7] begin name=mp3_decode_stereo_mono
+[PHASE7] profile=mono path=0:/MUSIC/diagnostic_mono_64k.mp3 sample_rate=44100 channels=1 bitrate_kbps=64000 frames=100/100 audio_us=2612244 elapsed_us=779903 realtime_factor_x1000=298 frame_min_us=7219 frame_avg_us=7790 frame_max_us=30793 sd_read_us=22936 decode_compute_us=756967 sd_read_calls=1 sd_read_bytes=14418 decoder_frames=101 eof=0 error=0
+[PHASE7] profile=stereo path=0:/MUSIC/MP3/00 80_MIkkuMikuni.mp3 sample_rate=44100 channels=2 bitrate_kbps=128000 frames=100/100 audio_us=2612244 elapsed_us=1738458 realtime_factor_x1000=665 frame_min_us=15074 frame_avg_us=17376 frame_max_us=41846 sd_read_us=48225 decode_compute_us=1690233 sd_read_calls=2 sd_read_bytes=29257 decoder_frames=101 eof=0 error=0
+[PHASE7] required=stereo+mono stereo=pass mono=pass
+[PHASE7] result=pass detail=stereo_mono_timing_recorded
+[KEYPROBE] after=phase7 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE8] begin name=midi_parse
+[PHASE8] path=0:/MUSIC/MIDI/2p-inv1.mid format=1 tracks=6 ppqn=120 events=1033 elapsed_us=35863 us_per_event=34 read_calls=49 seek_calls=49 read_bytes=3654 eof=1
+[PHASE8] result=pass
+[KEYPROBE] after=phase8 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE9] begin name=pcm_stream_1khz
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PHASE9] duration_ms=3000 samples=144384 ring=512 underruns=0 clips=0 drops=0
+[PHASE9] result=pass
+[KEYPROBE] after=phase9 polls=10 status=0000,0000,0000,0000,0000,0000,0000,0000,0000,0000 status_fail=0 nonempty=0 fifo_reads=0
+[PHASE10] begin name=keyboard_late
+[PHASE10] probe=keyboard_late duration_ms=5000 instruction=press_and_release_up_down_enter_escape_once
+[HUMAN] probe=keyboard_late 4キーを各1回、押して離してください: Up(0xb5), Down(0xb6), Enter(0x0a), Escape(0xb1)。長押し不要。
+[HUMAN] probe=keyboard_late countdown=3 uptime_ms=15353
+[HUMAN] probe=keyboard_late countdown=2 uptime_ms=16358
+[HUMAN] probe=keyboard_late countdown=1 uptime_ms=17362
+[HUMAN] probe=keyboard_late START uptime_ms=18367
+[PHASE10] raw probe=keyboard_late index=0 status_wr=1 status_rd=2 status=0x0300 fifo_count=3 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b5
+[PHASE10] raw probe=keyboard_late index=1 status_wr=1 status_rd=2 status=0x0200 fifo_count=2 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b5
+[PHASE10] raw probe=keyboard_late index=2 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b6
+[PHASE10] raw probe=keyboard_late index=3 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b6
+[PHASE10] raw probe=keyboard_late index=4 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x010a
+[PHASE10] raw probe=keyboard_late index=5 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x030a
+[PHASE10] raw probe=keyboard_late index=6 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x01b1
+[PHASE10] raw probe=keyboard_late index=7 status_wr=1 status_rd=2 status=0x0100 fifo_count=1 fifo_attempted=1 fifo_wr=1 fifo_rd=2 fifo=0x03b1
+[PHASE10] summary probe=keyboard_late elapsed_ms=5001 polls=483 status_ok=483 status_fail=0 status_nonempty=8 fifo_attempts=8 fifo_ok=8 fifo_events=8 expected_events=8 unexpected_events=0 zero_keys=0 invalid_states=0
+[PHASE10] code_count probe=keyboard_late state=1 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_late state=1 code=0xb6 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0x0a count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb1 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb5 count=1
+[PHASE10] code_count probe=keyboard_late state=3 code=0xb6 count=1
+[PHASE10] expected_code probe=keyboard_late name=up code=0xb5 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=down code=0xb6 pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=enter code=0x0a pressed=1 released=1 hold=0
+[PHASE10] expected_code probe=keyboard_late name=escape code=0xb1 pressed=1 released=1 hold=0
+[PHASE10] result=pass detail=keyboard_input_verified
+[VERDICT] phase1=pass phase2=pass phase3=pass phase4=pass phase5=pass phase6=pass phase7=pass phase8=pass phase9=pass phase10_early=pass phase10_late=pass phase10=pass overall=pass
