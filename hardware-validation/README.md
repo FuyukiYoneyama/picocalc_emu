@@ -46,7 +46,7 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 Canonical BSPのLCD検証は完了している。現在はBのキーボード試験と、両セッションの基板
 revision／SDカード識別情報が未記入である。
 
-BSP 0.8.0の推奨表示デフォルトはB（`pio-rgb565`、PIO blocking、LCD DMA OFF）である。
+BSP 0.8.1の推奨表示デフォルトはB（`pio-rgb565`、PIO blocking、LCD DMA OFF）である。
 音声とPSRAMは、ソース検査とA/BのRP2040ビルドを先に確認する。
 実機記録はその後に作成し、まずBの推奨デフォルトを検証した後、同じ標準UF2名で
 Aの互換・診断経路を検証する。
@@ -57,13 +57,15 @@ Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義す
 
 2026-08-01の共存検証では、LCD更新中のPSRAM合格設定を次のように確定した。
 
-- 推奨（最高速度）: `clkdiv=1.5 / fudge=true`、約83.3 MHz
+- 共存スイープ上の最高速度: `clkdiv=1.5 / fudge=true`、約83.3 MHz
+- 通常運用の推奨: `clkdiv=2.0 / fudge=false`、62.5 MHz
 - 合格: `clkdiv=2.0 / fudge=false`、62.5 MHz
 - 合格: `clkdiv=3.0 / fudge=false`、約41.7 MHz
 - 不合格: その他7候補
 
 全候補で`display_failures=0`だったため、このセッションでの制約はLCDではなく
 PSRAM転送条件である。詳細は`records/bsp-0.8.0-20260801-psram-coexist.json`を参照する。
+標準BSPの通常起動では83.3 MHzで1 byte不一致が発生し、62.5 MHzへフォールバックした。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、
 検証器はファイルの存在とリポジトリ外へのpath traversalを検査する。
 

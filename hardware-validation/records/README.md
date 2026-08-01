@@ -10,3 +10,6 @@ SDカード識別情報が未記入であることを表し、個別テストの
 2026-08-01には、BのLCD更新中にPSRAM候補速度を検証した記録
 `bsp-0.8.0-20260801-psram-coexist.json`を追加した。これは共存専用アプリの記録であり、
 LCD/PSRAMの判定はpassだが、SD・keyboardを実行していないため`overall_status=pending`である。
+
+同日の標準BSPスモーク結果は`bsp-0.8.0-20260801-standard-b.json`に記録した。
+LCD・SD・keyboardはpass、PSRAMは83.3 MHzから62.5 MHzへフォールバックしてpassである。

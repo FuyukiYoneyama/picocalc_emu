@@ -550,7 +550,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         [
             "reference=pico_rescue",
             "candidates=",
-            "1.50/1,2.00/0,3.00/0",
+            "2.00/0,3.00/0,1.50/1",
             "1.00/0,1.50/0,2.00/0,3.00/0,4.00/0",
             "psram_spi_init_clkdiv(pio1, -1, clkdiv, fudge)",
             "fudge=%u",
@@ -617,9 +617,9 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "PICOCALC_AUDIO_REFERENCE_TONE",
             'PICOCALC_LCD_VARIANT "pio-rgb565"',
             "PICOCALC_PSRAM_LCD_COEXIST_TEST",
-            "0.8.0-a-hwspi-rgb888-rgb666-compat",
-            "0.8.0-b-pio-rgb565-default",
-            "0.8.0-b-pio-rgb565-psram-lcd-coexist",
+            "0.8.1-a-hwspi-rgb888-rgb666-compat",
+            "0.8.1-b-pio-rgb565-default",
+            "0.8.1-b-pio-rgb565-psram-lcd-coexist",
         ],
     )
     require_text(

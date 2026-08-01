@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.8.0** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.1** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -79,7 +79,7 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`app=0.8.0-b-pio-rgb565-psram-lcd-coexist`です。
+このモードの起動ログ先頭は`app=0.8.1-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
@@ -168,7 +168,7 @@ python3 tools/picocalc.py verify \
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer |
-| PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は1.5/1→2/0→3/0、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
+| PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は2/0→3/0→1.5/1、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。
@@ -204,6 +204,10 @@ A（`hwspi-rgb888`）は公式互換・bring-up・診断経路として削除せ
 BSP 0.8.0では、BのLCD更新とPSRAM PIO1アクセスを交互に実行する共存クロック
 検証モードを追加しました。LCD DMAは引き続き使用せず、PSRAM側はPIO＋DMA
 blocking APIを使用します。
+
+BSP 0.8.1では、83.3 MHz候補が通常スモーク起動で1 byte不一致になった実機結果を
+反映し、250 MHz通常起動の第一候補を62.5 MHz（`clkdiv=2.0/fudge=false`）へ変更しました。
+83.3 MHzは共存検証で合格した候補としてフォールバックに残します。
 
 BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
 `general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに
