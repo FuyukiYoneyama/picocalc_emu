@@ -38,6 +38,11 @@ A/BのUF2を別名保存しない。
 24-byte write/readを120フレーム実行する`probe_lcd_coexistence()`を追加した。
 検証後は最初に共存合格した候補をそのまま有効にする。
 
+2026-08-01のPicoCalc実機（250 MHz）では、LCD更新を止めずに共存できたPSRAM設定は
+`clkdiv=1.5/fudge=true`（約83.3 MHz）、`clkdiv=2.0/fudge=false`（62.5 MHz）、
+`clkdiv=3.0/fudge=false`（約41.7 MHz）だった。推奨は最高速度の前者とし、
+検証記録は`hardware-validation/records/bsp-0.8.0-20260801-psram-coexist.json`に置く。
+
 実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
 未試験）である。
