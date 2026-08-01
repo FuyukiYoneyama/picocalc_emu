@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -26,6 +27,16 @@ def run(*arguments, env=None):
 
 
 class ToolTests(unittest.TestCase):
+    def test_build_versions_selects_non_coexistence_variant(self):
+        specification = importlib.util.spec_from_file_location("picocalc", PICOCALC)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        project = ROOT / "templates/rp2040-basic"
+        _, standard = module.build_versions(project, "pio-rgb565", False)
+        _, coexistence = module.build_versions(project, "pio-rgb565", True)
+        self.assertEqual(standard, "0.8.2-b-pio-rgb565-default")
+        self.assertEqual(coexistence, "0.8.2-b-pio-rgb565-psram-lcd-coexist")
+
     def copy_project(self, temporary):
         project = Path(temporary) / "project"
         shutil.copytree(

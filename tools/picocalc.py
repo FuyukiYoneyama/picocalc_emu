@@ -63,7 +63,12 @@ def build_versions(
     if len(branches) > 1:
         marker = "psram-lcd-coexist" if coexistence_test else (lcd_variant or "pio-rgb565")
         for candidate in branches:
-            if marker in candidate:
+            # The coexistence label also contains the LCD variant (for
+            # example, "pio-rgb565"). Exclude it from a normal build so the
+            # build history describes the same branch CMake selected.
+            if marker in candidate and (
+                coexistence_test or "psram-lcd-coexist" not in candidate
+            ):
                 app_version = candidate
                 break
     return (bsp_version, app_version)
