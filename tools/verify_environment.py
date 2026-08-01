@@ -125,6 +125,7 @@ def verify_lcd_transactions(checks: List[Check], root: Path) -> None:
         return
 
     source = root / "tests/lcd_protocol_test.cpp"
+    audio_source = root / "tests/audio_ring_spsc_test.cpp"
     include = root / "bsp/include"
     try:
         with tempfile.TemporaryDirectory() as temporary:
@@ -164,14 +165,49 @@ def verify_lcd_transactions(checks: List[Check], root: Path) -> None:
                 text=True,
                 check=False,
             )
+            audio_executable = Path(temporary) / "audio_ring_spsc_test"
+            audio_compiled = subprocess.run(
+                [
+                    compiler,
+                    "-std=c++17",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-I",
+                    str(include),
+                    str(audio_source),
+                    "-o",
+                    str(audio_executable),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if audio_compiled.returncode == 0:
+                audio_executed = subprocess.run(
+                    [str(audio_executable)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                )
+                audio_returncode = audio_executed.returncode
+                audio_stdout = audio_executed.stdout.strip()
+                audio_stderr = audio_executed.stderr[-4000:]
+            else:
+                audio_returncode = audio_compiled.returncode
+                audio_stdout = ""
+                audio_stderr = audio_compiled.stderr[-4000:]
         add_check(
             checks,
             "host-test:lcd-transactions",
-            executed.returncode == 0,
+            executed.returncode == 0 and audio_returncode == 0,
             stage="execute",
             returncode=executed.returncode,
-            stdout=executed.stdout.strip(),
-            stderr=executed.stderr[-4000:],
+            audio_returncode=audio_returncode,
+            stdout=(executed.stdout.strip() + "\n" + audio_stdout).strip(),
+            stderr=(executed.stderr[-4000:] + "\n" + audio_stderr).strip(),
         )
     except OSError as error:
         add_check(
@@ -619,9 +655,9 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "PICOCALC_AUDIO_REFERENCE_TONE",
             'PICOCALC_LCD_VARIANT "pio-rgb565"',
             "PICOCALC_PSRAM_LCD_COEXIST_TEST",
-            "0.8.3-a-hwspi-rgb888-rgb666-compat",
-            "0.8.3-b-pio-rgb565-default",
-            "0.8.3-b-pio-rgb565-psram-lcd-coexist",
+            "0.8.4-a-hwspi-rgb888-rgb666-compat",
+            "0.8.4-b-pio-rgb565-default",
+            "0.8.4-b-pio-rgb565-psram-lcd-coexist",
         ],
     )
     require_text(

@@ -34,8 +34,8 @@ class ToolTests(unittest.TestCase):
         project = ROOT / "templates/rp2040-basic"
         _, standard = module.build_versions(project, "pio-rgb565", False)
         _, coexistence = module.build_versions(project, "pio-rgb565", True)
-        self.assertEqual(standard, "0.8.3-b-pio-rgb565-default")
-        self.assertEqual(coexistence, "0.8.3-b-pio-rgb565-psram-lcd-coexist")
+        self.assertEqual(standard, "0.8.4-b-pio-rgb565-default")
+        self.assertEqual(coexistence, "0.8.4-b-pio-rgb565-psram-lcd-coexist")
 
     def copy_project(self, temporary):
         project = Path(temporary) / "project"

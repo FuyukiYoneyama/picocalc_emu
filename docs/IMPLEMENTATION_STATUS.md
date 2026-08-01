@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP 0.8.3、template、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
+## 現在利用できるもの（BSP 0.8.4、template、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -48,7 +48,7 @@ python3 tools/picocalc.py build --project . \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-起動ログの`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`と、各候補の
+起動ログの`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`と、各候補の
 `[PICOCALC][PSRAM][COEX]`行を記録する。`display_failures=0`かつ
 `psram_failures=0`のcandidateがLCD更新と共存できたPSRAM速度である。
 
@@ -190,8 +190,9 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 
 ## 最新標準テンプレートの実機確認
 
-標準B（`pio-rgb565`）のBSP/template `0.8.3`は、起動ログ先頭の
-`git=2360487f70ee`を持つUF2で次を確認済みである。
+標準B（`pio-rgb565`）のBSP/template `0.8.4`は、0.8.3で取得した起動ログを基礎に、
+音声リングのcross-core SPSC修正を加えた版である。0.8.4の音声実機記録はMusicPlayerの
+次回再生試験で取得する。
 
 - LCD固体色5色、既知パターン、GRAM readback: `app_status=pass`
 - PSRAM: `clkdiv=2.00`、self-test `pass`
@@ -210,14 +211,14 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.8.3は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
+0.8.4は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
-`app=0.8.3-b-pio-rgb565-default`、
-`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`、または
-`app=0.8.3-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
+`app=0.8.4-b-pio-rgb565-default`、
+`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`、または
+`app=0.8.4-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを先に実施し、0.8.3の実機検証まで完了している。標準アプリは
+ソース検査とA/Bビルドを先に実施し、0.8.3のLCD/SD等の実機検証まで完了している。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

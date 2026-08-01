@@ -34,13 +34,19 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 ## Audio: `audio_picoment`
 
 `audio_picoment/platform/picocalc_audio_pwm.cpp/.h`は、実機で音声出力を確認した
-`synth/Picocalc_ment/src/platform/`のPWM/DMA経路をBSP向けに固定したもの。PRA32-Uなどの
-音源生成は含めず、PCMを受け取る出力経路だけを提供する。
+`synth/Picocalc_ment/src/platform/`のPWM/DMA経路をBSP向けに固定したものを基にした、
+0.8.4でリング会計だけを修正したBSPドライバである。PRA32-Uなどの音源生成は含めず、
+PCMを受け取る出力経路だけを提供する。
 
 - GP26/27、sysclk 250 MHz基準、PWM wrap 255、約976 kHz carrier
-- 48 kHz、DMA timer、128 sample half-buffer、512 sample ring
+- 48 kHz、DMA timer、128 sample half-buffer、512 sample SPSC ring
 - 16-bit PCMからPWMへの量子化誤差拡散100%、DMA IRQのunderrun/drop統計
 - 初期化時は発音せずPWM midpoint。アプリが`write_sample()`して`start()`する
+
+0.8.4の変更理由は、core1 producerから`write_sample()`を呼ぶとcore0のDMA IRQに対する
+`save_and_disable_interrupts()`が無効で、共有`g_ring_count`の非アトミックRMWが破損する
+ためである。`g_ring_write`はproducer、`g_ring_read`はDMA IRQだけが書き、公開前後に
+`__dmb()`を置いた。変更対象はリング会計のみで、取得元のPWM/DMA契約は変更していない。
 
 ## PSRAM: `rp2040-psram`
 
@@ -63,8 +69,9 @@ PSRAMは揮発性なので永続ログや
 
 ## 規約
 
-- **このディレクトリのファイルを編集しない。** 修正が必要なら取得元を直し、コピーを
-  取り直して上記のSHA-256とcommitを更新する。
+- LCDの無改変コピーは**このディレクトリのファイルを編集しない**。修正が必要なら取得元を直し、
+  コピーを取り直して上記のSHA-256とcommitを更新する。`audio_picoment`だけは0.8.4で
+  上記のcore1/DMA IRQ競合を解消するためのBSP差分を許可された例外として記録する。
 - `bsp/src/display_pio_rgb565.cpp`は薄いアダプタに徹する。転送・初期化・タイミングを
   アダプタ側で作り直さない。
 - `tools/picocalc.py verify`が`vendor-lcd-pio-unmodified`でSHA-256を照合する。

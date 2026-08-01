@@ -10,7 +10,7 @@ BSP・テンプレート・実働プロジェクトの扱いは
 [REQUIREMENTS.md](../REQUIREMENTS.md) に定義する。本書は、その要求を実現する
 将来のエミュレーターと検証基盤の技術構成を定義する。
 
-> **実装状況:** Canonical BSP 0.8.3（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
+> **実装状況:** Canonical BSP 0.8.4（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
 > 実機向けBSPの現在版として実装済み。利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。

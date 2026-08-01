@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.3` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.4` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -18,11 +18,21 @@
 * keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
-* audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFS参照試験と、同じPWM/DMAの48 kHz PCM stream API。PWM wrap 255、128 sample DMA half、512 sample ring
+* audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFS参照試験と、同じPWM/DMAの48 kHz PCM stream API。PWM wrap 255、128 sample DMA half、512 sample SPSC ring
 * PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。通常起動の候補は250 MHzでは`2.0/false → 3.0/false → 1.5/true`、125 MHzでは`1.0/false → 1.5/false → 2.0/false → 3.0/false → 4.0/false`。全候補スイープは共存検証モードだけで行う
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
+
+## 0.8.4 audio ring change
+
+`vendor/audio_picoment/platform/picocalc_audio_pwm.cpp` は、`synth/Picocalc_ment`
+からのPWM/DMA出力経路を元にしたBSP内の意図的な修正版である。従来の共有
+`g_ring_count`を廃止し、512サンプルの2冪リングをproducer-owned
+`g_ring_write`／DMA IRQ-owned `g_ring_read`のSPSC会計へ変更した。
+core1から`write_sample()`を呼ぶ場合、core0のDMA IRQに対する割り込み禁止は効かないため、
+この変更が必要である。producer publishとconsumer releaseの境界には`__dmb()`を置く。
+変更範囲はこのリング会計だけで、PWMピン、DMA、量子化、音声フォーマットは変更していない。
 
 ## Read-only filesystem API
 

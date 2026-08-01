@@ -17,6 +17,7 @@
 #include "hardware/pwm.h"
 #include "hardware/sync.h"
 #include "pico/platform.h"
+#include "picocalc/detail/audio_ring_spsc.h"
 
 #if PICOMENT_FIXED_SINE_TEST
 #include "diagnostics/fixed_sine_test.h"
@@ -33,6 +34,7 @@ constexpr uint8_t kPwmResolutionBits =
     (kPwmSteps == 4096u) ? 12u : ((kPwmSteps == 1024u) ? 10u : ((kPwmSteps == 256u) ? 8u : 7u));
 constexpr uint8_t kPwmQuantShift = 16u - kPwmResolutionBits;
 constexpr uint8_t kErrorDiffusionPercent = 100;
+using AudioRing = picocalc::detail::AudioRingSpsc<kRingSamples>;
 
 static_assert(kPwmSteps == 128u || kPwmSteps == 256u || kPwmSteps == 1024u || kPwmSteps == 4096u,
               "PWM quantizer supports 7-bit, 8-bit, 10-bit, or 12-bit test modes");
@@ -48,7 +50,6 @@ volatile uint32_t g_sample_index = 0;
 volatile uint32_t g_underrun_count = 0;
 volatile uint32_t g_ring_read = 0;
 volatile uint32_t g_ring_write = 0;
-volatile uint32_t g_ring_count = 0;
 volatile uint32_t g_ring_write_drop_count = 0;
 volatile uint32_t g_clip_count = 0;
 volatile uint16_t g_peak_duty_delta = 0;
@@ -182,12 +183,14 @@ uint16_t __not_in_flash_func(quantize_pwm)(int16_t sample, int32_t* quant_error)
 }
 
 bool __not_in_flash_func(ring_pop)(uint32_t* sample) {
-    if (g_ring_count == 0) {
+    const uint32_t read = g_ring_read;
+    const uint32_t write = g_ring_write;
+    if (AudioRing::empty(write, read)) {
         return false;
     }
-    *sample = g_ring[g_ring_read];
-    g_ring_read = (g_ring_read + 1u) % kRingSamples;
-    --g_ring_count;
+    *sample = g_ring[AudioRing::slot(read)];
+    __dmb();
+    g_ring_read = read + 1u;
     return true;
 }
 
@@ -336,7 +339,6 @@ void init_common(bool stream_mode, bool start_immediately) {
     g_underrun_count = 0;
     g_ring_read = 0;
     g_ring_write = 0;
-    g_ring_count = 0;
     g_ring_write_drop_count = 0;
     g_clip_count = 0;
     g_peak_duty_delta = 0;
@@ -427,9 +429,9 @@ void stop_stream() {
         return;
     }
 
-    const uint32_t irq_state = save_and_disable_interrupts();
+    irq_set_enabled(DMA_IRQ_0, false);
     g_live = false;
-    restore_interrupts(irq_state);
+    __dmb();
 
     dma_channel_abort(static_cast<uint>(g_dma_channel));
     dma_channel_acknowledge_irq0(static_cast<uint>(g_dma_channel));
@@ -439,31 +441,31 @@ void stop_stream() {
     pwm_set_chan_level(static_cast<uint>(g_pwm_slice), g_right_channel, kPwmCenter);
     g_ring_read = 0;
     g_ring_write = 0;
-    g_ring_count = 0;
     PM_LOG_BOOT("audio=stream stop");
 }
 
 bool __not_in_flash_func(write_sample)(int16_t left, int16_t right) {
-    // The foreground producer and DMA IRQ share ring indices; keep this critical
-    // section short and in RAM so audio pacing is not held up by XIP stalls.
-    const uint32_t irq_state = save_and_disable_interrupts();
-    if (g_ring_count >= kRingSamples) {
+    // The producer owns g_ring_write and the DMA IRQ owns g_ring_read. The
+    // release barrier publishes the sample before the consumer can observe the
+    // new write cursor; no interrupt masking can protect a producer on core1
+    // from a DMA IRQ on core0.
+    const uint32_t write = g_ring_write;
+    const uint32_t read = g_ring_read;
+    if (AudioRing::full(write, read)) {
         ++g_ring_write_drop_count;
-        restore_interrupts(irq_state);
         return false;
     }
 
     const uint16_t left_duty = quantize_pwm(left, &g_quant_error_left);
     const uint16_t right_duty = quantize_pwm(right, &g_quant_error_right);
-    g_ring[g_ring_write] = pack_pwm(left_duty, right_duty);
-    g_ring_write = (g_ring_write + 1u) % kRingSamples;
-    ++g_ring_count;
-    restore_interrupts(irq_state);
+    g_ring[AudioRing::slot(write)] = pack_pwm(left_duty, right_duty);
+    __dmb();
+    g_ring_write = write + 1u;
     return true;
 }
 
 uint32_t __not_in_flash_func(writable_samples)() {
-    return kRingSamples - g_ring_count;
+    return kRingSamples - AudioRing::level(g_ring_write, g_ring_read);
 }
 
 Stats stats() {
@@ -472,7 +474,7 @@ Stats stats() {
     out.refill_count = g_refill_count;
     out.sample_index = g_sample_index;
     out.underrun_count = g_underrun_count;
-    out.ring_level = g_ring_count;
+    out.ring_level = AudioRing::level(g_ring_write, g_ring_read);
     out.ring_capacity = kRingSamples;
     out.ring_write_drop_count = g_ring_write_drop_count;
     out.carrier_hz = g_carrier_hz;

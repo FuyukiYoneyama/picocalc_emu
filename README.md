@@ -5,7 +5,7 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.8.3** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.4** です。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -82,7 +82,7 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`app=0.8.3-b-pio-rgb565-psram-lcd-coexist`です。
+このモードの起動ログ先頭は`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
@@ -195,9 +195,10 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 [Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
 
 この台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
-`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.3、commit
-`2360487f70ee`）は、別途取得した実機ログでLCD/GRAM readback、SD、キーボード、
-LCD検証後の音声停止まで確認済みです。実機では一度に一方だけを
+`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.4）は、
+0.8.3で取得した実機ログのLCD/GRAM readback、SD、キーボード、LCD検証後の音声停止を基礎に、
+core1音声producerとcore0 DMA IRQ間のSPSCリング修正を加えています。0.8.4の音声実機記録は
+MusicPlayerの次回再生試験で取得します。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 
