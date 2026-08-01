@@ -22,6 +22,17 @@ SD の mount/write/sync/read/compare/remove、キーボード待受を順に実�
 LCDバスは2 bytes/pixel、転送はPIO0 blockingで、LCD DMAは使用しません。
 LCD A（`hwspi-rgb888`）は互換・診断用として明示指定できます。
 
+PSRAMとLCDの共存クロックを実機検証する専用モードは、次でビルドします。
+
+```sh
+python3 tools/picocalc.py build --project . \
+  --lcd-variant pio-rgb565 --psram-lcd-coexist-test
+```
+
+このモードはLCD上で移動矩形を更新しながら、PSRAMの各候補clkdivで24-byteの
+write/readを120回実行します。`[PICOCALC][PSRAM][COEX]`の各candidate行で
+`display_failures=0`かつ`psram_failures=0`の候補が共存合格です。
+
 SD 成功時は LCD 中央下部が緑、失敗時は赤になります。UART/USB CDC には
 `[PICOCALC]` で始まる機械可読ログを出力します。検証用ログには LCD の期待色・領域、
 SD の実行シーケンスと失敗段階、キーボードイベントの通番が含まれます。

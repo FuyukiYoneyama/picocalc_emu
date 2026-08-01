@@ -46,10 +46,12 @@ UF2 SHA-256を使う。対象UF2を起動したら、ログの1行目にある
 Canonical BSPのLCD検証は完了している。現在はBのキーボード試験と、両セッションの基板
 revision／SDカード識別情報が未記入である。
 
-BSP 0.7.0の推奨表示デフォルトはB（`pio-rgb565`、PIO blocking、LCD DMA OFF）である。
+BSP 0.8.0の推奨表示デフォルトはB（`pio-rgb565`、PIO blocking、LCD DMA OFF）である。
 音声とPSRAMは、ソース検査とA/BのRP2040ビルドを先に確認する。
 実機記録はその後に作成し、まずBの推奨デフォルトを検証した後、同じ標準UF2名で
 Aの互換・診断経路を検証する。
+PSRAMとLCDの共存確認では、先に`--psram-lcd-coexist-test`のUF2を実機へ書き込み、
+各`[PSRAM][COEX]` candidate行を記録してから、通常のB標準ビルドへ戻す。
 `pending`テンプレートは成功証拠ではない。`records/`に追加した記録だけが
 Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義する。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、

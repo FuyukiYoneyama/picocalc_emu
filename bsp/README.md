@@ -34,6 +34,10 @@ A/BのUF2を別名保存しない。
 0.7.0では、公開APIのRGB565をプロジェクト標準画素形式とし、CMakeとビルドCLIの
 引数なしデフォルトをBへ変更した。A/Bのドライバは引き続き独立しており、Aを削除・統合しない。
 
+0.8.0では、BのLCD更新中にPSRAMの候補clkdivを順番に切り替え、各候補で
+24-byte write/readを120フレーム実行する`probe_lcd_coexistence()`を追加した。
+検証後は最初に共存合格した候補をそのまま有効にする。
+
 実機合格記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
 未試験）である。

@@ -616,8 +616,47 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         [
             "PICOCALC_AUDIO_REFERENCE_TONE",
             'PICOCALC_LCD_VARIANT "pio-rgb565"',
-            "0.7.0-a-hwspi-rgb888-rgb666-compat",
-            "0.7.0-b-pio-rgb565-default",
+            "PICOCALC_PSRAM_LCD_COEXIST_TEST",
+            "0.8.0-a-hwspi-rgb888-rgb666-compat",
+            "0.8.0-b-pio-rgb565-default",
+            "0.8.0-b-pio-rgb565-psram-lcd-coexist",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/include/picocalc/psram.h",
+        "psram-lcd-coexist-api",
+        [
+            "CoexistenceDisplayStep",
+            "CoexistenceResult",
+            "probe_lcd_coexistence",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "bsp/src/psram.cpp",
+        "psram-lcd-coexist-probe",
+        [
+            "[PICOCALC][PSRAM][COEX]",
+            "configure_candidate",
+            "display_failures",
+            "psram_failures",
+            "bool restored = false",
+            "reason=first_coexistence_pass",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "templates/rp2040-basic/app/main.cpp",
+        "template-psram-lcd-coexist-test",
+        [
+            "PICOCALC_PSRAM_LCD_COEXIST_TEST",
+            "coexist_display_step",
+            "probe_lcd_coexistence",
+            "frames_per_candidate=120",
         ],
     )
     for example in ("lcd.cpp", "keyboard.cpp", "sd.cpp", "psram.cpp", "audio_stream.cpp"):
@@ -727,9 +766,10 @@ def verify_portable(checks: List[Check], root: Path) -> None:
         "tools/picocalc.py",
         "lcd-cli-default-pio-rgb565",
         [
-            'marker = lcd_variant or "pio-rgb565"',
+            'marker = "psram-lcd-coexist" if coexistence_test',
             'default="pio-rgb565"',
             "default: pio-rgb565",
+            "--psram-lcd-coexist-test",
         ],
     )
     verify_lcd_transactions(checks, root)
