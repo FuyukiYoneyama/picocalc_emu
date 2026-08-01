@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.4-20260801-01",
+  "bsp_version": "0.8.4",
+  "repository_commit": "c91b6cb6d2e2b35534a64e34f70ee3b944500414",
+  "validation_date": "2026-08-01",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "Prepared for the next MusicPlayer playback evidence log. Board revision and SD identification are not recorded yet. The 0.8.4 audio ring change is the core1 producer/core0 DMA IRQ SPSC accounting fix described in bsp/README.md."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/PicoCalc_MusicPlayer.uf2",
+    "uf2_sha256": "a48238f90484610746bdbd5bb452e61b71be3404559d27d1f1be9a24addb2610",
+    "build_log": ""
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log; the 0.8.3 intermittent LCD readback result remains a separate known BSP issue.",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log.",
+      "evidence_files": []
+    }
+  },
+  "notes": "The next MusicPlayer playback log must record the 0.8.4 PCM stream path, including underrun, clip, drop, ring level, and the audible result. Audio evidence remains in notes rather than the canonical BSP tests schema. Build timestamp: 2026-08-01T00:00:00Z."
+}
