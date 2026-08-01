@@ -30,6 +30,10 @@ void start();
 // Stops PWM/DMA output. Call this when a diagnostic tone or PCM stream is no
 // longer wanted; stopping does not make the BSP unusable for a later init.
 void stop();
+// Finish already queued PCM and replace only the short EOF tail with
+// intentional center-duty silence. Completion is reported by drain_complete().
+void request_drain();
+bool drain_complete();
 bool write_sample(int16_t left, int16_t right);
 uint32_t writable_samples();
 Stats stats();

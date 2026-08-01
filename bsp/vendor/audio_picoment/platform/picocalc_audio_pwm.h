@@ -38,6 +38,8 @@ void init_fixed_sine();
 void init_stream();
 void start_stream();
 void stop_stream();
+void request_drain();
+bool drain_complete();
 bool write_sample(int16_t left, int16_t right);
 uint32_t writable_samples();
 Stats stats();

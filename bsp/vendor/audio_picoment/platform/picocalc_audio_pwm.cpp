@@ -65,6 +65,9 @@ uint g_active_half = 0;
 int32_t g_quant_error_left = 0;
 int32_t g_quant_error_right = 0;
 bool g_live = false;
+volatile bool g_drain_requested = false;
+volatile bool g_drain_stop_pending = false;
+volatile bool g_drain_complete = true;
 #if PICOMENT_FIXED_SINE_TEST
 bool g_stream_mode = false;
 #endif
@@ -159,14 +162,17 @@ uint16_t __not_in_flash_func(quantize_pwm)(int16_t sample, int32_t* quant_error)
     // for diagnostics because it was audibly worse on the PicoCalc speaker.
     const int32_t target = static_cast<int32_t>(sample) + 32768;
     int32_t shaped = target + ((*quant_error * kErrorDiffusionPercent) / 100);
+    // Error diffusion may move a representable int16 sample just outside the
+    // PWM input range. Clamp the shaped value before quantization; that is
+    // quantizer state correction, not source-audio clipping.
+    if (shaped < 0) shaped = 0;
+    if (shaped > 65535) shaped = 65535;
     int32_t duty = (shaped + (1 << (kPwmQuantShift - 1u))) >> kPwmQuantShift;
 
     if (duty < 0) {
         duty = 0;
-        ++g_clip_count;
     } else if (duty > board::kAudioPwmWrap) {
         duty = board::kAudioPwmWrap;
-        ++g_clip_count;
     }
 
     const int32_t reconstructed =
@@ -274,6 +280,19 @@ void __not_in_flash_func(refill_half)(uint half) {
     ++g_refill_count;
 }
 
+void __not_in_flash_func(refill_drain_half)(uint half) {
+    // EOF is a normal end condition, not an audio underrun.  Complete the
+    // final DMA half with queued samples and intentional center-duty silence
+    // for any short tail, without incrementing the underrun counter.
+    for (uint32_t i = 0; i < kHalfSamples; ++i) {
+        uint32_t packed = pack_pwm(kPwmCenter, kPwmCenter);
+        ring_pop(&packed);
+        g_dma_buffer[half][i] = packed;
+        ++g_sample_index;
+    }
+    ++g_refill_count;
+}
+
 void __not_in_flash_func(start_half)(uint half) {
     dma_channel_set_read_addr(static_cast<uint>(g_dma_channel), g_dma_buffer[half], false);
     dma_channel_set_transfer_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);
@@ -290,6 +309,23 @@ void __isr __not_in_flash_func(dma_irq0_handler)() {
     }
 
     const uint next_half = g_active_half ^ 1u;
+    if (g_drain_requested) {
+        if (g_drain_stop_pending) {
+            g_drain_requested = false;
+            g_drain_complete = true;
+            g_live = false;
+            __dmb();
+            dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), false);
+            irq_set_enabled(DMA_IRQ_0, false);
+            pwm_set_enabled(static_cast<uint>(g_pwm_slice), false);
+            return;
+        }
+        refill_drain_half(g_active_half);
+        g_drain_stop_pending = AudioRing::empty(g_ring_write, g_ring_read);
+        start_half(next_half);
+        ++g_irq_count;
+        return;
+    }
     refill_half(g_active_half);
     start_half(next_half);
     ++g_irq_count;
@@ -344,6 +380,9 @@ void init_common(bool stream_mode, bool start_immediately) {
     g_peak_duty_delta = 0;
     g_quant_error_left = 0;
     g_quant_error_right = 0;
+    g_drain_requested = false;
+    g_drain_stop_pending = false;
+    g_drain_complete = true;
 #if PICOMENT_FIXED_SINE_TEST
     g_stream_mode = stream_mode;
 #else
@@ -419,6 +458,9 @@ void init_stream() {
 }
 
 void start_stream() {
+    g_drain_requested = false;
+    g_drain_stop_pending = false;
+    g_drain_complete = false;
     refill_half(0);
     refill_half(1);
     start_output();
@@ -426,11 +468,17 @@ void start_stream() {
 
 void stop_stream() {
     if (!g_live) {
+        g_drain_requested = false;
+        g_drain_stop_pending = false;
+        g_drain_complete = true;
         return;
     }
 
     irq_set_enabled(DMA_IRQ_0, false);
     g_live = false;
+    g_drain_requested = false;
+    g_drain_stop_pending = false;
+    g_drain_complete = true;
     __dmb();
 
     dma_channel_abort(static_cast<uint>(g_dma_channel));
@@ -442,6 +490,21 @@ void stop_stream() {
     g_ring_read = 0;
     g_ring_write = 0;
     PM_LOG_BOOT("audio=stream stop");
+}
+
+void request_drain() {
+    if (!g_live) {
+        g_drain_complete = true;
+        return;
+    }
+    g_drain_stop_pending = false;
+    g_drain_complete = false;
+    __dmb();
+    g_drain_requested = true;
+}
+
+bool drain_complete() {
+    return g_drain_complete || !g_live;
 }
 
 bool __not_in_flash_func(write_sample)(int16_t left, int16_t right) {

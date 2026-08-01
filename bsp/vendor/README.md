@@ -48,6 +48,11 @@ PCMを受け取る出力経路だけを提供する。
 ためである。`g_ring_write`はproducer、`g_ring_read`はDMA IRQだけが書き、公開前後に
 `__dmb()`を置いた。変更対象はリング会計のみで、取得元のPWM/DMA契約は変更していない。
 
+0.8.5では、誤差拡散状態をPWM入力範囲へクランプして正当なint16 PCMをclipとして
+数えないようにし、`request_drain()` / `drain_complete()`を追加した。後者は曲末の
+短いDMA tailをcenter-duty silenceで完了させる。いずれもcore1 decoderとcore0 DMA
+producer/consumer構成で必要な差分であり、取得元との差分として記録する。
+
 ## PSRAM: `rp2040-psram`
 
 `rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを

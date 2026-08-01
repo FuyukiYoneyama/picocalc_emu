@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.4` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.5` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -33,6 +33,17 @@
 core1から`write_sample()`を呼ぶ場合、core0のDMA IRQに対する割り込み禁止は効かないため、
 この変更が必要である。producer publishとconsumer releaseの境界には`__dmb()`を置く。
 変更範囲はこのリング会計だけで、PWMピン、DMA、量子化、音声フォーマットは変更していない。
+
+## 0.8.5 audio quantizer correction
+
+誤差拡散の内部値がint16入力の表現範囲を一時的に超えた場合、PWM量子化前に
+`[0, 65535]`へクランプする。これは入力音声のclipではなく、量子化器の状態補正である。
+これにより、正当なint16 PCMの再生で`clip_count`が誤って増加しない。PWMピン、DMA、
+リング会計、音声フォーマットは変更していない。
+
+同版では、曲末に残るソフトウェアリングと2つのDMA half-bufferを
+`request_drain()` / `drain_complete()`で意図的なcenter-duty silenceとして排出する。
+EOFの通常終了をDMA underrunとして数えず、既に投入済みのPCMを捨てないためのAPIである。
 
 ## Read-only filesystem API
 

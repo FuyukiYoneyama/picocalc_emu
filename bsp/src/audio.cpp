@@ -41,6 +41,16 @@ void stop() {
     }
 }
 
+void request_drain() {
+    if (g_initialized) {
+        picoment::audio_pwm::request_drain();
+    }
+}
+
+bool drain_complete() {
+    return !g_initialized || picoment::audio_pwm::drain_complete();
+}
+
 bool write_sample(int16_t left, int16_t right) {
     if (!g_initialized) {
         return false;
