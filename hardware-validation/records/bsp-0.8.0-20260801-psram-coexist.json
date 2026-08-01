@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.0-20260801-psram-coexist",
+  "bsp_version": "0.8.0",
+  "repository_commit": "9f4cd5cb254f4ff05c922ca78ffc8b3e22ac8555",
+  "validation_date": "2026-08-01",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "LCD/PSRAM共存クロック専用検証。基板revisionは未記入。"
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "",
+    "cmake": ""
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": ""
+  },
+  "firmware": {
+    "path": "templates/rp2040-basic/build/picocalc_app.uf2",
+    "uf2_sha256": "eac8402aa45523536d6c4730860514e85d4a8ff091abc8465140809003c21914",
+    "build_log": "hardware-validation/records/evidence/pico20260801_101131_coexistence.md"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pass",
+      "observed": "250 MHz system clockで10候補を各120フレーム検証。全候補でdisplay_failures=0、16フレームごとのRAMRDもpass。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_101131_coexistence.md"
+      ]
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "共存専用アプリのためSD smoke testは実行していない。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_101131_coexistence.md"
+      ]
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "共存専用アプリのためキーボード試験は実行していない。",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260801_101131_coexistence.md"
+      ]
+    }
+  },
+  "notes": "PSRAM共存合格はclkdiv=1.5/fudge=true（約83.3 MHz）、clkdiv=2.0/fudge=false（62.5 MHz）、clkdiv=3.0/fudge=false（約41.7 MHz）。最初の合格候補clkdiv=1.5/fudge=trueを試験終了後に維持した。元ログは /home/fuyuki/pico_dvl/codex/log/pico20260801_101131.log。"
+}

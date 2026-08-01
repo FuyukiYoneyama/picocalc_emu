@@ -55,6 +55,11 @@ MISO3を固定する。`fudge`を常時有効にし、read/writeはDMA blocking 
 `fudge=false`の1/1.5/2/3/4を使う。PSRAMは揮発性なので永続ログや
 セーブ領域には使わない。
 
+2026-08-01のLCD共存実機検証では、250 MHz system clockで`fudge=true, clkdiv=1.5`
+（約83.3 MHz）が最高の合格設定だった。`fudge=false, clkdiv=2.0/3.0`も合格したが、
+`fudge=true, clkdiv=1.0`、`2.0`、`3.0`、`4.0`は失敗した。実際の候補選択は起動時の
+write/read検証結果に従う。
+
 ## 規約
 
 - **このディレクトリのファイルを編集しない。** 修正が必要なら取得元を直し、コピーを

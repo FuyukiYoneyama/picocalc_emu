@@ -51,6 +51,11 @@ python3 tools/picocalc.py build --project . \
 `[PICOCALC][PSRAM][COEX]`行を記録する。`display_failures=0`かつ
 `psram_failures=0`のcandidateがLCD更新と共存できたPSRAM速度である。
 
+2026-08-01の実機結果では、250 MHz system clockにおける共存合格は
+`clkdiv=1.5/fudge=true`（約83.3 MHz）、`clkdiv=2.0/fudge=false`（62.5 MHz）、
+`clkdiv=3.0/fudge=false`（約41.7 MHz）。最初の設定を最高速度の推奨値とする。
+全候補のLCD側は`display_failures=0`であり、PSRAM側の不一致だけが候補を不合格にした。
+
 LCD BSPはA/Bを混ぜず、ビルド時に一方を選ぶ。生成物名は常に同じである。
 
 ```sh

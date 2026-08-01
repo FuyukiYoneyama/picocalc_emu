@@ -54,6 +54,16 @@ PSRAMとLCDの共存確認では、先に`--psram-lcd-coexist-test`のUF2を実�
 各`[PSRAM][COEX]` candidate行を記録してから、通常のB標準ビルドへ戻す。
 `pending`テンプレートは成功証拠ではない。`records/`に追加した記録だけが
 Canonical BSP自身の証拠となる。記録形式は`schema.json`で定義する。
+
+2026-08-01の共存検証では、LCD更新中のPSRAM合格設定を次のように確定した。
+
+- 推奨（最高速度）: `clkdiv=1.5 / fudge=true`、約83.3 MHz
+- 合格: `clkdiv=2.0 / fudge=false`、62.5 MHz
+- 合格: `clkdiv=3.0 / fudge=false`、約41.7 MHz
+- 不合格: その他7候補
+
+全候補で`display_failures=0`だったため、このセッションでの制約はLCDではなく
+PSRAM転送条件である。詳細は`records/bsp-0.8.0-20260801-psram-coexist.json`を参照する。
 `build_log`と`evidence_files`はリポジトリルートからの相対パスで記入し、
 検証器はファイルの存在とリポジトリ外へのpath traversalを検査する。
 
