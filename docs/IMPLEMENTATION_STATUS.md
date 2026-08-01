@@ -26,7 +26,7 @@
 | Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。固定サイン参照とPCM streamを切替可能 |
-| PSRAM | `pico_rescue` | 8 MiB、PIO1、実績コードの候補順（fudge=trueのclkdiv 1/1.5/2/3/4、続いてfalse）、24 byte chunk、read/write自己検証、Buffer API |
+| PSRAM | `pico_rescue` | 8 MiB、PIO1、実機検証済み通常候補（250 MHz: 1.5/true→2/false→3/false、125 MHz: 1/false→1.5/false→2/false→3/false→4/false）、24 byte chunk、read/write自己検証、Buffer API |
 
 ## 新規プロジェクト
 

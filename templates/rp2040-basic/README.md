@@ -40,8 +40,9 @@ SD の実行シーケンスと失敗段階、キーボードイベントの通�
 LCD A（`hwspi-rgb888`）はloader-style SPI1/RGB666 3-byte containerの専用vendorドライバ、LCD B
 （`pio-rgb565`）は実機動作済みPIO/RGB565ドライバを使用します。選択した版はログ先頭の
 `variant`、`app`、`git`で識別します。
-PSRAMは`pico_rescue`の候補順（`fudge=true`のclkdiv 1/1.5/2/3/4、続いて
-`fudge=false`の同じ候補）をそのまま使用します。起動ログの
+PSRAMは実機検証済みの通常候補を使用します。250 MHzでは`clkdiv=1.5/fudge=true`
+→`2.0/false`→`3.0/false`、125 MHzでは`1.0/false`→`1.5/false`→`2.0/false`
+→`3.0/false`→`4.0/false`の順です。起動ログの
 `reference=pico_rescue`、`[PICOCALC][PSRAM][VERIFY]`、`[PICOCALC][PSRAM][PROBE]`
 を確認してください。
 
