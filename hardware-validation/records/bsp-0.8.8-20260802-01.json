@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.8-20260802-01",
+  "bsp_version": "0.8.8",
+  "repository_commit": "d60af46a00e85a1dc639c6b8b342ade774a544e0",
+  "validation_date": "2026-08-02",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "Prepared before shared MusicPlayer hardware playback validation. BSP 0.8.8 removes two per-sample divisions using a bit-identical wrap-255 reconstruction expression; it does not change PWM duty values or the audio format."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/PicoCalc_MusicPlayer.uf2",
+    "uf2_sha256": "890f3ee293115b9d6fc1c91bb379c563e939507624a19420d46af163db66df3b",
+    "build_log": "diagnostic Release build, pio-rgb565, timestamp 2026-08-02T09:00:00Z, app 1.1.4-midi-pitch-throughput"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log; the intermittent LCD readback result remains a separate known BSP issue.",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log.",
+      "evidence_files": []
+    }
+  },
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. The Host test compares all 256 duty values with the former division expression, and RP2040 disassembly confirms that write_sample() no longer calls integer division. Hardware audio performance and listening evidence are not yet claimed."
+}
