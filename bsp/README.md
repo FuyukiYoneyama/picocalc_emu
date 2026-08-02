@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.6` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.7` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -49,6 +49,13 @@ EOFの通常終了をDMA underrunとして数えず、既に投入済みのPCM�
 
 最後に補充したDMA halfを、反対側のhalfの完了後に実際に開始してから停止する。
 これにより曲末の1〜128サンプルを捨てず、停止時にはPWM出力をcenter dutyへ戻す。
+
+## 0.8.7 audio DMA restart
+
+EOF drainの停止IRQで無効化したDMAチャネルIRQ sourceを、`start_output()`のたびに
+再有効化する。NVICのIRQ lineだけを戻してもDMAチャネルから割り込みが上がらないため、
+複数曲の自動再生と停止後の再生を成立させるための修正である。PWM、DMA format、
+リング会計、量子化、drainのサンプル順序は変更していない。
 
 ## Read-only filesystem API
 

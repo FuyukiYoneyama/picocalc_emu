@@ -368,6 +368,9 @@ void start_output() {
 
     dma_channel_acknowledge_irq0(static_cast<uint>(g_dma_channel));
     irq_clear(DMA_IRQ_0);
+    // EOF drain disables the DMA channel's IRQ source as well as the NVIC
+    // line.  Re-enable both sides for every subsequent track or replay.
+    dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), true);
     g_live = true;
     irq_set_enabled(DMA_IRQ_0, true);
 

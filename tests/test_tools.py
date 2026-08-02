@@ -96,6 +96,31 @@ class ToolTests(unittest.TestCase):
         self.assertEqual(report["failed"], 0)
         self.assertTrue(report["checks"])
 
+    def test_audio_dma_restart_check_detects_missing_channel_reenable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            source = project / "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+            original = source.read_text(encoding="utf-8")
+            start = original.index("void start_output()")
+            end = original.index("void init_common(", start)
+            body = original[start:end]
+            body = body.replace(
+                "    // EOF drain disables the DMA channel's IRQ source as well as the NVIC\n"
+                "    // line.  Re-enable both sides for every subsequent track or replay.\n"
+                "    dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), true);\n",
+                "",
+                1,
+            )
+            source.write_text(original[:start] + body + original[end:], encoding="utf-8")
+            completed = run(VERIFY, "--project-root", project, "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        check = next(
+            check for check in report["checks"]
+            if check["name"] == "source-fingerprint:audio-dma-restart"
+        )
+        self.assertEqual(check["status"], "fail")
+
     def test_reference_verification_reports_missing_repositories(self):
         with tempfile.TemporaryDirectory() as temporary:
             completed = run(

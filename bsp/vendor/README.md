@@ -58,6 +58,10 @@ half完了後に一度開始してから停止し、曲末の1〜128サンプル
 PWMをcenter dutyへ戻す。これは`audio_picoment/platform/picocalc_audio_pwm.cpp`の
 drain状態遷移だけの差分である。
 
+0.8.7では、0.8.6のdrain停止IRQが無効化したDMAチャネルIRQ sourceを
+`start_output()`で再有効化する。NVICだけを再有効化してもDMAチャネルは割り込みを
+発生させないため、複数曲の自動再生と停止後の再生に必要な差分である。
+
 ## PSRAM: `rp2040-psram`
 
 `rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを

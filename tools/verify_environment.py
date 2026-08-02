@@ -87,6 +87,42 @@ def require_text(
         )
 
 
+def verify_audio_dma_restart(checks: List[Check], root: Path) -> None:
+    """The EOF drain must leave the DMA channel reusable for the next track."""
+    relative_path = "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+    path = root / relative_path
+    try:
+        text = path.read_text(encoding="utf-8")
+        start = text.index("void start_output()")
+        end = text.index("void init_common(", start)
+        start_output = text[start:end]
+        required = (
+            "dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), true);",
+            "irq_set_enabled(DMA_IRQ_0, true);",
+        )
+        missing = [token for token in required if token not in start_output]
+        drain_disable = (
+            "dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), false);"
+            in text
+        )
+        add_check(
+            checks,
+            "source-fingerprint:audio-dma-restart",
+            not missing and drain_disable,
+            path=relative_path,
+            missing=missing,
+            drain_disable=drain_disable,
+        )
+    except (OSError, UnicodeError, ValueError) as error:
+        add_check(
+            checks,
+            "source-fingerprint:audio-dma-restart",
+            False,
+            path=relative_path,
+            **error_details(error),
+        )
+
+
 def verify_generated_board(checks: List[Check], root: Path) -> None:
     profile_path = root / "profiles/picocalc-rp2040.json"
     generated_path = root / "bsp/include/picocalc/board_generated.h"
@@ -622,6 +658,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
             "picoment::audio_pwm::write_sample(",
         ],
     )
+    verify_audio_dma_restart(checks, root)
     require_text(
         checks,
         root,
