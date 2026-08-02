@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.7-20260802-01",
+  "bsp_version": "0.8.7",
+  "repository_commit": "b087a2b465389789f6a1d06b09eecf8fb96ab05a",
+  "validation_date": "2026-08-02",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pending",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": "Prepared before hardware playback validation. BSP 0.8.7 restores the DMA channel IRQ source in start_output() after EOF drain disables it, so automatic next-track playback and replay can receive DMA half-complete interrupts. No hardware result is claimed yet."
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/PicoCalc_MusicPlayer.uf2",
+    "uf2_sha256": "73c987e8d9332c0fe47efb07b5edeaf201d21bce39fefbc0dc900d5b0259aa48",
+    "build_log": "picocalc.py build --project ../music/PicoCalc_MusicPlayer --sdk /home/fuyuki/pico_dvl/codex/pico-sdk --lcd-variant pio-rgb565 --build-timestamp 2026-08-01T00:00:00Z"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log; the intermittent LCD readback result remains a separate known BSP issue.",
+      "evidence_files": []
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "evidence_files": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "Awaiting the shared MusicPlayer playback evidence log.",
+      "evidence_files": []
+    }
+  },
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. Host tests include the two-track drain-to-restart lifecycle model and a source fingerprint requiring DMA channel IRQ re-enable in start_output(). App version: 0.3.21-v1-core0-ring-restart. Build timestamp: 2026-08-01T00:00:00Z. Hardware validation has not been performed."
+}
