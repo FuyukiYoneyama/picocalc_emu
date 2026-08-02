@@ -62,6 +62,10 @@ drain状態遷移だけの差分である。
 `start_output()`で再有効化する。NVICだけを再有効化してもDMAチャネルは割り込みを
 発生させないため、複数曲の自動再生と停止後の再生に必要な差分である。
 
+0.8.8では、wrap 255の再構成式を全256入力で同値な`duty * 257`へ置き換える。
+PRA32-U再生時に左右各サンプルで発生していた除算だけを除去し、量子化結果とPWM dutyは
+変更しない。`picocalc/detail/audio_pwm_quantizer.h`のHost試験で旧式との完全一致を固定する。
+
 ## PSRAM: `rp2040-psram`
 
 `rp2040-psram/`は`PicoCalc/Code/picocalc_helloworld/rp2040-psram/`のPIO SPIドライバを

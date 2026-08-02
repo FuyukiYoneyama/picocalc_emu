@@ -38,6 +38,12 @@ all distributed under the MIT License by Fuyuki Yoneyama:
 Exact source repositories, pinned commits, copied file paths, and SHA-256
 fingerprints are recorded in `reference-projects/catalog.json`.
 
+The audio driver derived from `FuyukiYoneyama/Picocalc_ment` contains documented
+BSP-specific changes for cross-core SPSC accounting, drain/restart handling,
+quantizer state correction, and an exactly equivalent wrap-255 reconstruction
+optimization. The change history and reasons are recorded in `bsp/README.md`
+and `bsp/vendor/README.md`.
+
 ## Build-time dependencies
 
 The project can be built with the Raspberry Pi Pico SDK and other external

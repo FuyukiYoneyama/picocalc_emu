@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.7` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.8.8` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -56,6 +56,13 @@ EOF drainの停止IRQで無効化したDMAチャネルIRQ sourceを、`start_out
 再有効化する。NVICのIRQ lineだけを戻してもDMAチャネルから割り込みが上がらないため、
 複数曲の自動再生と停止後の再生を成立させるための修正である。PWM、DMA format、
 リング会計、量子化、drainのサンプル順序は変更していない。
+
+## 0.8.8 exact 8-bit PWM reconstruction
+
+PWM wrap 255では、誤差拡散用の再構成値
+`(duty * 65535 + 127) / 255`が全duty 0..255について厳密に`duty * 257`と等しい。
+左右各サンプルで発生していた除算をこの等価な乗算へ置き換えた。量子化結果、誤差拡散状態、
+PWM duty、音声フォーマットは変わらない。Host試験は全256入力を旧式と突合する。
 
 ## Read-only filesystem API
 

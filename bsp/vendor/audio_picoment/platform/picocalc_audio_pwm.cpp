@@ -17,6 +17,7 @@
 #include "hardware/pwm.h"
 #include "hardware/sync.h"
 #include "pico/platform.h"
+#include "picocalc/detail/audio_pwm_quantizer.h"
 #include "picocalc/detail/audio_ring_spsc.h"
 
 #if PICOMENT_FIXED_SINE_TEST
@@ -177,9 +178,9 @@ uint16_t __not_in_flash_func(quantize_pwm)(int16_t sample, int32_t* quant_error)
         duty = board::kAudioPwmWrap;
     }
 
-    const int32_t reconstructed =
-        static_cast<int32_t>((static_cast<uint32_t>(duty) * 65535u + (board::kAudioPwmWrap / 2u)) /
-                             board::kAudioPwmWrap);
+    const int32_t reconstructed = static_cast<int32_t>(
+        picocalc::detail::reconstruct_pwm_level<board::kAudioPwmWrap>(
+            static_cast<uint32_t>(duty)));
     *quant_error = shaped - reconstructed;
 
     const int32_t delta = (duty > kPwmCenter) ? (duty - kPwmCenter) : (kPwmCenter - duty);

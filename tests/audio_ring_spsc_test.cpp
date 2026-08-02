@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "picocalc/detail/audio_pwm_quantizer.h"
 #include "picocalc/detail/audio_ring_spsc.h"
 
 namespace {
@@ -66,7 +67,14 @@ int main() {
     }
     require(Ring::empty(write, read), "audio SPSC empty state missing");
 
+    for (uint32_t duty = 0; duty <= 255u; ++duty) {
+        const uint32_t legacy = (duty * 65535u + 127u) / 255u;
+        const uint32_t optimized =
+            picocalc::detail::reconstruct_pwm_level<255u>(duty);
+        require(optimized == legacy, "8-bit PWM reconstruction changed");
+    }
+
     run_sequence(UINT32_MAX - 200u);
-    std::cout << "audio SPSC ring test passed\n";
+    std::cout << "audio SPSC ring and quantizer test passed\n";
     return 0;
 }
