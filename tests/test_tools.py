@@ -27,6 +27,29 @@ def run(*arguments, env=None):
 
 
 class ToolTests(unittest.TestCase):
+    def test_build_mode_definitions_override_stale_cache(self):
+        specification = importlib.util.spec_from_file_location("picocalc", PICOCALC)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        self.assertEqual(
+            module.build_mode_definitions(False, False, True),
+            [
+                "-DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF",
+                "-DPICOCALC_DIAGNOSTIC_MODE=OFF",
+            ],
+        )
+        self.assertEqual(
+            module.build_mode_definitions(True, True, True),
+            [
+                "-DPICOCALC_PSRAM_LCD_COEXIST_TEST=ON",
+                "-DPICOCALC_DIAGNOSTIC_MODE=ON",
+            ],
+        )
+        self.assertEqual(
+            module.build_mode_definitions(False, False, False),
+            ["-DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF"],
+        )
+
     def test_build_versions_selects_non_coexistence_variant(self):
         specification = importlib.util.spec_from_file_location("picocalc", PICOCALC)
         module = importlib.util.module_from_spec(specification)

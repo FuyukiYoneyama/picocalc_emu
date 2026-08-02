@@ -75,6 +75,10 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 python3 tools/picocalc.py build --project ../MyApp
 ```
 
+`PICOCALC_DIAGNOSTIC_MODE`を宣言するアプリでは、通常の`build`がこのcache値を明示的に
+`OFF`へ戻します。以前の診断buildの`CMakeCache.txt`が残っていても、製品UF2へ診断処理を
+混入させません。診断を意図して作る場合だけ`--diagnostic-mode`を指定します。
+
 生成物は`../MyApp/build/picocalc_app.uf2`です。引数を省略した推奨表示デフォルトは
 `pio-rgb565`（RGB565、PIO blocking、LCD DMAなし）です。
 

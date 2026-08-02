@@ -202,6 +202,22 @@ def find_picotool_dir(requested: Optional[str]) -> Optional[Path]:
     return None
 
 
+def build_mode_definitions(
+    coexistence_test: bool, diagnostic_mode: bool, supports_diagnostic: bool
+) -> list[str]:
+    """Return explicit cache definitions so an old build cannot change mode."""
+    definitions = [
+        "-DPICOCALC_PSRAM_LCD_COEXIST_TEST={}".format(
+            "ON" if coexistence_test else "OFF"
+        )
+    ]
+    if supports_diagnostic:
+        definitions.append(
+            "-DPICOCALC_DIAGNOSTIC_MODE={}".format("ON" if diagnostic_mode else "OFF")
+        )
+    return definitions
+
+
 def build_project(
     project: Path,
     sdk_value: Optional[str],
@@ -210,10 +226,19 @@ def build_project(
     jobs: int,
     coexistence_test: bool,
     build_timestamp_value: Optional[str] = None,
+    diagnostic_mode: bool = False,
 ) -> int:
     project = project.resolve()
     if not (project / "CMakeLists.txt").is_file():
         print("error: no CMakeLists.txt in {}".format(project), file=sys.stderr)
+        return 2
+    project_cmake = (project / "CMakeLists.txt").read_text(encoding="utf-8")
+    supports_diagnostic = "PICOCALC_DIAGNOSTIC_MODE" in project_cmake
+    if diagnostic_mode and not supports_diagnostic:
+        print(
+            "error: --diagnostic-mode is not supported by {}".format(project),
+            file=sys.stderr,
+        )
         return 2
     sdk = find_sdk(sdk_value)
     if sdk is None:
@@ -251,6 +276,7 @@ def build_project(
         and item.get("app_version") == app_version
         and item.get("lcd_variant") == lcd_variant
         and item.get("coexistence_test", False) == coexistence_test
+        and item.get("diagnostic_mode", False) == diagnostic_mode
     ]
     if previous:
         print(
@@ -278,16 +304,17 @@ def build_project(
         "-DPICOCALC_BSP_GIT={}".format(source_commit()),
         "-DPICOCALC_APP_GIT={}".format(project_commit(project)),
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
-        "-DPICOCALC_PSRAM_LCD_COEXIST_TEST={}".format(
-            "ON" if coexistence_test else "OFF"
-        ),
     ]
+    configure.extend(
+        build_mode_definitions(coexistence_test, diagnostic_mode, supports_diagnostic)
+    )
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:
         configure.append("-Dpicotool_DIR={}".format(picotool_config))
     print("SDK     {}".format(sdk))
     print("LCD     {}".format(lcd_variant))
-    print("MODE    {}".format("psram-lcd-coexist" if coexistence_test else "standard"))
+    mode = "psram-lcd-coexist" if coexistence_test else "standard"
+    print("MODE    {} diagnostic={}".format(mode, "on" if diagnostic_mode else "off"))
     if picotool_config is not None:
         print("picotool {}".format(picotool_config))
     if subprocess.run(configure, env=environment).returncode != 0:
@@ -323,6 +350,7 @@ def build_project(
             "app_version": app_version,
             "lcd_variant": lcd_variant,
             "coexistence_test": coexistence_test,
+            "diagnostic_mode": diagnostic_mode,
             "uf2": str(uf2),
             "uf2_sha256": digest,
         },
@@ -428,6 +456,11 @@ def main() -> int:
         action="store_true",
         help="build the PSRAM clock/LCD update coexistence test (PIO RGB565 only)",
     )
+    build_parser.add_argument(
+        "--diagnostic-mode",
+        action="store_true",
+        help="enable destructive/verbose app diagnostics (default: OFF for product builds)",
+    )
 
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
@@ -474,6 +507,7 @@ def main() -> int:
             max(1, args.jobs),
             args.psram_lcd_coexist_test,
             args.build_timestamp,
+            args.diagnostic_mode,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

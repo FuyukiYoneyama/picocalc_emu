@@ -24,6 +24,10 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 python3 tools/picocalc.py build --project ../MyApp
 ```
 
+通常buildは、プロジェクトが`PICOCALC_DIAGNOSTIC_MODE`を宣言している場合、その値を必ず
+`OFF`へ明示設定する。古いbuild cacheから診断modeを継承しない。診断UF2を意図する場合だけ
+`--diagnostic-mode`を付ける。
+
 生成物は常に次です。
 
 ```text
