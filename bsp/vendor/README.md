@@ -74,8 +74,8 @@ PRA32-U再生時に左右各サンプルで発生していた除算だけを除�
 MISO3を固定する。read/writeはDMA blocking APIを使い、`fudge`は実測済み候補だけで選ぶ。
 
 クロック制約はドライバの一般的な上限ではなく、PicoCalc実機の記録を優先する。
-250 MHz通常起動時は実機合格済みの`fudge=true, clkdiv=1.5`、続いて
-`fudge=false, clkdiv=2/3`だけをread/write自己検証する。125 MHz側は
+250 MHz通常起動時は安定優先の`fudge=false, clkdiv=2/3`、続いて
+`fudge=true, clkdiv=1.5`だけをread/write自己検証する。125 MHz側は
 `fudge=false`の1/1.5/2/3/4を使う。共存検証モードだけは全候補を測定する。
 PSRAMは揮発性なので永続ログや
 セーブ領域には使わない。

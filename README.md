@@ -5,7 +5,8 @@
 PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
 初期化を毎回作り直さないための開発基盤です。
 
-現在は **Canonical BSP 0.8.4** です。実機動作済みプロジェクトから
+現在は **Canonical BSP 0.8.8** です。標準templateのアプリ版名は`0.8.4-*`として
+BSPとは独立に管理します。実機動作済みプロジェクトから
 抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
 利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
 まだ実装されていません。
@@ -43,7 +44,7 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 
 RP2040の同一ファームウェアをPC上で実行するFirmware backendには、
 [`FuyukiYoneyama/picoem-picocalc`](https://github.com/FuyukiYoneyama/picoem-picocalc)を
-第一候補として使用します。これは`0x4D44/picoem`の履歴と
+主バックエンドとして使用します。これは`0x4D44/picoem`の履歴と
 `MIT OR Apache-2.0`ライセンスを維持した独立派生リポジトリです。
 
 `picoem-picocalc`は`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
@@ -55,6 +56,13 @@ Firmware backendは高速なHost device modelの代替ではありません。�
 ファイル処理はHost backendで検証し、同一バイナリやRP2040固有動作の確認が必要な場合に
 Firmware backendを使用します。詳細は
 [主Firmware backend方針](docs/FIRMWARE_BACKEND.md)を参照してください。
+`rp2040js`もRP2040周辺機器の挙動、テスト構成、実装差を調べる比較資料として
+利用しますが、`picocalc_emu`へ接続する主バックエンドにはしません。
+
+Canonical BSPとtemplateの整備をMilestone 0として完了したため、ここから
+`picocalc_emu`のエミュレーター実装を本格的に開始します。最初のFirmware合否ゲートは、
+`picoem-picocalc`のSerial回帰を保ったまま、標準BのPIO0/RGB565/LCD DMA OFFを
+320×320 framebufferとして決定的に再現することです。
 
 ## 30秒で試す
 
@@ -103,7 +111,8 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`です。
+このモードの起動ログ先頭は`bsp=0.8.8`かつ
+`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
 
@@ -139,11 +148,11 @@ SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録し�
 ビルドログには次の識別情報が出ます。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=...
+[PICOCALC][BOOT] bsp=... app=... variant=... bsp_git=... app_git=... build=...
 [PICOCALC][APP] version=... build=...
 ```
 
-`build`はビルド開始時刻、`compile`はソースのコンパイル時刻です。UF2を実機へ
+`build`はビルド開始時刻です。UF2を実機へ
 書き込む前に、コマンドが出力するSHA-256と実機ログの版・時刻を記録してください。
 
 ## 検証レベル
@@ -216,10 +225,11 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 [Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
 
 この台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
-`overall_status=pending`を保持しています。最新の標準B（BSP/template 0.8.4）は、
-0.8.3で取得した実機ログのLCD/GRAM readback、SD、キーボード、LCD検証後の音声停止を基礎に、
-core1音声producerとcore0 DMA IRQ間のSPSCリング修正を加えています。0.8.4の音声実機記録は
-MusicPlayerの次回再生試験で取得します。実機では一度に一方だけを
+`overall_status=pending`を保持しています。最新BSP 0.8.8では、MusicPlayerの実機記録により
+SDと音声を確認済みです。基板はClockworkPi PicoCalc `CPI2.0`、SDはSanDisk Ultra
+32 GB/FAT32として記録しました。LCD RAMRDは0.8.3で間欠失敗があり、0.8.8台帳のLCDと
+keyboardはpendingです。専用HV-1診断でLCD readback 100回とguided keyboard入力を
+独立して閉じます。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 

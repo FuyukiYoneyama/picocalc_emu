@@ -15,6 +15,11 @@ The firmware backend complements the host-device-model backend; it does not repl
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
+`rp2040js` remains a comparison reference for RP2040 peripheral behavior,
+implementation techniques, and test structure. It is not the primary backend
+connected to `picocalc_emu`, and the two implementations are not forced into one
+shared device path.
+
 ## Integration policy
 
 - Keep `picoem-picocalc` in a separate repository rather than copying its source tree into `picocalc_emu`.

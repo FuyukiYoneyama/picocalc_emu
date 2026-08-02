@@ -4,14 +4,20 @@
 アプリを作るときの短い正規手順です。過去の調査経緯や将来のエミュレーター設計は
 この手順を上書きしません。
 
-## このリポジトリの現在の目的
+## このリポジトリの現在の段階
 
-これは完成したPCエミュレーターではありません。実機で動作確認したRP2040用BSPと
-アプリテンプレートを提供し、AIがLCD・SD・キーボード・音声・PSRAMの初期化を
-推測で書かなくて済むようにするプロジェクトです。
+これはまだ完成したPCエミュレーターではありません。ただし、実機で動作確認した
+RP2040用BSPとアプリテンプレートの整備はMilestone 0として完了しました。
+今後は、AIがこの動作済みスケルトンからアプリを作れる状態を維持しながら、
+`picocalc_emu`の`emu`部分を実装する段階です。
 
-現在のCanonical版はBSP `0.8.4`です。template の既存アプリ版名とは別に、実機で使用する対象は、ログ先頭の
-`[PICOCALC][BOOT]`に出る`bsp`、`app`、`variant`、`git`で識別します。
+現在のCanonical版はBSP `0.8.8`です。標準templateのアプリ版名は`0.8.4-*`のまま
+独立して管理されています。実機で使用する対象は、ログ先頭の`[PICOCALC][BOOT]`に出る
+`bsp`、`app`、`variant`、`bsp_git`、`app_git`で識別します。
+
+エミュレーターのFirmware backendはRust製`picoem-picocalc`を主系とし、
+`ExecutionModel::Serial`と継承済み回帰テストから始めます。`rp2040js`は周辺機器の
+振る舞いと実装方法の比較参考であり、主バックエンドではありません。
 
 ## AIが行う正規手順
 
@@ -109,7 +115,7 @@ PCMを使うアプリは、`PICOCALC_AUDIO_REFERENCE_TONE=OFF`でビルドし、
 
 画面だけで合否を判断しません。最低限、次を順番に確認します。
 
-1. 最初の行が`[PICOCALC][BOOT]`で、意図した`bsp/app/variant/git`である
+1. 最初の行が`[PICOCALC][BOOT]`で、意図した`bsp/app/variant/bsp_git/app_git`である
 2. LCD各色の`[PICOCALC][LCD][VERIFY] ... status=pass`が出る
 3. `[PICOCALC][LCD][VERIFY] app_status=pass`が出る
 4. BではRAMRDの`format=rgb565`と期待値が一致する
@@ -135,5 +141,6 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 - `docs/IMPLEMENTATION_STATUS.md`: 実装済み範囲と実機確認状況
 - `REQUIREMENTS.md`: 将来のエミュレーターを含む要求仕様
 - `docs/DESIGN.md`: 未実装エミュレーターの将来設計
+- `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
 - `docs/LCD_INVESTIGATION_20260729.md`: LCD問題の過去の調査記録。手順の根拠ではあるが、
   古いUF2やコミットを現在版として再利用しない

@@ -105,13 +105,18 @@ def verify_audio_dma_restart(checks: List[Check], root: Path) -> None:
             "dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), false);"
             in text
         )
+        sdk_2_0_compatible = (
+            "dma_channel_set_trans_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);"
+            in text
+        )
         add_check(
             checks,
             "source-fingerprint:audio-dma-restart",
-            not missing and drain_disable,
+            not missing and drain_disable and sdk_2_0_compatible,
             path=relative_path,
             missing=missing,
             drain_disable=drain_disable,
+            sdk_2_0_compatible=sdk_2_0_compatible,
         )
     except (OSError, UnicodeError, ValueError) as error:
         add_check(

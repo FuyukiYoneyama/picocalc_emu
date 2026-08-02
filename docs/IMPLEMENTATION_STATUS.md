@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP 0.8.4、template、RGB565推奨デフォルト・LCD A/B・音声・PSRAM）
+## 現在利用できるもの（BSP 0.8.8、template app 0.8.4-*、RGB565推奨デフォルト）
 
 この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
 土台を実装している。PC 上の完全な RP2040/PicoCalc エミュレーターはまだ未実装で
@@ -48,7 +48,7 @@ python3 tools/picocalc.py build --project . \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-起動ログの`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`と、各候補の
+起動ログの`bsp=0.8.8`と`app=0.8.4-b-pio-rgb565-psram-lcd-coexist`、各候補の
 `[PICOCALC][PSRAM][COEX]`行を記録する。`display_failures=0`かつ
 `psram_failures=0`のcandidateがLCD更新と共存できたPSRAM速度である。
 
@@ -98,6 +98,9 @@ PSRAMの実用例は`examples/psram.cpp`で、`picocalc::psram::Buffer`が領域
 PicoCalcのUF2はSDカードへコピーして使用するため、プロジェクト内のUF2名は
 常に`build/picocalc_app.uf2`で固定する。検証版やブランチ版でもファイル名を
 変更せず、UF2そのものは保存しない。
+専用HV-1診断は別プロジェクトであり、そのプロジェクト内では
+`diagnostics/bsp-quality/build/PicoCalc_BSP_Diagnostic.uf2`に常に固定する。
+どちらもビルドごとに名前を変えない。
 
 版を区別するときは、対象ブランチのソースコミット、BSP版、アプリ版または
 ビルドサブコメント、UF2のSHA-256を記録する。特別な実機試験を行う場合も、
@@ -111,7 +114,7 @@ BSP、SDK、ツールチェーン、ビルド設定を揃えた場合に限り�
 起動時の最初の機械可読ログは次の形式でなければならない。
 
 ```text
-[PICOCALC][BOOT] bsp=... app=... variant=... git=... build=...
+[PICOCALC][BOOT] bsp=... app=... variant=... bsp_git=... app_git=... build=...
 ```
 
 この1行を実機ログの版判定に使う。UF2ファイル名を版識別に使ってはならない。
@@ -168,9 +171,11 @@ UF2は従来どおり `build/picocalc_app.uf2` として生成する。LCDの`st
 
 - Canonical BSP とテンプレートは `arm-none-eabi-gcc 13.2.1`、
   Pico SDK 2.x 系でコンパイル可能
+- GitHub Actionsは最低互換条件としてPico SDK 2.0.0を固定し、実機台帳は
+  Pico SDK 2.2.0を使う。両方でコンパイルできるAPIを保つ
 - `picocalc_app.elf`、`.bin`、`.uf2` の生成を確認済み
-- clone単体のportable検証32件が合格
-- 生成器・検証器・異常系のPython回帰テスト20件が合格
+- clone単体のportable検証が合格
+- 生成器・検証器・異常系のPython回帰テストが合格
 - LCD初期化とCS分割は実行可能なhost transactionテストで検査
 - `--json`は入力ファイル破損・不正引数でも構造化された失敗を返す
 - GitHub Actionsでportable検証、Pythonテスト、RP2040 template compileを実行
@@ -188,37 +193,42 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 `pending`にしている。LCD A/Bの実機合格自体は、各ログの`app_status=pass`、GRAM readback
 全色一致、写真で個別に確定している。
 
-## 最新標準テンプレートの実機確認
+## 最新BSPの実機確認
 
-標準B（`pio-rgb565`）のBSP/template `0.8.4`は、0.8.3で取得した起動ログを基礎に、
-音声リングのcross-core SPSC修正を加えた版である。0.8.4の音声実機記録はMusicPlayerの
-次回再生試験で取得する。
+Canonical BSPは`0.8.8`、標準templateのapp版は`0.8.4-*`であり、
+この二つは独立して管理する。`bsp-0.8.8-20260802-01.json`には、
+ClockworkPi PicoCalc `CPI2.0`とSanDisk Ultra SDHC 32 GB/FAT32での実機情報を記録した。
 
-- LCD固体色5色、既知パターン、GRAM readback: `app_status=pass`
-- PSRAM: `clkdiv=2.00`、self-test `pass`
-- SD: mount/write/sync/read/compare/remove `status=ok`
-- キーボード: Pressed/Releasedイベント
-- 音声: LCD検証直後の`reason=lcd_verify_complete`で停止
+- SD: filesystem smoke、`/MUSIC`列挙、MP3/MIDIのEOF到達を確認
+- Audio: 3,549,641 samples、underrun/clip/dropがすべて0で、聴感上も音楽・コード・速度を確認
+- LCD: 0.8.3の3回起動中2回はGRAM readback合格、1回は不合格で間欠性が残る
+- Keyboard: 過去の標準スモークでPressed/Releasedを確認済みだが、0.8.8台帳では未完了
 
-この標準Bログはユーザー提供の実機ログで確認した結果である。基板revisionやSDカード
-識別情報を正式台帳へ登録する作業は別の記録整備であり、BSPの機能合格とは分けて扱う。
+そのため0.8.8台帳の`overall_status`は`pending`である。残るLCDとkeyboardは
+専用HV-1診断`diagnostics/bsp-quality`で独立して閉じる。この診断はSDへmount/writeせず、
+音声も起動せず、LCD GRAM write/readbackを100回繰り返し、
+Up/Down/Enter/Escapeを誘導して最後に`[BSP_DIAG_VERDICT]`を出力する。
+
+BSP 0.8.4から0.8.8までの音声変更は、cross-core SPSC ring、quantizer clamp、
+EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式への変更である。
+0.8.8の実機音声記録により、この経路の連続再生を確認した。
 
 また、次の機能は今後のエミュレーター段階である。
 
-- RP2040JS 上での同一 UF2/ELF 実行
+- `picoem-picocalc`上での同一UF2/ELF/BIN実行（`rp2040js`は比較参考）
 - SPI/I2C デバイスモデルと LCD framebuffer/PNG
 - FAT イメージを使う仮想 SD と故障注入
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
-0.8.4は、実機動作済みコードをコピーした参照経路と、AIが利用する汎用経路を
-同じBSP内に用意した版である。A/BのLCD経路は従来どおり独立しており、音声は
+0.8.8は、実機動作済みコードを基準にした参照経路と、AIが利用する汎用経路を
+同じBSP内に用意する現行版である。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
 `app=0.8.4-b-pio-rgb565-default`、
 `app=0.8.4-b-pio-rgb565-psram-lcd-coexist`、または
 `app=0.8.4-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを先に実施し、0.8.3のLCD/SD等の実機検証まで完了している。標準アプリは
+ソース検査とA/Bビルドを実施し、0.8.8のSD/音声実機検証まで完了している。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

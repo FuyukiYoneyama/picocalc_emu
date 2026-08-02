@@ -5,7 +5,7 @@ PC上のエミュレーターを実装する将来作業であり、現在のRP2
 混同しないでください。
 
 Firmware backendの開発方針は
-[`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)に定義します。第一候補は、
+[`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)に定義します。主バックエンドは、
 `0x4D44/picoem`から独立派生した`FuyukiYoneyama/picoem-picocalc`です。
 
 ## Milestone 0: Canonical BSP — implemented
@@ -55,6 +55,8 @@ Firmware backendの開発方針は
 Primary backendとして`picoem-picocalc`を使用する。ソースは
 `picocalc_emu`へコピーせず別リポジトリで保守し、正確なcommitを固定する。
 初期段階では`ExecutionModel::Serial`を正しさの基準とする。
+`rp2040js`はRP2040周辺機器の振る舞い、実装方法、テスト構成の比較参考とし、
+`picocalc_emu`に接続する主backendとはしない。
 
 - `picoem-picocalc`のversion/commit固定とcapability manifest
 - inherited RP2040 Serial test suiteの基準化

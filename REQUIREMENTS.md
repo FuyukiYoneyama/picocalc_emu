@@ -166,20 +166,24 @@ SD では少なくとも次を確認する。
 二つの実行経路を提供する。
 
 * Host App mode: アプリロジックを PC ネイティブ実行し、高速な画面・入力・ファイルテストを行う
-* Firmware mode: `rp2040js` を基盤として実際の UF2/HEX を実行し、RP2040 の MMIO と PicoCalc 固有デバイスを接続する
+* Firmware mode: Rust製`picoem-picocalc`を主基盤として実際のUF2/ELF/BINを実行し、RP2040のMMIOとPicoCalc固有デバイスを接続する
 
 Firmware mode の接続は次を初期目標とする。
 
 ```text
-rp2040js
-  SPI1 / GPIO 10-15  -> ST7365P LCD model
+picoem-picocalc (ExecutionModel::Serialを正しさの基準とする)
+  PIO0 / GPIO 10-15  -> ST7365P LCD model（標準B: RGB565, blocking）
+  SPI1 / GPIO 10-15  -> ST7365P LCD model（互換A: RGB666 container）
   SPI0 / GPIO 16-19  -> SD block-device model
   I2C1 / GPIO 6-7    -> keyboard STM32 register model
   GPIO 22            -> SD_DET
-  PIO/SPI            -> PSRAM model（後続段階）
+  PIO1 / GPIO 20,21,2,3 -> PSRAM model（後続段階）
 ```
 
-`rp2040js` は固定した commit/tag を使用する。デュアルコア、SSI/flash write、PIO、DMA の対応状況を capability manifest に記録し、未対応機能を無視せず明示的に停止または `hardware_required` と判定する。
+`picoem-picocalc`は別リポジトリで保守し、固定commitを使用する。デュアルコア、
+SSI/flash write、PIO、DMAの対応状況をcapability manifestに記録し、未対応機能を
+無視せず明示的に停止または`hardware_required`と判定する。`rp2040js`はRP2040の
+動作と実装方法を比較する参考として利用し、主バックエンドとはしない。
 
 ## 5. AI の標準開発フロー
 
@@ -262,8 +266,8 @@ required during initialization: <= 400000 Hz
 4. 動作保証済みプロジェクトテンプレート
 5. 実機から golden frame、UART、SPI/I²C、SD artifact を採取
 6. Host App mode と conformance test
-7. `rp2040js` の技術検証と固定
-8. `rp2040js` と PicoCalc LCD/keyboard/SD model の接続
+7. `picoem-picocalc`のSerial実行モデル、回帰テスト、固定commitの確定
+8. `picoem-picocalc`とPicoCalc LCD/keyboard/SD modelの接続（`rp2040js`も比較参考に使う）
 9. UF2 を使った Firmware mode
 10. デュアルコア、PIO、PSRAM、PicoMite への拡張
 

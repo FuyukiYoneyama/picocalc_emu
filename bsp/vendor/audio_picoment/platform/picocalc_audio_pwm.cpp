@@ -302,7 +302,9 @@ uint32_t __not_in_flash_func(refill_drain_half)(uint half) {
 
 void __not_in_flash_func(start_half)(uint half) {
     dma_channel_set_read_addr(static_cast<uint>(g_dma_channel), g_dma_buffer[half], false);
-    dma_channel_set_transfer_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);
+    // Pico SDK 2.0.0 exposes this name; newer SDKs retain it and add
+    // dma_channel_set_transfer_count() as an inline wrapper.
+    dma_channel_set_trans_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);
     dma_start_channel_mask(1u << static_cast<uint>(g_dma_channel));
     g_active_half = half;
 }

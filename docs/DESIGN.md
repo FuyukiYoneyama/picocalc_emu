@@ -10,7 +10,7 @@ BSP・テンプレート・実働プロジェクトの扱いは
 [REQUIREMENTS.md](../REQUIREMENTS.md) に定義する。本書は、その要求を実現する
 将来のエミュレーターと検証基盤の技術構成を定義する。
 
-> **実装状況:** Canonical BSP 0.8.4（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
+> **実装状況:** Canonical BSP 0.8.8（LCD二系統）、RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
 > 実機向けBSPの現在版として実装済み。利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
@@ -144,18 +144,27 @@ Pico SDK のハードウェア依存を shim に置き換えてアプリを PC �
 
 ### Mode B: Firmware/System
 
-UF2/HEX/ELF を対象に、実際の RP2040 ファームウェアを実行するバックエンドを追加する。RP2040 の初期バックエンドには `rp2040js` を採用し、検証済みの commit/tag を固定して利用する。完全互換を一括目標にせず、対象 ELF/UF2 と受け入れシナリオを各段階へ紐付ける。
+UF2/ELF/BINを対象に、実際のRP2040ファームウェアを実行するバックエンドを追加する。
+主バックエンドにはRust製`picoem-picocalc`を採用し、別リポジトリの検証済みcommitを
+固定して利用する。初期段階は`ExecutionModel::Serial`を正しさの基準とする。
+完全互換を一括目標にせず、対象ファームウェアと受け入れシナリオを各段階へ紐付ける。
 
-このモードは「実機と同じバイナリを動かす」確認用であり、Mode A の高速な回帰テストを置き換えない。`rp2040js` の未対応機能は capability manifest で管理し、未対応 MMIO を成功扱いにしない。Wokwi クラウド版は相関確認の補助候補とするが、通常のローカル実行と CI は外部サービスに依存させない。
+このモードは「実機と同じバイナリを動かす」確認用であり、Mode Aの高速な回帰テストを
+置き換えない。`picoem-picocalc`の未対応機能はcapability manifestで管理し、未対応MMIOを
+成功扱いにしない。`rp2040js`はレジスタ挙動、周辺機器実装、テスト方法を比較する参考とし、
+Wokwiクラウド版も相関確認の補助候補とするが、通常のローカル実行とCIは外部サービスへ
+依存させない。
 
 実装順は次の通りとする。
 
-1. `rp2040js` で既知の Pico SDK UF2、UART、停止条件を確認する
-2. GPIO、SPI1、I²C1 を PicoCalc LCD/keyboard model へ接続する
-3. SPI0、SD_DET、SD block-device model を接続する
-4. 対象アプリが必要とする DMA と PIO の対応状況を検証・補完する
-5. core1/SIO FIFO と PSRAM を追加する
-6. RP2350 の別 backend を選定する
+1. `picoem-picocalc`の継承済みSerialテストを通し、既知のPico SDKファームウェアでUARTと停止条件を確認する
+2. GPIOとPIO0を標準BのRGB565 LCD modelへ接続し、320×320 framebufferを再現する
+3. I²C1 keyboard modelを接続する
+4. SPI0、SD_DET、SD block-device modelを接続する
+5. PIO1 PSRAMとMISO feedbackを接続する
+6. PWM/DMA audioの観測を追加する
+7. core1/SIO FIFO、WFE/SEV、IRQ、PIO、DMAの相互作用を検証する
+8. 互換AのSPI1/RGB666 containerとRP2350の別backendを必要に応じて追加する
 
 各段階は「対象 ELF が起動する」だけでなく、対応するシナリオの画面・イベント・ファイル結果が Mode A または実機と一致した時点で完了とする。
 
@@ -243,7 +252,10 @@ App API、Pico SDK shim の最小部分、headless framebuffer、キーボード
 
 ### Phase 3: RP2040 Firmware backend
 
-`rp2040js` の採用検証とバージョン固定を行い、ST7365P LCD、I²C keyboard、SD block-device を GPIO/SPI/I²C へ接続する。実際の UF2 を起動し、実働プロジェクトと新規テンプレートの画面、UART、通信トレース、SD 結果を比較する。
+`picoem-picocalc`の採用検証とcommit固定を行い、ST7365P LCD、I²C keyboard、
+SD block-deviceをGPIO/PIO/SPI/I²Cへ接続する。実際のファームウェアを起動し、
+実働プロジェクトと新規テンプレートの画面、UART、通信トレース、SD結果を比較する。
+`rp2040js`は各段階の挙動比較と実装調査に利用する。
 
 ### Phase 4: 高い互換性と HIL
 

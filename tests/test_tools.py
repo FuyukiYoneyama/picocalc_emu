@@ -164,6 +164,29 @@ class ToolTests(unittest.TestCase):
         )
         self.assertEqual(check["status"], "fail")
 
+    def test_audio_dma_check_rejects_sdk_2_1_only_transfer_count_name(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            source = project / "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+            original = source.read_text(encoding="utf-8")
+            source.write_text(
+                original.replace(
+                    "dma_channel_set_trans_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);",
+                    "dma_channel_set_transfer_count(static_cast<uint>(g_dma_channel), kHalfSamples, false);",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            completed = run(VERIFY, "--project-root", project, "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        check = next(
+            check for check in report["checks"]
+            if check["name"] == "source-fingerprint:audio-dma-restart"
+        )
+        self.assertEqual(check["status"], "fail")
+        self.assertFalse(check["sdk_2_0_compatible"])
+
     def test_reference_verification_reports_missing_repositories(self):
         with tempfile.TemporaryDirectory() as temporary:
             completed = run(
