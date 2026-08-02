@@ -27,6 +27,18 @@ def run(*arguments, env=None):
 
 
 class ToolTests(unittest.TestCase):
+    def test_bsp_quality_diagnostic_is_focused_and_bounded(self):
+        project = ROOT / "diagnostics/bsp-quality"
+        cmake = (project / "CMakeLists.txt").read_text(encoding="utf-8")
+        source = (project / "app/main.cpp").read_text(encoding="utf-8")
+        self.assertIn('PICOCALC_UF2_NAME "PicoCalc_BSP_Diagnostic"', cmake)
+        self.assertIn("PICOCALC_AUDIO_REFERENCE_TONE OFF", cmake)
+        self.assertIn("constexpr uint32_t kReadbackIterations = 100;", source)
+        self.assertIn("keyboard::read_diagnostic(&sample)", source)
+        self.assertIn("[BSP_DIAG_VERDICT]", source)
+        self.assertNotIn("filesystem::", source)
+        self.assertNotIn("sdcard::", source)
+
     def test_build_mode_definitions_override_stale_cache(self):
         specification = importlib.util.spec_from_file_location("picocalc", PICOCALC)
         module = importlib.util.module_from_spec(specification)
@@ -48,6 +60,14 @@ class ToolTests(unittest.TestCase):
         self.assertEqual(
             module.build_mode_definitions(False, False, False),
             ["-DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF"],
+        )
+        self.assertEqual(
+            module.build_mode_definitions(False, False, True, True, True),
+            [
+                "-DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF",
+                "-DPICOCALC_DIAGNOSTIC_MODE=OFF",
+                "-DPICOCALC_HARDWARE_VALIDATION_MODE=ON",
+            ],
         )
 
     def test_build_versions_selects_non_coexistence_variant(self):

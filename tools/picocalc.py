@@ -203,7 +203,11 @@ def find_picotool_dir(requested: Optional[str]) -> Optional[Path]:
 
 
 def build_mode_definitions(
-    coexistence_test: bool, diagnostic_mode: bool, supports_diagnostic: bool
+    coexistence_test: bool,
+    diagnostic_mode: bool,
+    supports_diagnostic: bool,
+    hardware_validation_mode: bool = False,
+    supports_hardware_validation: bool = False,
 ) -> list[str]:
     """Return explicit cache definitions so an old build cannot change mode."""
     definitions = [
@@ -214,6 +218,12 @@ def build_mode_definitions(
     if supports_diagnostic:
         definitions.append(
             "-DPICOCALC_DIAGNOSTIC_MODE={}".format("ON" if diagnostic_mode else "OFF")
+        )
+    if supports_hardware_validation:
+        definitions.append(
+            "-DPICOCALC_HARDWARE_VALIDATION_MODE={}".format(
+                "ON" if hardware_validation_mode else "OFF"
+            )
         )
     return definitions
 
@@ -227,6 +237,7 @@ def build_project(
     coexistence_test: bool,
     build_timestamp_value: Optional[str] = None,
     diagnostic_mode: bool = False,
+    hardware_validation_mode: bool = False,
 ) -> int:
     project = project.resolve()
     if not (project / "CMakeLists.txt").is_file():
@@ -234,9 +245,22 @@ def build_project(
         return 2
     project_cmake = (project / "CMakeLists.txt").read_text(encoding="utf-8")
     supports_diagnostic = "PICOCALC_DIAGNOSTIC_MODE" in project_cmake
+    supports_hardware_validation = "PICOCALC_HARDWARE_VALIDATION_MODE" in project_cmake
     if diagnostic_mode and not supports_diagnostic:
         print(
             "error: --diagnostic-mode is not supported by {}".format(project),
+            file=sys.stderr,
+        )
+        return 2
+    if hardware_validation_mode and not supports_hardware_validation:
+        print(
+            "error: --hardware-validation-mode is not supported by {}".format(project),
+            file=sys.stderr,
+        )
+        return 2
+    if diagnostic_mode and hardware_validation_mode:
+        print(
+            "error: --diagnostic-mode and --hardware-validation-mode are mutually exclusive",
             file=sys.stderr,
         )
         return 2
@@ -277,6 +301,7 @@ def build_project(
         and item.get("lcd_variant") == lcd_variant
         and item.get("coexistence_test", False) == coexistence_test
         and item.get("diagnostic_mode", False) == diagnostic_mode
+        and item.get("hardware_validation_mode", False) == hardware_validation_mode
     ]
     if previous:
         print(
@@ -306,7 +331,13 @@ def build_project(
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
     ]
     configure.extend(
-        build_mode_definitions(coexistence_test, diagnostic_mode, supports_diagnostic)
+        build_mode_definitions(
+            coexistence_test,
+            diagnostic_mode,
+            supports_diagnostic,
+            hardware_validation_mode,
+            supports_hardware_validation,
+        )
     )
     picotool_config = find_picotool_dir(picotool_value)
     if picotool_config is not None:
@@ -314,7 +345,13 @@ def build_project(
     print("SDK     {}".format(sdk))
     print("LCD     {}".format(lcd_variant))
     mode = "psram-lcd-coexist" if coexistence_test else "standard"
-    print("MODE    {} diagnostic={}".format(mode, "on" if diagnostic_mode else "off"))
+    print(
+        "MODE    {} diagnostic={} hardware-validation={}".format(
+            mode,
+            "on" if diagnostic_mode else "off",
+            "on" if hardware_validation_mode else "off",
+        )
+    )
     if picotool_config is not None:
         print("picotool {}".format(picotool_config))
     if subprocess.run(configure, env=environment).returncode != 0:
@@ -351,6 +388,7 @@ def build_project(
             "lcd_variant": lcd_variant,
             "coexistence_test": coexistence_test,
             "diagnostic_mode": diagnostic_mode,
+            "hardware_validation_mode": hardware_validation_mode,
             "uf2": str(uf2),
             "uf2_sha256": digest,
         },
@@ -461,6 +499,11 @@ def main() -> int:
         action="store_true",
         help="enable destructive/verbose app diagnostics (default: OFF for product builds)",
     )
+    build_parser.add_argument(
+        "--hardware-validation-mode",
+        action="store_true",
+        help="auto-test only machine-owned validation media (default: OFF)",
+    )
 
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
@@ -508,6 +551,7 @@ def main() -> int:
             args.psram_lcd_coexist_test,
             args.build_timestamp,
             args.diagnostic_mode,
+            args.hardware_validation_mode,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:
