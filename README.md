@@ -39,6 +39,23 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 
 これらは[Milestones](docs/MILESTONES.md)に従って段階的に実装します。
 
+## Firmware backendの開発方針
+
+RP2040の同一ファームウェアをPC上で実行するFirmware backendには、
+[`FuyukiYoneyama/picoem-picocalc`](https://github.com/FuyukiYoneyama/picoem-picocalc)を
+第一候補として使用します。これは`0x4D44/picoem`の履歴と
+`MIT OR Apache-2.0`ライセンスを維持した独立派生リポジトリです。
+
+`picoem-picocalc`は`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
+正確なcommitを固定して利用します。初期段階では単一ホストスレッドの
+`ExecutionModel::Serial`を正しさの基準とし、PIO0 LCD、I2C1 keyboard、SPI0 SD、
+PIO1 PSRAM、PWM/DMA audio、multicoreを段階的に接続します。
+
+Firmware backendは高速なHost device modelの代替ではありません。通常のUI・入力・
+ファイル処理はHost backendで検証し、同一バイナリやRP2040固有動作の確認が必要な場合に
+Firmware backendを使用します。詳細は
+[主Firmware backend方針](docs/FIRMWARE_BACKEND.md)を参照してください。
+
 ## 30秒で試す
 
 必要条件はPython 3.8以降とC++17 host compilerです。clone単体で動くportable
@@ -238,6 +255,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 - [現在の実装状況](docs/IMPLEMENTATION_STATUS.md)
 - [Milestones](docs/MILESTONES.md)
+- [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md)
 - [将来のエミュレーター設計](docs/DESIGN.md)
 - [要求仕様](REQUIREMENTS.md)
 - [Canonical BSP](bsp/README.md)
@@ -247,5 +265,6 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 現時点では「PicoCalcエミュレーター完成品」ではなく、
 **PicoCalc向け検証済みBSPスターターキット兼エミュレーター開発基盤**です。
-現在使える主経路はRP2040実機向けBSP/templateであり、Host device modelと
-RP2040JSによるfirmware backendは将来計画です。
+現在使える主経路はRP2040実機向けBSP/templateです。将来のPC実行経路は、
+高速なHost device modelと、`picoem-picocalc`を利用するRP2040 Firmware backendの
+二本立てで開発します。

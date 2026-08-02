@@ -4,6 +4,10 @@ Milestone 0 は現在のBSPスターターキットとして完了していま�
 PC上のエミュレーターを実装する将来作業であり、現在のRP2040実機ビルド手順と
 混同しないでください。
 
+Firmware backendの開発方針は
+[`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)に定義します。第一候補は、
+`0x4D44/picoem`から独立派生した`FuyukiYoneyama/picoem-picocalc`です。
+
 ## Milestone 0: Canonical BSP — implemented
 
 - 実働プロジェクトを根拠にしたLCD・keyboard・SD/FatFS BSP
@@ -48,12 +52,26 @@ PC上のエミュレーターを実装する将来作業であり、現在のRP2
 
 ## Milestone 4: Firmware backend
 
-- RP2040JSのversion/commit固定とcapability manifest
-- 同一ELF/UF2のUART・GPIO・SPI・I2C接続
-- 必要範囲のPIO/DMA/multicore対応
+Primary backendとして`picoem-picocalc`を使用する。ソースは
+`picocalc_emu`へコピーせず別リポジトリで保守し、正確なcommitを固定する。
+初期段階では`ExecutionModel::Serial`を正しさの基準とする。
+
+- `picoem-picocalc`のversion/commit固定とcapability manifest
+- inherited RP2040 Serial test suiteの基準化
+- 同一ELF/BIN/UF2のロードとUART boot log取得
+- GPIOとPIO0を通した`pio-rgb565` LCD初期化・framebuffer生成
+- I2C1 keyboard、SPI0 SD、PIO1 PSRAM、PWM/DMA audioの段階的接続
+- 必要範囲のPIO/DMA/multicore、SIO FIFO、WFE/SEV、IRQ対応
+- PNG、UART、trace、filesystem、JUnit等のscenario成果物への接続
+- backend commitとcapabilityを各実行結果へ記録
+
+最初の合否ゲートは、LCD DMAを使わない標準`pio-rgb565` firmwareが
+`[PICOCALC][BOOT]`へ到達し、LCD初期化と320x320 framebufferを決定的に再現できることとする。
 
 Firmware backendはHost device modelの代替ではない。対象アプリが同一バイナリ
 確認を必要とし、backendの対応能力が明示されている場合だけ使用する。
+公開版`picocalc_emu`の通常ビルドがprivate依存を要求してはならず、正式統合前に
+`picoem-picocalc`も公開または同等に再現可能な配布形態にする。
 
 ## Milestone 5: BSP lifecycle
 
