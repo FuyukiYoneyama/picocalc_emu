@@ -7,10 +7,10 @@
   "operator": "Fuyuki Yoneyama",
   "overall_status": "pending",
   "hardware": {
-    "product": "PicoCalc",
-    "board_revision": "",
+    "product": "ClockworkPi PicoCalc",
+    "board_revision": "CPI2.0",
     "mcu": "RP2040",
-    "notes": "Shared MusicPlayer validation completed for SD and audio on this board. BSP 0.8.8 removes two per-sample divisions using a bit-identical wrap-255 reconstruction expression; it does not change PWM duty values or the audio format. Board revision and SD identity remain unavailable."
+    "notes": "Shared MusicPlayer validation completed for SD and audio on this board. Board revision CPI2.0 was read from operator photos IMG_8897.JPG and IMG_8894.JPG. BSP 0.8.8 removes two per-sample divisions using a bit-identical wrap-255 reconstruction expression; it does not change PWM duty values or the audio format."
   },
   "software": {
     "pico_sdk": "2.2.0",
@@ -18,9 +18,9 @@
     "cmake": "3.28.3"
   },
   "sd_card": {
-    "manufacturer": "",
-    "model": "",
-    "capacity": "",
+    "manufacturer": "SanDisk",
+    "model": "Ultra SDHC I, Class 10, 100 MB/s label",
+    "capacity": "32 GB",
     "filesystem": "FAT32"
   },
   "firmware": {
@@ -45,5 +45,5 @@
       "evidence_files": []
     }
   },
-  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. Evidence log /home/fuyuki/pico_dvl/codex/log/pico20260802_181946.log has SHA-256 b70ea8c125dd5537df049c1abab609fd4413348eedbe48373fbc179b1a9c54d7. Full MIDI playback produced 3549641 samples with underrun=0, clip=0, drop=0, min_ring=256, max_supply_gap_us=2100, service_rate_sps=52171, and source_eof=1; the operator reported recognizable music, chords, correct speed, and no interruptions. The Host test compares all 256 duty values with the former division expression, and RP2040 disassembly confirms that write_sample() no longer calls integer division. overall_status remains pending because LCD readback, keyboard interaction, board revision, and SD identity are not closed by this run."
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. Evidence log /home/fuyuki/pico_dvl/codex/log/pico20260802_181946.log has SHA-256 b70ea8c125dd5537df049c1abab609fd4413348eedbe48373fbc179b1a9c54d7. Full MIDI playback produced 3549641 samples with underrun=0, clip=0, drop=0, min_ring=256, max_supply_gap_us=2100, service_rate_sps=52171, and source_eof=1; the operator reported recognizable music, chords, correct speed, and no interruptions. SD identity was read from operator photo IMG_8891.JPG. The Host test compares all 256 duty values with the former division expression, and RP2040 disassembly confirms that write_sample() no longer calls integer division. overall_status remains pending because LCD readback and keyboard interaction are not closed by this run."
 }

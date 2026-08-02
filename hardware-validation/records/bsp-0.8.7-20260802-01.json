@@ -7,8 +7,8 @@
   "operator": "Fuyuki Yoneyama",
   "overall_status": "pending",
   "hardware": {
-    "product": "PicoCalc",
-    "board_revision": "",
+    "product": "ClockworkPi PicoCalc",
+    "board_revision": "CPI2.0",
     "mcu": "RP2040",
     "notes": "Prepared before hardware playback validation. BSP 0.8.7 restores the DMA channel IRQ source in start_output() after EOF drain disables it, so automatic next-track playback and replay can receive DMA half-complete interrupts. No hardware result is claimed yet."
   },
@@ -18,9 +18,9 @@
     "cmake": "3.28.3"
   },
   "sd_card": {
-    "manufacturer": "",
-    "model": "",
-    "capacity": "",
+    "manufacturer": "SanDisk",
+    "model": "Ultra SDHC I, Class 10, 100 MB/s label",
+    "capacity": "32 GB",
     "filesystem": "FAT32"
   },
   "firmware": {
