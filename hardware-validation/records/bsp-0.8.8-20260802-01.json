@@ -10,7 +10,7 @@
     "product": "PicoCalc",
     "board_revision": "",
     "mcu": "RP2040",
-    "notes": "Prepared before shared MusicPlayer hardware playback validation. BSP 0.8.8 removes two per-sample divisions using a bit-identical wrap-255 reconstruction expression; it does not change PWM duty values or the audio format."
+    "notes": "Shared MusicPlayer validation completed for SD and audio on this board. BSP 0.8.8 removes two per-sample divisions using a bit-identical wrap-255 reconstruction expression; it does not change PWM duty values or the audio format. Board revision and SD identity remain unavailable."
   },
   "software": {
     "pico_sdk": "2.2.0",
@@ -35,8 +35,8 @@
       "evidence_files": []
     },
     "sd": {
-      "status": "pending",
-      "observed": "Awaiting the shared MusicPlayer playback evidence log. No formatting or destructive SD preparation is required.",
+      "status": "pass",
+      "observed": "MusicPlayer log pico20260802_181946.log: filesystem smoke status=pass, nested /MUSIC enumeration entries=4, io_errors=0, MP3 and MIDI read/parse reached EOF. Existing music assets were not formatted, renamed, moved, or deleted.",
       "evidence_files": []
     },
     "keyboard": {
@@ -45,5 +45,5 @@
       "evidence_files": []
     }
   },
-  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. The Host test compares all 256 duty values with the former division expression, and RP2040 disassembly confirms that write_sample() no longer calls integer division. Hardware audio performance and listening evidence are not yet claimed."
+  "notes": "Audio evidence remains in notes rather than the canonical BSP tests schema. Evidence log /home/fuyuki/pico_dvl/codex/log/pico20260802_181946.log has SHA-256 b70ea8c125dd5537df049c1abab609fd4413348eedbe48373fbc179b1a9c54d7. Full MIDI playback produced 3549641 samples with underrun=0, clip=0, drop=0, min_ring=256, max_supply_gap_us=2100, service_rate_sps=52171, and source_eof=1; the operator reported recognizable music, chords, correct speed, and no interruptions. The Host test compares all 256 duty values with the former division expression, and RP2040 disassembly confirms that write_sample() no longer calls integer division. overall_status remains pending because LCD readback, keyboard interaction, board revision, and SD identity are not closed by this run."
 }
