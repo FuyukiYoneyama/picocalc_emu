@@ -158,15 +158,19 @@ Wokwiクラウド版も相関確認の補助候補とするが、通常のロー
 実装順は次の通りとする。
 
 1. `picoem-picocalc`の継承済みSerialテストを通し、既知のPico SDKファームウェアでUARTと停止条件を確認する
-2. GPIOとPIO0を標準BのRGB565 LCD modelへ接続し、320×320 framebufferを再現する
-3. I²C1 keyboard modelを接続する
-4. SPI0、SD_DET、SD block-device modelを接続する
-5. PIO1 PSRAMとMISO feedbackを接続する
-6. PWM/DMA audioの観測を追加する
-7. core1/SIO FIFO、WFE/SEV、IRQ、PIO、DMAの相互作用を検証する
-8. 互換AのSPI1/RGB666 containerとRP2350の別backendを必要に応じて追加する
+2. 無改変`Code/picocalc_helloworld`をdirect bootするheadless runnerを作り、UART、PC、例外、未対応MMIOを取得する
+3. 公式サンプルが使うAのSPI1/RGB666 3-byte転送をLCD modelへ接続し、`Hello World PicoCalc`を320×320 framebufferへ再現する
+4. PIO1/DMA PSRAMを接続し、公式サンプルの8 MiB全域試験を完走する
+5. I²C1 address `0x1f`のkeyboard controller、battery、backlightを接続し、scripted key echoを確認する
+6. 標準BのPIO0/RGB565/LCD DMA OFFを別bus adapterとして接続し、Canonical BSP診断を実行する
+7. SPI0、SD_DET、SD block-device modelを接続する
+8. PWM/DMA audio、core1/SIO FIFO、WFE/SEV、IRQ、PIO、DMAの相互作用を対象workloadごとに検証する
+9. RP2350の別backendを必要に応じて追加する
 
 各段階は「対象 ELF が起動する」だけでなく、対応するシナリオの画面・イベント・ファイル結果が Mode A または実機と一致した時点で完了とする。
+最初の画面表示は中間到達点であり、`picocalc_helloworld`の完全合格条件は
+[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。Aを最初に扱っても、
+Canonical BSPの推奨表示デフォルトはBのままである。
 
 ## 5. AI 向け CLI とシナリオ
 

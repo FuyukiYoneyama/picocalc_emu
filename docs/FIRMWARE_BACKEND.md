@@ -33,17 +33,28 @@ shared device path.
 ## Initial implementation order
 
 1. Build and run the inherited `rp2040-emu` Serial test suite without PicoCalc modifications.
-2. Load a PicoCalc BIN/ELF image and reach the `[PICOCALC][BOOT]` log line.
-3. Decode the default PIO0 RGB565 LCD path and reproduce the initialization transaction.
-4. Render deterministic 320x320 framebuffer output and compare hashes or PNG artifacts.
-5. Connect the keyboard model through I2C1.
-6. Add SPI0 SD-card support and deterministic filesystem fixtures.
-7. Connect PIO1 PSRAM and its MISO feedback path.
-8. Add PWM/DMA audio observation.
-9. Validate multicore firmware, SIO FIFO, WFE/SEV, interrupts, PIO, and DMA interactions.
-10. Add UF2 loading, GDB/debug support, and broader capability reporting as needed.
+2. Build the unmodified ClockworkPi `Code/picocalc_helloworld` source and pin its source commit, SDK/toolchain identity, and ELF/BIN hashes.
+3. Add a headless direct-boot runner that captures UART, PC, exceptions, unsupported MMIO, cycle limits, and the stop reason.
+4. Connect SPI1 and GPIO CS/DC/RESET to a PicoCalc LCD model, decode the sample's RGB666 three-byte wire format, and render a deterministic 320x320 framebuffer.
+5. Reach the first visible checkpoint where the unmodified sample displays `Hello World PicoCalc`.
+6. Connect PIO1/DMA PSRAM and complete the sample's full 8 MiB multi-width test without reducing its test range.
+7. Connect the address `0x1f` I2C1 keyboard-controller model, including FIFO, battery, and backlight registers, and verify scripted key echo.
+8. Record PWM initialization. Audible output is not an acceptance condition for this sample because its `main()` does not start sample playback.
+9. Integrate UART, framebuffer, trace, PSRAM, keyboard, capability, commit, and firmware-hash artifacts with `picocalc_emu`.
+10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path as the next firmware conformance target.
+11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
 
-The first feasibility gate is deliberately limited to the default `pio-rgb565` LCD variant with LCD DMA disabled. The backend is promoted to a supported `picocalc_emu` component only after that path produces stable, repeatable results and the inherited emulator regression suite remains green.
+The first end-to-end firmware target is the unmodified ClockworkPi
+`picocalc_helloworld`. Its LCD path is variant A: hardware SPI1 with RGB666 in a
+three-byte container. This prioritization does not change the Canonical BSP default,
+which remains variant B: PIO0, RGB565, and LCD DMA disabled. A and B use separate bus
+adapters and are not forced into one transfer implementation.
+
+Displaying the first frame is an intermediate visible checkpoint, not full sample
+acceptance. Full acceptance additionally requires the complete PSRAM test, I2C
+controller behavior, scripted keyboard echo, no silently ignored unsupported MMIO,
+and repeatable structured artifacts. The detailed gates and acceptance criteria are
+defined in [`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md).
 
 ## Public release requirement
 

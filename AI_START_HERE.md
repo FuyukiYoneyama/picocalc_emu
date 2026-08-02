@@ -149,5 +149,6 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 - `REQUIREMENTS.md`: 将来のエミュレーターを含む要求仕様
 - `docs/DESIGN.md`: 未実装エミュレーターの将来設計
 - `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
+- `docs/EMULATOR_ROADMAP.md`: 無改変`picocalc_helloworld`から始める実装順と段階別受入条件
 - `docs/LCD_INVESTIGATION_20260729.md`: LCD問題の過去の調査記録。手順の根拠ではあるが、
   古いUF2やコミットを現在版として再利用しない

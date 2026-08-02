@@ -60,9 +60,15 @@ Firmware backendを使用します。詳細は
 利用しますが、`picocalc_emu`へ接続する主バックエンドにはしません。
 
 Canonical BSPとtemplateの整備をMilestone 0として完了したため、ここから
-`picocalc_emu`のエミュレーター実装を本格的に開始します。最初のFirmware合否ゲートは、
-`picoem-picocalc`のSerial回帰を保ったまま、標準BのPIO0/RGB565/LCD DMA OFFを
-320×320 framebufferとして決定的に再現することです。
+`picocalc_emu`のエミュレーター実装を本格的に開始します。最初のFirmware縦断対象は、
+ClockworkPi公式の無改変`Code/picocalc_helloworld`です。まずAのSPI1/RGB666 3-byte転送で
+`Hello World PicoCalc`を320×320 framebufferへ決定的に描画し、その後、PSRAM全域試験、
+I2C keyboard controller、scripted key echoまで通して完全合格とします。
+
+これはCanonical BSPの推奨表示デフォルトを変更するものではありません。BのPIO0/RGB565/
+LCD DMA OFFは、公式サンプルAの縦断合格後に検証する次のFirmware conformance対象です。
+詳細な実装順と受入条件は
+[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)を参照してください。
 
 ## 30秒で試す
 

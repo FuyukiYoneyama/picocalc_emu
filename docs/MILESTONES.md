@@ -60,15 +60,27 @@ Primary backendとして`picoem-picocalc`を使用する。ソースは
 
 - `picoem-picocalc`のversion/commit固定とcapability manifest
 - inherited RP2040 Serial test suiteの基準化
-- 同一ELF/BIN/UF2のロードとUART boot log取得
-- GPIOとPIO0を通した`pio-rgb565` LCD初期化・framebuffer生成
-- I2C1 keyboard、SPI0 SD、PIO1 PSRAM、PWM/DMA audioの段階的接続
+- 無改変`Code/picocalc_helloworld`のsource/build identity固定
+- ELF/BINのdirect bootとUART、PC、例外、未対応MMIO、停止理由の取得
+- SPI1とGPIOを通したAのRGB666 3-byte LCD初期化・framebuffer生成
+- `Hello World PicoCalc`を最初の可視化到達点として取得
+- PIO1/DMA PSRAM全域試験、I2C1 keyboard controller、battery、backlightの接続
+- シナリオ入力したキーのLCD echoを含む`picocalc_helloworld`完全合格
+- 次のconformance対象としてBのPIO0/RGB565/LCD DMA OFFを接続
+- SPI0 SD、PWM/DMA audioの段階的接続
 - 必要範囲のPIO/DMA/multicore、SIO FIFO、WFE/SEV、IRQ対応
 - PNG、UART、trace、filesystem、JUnit等のscenario成果物への接続
 - backend commitとcapabilityを各実行結果へ記録
 
-最初の合否ゲートは、LCD DMAを使わない標準`pio-rgb565` firmwareが
-`[PICOCALC][BOOT]`へ到達し、LCD初期化と320x320 framebufferを決定的に再現できることとする。
+最初のFirmware縦断対象は、ClockworkPi公式の無改変`Code/picocalc_helloworld`とする。
+最初の可視化到達点はAのSPI1/RGB666 3-byte転送を解釈し、320x320 framebufferへ
+`Hello World PicoCalc`を決定的に描画できることである。ただし、この時点では完全合格と
+しない。8 MiB PSRAM全域試験、I2C controller、scripted keyboard echo、未対応MMIOなし、
+構造化artifactの反復一致まで満たして完全合格とする。
+
+この優先順位はCanonical BSPの推奨デフォルトを変更しない。BのPIO0/RGB565/
+LCD DMA OFFは、Aの公式サンプル縦断試験に続くFirmware conformance対象とする。
+詳細は[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。
 
 Firmware backendはHost device modelの代替ではない。対象アプリが同一バイナリ
 確認を必要とし、backendの対応能力が明示されている場合だけ使用する。

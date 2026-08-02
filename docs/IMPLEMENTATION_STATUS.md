@@ -215,11 +215,16 @@ EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式
 
 また、次の機能は今後のエミュレーター段階である。
 
-- `picoem-picocalc`上での同一UF2/ELF/BIN実行（`rp2040js`は比較参考）
+- 無改変`Code/picocalc_helloworld`のELF/BINを`picoem-picocalc`でdirect bootし、
+  AのSPI1/RGB666表示、PSRAM全域試験、I2C keyboard echoまで通す最初の縦断試験
 - SPI/I2C デバイスモデルと LCD framebuffer/PNG
 - FAT イメージを使う仮想 SD と故障注入
 - キーシナリオ再生、画面差分、JUnit/JSON 成果物
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
+
+最初の可視化到達点と公式サンプル完全合格、ならびにその後のBのFirmware conformanceは
+[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。エミュレーターの最初の対象がAでも、
+Canonical BSPの推奨表示デフォルトはBのままである。
 
 0.8.8は、実機動作済みコードを基準にした参照経路と、AIが利用する汎用経路を
 同じBSP内に用意する現行版である。A/BのLCD経路は従来どおり独立しており、音声は
