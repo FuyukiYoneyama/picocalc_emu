@@ -1,0 +1,355 @@
+{
+  "schema_version": 1,
+  "gate": 2,
+  "record_id": "gate2-20260803-01",
+  "milestone_target": "HELLO-VISIBLE",
+  "runner": {
+    "backend_repo": "picoem-picocalc",
+    "backend_branch": "feature/picocalc-integration",
+    "backend_commit": {
+      "base": "98f582cfb82cbd7ebc908c8ac38e7cc9967f92f8",
+      "wfe_fix": "d4a51266935b7906b76324a2ef9d6e5f743338fc",
+      "accepted": "1a86a58df95bffc81e8b1912b02f4c1283e3733c"
+    },
+    "crates_changed": [
+      "rp2040-emu (generic SPI external-device hook; additive)",
+      "picocalc-board (new; all PicoCalc-specific models)",
+      "picocalc-harness (--board / --fb-png / --quantum; report schema 1 -> 2)"
+    ],
+    "crate_added": {
+      "name": "picocalc-board",
+      "modules": ["pins", "st7365p", "wire", "framebuffer", "sha256"],
+      "dependencies": ["rp2040-emu (path)", "png 0.18.1"],
+      "dependency_notes": "png was added for the human-inspection PNG only; it emits IHDR/IDAT/IEND with no tIME or text chunks, so output is a pure function of the framebuffer. Version pinned by Cargo.lock (png 0.18.1, fdeflate 0.3.7). sha256.rs was moved out of picocalc-harness into this crate so the framebuffer canonical hash and the runner report share one implementation rather than duplicating it.",
+      "execution_model": "Serial"
+    },
+    "cli_additions": {
+      "--board <none|picocalc>": "default none. picocalc attaches the ST7365P model to SPI1 and adds the lcd + framebuffer report sections",
+      "--fb-png <path>": "write the 320x320 viewport as 8-bit RGB PNG; requires --board picocalc",
+      "--quantum <N>": "override the step quantum. Precedence: explicit --quantum > --stop-pc (1) > board default (16) > free-run (64)"
+    },
+    "backward_compatibility": "--board none reproduces Gate 1 exactly: step_quantum 64, no lcd/framebuffer sections, identical UART sha256 (4384ed18e8df458d06c36b23a70d4b51546aebd632e9e0ce8059a0c4286ae9d3). Only schema_version moved 1 -> 2."
+  },
+  "primary_source_findings": {
+    "method": "Read-only study of the ClockworkPi official picocalc_helloworld/lcdspi sources (lcdspi.h, lcdspi.c, fonts/font1.h, main.c) plus the built firmware disassembly. No official source was modified or copied; only constant values were transcribed.",
+    "spi_instance": "spi1",
+    "spi_speed_hz": 25000000,
+    "frame_bits": 8,
+    "pins": {
+      "SCK": "GP10 (GPIO_FUNC_SPI)",
+      "MOSI": "GP11 (GPIO_FUNC_SPI)",
+      "MISO": "GP12 (GPIO_FUNC_SPI)",
+      "CS": "GP13 (SIO, active low)",
+      "DC": "GP14 (SIO, 0 = command / 1 = data)",
+      "RESET": "GP15 (SIO, active low)"
+    },
+    "panel_geometry": {
+      "gram": "320x480",
+      "viewport": "320x320",
+      "source": "pico_lcd_init sets hres = vres = 320 and every primitive clips to it, so GRAM rows 320..479 are never addressed"
+    },
+    "colmod": "0x3A <- 0x66 (18 bits/pixel, 3 bytes on the wire, 6 significant bits in the top of each byte)",
+    "madctl": "0x36 <- 0x48 (MX | BGR, the ILI9341_Portrait macro). The init block writes a bare 0x36 with no parameter immediately before the final spi_write_cd(0x36, 1, 0x48) re-send.",
+    "init_sequence": [
+      "0xE0 Positive Gamma Control (15 params)",
+      "0xE1 Negative Gamma Control (15 params)",
+      "0xC0 Power Control 1 (2 params)",
+      "0xC1 Power Control 2 (1 param)",
+      "0xC5 VCOM Control (3 params)",
+      "0x36 MADCTL <- 0x48",
+      "0x3A COLMOD <- 0x66",
+      "0xB0 Interface Mode Control (1 param)",
+      "0xB1 Frame Rate Control (1 param)",
+      "0x21 INVON",
+      "0xB4 Display Inversion Control (1 param)",
+      "0xB6 Display Function Control (3 params)",
+      "0xB7 Entry Mode Set (1 param)",
+      "0xE9 (1 param)",
+      "0xF7 Adjust Control 3 (4 params)",
+      "0x11 SLPOUT, then sleep_ms(120)",
+      "0x29 DISPON, then sleep_ms(120)",
+      "0x36 (bare), then 0x36 <- 0x48"
+    ],
+    "hardware_reset": "reset_controller drives RST high 10 ms, low 10 ms, high 200 ms. Together with the earlier gpio_put(RST, 1) in lcd_spi_init this produces two observed low-to-high edges.",
+    "addressing": "define_region_spi lowers CS once, then sends 0x2A + 4 bytes, 0x2B + 4 bytes, 0x2C, toggling DC around each opcode, and leaves CS low for the whole pixel burst. CS is raised only when the drawing primitive finishes.",
+    "busy_discipline": {
+      "statement": "The firmware never moves a control line while a transfer is outstanding.",
+      "evidence": [
+        "spi_write_command / spi_write_data pulse CS around every single byte, but the enclosing spi_write_blocking (this pico-sdk build, disassembled at 0x200001cc, does not wait for RX; it polls SSPSR.BSY) blocks until the FIFO has drained.",
+        "The bulk path spi_write_fast fills the TX FIFO ignoring RX, and spi_finish then drains RX and waits for SSPSR.BSY to fall before lcd_spi_raise_cs.",
+        "SSPSR.BSY is asserted while the TX FIFO is non-empty, so the CPU is architecturally parked in a poll loop across the whole drain window."
+      ],
+      "consequence": "Sampling the pads immediately before the FIFO drain frames every word with the control lines the firmware intended for it, independent of step quantum."
+    },
+    "text_rendering": "fonts/font1.h is 8x12, one byte per scan line, MSB leftmost. draw_bitmap_spi emits three bytes per pixel (foreground GREEN = 00 FF 00, background BLACK = 00 00 00). lcd_clear uses draw_rect_spi, which streams one row at a time through spi_write_fast."
+  },
+  "hook_api": {
+    "location": "crates/rp2040-emu/src/peripherals/spi.rs",
+    "trait": "pub trait SpiExternalDevice: Send { fn transfer(&mut self, word: u16, bits: u8) -> u16; fn observe_pins(&mut self, _gpio_out_levels: u32) {} }",
+    "attach": "Bus::attach_spi_device(instance: usize, dev: Box<dyn SpiExternalDevice>) -> Result<Option<Box<dyn SpiExternalDevice>>, usize>",
+    "support": [
+      "Bus::spi_has_device(instance) -> bool",
+      "Bus::pad_out_levels() -> u32 (merged SIO + PIO pad output, masked to GPIO0..29)",
+      "SpiRegs::attach_device / has_device / observe_pins"
+    ],
+    "tap_point": "SpiRegs::tick TX FIFO drain loop, where the word was previously discarded. Non-loopback only: in loopback the PL022 ties TX to RX inside the chip, so the device is neither driven nor sampled and the RX copy is not duplicated. RX push-on-full latches SSPRIS.ROR and drops the frame, matching PL022 behaviour that pico-sdk spi_write_fast relies on.",
+    "observe_call_sites": [
+      "Bus::tick_peripherals, immediately before the SPI ticks, guarded by spi_has_device so the pad merge is skipped when nothing is attached",
+      "Emulator::update_gpio, so side-band edges that occur while the SSP is completely idle (the LCD hardware RESET pulse) are still seen when the fast path skips tick_peripherals. Idempotent: nothing executes between the two sites within one step."
+    ],
+    "reset_behaviour": "SpiRegs::reset preserves the attached device. A soldered part is not unsoldered by an MCU peripheral reset, and Emulator::reset would otherwise silently detach the panel.",
+    "generic_crate_purity": "rp2040-emu contains no PicoCalc pin number, constant or device. It routes words and an anonymous pad-level word; the device decides what it cares about. Same pattern as the pre-existing off-chip PSRAM tick.",
+    "approved_deviation": {
+      "as_specified": "The runner was to synchronise CS/DC/RESET into the model from GPIO after each step.",
+      "problem": "That is one step late and deadlocks. Within a single quantum the CPU executes CS=0, then the SSPDR push, then enters the BSY poll loop. A control-line snapshot taken at the end of that step is applied only after the drain, so the drain frames the byte with the previous transaction's CS=1 and the byte is rejected.",
+      "implemented_instead": "observe_pins added as a default-implemented trait method, called by the bus with the merged pad snapshot immediately before the drain.",
+      "status": "Formally approved by Sol on 2026-08-03 as part of the Gate 2 acceptance.",
+      "benefit": "Correctness becomes quantum-independent rather than quantum-tuned; verified empirically at quantum 1 through 256."
+    }
+  },
+  "wfe_fix": {
+    "commit": "d4a51266935b7906b76324a2ef9d6e5f743338fc",
+    "blocker": "Recorded in gate1-20260803-01/notes.md: picocalc_helloworld froze at cycle 1529101 with stop_reason=error, core 0 parked on WFE inside lcd_init's delay path. Every later Gate needs execution past that point.",
+    "root_cause": "A WFE-parked core was woken only by the event register, never by an enabled and pending NVIC interrupt. The pico-sdk sleep_until idiom (arm alarm, then WFE loop) therefore live-locked, and the pending TIMER IRQ simultaneously disqualified the both-cores-blocked clock-advance branch (tech_debt 1649), freezing virtual time.",
+    "specification_basis": "ARMv6-M Architecture Reference Manual B1.5.18: an asynchronous exception at preempting priority is a WFE wake-up event.",
+    "fix": "wake_checks un-parks a wfe_waiting core when pending_and_enabled() != 0, mirroring the existing WFI branch. The event register is deliberately not consumed (an interrupt wake is not an event-register consume), and disabled pending IRQs still do not wake.",
+    "diffstat": "crates/rp2040-emu/src/lib.rs +23, crates/rp2040-emu/tests/wfe_irq_wake.rs +213 (new). Purely additive.",
+    "tests_added": 5,
+    "tests_failing_before_fix": ["the wake case", "the no-consume case"],
+    "suite_after_fix": 1230,
+    "threaded_model": "The same gap exists in threaded/emulator.rs's worker loop. Left untouched under the Serial-first policy; see the known_limitations entry."
+  },
+  "hello_visible": {
+    "firmware": "picocalc_helloworld.bin",
+    "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+    "firmware_unmodified": true,
+    "board": "picocalc",
+    "step_quantum": 16,
+    "boot_mode": "direct_boot_from_flash",
+    "text_complete_cycles_approx": 75374000,
+    "last_glyph_pixel_cycles_approx": 75378000,
+    "golden_cycle_budget": 76000000,
+    "golden_budget_rationale": "A round number past completion. The framebuffer is stable from ~75.38M until the PSRAM test writes its own line to the LCD at ~200M cycles, so the budget has ample margin on both sides.",
+    "golden_rgb565_sha256": "cb4251497590686c3c8665287b15fe80bb20ba7b6f287779e3850e5a1e0cc966",
+    "canonical_hash_definition": "SHA-256 of the RGB565 raw byte stream: 320 * 320 * 2 bytes, row-major, little-endian per pixel. Not of the PNG, which is a derived human-inspection artefact.",
+    "golden_png_sha256": "ad98827eacd9a51817e8ec8f5c04afab0f057c3db5510eb697c0c625282f503f",
+    "golden_report_sha256": "0706332482033b223a40c88380077d688cf7de74f629f2f3262c1781a6a045ab",
+    "artefacts": {
+      "hello-visible.json": "the accepted run's full JSON report",
+      "hello-visible.png": "the golden framebuffer"
+    },
+    "pixels_written": 104320,
+    "pixels_written_decomposition": "102400 (320 x 320 lcd_clear) + 1920 (20 glyphs x 8 x 12) = 104320, exact",
+    "pixels_dropped": 0,
+    "orphan_data_bytes": 0,
+    "non_black_pixels": 267,
+    "lcd_observations": {
+      "reset_pulses": 2,
+      "swreset": 0,
+      "slpout": 1,
+      "slpin": 0,
+      "dispon": 1,
+      "dispoff": 0,
+      "madctl": "0x48",
+      "colmod": "0x66",
+      "caset": 21,
+      "raset": 21,
+      "ramwr": 21,
+      "ramrd": 0,
+      "ramwr_decomposition": "1 lcd_clear + 20 glyphs",
+      "unknown_commands": [
+        {"code": "0xb0", "count": 1},
+        {"code": "0xb1", "count": 1},
+        {"code": "0xb4", "count": 1},
+        {"code": "0xb6", "count": 1},
+        {"code": "0xb7", "count": 1},
+        {"code": "0xc0", "count": 1},
+        {"code": "0xc1", "count": 1},
+        {"code": "0xc5", "count": 1},
+        {"code": "0xe0", "count": 1},
+        {"code": "0xe1", "count": 1},
+        {"code": "0xe9", "count": 1},
+        {"code": "0xf7", "count": 1}
+      ],
+      "unknown_commands_note": "The whole ILI9488 power/gamma/frame init block. Counted by opcode rather than silently swallowed, so a decoder that lost frame sync would be visible here."
+    },
+    "independent_pixel_check": {
+      "method": "The expected bitmap for the string was computed directly from fonts/font1.h using the firmware's own bit-extraction expression, then compared against the decoded PNG.",
+      "expected_lit_pixels": 267,
+      "observed_lit_pixels": 267,
+      "missing": 0,
+      "extra": 0,
+      "distinct_colours": {"black": 102133, "green_0_255_0": 267},
+      "colour_note": "Exactly two colours, matching gui_fcolour = GREEN and gui_bcolour = BLACK in lcd_init."
+    },
+    "quantum_invariance": {
+      "quanta_tested": [1, 2, 4, 8, 16, 32, 64, 256],
+      "cycle_budget": 100000000,
+      "rgb565_sha256_identical": true,
+      "pixels_written_identical": 104320,
+      "pixels_dropped": 0,
+      "orphan_data_bytes": 0,
+      "significance": "Empirical confirmation of the sample-pads-before-drain framing argument. No quantum-boundary debt is carried into the verification path."
+    },
+    "determinism": {
+      "runs": 3,
+      "arguments_identical": true,
+      "json_identical": true,
+      "png_identical": true,
+      "uart_identical": true,
+      "method": "sha256 of the JSON report and the PNG for each of three runs with identical arguments"
+    },
+    "visual_acceptance": {
+      "accepted_by": "Sol",
+      "date": "2026-08-03",
+      "method": "Independent re-run reproducing rgb565_sha256 cb4251497590686c3c8665287b15fe80bb20ba7b6f287779e3850e5a1e0cc966, plus visual inspection of the PNG",
+      "result": "golden"
+    }
+  },
+  "roadmap_hello_visible_conditions": [
+    {
+      "n": 1,
+      "condition": "Flash/XIPからmain()へ到達する",
+      "status": "pass",
+      "evidence": "boot.mode = direct_boot_from_flash from the SDK vector table at flash+0x100; Gate 1 confirmed main at 0x10000ca8 with stop_reason=pc_match at cycle 127826, and the Gate 2 run uses the same boot path."
+    },
+    {
+      "n": 2,
+      "condition": "UART0ログを取得できる",
+      "status": "pass",
+      "evidence": "18 bytes \"Testing PSRAM...\\r\\n\", sha256 4384ed18e8df458d06c36b23a70d4b51546aebd632e9e0ce8059a0c4286ae9d3, byte-identical with and without the board attached."
+    },
+    {
+      "n": 3,
+      "condition": "clock、GPIO、SPI1、I2C1の初期化で未対応MMIO、Bus fault、panicを起こさない",
+      "status": "pass",
+      "evidence": "unsupported_mmio is empty with the observation log enabled, unsupported_mmio_truncated false, exception null, error null. No emulator panic across every run in this record."
+    },
+    {
+      "n": 4,
+      "condition": "LCDのRESET、CS、DCとSPI1転送を外部LCD modelへ渡す",
+      "status": "pass",
+      "evidence": "SPI1 carries the St7365pWire device; CS/DC/RESET reach it as pad levels through observe_pins. reset_pulses = 2 matches lcd_spi_init plus reset_controller, and orphan_data_bytes = 0 shows no byte arrived outside a framed command."
+    },
+    {
+      "n": 5,
+      "condition": "LCD初期化、画面消去、Hello World PicoCalc描画を解釈する",
+      "status": "pass",
+      "evidence": "SLPOUT 1, DISPON 1, COLMOD 0x66, MADCTL 0x48 observed; ramwr 21 = 1 clear + 20 glyphs; pixels_written 104320 matches 320x320 + 20x8x12 exactly with 0 dropped."
+    },
+    {
+      "n": 6,
+      "condition": "320×320 framebufferをPNGまたはhashとして決定的に取得する",
+      "status": "pass",
+      "evidence": "Canonical rgb565_sha256 cb4251497590686c3c8665287b15fe80bb20ba7b6f287779e3850e5a1e0cc966 over the 320x320x2 row-major little-endian raw stream, plus hello-visible.png (sha256 ad98827eacd9a51817e8ec8f5c04afab0f057c3db5510eb697c0c625282f503f). The PNG carries no tIME or text chunk, and the encoder version is pinned in Cargo.lock."
+    },
+    {
+      "n": 7,
+      "condition": "同一入力を繰り返したとき、UART、framebuffer、停止理由が一致する",
+      "status": "pass",
+      "evidence": "Three runs with identical arguments produced byte-identical JSON reports and byte-identical PNGs, with stop_reason cycle_limit each time. The framebuffer hash is additionally invariant across step quanta 1..256."
+    }
+  ],
+  "verification": {
+    "build": {
+      "command": "cargo build --release -p picocalc-harness",
+      "result": "ok",
+      "workspace_default_build": "ok"
+    },
+    "regression": {
+      "command": "cargo test -p rp2040-emu",
+      "results": [
+        {"suite": "lib (unittests src/lib.rs)", "passed": 1208, "failed": 0},
+        {"suite": "tests/firmware.rs", "passed": 9, "failed": 0},
+        {"suite": "tests/multicore.rs", "passed": 9, "failed": 0},
+        {"suite": "tests/smoke.rs", "passed": 6, "failed": 0},
+        {"suite": "tests/wfe_irq_wake.rs", "passed": 5, "failed": 0},
+        {"suite": "doc-tests rp2040_emu", "passed": 0, "failed": 0}
+      ],
+      "total_passed": 1237,
+      "failed": 0,
+      "baseline_before_gate2": 1230,
+      "new_tests_added": 7,
+      "regressions": 0,
+      "baseline_note": "1230 is the post-WFE-fix baseline (gate 1's 1225 plus the 5 wfe_irq_wake tests). The 7 new tests are the SPI external-device hook tests."
+    },
+    "board_crate_tests": {
+      "command": "cargo test -p picocalc-board",
+      "passed": 25,
+      "failed": 0,
+      "doc_tests_passed": 1,
+      "coverage": [
+        "RGB666 to RGB565 boundary values 0x00 / 0xFC / 0xFF and mid-scale",
+        "COLMOD register decode and bytes-per-pixel, including an unsupported value leaving the previous format in force",
+        "framing: bytes ignored while deselected or in reset; command state surviving CS pulsing between bytes",
+        "RESET edge re-initialisation and pulse counting; SWRESET clearing GRAM while keeping observation counters",
+        "unknown opcodes counted by opcode and kept sorted",
+        "CASET/RASET window and origin; column-then-row pointer walk with wrap; single-pixel window; off-GRAM writes dropped without panicking",
+        "RGB565 COLMOD consuming two bytes per pixel",
+        "viewport cropping the GRAM to the visible square",
+        "framebuffer raw byte order, RGB8 expansion, hash stability and sensitivity"
+      ]
+    },
+    "hook_tests": {
+      "command": "cargo test -p rp2040-emu (peripherals::spi)",
+      "added": 7,
+      "cases": [
+        "attached device receives TX words in order and its returns drive the RX FIFO",
+        "device frame width follows SSPCR0.DSS",
+        "observe_pins reaches the device and is a no-op when detached",
+        "loopback bypasses the device and does not double-push RX",
+        "detached tick still discards TX and leaves RX empty (pre-hook behaviour unchanged)",
+        "RX overrun latches ROR and drops the frame",
+        "reset keeps the soldered device attached"
+      ]
+    },
+    "harness_tests": {"command": "cargo test -p picocalc-harness", "passed": 3, "failed": 0},
+    "workspace_tests": {"command": "cargo test", "failed_suites": 0},
+    "lint": {
+      "cargo_clippy": "picocalc-harness, picocalc-board, rp2040-emu --all-targets: no new warnings. One pre-existing identity_op warning in rp2040-emu/src/tests.rs is untouched.",
+      "cargo_fmt": "clean for picocalc-board and picocalc-harness, and for every rp2040-emu file changed by this Gate (peripherals/spi.rs, bus/mod.rs, lib.rs). Pre-existing diffs remain in src/tests.rs, src/threaded/emulator.rs and tests/threaded_bus_paths.rs, which this Gate did not touch; they are left alone so the backend diff stays additive."
+    },
+    "long_run_behaviour": {
+      "cycle_budget": 800000000,
+      "stop_reason": "cycle_limit",
+      "exception": null,
+      "unsupported_mmio": [],
+      "uart_bytes": 18,
+      "ramwr": 37,
+      "pixels_written": 105856,
+      "non_black_pixels": 486,
+      "observation": "Past ~200M cycles the firmware also draws \"Testing PSRAM...\" to the LCD, matching the UART output line for line, then stalls inside psram_write8 because no PSRAM model is attached. Framebuffer content is stable from 200M through 800M cycles. Out of scope for this Gate; see known_limitations."
+    }
+  },
+  "known_limitations": [
+    {
+      "id": "psram-not-modelled",
+      "impact": "The run cannot progress past psram_test. The firmware stalls inside psram_write8.",
+      "detection": "UART stops after \"Testing PSRAM...\" and the LCD shows the same two lines and nothing more.",
+      "scope": "Gate 3 (PIO1/DMA PSRAM). Not a Gate 2 defect: HELLO-VISIBLE completes at ~75.4M cycles, long before the PSRAM test begins."
+    },
+    {
+      "id": "ramrd-not-implemented",
+      "impact": "RAMRD (0x2E) is decoded and counted but returns zero bytes. The firmware's read path (read_buffer_spi) is used only by scroll_lcd_spi, so any output exceeding the 26-line screen would corrupt the framebuffer.",
+      "detection": "lcd.ramrd becomes non-zero. It is 0 in every run in this record.",
+      "reason": "Modelling the ST7365P read protocol needs the dummy-byte and byte-order behaviour confirmed against silicon. Track A's real-hardware RAMRD session is the intended primary source; the plan already designates Gate 2 as provisionally accepted pending that correlation."
+    },
+    {
+      "id": "madctl-and-invon-not-applied",
+      "impact": "MADCTL 0x48 (MX | BGR) and INVON are recorded in the report but not applied to the framebuffer.",
+      "reason": "Both are panel-wiring and glass compensations. MX mirrors the column counter against the physical glass so the image is upright on the device, so applying it to a framebuffer indexed by logical CASET/RASET addresses would mirror the text relative to what a person sees. BGR is set precisely so that an R-first byte stream renders red as red, so wire bytes are decoded as (R, G, B) in stream order. INVON is enabled because the PicoCalc glass needs it to show BLACK as black; applying an inversion would produce a white background, the opposite of the device.",
+      "revisit": "If Track A's hardware capture disagrees, the transform belongs in the framebuffer extraction step, not in the command decoder."
+    },
+    {
+      "id": "threaded-wfe-gap",
+      "impact": "The WFE interrupt-wake fix was applied to the Serial model only. threaded/emulator.rs's worker loop has the same gap.",
+      "reason": "Serial is the correctness reference for this track (plan section 3.1). Threaded is not on the verification path for Milestone 1."
+    },
+    {
+      "id": "colmod-subset",
+      "impact": "Only COLMOD 0x55 (RGB565) and 0x66 (RGB666) are unpacked. Any other value leaves the previous format in force and is visible as an unchanged colmod field.",
+      "reason": "The official firmware uses 0x66 exclusively; 0x55 is modelled because it is the natural second case and costs nothing."
+    }
+  ],
+  "notes": "Gate 2 vertical slice. The unmodified picocalc_helloworld.bin drives an emulated SPI1 ST7365P through its full initialisation, clears the screen and renders Hello World PicoCalc, and the resulting 320x320 viewport is extracted deterministically as an RGB565 hash and a PNG. Two backend changes were needed: the WFE interrupt-wake fix that unblocked the Gate 1 clock freeze, and the generic SPI external-device hook. Neither adds PicoCalc knowledge to rp2040-emu; every board-specific fact lives in the new picocalc-board crate. The specified per-step control-line synchronisation was replaced, with Sol's approval, by a pre-drain pad observation, which makes framing correctness independent of the step quantum rather than dependent on tuning it. The framebuffer was additionally validated against an independently computed expectation derived from the firmware's own font table and bit-extraction expression: 267 lit pixels, zero missing, zero extra."
+}

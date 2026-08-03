@@ -143,6 +143,19 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 各Gateは「合格後に独立したcommitとして残す」（`EMULATOR_ROADMAP.md` §7）。
 以下の受入条件はチェック用の要約であり、正式な条件は`EMULATOR_ROADMAP.md` §3〜4。
 
+### 進捗
+
+| Gate | 状態 | record |
+|---|---|---|
+| Gate 0: 基準の固定 | 完了 2026-08-03 | `firmware-validation/records/gate0-20260803-01/` |
+| Gate 1: headless firmware runner | 完了 2026-08-03 | `firmware-validation/records/gate1-20260803-01/` |
+| Gate 2: SPI1 LCD vertical slice | 完了 2026-08-03（HELLO-VISIBLE達成） | `firmware-validation/records/gate2-20260803-01/` |
+| Gate 3: PIO1/DMA PSRAM | 未着手 | — |
+| Gate 4: I2C keyboard controller | 未着手 | — |
+| Gate 5: full application acceptance | 未着手 | — |
+| Gate 6: `picocalc_emu` integration | 未着手 | — |
+| Gate 7: Canonical BSP B conformance | 未着手 | — |
+
 ### Gate 0: 基準の固定（実機不要）
 
 作業:
@@ -291,6 +304,8 @@ command decoderとLCD state、(4)GRAM書き込み・address window・RGB666→RG
 decode、(5)PNG/hash出力。変更可能な場所は`rp2040-emu`のhook追加と新設
 PicoCalc専用crate、および`firmware-validation/records/`。Gate固有の禁止は
 汎用crateへPicoCalc固有のpin・定数を埋め込むこと。
+
+2026-08-03受入完了。golden hashと詳細は`firmware-validation/records/gate2-20260803-01/`。
 
 ### Gate 3: PIO1/DMA PSRAM（実機不要）
 
