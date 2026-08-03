@@ -70,7 +70,7 @@ Solが要件、計画、設計、受入、レビュー、統合、commit/push、
 
 - 通常のアプリ作業: 本書の「AIが行う正規手順」以降を読む。
 - エミュレーター作業: `docs/MILESTONES.md` → `docs/EMULATOR_ROADMAP.md` →
-  `docs/FIRMWARE_BACKEND.md`の順に読む。
+  `docs/IMPLEMENTATION_PLAN.md` → `docs/FIRMWARE_BACKEND.md`の順に読む。
 - BSP・driver作業: `bsp/README.md` → `bsp/vendor/README.md` →
   `THIRD_PARTY_NOTICES.md`の順に読み、通常アプリの変更範囲と混同しない。
 
@@ -214,6 +214,7 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 - `REQUIREMENTS.md`: 将来のエミュレーターを含む要求仕様
 - `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
 - `docs/EMULATOR_ROADMAP.md`: 無改変`picocalc_helloworld`から始める実装順と段階別受入条件
+- `docs/IMPLEMENTATION_PLAN.md`: Milestone 1をGate別の作業単位へ分解した実行計画
 - `docs/DESIGN.md`: **未実装**エミュレーターの将来設計。Phase番号は旧体系であり、
   実行順序は`docs/MILESTONES.md`が優先する
 - `bsp/vendor/README.md`: driverごとの由来、変更規約、呼び出し粒度

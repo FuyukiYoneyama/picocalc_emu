@@ -14,6 +14,9 @@ SHA-256、`picoem-picocalc`のcommitを実行結果へ記録する。実装開�
 ビルドへ使用するClockworkPi公式リポジトリ全体のcommitをGate 0で固定する。
 ディレクトリを最後に変更したcommitだけを、成果物全体のsource identityとして使わない。
 
+本書のGateを実行可能な作業単位へ分解した実行計画は
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)にある。
+
 ## 2. 対象ファームウェアの契約
 
 `picocalc_helloworld`は一つのアプリケーション内で、次を順に使用する。

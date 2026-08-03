@@ -223,7 +223,8 @@ EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
 最初の可視化到達点と公式サンプル完全合格、ならびにその後のBのFirmware conformanceは
-[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。エミュレーターの最初の対象がAでも、
+[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。作業単位の実行計画は
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)にある。エミュレーターの最初の対象がAでも、
 Canonical BSPの推奨表示デフォルトはBのままである。
 
 0.8.8は、実機動作済みコードを基準にした参照経路と、AIが利用する汎用経路を

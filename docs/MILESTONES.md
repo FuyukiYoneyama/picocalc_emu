@@ -56,6 +56,9 @@ golden の対象が確定して手戻りが少ないためです。`DESIGN.md §
 
 ## Milestone 1: Firmware backend — `picocalc_helloworld` first
 
+Milestone 1の作業単位分解と実行計画は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)に
+定義する。
+
 Primary backendとして`picoem-picocalc`を使用する。ソースは
 `picocalc_emu`へコピーせず別リポジトリで保守し、正確なcommitを固定する。
 初期段階では`ExecutionModel::Serial`を正しさの基準とする。

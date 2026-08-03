@@ -379,6 +379,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [要求仕様](REQUIREMENTS.md) — 全体要求と受け入れ条件
 - [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md) — `picoem-picocalc`の扱い
 - [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md) — Gate 0〜7の受入条件
+- [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) — Milestone 1をGate別の作業単位へ分解した実行計画
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系
 - [Vendored drivers](bsp/vendor/README.md) — driverごとの由来、変更規約、呼び出し粒度
 - [Third-party notices](THIRD_PARTY_NOTICES.md) — third-party由来コードの扱い

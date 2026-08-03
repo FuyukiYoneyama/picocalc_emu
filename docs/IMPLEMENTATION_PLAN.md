@@ -1,0 +1,227 @@
+# 詳細実装計画（Milestone 1: Firmware backend）
+
+> **文書の位置付け:** 全体計画の正典は`MILESTONES.md`、Gateの受入条件の正典は
+> `EMULATOR_ROADMAP.md`である。本書はそれらを変更せず、Milestone 1を実行可能な
+> 作業単位へ分解した実行計画を定義する。受入条件の記述が本書と
+> `EMULATOR_ROADMAP.md`で食い違う場合は`EMULATOR_ROADMAP.md`を優先する。
+>
+> 作成日: 2026-08-03。進捗欄は着手時に更新する。
+
+## 1. 目標の再確認
+
+プロジェクトの目的は「AIがPicoCalc向けプログラムをエミュレーター上で観測・検証・
+修正できるようにし、人間の実機検証往復を最小化すること」である。この目的に対して
+現在欠けているのは第2段（エミュレーター）であり、その最初の到達目標は、
+ClockworkPi公式の無改変`Code/picocalc_helloworld`を`picoem-picocalc`の
+`ExecutionModel::Serial`上で完全合格（HELLO-FULL）させ、続いてCanonical BSP Bの
+conformance（Gate 7）を通すことである。
+
+本計画の完了条件は`MILESTONES.md`のMilestone 1完了条件と同一である。
+
+## 2. 並行トラック構成
+
+作業は3トラックへ分ける。Track Bが本線であり、Track A/Cは本線を止めない。
+
+| Track | 内容 | 依存 |
+|---|---|---|
+| A: 0.8.8台帳クローズ | HV-1診断（`diagnostics/bsp-quality`）でLCD readback 100回とguided keyboardを実機確認し、`bsp-0.8.8`台帳のpendingを解消する | 人間の実機セッション1回。Track Bと独立 |
+| B: Firmware backend Gate 0〜7 | `picoem-picocalc`と`picocalc_emu`の接続実装。本書§4が詳細 | picoem-picocalcローカルリポジトリ、ClockworkPi公式ソース、Pico SDK |
+| C: 文書・CI保守 | Gate合格ごとの状況文書更新、capability manifestのCI検査追加 | Track Bの各Gate完了 |
+
+Track Aは実機依頼を伴うため、`DEVELOPMENT_WORKFLOW.md` §3に従い一度に
+一セッションだけ提示する。Track Bの初期Gate（0〜2）は実機を必要としないため、
+実機セッションの待ち時間に本線を進められる。
+
+## 3. 実装境界（再掲と具体化）
+
+`EMULATOR_ROADMAP.md` §6の境界を、リポジトリ単位の変更範囲として固定する。
+
+| リポジトリ | 担当 | 本計画で変更する場所 |
+|---|---|---|
+| `picoem-picocalc`（別リポジトリ、`feature/picocalc-integration`ブランチ） | RP2040コア、direct boot、外部SPI/I2C/PIO device hook、Serial correctness | 汎用`rp2040-emu` crateへの外部device interface追加、PicoCalc専用board/device crate新設 |
+| `picocalc_emu` | scenario実行、artifact収集・比較、利用者向けCLI | `tools/`へのfirmware runner呼び出し追加、`docs/`、成果物schema |
+| ClockworkPi `PicoCalc`公式リポジトリ | conformance対象の供給元 | **変更しない。同梱しない**（`EMULATOR_ROADMAP.md` §2.1） |
+
+禁止事項（全Gate共通）:
+
+- `picocalc_helloworld`のソース・成果物を`picocalc_emu`へコミットしない。
+- device modelソースを`picocalc_emu`へコピーしない。固定commitのAPIで接続する。
+- 汎用`rp2040-emu` crateへPicoCalc固有のpin・deviceを埋め込まない。
+- 未対応MMIOを黙って無視する実装を追加しない。停止または明示記録とする。
+- AのRGB666 3-byte転送とBのPIO0/RGB565転送を同じ転送処理へ統合しない。
+
+## 4. Gate別作業計画
+
+各Gateは「合格後に独立したcommitとして残す」（`EMULATOR_ROADMAP.md` §7）。
+以下の受入条件はチェック用の要約であり、正式な条件は`EMULATOR_ROADMAP.md` §3〜4。
+
+### Gate 0: 基準の固定（実機不要）
+
+作業:
+
+1. ClockworkPi公式リポジトリのcommitを1つ選び、リポジトリ全体のcommit hashを
+   source identityとして記録する。
+2. Pico SDK版、arm-none-eabi-gcc版、CMake optionを固定し、`picocalc_helloworld`の
+   無改変ELF/BINをビルドしてSHA-256、map、主要symbol（`main`、UART init等）を記録する。
+3. `picoem-picocalc`の対象commitを固定し、継承済みSerial test suiteを全実行して
+   合格状態を基準化する。
+4. 上記の識別情報一式を`picocalc_emu`側の機械可読ファイル
+   （例: `reference-projects/firmware-targets.json`）へ記録する。ELF/BIN自体は
+   記録しない。
+
+受入条件: 識別情報ファイルが存在し、記載手順で同一SHA-256のELF/BINを再現できる。
+Serial test suiteの合格ログとcommitが記録されている。
+
+### Gate 1: headless firmware runner（実機不要）
+
+作業:
+
+1. `picoem-picocalc`へheadless runnerを追加する。bootrom＋BINをロードし、
+   Pico SDK imageをFlash offset `0x100`からdirect bootする。
+2. cycle上限、UART capture、PC、例外、未対応MMIOアクセス（アドレスとアクセス元PC）、
+   終了理由を構造化出力（JSON）で取得する。
+3. 既知の小さいPico SDK firmware（自作のUART hello等）でrunnerを先に検証する。
+4. `picocalc_helloworld`が`main()`とUART初期化へ到達することを確認する。
+
+受入条件: 対話TUIなしで、コマンド1回からJSONレポートとUARTログが決定的に得られる。
+`picocalc_helloworld`の`main()`到達がPC/symbolで確認できる。
+
+注意: bootromが未実装SSI/QSPI経路からUF2待ちへ進んだ状態を「実行できた」と
+混同しない（`EMULATOR_ROADMAP.md` Gate 1）。
+
+### Gate 2: SPI1 LCD vertical slice → HELLO-VISIBLE（実機不要）
+
+作業:
+
+1. RP2040側SPIへ外部device transaction interfaceを追加する（汎用crate側は
+   PicoCalcを知らない汎用hookとする）。
+2. PicoCalc board adapterでSPI1とGP13/14/15のCS/DC/RESETをLCD modelへ接続する。
+3. ST7365P modelを実装する。内部GRAM 320×480、可視viewport 320×320。
+   command subsetは最低limitでreset、sleep/display state、MADCTL、COLMOD、CASET、
+   RASET、RAMWR。
+4. 3-byte RGB666 wire dataをdecodeし、共通RGB565 framebufferへ正規化する。
+5. framebufferのPNG/hash出力を追加し、同一入力での反復一致を検査する。
+
+受入条件: HELLO-VISIBLEの7条件（`EMULATOR_ROADMAP.md` §3）。
+`Hello World PicoCalc`のframebufferがPNG/hashで決定的に取得できる。
+
+リスク: LCD初期化列の解釈差。公式ファームウェアはILI9488名でST7365Pを駆動する。
+判定に迷う場合は`bsp/vendor/README.md`とAの実機合格記録（COLMOD `0x66`等）を
+一次資料とし、モデルを実機挙動へ合わせる。
+
+### Gate 3: PIO1/DMA PSRAM（実機不要）
+
+作業:
+
+1. PIOコアの対応範囲を確認し、公式サンプルのPSRAM PIO programをそのまま実行する。
+2. GP20/21/2/3のPIO1出力を8 MiB PSRAM modelへ接続し、DMA transactionを通す。
+3. 8/16/32/128-bit全域試験を完走させ、host実行時間を計測する。
+4. 遅すぎる場合も試験範囲を削らず、transaction等価と検証できるbackend側最適化
+   だけを追加する。
+
+受入条件: 全域試験完走、不一致0、UART/LCD上の完了結果取得。
+
+リスク（本計画最大）: 8 MiB全域×4幅の試験はSerial実行で長時間になり得る。
+対策順序は (1)まず正確さを確立して所要時間を実測 → (2)PIO/DMAのbatch実行等の
+等価最適化 → (3)それでも非現実的なら、範囲を削る代わりにGate 5の決定性検査回数を
+調整する判断をSolが行う。ファームウェア側の試験範囲は削らない。
+
+### Gate 4: I2C keyboard controller（実機不要）
+
+作業:
+
+1. 外部I2C device interfaceを追加する（固定ACK・固定`0xff`応答の即席実装を禁止）。
+2. address `0x1f`のSTM32 controller modelを実装する。FIFO（register `0x09`）、
+   battery、backlight registerを含む。速度は公式サンプルの10 kHz設定と
+   BSPの400 kHz設定の両方を受ける。
+3. シナリオ入力からFIFOへキーを投入し、ファームウェアのLCD echoまで検証する。
+
+受入条件: scripted keyがFIFO経由でLCDへechoされ、framebuffer/hashで確認できる。
+
+### Gate 5: full application acceptance → HELLO-FULL（実機不要）
+
+作業:
+
+1. HELLO-FULLの8条件（`EMULATOR_ROADMAP.md` §3）を一つのscenarioで実行する
+   runnerスクリプトを作る。
+2. UART、PNG、trace、PSRAM結果、keyboard結果、capability、backend/source commit、
+   成果物SHA-256を構造化artifactへ保存する。
+3. 3回以上連続実行して同一結果（決定性）を確認する。
+
+受入条件: 3回連続の決定的合格。この時点で初めて
+「公式`picocalc_helloworld`がエミュレーター上で動く」と宣言できる。
+
+### Gate 6: `picocalc_emu` integration（実機不要）
+
+作業:
+
+1. `picoem-picocalc`の検証済みcommitを固定し、`picocalc_emu`から
+   ソースコピーなしで接続する（例: `tools/picocalc.py emu-test`が固定commitの
+   runnerバイナリを呼び出す）。
+2. runnerの構造化artifactを`picocalc_emu`のscenario/artifact interfaceへ接続する。
+3. capability manifest（対応済み: SPI1/PIO1/DMA/I2C1/UART0等、未対応: SPI0 SD、
+   multicore等）を機械可読で公開し、portable検証の検査対象へ加える。
+4. 公開条件を確認する: 公開版`picocalc_emu`の通常ビルド・検証がprivate依存を
+   要求しない構成を維持する（`picoem-picocalc`の公開または同等の再現可能配布が
+   正式統合の前提。`docs/FIRMWARE_BACKEND.md`参照）。
+
+受入条件: clone＋固定commit取得だけでGate 5と同じ合格を`picocalc_emu`側の
+コマンドから再現できる。
+
+### Gate 7: Canonical BSP B conformance（実機不要、相関はMilestone 4）
+
+作業:
+
+1. PIO0 blocking転送用のbus adapterをAとは別に実装する（転送電文を統合しない）。
+2. `tools/picocalc.py new`で生成した標準template（B: PIO0/RGB565/LCD DMA OFF）の
+   UF2/ELFを実行する。
+3. 起動時スモークのLCD GRAM readback（RAMRD、SIO切替手順）をmodel側で対応し、
+   `[PICOCALC][LCD][VERIFY] app_status=pass`到達を確認する。
+4. SD/SPI0は本Gateでは未対応でよいが、未対応を黙殺せずcapabilityと停止理由で
+   明示する（SDスモークで停止する挙動を記録する）。
+
+受入条件: 標準templateのBOOT行・LCD VERIFY pass・RAMRD readbackが
+エミュレーター上で観測でき、`MILESTONES.md`のMilestone 1完了条件を満たす。
+
+## 5. Track A: 0.8.8実機台帳クローズ
+
+Gate作業と独立に、次の1セッションを人間へ依頼する。
+
+1. `diagnostics/bsp-quality`のHV-1診断UF2を対象コミットからビルドする
+   （`diagnostics/bsp-quality/build/PicoCalc_BSP_Diagnostic.uf2`、SHA-256記録）。
+2. 実機でLCD GRAM write/readback 100回とUp/Down/Enter/Escapeのguided入力を実行し、
+   `[BSP_DIAG_VERDICT]`を含むUARTログと画面写真を回収する。
+3. 結果を`hardware-validation/records/`の0.8.8台帳へ記録し、LCD/keyboardの
+   pendingを解消する。0.8.3で観測された間欠readback失敗が再現した場合は、
+   合格扱いにせず発生率を記録して原因調査タスクを起票する。
+
+このセッションはGate 2以降のLCD model実装の一次資料（実機のRAMRD挙動）としても
+価値があるため、Gate 2着手前後の実施が望ましい。ただしGate 0〜2は待たずに進める。
+
+## 6. 検証と記録の規律
+
+- 各Gateの合否はSolが独立検証してから確定する（`DEVELOPMENT_WORKFLOW.md` §2）。
+- Gate合格ごとに`docs/IMPLEMENTATION_STATUS.md`の該当節とcapability記録を更新する。
+- `python3 tools/picocalc.py verify`はGate 6以降、firmware-targets識別情報と
+  capability manifestの整合検査を含める。
+- 到達度は変更単位に`host_pass`/`host_fail`/`hardware_pass`/`hardware_fail`/
+  `hardware_required`で記録する（`README.md`末尾の測定方針）。
+- エミュレーター合格・実機不合格が発生した機能は`hardware_required`へ戻す。
+
+## 7. 順序と依存関係
+
+```text
+Track A: [HV-1実機セッション]（人間1回、任意時点）
+Track B: Gate 0 → Gate 1 → Gate 2(HELLO-VISIBLE) → Gate 3 → Gate 4
+         → Gate 5(HELLO-FULL) → Gate 6 → Gate 7
+Track C: 各Gate完了ごとに文書・CI更新
+```
+
+Gate 2完了（HELLO-VISIBLE）が最初の対外的な可視成果である。Gate 3のPSRAM性能が
+本線最大のリスクであり、Gate 2完了時点で全域試験の所要時間見積りを先行取得する。
+
+## 8. Milestone 2以降への接続
+
+Milestone 1完了後の順序は`MILESTONES.md`に従う（Host device models →
+Scenario runner → Hardware correlation → BSP lifecycle）。本書はMilestone 1の
+完了をもって役目を終え、後続Milestoneの詳細計画は着手時に別途起こす。
