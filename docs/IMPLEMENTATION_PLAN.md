@@ -79,6 +79,50 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
   リポジトリで自走する前提とする。ライセンス（MIT OR Apache-2.0）とNOTICEの
   維持は確認済み。
 
+## 3.2 実行環境と再現手順の固定（2026-08-03決定）
+
+- 作業環境はWSL（Ubuntu-24.04）。ARM toolchainは`arm-none-eabi-gcc` 13.2.1、
+  `cmake` 3.28.3、`ninja` 1.11.1（導入済み確認）。Rustはrustup経由のstable
+  1.97.1（2026-08-03導入、`cargo test -p rp2040-emu`で1225テスト全合格を
+  確認済み）。
+- ClockworkPi公式リポジトリはローカルclone`~/pico_dvl/codex/PicoCalc`を
+  読み取り専用で参照する。source identityはupstream`origin/master` =
+  commit`553da6f2408963b956779599d179d77fd611a4d7`とする。ローカルには
+  これより先の私的コミット1件（`schematic_sheets/`のJPG追加のみ、
+  `Code/`無変更と検証済み）と未追跡ファイル`Code/PicoMite/main.c`があるが、
+  リセット・cleanはしない。Gate 0受入時に
+  `git diff 553da6f2 master -- Code/picocalc_helloworld`が空であることを
+  確認する。
+- `Code/picocalc_helloworld/rp2040-psram`はネストした取得物
+  （`polpo/rp2040-psram`、commit`7786c93`）であり、識別情報へ別項目として
+  記録する。
+- Pico SDKは`~/pico_dvl/codex/pico-sdk`のtag 2.2.0を使用する
+  （実機台帳のビルドと同版）。`picocalc_emu`のCIが使う2.0.0はBSPの
+  最低互換検査用であり、Gate 0のsource identityとは別問題である。
+- 再現ビルド手順: build dirは公式clone外の
+  `~/pico_dvl/codex/build/picocalc_helloworld/`とし、`PICO_SDK_PATH`を
+  明示、generatorはNinja、CMakeオプションは
+  `-DCMAKE_BUILD_TYPE=Release -DPICO_NO_BI_PROGRAM_BUILD_DATE=1`で固定する。
+  後者はPico SDKが`__DATE__`をバイナリへ埋め込むことを止めるための必須
+  設定であり、これがないと受入条件「同一SHA-256の再現」を満たせない。
+  この設定はビルドオプションの固定でありソース無改変の原則に反しない。
+- 継承済みSerial回帰の範囲は`cargo test -p rp2040-emu`と定義する。
+  2026-08-03時点のbaselineは1225テスト全合格（backend commit`a4e23ca`）。
+
+## 3.3 成果物の保存規約
+
+- Gate受入の証拠（JSONレポート、UARTログ、framebuffer PNG、hash一覧、
+  テスト合格ログ）は`picocalc_emu`の新設ディレクトリ
+  `firmware-validation/records/gate<N>-YYYYMMDD-NN/`へ保存してコミットする。
+  実機台帳`hardware-validation/`と対をなすエミュレーター側台帳である。
+- 作業中の一時出力は`.gitignore`済みの`artifacts/`を使い、コミットしない。
+- 証拠ファイルには実時刻・絶対パスを含めない（ファイル名の日付は除く）。
+  両リポジトリのcommit hash（`picocalc_emu`と`picoem-picocalc`）を証拠JSONへ
+  記録し、相互参照とする。
+- この規約に伴い、各Gateの「変更可能な場所」に`firmware-validation/records/`
+  を追加する（各Gate分担と境界の記述へ「および`firmware-validation/records/`
+  への証拠追加」を変更可能な場所へ追記する）。
+
 ## 4. Gate別作業計画
 
 各Gateは「合格後に独立したcommitとして残す」（`EMULATOR_ROADMAP.md` §7）。
@@ -88,37 +132,78 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 
 作業:
 
-1. ClockworkPi公式リポジトリのcommitを1つ選び、リポジトリ全体のcommit hashを
-   source identityとして記録する。
+1. §3.2で固定したupstream commit`553da6f2…`をsource identityとし、
+   リポジトリ全体のcommit hashを記録する。
 2. Pico SDK版、arm-none-eabi-gcc版、CMake optionを固定し、`picocalc_helloworld`の
    無改変ELF/BINをビルドしてSHA-256、map、最低限`main`と、UART初期化・PSRAM試験・
-   キー入力ループに対応するsymbolをmapから列挙して記録する。
+   キー入力ループに対応するsymbolをmapから列挙して記録する。symbolの列挙に加え、
+   submodule相当の`rp2040-psram`のcommitも記録する。ビルドは§3.2の再現手順に従う。
 3. `picoem-picocalc`の対象commitを固定し、継承済みSerial test suiteを全実行して
    合格状態を基準化する。
 4. 上記の識別情報一式を`picocalc_emu`側の機械可読ファイル
    （例: `reference-projects/firmware-targets.json`。既存`catalog.json`
    （参照プロジェクト台帳）とは別系統のfirmware conformance対象識別台帳である）
-   へ記録する。ELF/BIN自体は記録しない。
+   へ記録する。ELF/BIN自体は記録しない。schema例:
+
+```json
+{
+  "schema_version": 1,
+  "targets": [
+    {
+      "id": "picocalc-helloworld-a",
+      "source": {
+        "repo_url": "https://github.com/clockworkpi/PicoCalc.git",
+        "commit": "553da6f2408963b956779599d179d77fd611a4d7",
+        "nested": [{"path": "Code/picocalc_helloworld/rp2040-psram", "commit": "7786c93"}]
+      },
+      "sdk": {"version": "2.2.0"},
+      "toolchain": {"arm_none_eabi_gcc": "13.2.1"},
+      "cmake": {"generator": "Ninja", "options": ["-DCMAKE_BUILD_TYPE=Release", "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"]},
+      "artifacts": {"elf_sha256": "<記録>", "bin_sha256": "<記録>"},
+      "backend": {"repo": "picoem-picocalc", "branch": "feature/picocalc-integration", "commit": "<記録>", "test_command": "cargo test -p rp2040-emu", "baseline": "1225 passed"}
+    }
+  ]
+}
+```
+
 5. `picoem-picocalc`のXIP、PIO、DMA、PWM、外部device hookの実装状況を棚卸しし、
    Gate 1〜4の作業見積りへ反映する（§3.1の初回調査を出発点とする）。
 
 受入条件: 識別情報ファイルが存在し、記載手順で同一SHA-256のELF/BINを再現できる。
 Serial test suiteの合格ログとcommitが記録されている。
 
-分担と境界: Lunaへ渡す単位は(1)公式リポジトリの再現ビルドと識別情報採取、
-(2)`firmware-targets.json`の作成、(3)Serial test suite実行とログ採取、
-(4)実装状況棚卸し調査。変更可能な場所は`picocalc_emu`の`reference-projects/`
-のみ。Gate固有の禁止は公式サンプルのソース・成果物をリポジトリへ持ち込むこと。
+分担と境界: Lunaへ渡す単位は(1)§3.2手順による再現ビルドと識別情報採取・
+`firmware-targets.json`作成、(2)Serial test suite実行とログ採取、
+(3)実装状況棚卸し調査。変更可能な場所は`picocalc_emu`の`reference-projects/`
+および`firmware-validation/records/`。Gate固有の禁止は公式サンプルの
+ソース・成果物をリポジトリへ持ち込むこと。
 
 ### Gate 1: headless firmware runner（実機不要）
 
 作業:
 
-1. `picoem-picocalc`へheadless runnerを追加する。bootrom＋BINをロードし、
+1. `picoem-picocalc`へheadless runnerを追加する。runnerは`picoem-picocalc`の
+   新規crate`crates/picocalc-harness`のbin`picocalc-run`とする
+   （`EMULATOR_ROADMAP.md` §6の「crate名は最初の実装タスクで確定する」に
+   基づく確定。既存`picoem-harness`の`picogus_diff_rp2040`の
+   `--flash`/`--bootrom`慣行を実装参考にする）。bootrom＋BINをロードし、
    Pico SDK imageをFlash offset `0x100`からdirect bootする。
+   bootromの扱い: bootrom像は`roms/rp2040/bootrom-rp2040-b2.bin`
+   （provenance記録済み）を既定とし、SDKが参照するROM table・bootrom関数の
+   解決のためにメモリへロードするが、bootromからの実行はしない。実行開始は
+   §3.1の近道（SP/PC/VTOR直接シード、offset`0x100`）で行う。
 2. cycle上限、UART capture、PC、例外、未対応MMIOアクセス（アドレスとアクセス元PC）、
-   終了理由を構造化出力（JSON）で取得する。
+   終了理由を構造化出力（JSON）で取得する。CLI契約: `--bin <path>`（必須）、
+   `--bootrom <path>`（既定`roms/rp2040/bootrom-rp2040-b2.bin`）、
+   `--cycles <N>`（既定`1_000_000_000`。超過時は`stop_reason=cycle_limit`で
+   正常終了扱いの停止）、`--json <出力先>`、`--uart <出力先>`。
+   JSONレポートの必須フィールド: `schema_version`、`backend_commit`、
+   `firmware`（basename、sha256）、`stop_reason`、`cycles`、`pc`、
+   `exception`（あれば）、`unsupported_mmio[]`（addr、アクセス元pc、count）、
+   `uart`（bytes数、sha256）。実時刻・絶対パスを含めない（作業6と整合）。
 3. 既知の小さいPico SDK firmware（自作のUART hello等）でrunnerを先に検証する。
+   小規模firmwareは既存の`roms/rp2040/`にある`blinky.bin`と生成スクリプト
+   （`gen_*.py`）を利用してよい。
 4. `picocalc_helloworld`が`main()`とUART初期化へ到達することを確認する。
 5. direct bootは§3.1の近道（SP/PC/VTOR直接シード）を用い、XIP領域
    `0x1000_0000`への命令フェッチ・リテラル読み出しが対象ファームウェアで
@@ -133,25 +218,35 @@ Serial test suiteの合格ログとcommitが記録されている。
 注意: bootromが未実装SSI/QSPI経路からUF2待ちへ進んだ状態を「実行できた」と
 混同しない（`EMULATOR_ROADMAP.md` Gate 1）。
 
-分担と境界: Lunaへ渡す単位は(1)headless runner binの新設、(2)JSONレポート
-schema定義、(3)小規模firmwareでのrunner検証、(4)`picocalc_helloworld`の
-`main()`到達確認。変更可能な場所は`picoem-picocalc`の新規bin/crateと、
-`rp2040-emu`への公開API追加。Gate固有の禁止は`rp2040-emu`コアの実行semantics
-を変更すること。
+分担と境界: Lunaへ渡す単位は(1)runner骨組み（bin新設・bootromロード・direct
+boot・終了理由）、(2)観測系（UART capture・未対応MMIO記録・JSON出力）、
+(3)小規模firmwareでのrunner検証、(4)`picocalc_helloworld`の`main()`到達確認。
+変更可能な場所は`picoem-picocalc`の新規bin/crateと、`rp2040-emu`への公開API
+追加、および`firmware-validation/records/`。Gate固有の禁止は`rp2040-emu`
+コアの実行semanticsを変更すること。
 
 ### Gate 2: SPI1 LCD vertical slice → HELLO-VISIBLE（実機不要）
 
 作業:
 
-1. RP2040側SPIへ外部device transaction interfaceを追加する（汎用crate側は
-   PicoCalcを知らない汎用hookとする）。
+1. 着手前にSolがSPI外部device transaction interfaceのAPI仕様（transfer粒度、
+   CS/DC/RESETの観測経路、既存`spi.rs`の`read32/write32/tick`モデルとの
+   接続点）を設計して確定する。この設計はLunaへ委任しない。本Milestoneで
+   hookを通すのはSerial実行のみとし、Threaded側への対応は行わない。
+   確定後、RP2040側SPIへ外部device transaction interfaceを追加する
+   （汎用crate側はPicoCalcを知らない汎用hookとする）。
 2. PicoCalc board adapterでSPI1とGP13/14/15のCS/DC/RESETをLCD modelへ接続する。
 3. ST7365P modelを実装する。内部GRAM 320×480、可視viewport 320×320。
    command subsetは最低limitでreset、sleep/display state、MADCTL、COLMOD、CASET、
    RASET、RAMWR。
 4. 3-byte RGB666 wire dataをdecodeし、共通RGB565 framebufferへ正規化する。
 5. framebufferのPNG/hash出力を追加し、同一入力での3回実行の一致を検査する
-   （Gate 1・Gate 5と同じ基準）。
+   （Gate 1・Gate 5と同じ基準）。HELLO-VISIBLEの初回判定規則: 初回のgolden
+   framebufferは存在しないため、最初の`Hello World PicoCalc`表示はSolが
+   PNGを目視して確定し、そのhashを以後のgoldenとする。PNG/hashの決定性
+   規約: 正準hashはRGB565 framebufferの生バイト列（320×320×2 byte、行優先、
+   little-endian）のSHA-256とする。PNGは人間の確認用の派生物であり、
+   encoder crateと版はCargo.lockで固定し、時刻メタデータchunkを含めない。
 
 受入条件: HELLO-VISIBLEの7条件（`EMULATOR_ROADMAP.md` §3）。
 `Hello World PicoCalc`のframebufferがPNG/hashで決定的に取得できる。
@@ -159,14 +254,17 @@ schema定義、(3)小規模firmwareでのrunner検証、(4)`picocalc_helloworld`
 リスク: LCD初期化列の解釈差。公式ファームウェアはILI9488名でST7365Pを駆動する。
 判定に迷う場合の一次資料の優先順位は、最優先はClockworkPi公式
 `picocalc_helloworld/lcdspi`のソース、次に実機合格記録（COLMOD `0x66`等）、
-`bsp/vendor/README.md`のA系統は補助資料とする。PIO/SPI駆動転送のエッジ精度は
+`bsp/vendor/README.md`のA系統は補助資料とする。公式リポジトリのルートに
+`ST7365P_SPEC_V1.0.pdf`（コントローラーのデータシート）が同梱されており、
+公式`lcdspi`ソースと併せて一次資料とする。PIO/SPI駆動転送のエッジ精度は
 Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ持ち込まない。
 
-分担と境界: Lunaへ渡す単位は(1)汎用SPI外部device transaction interfaceの
-追加、(2)PicoCalc board adapterとST7365P modelの新設、(3)RGB666 decodeと
-RGB565 framebuffer正規化、(4)PNG/hash出力。変更可能な場所は`rp2040-emu`の
-hook追加と新設PicoCalc専用crate。Gate固有の禁止は汎用crateへPicoCalc固有の
-pin・定数を埋め込むこと。
+分担と境界: Lunaへ渡す単位は(1)SPI hook実装と既存回帰の全合格（Sol設計
+確定後）、(2)PicoCalc board/device crateの骨組みとpin配線、(3)ST7365P
+command decoderとLCD state、(4)GRAM書き込み・address window・RGB666→RGB565
+decode、(5)PNG/hash出力。変更可能な場所は`rp2040-emu`のhook追加と新設
+PicoCalc専用crate、および`firmware-validation/records/`。Gate固有の禁止は
+汎用crateへPicoCalc固有のpin・定数を埋め込むこと。
 
 ### Gate 3: PIO1/DMA PSRAM（実機不要）
 
@@ -188,9 +286,10 @@ pin・定数を埋め込むこと。
 `EMULATOR_ROADMAP.md`が定める3回連続の決定的合格を維持し、調整してよいのは
 補助的なscenarioの反復回数だけとする。ファームウェア側の試験範囲は削らない。
 
-分担と境界: Lunaへ渡す単位は(1)PSRAM modelのPIO1/DMA接続、(2)全域試験の
-完走と実行時間計測、(3)transaction等価なbackend最適化。変更可能な場所は
-PSRAM model、PIO/DMA接続部、最適化対象のbackend内部。Gate固有の禁止は
+分担と境界: Lunaへ渡す単位は(1)PSRAM modelのPIO1/DMA接続、(2a)縮小領域での
+PSRAM経路確立、(2b)全域試験の実測、(2c)transaction等価なbackend最適化
+（必要時のみ）。変更可能な場所はPSRAM model、PIO/DMA接続部、最適化対象の
+backend内部、および`firmware-validation/records/`。Gate固有の禁止は
 ファームウェア側の試験範囲を削ること。
 
 ### Gate 4: I2C keyboard controller（実機不要）
@@ -207,16 +306,18 @@ PSRAM model、PIO/DMA接続部、最適化対象のbackend内部。Gate固有の
 受入条件: scripted keyがFIFO経由でLCDへechoされ、framebuffer/hashで確認できる。
 
 分担と境界: Lunaへ渡す単位は(1)外部I2C device interfaceの追加、(2)address
-`0x1f`のSTM32 controller model実装、(3)キー注入シナリオとecho検証。
-変更可能な場所はI2C hookと新設controller model。Gate固有の禁止は固定ACK・
-固定`0xff`応答などの即席実装。
+`0x1f`のSTM32 controller modelの実装とキー注入・echo検証。変更可能な場所は
+I2C hookと新設controller model、および`firmware-validation/records/`。
+Gate固有の禁止は固定ACK・固定`0xff`応答などの即席実装。
 
 ### Gate 5: full application acceptance → HELLO-FULL（実機不要）
 
 作業:
 
 1. HELLO-FULLの8条件（`EMULATOR_ROADMAP.md` §3）を一つのscenarioで実行する
-   runnerスクリプトを作る。
+   runnerスクリプトを作る。本Gateでいうscenarioはrunnerへの入力ファイル
+   （形式は本Gateで定義する）であり、Milestone 3のJSONシナリオschemaを
+   先取り実装しない。Milestone 3で置き換える。
 2. UART、PNG、trace、PSRAM結果、keyboard結果、capability、backend/source commit、
    成果物SHA-256を構造化artifactへ保存する。
 3. 3回以上連続実行して同一結果（決定性）を確認する。
@@ -225,9 +326,9 @@ PSRAM model、PIO/DMA接続部、最適化対象のbackend内部。Gate固有の
 「公式`picocalc_helloworld`がエミュレーター上で動く」と宣言できる。
 
 分担と境界: Lunaへ渡す単位は(1)HELLO-FULL統合scenarioの作成、
-(2)構造化artifact保存、(3)3回連続の決定性確認。変更可能な場所はscenario・
-artifact関連のみ。Gate固有の禁止はファームウェアへテスト専用の変更を
-加えること。
+(2)構造化artifact保存と3回連続の決定性確認。変更可能な場所はscenario・
+artifact関連、および`firmware-validation/records/`。Gate固有の禁止は
+ファームウェアへテスト専用の変更を加えること。
 
 ### Gate 6: `picocalc_emu` integration（実機不要）
 
@@ -253,9 +354,11 @@ artifact関連のみ。Gate固有の禁止はファームウェアへテスト�
 コマンドから再現できる。
 
 分担と境界: Lunaへ渡す単位は(1)`picocalc_emu`側CLI接続、(2)capability
-スナップショットと`verify`検査の追加、(3)公開・リリース検査の実施。
-変更可能な場所は`picocalc_emu`の`tools/`・`docs/`・検査データ。Gate固有の
-禁止はdevice modelソースを`picocalc_emu`へコピーすること。
+スナップショットと`verify`検査の追加。公開の実施とリリース検査の最終判定は
+Solと人間の判断事項であり、Lunaへ委任しない（検査スクリプト等の準備作業は
+Lunaに渡せる）。変更可能な場所は`picocalc_emu`の`tools/`・`docs/`・検査データ、
+および`firmware-validation/records/`。Gate固有の禁止はdevice modelソースを
+`picocalc_emu`へコピーすること。
 
 ### Gate 7: Canonical BSP B conformance（実機不要、相関はMilestone 4）
 
@@ -280,9 +383,11 @@ artifact関連のみ。Gate固有の禁止はファームウェアへテスト�
 エミュレーター上で観測でき、`MILESTONES.md`のMilestone 1完了条件を満たす。
 
 分担と境界: Lunaへ渡す単位は(1)PIO0用bus adapterの新設、(2)RAMRD/SIO切替
-手順のmodel対応、(3)標準template UF2の実行と判定。変更可能な場所はB用bus
-adapterとmodel拡張。Gate固有の禁止はAとBの転送処理の統合、およびtemplate・
-BSP側の変更。
+手順のmodel対応、(3)capability可否判定（250 MHz PLL・参照トーン・
+400 kHz I2C・62.5 MHz PSRAM。Gate 6までに実施しSolが判定）、(4)標準
+template UF2の実行と判定。変更可能な場所はB用bus adapterとmodel拡張、
+および`firmware-validation/records/`。Gate固有の禁止はAとBの転送処理の
+統合、およびtemplate・BSP側の変更。
 
 ## 5. Track A: 0.8.8実機台帳クローズ
 
@@ -319,6 +424,10 @@ Gate 0〜2の着手はTrack Aを待たない。
   Serial test suiteの全合格（回帰ゼロ）を含める。Gate 7の受入では、その最終
   合格ログとcommitを構造化artifactへ固定する（`MILESTONES.md`のMilestone 1
   完了条件）。
+- `picoem-picocalc`側の作業は`feature/picocalc-integration`ブランチへ積み、
+  Gate合格時に受入コミットを確定する。`picocalc_emu`側はGateごとに
+  `firmware-targets.json`と証拠recordでbackend commitを参照する。commit・
+  pushはSolが行う（`DEVELOPMENT_WORKFLOW.md` §1）。
 
 ## 7. 順序と依存関係
 
@@ -332,7 +441,8 @@ Track C: 各Gate完了ごとに文書・CI更新
 Gate 2完了（HELLO-VISIBLE）が最初の対外的な可視成果である。Gate 3のPSRAM性能が
 本線最大のリスクであり、Gate 2完了時点で全域試験の所要時間見積りを先行取得する。
 Gate 1のXIP/bootrom近道の成立確認と、Gate 2で新設する汎用device hookが
-先行リスクであり、Gate 0の棚卸しで見積りを確定する。
+先行リスクであり、Gate 0の棚卸しで見積りを確定する。Gate 0開始時点の
+環境ブロッカー（Rust toolchain不在）は2026-08-03に解消済みである（§3.2）。
 
 ## 8. Milestone 2以降への接続
 
