@@ -87,7 +87,7 @@ Pico SDK の依存部分をインターフェース化し、PC 用実装へリ�
 * Device Bus: CS/DC を含む SPI バイト列、速度とタイムアウトを含む I²C トランザクション
 * Optional devices: PSRAM、PWM/音声、ADC、PIO/DMA の必要範囲
 
-既存アプリは、アプリ本体の UI・状態機械・ゲームロジックを維持し、platform adapter または Pico SDK shim にリンクする。既存の `picocalc_helloworld` は PSRAM、PWM/IRQ、PIO、UART まで含む総合ハードウェアテストであるため、MVP の最初の fixture には使わない。最初に LCD とキーボードだけを使う小さな `emu_smoke` を作り、Optional devices の実装に合わせて既存 Hello World の対応範囲を広げる。
+既存アプリは、アプリ本体の UI・状態機械・ゲームロジックを維持し、platform adapter または Pico SDK shim にリンクする。Host backendでは、`picocalc_helloworld`がPSRAM、PWM/IRQ、PIO、UARTまで含むため最初のfixtureにせず、LCDとキーボードだけを使う小さな`emu_smoke`から始める。一方、Firmware backendでは無改変`picocalc_helloworld`を最初の縦断対象とし、`EMULATOR_ROADMAP.md`のGateに従って対応範囲を広げる。この二つを混同しない。
 
 ホストビルドでは同じデバイスモデルを SDL2 表示版と headless 版で共有する。headless 版を標準にし、AI/CI は GUI を必要としない。
 
@@ -234,11 +234,11 @@ prediction_agreement =
 
 > **実行順序の正典は[`MILESTONES.md`](MILESTONES.md)です。** 本節のPhase番号は
 > 初期設計時の区分であり、現在の実行順序とは一致しません。特にPhase 0の
-> golden採取は、現行計画ではMilestone 3へ移動しています。対応表は
+> golden採取は、現行計画ではMilestone 4へ移動しています。対応表は
 > `MILESTONES.md`の「他文書との対応」にあります。本節は各段階で「何を作るか」の
 > 内容説明として読み、「いつ作るか」は`MILESTONES.md`に従ってください。
 
-### Phase 0: 仕様固定（現行 Milestone 3 相当）
+### Phase 0: 仕様固定（現行 Milestone 4 相当）
 
 既存の実働プロジェクトを棚卸しし、再現可能なビルド、Pico SDK 版、ボード、利用機能を manifest 化する。LCD、SD、キーボードについて正常動作する実装と設定を選定し、RP2040/Pico1 と RP2350/Pico2 のプロファイルに分ける。実機から起動時の SPI/I²C トレース、代表画面、キー列、SD 内容を採取する。PDF 回路図と既存ドライバのピン定義を機械可読な board profile にする。これは
 Milestone 0 で `profiles/picocalc-rp2040.json` として実装済みである（当初案の
@@ -258,18 +258,18 @@ Milestone 0 で `profiles/picocalc-rp2040.json` として実装済みである�
 
 実機確認済みの Canonical PicoCalc BSP と新規プロジェクトテンプレートを作る。生成直後のプログラムが実機上で LCD 表示、SD mount/read/write/sync、キーボード入力に成功する状態を固定する。AI の通常変更範囲を `app/` と `assets/` に分離し、BSP/profile/build 基盤の変更検出を追加する。
 
-### Phase 2: 実開発への接続（現行 Milestone 1〜2 相当）
+### Phase 2: 実開発への接続（現行 Milestone 2〜3 相当）
 
 App API、Pico SDK shim の最小部分、headless framebuffer、キーボード FIFO、Fast/Compatibility mode SD、仮想時計、CLI、シナリオランナーを実装する。既存 CMake プロジェクトに `PICOCALC_EMU=ON` を追加し、共通のアプリコードと platform adapter を分離する。LCD/SD conformance test と変更影響分析を追加し、失敗成果物と KPI を次の修正プロンプトへ渡せる JSON レポートを作る。
 
-### Phase 3: RP2040 Firmware backend（現行 Milestone 4 相当）
+### Phase 3: RP2040 Firmware backend（現行 Milestone 1 相当）
 
 `picoem-picocalc`の採用検証とcommit固定を行い、ST7365P LCD、I²C keyboard、
 SD block-deviceをGPIO/PIO/SPI/I²Cへ接続する。実際のファームウェアを起動し、
 実働プロジェクトと新規テンプレートの画面、UART、通信トレース、SD結果を比較する。
 `rp2040js`は各段階の挙動比較と実装調査に利用する。
 
-### Phase 4: 高い互換性と HIL（現行 Milestone 3 の HIL＋Milestone 5 相当）
+### Phase 4: 高い互換性と HIL（現行 Milestone 4 の HIL＋Milestone 5 相当）
 
 GDB 接続、core1/SIO FIFO、PIO/DMA、PSRAM、PicoMite/uLisp/FUZIX の専用ランナー、USB またはシリアル経由の HIL ランナーを追加する。PicoMite は BASIC/SD/UI の外部観測を優先し、完全な VM 再現は依存度と費用を見て判断する。エミュレーターの合格判定は「実機を再現したこと」ではなく、「対象テストについて実機結果を予測できたこと」とする。
 

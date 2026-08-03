@@ -41,8 +41,8 @@ fingerprints are recorded in `reference-projects/catalog.json`.
 The audio driver derived from `FuyukiYoneyama/Picocalc_ment` contains documented
 BSP-specific changes for cross-core SPSC accounting, drain/restart handling,
 quantizer state correction, and an exactly equivalent wrap-255 reconstruction
-optimization. The change history and reasons are recorded in `bsp/README.md`
-and `bsp/vendor/README.md`.
+optimization. The change history and reasons are recorded in
+`bsp/CHANGELOG.md` and `bsp/vendor/README.md`.
 
 ## ClockworkPi PicoCalc official sample code
 
@@ -54,28 +54,30 @@ and `bsp/vendor/README.md`.
   `lcdspi.c` carries no copyright header.
 
 `bsp/vendor/lcd_hwspi_rgb888.cpp` is an independent implementation written for
-this repository. Two measurements, both verified on 2026-08-03 against the local
-checkout of `clockworkpi/PicoCalc` at commit
-`e8e38aa4b502d31a0d789911bbd84ec9eb0068b9` (confirmed identical to the upstream
-`HEAD` via `git ls-remote`):
+this repository. The comparison was checked on 2026-08-03 against
+`clockworkpi/PicoCalc` upstream `HEAD`
+`e8e38aa4b502d31a0d789911bbd84ec9eb0068b9`. The official `lcdspi.c` at that
+revision has Git blob ID `1c683dc0c921ee5a0fa7cc9e08981c548449d0b1`; the local
+reference checkout used for the comparison contains the same blob even though
+its repository `HEAD` is different.
+
+The comparison produced these engineering observations:
 
 1. **Code: not copied.** `lcd_hwspi_rgb888.cpp` is 275 lines, `lcdspi.c` is 715.
    They share four non-trivial identical lines, all Pico SDK boilerplate
    (`tight_loop_contents();`, `sleep_ms(120);` twice, `reset_controller();`).
    The longest contiguous identical run is three lines, two of which are `}`.
-2. **Initialization register values: identical, and independently published.**
+2. **Initialization register values: identical and also published elsewhere.**
    Both files write the same ILI9488 initialization sequence, including the two
-   15-byte gamma tables. That sequence is *not* ClockworkPi-authored: the
-   identical bytes are published in Bodmer's `TFT_eSPI`
+   15-byte gamma tables. The identical bytes are also published in Bodmer's `TFT_eSPI`
    (`TFT_Drivers/ILI9488_Init.h`) — E0 `00 03 09 08 16 0A 3F 78 4C 09 0A 08 16
    1A 0F`, E1 `00 16 19 03 0F 05 32 45 46 04 0E 0D 35 37 0F`, C0 `17 15`,
    C1 `41`, C5 `00 12 80`, `3A`=`66`, B0 `00`, B1 `A0`, B4 `02`, B6 `02 02 3B`.
-   These are the controller vendor's recommended values in wide public
-   circulation. Only `MADCTL`=`0x48` (orientation and BGR order) is
-   board-specific.
+   This establishes that the command/value sequence is not unique to the
+   ClockworkPi repository. It does not by itself determine authorship or license.
 
-This repository therefore carries no ClockworkPi-authored expression, and no
-ClockworkPi file is vendored here.
+No ClockworkPi file is vendored in this repository. The line comparison above is
+recorded as provenance evidence, not as a legal conclusion.
 
 **Open item — GPL-3.0 in the `lcdspi.c` lineage.** `lcdspi.c` itself has no
 copyright header and no stated origin, but the same file is distributed by
@@ -87,8 +89,9 @@ additionally retains MMBasic/PicoMite-style identifiers (`gui_fcolour`,
 `gui_bcolour`, `MainFont`), suggesting a further upstream that has not been
 identified.
 
-None of this affects `lcd_hwspi_rgb888.cpp`, which shares no code with
-`lcdspi.c`. Two standing rules keep it that way:
+The current project policy is to keep `lcd_hwspi_rgb888.cpp` independently
+implemented and not incorporate `lcdspi.c`. Two standing rules enforce that
+boundary:
 
 - **Do not vendor `lcdspi.c`**, or any file derived from it, into this
   MIT-licensed repository.
@@ -98,8 +101,10 @@ None of this affects `lcd_hwspi_rgb888.cpp`, which shares no code with
   If a distributable fixture is ever needed, write an equivalent sample
   in-house (see [`docs/EMULATOR_ROADMAP.md`](docs/EMULATOR_ROADMAP.md) §2.1).
 
-With those rules in force, this project has no unresolved licensing dependency
-on ClockworkPi.
+If future work needs to incorporate ClockworkPi source rather than observe its
+hardware protocol, its license must be resolved before that source or a derived
+artifact is distributed. This notice records repository policy and observed
+provenance; it is not a legal determination.
 
 Note that `bsp/vendor/rp2040-psram/` reached this project through the same
 official sample, but it is separately licensed MIT by Ian Scott — the upstream

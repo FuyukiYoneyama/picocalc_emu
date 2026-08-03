@@ -71,5 +71,6 @@ than shipping the official one — see
 A public `picocalc_emu` release must not require access to a private dependency. Before the firmware backend becomes a normal public build dependency, `picoem-picocalc` must be publicly accessible or replaced by an equivalent publicly reproducible source package. Third-party notices and license files must be preserved in both source and binary distributions.
 
 A public release must likewise not require any third-party source whose license
-is unstated. Because the conformance target is built locally and never
-redistributed, it does not constrain release; see `THIRD_PARTY_NOTICES.md`.
+is unstated. The release process must verify that the locally built conformance
+target and its source are not included in distributed artifacts; see
+`THIRD_PARTY_NOTICES.md`.

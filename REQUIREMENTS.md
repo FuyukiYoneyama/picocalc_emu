@@ -198,8 +198,8 @@ Firmware mode の接続は次を初期目標とする。
 
 ```text
 picoem-picocalc (ExecutionModel::Serialを正しさの基準とする)
-  PIO0 / GPIO 10-15  -> ST7365P LCD model（標準B: RGB565, blocking）
-  SPI1 / GPIO 10-15  -> ST7365P LCD model（互換A: RGB666 container）
+  PIO0 / GPIO 10-15  -> ST7365P board model（標準B: RGB565, blocking）
+  SPI1 / GPIO 10-15  -> 同modelのILI9488 command subset（互換A: RGB666 container）
   SPI0 / GPIO 16-19  -> SD block-device model
   I2C1 / GPIO 6-7    -> keyboard STM32 register model
   GPIO 22            -> SD_DET
@@ -289,7 +289,7 @@ required during initialization: <= 400000 Hz
 > **実行順序の正典は[`docs/MILESTONES.md`](docs/MILESTONES.md)です。** 以下の番号は
 > 要求を洗い出した順であり、実行順序ではありません。両者の対応表は
 > `MILESTONES.md`の「他文書との対応」にあります。項目1〜4はMilestone 0として
-> 完了済み、5はMilestone 3、6はMilestone 1〜2、7〜9はMilestone 4に対応します。
+> 完了済み、5はMilestone 4、6はMilestone 2〜3、7〜9はMilestone 1に対応します。
 
 1. 実働プロジェクトの棚卸しと再現ビルド
 2. LCD、SD、キーボードの正常実装と設定の選定

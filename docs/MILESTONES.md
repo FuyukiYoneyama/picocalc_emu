@@ -1,11 +1,16 @@
 # Milestones
 
-**この文書が計画の正典です。** 実装順序と完了条件を定義するのはここだけであり、
-他文書に出てくる段階表現は本書のMilestone番号を参照するものとします。
+**この文書が全体計画の正典です。** 全体の実装順序とMilestone単位の完了条件を
+定義します。Firmware Gateの詳細受入条件は`EMULATOR_ROADMAP.md`が定義し、
+他文書に出てくる段階表現は本書のMilestone番号へ対応付けます。
 
 Milestone 0 は完了しています。Milestone 1以降は
 PC上のエミュレーターを実装する将来作業であり、現在のRP2040実機ビルド手順と
 混同しないでください。
+
+ここでいうMilestone 0完了は、Canonical BSPのソース、portable検証、テンプレート、
+証拠台帳の基盤が整ったという意味である。最新BSP 0.8.8自身の実機台帳はLCDとkeyboardが
+pendingであり、0.8.8の全機能実機合格を意味しない。
 
 Firmware backendの開発方針は
 [`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)に定義します。主バックエンドは、
@@ -18,18 +23,18 @@ Firmware backendの開発方針は
 
 | 本書 | `DESIGN.md`（旧Phase番号） | `REQUIREMENTS.md §7`（旧優先順位） | `EMULATOR_ROADMAP.md` |
 |---|---|---|---|
-| Milestone 0 | Phase 1 MVP | 3〜4 | — |
-| Milestone 1 | Phase 2 の host 部分 | 6 | — |
-| Milestone 2 | Phase 2 の scenario 部分 | 6 | — |
-| Milestone 3 | Phase 0 の golden 採取＋Phase 4 の HIL | 1、5 | — |
-| Milestone 4 | Phase 3 | 7〜9 | Gate 0〜6 全体 |
-| Milestone 5 | 対応なし | 10 | Gate 7 以降 |
+| Milestone 0 | Phase 1 MVP | 1〜4 | — |
+| Milestone 1 | Phase 3 | 7〜9 | Gate 0〜7 |
+| Milestone 2 | Phase 2 の host 部分 | 6 | — |
+| Milestone 3 | Phase 2 の scenario 部分 | 6 | — |
+| Milestone 4 | Phase 0 の golden 採取＋Phase 4 の HIL | 5 | — |
+| Milestone 5 | Phase 4 の高互換性部分 | 10 | Gate 7完了後の拡張 |
 
-`EMULATOR_ROADMAP.md`のGateだけは階層が異なります。GateはMilestone 4の内部を
-分割したものであり、本書と競合しません。
+`EMULATOR_ROADMAP.md`のGateだけは階層が異なります。Gateは現行Milestone 1の
+Firmware backendを分割したものであり、本書と競合しません。
 
 **順序変更の記録:** `DESIGN.md`のPhase 0は、ロジックアナライザによるSPI/I²Cトレース
-採取とgolden採取を最初に行う計画でした。現行計画ではこれをMilestone 3
+採取とgolden採取を最初に行う計画でした。現行計画ではこれをMilestone 4
 （Hardware correlation）へ移しています。Canonical BSPを先に固定した方が、採取すべき
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
@@ -49,34 +54,7 @@ golden の対象が確定して手戻りが少ないためです。`DESIGN.md §
 完了条件は、clone単体のportable検証とテンプレートcompileがCIで成功し、
 初回のBSP実機スモーク結果を記録できることです。
 
-## Milestone 1: Host device models
-
-- native host App API/Pico SDK shim
-- headless LCD framebuffer
-- keyboard FIFO model
-- directory-backed Fast SD mode
-- 仮想時刻、固定乱数、stdout capture
-
-完了条件は、専用`emu_smoke`アプリがPC上で起動し、画面・キー・ファイル結果を
-決定的に生成できることです。
-
-## Milestone 2: Scenario runner
-
-- JSONシナリオ
-- key/text/wait/reset操作
-- pixel、region hash、file、stdout assertion
-- PNG、trace JSON、JUnit成果物
-- 100回連続実行の決定性検査
-
-## Milestone 3: Hardware correlation
-
-- 実機SPI/I2C/UART trace採取
-- host traceとのgolden比較
-- `host_pass → hardware_fail`記録
-- 変更影響に基づく実機必須判定
-- 実機検証回数と時間のKPI
-
-## Milestone 4: Firmware backend
+## Milestone 1: Firmware backend — `picocalc_helloworld` first
 
 Primary backendとして`picoem-picocalc`を使用する。ソースは
 `picocalc_emu`へコピーせず別リポジトリで保守し、正確なcommitを固定する。
@@ -93,10 +71,7 @@ Primary backendとして`picoem-picocalc`を使用する。ソースは
 - PIO1/DMA PSRAM全域試験、I2C1 keyboard controller、battery、backlightの接続
 - シナリオ入力したキーのLCD echoを含む`picocalc_helloworld`完全合格
 - 次のconformance対象としてBのPIO0/RGB565/LCD DMA OFFを接続
-- SPI0 SD、PWM/DMA audioの段階的接続
-- 必要範囲のPIO/DMA/multicore、SIO FIFO、WFE/SEV、IRQ対応
-- PNG、UART、trace、filesystem、JUnit等のscenario成果物への接続
-- backend commitとcapabilityを各実行結果へ記録
+- 必要範囲のPIO/DMA、PNG、UART、trace、capability成果物への接続
 
 最初のFirmware縦断対象は、ClockworkPi公式の無改変`Code/picocalc_helloworld`とする。
 最初の可視化到達点はAのSPI1/RGB666 3-byte転送を解釈し、320x320 framebufferへ
@@ -113,10 +88,42 @@ Firmware backendはHost device modelの代替ではない。対象アプリが�
 公開版`picocalc_emu`の通常ビルドがprivate依存を要求してはならず、正式統合前に
 `picoem-picocalc`も公開または同等に再現可能な配布形態にする。
 
-## Milestone 5: BSP lifecycle
+完了条件は、`EMULATOR_ROADMAP.md`のHELLO-FULLとGate 7のCanonical BSP B conformanceを
+満たし、継承済みSerial回帰がすべて合格した状態を、commitと構造化artifactで固定すること。
+
+## Milestone 2: Host device models
+
+- native host App API/Pico SDK shim
+- headless LCD framebuffer
+- keyboard FIFO model
+- directory-backed Fast SD mode
+- 仮想時刻、固定乱数、stdout capture
+
+完了条件は、専用`emu_smoke`アプリがPC上で起動し、画面・キー・ファイル結果を
+決定的に生成できることです。
+
+## Milestone 3: Scenario runner
+
+- JSONシナリオ
+- key/text/wait/reset操作
+- pixel、region hash、file、stdout assertion
+- PNG、trace JSON、JUnit成果物
+- 100回連続実行の決定性検査
+
+## Milestone 4: Hardware correlation
+
+- 実機SPI/I2C/UART trace採取
+- host traceとのgolden比較
+- `host_pass → hardware_fail`記録
+- 変更影響に基づく実機必須判定
+- 実機検証回数と時間のKPI
+
+## Milestone 5: BSP lifecycle and broader compatibility
 
 - `picocalc bsp status`
 - `picocalc bsp diff`
 - `picocalc bsp upgrade`
 - BSP changelogとmigration rule
 - 既存生成プロジェクトへの安全な修正配布
+- SPI0 SD、PWM/DMA audio playback、multicore、SIO FIFO、WFE/SEV、IRQの拡張
+- PicoMite、uLisp、FUZIX等の対象workload別runner

@@ -10,10 +10,9 @@ Rust製`picoem-picocalc`の`ExecutionModel::Serial`上で実行することで�
 判定しない。最初の可視化到達点と、公式サンプル全体の合格を分けて管理する。
 
 `picocalc_helloworld`の対象ソース、ビルド設定、Pico SDK、toolchain、ELF/BINの
-SHA-256、`picoem-picocalc`のcommitを実行結果へ記録する。調査時点で対象ディレクトリに
-ローカル変更はなく、このディレクトリを最後に変更したPicoCalc側commitは
-`e403bc04d8f1f1ee6617bf1484250731db319fa3`である。実装開始時には、実際にビルドへ
-使用するリポジトリ全体のcommitを改めて固定する。
+SHA-256、`picoem-picocalc`のcommitを実行結果へ記録する。実装開始時には、実際に
+ビルドへ使用するClockworkPi公式リポジトリ全体のcommitをGate 0で固定する。
+ディレクトリを最後に変更したcommitだけを、成果物全体のsource identityとして使わない。
 
 ## 2. 対象ファームウェアの契約
 
@@ -104,8 +103,9 @@ UF2待ちへ進む状態と、対象ファームウェアを実行できた状�
 
 - RP2040側SPIへ外部device transaction interfaceを追加する。
 - PicoCalc board adapterでSPI1とGP13/14/15のCS/DC/RESETをLCD modelへ接続する。
-- ILI9488/ST7365P互換の対象command subsetとして、少なくともreset、sleep/display state、
-  MADCTL、COLMOD、CASET、RASET、RAMWRを実装する。
+- 物理board profileはST7365P、内部GRAMは320×480、可視viewportは320×320として扱う。
+- Aの公式ファームウェアがILI9488名で使用するcommand subsetとして、少なくともreset、
+  sleep/display state、MADCTL、COLMOD、CASET、RASET、RAMWRを実装する。
 - 3-byte RGB666 wire dataをdecodeし、共通のRGB565 framebufferへ正規化する。
 - HELLO-VISIBLEの画面、UART、決定性を検収する。
 
@@ -163,13 +163,15 @@ framebufferは共有できるが、AのSPI1/RGB666とBのPIO0/RGB565を同じ転
 
 - `picoem-picocalc`: RP2040命令・周辺機能、direct boot、外部SPI/I2C device hook、
   Serial correctness、低レベルtraceを担当する。
-- PicoCalc board/device layer: pin配線、LCD、keyboard controller、PSRAM等の
-  PicoCalc固有モデルを担当し、汎用RP2040 coreへPicoCalc条件を埋め込まない。
+- `picoem-picocalc`内の専用PicoCalc board/device crate: pin配線、LCD、keyboard
+  controller、PSRAM等のPicoCalc固有モデルを担当する。汎用`rp2040-emu` crateへ
+  PicoCalc条件を埋め込まない。crate名は最初の実装タスクで確定する。
 - `picocalc_emu`: scenario実行、入力、UART/PNG/JSON等のartifact収集、比較、利用者向け
   interfaceを担当する。
 - `rp2040js`: 周辺機能の挙動、テスト構成、実装方法の比較参考に限定する。
 
-配置の詳細は最初の実装タスクで確定してよいが、この責任境界は維持する。
+`picocalc_emu`へdevice modelのソースをコピーせず、`picoem-picocalc`の固定commitにある
+公開runner APIを利用する。この責任境界は維持する。
 
 ## 7. Sol / Luna運用
 
