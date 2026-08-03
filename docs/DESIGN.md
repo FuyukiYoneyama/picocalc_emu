@@ -232,9 +232,17 @@ prediction_agreement =
 
 ## 7. 段階的な実装計画
 
-### Phase 0: 仕様固定
+> **実行順序の正典は[`MILESTONES.md`](MILESTONES.md)です。** 本節のPhase番号は
+> 初期設計時の区分であり、現在の実行順序とは一致しません。特にPhase 0の
+> golden採取は、現行計画ではMilestone 3へ移動しています。対応表は
+> `MILESTONES.md`の「他文書との対応」にあります。本節は各段階で「何を作るか」の
+> 内容説明として読み、「いつ作るか」は`MILESTONES.md`に従ってください。
 
-既存の実働プロジェクトを棚卸しし、再現可能なビルド、Pico SDK 版、ボード、利用機能を manifest 化する。LCD、SD、キーボードについて正常動作する実装と設定を選定し、RP2040/Pico1 と RP2350/Pico2 のプロファイルに分ける。実機から起動時の SPI/I²C トレース、代表画面、キー列、SD 内容を採取する。PDF 回路図と既存ドライバのピン定義を機械可読な `profiles/picocalc-v2.yaml` にする。
+### Phase 0: 仕様固定（現行 Milestone 3 相当）
+
+既存の実働プロジェクトを棚卸しし、再現可能なビルド、Pico SDK 版、ボード、利用機能を manifest 化する。LCD、SD、キーボードについて正常動作する実装と設定を選定し、RP2040/Pico1 と RP2350/Pico2 のプロファイルに分ける。実機から起動時の SPI/I²C トレース、代表画面、キー列、SD 内容を採取する。PDF 回路図と既存ドライバのピン定義を機械可読な board profile にする。これは
+Milestone 0 で `profiles/picocalc-rp2040.json` として実装済みである（当初案の
+`profiles/picocalc-v2.yaml` からファイル名と形式を変更した）。
 
 基準データの採取方法を次のように固定する。
 
@@ -246,26 +254,33 @@ prediction_agreement =
 
 トレースはバージョン付き JSON schema と raw capture の両方を保存する。正規化イベントは少なくとも `timestamp_us`, `bus`, `direction`, `address_or_cs`, `speed_hz`, `payload`, `result`, `scenario_id`, `profile_id` を持つ。golden の追加・更新は実機 artifact、変更理由、レビュー承認を必要とし、テスト失敗時の自動更新は禁止する。
 
-### Phase 1: MVP（最優先）
+### Phase 1: MVP（現行 Milestone 0 相当・完了）
 
 実機確認済みの Canonical PicoCalc BSP と新規プロジェクトテンプレートを作る。生成直後のプログラムが実機上で LCD 表示、SD mount/read/write/sync、キーボード入力に成功する状態を固定する。AI の通常変更範囲を `app/` と `assets/` に分離し、BSP/profile/build 基盤の変更検出を追加する。
 
-### Phase 2: 実開発への接続
+### Phase 2: 実開発への接続（現行 Milestone 1〜2 相当）
 
 App API、Pico SDK shim の最小部分、headless framebuffer、キーボード FIFO、Fast/Compatibility mode SD、仮想時計、CLI、シナリオランナーを実装する。既存 CMake プロジェクトに `PICOCALC_EMU=ON` を追加し、共通のアプリコードと platform adapter を分離する。LCD/SD conformance test と変更影響分析を追加し、失敗成果物と KPI を次の修正プロンプトへ渡せる JSON レポートを作る。
 
-### Phase 3: RP2040 Firmware backend
+### Phase 3: RP2040 Firmware backend（現行 Milestone 4 相当）
 
 `picoem-picocalc`の採用検証とcommit固定を行い、ST7365P LCD、I²C keyboard、
 SD block-deviceをGPIO/PIO/SPI/I²Cへ接続する。実際のファームウェアを起動し、
 実働プロジェクトと新規テンプレートの画面、UART、通信トレース、SD結果を比較する。
 `rp2040js`は各段階の挙動比較と実装調査に利用する。
 
-### Phase 4: 高い互換性と HIL
+### Phase 4: 高い互換性と HIL（現行 Milestone 3 の HIL＋Milestone 5 相当）
 
 GDB 接続、core1/SIO FIFO、PIO/DMA、PSRAM、PicoMite/uLisp/FUZIX の専用ランナー、USB またはシリアル経由の HIL ランナーを追加する。PicoMite は BASIC/SD/UI の外部観測を優先し、完全な VM 再現は依存度と費用を見て判断する。エミュレーターの合格判定は「実機を再現したこと」ではなく、「対象テストについて実機結果を予測できたこと」とする。
 
 ## 8. 推奨ディレクトリ
+
+> **これは将来構成であり、現状ではありません。** 現在実在するのは
+> `bsp/`、`templates/`、`reference-projects/`、`profiles/`、`tools/`、`tests/`、
+> `hardware-validation/`、`diagnostics/`、`docs/` です。以下のうち
+> `schemas/`、`include/picocalc_emu/`、`src/`、`adapters/`、`scenarios/`、
+> `golden/`、`fixtures/` はいずれも未作成で、Milestone 1以降に作られます。
+> 現状の構成は[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)を参照してください。
 
 ```text
 picocalc_emu/

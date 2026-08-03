@@ -1,18 +1,113 @@
-# PicoCalc Verified BSP & Emulator Development Kit
+# picocalc_emu — AIによるPicoCalc開発を、人間の実機検証なしで完結させるための開発基盤
 
 [![CI](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FuyukiYoneyama/picocalc_emu/actions/workflows/ci.yml)
 
-PicoCalc向けソフトをAIと開発するとき、LCD・SD・キーボード・音声・PSRAMの
-初期化を毎回作り直さないための開発基盤です。
+<!-- 注: 本リポジトリは現在privateです。上のCIバッジはアクセス権のない閲覧者には
+     表示されません。公開時に解消します。 -->
 
-現在は **Canonical BSP 0.8.8** です。標準templateのアプリ版名は`0.8.4-*`として
-BSPとは独立に管理します。実機動作済みプロジェクトから
-抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、検証ツールを
-利用できます。PC上でPicoCalcファームウェアを実行するエミュレーターは
-まだ実装されていません。
+
+## このプロジェクトの目的
+
+**PicoCalc向けのプログラム開発をAIに依頼したとき、人間が行う実機検証の回数を
+最小にし、できれば実機検証なしでプログラムを完成させられるようにすること。**
+そのための開発の枠組み（エミュレーターを含む）を提供します。
+
+「実機検証を減らす」の主語は人間です。AIは実機を操作できません。UF2をSDカードへ
+コピーし、PicoCalcへ挿し、電源を入れ、画面を見て、写真を撮り、UARTログを回収する
+作業は、すべて人間が行います。**AIが1回推測を外すたびに、人間がこの往復を1回払う。**
+このプロジェクトが削減する対象は、この人間の往復です。
+
+したがって最終目標は「エミュレーターを完成させること」ではありません。
+AIが自分で観測し、自分で失敗原因を特定し、自分で直せる状態を作り、人間の出番を
+**最後の1〜2回の確認、理想的には0回**にすることです。
+
+## PicoCalcとは
+
+[ClockworkPi PicoCalc](https://www.clockworkpi.com/picocalc)
+（[ソース](https://github.com/clockworkpi/PicoCalc)）は、Raspberry Pi Picoシリーズを
+差し替え可能なメインボードとして搭載する、電池駆動のスタンドアロン携帯マイコンです。
+ポケット電卓の形をした、それ自体で完結した小さなコンピューターだと考えてください。
+
+| 要素 | 内容 |
+|---|---|
+| メインボード | Pico 1 / 1 W（RP2040、Cortex-M0+ 133 MHz）または Pico 2 / 2 W（RP2350、Cortex-M33 150 MHz）を差し替え |
+| 画面 | 4インチ 320×320 IPS、SPI接続 |
+| キーボード | 67キーQWERTY、バックライト付き。STM32が管理し**I²C経由**で接続 |
+| 音声 | PWMスピーカー2基＋3.5 mmジャック |
+| ストレージ | SDカードスロット |
+| メモリ | オンボード8 MB PSRAM |
+| 電源 | 18650リチウム電池1本、ホットスワップ対応 |
+
+本リポジトリの現在の対象は**RP2040（Pico 1）搭載構成**です。
+
+重要なのは、この構成が「PCに繋いだ開発ボード」ではないという点です。プログラムは
+UF2としてSDカード経由で書き込み、実行結果は本体の画面とUARTログにしか現れません。
+**AIからは画面もSPI波形もSDカードの中身も一切見えません。**
+
+## なぜ難しいのか
+
+AIにPicoCalc向けアプリを書かせると、動作実績のあるプロジェクトを何本渡しても
+LCDが映らず、SDがmountできず、原因が特定できないまま実機デバッグが10回以上続きます。
+原因は資料不足ではなく、次の2つです。
+
+1. **合成の誤り** — 複数の実働プロジェクトには異なるドライバ、ピン設定、I²C速度、
+   ビルド構成が混在します。AIがそれらを部分的に組み合わせると、各部分は正しいのに
+   全体として動かない構成ができます。
+2. **観測不能** — AIに返る信号は「映る／映らない」の1ビットだけです。
+   1ビットのオラクルでは、リセット波形・CS粒度・clkdiv・転送形式・クロックといった
+   多次元の仮説空間を絞り込めません。だから推測し、外し、人間の往復が増えます。
+
+この2つを実際に踏み抜いた記録が
+[LCD不動作調査記録](docs/LCD_INVESTIGATION_20260729.md)です。LCDに1枚表示させる
+だけのために、UF2ビルド17回・実機書き込み15回以上を要しました。真因は待機時間でも
+CS粒度でもなく、**動作実績のある転送コードを手で書き写したこと自体**でした。
+
+## どう解くか
+
+観測できない相手には推測が生まれます。そこで三段構えで、推測の余地を順に消します。
+
+| 段 | 手段 | 消す推測 | 状態 |
+|---|---|---|---|
+| 1 | **Canonical BSP** — 実機動作済みコードを無改変で固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | **実装済み** |
+| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | 未実装 |
+| 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
+
+第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
+
+- **Host backend** — アプリロジックをPCネイティブ実行する高速経路。UI・入力・
+  ファイル処理の反復検証に使います。
+- **Firmware backend** — 実機と同一のRP2040バイナリをそのまま実行する経路。
+  PIO・DMA・割り込み・マルチコアなど、Host backendが置き換えて消してしまう層を
+  検証します。Rust製[`picoem-picocalc`](https://github.com/FuyukiYoneyama/picoem-picocalc)を
+  主バックエンドとして使用します。
+
+**なぜ2本必要か:** 前述のLCD障害はPIOプログラム、clkdiv、CSトグル粒度に潜んでいました。
+これらはHost backendがshimで置き換える層そのものであり、ホストをいくらグリーンにしても
+検出できません。人間の往復を本当にゼロへ近づけるには、同一バイナリを実行して
+実際の信号を観測する経路が不可欠です。詳細は
+[主Firmware backend方針](docs/FIRMWARE_BACKEND.md)を参照してください。
+
+## 現在地
+
+第1段のCanonical BSPは **0.8.8** として完了しています（Milestone 0）。実機動作済み
+プロジェクトから抽出したBSP、アプリテンプレート、プロジェクト生成器、証拠台帳、
+検証ツールが利用できます。標準templateのアプリ版名は`0.8.4-*`としてBSPとは独立に
+管理します。
+
+**第2段のエミュレーターはまだ実装されていません。** 現時点で人間の実機検証を
+ゼロにはできません。現在得られている効果は、AIにハードウェア初期化を毎回
+書き直させないことと、最初の実機試験で「どこが失敗したか」を一度で観測可能に
+することです。
+
+次の実装目標は、ClockworkPi公式の無改変`Code/picocalc_helloworld`をFirmware backend上で
+動かすことです。実装順と受入条件は
+[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)にあります。
+
+## 読む順番
 
 AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.md) を読みます。
-本書は全体説明、`AI_START_HERE.md`は変更範囲・A/B選択・ログ判定を含む正規手順です。
+本書は目的と全体像、`AI_START_HERE.md`は変更範囲・A/B選択・ログ判定を含む正規手順です。
+文書全体の読む順序は末尾の[文書](#文書)にあります。
 
 ## 現在できること
 
@@ -30,7 +125,7 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
 
-## 現在できないこと
+## 現在できないこと（これができないため、人間の実機検証がまだ必要です）
 
 - PC上でUF2/ELFを実行する
 - LCD framebufferをPNGとして取得する
@@ -38,30 +133,30 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - 仮想SDカードやSPI/I2C故障を注入する
 - host合格と実機結果の相関を自動集計する
 
-これらは[Milestones](docs/MILESTONES.md)に従って段階的に実装します。
+この5つは、そのまま「AIが自分で観測できないもの」の一覧です。ここが埋まるまで、
+画面を見る役目は人間に残ります。実装順は[Milestones](docs/MILESTONES.md)に従います。
 
-## Firmware backendの開発方針
+## Firmware backendの取り扱い
 
-RP2040の同一ファームウェアをPC上で実行するFirmware backendには、
-[`FuyukiYoneyama/picoem-picocalc`](https://github.com/FuyukiYoneyama/picoem-picocalc)を
-主バックエンドとして使用します。これは`0x4D44/picoem`の履歴と
-`MIT OR Apache-2.0`ライセンスを維持した独立派生リポジトリです。
-
-`picoem-picocalc`は`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
+`picoem-picocalc`は`0x4D44/picoem`の履歴と`MIT OR Apache-2.0`ライセンスを維持した
+独立派生リポジトリです。`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
 正確なcommitを固定して利用します。初期段階では単一ホストスレッドの
 `ExecutionModel::Serial`を正しさの基準とし、PIO0 LCD、I2C1 keyboard、SPI0 SD、
 PIO1 PSRAM、PWM/DMA audio、multicoreを段階的に接続します。
 
-Firmware backendは高速なHost device modelの代替ではありません。通常のUI・入力・
-ファイル処理はHost backendで検証し、同一バイナリやRP2040固有動作の確認が必要な場合に
-Firmware backendを使用します。詳細は
-[主Firmware backend方針](docs/FIRMWARE_BACKEND.md)を参照してください。
-`rp2040js`もRP2040周辺機器の挙動、テスト構成、実装差を調べる比較資料として
-利用しますが、`picocalc_emu`へ接続する主バックエンドにはしません。
+これはBSPと同じ規律をエミュレーター層へ適用したものです。BSPで
+`bsp/vendor/`（実績コードの無改変コピー）と`bsp/src/`（薄いアダプタ）を分けたのと同様に、
+汎用RP2040コアへPicoCalc固有の条件を埋め込まず、PicoCalc側はboard adapterと
+device modelに置きます。**動作実績のあるコードを書き写した瞬間に負ける**という
+Canonical BSPの教訓は、エミュレーター本体にもそのまま適用されます。
 
-Canonical BSPとtemplateの整備をMilestone 0として完了したため、ここから
-`picocalc_emu`のエミュレーター実装を本格的に開始します。最初のFirmware縦断対象は、
-ClockworkPi公式の無改変`Code/picocalc_helloworld`です。まずAのSPI1/RGB666 3-byte転送で
+`rp2040js`はRP2040周辺機器の挙動、テスト構成、実装差を調べる比較資料として
+利用しますが、`picocalc_emu`へ接続する主バックエンドにはしません。一つの正統な経路
+だけを持ち、二つの実装を混ぜないためです。
+
+最初のFirmware縦断対象は、ClockworkPi公式の無改変`Code/picocalc_helloworld`です。
+公式サンプルを選ぶのは、自分で書いたコードで自分のエミュレーターを検定すると、
+合格する方向へ無意識に調整できてしまうためです。まずAのSPI1/RGB666 3-byte転送で
 `Hello World PicoCalc`を320×320 framebufferへ決定的に描画し、その後、PSRAM全域試験、
 I2C keyboard controller、scripted key echoまで通して完全合格とします。
 
@@ -72,8 +167,11 @@ LCD DMA OFFは、公式サンプルAの縦断合格後に検証する次のFirmw
 
 ## 30秒で試す
 
-必要条件はPython 3.8以降とC++17 host compilerです。clone単体で動くportable
+必要条件は**Python 3.9以降**とC++17 host compilerです。clone単体で動くportable
 検証にはPico SDKは不要です。
+
+`tools/`のスクリプトは`list[str]`などのビルトインジェネリクス記法（PEP 585）を
+使うため、Python 3.8では起動時に`TypeError`になります。CIは3.11で実行しています。
 
 ```sh
 python3 tools/picocalc.py verify
@@ -239,52 +337,71 @@ keyboardはpendingです。専用HV-1診断でLCD readback 100回とguided keybo
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 
-## 変更履歴の要点（過去の経緯。現在の利用手順ではない）
-
-BSP 0.6.0では、動作済みプロジェクトを先にコピーした参照経路と、AIが利用する
-汎用経路を分離しました。`PICOCALC_AUDIO_REFERENCE_TONE=ON`（既定値）は
-`Picocalc_ment`の固定サイン、`OFF`はPCM stream APIを使います。PSRAMには
-`picocalc::psram::Buffer`を追加しました。いずれもソースとA/Bのビルドを確認し、
-この版の実機合否は最後にA/Bを個別に確認します。
-
-BSP 0.7.0では、アプリ／LCDラッパーの標準画素形式をRGB565と明記し、引数なしの
-推奨表示デフォルトをB（`pio-rgb565`、PIO blocking、DMA OFF）へ変更しました。
-A（`hwspi-rgb888`）は公式互換・bring-up・診断経路として削除せず、明示指定で利用できます。
-
-BSP 0.8.0では、BのLCD更新とPSRAM PIO1アクセスを交互に実行する共存クロック
-検証モードを追加しました。LCD DMAは引き続き使用せず、PSRAM側はPIO＋DMA
-blocking APIを使用します。
-
-BSP 0.8.1では、83.3 MHz候補が通常スモーク起動で1 byte不一致になった実機結果を
-反映し、250 MHz通常起動の第一候補を62.5 MHz（`clkdiv=2.0/fudge=false`）へ変更しました。
-83.3 MHzは共存検証で合格した候補としてフォールバックに残します。
-
-BSP 0.4.0では、B（`pio-rgb565`）の転送処理を書き写すのをやめ、実機動作が記録されている
-`general/lcd/src/lcd_rgb565_pio.cpp`の**無改変コピー**を`bsp/vendor/`へ置いて呼ぶだけに
-しました。`bsp/src/display_pio_rgb565.cpp`は`game/pico_skyace`と同じ呼び出し粒度
-（160×160のウィンドウごとに`set_window`1回、画素は160ピクセル単位）に徹する薄い
-アダプタです。`verify`は`vendor-lcd-pio-unmodified`でコピーのSHA-256を照合し、
-アダプタ側に転送処理が戻っていないことも検査します。経緯は
-[LCD調査記録](docs/LCD_INVESTIGATION_20260729.md)にあります。
+## RAMRDの解釈
 
 RAMRDはこの実機で正常に動作します（`life`のスクリーンショット取得ビルドが同じ手順で
-正しい画像を出力しています）。BのRAMRDは`life`の手順をそのまま使い、読み値が期待と
-違う場合はパネルではなく書き込み経路を疑います。
+正しい画像を出力しています）。BのRAMRDは`life`の手順をそのまま使い、**読み値が期待と
+違う場合はパネルではなく書き込み経路を疑います。**
+
+これは経験則ではなく実測に基づく規則です。過去に読み値の不一致を「この個体のRAMRDは
+信頼できない」と実機側へ帰属させた判断は誤りで、後に撤回しています。RAMRDは
+「書き込みが成立していない」ことを正しく報告していました。詳細は
+[LCD不動作調査記録](docs/LCD_INVESTIGATION_20260729.md)にあります。
+
+## BSPの変更履歴
+
+版ごとの変更内容と理由は[`bsp/CHANGELOG.md`](bsp/CHANGELOG.md)に分離しました。
+本書と`bsp/README.md`には現行0.8.8の契約だけを置きます。過去版の記述を
+現行仕様として実装・検証に使わないでください。
 
 ## 文書
 
-- [現在の実装状況](docs/IMPLEMENTATION_STATUS.md)
-- [Milestones](docs/MILESTONES.md)
-- [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md)
-- [将来のエミュレーター設計](docs/DESIGN.md)
-- [要求仕様](REQUIREMENTS.md)
-- [Canonical BSP](bsp/README.md)
-- [実機検証台帳](hardware-validation/README.md)
+分類は読む順序です。①を読まずに②以降へ進まないでください。
+
+### ① 必ず読む
+
+- [AI向け開始手順](AI_START_HERE.md) — 目的、変更範囲、A/B選択、ログ判定
+- 本書 — 目的と全体像
+
+### ② 作業に着手するとき読む
+
+- [現在の実装状況](docs/IMPLEMENTATION_STATUS.md) — 今どこまで動くか
+- [Canonical BSP](bsp/README.md) — 守るべきハードウェア契約（**現行のみ**）
+- [Milestones](docs/MILESTONES.md) — **実装順序の正典**。他文書の段階番号はここへ対応付ける
+- [Sol / Luna 開発運用](docs/DEVELOPMENT_WORKFLOW.md) — 役割と受入の境界
+- [実機検証台帳](hardware-validation/README.md) — 実機結果の記録方法
+
+### ③ 該当作業のときだけ参照する
+
+- [要求仕様](REQUIREMENTS.md) — 全体要求と受け入れ条件
+- [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md) — `picoem-picocalc`の扱い
+- [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md) — Gate 0〜7の受入条件
+- [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系
+- [Vendored drivers](bsp/vendor/README.md) — 無改変コピーの規約と呼び出し粒度
+- [Third-party notices](THIRD_PARTY_NOTICES.md) — third-party由来コードの扱い
+
+### ④ 歴史記録（現在の手順ではない）
+
+以下を現行仕様として実装・検証に使わないでください。過去のUF2やコミットを
+現在版として再利用しないでください。
+
+- [LCD不動作調査記録](docs/LCD_INVESTIGATION_20260729.md) — このプロジェクトが
+  なぜエミュレーターを必要とするかを示す一次記録
+- [開発・実機検証総合履歴](docs/PROJECT_HISTORY_20260729.md)
+- [BSP変更履歴](bsp/CHANGELOG.md)
 
 ## プロジェクトの位置付け
 
-現時点では「PicoCalcエミュレーター完成品」ではなく、
-**PicoCalc向け検証済みBSPスターターキット兼エミュレーター開発基盤**です。
-現在使える主経路はRP2040実機向けBSP/templateです。将来のPC実行経路は、
-高速なHost device modelと、`picoem-picocalc`を利用するRP2040 Firmware backendの
-二本立てで開発します。
+このリポジトリを「PicoCalc向けBSPスターターキット」と要約しないでください。
+それは目的ではなく、目的に到達するための第1段です。
+
+**目的は、AIによるPicoCalc開発から人間の実機検証を取り除くことです。**
+現在到達しているのは第1段（Canonical BSP）までで、AIが自分で観測するための
+第2段（エミュレーター）は未実装です。そのため現時点では、人間が画面を見る作業は
+まだ残っています。
+
+到達度は感覚ではなく、変更単位に`host_pass`、`host_fail`、`hardware_pass`、
+`hardware_fail`、`hardware_required`を記録して測ります。ただし実機回数の削減より
+予測精度を優先します。エミュレーターで合格したものが実機で落ちる割合が許容値を
+超えた機能は、モデルが直るまで`hardware_required`へ戻します。
+**エミュレーターは実機の代用であって、真実ではありません。**

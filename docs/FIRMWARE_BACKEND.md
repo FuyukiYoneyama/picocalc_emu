@@ -56,6 +56,20 @@ controller behavior, scripted keyboard echo, no silently ignored unsupported MMI
 and repeatable structured artifacts. The detailed gates and acceptance criteria are
 defined in [`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md).
 
+## The conformance target is not vendored
+
+`picocalc_helloworld` is a target to aim at, not a repository asset. Each
+verifier builds and runs it from the official ClockworkPi repository; this
+project records only the result and the identity needed to reproduce it (source
+commit, build settings, SDK/toolchain, artifact SHA-256). If CI later needs a
+firmware image it can distribute, write an equivalent sample in-house rather
+than shipping the official one — see
+[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md) §2.1.
+
 ## Public release requirement
 
 A public `picocalc_emu` release must not require access to a private dependency. Before the firmware backend becomes a normal public build dependency, `picoem-picocalc` must be publicly accessible or replaced by an equivalent publicly reproducible source package. Third-party notices and license files must be preserved in both source and binary distributions.
+
+A public release must likewise not require any third-party source whose license
+is unstated. Because the conformance target is built locally and never
+redistributed, it does not constrain release; see `THIRD_PARTY_NOTICES.md`.

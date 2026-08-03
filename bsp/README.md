@@ -19,50 +19,17 @@
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
 * audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFS参照試験と、同じPWM/DMAの48 kHz PCM stream API。PWM wrap 255、128 sample DMA half、512 sample SPSC ring
-* PSRAM: 8 MiB ESP-PSRAM64H、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。通常起動の候補は250 MHzでは`2.0/false → 3.0/false → 1.5/true`、125 MHzでは`1.0/false → 1.5/false → 2.0/false → 3.0/false → 4.0/false`。全候補スイープは共存検証モードだけで行う
+* PSRAM: 8 MiB（64 Mbit SPI PSRAM。ESP-PSRAM64H相当と記録しているが、実機の
+  刻印による確認は未実施。APS6404L系も同一コマンドセットで互換のため、BSPは型番では
+  なくコマンド契約に依存する）、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3。通常起動の候補は250 MHzでは`2.0/false → 3.0/false → 1.5/true`、125 MHzでは`1.0/false → 1.5/false → 2.0/false → 3.0/false → 4.0/false`。全候補スイープは共存検証モードだけで行う
 * PSRAM: transferは24 byte以下へ分割し、起動時にID読出しとread/write一致検証を行う。失敗時は利用不可として報告し、SRAMとして扱わない
 
 通常のアプリはこのディレクトリを変更せず、`picocalc/bsp.h` の API を使う。
 
-## 0.8.4 audio ring change
-
-`vendor/audio_picoment/platform/picocalc_audio_pwm.cpp` は、`synth/Picocalc_ment`
-からのPWM/DMA出力経路を元にしたBSP内の意図的な修正版である。従来の共有
-`g_ring_count`を廃止し、512サンプルの2冪リングをproducer-owned
-`g_ring_write`／DMA IRQ-owned `g_ring_read`のSPSC会計へ変更した。
-core1から`write_sample()`を呼ぶ場合、core0のDMA IRQに対する割り込み禁止は効かないため、
-この変更が必要である。producer publishとconsumer releaseの境界には`__dmb()`を置く。
-変更範囲はこのリング会計だけで、PWMピン、DMA、量子化、音声フォーマットは変更していない。
-
-## 0.8.5 audio quantizer correction
-
-誤差拡散の内部値がint16入力の表現範囲を一時的に超えた場合、PWM量子化前に
-`[0, 65535]`へクランプする。これは入力音声のclipではなく、量子化器の状態補正である。
-これにより、正当なint16 PCMの再生で`clip_count`が誤って増加しない。PWMピン、DMA、
-リング会計、音声フォーマットは変更していない。
-
-同版では、曲末に残るソフトウェアリングと2つのDMA half-bufferを
-`request_drain()` / `drain_complete()`で意図的なcenter-duty silenceとして排出する。
-EOFの通常終了をDMA underrunとして数えず、既に投入済みのPCMを捨てないためのAPIである。
-
-## 0.8.6 audio drain sequencing
-
-最後に補充したDMA halfを、反対側のhalfの完了後に実際に開始してから停止する。
-これにより曲末の1〜128サンプルを捨てず、停止時にはPWM出力をcenter dutyへ戻す。
-
-## 0.8.7 audio DMA restart
-
-EOF drainの停止IRQで無効化したDMAチャネルIRQ sourceを、`start_output()`のたびに
-再有効化する。NVICのIRQ lineだけを戻してもDMAチャネルから割り込みが上がらないため、
-複数曲の自動再生と停止後の再生を成立させるための修正である。PWM、DMA format、
-リング会計、量子化、drainのサンプル順序は変更していない。
-
-## 0.8.8 exact 8-bit PWM reconstruction
-
-PWM wrap 255では、誤差拡散用の再構成値
-`(duty * 65535 + 127) / 255`が全duty 0..255について厳密に`duty * 257`と等しい。
-左右各サンプルで発生していた除算をこの等価な乗算へ置き換えた。量子化結果、誤差拡散状態、
-PWM duty、音声フォーマットは変わらない。Host試験は全256入力を旧式と突合する。
+音声経路の版ごとの変更理由（0.8.4のSPSCリング会計、0.8.5の量子化器クランプとdrain、
+0.8.6のdrain順序、0.8.7のDMA IRQ source再開、0.8.8の等価乗算）は
+[`CHANGELOG.md`](CHANGELOG.md)に記録する。いずれもPWMピン、DMA形式、音声
+フォーマットは変更していない。
 
 ## Read-only filesystem API
 
@@ -96,33 +63,17 @@ PSRAM通常起動の250 MHz第一候補は`clkdiv=2.0/fudge=false`（62.5 MHz）
 標準テンプレートはLCD検証完了後に`audio::stop()`を呼ぶ。PCMアプリは`OFF`を選び、
 `audio::init()`、サンプル投入、`audio::start()`、終了時`audio::stop()`の順に使う。
 
-## 変更履歴（現在の契約ではない）
+## 版ごとの変更履歴
 
-0.6.0では、動作実績コードをコピーした参照経路を残したまま、AIが使う汎用経路も
-用意した。音声は`PICOCALC_AUDIO_REFERENCE_TONE=ON`で固定サイン、`OFF`で
-`audio::init()`→`write_sample()`→`start()`のPCM経路になる。PSRAMは生APIに加えて
-`psram::Buffer`でアドレス範囲を管理できる。個別のコピペ例は
-`templates/rp2040-basic/examples/`に置く。実機検証はこの準備が終わった最後に行う。
-
-0.7.0では、公開APIのRGB565をプロジェクト標準画素形式とし、CMakeとビルドCLIの
-引数なしデフォルトをBへ変更した。A/Bのドライバは引き続き独立しており、Aを削除・統合しない。
-
-0.8.0では、BのLCD更新中にPSRAMの候補clkdivを順番に切り替え、各候補で
-24-byte write/readを120フレーム実行する`probe_lcd_coexistence()`を追加した。
-検証後は最初に共存合格した候補をそのまま有効にする。
-
-2026-08-01のPicoCalc実機（250 MHz）では、LCD更新を止めずに共存できたPSRAM設定は
-`clkdiv=1.5/fudge=true`（約83.3 MHz）、`clkdiv=2.0/fudge=false`（62.5 MHz）、
-`clkdiv=3.0/fudge=false`（約41.7 MHz）だった。共存スイープ上の最高速度は前者で、
-検証記録は`hardware-validation/records/bsp-0.8.0-20260801-psram-coexist.json`に置く。
-
-その後の標準BSPスモーク起動では83.3 MHzで1 byte不一致が発生し、62.5 MHzへ
-フォールバックした。したがって通常運用の推奨は`clkdiv=2.0/fudge=false`とし、
-83.3 MHzは自動フォールバック候補に残す。
+過去の版でどこを、なぜ変えたかは[`CHANGELOG.md`](CHANGELOG.md)へ分離した。
+本書には現行0.8.8の契約だけを置く。0.1.x〜0.2.xのLCD不動作調査の全経緯は
+[`../docs/LCD_INVESTIGATION_20260729.md`](../docs/LCD_INVESTIGATION_20260729.md)にある。
 
 過去の台帳記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard
 未試験）である。最新の標準Bの実機確認結果は、起動ログの`git`と`app_status`を基準にする。
+
+## 生成ファイルの規約
 
 ピン定義と周波数は`profiles/picocalc-rp2040.json`を唯一の入力源とし、
 `tools/generate_board_header.py`が`include/picocalc/board_generated.h`を生成する。

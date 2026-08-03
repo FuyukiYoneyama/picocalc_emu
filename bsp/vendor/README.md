@@ -9,6 +9,13 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 初期化と、実機動作している`PicoCalc/Code/picocalc_helloworld/lcdspi/lcdspi.c`の
 ウィンドウ／RAMRD契約をBSPから直接呼べる形へ固定したドライバである。
 
+**このファイルはコピーではなく独自実装である。** 取り込んでいるのは、パネルを駆動する
+ために必要なハードウェア契約（初期化コマンド列、`COLMOD=0x66`、3-byte RGB666
+container、CS保持のウィンドウ取引、低速RAMRD経路）だけである。ClockworkPi公式サンプルは
+上流にライセンス表示がないため、本リポジトリはそのソースを一切再配布しない。
+経緯と未解決事項は[`THIRD_PARTY_NOTICES.md`](../../THIRD_PARTY_NOTICES.md)の
+「ClockworkPi PicoCalc official sample code」節に記録する。
+
 - SPI1、25 MHz、`COLMOD=0x66`、RGB888 3 bytes/pixel
 - リセット解除後200 ms、`0x11`/`0x29`前後の120 ms待機
 - `CASET`、`RASET`、`RAMWR`、画素列を一つのCS Low区間で送信
@@ -31,6 +38,21 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 同一である。`general/01_DISPLAY_LCD.md`§0と§8.1は、独自実装ではなくこのファイルを
 そのまま使うことを指示している。
 
+### 検証可能な出自
+
+上表の`general/lcd`は作業ワークスペース上の位置であり、
+`reference-projects/catalog.json`には登録されていない。したがって
+`verify --references --strict-commit`は上表の取得元commitを照合できない。
+
+**検証器が実際に照合する経路はこちらである。** `lcd_rgb565_pio.cpp`のSHA-256
+`d4013f26...`は、catalogに登録された`pico_skyace`（commit `4c599e6b13b8`）の
+evidence `src/platform/lcd_rgb565_pio.cpp`と一致する。同じバイト列が両方の
+ワークスペースに存在するため矛盾ではないが、**正典の出自はcatalog登録側**とする。
+上表は履歴上の取得経路として残す。
+
+コピーを取り直す場合は、catalogの`pico_skyace` evidenceと照合できることを条件とし、
+`verify`の`vendor-lcd-pio-unmodified`が通ることを確認する。
+
 ## Audio: `audio_picoment`
 
 `audio_picoment/platform/picocalc_audio_pwm.cpp/.h`は、実機で音声出力を確認した
@@ -38,7 +60,10 @@ BSPアダプタから分離する。新しいLCD転送を`bsp/src/display*.cpp`�
 0.8.4でリング会計だけを修正したBSPドライバである。PRA32-Uなどの音源生成は含めず、
 PCMを受け取る出力経路だけを提供する。
 
-- GP26/27、sysclk 250 MHz基準、PWM wrap 255、約976 kHz carrier
+- GP26/27、PWM wrap 255。carrierは`clock_get_hz(clk_sys) / (wrap + 1)`で実行時に導出する。
+  B（`pio-rgb565`、250 MHz）で約976 kHz、A（`hwspi-rgb888`、125 MHz）で約488 kHzになる。
+  ドライバはsysclkを固定値と仮定しないため、この数値をログ判定の期待値として
+  ハードコードしない
 - 48 kHz、DMA timer、128 sample half-buffer、512 sample SPSC ring
 - 16-bit PCMからPWMへの量子化誤差拡散100%、DMA IRQのunderrun/drop統計
 - 初期化時は発音せずPWM midpoint。アプリが`write_sample()`して`start()`する

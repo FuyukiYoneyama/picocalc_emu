@@ -1,12 +1,38 @@
 # Milestones
 
-Milestone 0 は現在のBSPスターターキットとして完了しています。Milestone 1以降は
+**この文書が計画の正典です。** 実装順序と完了条件を定義するのはここだけであり、
+他文書に出てくる段階表現は本書のMilestone番号を参照するものとします。
+
+Milestone 0 は完了しています。Milestone 1以降は
 PC上のエミュレーターを実装する将来作業であり、現在のRP2040実機ビルド手順と
 混同しないでください。
 
 Firmware backendの開発方針は
 [`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)に定義します。主バックエンドは、
 `0x4D44/picoem`から独立派生した`FuyukiYoneyama/picoem-picocalc`です。
+
+## 他文書との対応
+
+過去に複数の文書がそれぞれ独自の段階番号を持っていたため、対応表を残します。
+番号が食い違う場合は本書を優先してください。
+
+| 本書 | `DESIGN.md`（旧Phase番号） | `REQUIREMENTS.md §7`（旧優先順位） | `EMULATOR_ROADMAP.md` |
+|---|---|---|---|
+| Milestone 0 | Phase 1 MVP | 3〜4 | — |
+| Milestone 1 | Phase 2 の host 部分 | 6 | — |
+| Milestone 2 | Phase 2 の scenario 部分 | 6 | — |
+| Milestone 3 | Phase 0 の golden 採取＋Phase 4 の HIL | 1、5 | — |
+| Milestone 4 | Phase 3 | 7〜9 | Gate 0〜6 全体 |
+| Milestone 5 | 対応なし | 10 | Gate 7 以降 |
+
+`EMULATOR_ROADMAP.md`のGateだけは階層が異なります。GateはMilestone 4の内部を
+分割したものであり、本書と競合しません。
+
+**順序変更の記録:** `DESIGN.md`のPhase 0は、ロジックアナライザによるSPI/I²Cトレース
+採取とgolden採取を最初に行う計画でした。現行計画ではこれをMilestone 3
+（Hardware correlation）へ移しています。Canonical BSPを先に固定した方が、採取すべき
+golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
+歴史的記述として残っており、実行順序としては本書が優先します。
 
 ## Milestone 0: Canonical BSP — implemented
 
