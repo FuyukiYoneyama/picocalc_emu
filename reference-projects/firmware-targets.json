@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "targets": [
+    {
+      "id": "picocalc-helloworld-a",
+      "source": {
+        "repo_url": "https://github.com/clockworkpi/PicoCalc.git",
+        "commit": "553da6f2408963b956779599d179d77fd611a4d7",
+        "nested": [
+          {
+            "path": "Code/picocalc_helloworld/rp2040-psram",
+            "repo_url": "https://github.com/polpo/rp2040-psram.git",
+            "commit": "7786c93ec8d02dbb4f94a2e99645b25fb4abc2db"
+          }
+        ]
+      },
+      "sdk": {
+        "version": "2.2.0",
+        "path_note": "local clone tag 2.2.0"
+      },
+      "toolchain": {
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "cmake": {
+        "generator": "Ninja",
+        "options": [
+          "-DCMAKE_BUILD_TYPE=Release"
+        ],
+        "env": {
+          "CFLAGS": "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1",
+          "CXXFLAGS": "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"
+        }
+      },
+      "artifacts": {
+        "elf_sha256": "1df5bcffe64558a6a44eb9936c4f0c153184682bada3e7c63ee4edce7051094d",
+        "bin_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+        "uf2_sha256": "c0ac7577457c11aa6abbadc0d8ab8726ebf302d88ddc6c1f26879790371fca01"
+      },
+      "reproducibility": {
+        "builds_compared": 2,
+        "elf_match": true,
+        "bin_match": true,
+        "uf2_match": true
+      },
+      "symbols": {
+        "main": "0x10000ca8",
+        "uart_init": "0x10001bf4",
+        "stdio_init_all": "0x100050f0",
+        "psram_test": "0x100003a8",
+        "psram_spi_init_clkdiv": "0x100073e0",
+        "init_i2c_kbd": "0x10005da4",
+        "read_i2c_kbd": "0x10005de8",
+        "set_kbd_backlight": "0x10005fb4",
+        "test_kbd_backlight": "0x10000c7c",
+        "i2c_init": "0x100057fc"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "feature/picocalc-integration",
+        "commit": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
+        "test_command": "cargo test -p rp2040-emu",
+        "baseline": "1225 passed"
+      }
+    }
+  ]
+}

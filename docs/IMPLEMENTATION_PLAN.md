@@ -101,11 +101,20 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
   最低互換検査用であり、Gate 0のsource identityとは別問題である。
 - 再現ビルド手順: build dirは公式clone外の
   `~/pico_dvl/codex/build/picocalc_helloworld/`とし、`PICO_SDK_PATH`を
-  明示、generatorはNinja、CMakeオプションは
-  `-DCMAKE_BUILD_TYPE=Release -DPICO_NO_BI_PROGRAM_BUILD_DATE=1`で固定する。
-  後者はPico SDKが`__DATE__`をバイナリへ埋め込むことを止めるための必須
-  設定であり、これがないと受入条件「同一SHA-256の再現」を満たせない。
-  この設定はビルドオプションの固定でありソース無改変の原則に反しない。
+  明示、generatorはNinja、CMakeオプションは`-DCMAKE_BUILD_TYPE=Release`
+  とする。加えて、configure時に環境変数`CFLAGS`/`CXXFLAGS`へ
+  `-DPICO_NO_BI_PROGRAM_BUILD_DATE=1`を設定する。この定義はPico SDKの
+  Cプリプロセッサマクロ（ガードは`#if !PICO_NO_BI_PROGRAM_BUILD_DATE`）で
+  あり、`__DATE__`をバイナリへ埋め込むことを止めるための必須設定だが、
+  CMakeコマンドライン変数（`-D`）としては効かず警告のみで無視される。
+  `-DCMAKE_C_FLAGS=...`によるコンパイラフラグの直接上書きは、SDK
+  ツールチェーンが設定するアーキテクチャフラグを消してビルド失敗を
+  招くため使用禁止。環境変数`CFLAGS`/`CXXFLAGS`経由はCMakeが
+  ツールチェーンの初期化フラグへ安全に連結するため、この方式を正式手順
+  とする。これがないと受入条件「同一SHA-256の再現」を満たせない
+  （同日ビルドでの偶然のhash一致は日付マクロ無効の証明にならないことに
+  注意。日をまたぐと再現性が壊れる）。この設定はビルドオプションの
+  固定でありソース無改変の原則に反しない。
 - 継承済みSerial回帰の範囲は`cargo test -p rp2040-emu`と定義する。
   2026-08-03時点のbaselineは1225テスト全合格（backend commit`a4e23ca`）。
 
