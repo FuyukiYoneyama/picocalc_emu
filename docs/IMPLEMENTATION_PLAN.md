@@ -5,7 +5,8 @@
 > 作業単位へ分解した実行計画を定義する。受入条件の記述が本書と
 > `EMULATOR_ROADMAP.md`で食い違う場合は`EMULATOR_ROADMAP.md`を優先する。
 >
-> 作成日: 2026-08-03。進捗欄は着手時に更新する。
+> 作成日: 2026-08-03。同日、計画レビュー（整合レビューと`picoem-picocalc`
+> 実リポジトリの実現可能性調査）の結果を反映して改訂。進捗欄は着手時に更新する。
 
 ## 1. 目標の再確認
 
@@ -26,11 +27,14 @@ conformance（Gate 7）を通すことである。
 |---|---|---|
 | A: 0.8.8台帳クローズ | HV-1診断（`diagnostics/bsp-quality`）でLCD readback 100回とguided keyboardを実機確認し、`bsp-0.8.8`台帳のpendingを解消する | 人間の実機セッション1回。Track Bと独立 |
 | B: Firmware backend Gate 0〜7 | `picoem-picocalc`と`picocalc_emu`の接続実装。本書§4が詳細 | picoem-picocalcローカルリポジトリ、ClockworkPi公式ソース、Pico SDK |
-| C: 文書・CI保守 | Gate合格ごとの状況文書更新、capability manifestのCI検査追加 | Track Bの各Gate完了 |
+| C: 文書・CI保守 | Gate合格ごとの状況文書更新、capability manifestのCI検査追加、およびGate 5完了後に`EMULATOR_ROADMAP.md` §2の契約を満たす自作等価fixtureを作成してGate 5/7回帰をCIへ組み込む（公式サンプルはCIへ同梱できないため） | Track Bの各Gate完了 |
 
 Track Aは実機依頼を伴うため、`DEVELOPMENT_WORKFLOW.md` §3に従い一度に
 一セッションだけ提示する。Track Bの初期Gate（0〜2）は実機を必要としないため、
 実機セッションの待ち時間に本線を進められる。
+
+Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階番号はMilestone/Gateを
+用いる。
 
 ## 3. 実装境界（再掲と具体化）
 
@@ -50,6 +54,31 @@ Track Aは実機依頼を伴うため、`DEVELOPMENT_WORKFLOW.md` §3に従い�
 - 未対応MMIOを黙って無視する実装を追加しない。停止または明示記録とする。
 - AのRGB666 3-byte転送とBのPIO0/RGB565転送を同じ転送処理へ統合しない。
 
+## 3.1 前提調査の結果（2026-08-03）
+
+`picoem-picocalc`リポジトリ（`feature/picocalc-integration`ブランチ）を実地調査し、
+以下を確認した。
+
+- `ExecutionModel::Serial`は`crates/rp2040-emu`に実在し、Serial/Threaded比較の
+  回帰テスト（`tests/execution_model.rs`、`tests/dual_model.rs`）を
+  `cargo test -p rp2040-emu`で実行できる。
+- `load_bootrom`／`load_flash`（XIP `0x1000_0000`へのマップ）／
+  `direct_boot_from_flash(vtor_offset)`は実装済み。ただしSSIはstubでQSPI pad
+  モデルがないため、direct bootはbootrom実行を経ずSP/PC/VTORを直接シードする
+  近道である。この近道を採用し、bootrom実行経路の再現はMilestone 1の対象外と
+  する。
+- headless runner（非TUIのCLI）は存在しないため、Gate 1で新規binとして実装する。
+- 汎用SPI/I2Cの外部device traitは存在しない（既存deviceは個別structの直接配線、
+  `picoem-devices`のLCDは別物のshowcase用で流用不可）。この汎用hook新設が
+  本計画で最も新規実装の比重が高い箇所である。
+- DMAは12ch実装済み、PIOはテスト付きで実装済み。ただし`tech_debt.md`に
+  Threaded実行のquantum境界でGPIOエッジを取りこぼす既知の負債が記録されており、
+  Serialを正しさの基準とする方針の根拠でもある。Threaded側の制約をSerial検証へ
+  持ち込まない。
+- upstreamの開発重心はRP2350寄りであり、`rp2040-emu`への機能追加は本派生
+  リポジトリで自走する前提とする。ライセンス（MIT OR Apache-2.0）とNOTICEの
+  維持は確認済み。
+
 ## 4. Gate別作業計画
 
 各Gateは「合格後に独立したcommitとして残す」（`EMULATOR_ROADMAP.md` §7）。
@@ -66,8 +95,11 @@ Track Aは実機依頼を伴うため、`DEVELOPMENT_WORKFLOW.md` §3に従い�
 3. `picoem-picocalc`の対象commitを固定し、継承済みSerial test suiteを全実行して
    合格状態を基準化する。
 4. 上記の識別情報一式を`picocalc_emu`側の機械可読ファイル
-   （例: `reference-projects/firmware-targets.json`）へ記録する。ELF/BIN自体は
-   記録しない。
+   （例: `reference-projects/firmware-targets.json`。既存`catalog.json`
+   （参照プロジェクト台帳）とは別系統のfirmware conformance対象識別台帳である）
+   へ記録する。ELF/BIN自体は記録しない。
+5. `picoem-picocalc`のXIP、PIO、DMA、PWM、外部device hookの実装状況を棚卸しし、
+   Gate 1〜4の作業見積りへ反映する（§3.1の初回調査を出発点とする）。
 
 受入条件: 識別情報ファイルが存在し、記載手順で同一SHA-256のELF/BINを再現できる。
 Serial test suiteの合格ログとcommitが記録されている。
@@ -82,8 +114,14 @@ Serial test suiteの合格ログとcommitが記録されている。
    終了理由を構造化出力（JSON）で取得する。
 3. 既知の小さいPico SDK firmware（自作のUART hello等）でrunnerを先に検証する。
 4. `picocalc_helloworld`が`main()`とUART初期化へ到達することを確認する。
+5. direct bootは§3.1の近道（SP/PC/VTOR直接シード）を用い、XIP領域
+   `0x1000_0000`への命令フェッチ・リテラル読み出しが対象ファームウェアで
+   成立することを確認する。
+6. JSONレポート・ログ等のartifactから実時刻、絶対パス、ビルド環境依存値を
+   排除し、決定性比較の対象フィールドを定義する。
 
-受入条件: 対話TUIなしで、コマンド1回からJSONレポートとUARTログが決定的に得られる。
+受入条件: 対話TUIなしで、コマンド1回からJSONレポートとUARTログが、
+同一入力での3回実行が同一出力になる形で得られる。
 `picocalc_helloworld`の`main()`到達がPC/symbolで確認できる。
 
 注意: bootromが未実装SSI/QSPI経路からUF2待ちへ進んだ状態を「実行できた」と
@@ -106,8 +144,10 @@ Serial test suiteの合格ログとcommitが記録されている。
 `Hello World PicoCalc`のframebufferがPNG/hashで決定的に取得できる。
 
 リスク: LCD初期化列の解釈差。公式ファームウェアはILI9488名でST7365Pを駆動する。
-判定に迷う場合は`bsp/vendor/README.md`とAの実機合格記録（COLMOD `0x66`等）を
-一次資料とし、モデルを実機挙動へ合わせる。
+判定に迷う場合の一次資料の優先順位は、最優先はClockworkPi公式
+`picocalc_helloworld/lcdspi`のソース、次に実機合格記録（COLMOD `0x66`等）、
+`bsp/vendor/README.md`のA系統は補助資料とする。PIO/SPI駆動転送のエッジ精度は
+Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ持ち込まない。
 
 ### Gate 3: PIO1/DMA PSRAM（実機不要）
 
@@ -123,16 +163,18 @@ Serial test suiteの合格ログとcommitが記録されている。
 
 リスク（本計画最大）: 8 MiB全域×4幅の試験はSerial実行で長時間になり得る。
 対策順序は (1)まず正確さを確立して所要時間を実測 → (2)PIO/DMAのbatch実行等の
-等価最適化 → (3)それでも非現実的なら、範囲を削る代わりにGate 5の決定性検査回数を
-調整する判断をSolが行う。ファームウェア側の試験範囲は削らない。
+等価最適化 → (3)それでも非現実的な場合も、HELLO-FULL本体のscenarioは
+`EMULATOR_ROADMAP.md`が定める3回連続の決定的合格を維持し、調整してよいのは
+補助的なscenarioの反復回数だけとする。ファームウェア側の試験範囲は削らない。
 
 ### Gate 4: I2C keyboard controller（実機不要）
 
 作業:
 
 1. 外部I2C device interfaceを追加する（固定ACK・固定`0xff`応答の即席実装を禁止）。
-2. address `0x1f`のSTM32 controller modelを実装する。FIFO（register `0x09`）、
-   battery、backlight registerを含む。速度は公式サンプルの10 kHz設定と
+2. address `0x1f`のSTM32 controller modelを実装する。register `0x04`、
+   FIFO（register `0x09`）、battery、backlight registerとrepeated-start
+   transactionを含む。速度は公式サンプルの10 kHz設定と
    BSPの400 kHz設定の両方を受ける。
 3. シナリオ入力からFIFOへキーを投入し、ファームウェアのLCD echoまで検証する。
 
@@ -156,14 +198,20 @@ Serial test suiteの合格ログとcommitが記録されている。
 作業:
 
 1. `picoem-picocalc`の検証済みcommitを固定し、`picocalc_emu`から
-   ソースコピーなしで接続する（例: `tools/picocalc.py emu-test`が固定commitの
-   runnerバイナリを呼び出す）。
+   ソースコピーなしで接続する（例: `tools/picocalc.py test --mode firmware`が
+   固定commitのrunnerバイナリを呼び出す。`REQUIREMENTS.md` §5の標準コマンド
+   体系に合わせる）。
 2. runnerの構造化artifactを`picocalc_emu`のscenario/artifact interfaceへ接続する。
 3. capability manifest（対応済み: SPI1/PIO1/DMA/I2C1/UART0等、未対応: SPI0 SD、
    multicore等）を機械可読で公開し、portable検証の検査対象へ加える。
+   スナップショットを`picocalc_emu`内に機械可読ファイルとして保持し、
+   backend不在のclone単体でも`verify`のportable検査が完結する構成にする。
 4. 公開条件を確認する: 公開版`picocalc_emu`の通常ビルド・検証がprivate依存を
-   要求しない構成を維持する（`picoem-picocalc`の公開または同等の再現可能配布が
-   正式統合の前提。`docs/FIRMWARE_BACKEND.md`参照）。
+   要求しない構成を維持する（`docs/FIRMWARE_BACKEND.md`参照）。加えて、
+   正式統合の前提作業として「`picoem-picocalc`の公開または等価な再現可能配布の
+   実施」と「配布物へconformance target（`picocalc_helloworld`）とその
+   ソースが混入しないことのリリース検査（`THIRD_PARTY_NOTICES.md`整合）」を
+   独立の作業項目とする。
 
 受入条件: clone＋固定commit取得だけでGate 5と同じ合格を`picocalc_emu`側の
 コマンドから再現できる。
@@ -178,7 +226,14 @@ Serial test suiteの合格ログとcommitが記録されている。
 3. 起動時スモークのLCD GRAM readback（RAMRD、SIO切替手順）をmodel側で対応し、
    `[PICOCALC][LCD][VERIFY] app_status=pass`到達を確認する。
 4. SD/SPI0は本Gateでは未対応でよいが、未対応を黙殺せずcapabilityと停止理由で
-   明示する（SDスモークで停止する挙動を記録する）。
+   明示する。標準templateはSD失敗でもステータス領域を赤にして継続する設計の
+   ため、runtime停止ではなくcapabilityに`sd: unsupported`を明示し、SDスモークの
+   失敗を記録として扱う。
+5. 標準templateが起動時に要求する機能— 250 MHzへのPLL再設定、既定ONの音声
+   参照トーン（PWM＋DMA timer＋IRQ）、400 kHz I2C、62.5 MHz PSRAM — の対応可否を
+   Gate 6までのcapability棚卸しで判定する。未対応が残る場合は、templateやBSPを
+   変更せず、`PICOCALC_AUDIO_REFERENCE_TONE=OFF`等のビルド設定でGate 7の
+   対象構成を明示的に限定し、その構成をcapabilityへ記録する。
 
 受入条件: 標準templateのBOOT行・LCD VERIFY pass・RAMRD readbackが
 エミュレーター上で観測でき、`MILESTONES.md`のMilestone 1完了条件を満たす。
@@ -187,16 +242,21 @@ Serial test suiteの合格ログとcommitが記録されている。
 
 Gate作業と独立に、次の1セッションを人間へ依頼する。
 
-1. `diagnostics/bsp-quality`のHV-1診断UF2を対象コミットからビルドする
-   （`diagnostics/bsp-quality/build/PicoCalc_BSP_Diagnostic.uf2`、SHA-256記録）。
+1. `diagnostics/bsp-quality`のHV-1診断UF2を、版番号またはビルドサブコメントを
+   ソースへ反映してコミットした対象コミットから、
+   `--lcd-variant pio-rgb565 --build-timestamp YYYY-MM-DDTHH:MM:SSZ`を付けた
+   証拠ビルドで生成する。UF2は保存せずSHA-256のみ記録する。
 2. 実機でLCD GRAM write/readback 100回とUp/Down/Enter/Escapeのguided入力を実行し、
    `[BSP_DIAG_VERDICT]`を含むUARTログと画面写真を回収する。
-3. 結果を`hardware-validation/records/`の0.8.8台帳へ記録し、LCD/keyboardの
+3. 結果を`hardware-validation/records/`の0.8.8台帳へ、新規record
+   （例: `bsp-0.8.8-<日付>-02.json`）を追加して記録し、LCD/keyboardの
    pendingを解消する。0.8.3で観測された間欠readback失敗が再現した場合は、
    合格扱いにせず発生率を記録して原因調査タスクを起票する。
 
 このセッションはGate 2以降のLCD model実装の一次資料（実機のRAMRD挙動）としても
-価値があるため、Gate 2着手前後の実施が望ましい。ただしGate 0〜2は待たずに進める。
+価値がある。Gate 2の受入判定までにTrack Aの結果が揃わない場合、Gate 2は
+暫定合格とし、Track A完了後に実機RAMRD挙動と突き合わせて再確認する。
+Gate 0〜2の着手はTrack Aを待たない。
 
 ## 6. 検証と記録の規律
 
@@ -207,6 +267,12 @@ Gate作業と独立に、次の1セッションを人間へ依頼する。
 - 到達度は変更単位に`host_pass`/`host_fail`/`hardware_pass`/`hardware_fail`/
   `hardware_required`で記録する（`README.md`末尾の測定方針）。
 - エミュレーター合格・実機不合格が発生した機能は`hardware_required`へ戻す。
+- 各Gateの着手時に、Solが`EMULATOR_ROADMAP.md` §7に従い対象、受入条件、
+  変更可能範囲、禁止事項、検証方法を先に定義し、Lunaタスクを一件ずつ発行する。
+- 汎用`rp2040-emu` crateへ変更を加えたGate（Gate 2以降）の受入には、継承済み
+  Serial test suiteの全合格（回帰ゼロ）を含める。Gate 7の受入では、その最終
+  合格ログとcommitを構造化artifactへ固定する（`MILESTONES.md`のMilestone 1
+  完了条件）。
 
 ## 7. 順序と依存関係
 
@@ -219,6 +285,8 @@ Track C: 各Gate完了ごとに文書・CI更新
 
 Gate 2完了（HELLO-VISIBLE）が最初の対外的な可視成果である。Gate 3のPSRAM性能が
 本線最大のリスクであり、Gate 2完了時点で全域試験の所要時間見積りを先行取得する。
+Gate 1のXIP/bootrom近道の成立確認と、Gate 2で新設する汎用device hookが
+先行リスクであり、Gate 0の棚卸しで見積りを確定する。
 
 ## 8. Milestone 2以降への接続
 
