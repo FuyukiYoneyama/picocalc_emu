@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "gate": 1,
+  "record_id": "gate1-20260803-01",
+  "runner": {
+    "backend_repo": "picoem-picocalc",
+    "backend_branch": "feature/picocalc-integration",
+    "backend_commit": {
+      "base": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
+      "accepted": "98f582cfb82cbd7ebc908c8ac38e7cc9967f92f8"
+    },
+    "crate": "picocalc-harness",
+    "bin": "picocalc-run",
+    "added_to": "workspace default-members",
+    "dependencies": [
+      "rp2040-emu (path)"
+    ],
+    "dependency_notes": "No third-party crates. SHA-256 is implemented in-crate (src/sha256.rs, validated against known FIPS 180-4 vectors and sha256sum); the JSON report is hand-formatted with RFC 8259 escaping. Avoids pulling sha2/digest/generic-array or serde into a crate that otherwise needs only rp2040-emu.",
+    "execution_model": "Serial"
+  },
+  "cli_contract": {
+    "--bin <path>": "required; raw RP2040 flash image, loaded at 0x1000_0000",
+    "--bootrom <path>": "default roms/rp2040/bootrom-rp2040-b2.bin; loaded but never executed (ROM function-table resolution only)",
+    "--cycles <N>": "default 1000000000; exceeding it is a normal stop with stop_reason=cycle_limit",
+    "--stop-pc <hex>": "optional; stop with stop_reason=pc_match when core 0 PC equals the address. Forces step_quantum=1 so every instruction boundary is observed",
+    "--json <path>": "optional; default stdout",
+    "--uart <path>": "optional; raw UART0 TX bytes",
+    "--backend-commit <str>": "optional; report field value. Alternative: build-time PICOEM_BACKEND_COMMIT via option_env!. No run-time git invocation, so the report stays a pure function of its inputs",
+    "boot_sequence": "build with flash preloaded -> load_bootrom -> reset -> direct_boot_from_flash(0x100) after validating SP in SRAM and PC in XIP",
+    "boot_fallback": "A BIN with no pico-sdk vector table at flash+0x100 (e.g. the hand-assembled roms/rp2040/blinky.bin) is not direct-booted; the runner keeps the reset() seed from bootrom words 0/1 and reports boot.mode = bootrom_reset_vector. The bootrom still never executes, so this is not the USB-MSC path.",
+    "determinism_rules": "No wall-clock time, no absolute paths (basenames only), no host-dependent values. unsupported_mmio is sorted by (addr, pc)."
+  },
+  "report_schema": {
+    "required_fields": [
+      "schema_version",
+      "backend_commit",
+      "firmware{basename,sha256}",
+      "stop_reason",
+      "cycles",
+      "pc",
+      "exception",
+      "unsupported_mmio[]{addr,pc,count}",
+      "uart{bytes,sha256}"
+    ],
+    "additional_fields": [
+      "bootrom{basename,sha256,executed}",
+      "execution_model",
+      "boot{mode,vtor_flash_offset}",
+      "step_quantum",
+      "cycle_limit",
+      "stop_pc",
+      "error",
+      "unsupported_mmio_truncated"
+    ],
+    "stop_reason_values": [
+      "cycle_limit",
+      "pc_match",
+      "exception",
+      "error"
+    ]
+  },
+  "verification": {
+    "build": {
+      "command": "cargo build -p picocalc-harness",
+      "result": "ok",
+      "workspace_default_build": "ok"
+    },
+    "determinism_blinky": {
+      "firmware": "roms/rp2040/blinky.bin",
+      "firmware_sha256": "8c8da1739450e269066e0f8f3dc6ba8a743bd4008714e3ab25d956dbc540650a",
+      "bootrom": "roms/rp2040/bootrom.bin (synthetic)",
+      "cycles_arg": 2000000,
+      "runs": 3,
+      "stop_reason": "cycle_limit",
+      "cycles": 2000009,
+      "pc": "0x1000000e",
+      "boot_mode": "bootrom_reset_vector",
+      "json_identical": true,
+      "uart_identical": true,
+      "method": "diff on the JSON reports and cmp on the UART byte files, run 1 vs 2 and 1 vs 3"
+    },
+    "determinism_helloworld": {
+      "firmware": "picocalc_helloworld.bin",
+      "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+      "stop_pc": "0x10000ca8",
+      "runs": 3,
+      "json_identical": true,
+      "uart_identical": true
+    },
+    "main_reached": {
+      "symbol": "main",
+      "address": "0x10000ca8",
+      "stop_reason": "pc_match",
+      "cycles": 127826,
+      "step_quantum": 1,
+      "boot_mode": "direct_boot_from_flash",
+      "vtor_flash_offset": "0x0100",
+      "note": "Confirms the plan section 3.1 shortcut: instruction fetch and literal loads from the XIP window at 0x1000_0000 work for this firmware without executing the bootrom."
+    },
+    "symbol_reachability": [
+      {
+        "symbol": "main",
+        "address": "0x10000ca8",
+        "stop_reason": "pc_match",
+        "cycles": 127826
+      },
+      {
+        "symbol": "stdio_init_all",
+        "address": "0x100050f0",
+        "stop_reason": "pc_match",
+        "cycles": 134943
+      },
+      {
+        "symbol": "stdio_uart_init",
+        "address": "0x10005458",
+        "stop_reason": "pc_match",
+        "cycles": 134950
+      },
+      {
+        "symbol": "uart_init",
+        "address": "0x10001bf4",
+        "stop_reason": "pc_match",
+        "cycles": 135055
+      },
+      {
+        "symbol": "uart_set_format",
+        "address": "0x10001d14",
+        "stop_reason": "pc_match",
+        "cycles": 152927
+      },
+      {
+        "symbol": "lcd_init",
+        "address": "0x1000738c",
+        "stop_reason": "pc_match",
+        "cycles": 188202
+      },
+      {
+        "symbol": "sleep_ms",
+        "address": "0x100019d0",
+        "stop_reason": "error",
+        "cycles": 1529101,
+        "note": "Not reached. The run stalls earlier, inside lcd_init's own delay path. See notes.md."
+      }
+    ],
+    "uart_capture_real_bytes": {
+      "fixture": "roms/rp2040/uart_hello.bin",
+      "generator": "roms/rp2040/gen_uart_hello.py",
+      "fixture_provenance": "written for this project; no upstream source",
+      "fixture_sha256": "ec8a0ec651f408ed4d13ba3591dd9b5895182bf3685c287247868a2762677a28",
+      "program": "RESETS_CLR(0x4000F000) <- 1<<22 (release UART0); UARTCR(0x40034030) <- UARTEN|TXE (0x0101); UARTDR(0x40034000) <- each byte of \"HELLO\\n\"; B .",
+      "flag_wait_omitted": true,
+      "flag_wait_rationale": "No UARTFR.TXFF poll. UartRegs::push_tx taps the byte into the diagnostic TX wire log before the FIFO-capacity check, so the capture is unaffected by FIFO fullness, and a 6-byte message cannot fill the 16-entry FIFO anyway. The UARTEN|TXE write is NOT optional: push_tx returns early unless both bits are set, and the bus dispatch drops all UART accesses while RESETS holds bit 22.",
+      "cycles_arg": 100000,
+      "runs": 3,
+      "stop_reason": "cycle_limit",
+      "uart_bytes": 6,
+      "uart_sha256": "3b09aeb6f5f5336beb205d7f720371bc927cd46c21922e334d47ba264acb5ba4",
+      "content_matches_expected": true,
+      "expected_content": "HELLO\\n",
+      "json_identical": true,
+      "uart_identical": true
+    },
+    "stop_reason_coverage": [
+      {
+        "value": "cycle_limit",
+        "demonstrated_by": "blinky.bin and uart_hello.bin runs"
+      },
+      {
+        "value": "pc_match",
+        "demonstrated_by": "picocalc_helloworld --stop-pc 0x10000ca8"
+      },
+      {
+        "value": "exception",
+        "demonstrated_by": "purpose-built image with an SDK-shaped vector table whose reset handler loads from unmapped 0x6000_0000; stopped with exception=HardFault at pc=0x10000180 after 65 cycles"
+      },
+      {
+        "value": "error",
+        "demonstrated_by": "picocalc_helloworld free run (clock stall, see notes.md) and the hand-assembled faulting image"
+      }
+    ],
+    "regression": {
+      "command": "cargo test -p rp2040-emu",
+      "results": [
+        {
+          "suite": "lib (unittests src/lib.rs)",
+          "passed": 1201,
+          "failed": 0
+        },
+        {
+          "suite": "tests/firmware.rs",
+          "passed": 9,
+          "failed": 0
+        },
+        {
+          "suite": "tests/multicore.rs",
+          "passed": 9,
+          "failed": 0
+        },
+        {
+          "suite": "tests/smoke.rs",
+          "passed": 6,
+          "failed": 0
+        },
+        {
+          "suite": "doc-tests rp2040_emu",
+          "passed": 0,
+          "failed": 0
+        }
+      ],
+      "total_passed": 1225,
+      "failed": 0,
+      "matches_gate0_baseline": true
+    },
+    "lint": {
+      "cargo_clippy": "picocalc-harness --all-targets: 0 warnings; rp2040-emu: 0 warnings",
+      "cargo_fmt": "applied to the new crate only. rustfmt and clippy were not installed in the environment and were added via rustup component add. cargo fmt -p rp2040-emu also reformatted three pre-existing files unrelated to this work (src/tests.rs, src/threaded/emulator.rs, tests/threaded_bus_paths.rs); those were reverted so the backend diff stays additive."
+    }
+  },
+  "backend_change": {
+    "file": "crates/rp2040-emu/src/bus/mod.rs",
+    "diffstat": "+69 lines, 0 deletions (purely additive)",
+    "reason": "No existing mechanism could observe unsupported MMIO from a harness. Bus::bus_fault is sticky but CortexM0Plus::step calls clear_bus_fault() inside the same step while escalating to HardFault, so an external poll never sees it.",
+    "added_api": [
+      "pub unsupported_mmio_log_enabled: bool (default false)",
+      "pub fn unsupported_mmio_log(&self) -> Vec<(u32, u32, u64)> (sorted by (addr, pc))",
+      "pub fn unsupported_mmio_log_truncated(&self) -> bool",
+      "pub const UNSUPPORTED_MMIO_LOG_CAP: usize = 4096"
+    ],
+    "nature": "observation-only, opt-in",
+    "semantics_unchanged": "The recording hook sits inside set_bus_fault, which already existed and already emitted a tracing event. Fault stickiness, HardFault escalation and cycle accounting are untouched. With the flag off there is one predictable branch and no allocation. Nothing observable to the emulated program changes either way.",
+    "limits": [
+      "Capped at 4096 distinct (addr, pc) pairs; occurrence counts for already-recorded pairs keep accumulating past the cap, and unsupported_mmio_truncated reports when the cap was hit.",
+      "Records only accesses to addresses the bus does not decode. A peripheral that IS decoded but only partially modelled does not fault and therefore never appears here. Full-coverage access logging remains the job of Bus::mmio_trace_enabled.",
+      "Both production firmwares in this record produced an empty unsupported_mmio list; the mechanism was validated with a purpose-built faulting image (addr 0x60000000, pc 0x10000002, count 1)."
+    ]
+  },
+  "notes": "Gate 1 headless runner. Acceptance criteria met: a single non-interactive command yields a JSON report and a UART log, three runs on identical inputs produce byte-identical output, and main() reachability is confirmed by PC and symbol address. The UART capture path is verified with real bytes via a purpose-built fixture rather than the conformance firmware, because picocalc_helloworld initialises UART0 but prints to the LCD and stalls before any UART write. One blocking defect for later Gates is recorded in notes.md."
+}

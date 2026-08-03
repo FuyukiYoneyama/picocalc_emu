@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "backend_commit": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
+  "firmware": {"basename": "picocalc_helloworld.bin", "sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 20000000,
+  "stop_pc": "0x10000ca8",
+  "stop_reason": "pc_match",
+  "cycles": 127826,
+  "pc": "0x10000ca8",
+  "exception": null,
+  "error": null,
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "uart": {"bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+}

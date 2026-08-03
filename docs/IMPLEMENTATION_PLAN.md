@@ -68,6 +68,12 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
   近道である。この近道を採用し、bootrom実行経路の再現はMilestone 1の対象外と
   する。
 - headless runner（非TUIのCLI）は存在しないため、Gate 1で新規binとして実装する。
+- Gate 1実装時の追加知見: bootromはロードのみで実行せず、SDKのvector tableから
+  SP/PC/VTORを直接シードする方式で`picocalc_helloworld`の`main()`到達まで成立
+  する（XIP `0x1000_0000`からの命令フェッチ・リテラル読み出しを含む）。
+  SDK型のvector tableを持たないBIN（`roms/rp2040/blinky.bin`等の手書き像）は
+  direct bootせずbootromリセットベクタからの起動へフォールバックし、JSONの
+  `boot.mode`で両者を区別する。この場合もbootromは実行しない。
 - 汎用SPI/I2Cの外部device traitは存在しない（既存deviceは個別structの直接配線、
   `picoem-devices`のLCDは別物のshowcase用で流用不可）。この汎用hook新設が
   本計画で最も新規実装の比重が高い箇所である。
@@ -205,7 +211,9 @@ Serial test suiteの合格ログとcommitが記録されている。
    終了理由を構造化出力（JSON）で取得する。CLI契約: `--bin <path>`（必須）、
    `--bootrom <path>`（既定`roms/rp2040/bootrom-rp2040-b2.bin`）、
    `--cycles <N>`（既定`1_000_000_000`。超過時は`stop_reason=cycle_limit`で
-   正常終了扱いの停止）、`--json <出力先>`、`--uart <出力先>`。
+   正常終了扱いの停止）、`--stop-pc <hex>`（任意。実行PCが一致したら
+   `stop_reason=pc_match`で停止する。`main()`到達判定用。2026-08-03の
+   Gate 1受入で追加）、`--json <出力先>`、`--uart <出力先>`。
    JSONレポートの必須フィールド: `schema_version`、`backend_commit`、
    `firmware`（basename、sha256）、`stop_reason`、`cycles`、`pc`、
    `exception`（あれば）、`unsupported_mmio[]`（addr、アクセス元pc、count）、
@@ -267,6 +275,15 @@ boot・終了理由）、(2)観測系（UART capture・未対応MMIO記録・JSO
 `ST7365P_SPEC_V1.0.pdf`（コントローラーのデータシート）が同梱されており、
 公式`lcdspi`ソースと併せて一次資料とする。PIO/SPI駆動転送のエッジ精度は
 Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ持ち込まない。
+Gate 1で確認した先行ブロッカーとして、全コアがWFE/haltedのときSerial実行
+ループが0サイクルで抜け、消費サイクル数に比例するペリフェラルtickと
+TIMERアラームがいずれも進まなくなる凍結がある（`picocalc_helloworld`は
+約1.53Mサイクル、`lcd_init`の遅延処理内で停止する。詳細は
+`firmware-validation/records/gate1-20260803-01/notes.md`）。LCD描画も
+キー入力ループもSDKのsleepの先にあるため、Gate 2着手時に「全コアアイドル時に
+次の予定イベントまで仮想時間を進める」機構を、Solのhook API仕様確定と併せて
+先に解決する。コア実行semanticsへ触れる変更であるためSolが設計し、既存の
+1225回帰の維持を受入条件とする。
 
 分担と境界: Lunaへ渡す単位は(1)SPI hook実装と既存回帰の全合格（Sol設計
 確定後）、(2)PicoCalc board/device crateの骨組みとpin配線、(3)ST7365P
