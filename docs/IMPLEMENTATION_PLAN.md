@@ -91,7 +91,8 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 1. ClockworkPi公式リポジトリのcommitを1つ選び、リポジトリ全体のcommit hashを
    source identityとして記録する。
 2. Pico SDK版、arm-none-eabi-gcc版、CMake optionを固定し、`picocalc_helloworld`の
-   無改変ELF/BINをビルドしてSHA-256、map、主要symbol（`main`、UART init等）を記録する。
+   無改変ELF/BINをビルドしてSHA-256、map、最低限`main`と、UART初期化・PSRAM試験・
+   キー入力ループに対応するsymbolをmapから列挙して記録する。
 3. `picoem-picocalc`の対象commitを固定し、継承済みSerial test suiteを全実行して
    合格状態を基準化する。
 4. 上記の識別情報一式を`picocalc_emu`側の機械可読ファイル
@@ -103,6 +104,11 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 
 受入条件: 識別情報ファイルが存在し、記載手順で同一SHA-256のELF/BINを再現できる。
 Serial test suiteの合格ログとcommitが記録されている。
+
+分担と境界: Lunaへ渡す単位は(1)公式リポジトリの再現ビルドと識別情報採取、
+(2)`firmware-targets.json`の作成、(3)Serial test suite実行とログ採取、
+(4)実装状況棚卸し調査。変更可能な場所は`picocalc_emu`の`reference-projects/`
+のみ。Gate固有の禁止は公式サンプルのソース・成果物をリポジトリへ持ち込むこと。
 
 ### Gate 1: headless firmware runner（実機不要）
 
@@ -127,6 +133,12 @@ Serial test suiteの合格ログとcommitが記録されている。
 注意: bootromが未実装SSI/QSPI経路からUF2待ちへ進んだ状態を「実行できた」と
 混同しない（`EMULATOR_ROADMAP.md` Gate 1）。
 
+分担と境界: Lunaへ渡す単位は(1)headless runner binの新設、(2)JSONレポート
+schema定義、(3)小規模firmwareでのrunner検証、(4)`picocalc_helloworld`の
+`main()`到達確認。変更可能な場所は`picoem-picocalc`の新規bin/crateと、
+`rp2040-emu`への公開API追加。Gate固有の禁止は`rp2040-emu`コアの実行semantics
+を変更すること。
+
 ### Gate 2: SPI1 LCD vertical slice → HELLO-VISIBLE（実機不要）
 
 作業:
@@ -138,7 +150,8 @@ Serial test suiteの合格ログとcommitが記録されている。
    command subsetは最低limitでreset、sleep/display state、MADCTL、COLMOD、CASET、
    RASET、RAMWR。
 4. 3-byte RGB666 wire dataをdecodeし、共通RGB565 framebufferへ正規化する。
-5. framebufferのPNG/hash出力を追加し、同一入力での反復一致を検査する。
+5. framebufferのPNG/hash出力を追加し、同一入力での3回実行の一致を検査する
+   （Gate 1・Gate 5と同じ基準）。
 
 受入条件: HELLO-VISIBLEの7条件（`EMULATOR_ROADMAP.md` §3）。
 `Hello World PicoCalc`のframebufferがPNG/hashで決定的に取得できる。
@@ -148,6 +161,12 @@ Serial test suiteの合格ログとcommitが記録されている。
 `picocalc_helloworld/lcdspi`のソース、次に実機合格記録（COLMOD `0x66`等）、
 `bsp/vendor/README.md`のA系統は補助資料とする。PIO/SPI駆動転送のエッジ精度は
 Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ持ち込まない。
+
+分担と境界: Lunaへ渡す単位は(1)汎用SPI外部device transaction interfaceの
+追加、(2)PicoCalc board adapterとST7365P modelの新設、(3)RGB666 decodeと
+RGB565 framebuffer正規化、(4)PNG/hash出力。変更可能な場所は`rp2040-emu`の
+hook追加と新設PicoCalc専用crate。Gate固有の禁止は汎用crateへPicoCalc固有の
+pin・定数を埋め込むこと。
 
 ### Gate 3: PIO1/DMA PSRAM（実機不要）
 
@@ -163,9 +182,16 @@ Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ
 
 リスク（本計画最大）: 8 MiB全域×4幅の試験はSerial実行で長時間になり得る。
 対策順序は (1)まず正確さを確立して所要時間を実測 → (2)PIO/DMAのbatch実行等の
-等価最適化 → (3)それでも非現実的な場合も、HELLO-FULL本体のscenarioは
+等価最適化 → (3)それでも非現実的な場合の限定的な緩和、の順とする。
+非現実的とは、HELLO-FULL相当のscenario 1回のhost実行が60分以内に完走できない
+状態を指す。その場合もHELLO-FULL本体のscenarioは
 `EMULATOR_ROADMAP.md`が定める3回連続の決定的合格を維持し、調整してよいのは
 補助的なscenarioの反復回数だけとする。ファームウェア側の試験範囲は削らない。
+
+分担と境界: Lunaへ渡す単位は(1)PSRAM modelのPIO1/DMA接続、(2)全域試験の
+完走と実行時間計測、(3)transaction等価なbackend最適化。変更可能な場所は
+PSRAM model、PIO/DMA接続部、最適化対象のbackend内部。Gate固有の禁止は
+ファームウェア側の試験範囲を削ること。
 
 ### Gate 4: I2C keyboard controller（実機不要）
 
@@ -180,6 +206,11 @@ Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ
 
 受入条件: scripted keyがFIFO経由でLCDへechoされ、framebuffer/hashで確認できる。
 
+分担と境界: Lunaへ渡す単位は(1)外部I2C device interfaceの追加、(2)address
+`0x1f`のSTM32 controller model実装、(3)キー注入シナリオとecho検証。
+変更可能な場所はI2C hookと新設controller model。Gate固有の禁止は固定ACK・
+固定`0xff`応答などの即席実装。
+
 ### Gate 5: full application acceptance → HELLO-FULL（実機不要）
 
 作業:
@@ -192,6 +223,11 @@ Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ
 
 受入条件: 3回連続の決定的合格。この時点で初めて
 「公式`picocalc_helloworld`がエミュレーター上で動く」と宣言できる。
+
+分担と境界: Lunaへ渡す単位は(1)HELLO-FULL統合scenarioの作成、
+(2)構造化artifact保存、(3)3回連続の決定性確認。変更可能な場所はscenario・
+artifact関連のみ。Gate固有の禁止はファームウェアへテスト専用の変更を
+加えること。
 
 ### Gate 6: `picocalc_emu` integration（実機不要）
 
@@ -216,6 +252,11 @@ Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ
 受入条件: clone＋固定commit取得だけでGate 5と同じ合格を`picocalc_emu`側の
 コマンドから再現できる。
 
+分担と境界: Lunaへ渡す単位は(1)`picocalc_emu`側CLI接続、(2)capability
+スナップショットと`verify`検査の追加、(3)公開・リリース検査の実施。
+変更可能な場所は`picocalc_emu`の`tools/`・`docs/`・検査データ。Gate固有の
+禁止はdevice modelソースを`picocalc_emu`へコピーすること。
+
 ### Gate 7: Canonical BSP B conformance（実機不要、相関はMilestone 4）
 
 作業:
@@ -237,6 +278,11 @@ Serialで確立し、Threadedのquantum境界負債（§3.1）を検証経路へ
 
 受入条件: 標準templateのBOOT行・LCD VERIFY pass・RAMRD readbackが
 エミュレーター上で観測でき、`MILESTONES.md`のMilestone 1完了条件を満たす。
+
+分担と境界: Lunaへ渡す単位は(1)PIO0用bus adapterの新設、(2)RAMRD/SIO切替
+手順のmodel対応、(3)標準template UF2の実行と判定。変更可能な場所はB用bus
+adapterとmodel拡張。Gate固有の禁止はAとBの転送処理の統合、およびtemplate・
+BSP側の変更。
 
 ## 5. Track A: 0.8.8実機台帳クローズ
 
