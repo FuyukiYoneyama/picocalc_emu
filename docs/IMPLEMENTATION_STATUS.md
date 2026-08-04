@@ -248,6 +248,20 @@ Gate 6（`picocalc_emu`統合）も完了し、`python3 tools/picocalc.py test -
 - 3回連続実行でreport・UART・PNGがバイト一致
 
 これによりA（公式サンプル）とB（標準template）の両系統がPC上で観測可能になった。
+
+**実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
+検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
+LCDの`app_status=pass`、全5色＋パターンのGRAM readback一致、音声の`underruns=0`が
+**すべて一致した**。**「エミュレーターがpassと言い実機がfailする」事例は0件**であり、
+これがGate 7の結果を根拠に実機検証を減らしてよい根拠になる。あわせて0.8.8台帳の
+LCD・keyboard pendingを解消した（0.8.3で見られた間欠readback失敗は3回とも再現せず、
+キーボードは138イベントを取得）。
+
+ただし**PSRAMで不一致が出た**。実機は`status=pass id=0d5d5332c6817946`だが、
+エミュレーターは`fail id=0000000000000000`である。Gate 3の読み出し遅延較正が
+公式サンプルのfudge=true/clkdiv 1.00に合わせてあり、BSPドライバのfudge=0/clkdiv 2.00
+では誤る。方向としては「エミュレーターが厳しすぎる」側であり危険ではないが、
+モデルの欠陥であり修正対象である。
 **ただしSPI0のSDは未対応で、templateのSDスモークは`component=init status=begin`で
 停止する。** BSP側PSRAMドライバのverifyも、Gate 3のモデル較正が公式サンプルの
 設定に合わせてあるため失敗する。どちらも

@@ -58,7 +58,8 @@
       "id": "psram",
       "what": "APS6404L 8 MiB SPI PSRAM on PIO1 with CS20/SCK21/MOSI2/MISO3",
       "detail": "Reset-enable, reset, write and fast-read; the fast-read output is held one SCK to match the real chip's settling time, which the fudge PIO program compensates for.",
-      "since_gate": 3
+      "since_gate": 3,
+      "limitation": "Correlated against hardware on 2026-08-05 and found wrong for the Canonical BSP driver: it uses fudge=0 at clkdiv 2.00 where the official sample uses fudge=true at clkdiv 1.00, and the read-output delay was calibrated for the latter. Hardware passes where the model fails. Read ID (0x9F) is also unanswered, so the reported chip ID is zero rather than 0d5d5332c6817946."
     },
     {
       "id": "i2c-external-device",
@@ -134,7 +135,7 @@
     {
       "id": "timing-fidelity",
       "what": "Cycle-accurate agreement with silicon",
-      "detail": "Peripheral latencies are modelled where they change observable ordering, not calibrated against real hardware. Correlation against the device is Milestone 4."
+      "detail": "Peripheral latencies are modelled where they change observable ordering, not calibrated against real hardware. A first correlation run on 2026-08-05 (hardware-validation/records/bsp-0.8.8-20260804-02.json) found agreement on boot, clock, LCD verification and audio health, and one disagreement on PSRAM."
     }
   ]
 }

@@ -3,15 +3,15 @@
   "validation_id": "bsp-0.8.8-20260804-02",
   "bsp_version": "0.8.8",
   "repository_commit": "97ba30cc101b28454c95d7ae2656c0d9d5969e2e",
-  "validation_date": null,
-  "operator": "",
-  "overall_status": "pending",
-  "purpose": "Emulator-to-hardware correlation for Gate 7. The same source and build settings produced the BIN the emulator verified and the UF2 written to the card, so a disagreement here is a defect in the emulator's model rather than a difference of subject.",
+  "validation_date": "2026-08-05",
+  "operator": "Fuyuki Yoneyama",
+  "overall_status": "pass",
+  "purpose": "Emulator-to-hardware correlation for Gate 7. The UF2 written to the card and the BIN the emulator verified came from the same source and the same build settings, so a disagreement is a defect in the model rather than a difference of subject.",
   "hardware": {
-    "product": "PicoCalc",
-    "board_revision": "",
+    "product": "ClockworkPi PicoCalc",
+    "board_revision": "CPI2.0",
     "mcu": "RP2040",
-    "notes": ""
+    "notes": "Same board as bsp-0.8.8-20260802-01. Three consecutive power-on cycles were captured in one log."
   },
   "software": {
     "pico_sdk": "2.2.0",
@@ -19,16 +19,17 @@
     "cmake": "3.28.3"
   },
   "sd_card": {
-    "manufacturer": "",
-    "model": "",
-    "capacity": "",
+    "manufacturer": "SanDisk",
+    "model": "Ultra SDHC I, Class 10, 100 MB/s label",
+    "capacity": "32 GB",
     "filesystem": "FAT32"
   },
   "firmware": {
     "path": "build/picocalc_app.uf2",
     "uf2_sha256": "ee41419b9cf45c52e801dff667d2d82c071c9a99c09c3e1e9e422633341b5f0c",
     "bin_sha256": "2b23e42b4d6ac9a241ee61c05f0b8874812be02e92de3ddbb39a243862bc27fa",
-    "build_log": "python3 tools/picocalc.py build --project <dir> --lcd-variant pio-rgb565 --build-timestamp 2026-08-04T00:00:00Z"
+    "build_log": "hardware-validation/records/evidence/build-bsp-0.8.8-20260804-02.log",
+    "reproducibility_note": "The UF2 hash above is the artefact actually written to the card, built on 2026-08-04. Rebuilding the same source with the same settings on a later day produces a different hash, because the template build does not disable the Pico SDK's __DATE__ stamp. Gate 0 solved this for the official sample by setting PICO_NO_BI_PROGRAM_BUILD_DATE through CFLAGS; picocalc.py build does not yet do the same. Recorded as follow-up work."
   },
   "emulator_prediction": {
     "backend_commit": "b285fa22e7df45917d7a29b8aab1a32130025146",
@@ -38,39 +39,100 @@
     "clock": "target_khz=250000 actual_khz=250000",
     "lcd_app_status": "pass",
     "audio_verify": "status=ok underruns=0",
+    "psram": "verify fail, id=0000000000000000",
     "sd": "not modelled — the emulator stalls at component=init status=begin",
     "keyboard": "not exercised in this run; the emulator reaches the key loop only after SD, which it cannot pass"
   },
   "tests": {
     "lcd": {
-      "status": "pending",
-      "observed": "",
-      "evidence_files": [],
-      "compare_against": "emulator-prediction.png and framebuffer_rgb565_sha256 above"
+      "status": "pass",
+      "observed": "app_status=pass on all three power-on cycles. Every solid-fill colour (0x0000, 0xffff, 0xf800, 0x07e0, 0x001f) and the known-pattern sample read back with mismatches=0 through the SIO bit-bang RAMRD path. The operator confirmed the screen looks correct.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260805_053437.log"
+      ]
     },
     "sd": {
-      "status": "pending",
-      "observed": "",
-      "evidence_files": [],
-      "note": "Hardware is expected to pass here where the emulator cannot. That asymmetry is the point of the check, not a failure."
+      "status": "pass",
+      "observed": "component=detect status=present, component=init status=ok, and [SD][SMOKE] stage=end status=ok on all three cycles. The full mount/write/sync/read/compare/remove sequence completed.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260805_053437.log"
+      ]
     },
     "keyboard": {
-      "status": "pending",
-      "observed": "",
-      "evidence_files": []
+      "status": "pass",
+      "observed": "138 events, 69 pressed and 69 released, across the full QWERTY set plus modifiers and function keys. Codes are plausible ASCII and control values with no unknown register selects. Key entry was performed after the operator stopped recording, so it does not appear in the video; the UART log is its sole evidence.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260805_053437.log"
+      ]
     },
     "audio": {
-      "status": "pending",
-      "observed": "",
-      "evidence_files": [],
-      "note": "Audibility is a human-only judgement; the emulator can only say the stream ran without underruns."
+      "status": "pass",
+      "observed": "status=ok with underruns=0 on all three cycles. The operator confirmed roughly one second of tone, which matches the design: the reference tone stops at [AUDIO] status=stopped reason=lcd_verify_complete.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260805_053437.log"
+      ]
+    },
+    "psram": {
+      "status": "pass",
+      "observed": "status=pass with mismatches=0 at clkdiv 2.00 / 62.5 MHz / fudge=0, self_test=pass, capacity 8388608, id=0d5d5332c6817946. The first candidate was accepted; no fallback was needed.",
+      "evidence_files": [
+        "hardware-validation/records/evidence/pico20260805_053437.log"
+      ]
     }
   },
   "correlation": {
-    "agreements": [],
-    "disagreements": [],
-    "verdict": "pending",
-    "note": "Any disagreement is recorded even if hardware passes. An emulator that says pass where hardware says fail is the failure mode this project exists to prevent; the reverse (emulator cannot judge, hardware passes) is a known gap, not a defect."
+    "agreements": [
+      {
+        "item": "boot identity",
+        "detail": "The BOOT line matches the emulator's byte for byte, including bsp_git=97ba30cc101b and the fixed build timestamp."
+      },
+      {
+        "item": "system clock",
+        "detail": "target_khz=250000 actual_khz=250000 on both."
+      },
+      {
+        "item": "LCD app_status",
+        "detail": "Both report pass. This is the headline result: what the emulator judged for variant B, hardware judged the same way."
+      },
+      {
+        "item": "LCD GRAM readback",
+        "detail": "All five fill colours and the pattern sample read back with mismatches=0 on both. The emulator's RAMRD model agrees with silicon on this path."
+      },
+      {
+        "item": "audio stream health",
+        "detail": "status=ok with underruns=0 on both. Counter values differ (irq/refill/sample_index) because they depend on elapsed time, which the emulator does not calibrate."
+      }
+    ],
+    "disagreements": [
+      {
+        "item": "PSRAM",
+        "hardware": "pass, mismatches=0, id=0d5d5332c6817946",
+        "emulator": "fail, mismatches=23, id=0000000000000000",
+        "severity": "model defect",
+        "detail": "The emulator says fail where hardware says pass, and reports an all-zero chip ID because the model does not answer Read ID (0x9F). The read-output delay added at Gate 3 was calibrated for the official sample's fudge=true PIO program at clkdiv 1.00; the BSP driver uses fudge=0 at clkdiv 2.00, where that delay is wrong. Hardware has now supplied the real chip ID, which the model can adopt.",
+        "direction": "emulator stricter than hardware — the safe direction, but still a defect to fix"
+      }
+    ],
+    "known_gaps": [
+      {
+        "item": "SD",
+        "detail": "Hardware passes the full smoke; the emulator does not model SPI0 SD and stalls at init. Declared in capability.json, so no false pass was possible."
+      },
+      {
+        "item": "keyboard",
+        "detail": "Hardware delivered 138 events. The emulator has a keyboard model and passed key echo at Gate 4, but on this firmware it never reaches the key loop because SD blocks first."
+      }
+    ],
+    "verdict": "pass with one model defect",
+    "note": "No case of emulator-pass / hardware-fail was found. That is the failure mode this project exists to prevent, and its absence is what licenses trusting a Gate 7 pass. The PSRAM disagreement runs the other way: the emulator was pessimistic, which costs work but not correctness."
   },
-  "notes": ""
+  "closes_pending": {
+    "record": "bsp-0.8.8-20260802-01",
+    "items": [
+      "lcd",
+      "keyboard"
+    ],
+    "detail": "That record left LCD and keyboard pending after the 0.8.3 intermittent readback failure. Three consecutive power-on cycles here passed every readback stage with mismatches=0, and the keyboard produced 138 balanced press/release events. The intermittent failure did not reproduce."
+  },
+  "notes": "Video evidence IMG_8909.MOV and IMG_8910.MOV was recorded by the operator and kept outside the repository for size. It covers the display and the audio tone. The operator confirmed the screen looks correct and that the tone sounds for about a second, which matches the design: the reference tone stops when LCD verification completes."
 }

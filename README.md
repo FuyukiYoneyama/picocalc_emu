@@ -353,6 +353,28 @@ python3 tools/picocalc.py verify \
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
 reference evidence照合、実機相関確認が必要です。
 
+## エミュレーターと実機の相関（2026-08-05）
+
+Gate 7でエミュレーターが`app_status=pass`と判定したのと**同一ソース・同一設定**の
+UF2を実機で3回起動し、予測と突き合わせました。
+
+| 項目 | エミュレーター | 実機 | 一致 |
+|---|---|---|---|
+| BOOT行（版・commit・timestamp） | 予測どおり | 同一 | ✓ |
+| system clock | `actual_khz=250000` | 同じ | ✓ |
+| **LCD `app_status`** | **pass** | **pass**（3回とも） | **✓** |
+| GRAM readback（全5色＋パターン） | mismatches=0 | 同じ | ✓ |
+| 音声 | `underruns=0` | 同じ | ✓ |
+| PSRAM | fail | **pass** | **✗** |
+| SD | 未対応（停止） | pass | 既知のギャップ |
+| keyboard | この経路では未到達 | 138イベント | 既知のギャップ |
+
+**「エミュレーターがpassと言い、実機がfailする」事例は0件でした。** これがこの
+プロジェクトの最も避けたい失敗であり、その不在がGate 7の結果を信頼してよい根拠に
+なります。PSRAMの不一致は逆方向（エミュレーターが厳しすぎる）で、危険ではありませんが
+モデルの欠陥です。記録は
+[bsp-0.8.8-20260804-02](hardware-validation/records/bsp-0.8.8-20260804-02.json)。
+
 ## Canonical BSP自身の実機記録
 
 参照プロジェクトの証拠と、抽出後BSP自身の証拠は分離しています。実機検証時は
