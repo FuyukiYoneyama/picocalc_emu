@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "gate": 4,
+  "record_id": "gate4-20260804-01",
+  "title": "I2C keyboard controller modelled; scripted keys echo to the display",
+  "backend_commit": {
+    "base": "0bfd3a9a5b0e46548d6ce7b77a02787911fb2078",
+    "accepted": "7db19450a35f46875d7d88f00d779b1c634b0a0b",
+    "repo": "picoem-picocalc",
+    "branch": "feature/picocalc-integration"
+  },
+  "target": {
+    "firmware": "picocalc_helloworld.bin",
+    "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+    "unmodified": true
+  },
+  "primary_source_findings": {
+    "driver": "picocalc_helloworld/i2ckbd/i2ckbd.c and .h",
+    "bus": "i2c1, SDA GP6, SCL GP7, 10 kHz, 7-bit address 0x1F",
+    "registers": {
+      "0x09": "key FIFO; two bytes read as a little-endian u16, state = buff & 0xFF (1 pressed, 3 released), keycode = buff >> 8",
+      "0x0B": "battery; test_battery() takes read_battery() >> 8, bit 7 is the charging flag and the low seven bits are the percentage",
+      "0x0A": "backlight; written as 0x8A (bit 7 set) followed by the level, then read back -- set_kbd_backlight treats a zero word as failure and returns -1",
+      "0x04": "key count; used by the Canonical BSP rather than this sample, implemented for Gate 7"
+    },
+    "transaction_shape": "The official driver writes the register byte in a transfer terminated by STOP, waits ~16 ms, then reads two bytes in a separate transfer. The Canonical BSP uses a repeated START instead. The model keeps the selected register across STOP so one implementation serves both."
+  },
+  "implementation": {
+    "generic_hook": {
+      "crate": "rp2040-emu",
+      "trait": "I2cExternalDevice { responds_to, write_byte, read_byte, transaction_end }",
+      "attach": "Bus::attach_i2c_device(instance, device)",
+      "rationale": "The plan forbids the fixed-ACK / fixed-0xff stub for this gate. The controller model now asks an attached device whether it claims the address and where read bytes come from; with nothing attached the historical ALWAYS_ACK_ADDRS stub is untouched.",
+      "board_agnostic": true
+    },
+    "board_model": {
+      "crate": "picocalc-board",
+      "type": "Keyboard / KeyboardWire",
+      "address": "0x1F",
+      "note": "All PicoCalc-specific values (address, register numbers, byte placement) live in the board crate; rp2040-emu knows none of them."
+    }
+  },
+  "defects_fixed": [
+    {
+      "id": "i2c-tx-fifo-never-drained",
+      "symptom": "UART filled with 'read_i2c_kbd i2c write error'; backlight_writes stopped at 2 of 4 and the stored level was wrong.",
+      "cause": "Bytes handed to the slave were also pushed into the TX FIFO, which nothing drains. After 16 writes the FIFO was full, TFNF stayed low, and the SDK's write helper timed out waiting for space.",
+      "fix": "A byte delivered to an attached device is not queued; the FIFO path is unchanged when no device is attached.",
+      "evidence": "i2c write error count went from continuous to 0; backlight_writes 2 -> 4."
+    },
+    {
+      "id": "ramrd-stub-blanked-the-screen",
+      "symptom": "Framebuffer entirely black despite 365,664 pixel writes.",
+      "cause": "Gate 2 left RAMRD a counted stub returning zero. Once firmware output passed 21 lines, scroll_lcd_spi began moving each line through read_buffer_spi + draw_buffer_spi, writing zeros over the display.",
+      "fix": "RAMRD implemented: dummy byte, then three bytes per pixel in the reverse of the RAMWR order, because read_buffer_spi swaps the first and third byte before writing them back.",
+      "note": "Gate 2's record predicted this exact failure and named a non-zero ramrd_count as the signal. It read 624 on this run."
+    },
+    {
+      "id": "battery-byte-placement",
+      "symptom": "Display read 'battery percent is 0' and 'kbd backlight -1' four times.",
+      "cause": "The model returned the percentage in the low byte, but test_battery reads read_battery() >> 8. Reads after a register write returned nothing at all, which set_kbd_backlight reports as -1.",
+      "fix": "Battery answers [register, percent | charging << 7]; every register write latches the register's current value for the read-back that follows.",
+      "evidence": "Display now reads 'battery percent is 100', 'battery is not charging', and 'kbd backlight 50/100/255/0'."
+    }
+  ],
+  "verification": {
+    "run": {
+      "cycles": 9500000000,
+      "board": "picocalc",
+      "psram": true,
+      "keys": "HI",
+      "quantum": 1
+    },
+    "keyboard_counters": {
+      "attached": true,
+      "addr": "0x1f",
+      "reg_selects": 216,
+      "key_events_delivered": 4,
+      "key_events_remaining": 0,
+      "battery_reads": 1,
+      "backlight_writes": 4,
+      "backlight": 0,
+      "unknown_reg_selects": 0
+    },
+    "uart_lines_of_interest": [
+      "battery percent is 100",
+      "battery is not charging",
+      "kbd backlight 50",
+      "kbd backlight 100",
+      "kbd backlight 255",
+      "kbd backlight 0"
+    ],
+    "i2c_write_errors": 0,
+    "lcd": {
+      "ramrd": 624,
+      "non_black_pixels": 8646,
+      "framebuffer_rgb565_sha256": "bdd19fa2ee0c6f87b1543b1cc6cac43e1d1afa74f325f46929a96daef833cc6a"
+    },
+    "key_echo": {
+      "injected": "HI",
+      "observed": "Both characters appear on the last line of the framebuffer, after the scrolled PSRAM results.",
+      "visual_acceptance": "Sol read the PNG on 2026-08-04."
+    },
+    "tests": {
+      "rp2040-emu": 1248,
+      "picocalc-board": 39,
+      "picoem-devices": 46,
+      "new_cases": "7 I2C hook, 10 keyboard, 2 RAMRD round-trip",
+      "regressions": 0
+    }
+  },
+  "roadmap_gate4_conditions": [
+    {
+      "n": 1,
+      "condition": "Provide an external I2C device interface rather than a fixed ACK or fixed 0xff reply",
+      "status": "pass",
+      "evidence": "I2cExternalDevice trait in rp2040-emu; the stub list applies only when no device is attached."
+    },
+    {
+      "n": 2,
+      "condition": "Implement the address 0x1f controller with FIFO, battery and backlight registers",
+      "status": "pass",
+      "evidence": "Registers 0x04, 0x09, 0x0A and 0x0B, with byte placement taken from the firmware that reads them."
+    },
+    {
+      "n": 3,
+      "condition": "Inject scenario keys into the FIFO and verify the firmware's LCD echo",
+      "status": "pass",
+      "evidence": "--keys HI queues press/release pairs; all four events were delivered and both characters render on the display."
+    }
+  ],
+  "known_limitations": [
+    "The first byte of the battery reply is a register echo; no firmware we model inspects it, and the real controller's value there is unconfirmed.",
+    "Key codes are passed through as 8-bit values; the controller has no encoding for anything wider.",
+    "Bus speed is not modelled, so the sample's 10 kHz and the Canonical BSP's 400 kHz behave identically."
+  ]
+}
