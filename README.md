@@ -70,7 +70,7 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 | 段 | 手段 | 消す推測 | 状態 |
 |---|---|---|---|
 | 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | ソース・portable基盤は**実装済み**。0.8.8実機台帳はLCD/keyboard pending |
-| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | 未実装 |
+| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | 公式サンプル（LCD A系統）は**縦断完了**（HELLO-FULL）。標準templateのB系統は未対応 |
 | 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
 
 第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
@@ -96,14 +96,25 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。ただし最新0.8.8自身の実機台帳は
 LCDとkeyboardがpendingであり、A/BのLCD個別合格記録は0.4.0時点のものです。
 
-**第2段のエミュレーターはまだ実装されていません。** 現時点で人間の実機検証を
-ゼロにはできません。現在得られている効果は、AIにハードウェア初期化を毎回
-書き直させないことと、最初の実機試験で「どこが失敗したか」を一度で観測可能に
-することです。
+**第2段のエミュレーターは、公式サンプルの縦断まで到達しました（2026-08-04）。**
+ClockworkPi公式の無改変`Code/picocalc_helloworld`が、Firmware backend
+（`picoem-picocalc`、`ExecutionModel::Serial`）上でHELLO-FULLの8条件すべてを
+満たして動作します。LCD描画、8 MiB PSRAM全域試験（8/16/32/128-bit、全バイト一致）、
+I2Cキーボードのbattery/backlight、シナリオから投入したキーのLCD echo、PWM初期化の
+観測までをPC上で確認でき、3回連続実行でUART・framebuffer・JSONがバイト一致します。
+記録は`firmware-validation/records/gate5-20260804-01/`にあります。
 
-次の実装目標は、ClockworkPi公式の無改変`Code/picocalc_helloworld`をFirmware backend上で
-動かすことです。実装順と受入条件は
-[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)にあります。
+**ただし、これで人間の実機検証がゼロになったわけではありません。** 到達したのは
+公式サンプルが使うLCD A系統（SPI1/RGB666）の経路です。標準templateが使う推奨
+デフォルトB系統（PIO0/RGB565/LCD DMA OFF）はエミュレーター側が未対応で、
+Gate 7の作業です。SPI0のSDカード、音声再生、multicoreも未対応です。したがって
+**AIが自作アプリを自力で検証できる段階には、まだ達していません。**
+
+次の目標はGate 6（`picocalc_emu`統合の仕上げと公開条件）とGate 7
+（Canonical BSP B conformance）です。実装順と受入条件は
+[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と進捗は
+[詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
+一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
 ## 読む順番
 
@@ -127,16 +138,31 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
 
+エミュレーター（第2段）では、公式サンプルが使う経路について次ができます。
+
+- Pico SDK形式のBINをPC上でdirect bootし、決定的に実行する
+- UART0の出力を取得する
+- symbol/PC一致で到達点を判定する（`main()`到達など）
+- LCD framebufferをRGB565 hashとPNGで取得する（LCD A系統: SPI1/RGB666）
+- 8 MiB PSRAMの内容を範囲指定で検証する
+- キーシナリオを投入し、LCDへのechoを確認する
+- PWM設定と未対応MMIOアクセスを観測する
+- `python3 tools/picocalc.py test --mode firmware --firmware <bin>`で上記を実行する
+
 ## 現在できないこと（これができないため、人間の実機検証がまだ必要です）
 
-- PC上でUF2/ELFを実行する
-- LCD framebufferをPNGとして取得する
-- キーシナリオを再生する
-- 仮想SDカードやSPI/I2C故障を注入する
-- host合格と実機結果の相関を自動集計する
+- **標準templateのB系統（PIO0/RGB565）をエミュレーターで実行する**（Gate 7）
+- 仮想SDカード（SPI0 SD）やSPI/I2C故障を注入する
+- 音声再生・multicore・UF2直接ロードを扱う
+- アプリロジックをPCネイティブ実行するhost backend（Milestone 2）
+- JSONシナリオによる再生と画面差分の自動判定（Milestone 3）
+- host合格と実機結果の相関を自動集計する（Milestone 4）
 
-この5つは、そのまま「AIが自分で観測できないもの」の一覧です。ここが埋まるまで、
-画面を見る役目は人間に残ります。実装順は[Milestones](docs/MILESTONES.md)に従います。
+**最初の項目が最も重要です。** 公式サンプル（A系統）は動きますが、AIが実際に書く
+アプリは標準templateのB系統を使うため、まだエミュレーターで検証できません。
+ここが埋まるまで、画面を見る役目は人間に残ります。実装順は
+[Milestones](docs/MILESTONES.md)、対応・未対応の詳細は
+[capability manifest](firmware-validation/capability.json)にあります。
 
 ## Firmware backendの取り扱い
 
@@ -401,9 +427,11 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 **第一目的は、AIがPicoCalc向けプログラムを自ら観測・検証・修正できることです。**
 人間の実機検証回数は、その効果と予測精度を測る成果指標です。
-現在到達しているのは第1段（Canonical BSP）までで、AIが自分で観測するための
-第2段（エミュレーター）は未実装です。そのため現時点では、人間が画面を見る作業は
-まだ残っています。
+第1段（Canonical BSP）は整備済みで、第2段（エミュレーター）は公式サンプルの
+経路について観測できる段階まで来ました。ただしAIが実際に書くアプリが使う
+標準templateの経路（B系統）は未対応であり、**AIが自作アプリを自力で検証する**
+という第一目的にはまだ到達していません。そのため現時点でも、人間が画面を見る
+作業は残っています。
 
 到達度は感覚ではなく、変更単位に`host_pass`、`host_fail`、`hardware_pass`、
 `hardware_fail`、`hardware_required`を記録して測ります。ただし実機回数の削減より

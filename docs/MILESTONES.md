@@ -56,6 +56,13 @@ golden の対象が確定して手戻りが少ないためです。`DESIGN.md §
 
 ## Milestone 1: Firmware backend — `picocalc_helloworld` first
 
+**進行中（2026-08-04時点でGate 0〜5完了、HELLO-FULL達成）。** 無改変の公式
+`picocalc_helloworld`が`ExecutionModel::Serial`上でHELLO-FULLの8条件を満たした。
+残るはGate 6（`picocalc_emu`統合の仕上げと公開条件）とGate 7（Canonical BSP B
+conformance）であり、この2つを満たした時点でMilestone 1完了となる。
+Gate別の進捗表と証拠は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4と
+`firmware-validation/records/`にある。
+
 Milestone 1の作業単位分解と実行計画は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)に
 定義する。
 

@@ -17,6 +17,12 @@ SHA-256、`picoem-picocalc`のcommitを実行結果へ記録する。実装開�
 本書のGateを実行可能な作業単位へ分解した実行計画は
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)にある。
 
+**達成状況（2026-08-04）:** Gate 0〜5が完了し、§3のHELLO-VISIBLE（7条件）と
+HELLO-FULL（8条件）をいずれも満たした。したがって「公式`picocalc_helloworld`が
+エミュレーター上で動く」と判定できる段階に到達している。残るGateは6（`picocalc_emu`
+統合）と7（Canonical BSP B conformance）である。各Gateの証拠は
+`firmware-validation/records/`にある。
+
 ## 2. 対象ファームウェアの契約
 
 `picocalc_helloworld`は一つのアプリケーション内で、次を順に使用する。
