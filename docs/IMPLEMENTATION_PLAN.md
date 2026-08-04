@@ -150,7 +150,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 | Gate 0: 基準の固定 | 完了 2026-08-03 | `firmware-validation/records/gate0-20260803-01/` |
 | Gate 1: headless firmware runner | 完了 2026-08-03 | `firmware-validation/records/gate1-20260803-01/` |
 | Gate 2: SPI1 LCD vertical slice | 完了 2026-08-03（HELLO-VISIBLE達成） | `firmware-validation/records/gate2-20260803-01/` |
-| Gate 3: PIO1/DMA PSRAM | 未着手 | — |
+| Gate 3: PIO1/DMA PSRAM | 完了 2026-08-04（全域試験完走） | `firmware-validation/records/gate3-20260804-01/` |
 | Gate 4: I2C keyboard controller | 未着手 | — |
 | Gate 5: full application acceptance | 未着手 | — |
 | Gate 6: `picocalc_emu` integration | 未着手 | — |
@@ -326,6 +326,11 @@ PicoCalc専用crate、および`firmware-validation/records/`。Gate固有の禁
 状態を指す。その場合もHELLO-FULL本体のscenarioは
 `EMULATOR_ROADMAP.md`が定める3回連続の決定的合格を維持し、調整してよいのは
 補助的なscenarioの反復回数だけとする。ファームウェア側の試験範囲は削らない。
+
+実測結果（2026-08-04）: 全域試験の完走に要したのは約8.7×10⁹サイクル・host実行約5.6分で、
+60分基準に対し約10倍の余裕があった。緩和策(3)は発動していない。本Gateの実際のブロッカーは
+実行時間ではなく、sub-quantum edge lossとPSRAM読み出しタイミングという2つの正確さの欠陥
+だった。詳細は`firmware-validation/records/gate3-20260804-01/`。2026-08-04受入完了。
 
 分担と境界: Lunaへ渡す単位は(1)PSRAM modelのPIO1/DMA接続、(2a)縮小領域での
 PSRAM経路確立、(2b)全域試験の実測、(2c)transaction等価なbackend最適化

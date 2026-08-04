@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "gate": 3,
+  "record_id": "gate3-20260804-01",
+  "title": "PIO1/DMA PSRAM connected; official psram_test completes over the full 8 MiB",
+  "backend_commit": {
+    "base": "1a86a58df95bffc81e8b1912b02f4c1283e3733c",
+    "accepted": "0bfd3a9a5b0e46548d6ce7b77a02787911fb2078",
+    "repo": "picoem-picocalc",
+    "branch": "feature/picocalc-integration"
+  },
+  "target": {
+    "firmware": "picocalc_helloworld.bin",
+    "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+    "unmodified": true,
+    "source_identity": "see reference-projects/firmware-targets.json"
+  },
+  "configuration": {
+    "pio": "PIO1",
+    "clkdiv": 1.0,
+    "program": "spi_psram_fudge",
+    "fudge": true,
+    "pins": { "cs": 20, "sck": 21, "mosi": 2, "miso": 3 },
+    "build_defines": ["PSRAM_ASYNC=0", "PSRAM_MUTEX=1"],
+    "runner_quantum": 8,
+    "psram_model": "picoem-devices::Psram (APS6404L 8 MiB), reused; no new model written"
+  },
+  "wire_format": {
+    "finding": "The firmware wire format already matched the model's expectation; this was not a source of error.",
+    "read8_command": "{40, 8, 0x0b, addr[2], addr[1], addr[0], dummy}",
+    "decomposition": "40 bits write = cmd(8) + addr(24) + dummy(8), then 8 bits read",
+    "model_expectation": "Phase::ReadDummy consumes exactly one dummy byte (8 SCK) before ReadData"
+  },
+  "defects_fixed": [
+    {
+      "id": "sub-quantum-edge-loss",
+      "component": "rp2040-emu step_serial peripheral tick",
+      "nature": "The documentation was correct and the implementation was wrong.",
+      "documented_contract": "Advance PIO and the GPIO/PSRAM merge one system cycle at a time, because PIO-driven SPI programs toggle SCK every 1-2 sysclks and a bulk tick_pio(consumed) followed by a single update_gpio() would let SCK/CS edges slip inside the quantum.",
+      "actual_implementation": "Both the fast path and the slow path advanced PIO in bulk and snapshotted GPIO once.",
+      "why_it_broke": "A Cortex-M0+ instruction consumes 1-3 cycles, so whenever consumed >= 2 the PSRAM saw only the final pin snapshot and lost intervening SCK edges.",
+      "symptoms": [
+        "CS frames opened and closed at a plausible rate (cs_falling_count consistent with the write8 loop)",
+        "99.85% of command bytes decoded as unknown; cmd_write/cmd_fast_read plateaued after startup",
+        "Measured ~142 cycles per frame against a theoretical ~84, consistent with lost bits",
+        "PSRAM buffer stayed empty (bytes_written = 0) despite continuous traffic"
+      ],
+      "fix": "The slow path loops per cycle (tick_pio_and_route_irqs(1) + update_gpio()) when a PIO SM is enabled, consumed > 1, and a pin-watching device is attached (Bus::has_pin_watching_device). The fast path is unchanged, so PIO-idle throughput and the no-PSRAM case are untouched.",
+      "regression_test": "crates/rp2040-emu/tests/psram_pio_edge_interleave.rs drives the real spi_psram_fudge program at step_quantum=8; it fails without the fix (cmd_write_count 0 vs 1) and passes with it."
+    },
+    {
+      "id": "read-output-one-sck-early",
+      "component": "picoem-devices Psram fast-read output timing",
+      "nature": "The model drove MISO one SCK earlier than the real chip.",
+      "primary_evidence": "The official PIO program documents the real chip's behavior directly: 'nop side 0b10 ; Fudge factor of extra clock cycle; the PSRAM needs 1 extra for output to start appearing' (rp2040-psram/psram_spi.pio). This is the upstream driver author's observation of real silicon.",
+      "why_it_broke": "The model set driving_miso and popped the first data bit as soon as the eighth dummy bit arrived, so the fudge program's extra clock consumed a bit that the real chip has not yet produced.",
+      "symptoms": [
+        "Read stream shifted left by exactly one bit",
+        "UART reported 'PSRAM failure at address 1 (1 != 2)' -- the stored value 1 read back as 2",
+        "Write and async-write passes were already byte-perfect over the full 8 MiB, isolating the fault to the read path"
+      ],
+      "fix": "Psram gains an opt-in read_output_delay_sck (default 0, so existing behavior and the PicoGUS path are unchanged) that holds MISO for that many SCK after the dummy phase. picocalc-board builds its instance with a delay of 1 and quotes the upstream comment as the justification.",
+      "regression_test": "picoem-devices unit test comparing delay 0 vs 1 bit placement, plus a fast-read round-trip through the real fudge program in psram_pio_edge_interleave.rs (fails at delay 0 with 0x5A read back as 0xB4)."
+    }
+  ],
+  "full_test_result": {
+    "completed": true,
+    "scope_reduced": false,
+    "scope_note": "The firmware's own test range was not reduced in any way; all 8/16/32/128-bit write, async-write and read passes ran over the full 8 MiB.",
+    "uart_lines": [
+      { "line": "Testing PSRAM..." },
+      { "width_bits": 8, "operation": "write", "bytes": "8MB", "us": 11938555, "bytes_per_sec": 702648 },
+      { "width_bits": 8, "operation": "write async", "bytes": "8MB", "us": 5298067, "bytes_per_sec": 1583333 },
+      { "width_bits": 8, "operation": "read", "bytes": "8MB", "us": 16903360, "bytes_per_sec": 496268 },
+      { "width_bits": 16, "operation": "write", "bytes": "8MB", "us": 6244152, "bytes_per_sec": 1343434 },
+      { "width_bits": 16, "operation": "read", "bytes": "8MB", "us": 9366228, "bytes_per_sec": 895622 },
+      { "width_bits": 32, "operation": "write", "bytes": "8MB", "us": 3705494, "bytes_per_sec": 2263829 },
+      { "width_bits": 32, "operation": "read", "bytes": "8MB", "us": 5329604, "bytes_per_sec": 1573964 },
+      { "width_bits": 128, "operation": "write", "bytes": "8MB", "us": 1899559, "bytes_per_sec": 4416082 },
+      { "width_bits": 128, "operation": "read", "bytes": "8MB", "us": 2068080, "bytes_per_sec": 4056230 }
+    ],
+    "psram_failure_reported": false,
+    "verify": {
+      "range": "0x00000000:0x800000",
+      "matched": 8388608,
+      "mismatched": 0,
+      "first_mismatch": null,
+      "pattern": "addr & 0xFF, as written by the firmware's 8-bit pass"
+    },
+    "cmd_counts": {
+      "write": 23592960,
+      "fast_read": 15204352,
+      "reset_enable": 1,
+      "reset": 1,
+      "unknown": 0
+    },
+    "bytes_written": 41943040,
+    "bytes_read": 48758784,
+    "stop_reason": "cycle_limit",
+    "cycles": 8700000003,
+    "unsupported_mmio": [],
+    "exception": null
+  },
+  "performance": {
+    "completion_cycles_bisected": {
+      "incomplete_at": 8400000000,
+      "complete_at": 8700000000,
+      "note": "At 8.4e9 the final 128-bit read line was still missing; at 8.7e9 all nine lines were present."
+    },
+    "host_wall_clock_minutes": 5.6,
+    "throughput_cycles_per_sec": 28700000,
+    "budget_minutes": 60,
+    "headroom_factor": 10.7,
+    "conclusion": "Execution time was never the real risk for this gate. The blockers were two correctness defects; once fixed, the full-scope test finishes about ten times inside the budget."
+  },
+  "roadmap_gate3_conditions": [
+    {
+      "n": 1,
+      "condition": "Run the official sample's PIO program, pins and DMA transactions as-is",
+      "status": "pass",
+      "evidence": "spi_psram_fudge on PIO1 at clkdiv 1.0 with CS20/SCK21/MOSI2/MISO3; DMA feeds the PIO TX FIFO exactly as the firmware sets it up. No firmware or PIO program was modified."
+    },
+    {
+      "n": 2,
+      "condition": "Establish correctness on the Serial model first and measure host runtime of the full test",
+      "status": "pass",
+      "evidence": "ExecutionModel::Serial throughout; full run measured at ~8.7e9 cycles and ~5.6 minutes."
+    },
+    {
+      "n": 3,
+      "condition": "Do not reduce the firmware's test range to claim a pass; only add backend optimisations proven transaction-equivalent",
+      "status": "pass",
+      "evidence": "No optimisation was needed and no scope was cut. All four widths and every pass ran to completion."
+    },
+    {
+      "n": 4,
+      "condition": "Acceptance: full-range test completes, zero mismatches, completion result observable on UART/LCD",
+      "status": "pass",
+      "evidence": "Nine UART result lines with no PSRAM failure; independent range verification 8388608 matched / 0 mismatched; unknown command decodes 0."
+    }
+  ],
+  "verification": {
+    "tests": {
+      "rp2040-emu": 1241,
+      "picoem-devices": 46,
+      "picocalc-board": 25,
+      "picocalc-harness": 3,
+      "regressions": 0
+    },
+    "gate2_framebuffer_hash_unchanged": "cb4251497590686c3c8665287b15fe80bb20ba7b6f287779e3850e5a1e0cc966",
+    "determinism": "Repeated runs produced byte-identical JSON reports and UART output.",
+    "performance_regression": "None. With no PSRAM attached the per-cycle path is not taken and timings matched the pre-fix build.",
+    "independent_check": "Sol re-ran the full 8.7e9-cycle test and the Gate 2 reproduction directly rather than relying on the implementer's report."
+  },
+  "known_limitations": [
+    "The threaded execution model has the same sub-quantum edge-loss gap in its worker loop; left untouched under the Serial-first policy and not exercised by this backend.",
+    "I2C battery and keyboard controller accesses are still unmodelled and produce errors later in the firmware; that is Gate 4's scope and does not affect the PSRAM test.",
+    "read_output_delay_sck models the real chip's access time as a whole SCK; it is a timing approximation, not a modelled tACC in nanoseconds.",
+    "RAMRD on the LCD model remains a stub returning zero (carried over from Gate 2)."
+  ]
+}

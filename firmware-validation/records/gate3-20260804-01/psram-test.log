@@ -1,0 +1,10 @@
+Testing PSRAM...
+8 bit: PSRAM write 8MB in 11938555 us, 702648 B/s
+8 bit: PSRAM write async 8MB in 5298067 us, 1583333 B/s
+8 bit: PSRAM read 8MB in 16903360 us, 496268 B/s
+16 bit: PSRAM write 8MB in 6244152 us, 1343434 B/s
+16 bit: PSRAM read 8MB in 9366228 us, 895622 B/s
+32 bit: PSRAM write 8MB in 3705494 us, 2263829 B/s
+32 bit: PSRAM read 8MB in 5329604 us, 1573964 B/s
+128 bit: PSRAM write 8MB in 1899559 us, 4416082 B/s
+128 bit: PSRAM read 8MB in 2068080 us, 4056230 B/s

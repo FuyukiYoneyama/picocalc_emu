@@ -213,14 +213,17 @@ BSP 0.8.4から0.8.8までの音声変更は、cross-core SPSC ring、quantizer 
 EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式への変更である。
 0.8.8の実機音声記録により、この経路の連続再生を確認した。
 
-## エミュレーターの現在地（2026-08-03）
+## エミュレーターの現在地（2026-08-04）
 
-Firmware backend（Milestone 1）はGate 0〜2が完了した。無改変の公式
+Firmware backend（Milestone 1）はGate 0〜3が完了した。無改変の公式
 `Code/picocalc_helloworld`を`picoem-picocalc`の`ExecutionModel::Serial`上で
 direct bootし、`Hello World PicoCalc`をPC上で決定的に描画できる（HELLO-VISIBLE到達）。
+さらにPIO1/DMA経由の8 MiB PSRAMを接続し、公式サンプルの全域試験
+（8/16/32/128-bitのwrite・async write・read）を試験範囲を削らずに完走させ、
+全バイト一致（8,388,608一致、不一致0）を確認した。host実行は約5.6分である。
 現時点で可能なのは、UART0ログの取得、symbol/PCによる`main()`到達判定、
-外部SPI1 ST7365P modelを介したLCD framebufferのhash/PNG取得である。
-残りはGate 3〜7（PSRAM、keyboard、HELLO-FULL、`picocalc_emu`統合、B conformance）で、
+外部SPI1 ST7365P modelを介したLCD framebufferのhash/PNG取得、PSRAM内容の範囲検証である。
+残りはGate 4〜7（keyboard、HELLO-FULL、`picocalc_emu`統合、B conformance）で、
 作業単位と進捗は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4、
 証拠は`firmware-validation/records/`にある。
 
