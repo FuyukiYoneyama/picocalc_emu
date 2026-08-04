@@ -3,7 +3,7 @@
   "backend": {
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
-    "branch": "feature/picocalc-integration",
+    "branch": "main",
     "execution_model": "Serial",
     "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out. Gate 7 is in progress: the standard template boots and reaches main, but variant B's PIO0 display path is not modelled yet."
   },

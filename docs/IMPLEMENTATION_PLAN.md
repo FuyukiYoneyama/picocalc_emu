@@ -42,7 +42,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 
 | リポジトリ | 担当 | 本計画で変更する場所 |
 |---|---|---|
-| `picoem-picocalc`（別リポジトリ、`feature/picocalc-integration`ブランチ） | RP2040コア、direct boot、外部SPI/I2C/PIO device hook、Serial correctness | 汎用`rp2040-emu` crateへの外部device interface追加、PicoCalc専用board/device crate新設 |
+| `picoem-picocalc`（別リポジトリ、`main`ブランチ） | RP2040コア、direct boot、外部SPI/I2C/PIO device hook、Serial correctness | 汎用`rp2040-emu` crateへの外部device interface追加、PicoCalc専用board/device crate新設 |
 | `picocalc_emu` | scenario実行、artifact収集・比較、利用者向けCLI | `tools/`へのfirmware runner呼び出し追加、`docs/`、成果物schema |
 | ClockworkPi `PicoCalc`公式リポジトリ | conformance対象の供給元 | **変更しない。同梱しない**（`EMULATOR_ROADMAP.md` §2.1） |
 
@@ -56,7 +56,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 
 ## 3.1 前提調査の結果（2026-08-03）
 
-`picoem-picocalc`リポジトリ（`feature/picocalc-integration`ブランチ）を実地調査し、
+`picoem-picocalc`リポジトリを実地調査し、
 以下を確認した。
 
 - `ExecutionModel::Serial`は`crates/rp2040-emu`に実在し、Serial/Threaded比較の
@@ -188,7 +188,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
       "toolchain": {"arm_none_eabi_gcc": "13.2.1"},
       "cmake": {"generator": "Ninja", "options": ["-DCMAKE_BUILD_TYPE=Release", "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"]},
       "artifacts": {"elf_sha256": "<記録>", "bin_sha256": "<記録>"},
-      "backend": {"repo": "picoem-picocalc", "branch": "feature/picocalc-integration", "commit": "<記録>", "test_command": "cargo test -p rp2040-emu", "baseline": "1225 passed"}
+      "backend": {"repo": "picoem-picocalc", "branch": "main", "commit": "<記録>", "test_command": "cargo test -p rp2040-emu", "baseline": "1225 passed"}
     }
   ]
 }
@@ -519,10 +519,20 @@ Gate 0〜2の着手はTrack Aを待たない。
   Serial test suiteの全合格（回帰ゼロ）を含める。Gate 7の受入では、その最終
   合格ログとcommitを構造化artifactへ固定する（`MILESTONES.md`のMilestone 1
   完了条件）。
-- `picoem-picocalc`側の作業は`feature/picocalc-integration`ブランチへ積み、
-  Gate合格時に受入コミットを確定する。`picocalc_emu`側はGateごとに
+- **両リポジトリとも`main`へ直接コミットする。作業用ブランチを切らない。**
+  Gate合格ごとに独立したcommitとして残し、`picocalc_emu`側はGateごとに
   `firmware-targets.json`と証拠recordでbackend commitを参照する。commit・
   pushはSolが行う（`DEVELOPMENT_WORKFLOW.md` §1）。
+
+  当初この計画は`picoem-picocalc`側を`feature/picocalc-integration`へ積むと
+  していたが、2026-08-04に`main`へfast-forwardして方針を改めた。理由は次の
+  とおりである。単独開発でレビュー工程がないため分岐に実質的な利点がなく、
+  一方でGate 1〜7の成果が`main`に無い状態は「pushした」という報告と
+  リポジトリの見え方が食い違う原因になった。加えて、AIはブランチ作成
+  （非破壊）はできてもリモートブランチ削除（破壊的）は実行できないため、
+  切りっぱなしのブランチが溜まり、後片付けが人間へ回る。ブランチを切るのは
+  並行して壊れうる実験や実際にレビューが入る場合に限り、その際も
+  「いつ誰が消すか」を決めてから切る。
 
 ## 7. 順序と依存関係
 
