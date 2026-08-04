@@ -257,11 +257,29 @@ LCDの`app_status=pass`、全5色＋パターンのGRAM readback一致、音声�
 LCD・keyboard pendingを解消した（0.8.3で見られた間欠readback失敗は3回とも再現せず、
 キーボードは138イベントを取得）。
 
-ただし**PSRAMで不一致が出た**。実機は`status=pass id=0d5d5332c6817946`だが、
-エミュレーターは`fail id=0000000000000000`である。Gate 3の読み出し遅延較正が
-公式サンプルのfudge=true/clkdiv 1.00に合わせてあり、BSPドライバのfudge=0/clkdiv 2.00
-では誤る。方向としては「エミュレーターが厳しすぎる」側であり危険ではないが、
-モデルの欠陥であり修正対象である。
+相関で見つかった**PSRAMの不一致は修正済み**である（2026-08-05）。実機が返した
+チップIDを一次情報として`0x9F` Read IDを実装し、その読み出しにもFast Readと同じ
+出力遅延を適用した（遅延はチップの出力ドライバの性質でありコマンドの種類とは
+無関係なため）。現在はエミュレーターも`status=pass id=0d5d5332c6817946`を返し、
+実機と一致する。
+
+**あわせてSPI0のSDカードを実装した。** これで標準templateが全機能を完走する。
+
+```text
+[PICOCALC][LCD][VERIFY] app_status=pass
+[PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
+[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0 status_region=green
+```
+
+SDカードモデルはSPIモードのbring-up（CMD0/CMD8/CMD55+ACMD41/CMD58）と
+単一ブロックread/writeを実装し、**空のFAT16でフォーマット済みの状態で始まる**
+（BSPはmountするだけでフォーマットしないため）。mount/write/sync/read/compare/remove
+の全系列が通る。
+
+**注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
+Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで
+B（既定値）のまま実行すると到達サイクルが約3分の1に減る。公式サンプルを走らせる
+場合は`--lcd-variant hwspi-rgb888`を明示する。
 **ただしSPI0のSDは未対応で、templateのSDスモークは`component=init status=begin`で
 停止する。** BSP側PSRAMドライバのverifyも、Gate 3のモデル較正が公式サンプルの
 設定に合わせてあるため失敗する。どちらも

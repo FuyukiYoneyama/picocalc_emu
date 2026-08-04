@@ -401,7 +401,11 @@ class ToolTests(unittest.TestCase):
             if check["name"] == "hardware-validation:records"
         )
         self.assertEqual(completed.returncode, 0, report)
-        self.assertEqual(ledger["passing_records"], 1)
+        # The synthetic record must be accepted. The count is not pinned
+        # to one: real hardware records also reach `pass`, and a test
+        # that assumed otherwise would start failing the day one did.
+        self.assertGreaterEqual(ledger["passing_records"], 1)
+        self.assertEqual(ledger.get("invalid", []), [])
 
     def test_project_generator_pins_bsp_and_writes_valid_json(self):
         with tempfile.TemporaryDirectory() as temporary:

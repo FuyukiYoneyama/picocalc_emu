@@ -319,6 +319,22 @@ def build_project(
     build_dir.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
     environment["PICO_SDK_PATH"] = str(sdk)
+    # Keep the artifact a function of its inputs. The Pico SDK stamps
+    # __DATE__ into the binary through PICO_PROGRAM_BUILD_DATE, so two
+    # builds of identical source on different days produce different
+    # hashes -- which defeats --build-timestamp and makes an evidence
+    # build unreproducible the moment the day rolls over. The define is
+    # a C preprocessor macro, not a CMake variable, so passing it with
+    # -D does nothing but warn; it has to arrive through the compiler
+    # flags. Appending to CFLAGS/CXXFLAGS is safe because CMake
+    # concatenates them onto the toolchain's own flags, whereas setting
+    # CMAKE_C_FLAGS would replace the architecture flags and break the
+    # build outright.
+    for variable in ("CFLAGS", "CXXFLAGS"):
+        existing = environment.get(variable, "")
+        flag = "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"
+        if flag not in existing:
+            environment[variable] = (existing + " " + flag).strip()
     configure = [
         "cmake",
         "-S",

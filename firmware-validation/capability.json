@@ -57,9 +57,9 @@
     {
       "id": "psram",
       "what": "APS6404L 8 MiB SPI PSRAM on PIO1 with CS20/SCK21/MOSI2/MISO3",
-      "detail": "Reset-enable, reset, write and fast-read; the fast-read output is held one SCK to match the real chip's settling time, which the fudge PIO program compensates for.",
+      "detail": "Reset-enable, reset, write, fast-read and Read ID. The read output is held one SCK to match the real chip's settling time, applied to both fast-read and Read ID because it is a property of the output driver rather than of the command. The reported identity is the value the PicoCalc's own chip returned during hardware correlation.",
       "since_gate": 3,
-      "limitation": "Correlated against hardware on 2026-08-05 and found wrong for the Canonical BSP driver: it uses fudge=0 at clkdiv 2.00 where the official sample uses fudge=true at clkdiv 1.00, and the read-output delay was calibrated for the latter. Hardware passes where the model fails. Read ID (0x9F) is also unanswered, so the reported chip ID is zero rather than 0d5d5332c6817946."
+      "correlated": "2026-08-05 against hardware: verify passes and the ID matches (hardware-validation/records/bsp-0.8.8-20260804-02.json)."
     },
     {
       "id": "i2c-external-device",
@@ -104,14 +104,16 @@
       "what": "FDEBUG.TXSTALL latches when a state machine runs dry on an empty TX FIFO",
       "detail": "The end-of-transfer signal firmware actually waits on. FSTAT's TXEMPTY cannot serve, because it goes true while the last word is still being shifted out.",
       "since_gate": 7
+    },
+    {
+      "id": "sd-card",
+      "what": "SD card in SPI mode on SPI0, with card detect on GP22",
+      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The card arrives formatted with an empty FAT16 volume, because the BSP mounts and never formats. The template's full smoke sequence -- mount, write, sync, read, compare, remove -- completes.",
+      "limitation": "No multi-block transfer, no CSD/CID beyond bring-up, no removal or write-protect, and writes complete immediately rather than holding the host through a programming delay.",
+      "since_gate": "post-7"
     }
   ],
   "unsupported": [
-    {
-      "id": "sd-card",
-      "what": "SPI0 SD card and any filesystem on it",
-      "consequence": "Firmware that mounts a card will fail at that step. Not exercised by the current conformance target."
-    },
     {
       "id": "multicore",
       "what": "Launching core 1 from firmware",

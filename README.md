@@ -114,10 +114,20 @@ PC上で確認できます。3回連続実行でreport・UART・PNGがバイト�
 python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 ```
 
-**ただし、人間の実機検証がゼロになったわけではありません。** SPI0のSDカードは
-未対応で、標準templateのSDスモークは初期化で停止します。multicoreと音声の実再生も
-未対応です。加えて、**実機の色・向き・可読性・聴感はエミュレーターでは判定できません。**
-したがってSDを使う機能と最終的な見た目の確認には、引き続き人間の実機検証が必要です。
+実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
+が全機能を完走します。
+
+```text
+[PICOCALC][LCD][VERIFY] app_status=pass
+[PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
+[PICOCALC][SMOKE] lcd=ok sd=ok stage=ok detail=0 status_region=green
+```
+
+**ただし、人間の実機検証がゼロになったわけではありません。** multicoreと音声の
+実再生は未対応です。そして何より、**実機の色・向き・可読性・聴感はエミュレーターでは
+判定できません。** エミュレーターは「firmwareが何を書いたか」は再現しますが、
+「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
+引き続き実機が必要です。
 
 Milestone 1（Firmware backend）はこれで完了です。実装順と受入条件は
 [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と経緯は
@@ -159,9 +169,9 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 
 ## 現在できないこと（これができないため、人間の実機検証がまだ必要です）
 
-- **仮想SDカード（SPI0 SD）** — 標準templateのSDスモークは初期化で停止する
 - SPI/I2C故障の注入
 - 音声の実再生・multicore・UF2直接ロード
+- SDカードの取り外し・書き込み禁止・マルチブロック転送
 - アプリロジックをPCネイティブ実行するhost backend（Milestone 2）
 - JSONシナリオによる再生と画面差分の自動判定（Milestone 3）
 - host合格と実機結果の相関を自動集計する（Milestone 4）
