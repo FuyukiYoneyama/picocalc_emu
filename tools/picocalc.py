@@ -507,7 +507,9 @@ def firmware_test(
         command.extend(["--keys", keys])
 
     print("running {} on backend {}".format(target_id, actual_commit[:12]))
-    result = subprocess.run(command)
+    # The runner resolves its default bootrom path relative to its own
+    # repository root, so run it from there.
+    result = subprocess.run(command, cwd=str(backend))
     if result.returncode != 0:
         print("runner exited {}".format(result.returncode))
         return 1

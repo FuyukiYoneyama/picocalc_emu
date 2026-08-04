@@ -59,9 +59,11 @@
       "backend": {
         "repo": "picoem-picocalc",
         "branch": "feature/picocalc-integration",
-        "commit": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
         "test_command": "cargo test -p rp2040-emu",
-        "baseline": "1225 passed"
+        "baseline": "1225 passed at the Gate 0 baseline; 1248 at the accepted commit",
+        "baseline_commit": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
+        "accepted": "ba66390db95824c6732ccff61d71b39d35170ec1",
+        "note": "baseline_commit is the Serial regression baseline fixed at Gate 0; accepted is the commit that passed HELLO-FULL (Gate 5)."
       }
     }
   ]

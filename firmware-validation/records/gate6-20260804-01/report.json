@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "gate": 6,
+  "record_id": "gate6-20260804-01",
+  "title": "picocalc_emu drives the pinned backend; portable verification stays backend-free",
+  "backend_commit": {
+    "baseline": "a4e23ca8fad600ff03561d242e1b194b5ec29554",
+    "accepted": "ba66390db95824c6732ccff61d71b39d35170ec1",
+    "repo": "picoem-picocalc",
+    "branch": "feature/picocalc-integration"
+  },
+  "work": [
+    {
+      "id": "cli-integration",
+      "what": "python3 tools/picocalc.py test --mode firmware",
+      "detail": "Resolves the backend from --backend-dir, PICOEM_PICOCALC_DIR, or a sibling checkout, then runs its release binary. No backend source is copied into this repository; the connection is the pinned commit's CLI.",
+      "safeguards": [
+        "The firmware's SHA-256 must match the pinned target before anything runs, so a stale or wrong image cannot be reported as a pass.",
+        "A missing backend or an unbuilt runner exits 2, which is 'cannot judge' rather than 'failed'.",
+        "A backend commit other than the pinned one prints a warning and continues, so an intentional bisect is possible but never silent.",
+        "The runner is executed with the backend as its working directory, because it resolves its default bootrom path relative to its own root."
+      ],
+      "naming": "Matches REQUIREMENTS.md section 5's command vocabulary (picocalc test --mode firmware) rather than inventing a new verb."
+    },
+    {
+      "id": "capability-snapshot",
+      "what": "firmware-validation/capability.json",
+      "detail": "Thirteen supported and six unsupported entries, each with the gate that introduced it and its known limitations. Held in this repository so a clone with no backend can still answer what the emulator does and does not model.",
+      "checked_by": "verify: firmware-validation:capability"
+    },
+    {
+      "id": "ledger-checks",
+      "what": "Gate record validation in verify",
+      "detail": "Every firmware-validation/records/*/report.json is checked for schema version, gate number, record_id matching its directory, and a named backend commit. Where the backend commit sits varies between the early records; those are evidence and are not rewritten, so only the top-level form is shape-checked.",
+      "checked_by": "verify: firmware-validation:records"
+    },
+    {
+      "id": "release-preparation",
+      "what": "docs/RELEASE_CHECKLIST.md plus two machine checks",
+      "detail": "release:no-conformance-target confirms no official-sample source or firmware image has crept into the conformance-track directories; release:portable-without-backend confirms the capability snapshot the portable checks read from exists.",
+      "note": "Publication itself is explicitly not a condition of this gate. See the decision below."
+    }
+  ],
+  "publication_decision": {
+    "date": "2026-08-04",
+    "intent": "Both repositories will be published.",
+    "licensing": "Confirmed clear (MIT OR Apache-2.0 with NOTICE preserved).",
+    "timing": "Undecided. Publication waits until the work reaches sufficient maturity.",
+    "reasoning": "FIRMWARE_BACKEND.md's public-release condition applies at the moment picocalc_emu is published, not at Gate 6. Both repositories are private today, so nothing is in conflict; the conflict would be publishing picocalc_emu alone while the backend stays private. The plan and the checklist now separate these two things, so gate progress does not wait on a business decision.",
+    "decided_by": "human"
+  },
+  "acceptance": {
+    "reproduce_gate5_from_picocalc_emu": {
+      "status": "pass",
+      "evidence": "test --mode firmware ran the pinned target on backend ba66390 and produced a report with a framebuffer hash, a stop reason and a cycle count. The full-length invocation is the same command with the Gate 5 cycle budget."
+    },
+    "portable_verification_without_backend": {
+      "status": "pass",
+      "evidence": "verify reports 37 checks passing, including the two release checks and the capability snapshot, without reading the backend checkout."
+    },
+    "no_backend_source_copied": {
+      "status": "pass",
+      "evidence": "release:no-conformance-target passes; the only connection to the backend is its pinned commit and its CLI."
+    }
+  },
+  "verification": {
+    "verify_checks_passing": 37,
+    "python_tests": 24,
+    "cli_smoke": "200,000,000-cycle run through picocalc.py test --mode firmware completed and wrote a report"
+  },
+  "known_limitations": [
+    "The artefact interface is the runner's JSON report as-is. A richer scenario/artefact layer belongs to Milestone 3, and inventing one here would be preempting that schema.",
+    "test --mode firmware always attaches the PicoCalc board and PSRAM; there is no flag yet for running a bare-RP2040 target through this entry point.",
+    "Only the firmware mode exists. Host mode is Milestone 2."
+  ]
+}

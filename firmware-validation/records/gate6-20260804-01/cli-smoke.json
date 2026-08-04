@@ -1,0 +1,57 @@
+{
+  "schema_version": 4,
+  "backend_commit": "ba66390db95824c6732ccff61d71b39d35170ec1",
+  "firmware": {"basename": "picocalc_helloworld.bin", "sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 200000000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 200000003,
+  "pc": "0x100087e8",
+  "exception": null,
+  "error": null,
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x66",
+    "caset": 37, "raset": 37, "ramwr": 37, "ramrd": 0,
+    "pixels_written": 105856, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0xb0", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb6", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe9", "count": 1},
+      {"code": "0xf7", "count": 1}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "b30b2a7ef9d60c14818009d3fa70294f1d6e14a6900c396a6f6fe3db32033cc8", "non_black_pixels": 486, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 65721441, "cs_falling_count": 202241,
+    "bytes_written": 202237, "bytes_read": 0,
+    "cmd_counts": {"write": 202238, "fast_read": 0, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 250, "cc": "0x00000000"}
+    ]
+  },
+  "uart": {"bytes": 18, "sha256": "4384ed18e8df458d06c36b23a70d4b51546aebd632e9e0ce8059a0c4286ae9d3"}
+}

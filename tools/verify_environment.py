@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -355,6 +356,71 @@ def validation_shape_errors(record: Any, completed: bool) -> List[str]:
                     "passing record requires tests.{} evidence".format(name)
                 )
     return errors
+
+
+def verify_release_conditions(checks: List[Check], root: Path) -> None:
+    """Check the automatable parts of docs/RELEASE_CHECKLIST.md.
+
+    The conformance target is a thing to aim at, not an asset of this
+    repository: only the result and the identity needed to reproduce it
+    are recorded. And portable verification has to stay complete on a
+    clone with no firmware backend, or a public release would require a
+    private dependency.
+    """
+    # Firmware images belonging to the conformance track. Hardware
+    # evidence for this project's own builds lives under
+    # `hardware-validation/` and is out of scope here — what must never
+    # appear is the official sample, or any firmware image inside the
+    # emulator-side ledger and the target identity records.
+    binary_suffixes = {".elf", ".bin", ".uf2", ".hex"}
+    watched_dirs = ("firmware-validation", "reference-projects", "docs", "tools")
+    strays: List[str] = []
+    skip_dirs = {".git", "build", "build-ci", "artifacts", "__pycache__"}
+    for directory in watched_dirs:
+        base = root / directory
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in binary_suffixes:
+                continue
+            relative = path.relative_to(root)
+            if any(part in skip_dirs for part in relative.parts):
+                continue
+            strays.append(str(relative))
+    # Anything named after the sample, anywhere.
+    strays.extend(
+        str(path.relative_to(root))
+        for path in root.rglob("picocalc_helloworld*")
+        if path.is_file() and ".git" not in path.parts
+    )
+    # Source files of the official sample would arrive under a directory
+    # named after it; the identity records name it in text, which is fine.
+    sample_dirs = [
+        str(path.relative_to(root))
+        for path in root.rglob("picocalc_helloworld")
+        if path.is_dir() and ".git" not in path.parts
+    ]
+    add_check(
+        checks,
+        "release:no-conformance-target",
+        not strays and not sample_dirs,
+        firmware_images=strays,
+        sample_directories=sample_dirs,
+    )
+
+    # The portable checks must not need the backend. They run from this
+    # process, so reaching this point at all means they did not require
+    # it; what we assert here is that the snapshot they read from exists.
+    capability = root / "firmware-validation/capability.json"
+    backend_dir_env = os.environ.get("PICOEM_PICOCALC_DIR")
+    add_check(
+        checks,
+        "release:portable-without-backend",
+        capability.is_file(),
+        capability_snapshot=str(capability.relative_to(root)),
+        backend_env_set=bool(backend_dir_env),
+        note="portable verification reads the snapshot, never the backend checkout",
+    )
 
 
 def verify_firmware_validation(checks: List[Check], root: Path) -> None:
@@ -983,6 +1049,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     verify_catalog(checks, root)
     verify_hardware_validation(checks, root)
     verify_firmware_validation(checks, root)
+    verify_release_conditions(checks, root)
 
 
 def verify_references(

@@ -153,7 +153,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 | Gate 3: PIO1/DMA PSRAM | 完了 2026-08-04（全域試験完走） | `firmware-validation/records/gate3-20260804-01/` |
 | Gate 4: I2C keyboard controller | 完了 2026-08-04（キーecho確認） | `firmware-validation/records/gate4-20260804-01/` |
 | Gate 5: full application acceptance | 完了 2026-08-04（**HELLO-FULL達成**） | `firmware-validation/records/gate5-20260804-01/` |
-| Gate 6: `picocalc_emu` integration | 未着手 | — |
+| Gate 6: `picocalc_emu` integration | 完了 2026-08-04（公開は時期未定・別管理） | `firmware-validation/records/gate6-20260804-01/` |
 | Gate 7: Canonical BSP B conformance | 未着手 | — |
 
 ### Gate 0: 基準の固定（実機不要）
@@ -389,15 +389,21 @@ artifact関連、および`firmware-validation/records/`。Gate固有の禁止�
    multicore等）を機械可読で公開し、portable検証の検査対象へ加える。
    スナップショットを`picocalc_emu`内に機械可読ファイルとして保持し、
    backend不在のclone単体でも`verify`のportable検査が完結する構成にする。
-4. 公開条件を確認する: 公開版`picocalc_emu`の通常ビルド・検証がprivate依存を
-   要求しない構成を維持する（`docs/FIRMWARE_BACKEND.md`参照）。加えて、
-   正式統合の前提作業として「`picoem-picocalc`の公開または等価な再現可能配布の
-   実施」と「配布物へconformance target（`picocalc_helloworld`）とその
-   ソースが混入しないことのリリース検査（`THIRD_PARTY_NOTICES.md`整合）」を
-   独立の作業項目とする。
+4. 公開**準備**を整える。`picocalc_emu`と`picoem-picocalc`はどちらも現在private
+   であり、この状態では`FIRMWARE_BACKEND.md`の公開条件と矛盾しない。同条件は
+   「`picocalc_emu`を公開する時点」で満たすべきものであって、本Gateの完了条件
+   ではない。本Gateでは次を用意するにとどめる。
+   - backend不在でもportable検証が完結する構成（作業3で達成）
+   - 公開前チェックリストの文書化と、機械検査できる項目の自動化
+     （`docs/RELEASE_CHECKLIST.md`）
+
+**公開の実施時期は未定である。** 方針としては公開予定であり、ライセンス面
+（`MIT OR Apache-2.0`とNOTICE維持）の確認は済んでいる。ただし十分な完成度に
+達するまで公開しない。この判断は人間が行い、Gate進行の前提条件にはしない。
 
 受入条件: clone＋固定commit取得だけでGate 5と同じ合格を`picocalc_emu`側の
-コマンドから再現できる。
+コマンドから再現できること、およびbackend不在のcloneで`verify`が完結すること。
+公開そのものは受入条件に含めない。
 
 分担と境界: Lunaへ渡す単位は(1)`picocalc_emu`側CLI接続、(2)capability
 スナップショットと`verify`検査の追加。公開の実施とリリース検査の最終判定は
