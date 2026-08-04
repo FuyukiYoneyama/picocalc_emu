@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates/rp2040-basic"
 BSP = ROOT / "bsp"
 CATALOG = ROOT / "reference-projects/catalog.json"
+FIRMWARE_TARGETS = ROOT / "reference-projects/firmware-targets.json"
+CAPABILITY = ROOT / "firmware-validation/capability.json"
 
 
 def read_version(path: Path, variable: str) -> str:
@@ -400,6 +402,142 @@ def build_project(
     return 0
 
 
+def resolve_backend(explicit: Optional[Path]) -> Optional[Path]:
+    """Locate the picoem-picocalc checkout.
+
+    The firmware backend is a separate repository pinned by commit, never
+    vendored here. Order: explicit flag, PICOEM_PICOCALC_DIR, then a
+    sibling checkout next to this repository.
+    """
+    if explicit is not None:
+        return explicit
+    from_env = os.environ.get("PICOEM_PICOCALC_DIR")
+    if from_env:
+        return Path(from_env)
+    sibling = ROOT.parent / "picoem-picocalc"
+    return sibling if sibling.is_dir() else None
+
+
+def load_firmware_target(target_id: str) -> Optional[dict]:
+    if not FIRMWARE_TARGETS.is_file():
+        return None
+    with FIRMWARE_TARGETS.open("r", encoding="utf-8") as source:
+        document = json.load(source)
+    for target in document.get("targets", []):
+        if target.get("id") == target_id:
+            return target
+    return None
+
+
+def firmware_test(
+    target_id: str,
+    firmware: Path,
+    backend_dir: Optional[Path],
+    cycles: int,
+    keys: Optional[str],
+    json_out: Optional[Path],
+) -> int:
+    """Run a conformance target on the pinned firmware backend.
+
+    Exit codes: 0 pass, 1 mismatch or failure, 2 backend unavailable.
+    Code 2 is the "cannot judge" case — the caller should treat it as
+    hardware_required rather than as a failing run.
+    """
+    target = load_firmware_target(target_id)
+    if target is None:
+        print("unknown firmware target '{}'".format(target_id))
+        print("known targets are listed in {}".format(FIRMWARE_TARGETS))
+        return 1
+
+    if not firmware.is_file():
+        print("firmware image not found: {}".format(firmware))
+        return 1
+
+    digest = hashlib.sha256(firmware.read_bytes()).hexdigest()
+    expected = target.get("artifacts", {}).get("bin_sha256")
+    if expected and digest != expected:
+        print("firmware does not match the pinned target")
+        print("  expected {}".format(expected))
+        print("  actual   {}".format(digest))
+        print("rebuild it with the procedure in docs/IMPLEMENTATION_PLAN.md 3.2")
+        return 1
+
+    backend = resolve_backend(backend_dir)
+    if backend is None or not backend.is_dir():
+        print("firmware backend checkout not found")
+        print("set PICOEM_PICOCALC_DIR or pass --backend-dir")
+        return 2
+    runner = backend / "target/release/picocalc-run"
+    if not runner.is_file():
+        print("backend runner not built: {}".format(runner))
+        print("build it with: cargo build --release -p picocalc-harness")
+        return 2
+
+    pinned = target.get("backend", {}).get("accepted") or target.get("backend", {}).get(
+        "commit"
+    )
+    head = subprocess.run(
+        ["git", "-C", str(backend), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    actual_commit = head.stdout.strip() if head.returncode == 0 else "unknown"
+    if pinned and actual_commit != pinned:
+        print("warning: backend is at {} but the target pins {}".format(
+            actual_commit[:12], str(pinned)[:12]
+        ))
+
+    with_json = json_out or (ROOT / "artifacts/firmware-test.json")
+    with_json.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        str(runner),
+        "--bin",
+        str(firmware),
+        "--board",
+        "picocalc",
+        "--psram",
+        "--cycles",
+        str(cycles),
+        "--json",
+        str(with_json),
+        "--backend-commit",
+        actual_commit,
+    ]
+    if keys:
+        command.extend(["--keys", keys])
+
+    print("running {} on backend {}".format(target_id, actual_commit[:12]))
+    result = subprocess.run(command)
+    if result.returncode != 0:
+        print("runner exited {}".format(result.returncode))
+        return 1
+
+    with with_json.open("r", encoding="utf-8") as source:
+        report = json.load(source)
+    unsupported = report.get("unsupported_mmio", [])
+    exception = report.get("exception")
+    print("stop_reason={} cycles={}".format(
+        report.get("stop_reason"), report.get("cycles")
+    ))
+    if report.get("psram", {}).get("verify"):
+        verify_result = report["psram"]["verify"]
+        print("psram verify matched={} mismatched={}".format(
+            verify_result.get("matched"), verify_result.get("mismatched")
+        ))
+    if report.get("framebuffer"):
+        print("framebuffer {}".format(report["framebuffer"].get("rgb565_sha256")))
+    print("report written to {}".format(with_json))
+
+    failed = False
+    if exception is not None:
+        print("FAIL exception: {}".format(exception))
+        failed = True
+    if unsupported:
+        print("FAIL {} unsupported MMIO accesses".format(len(unsupported)))
+        failed = True
+    return 1 if failed else 0
+
+
 def verify(references: bool, strict_commit: bool, reference_root: Optional[Path]) -> int:
     command = [sys.executable, str(ROOT / "tools/verify_environment.py")]
     if references:
@@ -505,6 +643,35 @@ def main() -> int:
         help="auto-test only machine-owned validation media (default: OFF)",
     )
 
+    test_parser = subparsers.add_parser(
+        "test", help="run a conformance target on the firmware backend"
+    )
+    test_parser.add_argument(
+        "--mode",
+        choices=["firmware"],
+        required=True,
+        help="only 'firmware' exists today; host mode is Milestone 2",
+    )
+    test_parser.add_argument(
+        "--target",
+        default="picocalc-helloworld-a",
+        help="target id from reference-projects/firmware-targets.json",
+    )
+    test_parser.add_argument(
+        "--firmware",
+        type=Path,
+        required=True,
+        help="BIN to run; its SHA-256 must match the pinned target",
+    )
+    test_parser.add_argument(
+        "--backend-dir",
+        type=Path,
+        help="picoem-picocalc checkout (default: PICOEM_PICOCALC_DIR or ../picoem-picocalc)",
+    )
+    test_parser.add_argument("--cycles", type=int, default=9_500_000_000)
+    test_parser.add_argument("--keys", help="keys to inject through the keyboard FIFO")
+    test_parser.add_argument("--json", dest="json_out", type=Path)
+
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
     )
@@ -552,6 +719,15 @@ def main() -> int:
             args.build_timestamp,
             args.diagnostic_mode,
             args.hardware_validation_mode,
+        )
+    if args.command == "test":
+        return firmware_test(
+            args.target,
+            args.firmware,
+            args.backend_dir,
+            args.cycles,
+            args.keys,
+            args.json_out,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "backend": {
+    "repo": "picoem-picocalc",
+    "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
+    "branch": "feature/picocalc-integration",
+    "execution_model": "Serial",
+    "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
+  },
+  "supported": [
+    {
+      "id": "direct-boot",
+      "what": "Direct boot of a Pico SDK image from flash offset 0x100",
+      "detail": "The bootrom image is loaded so ROM function lookups resolve, but never executed; SP/PC/VTOR are seeded from the SDK vector table. Images without an SDK vector table fall back to the bootrom reset vector and are reported as boot.mode.",
+      "since_gate": 1
+    },
+    {
+      "id": "xip-read",
+      "what": "Instruction fetch and literal reads from XIP flash at 0x1000_0000",
+      "since_gate": 1
+    },
+    {
+      "id": "uart0-capture",
+      "what": "UART0 transmit capture as raw bytes plus a SHA-256",
+      "since_gate": 1
+    },
+    {
+      "id": "unsupported-mmio-log",
+      "what": "Opt-in log of accesses to undecoded MMIO addresses, with the accessing PC",
+      "limitation": "Only undecoded addresses fault and are recorded. A peripheral that is decoded but partially implemented does not appear here.",
+      "since_gate": 1
+    },
+    {
+      "id": "spi-external-device",
+      "what": "Generic off-chip SPI slave hook on either controller",
+      "detail": "Words are handed to the device as they drain from the TX FIFO, with pad levels presented immediately beforehand so CS/DC framing is correct at any step quantum.",
+      "since_gate": 2
+    },
+    {
+      "id": "lcd-st7365p",
+      "what": "ST7365P display model on SPI1 with GP13/14/15 as CS/DC/RESET",
+      "detail": "320x480 RGB565 frame memory, CASET/RASET windowing, RAMWR in RGB565 or RGB666, RAMRD readback, and a 320x320 viewport exported as a canonical RGB565 SHA-256 and a deterministic PNG.",
+      "limitation": "MADCTL and INVON are recorded but not applied to the logical framebuffer; both are panel-wiring compensations that would invert or mirror the image relative to what a person sees on the device.",
+      "since_gate": 2
+    },
+    {
+      "id": "pio",
+      "what": "Both PIO blocks, advanced one system cycle at a time whenever a pin-watching device is attached",
+      "detail": "Bulk advancement would drop the SCK edges of a PIO-driven SPI program between quantum boundaries.",
+      "since_gate": 3
+    },
+    {
+      "id": "dma",
+      "what": "12-channel DMA including the DREQ matrix, used here to feed the PIO TX FIFO",
+      "since_gate": 3
+    },
+    {
+      "id": "psram",
+      "what": "APS6404L 8 MiB SPI PSRAM on PIO1 with CS20/SCK21/MOSI2/MISO3",
+      "detail": "Reset-enable, reset, write and fast-read; the fast-read output is held one SCK to match the real chip's settling time, which the fudge PIO program compensates for.",
+      "since_gate": 3
+    },
+    {
+      "id": "i2c-external-device",
+      "what": "Generic off-chip I2C slave hook on either controller",
+      "detail": "A device claims its own address; with none attached the historical always-ACK stub list still applies.",
+      "since_gate": 4
+    },
+    {
+      "id": "keyboard-controller",
+      "what": "PicoCalc STM32 keyboard/power controller at address 0x1F on I2C1",
+      "detail": "Key FIFO, key count, battery and backlight registers. Register selection survives STOP, so both the official driver's write-STOP-read and the Canonical BSP's repeated START work against one model.",
+      "limitation": "Bus speed is not modelled, so 10 kHz and 400 kHz behave identically.",
+      "since_gate": 4
+    },
+    {
+      "id": "pwm-observation",
+      "what": "PWM slice configuration is readable for reporting",
+      "limitation": "Configuration only. No audio is produced and DMA-paced playback is not exercised.",
+      "since_gate": 5
+    },
+    {
+      "id": "wfe-irq-wake",
+      "what": "A core parked on WFE wakes on an enabled pending interrupt, per ARMv6-M B1.5.18",
+      "detail": "Required by the Pico SDK sleep idiom; without it an alarm-plus-WFE loop live-locks.",
+      "since_gate": 2
+    }
+  ],
+  "unsupported": [
+    {
+      "id": "sd-card",
+      "what": "SPI0 SD card and any filesystem on it",
+      "consequence": "Firmware that mounts a card will fail at that step. Not exercised by the current conformance target."
+    },
+    {
+      "id": "multicore",
+      "what": "Launching core 1 from firmware",
+      "detail": "The core exists and the SIO FIFO is modelled, but no conformance target starts it yet."
+    },
+    {
+      "id": "audio-output",
+      "what": "PWM audio playback through DMA to a sample sink",
+      "detail": "PWM configuration is observable; sample streaming is not modelled."
+    },
+    {
+      "id": "bootrom-execution",
+      "what": "Executing the real bootrom, including USB MSC boot",
+      "detail": "SSI is a stub and QSPI pads are not modelled, so boot uses the direct-boot shortcut instead."
+    },
+    {
+      "id": "threaded-model",
+      "what": "The threaded execution model as a correctness reference",
+      "detail": "Serial is the reference. The threaded worker loop still has the sub-quantum GPIO-edge gap and the WFE interrupt-wake gap that were fixed on the serial path."
+    },
+    {
+      "id": "timing-fidelity",
+      "what": "Cycle-accurate agreement with silicon",
+      "detail": "Peripheral latencies are modelled where they change observable ordering, not calibrated against real hardware. Correlation against the device is Milestone 4."
+    }
+  ]
+}

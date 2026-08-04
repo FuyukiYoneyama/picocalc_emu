@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "gate": 5,
+  "record_id": "gate5-20260804-01",
+  "title": "HELLO-FULL: the unmodified picocalc_helloworld passes end to end, deterministically",
+  "backend_commit": {
+    "base": "7db19450a35f46875d7d88f00d779b1c634b0a0b",
+    "accepted": "ba66390db95824c6732ccff61d71b39d35170ec1",
+    "repo": "picoem-picocalc",
+    "branch": "feature/picocalc-integration",
+    "note": "Runs were made with the PWM observation accessor applied on top of 7db1945; that change is committed as ba66390."
+  },
+  "target": {
+    "firmware": "picocalc_helloworld.bin",
+    "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+    "unmodified": true,
+    "source_identity": "reference-projects/firmware-targets.json, target picocalc-helloworld-a"
+  },
+  "invocation": {
+    "runner": "picocalc-run",
+    "arguments": "--board picocalc --psram --keys HI --cycles 9500000000 --psram-verify-range 0:8388608",
+    "quantum": 1,
+    "execution_model": "Serial"
+  },
+  "hello_full_conditions": [
+    {
+      "n": 1,
+      "condition": "Attach an 8 MiB PSRAM model to PIO1, DMA and GP20/21/2/3",
+      "status": "pass",
+      "evidence": "picocalc-board wires picoem-devices::Psram to CS20/SCK21/MOSI2/MISO3 on PIO1; the firmware's own DMA feeds the PIO TX FIFO."
+    },
+    {
+      "n": 2,
+      "condition": "Run the sample's full 8/16/32/128-bit write and read test without reducing its range",
+      "status": "pass",
+      "evidence": "All nine UART result lines are present, covering every width and both write paths plus read-back."
+    },
+    {
+      "n": 3,
+      "condition": "Capture the PSRAM completion result from UART or LCD, with zero mismatches",
+      "status": "pass",
+      "evidence": "'PSRAM testing done' on both UART and the display; independent range verification reports 8388608 matched and 0 mismatched."
+    },
+    {
+      "n": 4,
+      "condition": "Handle battery and backlight registers on the address 0x1f keyboard controller",
+      "status": "pass",
+      "evidence": "Display reads 'battery percent is 100' and 'battery is not charging'; four backlight levels are written and read back without error."
+    },
+    {
+      "n": 5,
+      "condition": "Scripted keys reach the FIFO and are echoed to the LCD",
+      "status": "pass",
+      "evidence": "--keys HI queued two press/release pairs; all four events were delivered and both characters render on the last line of the framebuffer."
+    },
+    {
+      "n": 6,
+      "condition": "PWM initialisation is observable; audible output is not required because main() never starts playback",
+      "status": "pass",
+      "evidence": "One configured slice reported: slice 5 (the pair carrying GP26/GP27), CSR enable set, TOP 250. No sample stream is started by the firmware and none is modelled."
+    },
+    {
+      "n": 7,
+      "condition": "No unsupported MMIO, bus fault, panic or silently dropped peripheral",
+      "status": "pass",
+      "evidence": "unsupported_mmio empty, exception null, stop_reason cycle_limit — the run ends because the budget is spent, not because anything failed."
+    },
+    {
+      "n": 8,
+      "condition": "Save UART log, framebuffer, key result, PSRAM result, backend/source commit and artefact SHA-256 to structured artefacts, and get the same result across repeated runs",
+      "status": "pass",
+      "evidence": "Three consecutive runs produced byte-identical UART (607 bytes) and PNG files, and JSON reports that differ only in the PNG filename each run was told to write."
+    }
+  ],
+  "determinism": {
+    "runs": 3,
+    "uart_identical": true,
+    "uart_bytes": 607,
+    "uart_sha256_prefix": "8992bee189687104",
+    "png_identical": true,
+    "json_identical_excluding_output_filename": true,
+    "note": "The only JSON difference across runs is the framebuffer.png field, which echoes the output path given on the command line. That is an input, not emulator state."
+  },
+  "results": {
+    "cycles": 9500000000,
+    "stop_reason": "cycle_limit",
+    "framebuffer_rgb565_sha256": "bdd19fa2ee0c6f87b1543b1cc6cac43e1d1afa74f325f46929a96daef833cc6a",
+    "psram_verify": {
+      "range": "0x00000000:0x800000",
+      "matched": 8388608,
+      "mismatched": 0
+    },
+    "keyboard": {
+      "key_events_delivered": 4,
+      "battery_reads": 1,
+      "backlight_writes": 4,
+      "unknown_reg_selects": 0
+    },
+    "pwm": {
+      "configured_slices": 1,
+      "slice": 5,
+      "top": 250,
+      "playback_started": false
+    },
+    "unsupported_mmio": 0,
+    "exception": null
+  },
+  "declaration": "With all eight conditions met, the official picocalc_helloworld is judged to run on the emulator. This is the point EMULATOR_ROADMAP reserves that statement for.",
+  "known_limitations": [
+    "Timing is not calibrated against silicon; the firmware's own microsecond figures are emulator time, not device time.",
+    "PWM playback, SPI0 SD and core 1 remain unmodelled — none is exercised by this target. See firmware-validation/capability.json.",
+    "The threaded execution model still carries the sub-quantum edge-loss and WFE wake gaps that were fixed on the Serial path."
+  ]
+}

@@ -1,0 +1,16 @@
+Testing PSRAM...
+8 bit: PSRAM write 8MB in 9170602 us, 914728 B/s
+8 bit: PSRAM write async 8MB in 5298068 us, 1583333 B/s
+8 bit: PSRAM read 8MB in 15768060 us, 532000 B/s
+16 bit: PSRAM write 8MB in 5234996 us, 1602409 B/s
+16 bit: PSRAM read 8MB in 8546288 us, 981549 B/s
+32 bit: PSRAM write 8MB in 3327061 us, 2521326 B/s
+32 bit: PSRAM read 8MB in 4982707 us, 1683544 B/s
+128 bit: PSRAM write 8MB in 1710342 us, 4904638 B/s
+128 bit: PSRAM read 8MB in 1985298 us, 4225364 B/s
+battery percent is 100
+battery is not charging
+kbd backlight 50
+kbd backlight 100
+kbd backlight 255
+kbd backlight 0

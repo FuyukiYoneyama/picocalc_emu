@@ -357,6 +357,101 @@ def validation_shape_errors(record: Any, completed: bool) -> List[str]:
     return errors
 
 
+def verify_firmware_validation(checks: List[Check], root: Path) -> None:
+    """Check the emulator-side ledger: capability snapshot and Gate records.
+
+    The firmware backend lives in a separate repository, so a clone of
+    this one cannot ask it what it supports. The snapshot in
+    `firmware-validation/capability.json` is what keeps the portable
+    verification complete without a backend checkout.
+    """
+    directory = root / "firmware-validation"
+    if not directory.is_dir():
+        # Nothing to check on a clone that predates the firmware track.
+        return
+
+    capability_path = directory / "capability.json"
+    try:
+        capability = load_json(capability_path)
+        backend = capability.get("backend", {})
+        supported = capability.get("supported", [])
+        unsupported = capability.get("unsupported", [])
+        errors: List[str] = []
+        if capability.get("schema_version") != 1:
+            errors.append("schema_version must be 1")
+        if not isinstance(backend, dict) or not backend.get("repo"):
+            errors.append("backend.repo is required")
+        if backend.get("execution_model") != "Serial":
+            errors.append("execution_model must be Serial while it is the reference")
+        for name, entries in (("supported", supported), ("unsupported", unsupported)):
+            if not isinstance(entries, list) or not entries:
+                errors.append("{} must be a non-empty list".format(name))
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict) or not entry.get("id") or not entry.get("what"):
+                    errors.append("{} entries need id and what".format(name))
+                    break
+        add_check(
+            checks,
+            "firmware-validation:capability",
+            not errors,
+            errors=errors,
+            supported=len(supported) if isinstance(supported, list) else 0,
+            unsupported=len(unsupported) if isinstance(unsupported, list) else 0,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as error:
+        add_check(
+            checks,
+            "firmware-validation:capability",
+            False,
+            **error_details(error),
+        )
+
+    records_dir = directory / "records"
+    try:
+        reports = sorted(records_dir.glob("*/report.json"))
+        invalid: List[Dict[str, object]] = []
+        for path in reports:
+            record = load_json(path)
+            problems: List[str] = []
+            if record.get("schema_version") != 1:
+                problems.append("schema_version must be 1")
+            if not isinstance(record.get("gate"), int):
+                problems.append("gate must be an integer")
+            if record.get("record_id") != path.parent.name:
+                problems.append("record_id must match the directory name")
+            # Where the backend commit is recorded varies: the first
+            # gates put it under the section it belonged to (the Serial
+            # baseline, the runner), later ones use a top-level
+            # `backend_commit`. Records are evidence and are not
+            # rewritten after acceptance, so only the top-level form is
+            # shape-checked; every record is separately required to
+            # mention the backend commit somewhere.
+            backend_commit = record.get("backend_commit")
+            if isinstance(backend_commit, dict) and not (
+                backend_commit.get("accepted") or backend_commit.get("commit")
+            ):
+                problems.append("backend_commit needs accepted or commit")
+            if "backend_commit" not in json.dumps(record):
+                problems.append("record does not name the backend commit")
+            if problems:
+                invalid.append({"path": path.name, "record": path.parent.name, "errors": problems})
+        add_check(
+            checks,
+            "firmware-validation:records",
+            not invalid,
+            records=len(reports),
+            invalid=invalid,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as error:
+        add_check(
+            checks,
+            "firmware-validation:records",
+            False,
+            **error_details(error),
+        )
+
+
 def verify_hardware_validation(checks: List[Check], root: Path) -> None:
     directory = root / "hardware-validation"
     try:
@@ -887,6 +982,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     verify_template_smoke(checks, root)
     verify_catalog(checks, root)
     verify_hardware_validation(checks, root)
+    verify_firmware_validation(checks, root)
 
 
 def verify_references(

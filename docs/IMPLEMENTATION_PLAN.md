@@ -152,7 +152,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 | Gate 2: SPI1 LCD vertical slice | 完了 2026-08-03（HELLO-VISIBLE達成） | `firmware-validation/records/gate2-20260803-01/` |
 | Gate 3: PIO1/DMA PSRAM | 完了 2026-08-04（全域試験完走） | `firmware-validation/records/gate3-20260804-01/` |
 | Gate 4: I2C keyboard controller | 完了 2026-08-04（キーecho確認） | `firmware-validation/records/gate4-20260804-01/` |
-| Gate 5: full application acceptance | 未着手 | — |
+| Gate 5: full application acceptance | 完了 2026-08-04（**HELLO-FULL達成**） | `firmware-validation/records/gate5-20260804-01/` |
 | Gate 6: `picocalc_emu` integration | 未着手 | — |
 | Gate 7: Canonical BSP B conformance | 未着手 | — |
 

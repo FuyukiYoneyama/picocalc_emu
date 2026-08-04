@@ -215,15 +215,23 @@ EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式
 
 ## エミュレーターの現在地（2026-08-04）
 
-Firmware backend（Milestone 1）はGate 0〜3が完了した。無改変の公式
-`Code/picocalc_helloworld`を`picoem-picocalc`の`ExecutionModel::Serial`上で
-direct bootし、`Hello World PicoCalc`をPC上で決定的に描画できる（HELLO-VISIBLE到達）。
-さらにPIO1/DMA経由の8 MiB PSRAMを接続し、公式サンプルの全域試験
-（8/16/32/128-bitのwrite・async write・read）を試験範囲を削らずに完走させ、
-全バイト一致（8,388,608一致、不一致0）を確認した。host実行は約5.6分である。
-現時点で可能なのは、UART0ログの取得、symbol/PCによる`main()`到達判定、
-外部SPI1 ST7365P modelを介したLCD framebufferのhash/PNG取得、PSRAM内容の範囲検証である。
-残りはGate 4〜7（keyboard、HELLO-FULL、`picocalc_emu`統合、B conformance）で、
+Firmware backend（Milestone 1）はGate 0〜5が完了し、**HELLO-FULLに到達した**。
+無改変の公式`Code/picocalc_helloworld`を`picoem-picocalc`の
+`ExecutionModel::Serial`上でdirect bootし、次のすべてをPC上で実行できる。
+
+- `Hello World PicoCalc`の描画（HELLO-VISIBLE）
+- PIO1/DMA経由8 MiB PSRAMの全域試験（8/16/32/128-bit）を試験範囲を削らずに完走し、
+  8,388,608バイト全一致・不一致0
+- I2C1のkeyboard controller（address `0x1F`）でbattery・backlightを扱い、
+  シナリオから投入したキーをLCDへecho
+- PWM初期化の観測（サンプルは再生を開始しないため可聴音は要求されない）
+- 未対応MMIO・例外なし、3回連続実行でUART・framebuffer・JSONがバイト一致
+
+現時点で可能なのは、UART0ログの取得、symbol/PCによる到達判定、LCD framebufferの
+hash/PNG取得、PSRAM内容の範囲検証、キーシナリオの投入、PWM設定の観測である。
+`python3 tools/picocalc.py test --mode firmware --firmware <bin>`で実行でき、
+対応・未対応機能は`firmware-validation/capability.json`に記録している。
+残りはGate 6〜7（`picocalc_emu`統合の仕上げ、Canonical BSP B conformance）で、
 作業単位と進捗は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4、
 証拠は`firmware-validation/records/`にある。
 
