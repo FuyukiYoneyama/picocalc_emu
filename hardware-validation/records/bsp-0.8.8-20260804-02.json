@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "validation_id": "bsp-0.8.8-20260804-02",
+  "bsp_version": "0.8.8",
+  "repository_commit": "97ba30cc101b28454c95d7ae2656c0d9d5969e2e",
+  "validation_date": null,
+  "operator": "",
+  "overall_status": "pending",
+  "purpose": "Emulator-to-hardware correlation for Gate 7. The same source and build settings produced the BIN the emulator verified and the UF2 written to the card, so a disagreement here is a defect in the emulator's model rather than a difference of subject.",
+  "hardware": {
+    "product": "PicoCalc",
+    "board_revision": "",
+    "mcu": "RP2040",
+    "notes": ""
+  },
+  "software": {
+    "pico_sdk": "2.2.0",
+    "compiler": "arm-none-eabi-gcc 13.2.1",
+    "cmake": "3.28.3"
+  },
+  "sd_card": {
+    "manufacturer": "",
+    "model": "",
+    "capacity": "",
+    "filesystem": "FAT32"
+  },
+  "firmware": {
+    "path": "build/picocalc_app.uf2",
+    "uf2_sha256": "ee41419b9cf45c52e801dff667d2d82c071c9a99c09c3e1e9e422633341b5f0c",
+    "bin_sha256": "2b23e42b4d6ac9a241ee61c05f0b8874812be02e92de3ddbb39a243862bc27fa",
+    "build_log": "python3 tools/picocalc.py build --project <dir> --lcd-variant pio-rgb565 --build-timestamp 2026-08-04T00:00:00Z"
+  },
+  "emulator_prediction": {
+    "backend_commit": "b285fa22e7df45917d7a29b8aab1a32130025146",
+    "record": "firmware-validation/records/gate7-20260804-01/",
+    "framebuffer_rgb565_sha256": "2d15fa6a8d3939cdbf3d36b6e5bfee00add71666e71e00af4e31f3e3f6a1343a",
+    "boot_line": "[PICOCALC][BOOT] bsp=0.8.8 app=0.8.4-b-pio-rgb565-default variant=pio-rgb565 bsp_git=97ba30cc101b app_git=untracked build=2026-08-04T00:00:00Z",
+    "clock": "target_khz=250000 actual_khz=250000",
+    "lcd_app_status": "pass",
+    "audio_verify": "status=ok underruns=0",
+    "sd": "not modelled — the emulator stalls at component=init status=begin",
+    "keyboard": "not exercised in this run; the emulator reaches the key loop only after SD, which it cannot pass"
+  },
+  "tests": {
+    "lcd": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": [],
+      "compare_against": "emulator-prediction.png and framebuffer_rgb565_sha256 above"
+    },
+    "sd": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": [],
+      "note": "Hardware is expected to pass here where the emulator cannot. That asymmetry is the point of the check, not a failure."
+    },
+    "keyboard": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": []
+    },
+    "audio": {
+      "status": "pending",
+      "observed": "",
+      "evidence_files": [],
+      "note": "Audibility is a human-only judgement; the emulator can only say the stream ran without underruns."
+    }
+  },
+  "correlation": {
+    "agreements": [],
+    "disagreements": [],
+    "verdict": "pending",
+    "note": "Any disagreement is recorded even if hardware passes. An emulator that says pass where hardware says fail is the failure mode this project exists to prevent; the reverse (emulator cannot judge, hardware passes) is a known gap, not a defect."
+  },
+  "notes": ""
+}
