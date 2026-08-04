@@ -234,9 +234,16 @@ Firmware backend（Milestone 1）はGate 0〜5が完了し、**HELLO-FULLに到�
 hash/PNG取得、PSRAM内容の範囲検証、キーシナリオの投入、PWM設定の観測である。
 `python3 tools/picocalc.py test --mode firmware --firmware <bin>`で実行でき、
 対応・未対応機能は`firmware-validation/capability.json`に記録している。
-残りはGate 6〜7（`picocalc_emu`統合の仕上げ、Canonical BSP B conformance）で、
-作業単位と進捗は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4、
-証拠は`firmware-validation/records/`にある。
+Gate 6（`picocalc_emu`統合）も完了し、`python3 tools/picocalc.py test --mode firmware`
+から固定commitのbackendを駆動できる。
+
+**Gate 7（Canonical BSP B conformance）は進行中である。** 標準templateは起動して
+`main()`へ到達し、BOOT行と250 MHzクロック設定（`actual_khz=250000`）を確認できる
+段階まで来たが、B系統（PIO0/RGB565）のLCD modelが未実装のため、LCD初期化の
+PIO0 FIFO待ちで停止する。音声参照トーン、SD、B系統RAMRDの挙動はいずれもこの先に
+あるため未確認である。現在地と残作業の順序は
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4.7、対応・未対応の一覧は
+`firmware-validation/capability.json`、証拠は`firmware-validation/records/`にある。
 
 また、次の機能は今後のエミュレーター段階である。
 

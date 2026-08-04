@@ -5,7 +5,7 @@
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "feature/picocalc-integration",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
+    "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out. Gate 7 is in progress: the standard template boots and reaches main, but variant B's PIO0 display path is not modelled yet."
   },
   "supported": [
     {
@@ -84,6 +84,13 @@
       "what": "A core parked on WFE wakes on an enabled pending interrupt, per ARMv6-M B1.5.18",
       "detail": "Required by the Pico SDK sleep idiom; without it an alarm-plus-WFE loop live-locks.",
       "since_gate": 2
+    },
+    {
+      "id": "flash-chip-commands",
+      "what": "SPI flash behind XIP_SSI answers the boot-time commands firmware asks the chip",
+      "detail": "Read Unique ID (0x4B), JEDEC ID (0x9F) and the two status registers. The FIFO level registers (TXFLR/RXFLR) track the reply queue, because the bootrom transfer loop reads those rather than the status flags. Required by pico_unique_id, which the standard template links and the official sample does not.",
+      "limitation": "Erase and program are deliberately absent: nothing in the conformance track writes flash, and a half-modelled program path would corrupt the XIP image rather than fail visibly.",
+      "since_gate": 7
     }
   ],
   "unsupported": [
@@ -105,7 +112,7 @@
     {
       "id": "bootrom-execution",
       "what": "Executing the real bootrom, including USB MSC boot",
-      "detail": "SSI is a stub and QSPI pads are not modelled, so boot uses the direct-boot shortcut instead."
+      "detail": "QSPI pads are not modelled, so boot uses the direct-boot shortcut. The SSI block itself now models flash command and response (see flash-chip-commands); what is absent is running the bootrom's own boot path."
     },
     {
       "id": "threaded-model",
@@ -116,6 +123,11 @@
       "id": "timing-fidelity",
       "what": "Cycle-accurate agreement with silicon",
       "detail": "Peripheral latencies are modelled where they change observable ordering, not calibrated against real hardware. Correlation against the device is Milestone 4."
+    },
+    {
+      "id": "lcd-variant-b",
+      "what": "The Canonical BSP default display path: PIO0, RGB565, LCD DMA off",
+      "detail": "Gate 2 modelled variant A (SPI1, RGB666) because that is what the official sample uses. The standard template uses variant B, whose transfers come out of PIO0 rather than the SSP, so it needs its own bus adapter. Modelling it is Gate 7's main work; until then a template build boots and reaches main but stalls waiting on PIO0's TX FIFO."
     }
   ]
 }

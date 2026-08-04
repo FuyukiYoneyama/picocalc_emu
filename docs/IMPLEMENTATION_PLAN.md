@@ -154,7 +154,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 | Gate 4: I2C keyboard controller | 完了 2026-08-04（キーecho確認） | `firmware-validation/records/gate4-20260804-01/` |
 | Gate 5: full application acceptance | 完了 2026-08-04（**HELLO-FULL達成**） | `firmware-validation/records/gate5-20260804-01/` |
 | Gate 6: `picocalc_emu` integration | 完了 2026-08-04（公開は時期未定・別管理） | `firmware-validation/records/gate6-20260804-01/` |
-| Gate 7: Canonical BSP B conformance | 未着手 | — |
+| Gate 7: Canonical BSP B conformance | **進行中**（下記§4.7に現在地） | — |
 
 ### Gate 0: 基準の固定（実機不要）
 
@@ -440,6 +440,49 @@ Lunaに渡せる）。変更可能な場所は`picocalc_emu`の`tools/`・`docs/
 template UF2の実行と判定。変更可能な場所はB用bus adapterとmodel拡張、
 および`firmware-validation/records/`。Gate固有の禁止はAとBの転送処理の
 統合、およびtemplate・BSP側の変更。
+
+#### 4.7 Gate 7の現在地（2026-08-04）
+
+着手前に洗い出した5つの未確定事項と、実地調査で判明したことを記録する。
+**Gate 7は進行中であり、未完了である。**
+
+| # | 未確定事項 | 状態 |
+|---|---|---|
+| 1 | 標準templateのBIN入手手順 | **手順確定・BIN取得済み**。`firmware-targets.json`への第2ターゲット登録は**未** |
+| 2 | 250 MHzへのPLL再設定 | **解決**。実測で`clock status=ok target_khz=250000 actual_khz=250000` |
+| 3 | 音声参照トーン（PWM＋DMA＋IRQ）の可否 | **未確認**（到達していない） |
+| 4 | SPI0 SD未対応時のtemplate挙動 | **未確認**（到達していない） |
+| 5 | B系統RAMRD（PIO停止→SIO切替→復帰） | **未確認**。前提のB系統LCD model自体が未実装 |
+
+BIN入手手順は次に確定した。UF2を保存しない規約は実機へ渡す成果物の版管理の
+ためのものであり、エミュレーターが読むBINとは無関係である。
+
+```sh
+python3 tools/picocalc.py new <Name> --output <dir>
+python3 tools/picocalc.py build --project <dir> --lcd-variant pio-rgb565 \
+  --build-timestamp YYYY-MM-DDTHH:MM:SSZ
+# 成果物: <dir>/build/picocalc_app.bin
+```
+
+**5点の外側で見つかり、解決したブロッカー:** 標準templateは`pico_unique_id`を
+含み、起動時のコンストラクタがフラッシュチップへRead Unique ID（`0x4B`）を
+発行する。XIPウィンドウからの読み出しではなくチップへの問い合わせであるため、
+SSIをstubしていたエミュレーターでは応答が返らず、bootromの転送ループが
+cycle 34,256で無限ループしていた。公式サンプルは`pico_unique_id`をリンクしない
+ため顕在化していなかった。`crates/rp2040-emu/src/bus/ssi_flash.rs`で
+コマンド／応答をモデル化して解決（backend commit `ab121f5`）。あわせて、
+bootromの転送ループがステータスフラグではなくFIFOレベルレジスタ
+（TXFLR/RXFLR）を読むこと、および`SSI_SR`がBUSYを立てっぱなしにしていた
+（実機はそうならず、転送完了待ちのファームウェアが必ずハングする）ことを修正した。
+
+**現在の停止位置:** `main()`到達（cycle 54,020）後、BOOT行3行と
+`[PICOCALC][LCD] variant=pio-rgb565`まで出力し、`write_command`内の
+**PIO0 FSTAT（TXEMPTY）待ち**で停止する。これはB系統のPIO0転送そのもので、
+上表の作業1（PIO0用bus adapter）が対象とする箇所である。
+
+**残作業の順序:** 3・4・5はいずれもB系統LCD modelの完成を前提とする。
+到達順は「B系統LCD model → 音声参照トーン → PSRAM/SD → RAMRD → app_status=pass」
+であり、途中を飛ばして観測することはできない。
 
 ## 5. Track A: 0.8.8実機台帳クローズ
 
