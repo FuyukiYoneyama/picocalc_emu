@@ -70,7 +70,7 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 | 段 | 手段 | 消す推測 | 状態 |
 |---|---|---|---|
 | 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | ソース・portable基盤は**実装済み**。0.8.8実機台帳はLCD/keyboard pending |
-| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | 公式サンプル（LCD A系統）は**縦断完了**（HELLO-FULL）。標準templateのB系統は未対応 |
+| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A系統（公式サンプル）とB系統（標準template）の**LCD・キー入力を観測可能**（Gate 0〜7完了）。SDは未対応 |
 | 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
 
 第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
@@ -104,15 +104,23 @@ I2Cキーボードのbattery/backlight、シナリオから投入したキーの
 観測までをPC上で確認でき、3回連続実行でUART・framebuffer・JSONがバイト一致します。
 記録は`firmware-validation/records/gate5-20260804-01/`にあります。
 
-**ただし、これで人間の実機検証がゼロになったわけではありません。** 到達したのは
-公式サンプルが使うLCD A系統（SPI1/RGB666）の経路です。標準templateが使う推奨
-デフォルトB系統（PIO0/RGB565/LCD DMA OFF）はエミュレーター側が未対応で、
-Gate 7の作業です。SPI0のSDカード、音声再生、multicoreも未対応です。したがって
-**AIが自作アプリを自力で検証できる段階には、まだ達していません。**
+**続いてGate 7も完了し、標準templateがエミュレーター上で検証できるようになりました。**
+`tools/picocalc.py new`で生成したプロジェクト（B系統: PIO0/RGB565/LCD DMA OFF）が
+起動し、250 MHzクロック設定、PIO0経由のLCD初期化と既知パターン描画、SIO bitbang
+経路でのGRAM readbackによる`app_status=pass`、音声参照トーンの正常動作までを
+PC上で確認できます。3回連続実行でreport・UART・PNGがバイト一致します。
 
-次の目標はGate 6（`picocalc_emu`統合の仕上げと公開条件）とGate 7
-（Canonical BSP B conformance）です。実装順と受入条件は
-[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と進捗は
+```sh
+python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
+```
+
+**ただし、人間の実機検証がゼロになったわけではありません。** SPI0のSDカードは
+未対応で、標準templateのSDスモークは初期化で停止します。multicoreと音声の実再生も
+未対応です。加えて、**実機の色・向き・可読性・聴感はエミュレーターでは判定できません。**
+したがってSDを使う機能と最終的な見た目の確認には、引き続き人間の実機検証が必要です。
+
+Milestone 1（Firmware backend）はこれで完了です。実装順と受入条件は
+[Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と経緯は
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
@@ -151,17 +159,18 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 
 ## 現在できないこと（これができないため、人間の実機検証がまだ必要です）
 
-- **標準templateのB系統（PIO0/RGB565）をエミュレーターで実行する**（Gate 7）
-- 仮想SDカード（SPI0 SD）やSPI/I2C故障を注入する
-- 音声再生・multicore・UF2直接ロードを扱う
+- **仮想SDカード（SPI0 SD）** — 標準templateのSDスモークは初期化で停止する
+- SPI/I2C故障の注入
+- 音声の実再生・multicore・UF2直接ロード
 - アプリロジックをPCネイティブ実行するhost backend（Milestone 2）
 - JSONシナリオによる再生と画面差分の自動判定（Milestone 3）
 - host合格と実機結果の相関を自動集計する（Milestone 4）
 
-**最初の項目が最も重要です。** 公式サンプル（A系統）は動きますが、AIが実際に書く
-アプリは標準templateのB系統を使うため、まだエミュレーターで検証できません。
-ここが埋まるまで、画面を見る役目は人間に残ります。実装順は
-[Milestones](docs/MILESTONES.md)、対応・未対応の詳細は
+**そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
+画面の向き、文字の可読性、音の聞こえ方です。エミュレーターは「firmwareが何を書いたか」
+は再現できますが、「人がそれをどう見るか」は再現しません。ここは人間に残ります。
+
+実装順は[Milestones](docs/MILESTONES.md)、対応・未対応の詳細は
 [capability manifest](firmware-validation/capability.json)にあります。
 
 ## Firmware backendの取り扱い
@@ -429,11 +438,12 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 **第一目的は、AIがPicoCalc向けプログラムを自ら観測・検証・修正できることです。**
 人間の実機検証回数は、その効果と予測精度を測る成果指標です。
-第1段（Canonical BSP）は整備済みで、第2段（エミュレーター）は公式サンプルの
-経路について観測できる段階まで来ました。ただしAIが実際に書くアプリが使う
-標準templateの経路（B系統）は未対応であり、**AIが自作アプリを自力で検証する**
-という第一目的にはまだ到達していません。そのため現時点でも、人間が画面を見る
-作業は残っています。
+第1段（Canonical BSP）は整備済みで、第2段（エミュレーター）はMilestone 1を完了し、
+**AIが自作アプリの画面とキー入力をPC上で検証できる**段階に到達しました。標準
+templateから生成したプロジェクトが、LCD描画とGRAM readbackまで通ります。
+
+ただし到達したのはそこまでです。SDを使う機能は未対応で、実機の色・向き・可読性・
+聴感はエミュレーターでは判定できません。**人間の実機検証はまだゼロになっていません。**
 
 到達度は感覚ではなく、変更単位に`host_pass`、`host_fail`、`hardware_pass`、
 `hardware_fail`、`hardware_required`を記録して測ります。ただし実機回数の削減より

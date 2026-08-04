@@ -237,13 +237,23 @@ hash/PNG取得、PSRAM内容の範囲検証、キーシナリオの投入、PWM�
 Gate 6（`picocalc_emu`統合）も完了し、`python3 tools/picocalc.py test --mode firmware`
 から固定commitのbackendを駆動できる。
 
-**Gate 7（Canonical BSP B conformance）は進行中である。** 標準templateは起動して
-`main()`へ到達し、BOOT行と250 MHzクロック設定（`actual_khz=250000`）を確認できる
-段階まで来たが、B系統（PIO0/RGB565）のLCD modelが未実装のため、LCD初期化の
-PIO0 FIFO待ちで停止する。音声参照トーン、SD、B系統RAMRDの挙動はいずれもこの先に
-あるため未確認である。現在地と残作業の順序は
-[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4.7、対応・未対応の一覧は
-`firmware-validation/capability.json`、証拠は`firmware-validation/records/`にある。
+**Gate 7（Canonical BSP B conformance）も完了した（2026-08-04）。**
+`tools/picocalc.py new`で生成した標準template（B: PIO0/RGB565/LCD DMA OFF）が
+エミュレーター上で起動し、次を確認できる。
+
+- `[PICOCALC][BOOT]`行と250 MHzクロック設定（`actual_khz=250000`）
+- PIO0経由のLCD初期化と既知パターン描画
+- SIO bitbang経路でのGRAM readbackによる`app_status=pass`（全色一致）
+- 音声参照トーンの`[PICOCALC][AUDIO][VERIFY] status=ok`（underrun 0）
+- 3回連続実行でreport・UART・PNGがバイト一致
+
+これによりA（公式サンプル）とB（標準template）の両系統がPC上で観測可能になった。
+**ただしSPI0のSDは未対応で、templateのSDスモークは`component=init status=begin`で
+停止する。** BSP側PSRAMドライバのverifyも、Gate 3のモデル較正が公式サンプルの
+設定に合わせてあるため失敗する。どちらも
+`firmware-validation/capability.json`へ未対応として記録している。経緯は
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4.7、証拠は
+`firmware-validation/records/`にある。
 
 また、次の機能は今後のエミュレーター段階である。
 

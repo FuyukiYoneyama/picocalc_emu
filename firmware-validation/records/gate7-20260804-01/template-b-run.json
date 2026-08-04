@@ -1,0 +1,55 @@
+{
+  "schema_version": 4,
+  "backend_commit": "gate7",
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "d6c4f8ae306c310632a3191801c4e1b378f49425e43e50ecb3b3d5abee8a33c6"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 600000000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 600000002,
+  "pc": "0x20000f40",
+  "exception": null,
+  "error": null,
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 47, "raset": 47, "ramwr": 41, "ramrd": 6,
+    "pixels_written": 876356, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "2d15fa6a8d3939cdbf3d36b6e5bfee00add71666e71e00af4e31f3e3f6a1343a", "non_black_pixels": 38592, "png": "fb.png"},
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [22, 0, 0, 0]}
+  ],
+  "uart": {"bytes": 5833, "sha256": "16d32e959b40ed3d8032736837f541b9c4a8ba73c5ba31323ca1e0773dfc4dec"}
+}

@@ -56,12 +56,18 @@ golden の対象が確定して手戻りが少ないためです。`DESIGN.md §
 
 ## Milestone 1: Firmware backend — `picocalc_helloworld` first
 
-**進行中（2026-08-04時点でGate 0〜5完了、HELLO-FULL達成）。** 無改変の公式
-`picocalc_helloworld`が`ExecutionModel::Serial`上でHELLO-FULLの8条件を満たした。
-残るはGate 6（`picocalc_emu`統合の仕上げと公開条件）とGate 7（Canonical BSP B
-conformance）であり、この2つを満たした時点でMilestone 1完了となる。
-Gate別の進捗表と証拠は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4と
+**Gate 0〜7完了（2026-08-04）。** 無改変の公式`picocalc_helloworld`が
+`ExecutionModel::Serial`上でHELLO-FULLの8条件を満たし、続いてCanonical BSPの
+推奨デフォルトB（PIO0/RGB565/LCD DMA OFF）で生成した標準templateが
+`[PICOCALC][LCD][VERIFY] app_status=pass`に到達した。Gate別の進捗表と証拠は
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4と
 `firmware-validation/records/`にある。
+
+完了条件のうち、継承済みSerial回帰の全合格とGate 7のB conformanceは満たしている。
+ただし本Milestoneが目指した「AIが自作アプリを自力で検証できる」状態には、
+SPI0のSD（templateのSDスモークが停止する）とBSP側PSRAMドライバの読み出し較正が
+残っている。これらの範囲は`firmware-validation/capability.json`に未対応として
+記録し、Milestone 5の拡張対象とする。
 
 Milestone 1の作業単位分解と実行計画は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)に
 定義する。

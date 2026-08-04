@@ -1,0 +1,73 @@
+[PICOCALC][BOOT] bsp=0.8.8 app=0.8.4-b-pio-rgb565-default variant=pio-rgb565 bsp_git=88a67ee7678c app_git=untracked build=2026-08-04T00:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=fail address=0x019040 bytes=24 mismatches=23 write_us=4 read_us=4
+[PICOCALC][PSRAM][PROBE] status=fail pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0000000000000000
+[PICOCALC][PSRAM][VERIFY] status=fail address=0x019040 bytes=24 mismatches=23 write_us=5 read_us=7
+[PICOCALC][PSRAM][PROBE] status=fail pio=1 sm=0 sysclk_khz=250000 clkdiv=3.00 spi_hz=41666668 fudge=0 id=0000000000000000
+[PICOCALC][PSRAM][VERIFY] status=fail address=0x019040 bytes=24 mismatches=23 write_us=3 read_us=3
+[PICOCALC][PSRAM][PROBE] status=fail pio=1 sm=0 sysclk_khz=250000 clkdiv=1.50 spi_hz=83333336 fudge=1 id=0000000000000000
+[PICOCALC][PSRAM] status=unavailable reason=no_safe_configuration
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=fixed_sine rate=48000 tone=1000 amp_db=-6 pwm_wrap=255 carrier=976562 dma_half=128 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=reference-fixed-sine output=1khz
+[PICOCALC][APP] version=0.8.4-b-pio-rgb565-default build=2026-08-04T00:00:00Z
+[PICOCALC][VERIFY] psram=unavailable sysclk_khz=250000 clkdiv=0.00 spi_hz=0
+[PICOCALC][AUDIO][VERIFY] mode=reference-fixed-sine status=ok rate=48000 carrier_hz=976562 irq=0 refill=2 sample_index=256 underruns=0 pwm_wrap=255 dma_half=128 ring=512
+[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard
+[PICOCALC][LCD][VERIFY] stage=solid_fill_begin samples=8,8:2x2 colors=0x0000,0xffff,0xf800,0x07e0,0x001f
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x0000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x0000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x0000 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=1 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=2 raw=0xffff value=0xffff
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xffff status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xf800 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xf800 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x07e0 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x001f value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x001f status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=pattern_begin pattern=known_regions width=320 height=320
+[PICOCALC][LCD][VERIFY] stage=end status=drawn regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=pattern_readback status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] app_status=pass
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete
+[PICOCALC][SD][SMOKE] stage=begin path=0:/PICOTEST.TXT sequence=mount,write,sync,close_write,read,compare,close_read,remove
+[PICOCALC][SD] component=detect status=present detail=0
+[PICOCALC][SD] component=init status=begin detail=0
