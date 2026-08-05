@@ -611,6 +611,13 @@ def load_firmware_registry() -> dict:
         checks = acceptance.get("report_checks")
         if not isinstance(checks, list) or not checks:
             raise ValueError("{}.acceptance.report_checks must be non-empty".format(where))
+        for digest_field in ("normalized_report_sha256", "timeline_sha256"):
+            if digest_field in acceptance and not is_sha256(acceptance[digest_field]):
+                raise ValueError(
+                    "{}.acceptance.{} must be a SHA-256".format(where, digest_field)
+                )
+        if "timeline_sha256" in acceptance and scenario is None:
+            raise ValueError("{}.acceptance.timeline_sha256 needs a scenario".format(where))
         for check_index, check in enumerate(checks):
             check_where = "{}.acceptance.report_checks[{}]".format(where, check_index)
             if (
@@ -634,6 +641,14 @@ def is_sha256(value) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(
         char in "0123456789abcdef" for char in value
     )
+
+
+def normalized_json_sha256(value: object) -> str:
+    """Hash compact UTF-8 JSON with recursively sorted object keys and a final LF."""
+    normalized = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ) + "\n"
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def is_git_commit(value) -> bool:
@@ -786,6 +801,7 @@ def firmware_test(
     lcd_variant: Optional[str],
     scenario_override: Optional[Path],
     snapshot_dir: Optional[Path],
+    uart_out: Optional[Path],
     json_out: Optional[Path],
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
@@ -915,6 +931,7 @@ def firmware_test(
 
     with tempfile.TemporaryDirectory(prefix="picocalc-r2-") as temporary:
         report_path = Path(temporary) / "report.json"
+        uart_path = Path(temporary) / "uart.bin"
         command = [
             str(runner),
             "--bin", str(firmware),
@@ -949,6 +966,8 @@ def firmware_test(
             snapshots.mkdir(parents=True, exist_ok=True)
             command.extend(["--scenario", str(scenario_path)])
             command.extend(["--snapshot-dir", str(snapshots)])
+        if uart_out is not None:
+            command.extend(["--uart", str(uart_path)])
 
         print("running {} on backend {}".format(target_id, actual_commit[:12]))
         try:
@@ -968,6 +987,12 @@ def firmware_test(
         if not isinstance(report, dict):
             print("runner report must be a JSON object")
             return 2
+        if uart_out is not None:
+            if not uart_path.is_file():
+                print("runner did not produce a UART log")
+                return 2
+            uart_out.parent.mkdir(parents=True, exist_ok=True)
+            uart_out.write_bytes(uart_path.read_bytes())
         if json_out is not None:
             json_out.parent.mkdir(parents=True, exist_ok=True)
             json_out.write_bytes(report_bytes)
@@ -987,6 +1012,29 @@ def firmware_test(
         {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
     ]
     failures = check_report(report, required_checks + target["acceptance"]["report_checks"])
+    expected_report_sha = target["acceptance"].get("normalized_report_sha256")
+    if expected_report_sha is not None:
+        actual_report_sha = normalized_json_sha256(report)
+        if actual_report_sha != expected_report_sha:
+            failures.append(
+                "normalized report SHA-256 expected {} but got {}".format(
+                    expected_report_sha, actual_report_sha
+                )
+            )
+    expected_timeline_sha = target["acceptance"].get("timeline_sha256")
+    if expected_timeline_sha is not None:
+        scenario_report = report.get("scenario")
+        actual_timeline_sha = None
+        if not isinstance(scenario_report, dict) or "steps" not in scenario_report:
+            failures.append("scenario.steps is missing")
+        else:
+            actual_timeline_sha = normalized_json_sha256(scenario_report["steps"])
+        if actual_timeline_sha is not None and actual_timeline_sha != expected_timeline_sha:
+            failures.append(
+                "scenario timeline SHA-256 expected {} but got {}".format(
+                    expected_timeline_sha, actual_timeline_sha
+                )
+            )
     verdict_status = report.get("verdict", {}).get("status")
     expected_code = {"pass": 0, "fail": 1, "cannot_judge": 2}.get(verdict_status)
     if expected_code is None:
@@ -1010,6 +1058,8 @@ def firmware_test(
         print("framebuffer {}".format(report["framebuffer"].get("rgb565_sha256")))
     if json_out is not None:
         print("report written to {}".format(json_out))
+    if uart_out is not None:
+        print("UART written to {}".format(uart_out))
     if any(failure.endswith(" is missing") or failure.endswith(" has no length")
            for failure in failures):
         print("runner report is missing required structured fields:")
@@ -1209,6 +1259,12 @@ def main() -> int:
         help="firmware mode: preserve scenario snapshots in this directory",
     )
     test_parser.add_argument(
+        "--uart",
+        dest="uart_out",
+        type=Path,
+        help="firmware mode: preserve the raw UART0 byte stream",
+    )
+    test_parser.add_argument(
         "--sd",
         action="store_true",
         default=None,
@@ -1292,9 +1348,10 @@ def main() -> int:
                 or args.lcd_variant is not None
                 or args.scenario is not None
                 or args.snapshot_dir is not None
+                or args.uart_out is not None
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--sd/--sd-format are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-format are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -1311,6 +1368,7 @@ def main() -> int:
             args.lcd_variant,
             args.scenario,
             args.snapshot_dir,
+            args.uart_out,
             args.json_out,
         )
     if args.command == "verify":

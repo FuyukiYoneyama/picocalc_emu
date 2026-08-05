@@ -38,6 +38,19 @@ class ToolTests(unittest.TestCase):
         specification.loader.exec_module(module)
         return module
 
+    def test_normalized_json_sha256_is_order_independent_and_utf8(self):
+        module = self.load_picocalc_module()
+        left = {"z": [2, 1], "a": {"日本語": True}}
+        right = {"a": {"日本語": True}, "z": [2, 1]}
+        self.assertEqual(
+            module.normalized_json_sha256(left),
+            module.normalized_json_sha256(right),
+        )
+        expected = hashlib.sha256(
+            '{"a":{"日本語":true},"z":[2,1]}\n'.encode("utf-8")
+        ).hexdigest()
+        self.assertEqual(module.normalized_json_sha256(left), expected)
+
     def make_firmware_fixture(self, temporary, with_scenario=True):
         root = Path(temporary)
         backend = root / "backend"
@@ -136,11 +149,16 @@ report = {
     "unsupported_mmio": [],
     "unsupported_mmio_truncated": False,
     "verdict": {"status": status},
+    "scenario": {"steps": []},
     "probe": "ok",
 }
 if mode == "missing-field":
     del report["backend_build"]
+if mode == "missing-timeline":
+    del report["scenario"]
 report_path.write_text(json.dumps(report), encoding="utf-8")
+if "--uart" in args:
+    Path(value("--uart")).write_bytes(b"UART fixture\\n")
 raise SystemExit(code)
 """, encoding="utf-8")
         runner.chmod(0o755)
@@ -151,7 +169,7 @@ raise SystemExit(code)
             target_id="fixture", firmware=firmware, backend_dir=backend,
             cycles=None, keys=None, sd=None, sd_format=None,
             lcd_variant=None, scenario_override=scenario, snapshot_dir=None,
-            json_out=None,
+            uart_out=None, json_out=None,
         )
         arguments.update(overrides)
         with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
@@ -763,20 +781,25 @@ raise SystemExit(code)
     def test_r2_target_drives_the_complete_runner_command(self):
         module = self.load_picocalc_module()
         with tempfile.TemporaryDirectory() as temporary:
-            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(
+                temporary
+            )
             output = Path(temporary) / "accepted.json"
+            uart = Path(temporary) / "accepted.uart"
             result = self.run_firmware_fixture(
-                module, backend, firmware, scenario, registry, json_out=output
+                module, backend, firmware, scenario, registry,
+                json_out=output, uart_out=uart,
             )
             self.assertEqual(result, 0)
             self.assertTrue(output.is_file())
+            self.assertEqual(uart.read_bytes(), b"UART fixture\n")
             argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
             for item in (
                 "--lcd-variant", "hwspi-rgb888", "--quantum", "1",
                 "--psram", "--psram-verify-range", "0:16", "--keyboard",
                 "--keys", "HI", "--sd", "--sd-format", "fat32",
                 "--scenario", "--expect-stop", "scenario_done", "--expect-uart", "READY",
-                "--snapshot-dir",
+                "--snapshot-dir", "--uart",
             ):
                 self.assertIn(item, argv)
 
@@ -791,6 +814,9 @@ raise SystemExit(code)
                 lambda value: value["runner"].update(cycles=True),
                 lambda value: value["acceptance"]["report_checks"].append(
                     {"path": "items", "op": "length_eq", "value": True}
+                ),
+                lambda value: value["acceptance"].update(
+                    normalized_report_sha256="not-a-sha"
                 ),
             )
             for mutate in mutations:
@@ -861,6 +887,47 @@ raise SystemExit(code)
                 self.assertEqual(self.run_firmware_fixture(
                     module, backend, firmware, scenario, registry
                 ), expected)
+
+    def test_r3_target_pins_normalized_report_and_timeline(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            first_report = Path(temporary) / "first.json"
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry, json_out=first_report
+            ), 0)
+            report = json.loads(first_report.read_text(encoding="utf-8"))
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            acceptance = document["targets"][0]["acceptance"]
+            normalized_report_sha = module.normalized_json_sha256(report)
+            acceptance["normalized_report_sha256"] = normalized_report_sha
+            acceptance["timeline_sha256"] = module.normalized_json_sha256(
+                report["scenario"]["steps"]
+            )
+            registry.write_text(json.dumps(document), encoding="utf-8")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry
+            ), 0)
+
+            acceptance["normalized_report_sha256"] = "0" * 64
+            registry.write_text(json.dumps(document), encoding="utf-8")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry
+            ), 1)
+            acceptance["normalized_report_sha256"] = normalized_report_sha
+            registry.write_text(json.dumps(document), encoding="utf-8")
+
+            (backend / "mode").write_text("missing-timeline", encoding="utf-8")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry
+            ), 2)
+            (backend / "mode").unlink()
+
+            acceptance["timeline_sha256"] = "0" * 64
+            registry.write_text(json.dumps(document), encoding="utf-8")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry
+            ), 1)
 
 
 if __name__ == "__main__":

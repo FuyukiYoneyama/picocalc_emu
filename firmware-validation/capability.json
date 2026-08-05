@@ -146,6 +146,13 @@
       "since_gate": "R2"
     },
     {
+      "id": "picotetris-r3-regression",
+      "what": "Formal PicoTetris application regression across native game logic and the RP2040 firmware path",
+      "detail": "The game rules are hardware-free and covered by 666 native checks. Target picotetris-r3 pins source/BSP/toolchain/BIN/backend/FAT32/scenario/report expectations. Two fresh builds produced identical BIN and UF2 payloads; three firmware runs produced identical UART, RGB565 framebuffer, PNG, raw and normalized reports, and 85-step timelines while clearing 13 lines for score 1400 with 362 delivered and zero dropped key events.",
+      "limitation": "R3 is emulator evidence. CI wiring is R4 and correlation of the exact registered BIN SHA on a physical PicoCalc is R5.",
+      "since_gate": "R3"
+    },
+    {
       "id": "host-backend",
       "what": "The BSP's public API built against host models, so application logic runs natively",
       "detail": "Lives in picocalc_emu under bsp/host and does not use this emulator. display is a framebuffer, keyboard a bounded queue, psram host memory, sdcard an array of sectors; the filesystem layer and ChanFatFS are the device's own sources compiled unchanged on top of the RAM block device. sleep_ms advances a virtual clock rather than blocking. Run with `picocalc.py test --mode host`; bsp/host/tests/emu_smoke.cpp is Milestone 2's completion condition and its output is byte-identical across runs.",

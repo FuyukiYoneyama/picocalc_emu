@@ -165,8 +165,8 @@ RP2040バイナリを作らずに1秒未満で検査できるようにします�
 詳細は[`HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
 
 現行`test --mode host`はBSPの専用`emu_smoke`を実行します。Host backendが完成したことは、
-PicoTetrisなど任意アプリのロジック試験が既に接続済みという意味ではありません。
-アプリ固有のpure logic testは個別に追加します。
+任意アプリのロジック試験が自動接続されるという意味ではありません。PicoTetrisはR3で
+hardware-freeなゲーム規則へ分離し、666 checksの個別host unit testを追加しました。
 
 このscenarioの実装中、エミュレーター側の欠陥も1件見つかりました。キーボード
 モデルのFIFOに上限がなく、滞留が32の倍数に達するとBSPの`key_info[0] & 0x1f`が0を
@@ -179,10 +179,11 @@ PicoTetrisなど任意アプリのロジック試験が既に接続済みとい�
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
-conformance）、上位CLI/target registry（R2）は完了しました。次の作業はPicoTetris回帰
-（R3）、CI、同一BIN実機相関の順に進めます。keyboard conformanceの固定内容は
+conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
+次はCI、同一BIN実機相関の順に進めます。R3の全SHAと受入結果は
+[`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r2完了反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r3完了反映)が正典です。
 
 ## 読む順番
 
@@ -330,8 +331,9 @@ python3 tools/picocalc.py build --project ../MyApp \
 ### UF2と版管理の運用規約
 
 PicoCalcではUF2をSDカードへコピーして使うため、同じプロジェクト内でUF2の
-ファイル名を変更しない。生成物の名前は常に`build/picocalc_app.uf2`とし、
-検証版・分岐版でもこの名前を維持する。UF2自体はリポジトリやプロジェクトの
+ファイル名を変更しない。標準templateの生成物は`build/picocalc_app.uf2`、PicoTetrisは
+`build/PicoTetris.uf2`に固定し、検証版・分岐版でもプロジェクト内の名前を維持する。
+UF2自体はリポジトリやプロジェクトの
 成果物として保存せず、必要なときに対象コミットから生成する。通常ビルドは
 ビルド時刻を埋め込むためSHA-256が変わり得る。実機記録など再現性が必要な
 証拠ビルドでは、`--build-timestamp YYYY-MM-DDTHH:MM:SSZ`を指定し、同じ
@@ -516,6 +518,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [Scenario runner](docs/SCENARIO_RUNNER.md) — JSON scenarioの形式、条件付きキー投入、画面の機械判定
 - [Host backend](docs/HOST_BACKEND.md) — アプリロジックをホストのモデルに対してビルドし単体試験する
 - [R0 baseline](docs/R0_BASELINE.md) — 開始点、生成契約、PicoTetris source identityと再取得bundle
+- [R3 PicoTetris正式回帰](docs/R3_PICOTETRIS_REGRESSION.md) — host logic、再現可能build、firmware 3回決定性と現行bundle
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系
@@ -546,8 +549,9 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 templateから生成したプロジェクトが、LCD描画とGRAM readbackまで通ります。
 
 LCD、PSRAM、SD、keyboardを使う標準templateと、条件付きscenarioまでPC上で観測できます。
-ただし上位CLIの厳密な自動合否、個別アプリのhost unit test、継続CIへのtarget登録は
-hardening中です。また実機の色・向き・可読性・聴感はエミュレーターでは判定できません。
+上位CLIのfail-closed判定とtarget registryはR2、PicoTetrisの個別host unit testと正式targetは
+R3で完了しました。継続CIへの接続はR4です。また実機の色・向き・可読性・聴感は
+エミュレーターでは判定できません。
 **人間の実機検証はまだゼロになっていません。**
 
 到達度は感覚ではなく、変更単位に`host_pass`、`host_fail`、`hardware_pass`、

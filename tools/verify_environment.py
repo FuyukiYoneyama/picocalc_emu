@@ -1211,6 +1211,218 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     verify_host_backend(checks, root)
     verify_release_conditions(checks, root)
     verify_r0_contract(checks, root)
+    verify_r3_contract(checks, root)
+
+
+def verify_r3_contract(checks: List[Check], root: Path) -> None:
+    """Verify the portable R3 target, evidence record and recovery bundle."""
+    try:
+        manifest = load_json(root / "provenance/picotetris-r3.json")
+        record = load_json(
+            root / "firmware-validation/records/r3-20260806-01/report.json"
+        )
+        registry = picocalc.load_firmware_registry()
+        target = next(
+            item for item in registry["targets"] if item["id"] == "picotetris-r3"
+        )
+        bundle_contract = manifest["bundle"]
+        source_commit = manifest["regression_source_commit"]
+        target_checks = {
+            check["path"]: check["value"]
+            for check in target["acceptance"]["report_checks"]
+        }
+        aligned = (
+            manifest.get("schema_version") == 1
+            and manifest.get("record_id") == "picotetris-r3-provenance"
+            and manifest.get("remote") is None
+            and re.fullmatch(r"[0-9a-f]{40}", source_commit) is not None
+            and target.get("status") == "active"
+            and target["source"].get("commit") == source_commit
+            and target["artifacts"].get("bin_sha256")
+            == record.get("build", {}).get("bin_sha256")
+            and target["artifacts"].get("uf2_sha256")
+            == record.get("build", {}).get("uf2_sha256")
+            and target["backend"].get("accepted")
+            == record.get("firmware_regression", {}).get("backend_commit")
+            and target["backend"].get("report_schema")
+            == record.get("firmware_regression", {}).get("report_schema")
+            and target.get("scenario", {}).get("sha256")
+            == record.get("firmware_regression", {}).get("scenario_sha256")
+            and target["source"].get("bsp")
+            == manifest.get("bsp", {}).get("version")
+            == record.get("source", {}).get("bsp_version")
+            and target["source"].get("bsp_source_commit")
+            == manifest.get("bsp", {}).get("source_commit")
+            == record.get("source", {}).get("bsp_source_commit")
+            and target["source"].get("bsp_tree_sha256")
+            == manifest.get("bsp", {}).get("tree_sha256")
+            == record.get("source", {}).get("bsp_tree_sha256")
+            and target_checks.get("uart.sha256")
+            == record.get("firmware_regression", {}).get("uart_sha256")
+            and target_checks.get("framebuffer.rgb565_sha256")
+            == record.get("firmware_regression", {}).get(
+                "framebuffer_rgb565_sha256"
+            )
+            and target["acceptance"].get("normalized_report_sha256")
+            == record.get("firmware_regression", {}).get("normalized_report_sha256")
+            and target["acceptance"].get("timeline_sha256")
+            == record.get("firmware_regression", {}).get("timeline_sha256")
+            and record.get("source", {}).get("commit") == source_commit
+            and record.get("provenance", {}).get("bundle_sha256")
+            == bundle_contract.get("sha256")
+            and bundle_contract.get("complete_history") is True
+            and record.get("result") == "pass"
+            and record.get("firmware_regression", {}).get("runs") == 3
+            and record.get("firmware_regression", {}).get("passes") == 3
+            and record.get("firmware_regression", {}).get(
+                "all_compared_outputs_identical"
+            )
+            is True
+        )
+        add_check(
+            checks,
+            "r3:picotetris-contract",
+            aligned,
+            source_commit=source_commit,
+            target=target.get("id"),
+        )
+
+        bundle = root / bundle_contract["path"]
+        expected_hash = bundle_contract["sha256"]
+        actual_hash = sha256(bundle) if bundle.is_file() else "missing"
+        bundle_head = ""
+        if bundle.is_file():
+            completed = subprocess.run(
+                ["git", "bundle", "list-heads", str(bundle), bundle_contract["ref"]],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if completed.returncode == 0 and completed.stdout.split():
+                bundle_head = completed.stdout.split()[0]
+        add_check(
+            checks,
+            "r3:picotetris-bundle",
+            actual_hash == expected_hash and bundle_head == bundle_contract["head"],
+            expected=expected_hash,
+            actual=actual_hash,
+            expected_head=bundle_contract["head"],
+            actual_head=bundle_head or "missing",
+        )
+
+        run_problems: List[str] = []
+        raw_hashes = []
+        normalized_hashes = []
+        timeline_hashes = []
+        uart_hashes = []
+        png_hashes = []
+        expected_run = record["firmware_regression"]
+        for run_number in range(1, 4):
+            run_dir = (
+                root
+                / "firmware-validation/records/r3-20260806-01/runs"
+                / "run-{}".format(run_number)
+            )
+            report_path = run_dir / "report.json"
+            uart_path = run_dir / "uart.log"
+            png_path = run_dir / "tetris-line-clear.png"
+            if not all(path.is_file() for path in (report_path, uart_path, png_path)):
+                run_problems.append("run-{} artifacts missing".format(run_number))
+                continue
+            run_report = load_json(report_path)
+            raw_hashes.append(sha256(report_path))
+            normalized_hashes.append(picocalc.normalized_json_sha256(run_report))
+            timeline_hashes.append(
+                picocalc.normalized_json_sha256(run_report["scenario"]["steps"])
+            )
+            uart_hashes.append(sha256(uart_path))
+            png_hashes.append(sha256(png_path))
+            if (
+                run_report.get("verdict", {}).get("status") != "pass"
+                or run_report.get("scenario", {}).get("status") != "pass"
+                or len(run_report.get("scenario", {}).get("steps", [])) != 85
+                or run_report.get("uart", {}).get("sha256") != sha256(uart_path)
+                or run_report.get("framebuffer", {}).get("rgb565_sha256")
+                != expected_run["framebuffer_rgb565_sha256"]
+            ):
+                run_problems.append("run-{} report/artifact mismatch".format(run_number))
+        expected_sets = (
+            (raw_hashes, expected_run["raw_report_sha256"], "raw report"),
+            (
+                normalized_hashes,
+                expected_run["normalized_report_sha256"],
+                "normalized report",
+            ),
+            (timeline_hashes, expected_run["timeline_sha256"], "timeline"),
+            (uart_hashes, expected_run["uart_sha256"], "UART"),
+            (png_hashes, expected_run["snapshot_png_sha256"], "PNG"),
+        )
+        for digests, expected_digest, label in expected_sets:
+            if len(digests) != 3 or set(digests) != {expected_digest}:
+                run_problems.append("{} digests differ".format(label))
+        add_check(
+            checks,
+            "r3:firmware-run-evidence",
+            not run_problems,
+            runs=len(raw_hashes),
+            errors=run_problems,
+        )
+
+        source_available = False
+        source_is_ancestor = False
+        clone_head = ""
+        if bundle.is_file():
+            with tempfile.TemporaryDirectory(prefix="picotetris-r3-bundle-") as temporary:
+                checkout = Path(temporary) / "picotetris"
+                cloned = subprocess.run(
+                    ["git", "clone", "-q", "-b", "main", str(bundle), str(checkout)],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if cloned.returncode == 0:
+                    head_result = subprocess.run(
+                        ["git", "-C", str(checkout), "rev-parse", "HEAD"],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    clone_head = head_result.stdout.strip()
+                    source_available = subprocess.run(
+                        ["git", "-C", str(checkout), "cat-file", "-e", source_commit],
+                        capture_output=True,
+                        check=False,
+                    ).returncode == 0
+                    source_is_ancestor = subprocess.run(
+                        [
+                            "git", "-C", str(checkout), "merge-base", "--is-ancestor",
+                            source_commit, bundle_contract["head"],
+                        ],
+                        capture_output=True,
+                        check=False,
+                    ).returncode == 0
+        add_check(
+            checks,
+            "r3:picotetris-bundle-recovery",
+            clone_head == bundle_contract["head"]
+            and source_available
+            and source_is_ancestor,
+            expected_head=bundle_contract["head"],
+            actual_head=clone_head or "missing",
+            source_commit=source_commit,
+            source_available=source_available,
+            source_is_ancestor=source_is_ancestor,
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        AttributeError,
+    ) as error:
+        add_check(checks, "r3:picotetris-contract", False, **error_details(error))
 
 
 def verify_r0_contract(checks: List[Check], root: Path) -> None:

@@ -12,18 +12,18 @@
 ライン消去が**一度も走らなかった**と記録している。このscenarioはそれを走らせる。
 
 ```sh
-picocalc-run --bin picocalc_app.bin \
-  --board picocalc --lcd-variant pio-rgb565 --psram --sd \
-  --scenario scenarios/tetris-line-clear.json \
-  --snapshot-dir out/ --cycles 8000000000 --json out/report.json
+python3 tools/picocalc.py test --mode firmware \
+  --target picotetris-r3 --firmware <PicoTetris.bin> \
+  --backend-dir <picoem-picocalc> \
+  --snapshot-dir out/ --json out/report.json
 ```
 
 結果は13ライン消去、スコア1400。所要は仮想3.7秒、実時間で約1分。
 
 ### 配置をどう決めたか
 
-ゲームの乱数は種を固定したxorshiftで、`spawn()`はその純関数である。つまり
-**ピース列は事前に分かる**。`tools/plan_tetris.py`は`app/main.cpp`の規則
+ゲームの乱数は種を固定したxorshiftで、`spawn()`は状態を更新するが決定的である。つまり
+**ピース列は事前に分かる**。`tools/plan_tetris.py`はPicoTetrisの`src/game.cpp`の規則
 （同じ形状表、同じ衝突判定、同じ壁蹴り順）をPythonへ書き写し、各ピースの置き場所を
 定石のヒューリスティック（消去数・穴・高さ・凸凹）で選び、そこへ至るキー列を出力する。
 
@@ -40,7 +40,7 @@ scenarioを書かずに落とす。
 21キー＝42イベントになった。キーボードコントローラは31イベントしか保持できないため
 （`SCENARIO_RUNNER.md`「コントローラの深さ」節）、末尾は捨てられていた。
 
-現在は必要な回数だけ動かすので、最長でも8キー＝16イベントに収まる。プランナーは
+現在は必要な回数だけ動かすので、最長でも9キー＝18イベントに収まる。プランナーは
 出力前にこの上限を検査し、超えたら落ちる。
 
 ### このscenarioが見つけたもの
@@ -56,7 +56,7 @@ scenarioを書かずに落とす。
 python3 scenarios/tools/plan_tetris.py <ドロップ数> <ドロップ間の待ち ms> > out.json
 ```
 
-対象は`build/tetris`のPicoTetris（`~/pico_dvl/codex/picotetris`）である。ゲーム側の
+対象は`~/pico_dvl/codex/picotetris`のPicoTetrisである。ゲーム側の
 形状表・乱数種・重力周期のいずれかが変われば、プランナーもそれに合わせないと
 予測スコアの`assert`が落ちる。**落ちるのは正しい**。それが、この2つが同じ規則を
 見ているという主張の担保である。

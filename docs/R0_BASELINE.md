@@ -55,7 +55,7 @@ PicoTetrisには意図的にremoteを設けない。代わりに完全履歴を�
 `provenance/picotetris-r0.bundle`を保存し、SHA-256をmanifestに固定した。再取得は次で行う。
 
 ```sh
-git clone provenance/picotetris-r0.bundle /tmp/picotetris-r0
+git clone -b main provenance/picotetris-r0.bundle /tmp/picotetris-r0
 git -C /tmp/picotetris-r0 rev-parse HEAD
 ```
 

@@ -42,7 +42,7 @@ Firmware backendを分割したものであり、本書と競合しません。
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
 
-## 現在の実行順序（2026-08-06 R2完了反映）
+## 現在の実行順序（2026-08-06 R3完了反映）
 
 以下は新しいMilestone体系ではありません。完了済みMilestone 0〜3を再現可能な
 継続回帰として固め、Milestone 4の継続相関へ進むための作業パッケージです。
@@ -65,7 +65,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R0 | 基準点・生成契約・provenanceの固定 | `picocalc_emu`、`picotetris` | 開始baselineとして3リポジトリのcommitと合否契約schemaを記録する。生成後metadataのBSP版が`bsp/VERSION`と一致し、必要なlicense/noticesとローカル参照が揃う。PicoTetrisを固定source identityから再取得できる | **完了（2026-08-05）** |
 | R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **完了 2026-08-05**。R1-SD、verdict、公式keyboard conformanceを完了 |
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
-| R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | R2後 |
+| R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | **完了 2026-08-06**。666 host checks、再現可能BIN/UF2、active target、3回決定一致 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | R3後 |
 | R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | R4後 |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | R5後 |
@@ -212,7 +212,25 @@ LCD/SD/READY marker、drop 0、unknown SD/MMIO 0、schema 8 verdict passを確�
 scenario、backend、LCD variant、missing/malformed/stale reportの異常系も回帰試験に固定した。
 公式A targetも同じCLIで95億cycleを完走し、PSRAM 8,388,608 byte全一致、keyboard 4 event、
 必須marker不足0、exception/MMIO 0でpassした。これによりactive A/Bの両方を現行pinで実証した。
-証跡は`firmware-validation/records/r2-20260806-01/`にある。次はR3である。
+証跡は`firmware-validation/records/r2-20260806-01/`にある。後続のR3も完了した。
+
+### R3実装結果（2026-08-06）
+
+PicoTetrisのゲーム規則と状態をBSP-freeな`game.h`/`game.cpp`へ分離し、描画・UART・BSPだけを
+`app/main.cpp`へ残した。666 host checksで全7形状×4回転、各境界・占有衝突、回転と壁蹴り、
+1〜4ラインの100/300/500/800点、固定seed、game-over、`R` restart、gravity tick resetを合格した。
+この分離により、restart後も旧poll tickを引き継ぐ欠陥を修正した。
+
+source commit `fed84f358d7dcadb1457752e687355ddb1875c48`を別々のclean cloneから固定toolchain・
+timestampでbuildし、BIN `0784d80d...46e62`とUF2 `44ec6227...e274`がbyte-identicalになった。
+絶対build pathを含むELFは一致しないため、その再現性は主張しない。
+
+`picotetris-r3`をactive firmware targetへ登録し、backend `0d434d789ed2...`で同じscenarioを
+3回実行した。3回とも85/85、13 lines、score 1400、key 362/0、exception/error/MMIO 0で、
+UART、RGB565、PNG、raw/正規化report、85-step timelineが一致した。remoteを持たない方針は
+維持し、`provenance/picotetris-r3.bundle`へR3完全履歴を追加した。詳細と全SHAは
+[`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)、機械可読証跡は
+`firmware-validation/records/r3-20260806-01/`にある。次はR4である。
 
 ## Milestone 0: Canonical BSP — implemented
 
@@ -310,9 +328,8 @@ Milestone 5へ明示的に繰り延べる。
 両者は直接比較できる。**firmware backendが権威であることは変わらない**。PIO・DMA・
 I2C・割り込み・LCDのwire形式はhostに存在しない。
 
-ここで完了したのはhost device modelと専用`emu_smoke`です。PicoTetrisの
-`clear_lines()`や衝突判定はまだhost testへ接続されていないため、アプリ固有の単体試験は
-R3で行います。
+ここで完了したのはhost device modelと専用`emu_smoke`です。後続R3ではPicoTetrisの
+ゲーム規則をhardware-freeに分離し、アプリ固有の666 host checksへ接続しました。
 
 ## Milestone 3: Scenario runner
 
@@ -342,8 +359,8 @@ JUnit形式の出力が要る見込み。Milestone 3の中核完了条件はscen
 **一部完了。** Gate 7と同一ソース・同一設定のUF2を実機で3回確認し、BOOT、250 MHz、
 LCD `app_status=pass`、GRAM readback、audioの一致を記録しました。そこで見つかった
 PSRAMとSDのmodel gapも解消済みです。ただし、この記録のBINは現在の生成契約から
-一意に再生成できず、PicoTetrisも継続回帰targetとして未登録です。R0〜R4で現行成果物を
-固定した後、R5で同一BIN SHAによる相関を追加します。
+一意に再生成できない時点証拠です。後続R3で現行PicoTetrisを再現可能buildとactive targetへ
+固定しました。R4のCI接続後、R5で同一BIN SHAによる相関を追加します。
 
 - 実機SPI/I2C/UART trace採取
 - host traceとのgolden比較

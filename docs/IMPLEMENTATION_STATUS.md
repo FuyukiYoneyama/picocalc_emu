@@ -13,7 +13,9 @@ R0の生成契約・source identity固定は完了した。schema 2 metadata、�
 実体SHA-256、license/notices、PicoTetrisの履歴復元とGit bundleを
 [`R0_BASELINE.md`](R0_BASELINE.md)に記録している。R1はSD/FAT32、verdict、公式keyboard
 firmware conformanceを完了し、R2でschema 2 target registry、schema 8 backend build identity、
-上位Firmware CLIのfail-closed接続まで完了した。次の未完了作業はR3のPicoTetris正式回帰化である。
+上位Firmware CLIのfail-closed接続まで完了した。R3ではPicoTetrisの666 host checks、
+再現可能BIN/UF2、active firmware target、3回決定性回帰まで完了した。次の未完了作業はR4の
+品質ゲートとCIである。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -104,9 +106,9 @@ PSRAMの実用例は`examples/psram.cpp`で、`picocalc::psram::Buffer`が領域
 
 ## UF2と実機検証の版管理規約
 
-PicoCalcのUF2はSDカードへコピーして使用するため、プロジェクト内のUF2名は
-常に`build/picocalc_app.uf2`で固定する。検証版やブランチ版でもファイル名を
-変更せず、UF2そのものは保存しない。
+PicoCalcのUF2はSDカードへコピーして使用するため、同じプロジェクト内のUF2名を固定する。
+標準templateは`build/picocalc_app.uf2`、PicoTetrisは`build/PicoTetris.uf2`とし、検証版や
+ブランチ版でもそれぞれの名前を変更しない。UF2そのものは保存しない。
 専用HV-1診断は別プロジェクトであり、そのプロジェクト内では
 `diagnostics/bsp-quality/build/PicoCalc_BSP_Diagnostic.uf2`に常に固定する。
 どちらもビルドごとに名前を変えない。
@@ -372,8 +374,8 @@ python3 tools/picocalc.py test --mode host
   hostのファイルシステム試験は代用品ではなく出荷するコードを動かしている
 
 これはhost基盤と専用`emu_smoke`の合格である。任意アプリのソースが自動的に
-`test --mode host`へ接続されるわけではない。PicoTetrisのライン消去・衝突判定など、
-アプリ固有のhost unit testはR3で追加する。
+`test --mode host`へ接続されるわけではない。PicoTetrisについては後続R3で
+ライン消去・衝突・回転・seed・resetを666 checksの独立host unit testへ追加した。
 
 **まだできないこと:** directory-backed Fast SDモードは未実装（カードはホストメモリ上の
 セクタ配列）。multicore・割り込み・DMA・PIOは存在しない。LCDのwire形式の違い（A/B）も

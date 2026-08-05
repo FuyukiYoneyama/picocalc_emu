@@ -30,9 +30,9 @@
 > **その後（2026-08-05）:** 穴1・2・4はscenario runnerで解消した。詳細は
 > [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)、証拠は
 > `firmware-validation/records/milestone3-20260805-01/`。穴3については**host device modelと
-> 専用`emu_smoke`の基盤が完成**した。ただしPicoTetris自身のライン消去・衝突判定を
-> 呼び出すhost unit testはまだ無い。基盤完成とアプリ接続完了を区別し、後者は
-> `MILESTONES.md`のR3で行う。各節の末尾に後続状態を追記した。
+> 専用`emu_smoke`の基盤が完成**した。その後R3（2026-08-06）でPicoTetris自身の
+> hardware-free game logicと666 host checks、再現可能build、正式firmware targetまで
+> 完了した。基盤完成とアプリ接続完了を区別したうえで、両方が現在は揃っている。
 
 ### 1. キー入力のタイミングを制御できない（最も重い）
 
@@ -89,8 +89,9 @@
 > ビルドする。`python3 tools/picocalc.py test --mode host`で1秒未満で走る。
 > 詳細は[`HOST_BACKEND.md`](HOST_BACKEND.md)。
 >
-> このコマンドが現在走らせるのは汎用`emu_smoke`であり、PicoTetrisの
-> `clear_lines()`や`collides()`を直接試験しない。アプリ固有の穴はR3へ残る。
+> このコマンドが走らせるのは汎用`emu_smoke`であり、任意アプリの試験を自動登録しない。
+> PicoTetrisは後続R3で別のnative targetを持ち、`clear_lines()`相当、全形状・回転・衝突、
+> score、seed、game-over/resetを666 checksで直接試験するようになった。
 > ただし**firmware backendが権威である**ことは
 > 変わらない。hostにはPIO・DMA・I2C・割り込みが無く、ハードウェアの挙動は
 > 問いとして成立しない。両者を繋ぐのはframebuffer digestで、正規形が同一なので
@@ -134,6 +135,11 @@
 > provenance、アプリ固有host unit test、再現可能BIN、target registry/CLI、CIがさらに必要と
 > 判明した。これは当時の観察を取り消すものではなく、基盤を実運用へ接続する次段階である。
 > 順序と受入条件は`MILESTONES.md`のR0〜R4を正典とする。
+>
+> **R3完了（2026-08-06）:** source `fed84f358d...`からBIN/UF2を2回再現し、
+> `picotetris-r3` targetでscenarioを3回実行した。3回とも85/85、13 lines、score 1400、
+> key 362/drop 0で、UART・framebuffer・PNG・report・timeline SHAが一致した。詳細は
+> [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)にある。CI接続はR4へ残る。
 
 ## 成果物
 
@@ -145,5 +151,5 @@
 このゲームはエミュレーターの**回帰候補かつ現在のscenario証拠**である。
 `scenarios/tetris-line-clear.json`が実行するのはこのバイナリであり、
 そこで見つかったキーボードモデルの欠陥は、実際のアプリを走らせなければ
-出てこなかった種類のものである。source identity、再現可能build、target登録、CIまでを
-満たす正式な継続回帰化はR3/R4で行う。
+出てこなかった種類のものである。source identity、再現可能build、target登録はR3で完了した。
+CIへの品質ゲート接続はR4で行う。

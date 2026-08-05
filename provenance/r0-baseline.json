@@ -70,7 +70,7 @@
       "path": "provenance/picotetris-r0.bundle",
       "sha256": "af53ab7ca3b173319ac43acbc29efb399d364325bc507e417a75db18f0c9e6bf",
       "head": "0a2735a4dc1c4aaf892fbf2364b7076535ef94e2",
-      "clone_command": "git clone provenance/picotetris-r0.bundle picotetris-r0"
+      "clone_command": "git clone -b main provenance/picotetris-r0.bundle picotetris-r0"
     }
   }
 }

@@ -141,6 +141,94 @@
           {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0}
         ]
       }
+    },
+    {
+      "id": "picotetris-r3",
+      "status": "active",
+      "source": {
+        "repo": "picotetris",
+        "commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+        "remote": null,
+        "bsp": "0.8.8",
+        "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+        "bsp_tree_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d",
+        "app": "picotetris-r3"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local <picotetris> <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach fed84f358d7dcadb1457752e687355ddb1875c48",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-06T00:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-06T00:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "PicoTetris.bin",
+        "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "0d434d789ed2aa0743520eb0d411fa2ced1974e4",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 8000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {"attached": true, "format": "fat32"}
+      },
+      "scenario": {
+        "path": "scenarios/tetris-line-clear.json",
+        "sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[TETRIS] start",
+          "[TETRIS] cleared=",
+          "score=1400 lines=13"
+        ],
+        "normalized_report_sha256": "eca38c789523f25429b64eed29de77adcde0d60f18537803f79cc1e6e1232b10",
+        "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
+          {"path": "cycles", "op": "eq", "value": 927528660},
+          {"path": "elapsed_us", "op": "eq", "value": 3715000},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "uart.sha256", "op": "eq", "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"},
+          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"},
+          {"path": "scenario.status", "op": "eq", "value": "pass"},
+          {"path": "scenario.steps_total", "op": "eq", "value": 85},
+          {"path": "scenario.steps", "op": "length_eq", "value": 85},
+          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 362},
+          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
+          {"path": "sd.format", "op": "eq", "value": "fat32"},
+          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
+          {"path": "psram.attached", "op": "eq", "value": true}
+        ]
+      }
     }
   ]
 }
