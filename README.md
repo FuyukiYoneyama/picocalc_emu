@@ -111,13 +111,15 @@ I2Cキーボードのbattery/backlight、シナリオから投入したキーの
 PC上で確認できます。3回連続実行でreport・UART・PNGがバイト一致します。
 
 ```sh
-python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
+python3 tools/picocalc.py test --mode firmware \
+  --target picocalc-template-b --firmware <path-to.bin>
 ```
 
-この上位CLIは現在、firmware起動のsmoke経路です。targetに宣言したscenario、SD、
-LCD variant等をすべて転送し、structured reportの期待値まで自動判定するhardeningは
-未完です。R2が完了するまでは、CLIの終了だけを全機能合格の根拠にせず、runnerの
-scenario status、停止理由、必須UART markerを併せて確認します。
+R2でこの上位CLIをschema 2 target registryへ接続しました。source/toolchain/BSP、BINと
+scenarioのSHA-256、backend build commit、LCD/PSRAM/keyboard/SD設定、停止理由、UART marker、
+structured report期待値を1つの契約として固定します。CLIは宣言をrunnerへ全転送し、毎回
+新しいreportだけを読み、runnerの終了コード0/1/2とschema 8 verdictの一致まで検査します。
+引数overrideが契約と違う場合やBIN・scenario・backendが違う場合は実行前に失敗します。
 
 実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
 が全機能を完走します。
@@ -176,11 +178,11 @@ PicoTetrisなど任意アプリのロジック試験が既に接続済みとい�
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
-生成契約・source identityの固定（R0）とR1（SD/FAT32、backend verdict、公式keyboard
-conformance）は完了しました。次の作業は上位CLI/target registry（R2）、PicoTetris回帰、
-CI、同一BIN実機相関の順に進めます。keyboard conformanceの固定内容は
+生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
+conformance）、上位CLI/target registry（R2）は完了しました。次の作業はPicoTetris回帰
+（R3）、CI、同一BIN実機相関の順に進めます。keyboard conformanceの固定内容は
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-05レビュー反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r2完了反映)が正典です。
 
 ## 読む順番
 
@@ -215,8 +217,8 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
   mount/write/sync/read/compare/removeを完走する
 - **JSON scenarioで条件付きにキーを投入し、画面・UART出力を機械的に判定する**
 - PWM設定と未対応MMIOアクセスを観測する
-- `python3 tools/picocalc.py test --mode firmware --firmware <bin>`でbackendを起動する。
-  runner側の合否判定はR1で完了し、上位CLIとの自動接続はR2でhardeningする
+- `python3 tools/picocalc.py test --mode firmware --target <id> --firmware <bin>`で、
+  target契約に固定したbackend設定と期待値を1コマンドで検証する
 
 host backendでは、アプリのロジックをRP2040バイナリを作らずに検査できます。
 

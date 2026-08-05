@@ -65,13 +65,14 @@ mount/write/sync/read/compare/removeまで到達し`app_status=pass`を出せま
 次のコマンドでBINを実行できます。
 
 ```sh
-python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
+python3 tools/picocalc.py test --mode firmware \
+  --target picocalc-template-b --firmware <path-to.bin>
 ```
 
-現行の上位CLIはfirmwareを起動するsmoke経路として使えますが、targetに宣言した
-scenario・SD・LCD variant等をすべて自動転送して合否判定する段階にはまだありません。
-このコマンドの終了だけで「全機能合格」と報告せず、R1/R2完了まではrunnerの
-structured report、scenario status、必須UART markerを確認してください。修正順序は
+R2完了後の上位CLIは、targetに宣言したscenario・SD・LCD variant等をすべて自動転送し、
+毎回新規生成したschema 8 structured report、停止理由、必須UART marker、backend build
+identityまで照合します。BIN、scenario、backend、CLI overrideが契約と違えば実行前に失敗し、
+runnerの0=pass、1=failure、2=cannot-judgeをそのまま返します。修正順序は
 [`docs/MILESTONES.md`](docs/MILESTONES.md)の「現在の実行順序」にあります。
 
 **画面の状態を見てキーを条件付きに投入したいときはscenario runnerを使います。**

@@ -79,13 +79,13 @@
     },
     {
       "id": "picocalc-template-b",
-      "status": "pending-revalidation",
-      "status_reason": "The former entry mixed the Gate 7 d6c4 BIN with the later R1-SD backend/profile. R2 keeps it non-runnable until a fresh reproducible BIN is tested against this complete schema-8 contract.",
+      "status": "active",
       "source": {
         "repo": "picocalc_emu",
-        "commit": "6533274810144c85b9b364bd23fecf17980c831c",
+        "commit": "82e943ab1942ef869e9bff38ae6fcf8074930361",
         "template": "templates/rp2040-basic",
         "bsp": "0.8.8",
+        "bsp_tree_sha256": "9baeaa9c42026a0e284c4298c4000132aab2f7df837eeb7dbbb8f56967ac1550",
         "app": "0.8.4-b-pio-rgb565-default"
       },
       "toolchain": {
@@ -93,13 +93,20 @@
         "arm_none_eabi_gcc": "13.2.1"
       },
       "build": {
-        "command": "python3 tools/picocalc.py build --project templates/rp2040-basic --lcd-variant pio-rgb565 --build-timestamp <UTC>",
-        "timestamp_used": "2026-08-04T00:00:00Z",
-        "builds_compared": 2
+        "commands": [
+          "python3 tools/picocalc.py new R2Template --output <fresh-dir>",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-06T00:00:00Z"
+        ],
+        "timestamp_used": "2026-08-06T00:00:00Z",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
       },
       "artifacts": {
         "bin_basename": "picocalc_app.bin",
-        "bin_sha256": "d6c4f8ae306c310632a3191801c4e1b378f49425e43e50ecb3b3d5abee8a33c6"
+        "bin_sha256": "1e6abac252c28a349d172254c0bc08976786023597a1c44002bfcb1bfbd02a3d",
+        "uf2_sha256": "1ab0d16f4f05207934f6d63b77d2ae5437231ee3762381b82505a3d4acefc757"
       },
       "backend": {
         "repo": "picoem-picocalc",
@@ -122,7 +129,7 @@
         "expected_stop_reason": "cycle_limit",
         "required_uart_markers": [
           "[PICOCALC][LCD][VERIFY] app_status=pass",
-          "[PICOCALC][SD][SMOKE] status=pass",
+          "[PICOCALC][SD][SMOKE] stage=end status=ok",
           "[PICOCALC][READY] keyboard=waiting"
         ],
         "report_checks": [

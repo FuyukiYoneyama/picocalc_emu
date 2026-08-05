@@ -583,14 +583,22 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             if record.get("schema_version") != 1:
                 problems.append("schema_version must be 1")
             # Every record says which unit of work it is evidence for.
-            # Gates 0-7 were Milestone 1's internal steps; work after
-            # that is numbered by milestone instead, so either key
-            # identifies a record and exactly one of them must.
+            # Gates 0-7 were Milestone 1's internal steps. Later evidence
+            # can identify either a numbered milestone or an R-series
+            # roadmap package, but exactly one identity is required.
             has_gate = isinstance(record.get("gate"), int)
             has_milestone = isinstance(record.get("milestone"), int)
-            if has_gate == has_milestone:
+            roadmap_package = record.get("roadmap_package")
+            has_roadmap_package = (
+                isinstance(roadmap_package, str)
+                and len(roadmap_package) >= 2
+                and roadmap_package[0] == "R"
+                and roadmap_package[1:].isdigit()
+            )
+            if sum((has_gate, has_milestone, has_roadmap_package)) != 1:
                 problems.append(
-                    "record must carry exactly one of gate or milestone, as an integer"
+                    "record must carry exactly one integer gate, integer milestone, "
+                    "or R-series roadmap_package"
                 )
             if record.get("record_id") != path.parent.name:
                 problems.append("record_id must match the directory name")

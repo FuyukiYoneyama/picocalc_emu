@@ -42,7 +42,7 @@ Firmware backendを分割したものであり、本書と競合しません。
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
 
-## 現在の実行順序（2026-08-05レビュー反映）
+## 現在の実行順序（2026-08-06 R2完了反映）
 
 以下は新しいMilestone体系ではありません。完了済みMilestone 0〜3を再現可能な
 継続回帰として固め、Milestone 4の継続相関へ進むための作業パッケージです。
@@ -64,7 +64,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 |---|---|---|---|---|
 | R0 | 基準点・生成契約・provenanceの固定 | `picocalc_emu`、`picotetris` | 開始baselineとして3リポジトリのcommitと合否契約schemaを記録する。生成後metadataのBSP版が`bsp/VERSION`と一致し、必要なlicense/noticesとローカル参照が揃う。PicoTetrisを固定source identityから再取得できる | **完了（2026-08-05）** |
 | R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **完了 2026-08-05**。R1-SD、verdict、公式keyboard conformanceを完了 |
-| R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | R0・R1後 |
+| R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | R2後 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | R3後 |
 | R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | R4後 |
@@ -175,7 +175,7 @@ backend commit `914fcef65b5fe662142c3bdf529c5754aada4954`でrunner reportをsche
 
 Rust board 61件、runner 33件、doctest 1件、Clippyが合格し、実processで2/0/1の終了コードと
 schema 7 verdictの一致を確認した。上位`picocalc.py`とtarget registryがこの期待値を構造化して
-runnerへ渡す作業は計画どおりR2で行う。
+runnerへ渡す作業は当時R2へ残し、後述のR2実装で完了した。
 
 ### R1-keyboard実装結果（2026-08-05）
 
@@ -191,6 +191,28 @@ select/writeを記録する。未知selectまたはunsupported writeを`keyboard
 Rust board 72件、runner 33件、doctest 1件、Clippyが合格した。一次ソースidentity、実装範囲と
 GPIO scan/PMU lifecycle等の意図的な境界は[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)に
 記録した。これでR1は全項目完了し、次はR2である。
+
+### R2実装結果（2026-08-06）
+
+R2は完了した。`firmware-targets.json`をschema 2へ更新し、active targetをsource/toolchain、
+exact BIN/scenario SHA-256、backend build、device設定、accepted stop、UART marker、任意階層の
+report checkからなる不可分の契約にした。CLI overrideは契約と同値の場合だけ許可し、違いは
+runner起動前のjudged failureとして明示する。
+
+backendはbuild時の実commitとdirty状態をrunnerへ埋め込み、report schema 8の
+`backend_build`へ出す。CLI引数で古いbinaryに新しいHEADを名乗らせることはできない。
+CLIは一意な一時reportを使うため既存JSONを再利用せず、report欠落・破損・必須field不足、
+runner exitとverdictの不一致を終了2にする。判定済みfailureの1、cannot-judgeの2も潰さず返す。
+
+Template Bをgenerator commit `82e943ab1942ef869e9bff38ae6fcf8074930361`から2回fresh buildし、
+BIN `1e6abac...a3d`とUF2 `1ab0d16f...c757`が一致した。異なる絶対build pathを含むELFは一致
+しなかったため、ELFのpath非依存再現性は主張しない。このBINをbackend
+`0d434d789ed2aa0743520eb0d411fa2ced1974e4`で1コマンド実行し、12億cycle、FAT32 read 9/write 10、
+LCD/SD/READY marker、drop 0、unknown SD/MMIO 0、schema 8 verdict passを確認した。wrong BIN、
+scenario、backend、LCD variant、missing/malformed/stale reportの異常系も回帰試験に固定した。
+公式A targetも同じCLIで95億cycleを完走し、PSRAM 8,388,608 byte全一致、keyboard 4 event、
+必須marker不足0、exception/MMIO 0でpassした。これによりactive A/Bの両方を現行pinで実証した。
+証跡は`firmware-validation/records/r2-20260806-01/`にある。次はR3である。
 
 ## Milestone 0: Canonical BSP — implemented
 

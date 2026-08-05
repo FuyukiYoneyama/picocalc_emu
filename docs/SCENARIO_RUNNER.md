@@ -109,7 +109,8 @@ Canonical BSPもカウントを`key_info[0] & 0x1f`として読む。したが�
 状態である。
 
 現在はモデルが31で頭打ちになり、溢れたイベントを`keyboard.key_events_dropped`に
-数える。scenarioの走行中に1件でも捨てられたら、標準エラーへ警告が出る。
+数える。scenarioの走行中に1件でも捨てられたら、標準エラーへ警告を出し、R1以降の
+規範的verdictは`keyboard_event_dropped`でfailureになる。
 
 ```
 warning: the keyboard controller discarded 12 event(s) — input was queued faster

@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R2",
+  "record_id": "r2-20260806-01",
+  "title": "Firmware CLI and target registry generalization",
+  "source_commit": {
+    "repo": "picocalc_emu",
+    "commit": "82e943ab1942ef869e9bff38ae6fcf8074930361",
+    "role": "Template B generator source and initial R2 CLI implementation",
+    "contract_validation_commit": "a546b87d5e486b21354da2aa38c59b64497dc4e0"
+  },
+  "backend_commit": {
+    "repo": "picoem-picocalc",
+    "accepted": "0d434d789ed2aa0743520eb0d411fa2ced1974e4",
+    "report_schema": 8,
+    "compiled_identity": true,
+    "dirty": false
+  },
+  "registry": {
+    "schema_version": 2,
+    "schema": "reference-projects/firmware-targets.schema.json",
+    "contract": [
+      "source and toolchain identity",
+      "exact BIN and scenario SHA-256",
+      "compiled backend commit",
+      "board, LCD, cycle, PSRAM, keyboard and SD options",
+      "accepted stop and required UART markers",
+      "structured report expectations"
+    ]
+  },
+  "reproducible_build": {
+    "target": "picocalc-template-b",
+    "timestamp": "2026-08-06T00:00:00Z",
+    "fresh_builds": 2,
+    "bin_sha256": "1e6abac252c28a349d172254c0bc08976786023597a1c44002bfcb1bfbd02a3d",
+    "bin_byte_identical": true,
+    "uf2_sha256": "1ab0d16f4f05207934f6d63b77d2ae5437231ee3762381b82505a3d4acefc757",
+    "uf2_byte_identical": true,
+    "elf_byte_identical": false,
+    "elf_note": "The two builds used different absolute build directories. BIN and UF2, which carry the executable target payload, are identical; the ELF debug artifact retains a build-path difference and is not claimed reproducible across paths."
+  },
+  "one_command_acceptance": {
+    "command": "python3 tools/picocalc.py test --mode firmware --target picocalc-template-b --firmware <picocalc_app.bin> --backend-dir <picoem-picocalc> --json <report.json>",
+    "exit_code": 0,
+    "verdict": "pass",
+    "stop_reason": "cycle_limit",
+    "cycles": 1200000000,
+    "lcd_variant": "pio-rgb565",
+    "framebuffer_rgb565_sha256": "d22729c05ef814b473c90d97b54d9074d8761bf0bc94c0201c6d2df393d5e71b",
+    "uart_sha256": "b38268edf38e20698d037106964a9ac764fdaca3319078234ff6a200199171e0",
+    "sd": {
+      "format": "fat32",
+      "blocks_read": 9,
+      "blocks_written": 10,
+      "unknown_commands": 0
+    },
+    "keyboard": {
+      "key_events_dropped": 0,
+      "unknown_reg_selects": 0,
+      "unknown_reg_writes": 0
+    },
+    "exception": null,
+    "error": null,
+    "unsupported_mmio": 0,
+    "unsupported_mmio_truncated": false,
+    "required_uart_markers_missing": 0,
+    "runner_report_sha256": "4bb39050546734aef4c605155cfa63b1a1e99146e6fc0d988672754d113b5eb2"
+  },
+  "official_a_acceptance": {
+    "target": "picocalc-helloworld-a",
+    "exit_code": 0,
+    "verdict": "pass",
+    "stop_reason": "cycle_limit",
+    "cycles": 9500000000,
+    "lcd_variant": "hwspi-rgb888",
+    "psram_verify_matched": 8388608,
+    "psram_verify_mismatched": 0,
+    "keyboard_key_events_delivered": 4,
+    "keyboard_key_events_remaining": 0,
+    "keyboard_key_events_dropped": 0,
+    "framebuffer_rgb565_sha256": "a7351e954d8699e876c0529de72ce109ca48be00be12e1324f6a264d86860b47",
+    "uart_sha256": "5559f2f1de9dc7517bd99044d590fb4b0bed32a6aa50f9018e3d74f7ffeec56f",
+    "exception": null,
+    "error": null,
+    "unsupported_mmio": 0,
+    "required_uart_markers_missing": 0,
+    "runner_report_sha256": "daea2b23a975c9193c2825d1e13ad5e8591a2aad7d9349c7730f5aa521c1cd46"
+  },
+  "negative_acceptance": {
+    "preflight_exit_1": [
+      "wrong BIN SHA-256",
+      "wrong scenario SHA-256",
+      "wrong LCD variant override",
+      "wrong backend checkout",
+      "dirty backend checkout"
+    ],
+    "cannot_judge_exit_2": [
+      "missing report",
+      "malformed report",
+      "non-object report",
+      "required report field missing",
+      "runner exit and verdict mismatch"
+    ],
+    "judged_failure_exit_1": [
+      "reported LCD variant mismatch",
+      "reported compiled backend mismatch"
+    ],
+    "stale_report_reuse_prevented": true,
+    "runner_exit_classes_preserved": [0, 1, 2]
+  },
+  "verification": {
+    "python_tests": 31,
+    "portable_plus_r0_checks": 50,
+    "backend_board_tests": 72,
+    "backend_runner_tests": 34,
+    "backend_doctests": 1,
+    "backend_clippy_warnings": 0
+  },
+  "result": "pass",
+  "next": "R3 PicoTetris formal regression"
+}

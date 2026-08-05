@@ -15,12 +15,15 @@ The firmware backend complements the host-device-model backend; it does not repl
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
-The current runner report schema is 7. Its top-level `verdict` is normative and is the single
+The current runner report schema is 8. Its top-level `verdict` is normative and is the single
 source for both the report status and process exit: 0 pass, 1 judged failure, 2 cannot judge.
 Cycle exhaustion is not implicitly successful; conformance targets must name an accepted stop and
 their required UART markers. Exception, emulator error, unsupported/truncated MMIO, keyboard event
 loss, scenario failure, stop mismatch, and marker absence cannot silently pass. Connecting these
-expectations through the cross-repository target CLI remains R2 work.
+expectations through the cross-repository target CLI was completed in R2. Schema 8 additionally
+reports the commit and dirty state compiled into the runner. Registry schema 2 binds that identity,
+the exact BIN/scenario hashes, device arguments, stop, markers, and report checks into one contract;
+the CLI rejects mismatches and never accepts a stale report from an earlier run.
 
 `rp2040js` remains a comparison reference for RP2040 peripheral behavior,
 implementation techniques, and test structure. It is not the primary backend

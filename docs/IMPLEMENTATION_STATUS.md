@@ -11,9 +11,9 @@ PSRAM、SD、keyboardを含めてエミュレーター上で観測できる。�
 
 R0の生成契約・source identity固定は完了した。schema 2 metadata、生成時BSP版・commit・
 実体SHA-256、license/notices、PicoTetrisの履歴復元とGit bundleを
-[`R0_BASELINE.md`](R0_BASELINE.md)に記録している。R1はSD/FAT32、schema 7 verdict、
-公式keyboard firmware conformanceを完了した。次の未完了作業はR2のFirmware CLI・target
-registry一般化である。
+[`R0_BASELINE.md`](R0_BASELINE.md)に記録している。R1はSD/FAT32、verdict、公式keyboard
+firmware conformanceを完了し、R2でschema 2 target registry、schema 8 backend build identity、
+上位Firmware CLIのfail-closed接続まで完了した。次の未完了作業はR3のPicoTetris正式回帰化である。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -246,10 +246,10 @@ Firmware backend（Milestone 1）はGate 0〜5が完了し、**HELLO-FULLに到�
 hash/PNG取得、PSRAM内容の範囲検証、キーシナリオの投入、PWM設定の観測である。
 対応・未対応機能は`firmware-validation/capability.json`に記録している。
 Gate 6（`picocalc_emu`統合）も完了し、`python3 tools/picocalc.py test --mode firmware`
-から固定commitのbackendを駆動できる。ただし現在の上位CLIはtargetのscenario、SD、
-LCD variant等をすべて転送せず、非scenario実行の合否条件も十分に検査しない。
-登録conformance targetの権威ある合否は、R2が完了するまでrunnerのstructured reportと
-必須UART markerを併せて確認する。修正計画は`MILESTONES.md`のR2に定義する。
+から固定commitのbackendを駆動できる。R2で上位CLIをschema 2 registryへ接続し、targetの
+scenario、SD、LCD variantを含む全device設定、停止理由、必須UART marker、structured report
+期待値を自動判定するようにした。BIN/scenario/backend/override不一致は実行前に失敗し、
+毎回fresh reportだけを検査する。登録conformance targetはこの1コマンド経路を正典とする。
 
 **Gate 7（Canonical BSP B conformance）も完了した（2026-08-04）。**
 `tools/picocalc.py new`で生成した標準template（B: PIO0/RGB565/LCD DMA OFF）が
@@ -290,15 +290,23 @@ SDカードモデルはSPIモードのbring-up（CMD0/CMD8/CMD55+ACMD41/CMD58）
 filesystemは購入時付属32 GBカードに合わせて**FAT32がデフォルト**で、FAT16は
 明示選択できる（BSPはmountするだけでformatしない）。
 両形式でmount/write/sync/read/compare/removeの全系列をhost/firmware両backendで通し、
-runner reportはschema 7でschema 6の`sd.format`、block数、read/write数、unknown commandを
+runner reportはschema 8でschema 6の`sd.format`、block数、read/write数、unknown commandを
 保持し、さらに規範的な`verdict`を記録する。
 
-schema 7ではcycle limitを暗黙のPassにしない。許可stop reasonと必須UART markerを明示し、
+schema 8ではcycle limitを暗黙のPassにしない。許可stop reasonと必須UART markerを明示し、
 exception、emulator error、unsupported/truncated MMIO、keyboard drop、scenario失敗、stop
 mismatch、marker不足を終了コード1にする。判定条件不足またはscenario基盤faultは終了コード2、
 すべての条件を満たす場合だけ0である。keyboardの未知register select/writeも
-`keyboard_protocol_error`として終了コード1にする。R1完了backend固定commitは
-`d54ee24d816d4595f2ee750f25ccd7e44f103a22`。上位CLI/target registryへの構造化接続はR2で行う。
+`keyboard_protocol_error`として終了コード1にする。さらにschema 8はrunnerへcompileされた
+backend commitとdirty状態を記録するため、古いrunner binaryへCLIから新しいcommitを名乗らせ
+られない。R2 accepted backend固定commitは`0d434d789ed2aa0743520eb0d411fa2ced1974e4`である。
+
+R2のactive Template B targetはgenerator commit `82e943ab...0361`、BIN
+`1e6abac2...a3d`、PIO-RGB565、PSRAM、keyboard、FAT32を固定する。2回のfresh buildでBIN/UF2が
+一致し、1コマンド実走で12億cycle、LCD/SD/READY marker、SD read/write、drop 0、unknown
+command/MMIO 0、schema 8 verdict passを確認した。詳細は
+`firmware-validation/records/r2-20260806-01/`に記録している。activeの公式A targetも同じ経路で
+95億cycle、PSRAM全8 MiB一致、keyboard 4 event、必須marker不足0としてpassした。
 
 **注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
 Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで
