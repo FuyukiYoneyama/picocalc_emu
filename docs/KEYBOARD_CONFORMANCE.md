@@ -15,7 +15,7 @@ keyboard subtreeは`8584a4755ee85d2e49b3ef1f27276c6184c88970`です。このsubt
 
 ## R1で固定した契約
 
-backend commit `fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4`で次を実装・試験しました。
+backend commit `d54ee24d816d4595f2ee750f25ccd7e44f103a22`で次を実装・試験しました。
 
 - I2C 7-bit address `0x1f`、register `0x01`から`0x0e`の公式reply
 - firmware version `0x16`、key countの31件maskとCaps/Num flag
@@ -35,6 +35,12 @@ writeとして扱います。テスト用の内部CFG setterだけがoverwrite p
 既存scenarioの`key`操作と`--keys`は論理keycodeのFIFO注入です。これを物理matrix処理へ暗黙に
 切り替えると、従来`A`を投入したscenarioが公式のunshifted変換で`a`になり互換性を壊します。
 そこで論理注入は維持し、物理matrix/button transitionは別のconformance APIに分離しました。
+
+公式controllerはCtrl reportを`0xa5`と定義します。古い`picocalc_helloworld` consumerには
+`0x7e`をCtrlとして扱う箇所がありますが、producer一次の原則に従ってモデルは`0xa5`を採用し、
+全5 modifier codeを試験します。またSymbol `0xa4`はfirmwareに分岐とcode定義がある一方、
+現行matrix/button tableには`MOD_SYM` entryがないため、宣言上は存在しても物理入力からは
+到達不能です。conformance APIではこの宣言済みtransition自体を試験可能にしています。
 
 ## runnerの判定
 

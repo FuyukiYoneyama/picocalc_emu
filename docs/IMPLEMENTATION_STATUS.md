@@ -298,7 +298,7 @@ exception、emulator error、unsupported/truncated MMIO、keyboard drop、scenar
 mismatch、marker不足を終了コード1にする。判定条件不足またはscenario基盤faultは終了コード2、
 すべての条件を満たす場合だけ0である。keyboardの未知register select/writeも
 `keyboard_protocol_error`として終了コード1にする。R1完了backend固定commitは
-`fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4`。上位CLI/target registryへの構造化接続はR2で行う。
+`d54ee24d816d4595f2ee750f25ccd7e44f103a22`。上位CLI/target registryへの構造化接続はR2で行う。
 
 **注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
 Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで

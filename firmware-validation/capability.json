@@ -4,7 +4,7 @@
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4",
+    "commit": "d54ee24d816d4595f2ee750f25ccd7e44f103a22",
     "execution_model": "Serial",
     "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
   },

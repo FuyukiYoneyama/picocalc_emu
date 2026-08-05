@@ -99,7 +99,7 @@
           "gate7_accepted": "b285fa22e7df45917d7a29b8aab1a32130025146",
           "r1_sd_tested": "6a618010dc8b8217b6035951b361dc859f472301",
           "r1_verdict_contract": "914fcef65b5fe662142c3bdf529c5754aada4954",
-          "r1_complete_contract": "fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4"
+          "r1_complete_contract": "d54ee24d816d4595f2ee750f25ccd7e44f103a22"
         },
         "test_command": "cargo test -p picocalc-board -p picocalc-harness",
         "note": "accepted remains the R1-SD target pin using report schema 6. R1 verdict hardening is recorded at history.r1_verdict_contract and the completed R1 contract, including official keyboard conformance, at history.r1_complete_contract with schema 7. R2 will promote that complete pin and pass this target's structured expectations to the runner; until then this registry entry is historical input, not a schema-7 one-command acceptance contract."

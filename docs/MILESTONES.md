@@ -179,7 +179,7 @@ runnerへ渡す作業は計画どおりR2で行う。
 
 ### R1-keyboard実装結果（2026-08-05）
 
-backend commit `fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4`で、公式STM32 firmwareを一次資料に
+backend commit `d54ee24d816d4595f2ee750f25ccd7e44f103a22`で、公式STM32 firmwareを一次資料に
 consumer-visibleなregister `0x01`から`0x0e`、31-event FIFO、state、modifier、lock、
 hold/repeat、overflow、両backlight、battery、reset、C64、power-offを固定した。公式7×8 matrixと
 12 direct buttonのkeymapも物理transition APIに写し、既存の論理key injectionとは分離した。
@@ -188,7 +188,7 @@ runner reportはdrop/overwrite、内部config/interrupt、lock、両backlight、
 select/writeを記録する。未知selectまたはunsupported writeを`keyboard_protocol_error`としてfailに
 するため、実装していないkeyboard registerをACK後に捨ててPassにする判定漏れも解消した。
 
-Rust board 71件、runner 33件、doctest 1件、Clippyが合格した。一次ソースidentity、実装範囲と
+Rust board 72件、runner 33件、doctest 1件、Clippyが合格した。一次ソースidentity、実装範囲と
 GPIO scan/PMU lifecycle等の意図的な境界は[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)に
 記録した。これでR1は全項目完了し、次はR2である。
 
