@@ -69,6 +69,20 @@ def git_has_commit(path: Path, commit: str) -> bool:
     return completed.returncode == 0
 
 
+def git_rev_parse(path: Path, revision: str) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", revision],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
 def load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as source:
         return json.load(source)
@@ -1240,6 +1254,7 @@ def verify_r0_workspace(checks: List[Check], root: Path, workspace_root: Path) -
         expected_hash = bsp["tree_sha256"]
         actual_hash = directory_sha256(tetris / "bsp")
         source_commit = bsp["source_commit"]
+        source_tree = git_rev_parse(root, source_commit + ":bsp")
         add_check(
             checks,
             "r0:picotetris-provenance",
@@ -1249,22 +1264,38 @@ def verify_r0_workspace(checks: List[Check], root: Path, workspace_root: Path) -
             and metadata.get("provenance", {}).get("kind") == "reconstructed"
             and expected_hash == actual_hash
             and git_has_commit(root, source_commit)
+            and bsp.get("git_tree") == source_tree
             and (tetris / "LICENSE").is_file()
             and (tetris / "THIRD_PARTY_NOTICES.md").is_file(),
             expected_bsp_sha256=expected_hash,
             actual_bsp_sha256=actual_hash,
             bsp_source_commit=source_commit,
+            bsp_source_tree=source_tree,
         )
 
         bundle = root / manifest["artifacts"]["picotetris_bundle"]["path"]
         expected_bundle_hash = manifest["artifacts"]["picotetris_bundle"]["sha256"]
         actual_bundle_hash = sha256(bundle) if bundle.is_file() else "missing"
+        bundle_head = ""
+        if bundle.is_file():
+            completed = subprocess.run(
+                ["git", "bundle", "list-heads", str(bundle), "refs/heads/main"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                check=False,
+            )
+            if completed.returncode == 0 and completed.stdout.strip():
+                bundle_head = completed.stdout.split()[0]
         add_check(
             checks,
             "r0:picotetris-bundle",
-            actual_bundle_hash == expected_bundle_hash,
+            actual_bundle_hash == expected_bundle_hash
+            and bundle_head == manifest["artifacts"]["picotetris_bundle"]["head"],
             expected=expected_bundle_hash,
             actual=actual_bundle_hash,
+            expected_head=manifest["artifacts"]["picotetris_bundle"]["head"],
+            actual_head=bundle_head or "missing",
         )
     except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
         add_check(checks, "r0:workspace", False, **error_details(error))

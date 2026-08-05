@@ -62,7 +62,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 
 | 順序 | 作業パッケージ | 主な対象 | 受入条件 | 状態 |
 |---|---|---|---|---|
-| R0 | 基準点・生成契約・provenanceの固定 | `picocalc_emu`、`picotetris` | 開始baselineとして3リポジトリのcommitと合否契約schemaを記録する。生成後metadataのBSP版が`bsp/VERSION`と一致し、必要なlicense/noticesとローカル参照が揃う。PicoTetrisを固定source identityから再取得できる | 未着手 |
+| R0 | 基準点・生成契約・provenanceの固定 | `picocalc_emu`、`picotetris` | 開始baselineとして3リポジトリのcommitと合否契約schemaを記録する。生成後metadataのBSP版が`bsp/VERSION`と一致し、必要なlicense/noticesとローカル参照が揃う。PicoTetrisを固定source identityから再取得できる | **完了（2026-08-05）** |
 | R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **R1-SD完了**。verdict・keyboardは未着手 |
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | R0・R1後 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | R2後 |
@@ -104,17 +104,16 @@ R1では次を満たします。
 raw imageのload/saveやdirectory-backed Fast SDはこの受入条件とは分離し、FAT32対応を
 それらの大きな機能に依存させません。
 
-### 実装着手レビュー（2026-08-05）
+### 実装着手時レビュー（2026-08-05、時点記録）
 
 **判定はGOです。** 公式keyboard producer、既存FAT16の境界、FAT32で追加する構造、
 CLI/report/target契約、host/firmware共通の合否条件まで決まっており、未決の製品判断は
 ありません。portable検証39件、Python 24件、host smoke 3回決定一致、Rust board 56件、
 runner 24件、doctest 1件が合格しています。
 
-ただし現在の3リポジトリには統合文書差分があるため、ソース実装を混ぜる前にR0として
-この文書・catalog・capability・baseline test結果をレビュー可能な変更単位へ固定します。
-これは設計上のblockerではなく、後から「どの仕様に対する実装か」を失わないための
-provenance gateです。R0固定後のR1-SD実装順は次のとおりです。
+この判定時には3リポジトリに統合文書差分があったため、ソース実装を混ぜる前にR0として
+この文書・catalog・capability・baseline test結果をレビュー可能な変更単位へ固定する方針と
+した。R0とR1-SDはその後完了している。以下は着手時に定めたR1-SD実装順の履歴である。
 
 1. Rust側にvolume format型とFAT16/FAT32 geometry単体試験を追加する。
 2. `SdCard`生成器へFAT32 profileを接続し、block readでBPB/FSInfo/FAT/rootを検査する。
@@ -123,6 +122,21 @@ provenance gateです。R0固定後のR1-SD実装順は次のとおりです。
 5. target registryへ形式を固定し、FAT16/FAT32各3回の決定性回帰を記録する。
 
 keyboard conformanceは同じR1内の独立作業であり、R0固定後はR1-SDと並行できます。
+
+### R0実装結果（2026-08-05）
+
+R0は完了した。開始commit、合否schema、R1既知gapを
+[`R0_BASELINE.md`](R0_BASELINE.md)と`provenance/r0-baseline.json`へ固定した。
+generator metadataをschema 2へ更新し、`bsp/VERSION`、source commit、dirty状態、BSP実体
+SHA-256を生成時に記録する。生成先用のMIT Licenseと自己完結したthird-party noticesも
+追加した。
+
+PicoTetrisは元の生成commitを推測せず、完全一致するcanonical BSP commit
+`cbfc90467e2b8392fbd0429c83925b94ca365824`を根拠に`kind: reconstructed`として復元した。
+remoteを作らない方針を維持し、R0固定commitを含む完全Git bundleとSHA-256を保存した。
+`picocalc.py verify --r0 --workspace-root ..`が固定commit、metadata、BSP hash、license/notices、
+bundleを検査する。R1-SDは完了済みだが、verdictと公式keyboard conformanceは引き続きR1の
+未完了項目である。
 
 ### R1-SD実装結果（2026-08-05）
 

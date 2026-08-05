@@ -176,8 +176,9 @@ PicoTetrisなど任意アプリのロジック試験が既に接続済みとい�
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
-次の作業は、生成契約・source identityとbackendの合否判定を先に固め、上位CLI/target
-registry、PicoTetris回帰、CI、同一BIN実機相関の順に進めます。詳細な依存関係と
+生成契約・source identityの固定（R0）は完了しました。次の作業はbackendの合否判定と
+公式keyboard conformance（R1残件）を固め、上位CLI/target registry、PicoTetris回帰、
+CI、同一BIN実機相関の順に進めます。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-05レビュー反映)が正典です。
 
 ## 読む順番
@@ -511,6 +512,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) — 実施済みMilestone 1をGate別に分解した計画と判断記録
 - [Scenario runner](docs/SCENARIO_RUNNER.md) — JSON scenarioの形式、条件付きキー投入、画面の機械判定
 - [Host backend](docs/HOST_BACKEND.md) — アプリロジックをホストのモデルに対してビルドし単体試験する
+- [R0 baseline](docs/R0_BASELINE.md) — 開始点、生成契約、PicoTetris source identityと再取得bundle
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

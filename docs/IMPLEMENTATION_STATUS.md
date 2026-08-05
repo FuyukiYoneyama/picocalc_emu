@@ -9,6 +9,11 @@ PSRAM、SD、keyboardを含めてエミュレーター上で観測できる。�
 継続回帰targetへ接続済みかどうかは別に判定し、現在のhardening順序は
 [`MILESTONES.md`](MILESTONES.md)の「現在の実行順序」を参照する。
 
+R0の生成契約・source identity固定は完了した。schema 2 metadata、生成時BSP版・commit・
+実体SHA-256、license/notices、PicoTetrisの履歴復元とGit bundleを
+[`R0_BASELINE.md`](R0_BASELINE.md)に記録している。次の未完了作業はR1のbackend verdictと
+公式keyboard firmwareを一次資料にしたconformance testである。
+
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証

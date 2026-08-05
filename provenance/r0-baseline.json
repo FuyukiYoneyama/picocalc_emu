@@ -36,5 +36,41 @@
       "full official keyboard register/modifier/repeat/overflow conformance is pending"
     ]
   },
-  "fixed_points": []
+  "fixed_points": [
+    {
+      "repository": "picocalc_emu",
+      "workspace_path": "picocalc_emu",
+      "commit": "1330a15183f986e34d0c7b415a72618e079ebf0b",
+      "role": "generation and R0 verification contract"
+    },
+    {
+      "repository": "picoem-picocalc",
+      "workspace_path": "picoem-picocalc",
+      "commit": "07ce135b7bc4646eb3df8f52dd193ba66347570b",
+      "role": "R0 backend documentation baseline"
+    },
+    {
+      "repository": "picotetris",
+      "workspace_path": "picotetris",
+      "commit": "0a2735a4dc1c4aaf892fbf2364b7076535ef94e2",
+      "role": "reconstructed project provenance and licensing"
+    }
+  ],
+  "reconstructed_sources": {
+    "picotetris_bsp": {
+      "repository": "picocalc_emu",
+      "commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+      "path": "bsp",
+      "git_tree": "9c29d5261cbcfe51f6b34c14054497443180a31b",
+      "directory_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d"
+    }
+  },
+  "artifacts": {
+    "picotetris_bundle": {
+      "path": "provenance/picotetris-r0.bundle",
+      "sha256": "af53ab7ca3b173319ac43acbc29efb399d364325bc507e417a75db18f0c9e6bf",
+      "head": "0a2735a4dc1c4aaf892fbf2364b7076535ef94e2",
+      "clone_command": "git clone provenance/picotetris-r0.bundle picotetris-r0"
+    }
+  }
 }
