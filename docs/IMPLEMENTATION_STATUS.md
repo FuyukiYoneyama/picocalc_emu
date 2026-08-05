@@ -15,7 +15,9 @@ R0の生成契約・source identity固定は完了した。schema 2 metadata、�
 firmware conformanceを完了し、R2でschema 2 target registry、schema 8 backend build identity、
 上位Firmware CLIのfail-closed接続まで完了した。R3ではPicoTetrisの666 host checks、
 再現可能BIN/UF2、active firmware target、3回決定性回帰まで完了した。次の未完了作業はR4の
-品質ゲートとCIである。
+品質ゲートとCIである。R4のclean-clone CI準備として、PicoTetrisには2026-08-06にprivate
+GitHub repository `FuyukiYoneyama/picotetris`を追加した。R0/R3のbundleと`remote: null`は
+各時点の復旧証拠なので保持する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

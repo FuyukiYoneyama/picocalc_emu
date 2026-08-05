@@ -51,8 +51,10 @@ PicoTetrisの`bsp/`全体は`picocalc_emu` commit
 流用しない。device subtreeが現行と一致することと、全treeの歴史的source identityを
 区別する。
 
-PicoTetrisには意図的にremoteを設けない。代わりに完全履歴を含む
-`provenance/picotetris-r0.bundle`を保存し、SHA-256をmanifestに固定した。再取得は次で行う。
+R0完了時点のPicoTetrisには意図的にremoteを設けなかった。代わりに完全履歴を含む
+`provenance/picotetris-r0.bundle`を保存し、SHA-256をmanifestに固定した。R4準備で
+2026-08-06にprivate GitHub repositoryを追加した後も、R0の時点証拠であるmanifestの
+`remote: null`とbundleは書き換えない。R0状態の再取得は次で行う。
 
 ```sh
 git clone -b main provenance/picotetris-r0.bundle /tmp/picotetris-r0

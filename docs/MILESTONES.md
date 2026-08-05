@@ -133,7 +133,8 @@ SHA-256を生成時に記録する。生成先用のMIT Licenseと自己完結�
 
 PicoTetrisは元の生成commitを推測せず、完全一致するcanonical BSP commit
 `cbfc90467e2b8392fbd0429c83925b94ca365824`を根拠に`kind: reconstructed`として復元した。
-remoteを作らない方針を維持し、R0固定commitを含む完全Git bundleとSHA-256を保存した。
+R0時点ではremoteを作らず、R0固定commitを含む完全Git bundleとSHA-256を保存した。
+R4準備でprivate remoteを追加した後も、このR0時点のbundleと`remote: null`は維持する。
 `picocalc.py verify --r0 --workspace-root ..`が固定commit、metadata、BSP hash、license/notices、
 bundleを検査する。R0完了時点ではR1-SDだけが先に完了し、verdictと公式keyboard conformanceは
 未完了だった。両項目はその後2026-08-05に完了している。
@@ -231,7 +232,9 @@ timestampでbuildし、BIN `0784d80d...46e62`とUF2 `44ec6227...e274`がbyte-ide
 `picotetris-r3`をactive firmware targetへ登録し、backend `0d434d789ed2...`で同じscenarioを
 3回実行した。3回とも85/85、13 lines、score 1400、key 362/0、exception/error/MMIO 0で、
 UART、RGB565、PNG、raw/正規化report、85-step timelineが一致した。remoteを持たない方針は
-維持し、`provenance/picotetris-r3.bundle`へR3完全履歴を追加した。詳細と全SHAは
+R3完了時点まで維持し、`provenance/picotetris-r3.bundle`へR3完全履歴を追加した。R4の
+clean-clone CI準備として2026-08-06にprivate GitHub repositoryを追加したが、R3のbundleと
+`remote: null`は時点証拠として変更しない。詳細と全SHAは
 [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)、機械可読証跡は
 `firmware-validation/records/r3-20260806-01/`にある。次はR4である。
 

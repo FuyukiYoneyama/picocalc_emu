@@ -1,10 +1,14 @@
 # R3 PicoTetris正式回帰
 
-R3は2026-08-06に完了した。対象はremoteを意図的に持たない`picotetris`と、
+R3は2026-08-06に完了した。対象はR3完了時点でremoteを意図的に持たない`picotetris`と、
 `picocalc_emu`のhost/firmware検査基盤である。機械可読なtargetは
 `reference-projects/firmware-targets.json`の`picotetris-r3`、実測記録は
 `firmware-validation/records/r3-20260806-01/report.json`、再取得用の完全履歴は
 `provenance/picotetris-r3.bundle`に固定した。
+
+R4のclean-clone CI準備として、R3完了後の2026-08-06にprivate GitHub repository
+`FuyukiYoneyama/picotetris`を追加した。R3 manifestの`remote: null`とbundleは、当時の
+復旧契約を示す時点証拠なので変更しない。
 
 ```sh
 git clone -b main provenance/picotetris-r3.bundle /tmp/picotetris-r3
