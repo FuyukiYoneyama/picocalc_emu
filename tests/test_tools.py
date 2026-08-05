@@ -150,7 +150,8 @@ raise SystemExit(code)
         arguments = dict(
             target_id="fixture", firmware=firmware, backend_dir=backend,
             cycles=None, keys=None, sd=None, sd_format=None,
-            lcd_variant=None, scenario_override=scenario, json_out=None,
+            lcd_variant=None, scenario_override=scenario, snapshot_dir=None,
+            json_out=None,
         )
         arguments.update(overrides)
         with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
@@ -208,6 +209,48 @@ raise SystemExit(code)
         _, coexistence = module.build_versions(project, "pio-rgb565", True)
         self.assertEqual(standard, "0.8.4-b-pio-rgb565-default")
         self.assertEqual(coexistence, "0.8.4-b-pio-rgb565-psram-lcd-coexist")
+
+    def test_build_identities_detect_app_and_copied_bsp_changes(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary) / "project"
+            project.mkdir()
+            subprocess.run(["git", "init", "-q", project], check=True)
+            subprocess.run(
+                ["git", "-C", project, "config", "user.email", "build@example.invalid"],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", project, "config", "user.name", "Build Test"],
+                check=True,
+            )
+            (project / "tracked").write_text("source\n", encoding="utf-8")
+            subprocess.run(["git", "-C", project, "add", "tracked"], check=True)
+            subprocess.run(
+                ["git", "-C", project, "commit", "-qm", "fixture"], check=True
+            )
+            self.assertNotIn("-dirty", module.project_commit(project))
+            (project / "new-source.cpp").write_text("// new\n", encoding="utf-8")
+            self.assertTrue(module.project_commit(project).endswith("-dirty"))
+
+            bsp = project / "bsp"
+            bsp.mkdir()
+            (bsp / "VERSION").write_text("0.8.8\n", encoding="utf-8")
+            commit = "a" * 40
+            metadata = {
+                "provenance": {
+                    "bsp": {
+                        "source_commit": commit,
+                        "tree_sha256": directory_sha256(bsp),
+                    }
+                }
+            }
+            (project / ".picocalc-project.json").write_text(
+                json.dumps(metadata), encoding="utf-8"
+            )
+            self.assertEqual(module.bsp_build_identity(project), "a" * 12)
+            (bsp / "VERSION").write_text("changed\n", encoding="utf-8")
+            self.assertEqual(module.bsp_build_identity(project), "a" * 12 + "-dirty")
 
     def copy_project(self, temporary):
         project = Path(temporary) / "project"
@@ -733,6 +776,7 @@ raise SystemExit(code)
                 "--psram", "--psram-verify-range", "0:16", "--keyboard",
                 "--keys", "HI", "--sd", "--sd-format", "fat32",
                 "--scenario", "--expect-stop", "scenario_done", "--expect-uart", "READY",
+                "--snapshot-dir",
             ):
                 self.assertIn(item, argv)
 

@@ -81,9 +81,14 @@ def build_versions(
 
 def source_commit() -> str:
     """Return the source repository commit used to produce a copied project."""
+    return git_build_identity(ROOT)
+
+
+def git_build_identity(path: Path) -> str:
+    """Return a short commit plus -dirty when tracked or untracked source differs."""
     try:
         completed = subprocess.run(
-            ["git", "-C", str(ROOT), "rev-parse", "--short=12", "HEAD"],
+            ["git", "-C", str(path), "rev-parse", "--short=12", "HEAD"],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
@@ -94,29 +99,43 @@ def source_commit() -> str:
     commit = completed.stdout.strip() if completed.returncode == 0 else ""
     if not commit:
         return "untracked"
-    dirty = subprocess.run(
-        ["git", "-C", str(ROOT), "diff", "--quiet"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    ).returncode != 0
-    return commit + ("-dirty" if dirty else "")
-
-
-def project_commit(project: Path) -> str:
-    """Return the app repository commit, or untracked for a source directory."""
     try:
-        completed = subprocess.run(
-            ["git", "-C", str(project), "rev-parse", "--short=12", "HEAD"],
+        status = subprocess.run(
+            [
+                "git", "-C", str(path), "status", "--porcelain",
+                "--untracked-files=normal",
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
             check=False,
         )
     except OSError:
-        return "untracked"
-    commit = completed.stdout.strip() if completed.returncode == 0 else ""
-    return commit or "untracked"
+        return commit + "-dirty"
+    dirty = status.returncode != 0 or bool(status.stdout.strip())
+    return commit + ("-dirty" if dirty else "")
+
+
+def project_commit(project: Path) -> str:
+    """Return the app repository commit, or untracked for a source directory."""
+    return git_build_identity(project)
+
+
+def bsp_build_identity(project: Path) -> str:
+    """Use the copied BSP's pinned source identity, not this tool's current HEAD."""
+    metadata_path = project / ".picocalc-project.json"
+    bsp_dir = project / "bsp"
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        bsp = metadata["provenance"]["bsp"]
+        commit = bsp["source_commit"]
+        expected_tree = bsp["tree_sha256"]
+        if not is_git_commit(commit) or not is_sha256(expected_tree):
+            raise ValueError("invalid BSP provenance")
+        dirty = directory_sha256(bsp_dir) != expected_tree
+        return commit[:12] + ("-dirty" if dirty else "")
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return source_commit()
 
 
 def load_build_history(path: Path) -> dict:
@@ -253,6 +272,7 @@ def build_project(
     build_timestamp_value: Optional[str] = None,
     diagnostic_mode: bool = False,
     hardware_validation_mode: bool = False,
+    generator: Optional[str] = None,
 ) -> int:
     project = project.resolve()
     if not (project / "CMakeLists.txt").is_file():
@@ -348,8 +368,10 @@ def build_project(
         flag = "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"
         if flag not in existing:
             environment[variable] = (existing + " " + flag).strip()
-    configure = [
-        "cmake",
+    configure = ["cmake"]
+    if generator is not None:
+        configure.extend(["-G", generator])
+    configure.extend([
         "-S",
         str(project),
         "-B",
@@ -357,10 +379,10 @@ def build_project(
         "-DPICO_BOARD=pico",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
-        "-DPICOCALC_BSP_GIT={}".format(source_commit()),
+        "-DPICOCALC_BSP_GIT={}".format(bsp_build_identity(project)),
         "-DPICOCALC_APP_GIT={}".format(project_commit(project)),
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
-    ]
+    ])
     configure.extend(
         build_mode_definitions(
             coexistence_test,
@@ -410,6 +432,8 @@ def build_project(
         )
         return 1
     digest = hashlib.sha256(uf2.read_bytes()).hexdigest()
+    binary = build_dir / (artifact_name + ".bin")
+    elf = build_dir / (artifact_name + ".elf")
     append_build_history(
         history_path,
         {
@@ -422,6 +446,15 @@ def build_project(
             "hardware_validation_mode": hardware_validation_mode,
             "uf2": str(uf2),
             "uf2_sha256": digest,
+            "bin_sha256": (
+                hashlib.sha256(binary.read_bytes()).hexdigest() if binary.is_file() else None
+            ),
+            "elf_sha256": (
+                hashlib.sha256(elf.read_bytes()).hexdigest() if elf.is_file() else None
+            ),
+            "app_git": project_commit(project),
+            "bsp_git": bsp_build_identity(project),
+            "generator": generator or os.environ.get("CMAKE_GENERATOR", "default"),
         },
     )
     print("PRODUCT {}".format(artifact_name))
@@ -752,6 +785,7 @@ def firmware_test(
     sd_format: Optional[str],
     lcd_variant: Optional[str],
     scenario_override: Optional[Path],
+    snapshot_dir: Optional[Path],
     json_out: Optional[Path],
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
@@ -907,7 +941,14 @@ def firmware_test(
         if target_sd.get("attached", False):
             command.extend(["--sd", "--sd-format", target_sd["format"]])
         if scenario_path is not None:
+            snapshots = (
+                snapshot_dir.resolve()
+                if snapshot_dir is not None
+                else Path(temporary) / "snapshots"
+            )
+            snapshots.mkdir(parents=True, exist_ok=True)
             command.extend(["--scenario", str(scenario_path)])
+            command.extend(["--snapshot-dir", str(snapshots)])
 
         print("running {} on backend {}".format(target_id, actual_commit[:12]))
         try:
@@ -1083,6 +1124,11 @@ def main() -> int:
     )
     build_parser.add_argument("--jobs", type=int, default=2)
     build_parser.add_argument(
+        "--generator",
+        choices=("Ninja", "Unix Makefiles"),
+        help="explicit CMake generator for reproducible builds",
+    )
+    build_parser.add_argument(
         "--build-timestamp",
         help="fixed UTC build timestamp for reproducible evidence builds (YYYY-MM-DDTHH:MM:SSZ)",
     )
@@ -1158,6 +1204,11 @@ def main() -> int:
         help="firmware mode: optional scenario override with the target's exact SHA-256",
     )
     test_parser.add_argument(
+        "--snapshot-dir",
+        type=Path,
+        help="firmware mode: preserve scenario snapshots in this directory",
+    )
+    test_parser.add_argument(
         "--sd",
         action="store_true",
         default=None,
@@ -1227,6 +1278,7 @@ def main() -> int:
             args.build_timestamp,
             args.diagnostic_mode,
             args.hardware_validation_mode,
+            args.generator,
         )
     if args.command == "test":
         if args.sd_format is not None and not args.sd:
@@ -1239,9 +1291,10 @@ def main() -> int:
                 or args.keys is not None
                 or args.lcd_variant is not None
                 or args.scenario is not None
+                or args.snapshot_dir is not None
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--sd/--sd-format are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--sd/--sd-format are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -1257,6 +1310,7 @@ def main() -> int:
             args.sd_format,
             args.lcd_variant,
             args.scenario,
+            args.snapshot_dir,
             args.json_out,
         )
     if args.command == "verify":
