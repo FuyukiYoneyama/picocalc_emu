@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "milestone": 2,
+  "record_id": "milestone2-20260805-01",
+  "title": "Host backend: the BSP's public API built against host models, so application logic can be tested without an RP2040 image",
+  "backend_commit": {
+    "base": "71d66fb06260746cce56cea78ccb2ab23a51ef1f",
+    "repo": "picoem-picocalc",
+    "branch": "main",
+    "note": "The host backend lives entirely in picocalc_emu under bsp/host and does not use the emulator. The commit is recorded because the framebuffer digest is defined to match that backend's, and the keyboard depth bound was taken from it."
+  },
+  "why": {
+    "gap": "Line clearing and collision detection are pure functions, but reaching them meant building an RP2040 image and running the emulator.",
+    "evidence_the_gap_was_real": "docs/DOGFOODING_20260805.md gap 3. This was the last of the four the dogfooding run found.",
+    "revised_judgement": "Milestone 2 had been assessed as lower priority once the firmware backend ran. Writing an application showed a second use for it that had not been considered: testing application logic, not merely iterating faster."
+  },
+  "implementation": {
+    "location": "bsp/host",
+    "library": "picocalc_bsp_host",
+    "separate_from_device_build": "bsp/CMakeLists.txt is untouched. The host build is a second consumer of the same public API, not a change to it.",
+    "modelled": {
+      "display": "A 320x320 framebuffer. The window / write_pixels semantics are kept exactly, including the write pointer wrapping within the window, because applications depend on that shape.",
+      "keyboard": "A queue bounded at 31 events, with overflow counted.",
+      "psram": "8 MiB of host memory with the device's bounds behaviour. info().id reports the identity the real chip returned during hardware correlation, not a placeholder.",
+      "sdcard": "An array of sectors, arriving formatted.",
+      "audio": "Sample bookkeeping. No output device.",
+      "pico_sdk": "stdio_init_all and sleep_ms only — the two symbols every application in this repository actually uses."
+    },
+    "shared_with_the_device_build": {
+      "sources": ["src/filesystem.cpp", "src/fatfs_diskio.cpp", "third_party/ChanFatFS/src/ff.c", "third_party/ChanFatFS/src/ffunicode.c"],
+      "why_this_matters": "Those two BSP sources have no Pico SDK dependency at all — they speak only to picocalc::sdcard and to ChanFatFS. The host build therefore compiles the very same files the device does, on top of a RAM block device, so a host filesystem test exercises the shipping code rather than a stand-in for it.",
+      "guarded_by": "verify_environment check host-backend:shares-device-filesystem"
+    },
+    "why_the_card_arrives_formatted": "The BSP mounts and never formats, and this build cannot format either: ChanFatFS is configured with FF_USE_MKFS 0, and that configuration is part of the hardware-verified device build. Changing it to make the host convenient would change what ships. So the same textbook FAT16 the emulator's card model lays down is written directly — a layout already known to mount.",
+    "narrow_sdk_shim_is_deliberate": "Code that uses an unmodelled part of the chip fails to compile. That is the correct answer; a broad shim would grant false confidence from a host run."
+  },
+  "cross_backend_property": {
+    "what": "framebuffer_sha256() uses the same canonical form as the firmware backend: row-major, little-endian RGB565 raw bytes.",
+    "consequence": "An application that draws the same picture under both backends produces the same 64 hex characters here and in picocalc-run's framebuffer.rgb565_sha256, so the two runs can be compared directly.",
+    "why_not_hash_a_png": "An encoder-settings change would move the bytes without the picture changing."
+  },
+  "result": {
+    "status": "pass",
+    "completion_condition": "A dedicated application starts on the PC and produces screen, key and file results deterministically.",
+    "application": "bsp/host/tests/emu_smoke.cpp",
+    "checks": 26,
+    "failures": 0,
+    "determinism": {
+      "runs": 3,
+      "byte_identical": true,
+      "stdout_sha256": "3a4c400f3034da4e2c134eeecf30e70fe667a07271312265ee65e73f5bc94eb3",
+      "how": "Checked from the outside by tools/picocalc.py test --mode host, because nothing inside the program may read a wall clock, a random source, or an address."
+    },
+    "notable_checks": [
+      "The BSP's own filesystem smoke sequence — mount, write, sync, read, compare, remove — completes, running the same sources the device builds.",
+      "The keyboard stops at 31 events and counts the 169 it discarded, reproducing the hardware constraint rather than a host artefact.",
+      "sleep_ms advances virtual time by exactly 250000 us without blocking."
+    ]
+  },
+  "defect_found": {
+    "id": "host-sd-silently-read-only",
+    "symptom": "The first host run of the BSP's own smoke test failed at the write stage with no sectors ever reaching the block layer.",
+    "cause": "fatfs_diskio.cpp gates writes behind PICOCALC_BSP_ENABLE_SD_WRITE and answers RES_WRPRT without it. The device build defines it; the host build did not.",
+    "fix": "The host build defines it too, and verify_environment now checks that it still does — a silently read-only card is the kind of difference that would make host results quietly stop meaning what they appear to."
+  },
+  "known_limitations": [
+    "Directory-backed Fast SD mode, listed under Milestone 2, is not implemented. The card is an array of sectors in host memory; there is no path that shows a host directory to the application.",
+    "No multicore, no interrupts, no DMA, no PIO. Behaviour depending on any of them is invisible here and belongs to the firmware backend.",
+    "The LCD wire format does not exist on the host, so verify_pixels always reports transport_ok. It can confirm what the application computed, never that the picture reached a panel.",
+    "audio underrun_count is always zero. That is the absence of a claim, not a claim of no underruns: nothing on the host consumes samples on a schedule.",
+    "The scenario runner is firmware-backend only. Host tests are written in C++."
+  ],
+  "authority": "The firmware backend remains the authority on hardware behaviour. The host backend answers whether the application computed the right thing, in under a second; it cannot see the questions the firmware backend exists to answer."
+}

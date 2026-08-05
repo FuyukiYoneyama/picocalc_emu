@@ -84,7 +84,14 @@
 → Milestone 2のhost backendの価値はここにある。当初「firmware backendがあるので
 優先度が下がった」と評価したが、**アプリのロジック検証という別の用途がある**。
 
-> **未解決（2026-08-05時点）。** 4つの穴のうちこれだけが残っている。次の作業。
+> **解消（2026-08-05）。** host backendがBSPの公開APIをホストのモデルに対して
+> ビルドする。`python3 tools/picocalc.py test --mode host`で1秒未満で走る。
+> 詳細は[`HOST_BACKEND.md`](HOST_BACKEND.md)。
+>
+> これで4つの穴はすべて塞がった。ただし**firmware backendが権威である**ことは
+> 変わらない。hostにはPIO・DMA・I2C・割り込みが無く、ハードウェアの挙動は
+> 問いとして成立しない。両者を繋ぐのはframebuffer digestで、正規形が同一なので
+> 同じ絵を描いたアプリは両方で同じhashを出す。
 
 ### 4. 途中経過が見えない
 
@@ -113,9 +120,12 @@
 
 1. ~~**scenario runner**（Milestone 3）~~ — **完了（2026-08-05）**。
    [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)
-2. **host backend**（Milestone 2） — アプリのロジックをホストで単体テストする。
-   当初の想定（高速反復）より、こちらの用途の方が実利がある。**次の作業**
+2. ~~**host backend**（Milestone 2）~~ — **完了（2026-08-05）**。
+   [`HOST_BACKEND.md`](HOST_BACKEND.md)
 3. ~~定期スナップショット~~ — **完了**。scenarioの`snapshot`操作に含まれる
+
+**この記録から出た作業はすべて終わった。** 実際にアプリを1本書いたことで、
+計画からは出てこなかった要求が3つ出て、そのすべてが実装に至っている。
 
 ## 成果物
 

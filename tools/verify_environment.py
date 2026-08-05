@@ -423,6 +423,46 @@ def verify_release_conditions(checks: List[Check], root: Path) -> None:
     )
 
 
+def verify_host_backend(checks: List[Check], root: Path) -> None:
+    """Check the host backend's shape without compiling it.
+
+    Portable verification has no compiler guarantee, so this asserts the
+    two properties that would silently rot: that the sources exist, and
+    that the host build still shares the device's filesystem layer
+    rather than quietly growing a copy of it. Whether it compiles and
+    passes is `picocalc.py test --mode host`, which needs a toolchain.
+    """
+    host = root / "bsp" / "host"
+    required = [
+        host / "CMakeLists.txt",
+        host / "CMakeLists.host.txt",
+        host / "include" / "pico" / "stdlib.h",
+        host / "include" / "picocalc" / "host.h",
+        host / "tests" / "emu_smoke.cpp",
+    ]
+    missing = [str(path.relative_to(root)) for path in required if not path.is_file()]
+    add_check(checks, "host-backend:sources", not missing, missing=missing)
+
+    try:
+        text = (host / "CMakeLists.host.txt").read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        add_check(checks, "host-backend:shares-device-filesystem", False,
+                  **error_details(error))
+        return
+
+    # The value of the host filesystem test is that it runs the shipping
+    # code. If these ever stop being pulled in from ../src, the host is
+    # testing a copy and the result stops meaning anything.
+    shared = ["src/filesystem.cpp", "src/fatfs_diskio.cpp"]
+    absent = [name for name in shared if name not in text]
+    # Writes are gated behind this macro in fatfs_diskio.cpp. Without it
+    # the card is silently read-only and the smoke test fails at `write`.
+    if "PICOCALC_BSP_ENABLE_SD_WRITE" not in text:
+        absent.append("PICOCALC_BSP_ENABLE_SD_WRITE")
+    add_check(checks, "host-backend:shares-device-filesystem", not absent,
+              missing=absent)
+
+
 def verify_firmware_validation(checks: List[Check], root: Path) -> None:
     """Check the emulator-side ledger: capability snapshot and Gate records.
 
@@ -1062,6 +1102,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     verify_catalog(checks, root)
     verify_hardware_validation(checks, root)
     verify_firmware_validation(checks, root)
+    verify_host_backend(checks, root)
     verify_release_conditions(checks, root)
 
 

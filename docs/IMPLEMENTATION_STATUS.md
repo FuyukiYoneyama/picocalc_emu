@@ -316,11 +316,36 @@ picocalc-run --bin app.bin --board picocalc --lcd-variant pio-rgb565 \
 （時間待ちの精度は別で、こちらは正確）。レポート項目（`key_events_dropped`など）に
 対する`assert`は書けない。
 
+### Host backend（Milestone 2、2026-08-05）
+
+**アプリのロジックをRP2040バイナリを作らずに検査できるようになった。** BSPの公開APIを
+ホストのモデルに対してビルドする。詳細は[`HOST_BACKEND.md`](HOST_BACKEND.md)。
+
+```sh
+python3 tools/picocalc.py test --mode host
+```
+
+`bsp/host/tests/emu_smoke.cpp`が26項目を検査し、3回連続実行で出力がバイト一致する
+（Milestone 2の完了条件）。所要は1秒未満。
+
+**firmware backendが権威である。** hostにはPIO・DMA・I2C・割り込みが存在しないため、
+ハードウェアの挙動は問いとして成立しない。その代わり次の2点が効く。
+
+- **framebuffer digestが両backendで同じ正規形**（row-major RGB565生バイト列の
+  SHA-256）。同じ絵を描いたアプリは両方で同じ64文字を出すので、安いhost実行が
+  高いfirmware実行の代わりを務めてよい根拠が取れる
+- **`src/filesystem.cpp`と`src/fatfs_diskio.cpp`はデバイスと同一ソースをコンパイル
+  する**（Pico SDK依存が無いため）。差し替えるのは下のブロックデバイスだけで、
+  hostのファイルシステム試験は代用品ではなく出荷するコードを動かしている
+
+**まだできないこと:** directory-backed Fast SDモードは未実装（カードはホストメモリ上の
+セクタ配列）。multicore・割り込み・DMA・PIOは存在しない。LCDのwire形式の違い（A/B）も
+hostには無く、`verify_pixels`は常に`transport_ok=true`を返す。scenario runnerは
+firmware backend専用で、hostのテストはC++で書く。
+
 また、次の機能は今後のエミュレーター段階である。
 
-- **ホストでのアプリロジック単体試験（Milestone 2）** — `clear_lines()`のような
-  純粋関数をRP2040バイナリを作らずに検査する。ドッグフーディングの穴3は未解決
-- FAT イメージを使う仮想 SD と故障注入
+- directory-backed Fast SDモードと故障注入
 - JUnit成果物、100回連続実行の決定性検査
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 

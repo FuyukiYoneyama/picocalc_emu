@@ -131,6 +131,19 @@
       "detail": "The count register carries the depth in its low five bits and the Canonical BSP reads it as `key_info[0] & 0x1f`. An unbounded model queue could reach a multiple of 32, whereupon the driver reads zero and stops draining for good -- an emulator-only state. Overflow is counted in key_events_dropped and reported; picocalc-run warns when a scenario's input was discarded.",
       "limitation": "Which end a full controller discards is unverified. The model drops the arriving event.",
       "since_gate": "milestone-3"
+    },
+    {
+      "id": "host-backend",
+      "what": "The BSP's public API built against host models, so application logic runs natively",
+      "detail": "Lives in picocalc_emu under bsp/host and does not use this emulator. display is a framebuffer, keyboard a bounded queue, psram host memory, sdcard an array of sectors; the filesystem layer and ChanFatFS are the device's own sources compiled unchanged on top of the RAM block device. sleep_ms advances a virtual clock rather than blocking. Run with `picocalc.py test --mode host`; bsp/host/tests/emu_smoke.cpp is Milestone 2's completion condition and its output is byte-identical across runs.",
+      "limitation": "Not a model of the chip: no PIO, DMA, I2C transaction, interrupt or multicore, and no LCD wire format, so verify_pixels always reports transport_ok. Directory-backed Fast SD mode is not implemented. audio underrun_count is always zero because nothing consumes samples on a schedule -- that is the absence of a measurement, not a result. This backend answers whether the application computed the right thing; the firmware backend remains the authority on hardware behaviour.",
+      "since_gate": "milestone-2"
+    },
+    {
+      "id": "cross-backend-framebuffer-digest",
+      "what": "The host and firmware backends hash the framebuffer identically",
+      "detail": "Both define the canonical form as the raw RGB565 byte stream -- width * height * 2 bytes, row-major, little-endian per pixel -- so an application that draws the same picture under both produces the same digest in picocalc-run's framebuffer.rgb565_sha256 and in picocalc::host::framebuffer_sha256(). This is what lets a cheap host run be checked against a slow firmware one. Hashing a PNG instead would break the moment either encoder changed, without the picture changing.",
+      "since_gate": "milestone-2"
     }
   ],
   "unsupported": [

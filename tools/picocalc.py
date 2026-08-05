@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -445,6 +445,92 @@ def load_firmware_target(target_id: str) -> Optional[dict]:
     return None
 
 
+def host_test(
+    build_dir: Optional[Path],
+    repeat: int,
+    json_out: Optional[Path],
+) -> int:
+    """Build and run the host backend's smoke application.
+
+    This is Milestone 2's completion condition: a dedicated application
+    starts on the PC and produces screen, key and file results
+    deterministically. Determinism is checked from the outside — the
+    program is run `repeat` times and the output compared byte for byte
+    — because nothing inside it may read a wall clock, a random source,
+    or an address.
+
+    Exit codes match the firmware mode: 0 pass, 1 the run was judged and
+    failed, 2 it could not be judged (no compiler, configure failed).
+    """
+    host_source = ROOT / "bsp" / "host"
+    if not host_source.is_dir():
+        print("host backend not found at {}".format(host_source))
+        return 2
+
+    build = build_dir if build_dir is not None else ROOT / "build-host"
+    steps = (
+        ["cmake", "-S", str(host_source), "-B", str(build)],
+        ["cmake", "--build", str(build), "-j"],
+    )
+    for command in steps:
+        print("$ {}".format(" ".join(command)))
+        try:
+            result = subprocess.run(command, check=False)
+        except OSError as error:
+            print("cannot run {}: {}".format(command[0], error))
+            print("the host backend needs cmake and a C++17 compiler")
+            return 2
+        if result.returncode != 0:
+            # A configure or compile failure is not a verdict about the
+            # application; it means the run never happened.
+            return 2
+
+    binary = build / "tests" / "emu_smoke"
+    if not binary.is_file():
+        print("emu_smoke was not produced at {}".format(binary))
+        return 2
+
+    outputs: List[str] = []
+    codes: List[int] = []
+    for index in range(repeat):
+        run = subprocess.run([str(binary)], check=False, capture_output=True, text=True)
+        outputs.append(run.stdout)
+        codes.append(run.returncode)
+        if index == 0:
+            print(run.stdout, end="")
+
+    deterministic = all(text == outputs[0] for text in outputs)
+    passed = all(code == 0 for code in codes)
+    digest = hashlib.sha256(outputs[0].encode("utf-8")).hexdigest()
+
+    print("host backend: {} run(s), {}, output sha256 {}".format(
+        repeat,
+        "byte-identical" if deterministic else "OUTPUTS DIFFER",
+        digest[:16],
+    ))
+
+    if json_out is not None:
+        report = {
+            "schema_version": 1,
+            "mode": "host",
+            "status": "pass" if (passed and deterministic) else "fail",
+            "runs": repeat,
+            "deterministic": deterministic,
+            "stdout_sha256": digest,
+            "exit_codes": codes,
+        }
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        with json_out.open("w", encoding="utf-8") as sink:
+            json.dump(report, sink, indent=2, sort_keys=True)
+            sink.write("\n")
+        print("wrote {}".format(json_out))
+
+    if not deterministic:
+        print("the same program produced different output on repeated runs")
+        return 1
+    return 0 if passed else 1
+
+
 def firmware_test(
     target_id: str,
     firmware: Path,
@@ -662,24 +748,38 @@ def main() -> int:
     )
 
     test_parser = subparsers.add_parser(
-        "test", help="run a conformance target on the firmware backend"
+        "test", help="run a conformance target on the firmware or host backend"
     )
     test_parser.add_argument(
         "--mode",
-        choices=["firmware"],
+        choices=["firmware", "host"],
         required=True,
-        help="only 'firmware' exists today; host mode is Milestone 2",
+        help=(
+            "'firmware' runs the real image on the RP2040 emulator and is the "
+            "authority on hardware behaviour; 'host' builds the BSP against host "
+            "models and runs application logic natively, in a fraction of a second"
+        ),
     )
     test_parser.add_argument(
         "--target",
         default="picocalc-helloworld-a",
-        help="target id from reference-projects/firmware-targets.json",
+        help="firmware mode: target id from reference-projects/firmware-targets.json",
     )
     test_parser.add_argument(
         "--firmware",
         type=Path,
-        required=True,
-        help="BIN to run; its SHA-256 must match the pinned target",
+        help="firmware mode: BIN to run; its SHA-256 must match the pinned target",
+    )
+    test_parser.add_argument(
+        "--build-dir",
+        type=Path,
+        help="host mode: where to configure and build (default: build-host/)",
+    )
+    test_parser.add_argument(
+        "--repeat",
+        type=int,
+        default=3,
+        help="host mode: runs to compare for determinism (default: 3)",
     )
     test_parser.add_argument(
         "--backend-dir",
@@ -739,6 +839,10 @@ def main() -> int:
             args.hardware_validation_mode,
         )
     if args.command == "test":
+        if args.mode == "host":
+            return host_test(args.build_dir, max(1, args.repeat), args.json_out)
+        if args.firmware is None:
+            parser.error("--mode firmware requires --firmware <path>")
         return firmware_test(
             args.target,
             args.firmware,
