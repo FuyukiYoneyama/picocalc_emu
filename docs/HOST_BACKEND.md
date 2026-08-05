@@ -53,7 +53,8 @@ hostのファイルシステム試験は、代用品ではなく**出荷する�
 SDカードは**フォーマット済みで始まる**。BSPはmountするだけでformatせず、この
 ビルドもformatできない（ChanFatFSが`FF_USE_MKFS 0`で構成されており、その構成は
 実機検証済みのデバイスビルドの一部なので、hostの都合で変えない）。そこで
-購入時付属32 GBカードに合わせたFAT32レイアウトを既定で直接書き込む。
+テスト用セクタ配列は64 MiBだが、filesystemの選択は購入時付属32 GBカードに合わせて
+FAT32を既定として直接書き込む。容量を32 GBとして模擬しているという意味ではない。
 `format_sd(SdFormat::Fat16)`でFAT16も明示選択できる。`sd_formats_test`は両形式に対して
 共有Chan FatFsのmount/write/sync/read/compare/removeを実行する。
 
@@ -130,8 +131,12 @@ CIからそのまま使える。
 読んでいれば比較が落ちる。
 
 ```
-host backend: 3 run(s), byte-identical, output sha256 3a4c400f3034da4e
+host backend: 3 run(s), byte-identical, output sha256 84afb65deb46c313
 ```
+
+これはFAT32既定化後の現行出力で、完全なSHA-256は
+`84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b`である。
+`milestone2-20260805-01`に残る`3a4c400f...`はSD形式試験追加前の時点証拠なので書き換えない。
 
 ## まだできないこと
 

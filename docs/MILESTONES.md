@@ -129,11 +129,14 @@ keyboard conformanceは同じR1内の独立作業であり、R0固定後はR1-SD
 R1-SDは完了しました。Rust `SdCard`とhost block deviceの両方でFAT32を既定にし、FAT16を
 明示profileとして保持しました。FAT32はBPB、FSInfoとbackup、backup boot sector、
 root cluster 2、2面FATを持ちます。runner schema 6の`sd.format`に選択形式を記録し、
-template targetも`fat32`を明示固定します。
+template targetも`fat32`を明示固定します。targetの現行backend pinはR1-SDを含む
+`6a618010dc8b8217b6035951b361dc859f472301`で、Gate 7時点の`b285fa22...`は履歴として
+別フィールドに保持します。これはR1全体のverdict hardening完了を意味しません。
 
 - Rust board test: 61件合格（FAT profile構造試験5件を含む）
 - runner test: 26件合格（CLI依存条件とSD report試験を含む）
-- host CTest: FAT32/FAT16両形式で共有Chan FatFs smoke合格
+- host CTest: FAT32/FAT16両形式で共有Chan FatFs smoke合格。既定FAT32の`emu_smoke`は
+  3回バイト一致（stdout SHA-256 `84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b`）
 - firmware: 同一BIN SHA-256 `3fdb8231c164dbec73c17b556a964d9c16da44ae7ae6cbf615d39b7b08b934a5`
   でFAT32/FAT16ともSD smoke合格、exceptionなし、unsupported MMIO 0
 - FAT32 report 3回一致: SHA-256 `7d62d9cfc71ebb85d066ab9846271ba73c06f63d32c6f8db18bbfa5f088b5df0`

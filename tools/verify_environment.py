@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import generate_board_header
+from provenance import directory_sha256
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,19 @@ def git_head(path: Path) -> str:
     except OSError:
         return ""
     return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
+def git_has_commit(path: Path, commit: str) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(path), "cat-file", "-e", commit + "^{commit}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
 
 
 def load_json(path: Path) -> Any:
@@ -1135,6 +1149,125 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     verify_firmware_validation(checks, root)
     verify_host_backend(checks, root)
     verify_release_conditions(checks, root)
+    verify_r0_contract(checks, root)
+
+
+def verify_r0_contract(checks: List[Check], root: Path) -> None:
+    """Verify the portable half of the R0 generation/provenance contract."""
+    try:
+        manifest = load_json(root / "provenance/r0-baseline.json")
+        starting_points = manifest["starting_points"]
+        contracts = manifest["contracts"]
+        repositories = {item["repository"] for item in starting_points}
+        commits_valid = all(
+            re.fullmatch(r"[0-9a-f]{40}", item["commit"]) is not None
+            for item in starting_points
+        )
+        add_check(
+            checks,
+            "r0:baseline-contract",
+            manifest.get("schema_version") == 1
+            and manifest.get("record_id") == "r0-20260805"
+            and repositories == {"picocalc_emu", "picoem-picocalc", "picotetris"}
+            and commits_valid
+            and contracts.get("project_metadata_schema") == 2
+            and contracts.get("firmware_report_schema") == 6
+            and contracts.get("host_report_schema") == 1
+            and contracts.get("scenario_schema") == 1
+            and contracts.get("firmware_target_registry_schema") == 1
+            and contracts.get("capability_schema") == 1
+            and contracts.get("runner_exit_codes")
+            == {"0": "pass", "1": "judged_failure", "2": "could_not_judge"},
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(checks, "r0:baseline-contract", False, **error_details(error))
+
+    try:
+        metadata = load_json(root / "templates/rp2040-basic/.picocalc-project.json")
+        bsp_version = (root / "bsp/VERSION").read_text(encoding="utf-8").strip()
+        provenance = metadata["provenance"]
+        bsp = provenance["bsp"]
+        add_check(
+            checks,
+            "r0:generated-project-contract",
+            metadata.get("schema_version") == 2
+            and metadata.get("bsp_version") == bsp_version
+            and provenance.get("kind") == "generated"
+            and bsp.get("version") == bsp_version
+            and bsp.get("source_path") == "bsp"
+            and metadata.get("project_name") == "GENERATED_PROJECT_NAME"
+            and provenance.get("generator", {}).get("commit")
+            == "GENERATED_SOURCE_COMMIT"
+            and bsp.get("source_commit") == "GENERATED_SOURCE_COMMIT"
+            and bsp.get("tree_sha256") == "GENERATED_BSP_TREE_SHA256",
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(checks, "r0:generated-project-contract", False, **error_details(error))
+
+    required_files = [
+        "templates/rp2040-basic/LICENSE",
+        "templates/rp2040-basic/THIRD_PARTY_NOTICES.md",
+    ]
+    missing = [path for path in required_files if not (root / path).is_file()]
+    add_check(checks, "r0:generated-project-licenses", not missing, missing=missing)
+
+
+def verify_r0_workspace(checks: List[Check], root: Path, workspace_root: Path) -> None:
+    """Verify R0 fixed points and the reconstructed PicoTetris checkout."""
+    try:
+        manifest = load_json(root / "provenance/r0-baseline.json")
+        fixed_points = {
+            item["repository"]: item for item in manifest["fixed_points"]
+        }
+        required = {"picocalc_emu", "picoem-picocalc", "picotetris"}
+        add_check(checks, "r0:fixed-points", set(fixed_points) == required)
+        for name in sorted(required):
+            item = fixed_points[name]
+            repository = workspace_root / item["workspace_path"]
+            commit = item["commit"]
+            add_check(
+                checks,
+                "r0:fixed-commit:" + name,
+                re.fullmatch(r"[0-9a-f]{40}", commit) is not None
+                and git_has_commit(repository, commit),
+                commit=commit,
+                workspace_path=item["workspace_path"],
+            )
+
+        tetris = workspace_root / fixed_points["picotetris"]["workspace_path"]
+        metadata = load_json(tetris / ".picocalc-project.json")
+        bsp = metadata["provenance"]["bsp"]
+        expected_hash = bsp["tree_sha256"]
+        actual_hash = directory_sha256(tetris / "bsp")
+        source_commit = bsp["source_commit"]
+        add_check(
+            checks,
+            "r0:picotetris-provenance",
+            metadata.get("schema_version") == 2
+            and metadata.get("project_name") == "PicoTetris"
+            and metadata.get("bsp_version") == bsp.get("version")
+            and metadata.get("provenance", {}).get("kind") == "reconstructed"
+            and expected_hash == actual_hash
+            and git_has_commit(root, source_commit)
+            and (tetris / "LICENSE").is_file()
+            and (tetris / "THIRD_PARTY_NOTICES.md").is_file(),
+            expected_bsp_sha256=expected_hash,
+            actual_bsp_sha256=actual_hash,
+            bsp_source_commit=source_commit,
+        )
+
+        bundle = root / manifest["artifacts"]["picotetris_bundle"]["path"]
+        expected_bundle_hash = manifest["artifacts"]["picotetris_bundle"]["sha256"]
+        actual_bundle_hash = sha256(bundle) if bundle.is_file() else "missing"
+        add_check(
+            checks,
+            "r0:picotetris-bundle",
+            actual_bundle_hash == expected_bundle_hash,
+            expected=expected_bundle_hash,
+            actual=actual_bundle_hash,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(checks, "r0:workspace", False, **error_details(error))
 
 
 def verify_references(
@@ -1244,6 +1377,16 @@ def main() -> int:
         type=Path,
         help="directory containing catalog workspace_path repositories",
     )
+    parser.add_argument(
+        "--r0",
+        action="store_true",
+        help="also verify R0 fixed commits, PicoTetris provenance, and recovery bundle",
+    )
+    parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        help="directory containing the three R0 workspace repositories",
+    )
     parser.add_argument("--json", action="store_true", help="emit JSON only")
     parser.add_argument(
         "--project-root",
@@ -1252,7 +1395,12 @@ def main() -> int:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
-    mode = "portable+references" if args.references else "portable"
+    mode_parts = ["portable"]
+    if args.references:
+        mode_parts.append("references")
+    if args.r0:
+        mode_parts.append("r0")
+    mode = "+".join(mode_parts)
     checks: List[Check] = []
 
     if (args.strict_commit or args.reference_root is not None) and not args.references:
@@ -1261,6 +1409,16 @@ def main() -> int:
             "invocation:arguments",
             False,
             error="--strict-commit/--reference-root require --references",
+        )
+        report = make_report(checks, "invalid")
+        emit_report(report, args.json)
+        return 2
+    if args.workspace_root is not None and not args.r0:
+        add_check(
+            checks,
+            "invocation:arguments",
+            False,
+            error="--workspace-root requires --r0",
         )
         report = make_report(checks, "invalid")
         emit_report(report, args.json)
@@ -1276,6 +1434,13 @@ def main() -> int:
         verify_portable(checks, root)
         if args.references:
             verify_references(checks, root, reference_root, args.strict_commit)
+        if args.r0:
+            workspace_root = (
+                args.workspace_root.resolve()
+                if args.workspace_root is not None
+                else root.parent
+            )
+            verify_r0_workspace(checks, root, workspace_root)
     except Exception as error:  # Last-resort normalization for machine consumers.
         add_check(
             checks,

@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from provenance import directory_sha256, git_dirty, git_head
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates/rp2040-basic"
@@ -169,6 +171,16 @@ def create_project(name: str, output: Path) -> int:
     with metadata.open("r", encoding="utf-8") as source:
         project_metadata = json.load(source)
     project_metadata["project_name"] = name
+    bsp_version = (BSP / "VERSION").read_text(encoding="utf-8").strip()
+    source_commit = git_head(ROOT)
+    project_metadata["bsp_version"] = bsp_version
+    provenance = project_metadata["provenance"]
+    provenance["generator"]["commit"] = source_commit
+    provenance["generator"]["dirty"] = git_dirty(ROOT)
+    provenance["bsp"]["version"] = bsp_version
+    provenance["bsp"]["source_commit"] = source_commit
+    provenance["bsp"]["source_dirty"] = git_dirty(ROOT, "bsp")
+    provenance["bsp"]["tree_sha256"] = directory_sha256(BSP)
     with metadata.open("w", encoding="utf-8") as destination_file:
         json.dump(project_metadata, destination_file, ensure_ascii=False, indent=2)
         destination_file.write("\n")
@@ -660,7 +672,13 @@ def firmware_test(
     return 1 if failed else 0
 
 
-def verify(references: bool, strict_commit: bool, reference_root: Optional[Path]) -> int:
+def verify(
+    references: bool,
+    strict_commit: bool,
+    reference_root: Optional[Path],
+    r0: bool,
+    workspace_root: Optional[Path],
+) -> int:
     command = [sys.executable, str(ROOT / "tools/verify_environment.py")]
     if references:
         command.append("--references")
@@ -668,6 +686,10 @@ def verify(references: bool, strict_commit: bool, reference_root: Optional[Path]
         command.append("--strict-commit")
     if reference_root is not None:
         command.extend(["--reference-root", str(reference_root)])
+    if r0:
+        command.append("--r0")
+    if workspace_root is not None:
+        command.extend(["--workspace-root", str(workspace_root)])
     return subprocess.run(command).returncode
 
 
@@ -836,6 +858,16 @@ def main() -> int:
         type=Path,
         help="directory containing reference repositories",
     )
+    verify_parser.add_argument(
+        "--r0",
+        action="store_true",
+        help="also verify the local R0 fixed points and PicoTetris recovery bundle",
+    )
+    verify_parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        help="directory containing picocalc_emu, picoem-picocalc, and picotetris",
+    )
     fetch_parser = subparsers.add_parser(
         "fetch-references",
         help="clone catalog reference repositories at pinned commits",
@@ -891,7 +923,15 @@ def main() -> int:
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:
             parser.error("--strict-commit/--reference-root require --references")
-        return verify(args.references, args.strict_commit, args.reference_root)
+        if args.workspace_root is not None and not args.r0:
+            parser.error("--workspace-root requires --r0")
+        return verify(
+            args.references,
+            args.strict_commit,
+            args.reference_root,
+            args.r0,
+            args.workspace_root,
+        )
     if args.command == "fetch-references":
         return fetch_references(args.output, args.dry_run)
     return 2

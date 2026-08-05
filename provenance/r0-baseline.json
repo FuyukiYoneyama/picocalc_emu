@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "record_id": "r0-20260805",
+  "purpose": "R0 starting points and machine-readable acceptance contracts. Starting commits are the main-branch tips immediately before R0 edits; they are intentionally not self-references to the commit that stores this record.",
+  "starting_points": [
+    {
+      "repository": "picocalc_emu",
+      "workspace_path": "picocalc_emu",
+      "commit": "b6efb2e956b46432423fc1f3eaab111188e4c7db"
+    },
+    {
+      "repository": "picoem-picocalc",
+      "workspace_path": "picoem-picocalc",
+      "commit": "6a618010dc8b8217b6035951b361dc859f472301"
+    },
+    {
+      "repository": "picotetris",
+      "workspace_path": "picotetris",
+      "commit": "396ed5cb415d95289475032754a4931d915bb3a6"
+    }
+  ],
+  "contracts": {
+    "project_metadata_schema": 2,
+    "firmware_report_schema": 6,
+    "host_report_schema": 1,
+    "scenario_schema": 1,
+    "firmware_target_registry_schema": 1,
+    "capability_schema": 1,
+    "runner_exit_codes": {
+      "0": "pass",
+      "1": "judged_failure",
+      "2": "could_not_judge"
+    },
+    "known_r1_gaps": [
+      "non-scenario runs do not yet turn every required UART/LCD marker failure into exit 1",
+      "full official keyboard register/modifier/repeat/overflow conformance is pending"
+    ]
+  },
+  "fixed_points": []
+}

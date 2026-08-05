@@ -8,6 +8,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from provenance import directory_sha256
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PICOCALC = ROOT / "tools/picocalc.py"
@@ -465,8 +468,23 @@ class ToolTests(unittest.TestCase):
             metadata = json.loads(
                 (destination / ".picocalc-project.json").read_text(encoding="utf-8")
             )
+            bsp_version = (ROOT / "bsp/VERSION").read_text(encoding="utf-8").strip()
             self.assertEqual(metadata["project_name"], "Demo_App-1")
-            self.assertEqual(metadata["bsp_version"], "0.5.0")
+            self.assertEqual(metadata["schema_version"], 2)
+            self.assertEqual(metadata["bsp_version"], bsp_version)
+            self.assertEqual(metadata["provenance"]["kind"], "generated")
+            self.assertEqual(
+                metadata["provenance"]["bsp"]["version"], bsp_version
+            )
+            self.assertEqual(
+                metadata["provenance"]["bsp"]["tree_sha256"],
+                directory_sha256(destination / "bsp"),
+            )
+            self.assertRegex(
+                metadata["provenance"]["bsp"]["source_commit"], r"^[0-9a-f]{40}$"
+            )
+            self.assertTrue((destination / "LICENSE").is_file())
+            self.assertTrue((destination / "THIRD_PARTY_NOTICES.md").is_file())
 
     def test_project_generator_rejects_invalid_name(self):
         completed = run(PICOCALC, "new", "../bad")

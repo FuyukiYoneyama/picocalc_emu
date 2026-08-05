@@ -94,8 +94,13 @@
       "backend": {
         "repo": "picoem-picocalc",
         "branch": "main",
-        "accepted": "b285fa22e7df45917d7a29b8aab1a32130025146",
-        "test_command": "cargo test -p rp2040-emu"
+        "accepted": "6a618010dc8b8217b6035951b361dc859f472301",
+        "history": {
+          "gate7_accepted": "b285fa22e7df45917d7a29b8aab1a32130025146",
+          "r1_sd_tested": "6a618010dc8b8217b6035951b361dc859f472301"
+        },
+        "test_command": "cargo test -p picocalc-board -p picocalc-harness",
+        "note": "The current pin supports schema 6 and --sd-format. R1 verdict hardening is still pending, so a runner exit code alone is not yet the authoritative target verdict."
       },
       "runner": {
         "arguments": "--board picocalc --lcd-variant pio-rgb565 --quantum 1 --sd --sd-format fat32",
@@ -104,7 +109,8 @@
           "format": "fat32",
           "note": "FAT32 is the PicoCalc default; FAT16 must be selected explicitly for compatibility tests."
         },
-        "accepted_at_gate": 7
+        "first_accepted_at_gate": 7,
+        "current_profile_validated_at": "R1-SD"
       }
     }
   ]

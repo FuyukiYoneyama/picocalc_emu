@@ -1,8 +1,25 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "project_name": "GENERATED_PROJECT_NAME",
   "template": "rp2040-basic",
   "target": "picocalc-rp2040",
-  "bsp_version": "0.5.0",
+  "bsp_version": "0.8.8",
+  "provenance": {
+    "kind": "generated",
+    "generator": {
+      "repository": "https://github.com/FuyukiYoneyama/picocalc_emu.git",
+      "commit": "GENERATED_SOURCE_COMMIT",
+      "dirty": true
+    },
+    "template_path": "templates/rp2040-basic",
+    "bsp": {
+      "source_path": "bsp",
+      "version": "0.8.8",
+      "source_commit": "GENERATED_SOURCE_COMMIT",
+      "source_dirty": true,
+      "tree_sha256": "GENERATED_BSP_TREE_SHA256"
+    }
+  },
   "application_sources": [
     "app/main.cpp"
   ],

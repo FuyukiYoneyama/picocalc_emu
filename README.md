@@ -122,10 +122,12 @@ scenario status、停止理由、必須UART markerを併せて確認します。
 実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
 が全機能を完走します。
 
-SDのSPI block protocolはFAT形式に依存しません。購入時付属の32 GBカードに合わせて、
-firmware backendとhost backendは**FAT32をデフォルト**とし、FAT16は
-`--sd-format fat16`またはhost APIの明示指定で利用できます。両形式ともBSP自身の
-mount/write/sync/read/compare/removeを通し、各3回の決定性を確認済みです。
+SDのSPI block protocolはFAT形式に依存しません。テスト用volume自体は64 MiBですが、
+購入時付属の32 GBカードのfilesystemに合わせ、firmware backendとhost backendは
+**FAT32をデフォルト**とし、FAT16は`--sd-format fat16`またはhost APIの明示指定で
+利用できます。両形式ともBSP自身のmount/write/sync/read/compare/removeを通します。
+firmwareはFAT32/FAT16を各3回実行して決定一致、hostは両形式のCTest合格に加え、
+既定FAT32を使う`emu_smoke`の3回バイト一致を確認済みです。
 
 ```text
 [PICOCALC][LCD][VERIFY] app_status=pass
