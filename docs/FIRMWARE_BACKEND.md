@@ -41,6 +41,14 @@ shared device path.
 7. Connect the address `0x1f` I2C1 keyboard-controller model, including FIFO, battery, and backlight registers, and verify scripted key echo.
 8. Record PWM initialization. Audible output is not an acceptance condition for this sample because its `main()` does not start sample playback.
 9. Integrate UART, framebuffer, trace, PSRAM, keyboard, capability, commit, and firmware-hash artifacts with `picocalc_emu`.
+
+The primary behavioral reference for the keyboard controller is ClockworkPi's
+[`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
+STM32F103R8T6 firmware. The local workspace checkout is
+`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`. A working RP2040 application such as
+`picocalc-life` is consumer-side hardware evidence, not the protocol definition. Model changes must
+first agree with the official register/FIFO/key-state implementation, then be checked against the
+known-good consumer and hardware records.
 10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path as the next firmware conformance target.
 11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
 

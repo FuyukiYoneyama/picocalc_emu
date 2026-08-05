@@ -98,8 +98,8 @@ tetris.json: steps[2].condition.kind: 'region_stable' compares against an earlie
 
 **1回のバーストで31イベント（＝15キー）を超えて積んではいけない。**
 
-キーボードコントローラのカウントレジスタは深さを**下位5ビット**で返す。Canonical BSPは
-これを`key_info[0] & 0x1f`として読む（実機検証済みの挙動）。したがって32イベント
+ClockworkPi公式STM32 keyboard firmwareは`FIFO_SIZE 31`と`KEY_COUNT_MASK 0x1F`を定義する。
+Canonical BSPもカウントを`key_info[0] & 0x1f`として読む。したがって32イベント
 以上を保持したコントローラは**自分を空だと報告する**ことになり、実機はその状態に
 なり得ない。
 

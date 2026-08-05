@@ -127,8 +127,13 @@ UF2待ちへ進む状態と、対象ファームウェアを実行できた状�
 
 ### Gate 4: I2C keyboard controller
 
+- [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
+  （ローカル`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）の
+  STM32F103R8T6 firmwareを
+  protocol producerの一次リファレンスとする。`picocalc-life`はconsumer側の実機証拠である。
 - 固定ACKや固定`0xff`応答ではなく、外部I2C device interfaceを用意する。
-- address `0x1f`のFIFO、battery、backlight registerを実装する。
+- address `0x1f`のregister/FIFO、key state、modifier、hold/repeat、overflow policy、
+  battery、backlightを、対象workloadが使う範囲で実装する。
 - シナリオ入力をFIFOへ投入し、ファームウェアのLCD echoまで検証する。
 
 ### Gate 5: full application acceptance

@@ -485,6 +485,20 @@ def host_test(
             # application; it means the run never happened.
             return 2
 
+    # Run the model-level tests once before repeating the application.
+    # This includes both FAT32-default and explicit-FAT16 filesystem
+    # smoke paths; a failure is a judged host-backend failure.
+    try:
+        ctest = subprocess.run(
+            ["ctest", "--test-dir", str(build), "--output-on-failure"],
+            check=False,
+        )
+    except OSError as error:
+        print("cannot run ctest: {}".format(error))
+        return 2
+    if ctest.returncode != 0:
+        return 1
+
     binary = build / "tests" / "emu_smoke"
     if not binary.is_file():
         print("emu_smoke was not produced at {}".format(binary))
@@ -537,6 +551,8 @@ def firmware_test(
     backend_dir: Optional[Path],
     cycles: int,
     keys: Optional[str],
+    sd: bool,
+    sd_format: Optional[str],
     json_out: Optional[Path],
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
@@ -607,6 +623,8 @@ def firmware_test(
     ]
     if keys:
         command.extend(["--keys", keys])
+    if sd:
+        command.extend(["--sd", "--sd-format", sd_format or "fat32"])
 
     print("running {} on backend {}".format(target_id, actual_commit[:12]))
     # The runner resolves its default bootrom path relative to its own
@@ -788,6 +806,16 @@ def main() -> int:
     )
     test_parser.add_argument("--cycles", type=int, default=9_500_000_000)
     test_parser.add_argument("--keys", help="keys to inject through the keyboard FIFO")
+    test_parser.add_argument(
+        "--sd",
+        action="store_true",
+        help="firmware mode: attach an SD card; FAT32 is the default profile",
+    )
+    test_parser.add_argument(
+        "--sd-format",
+        choices=["fat32", "fat16"],
+        help="firmware mode: initial SD filesystem profile (requires --sd)",
+    )
     test_parser.add_argument("--json", dest="json_out", type=Path)
 
     verify_parser = subparsers.add_parser(
@@ -839,7 +867,14 @@ def main() -> int:
             args.hardware_validation_mode,
         )
     if args.command == "test":
+        if args.sd_format is not None and not args.sd:
+            parser.error("--sd-format requires --sd")
         if args.mode == "host":
+            if args.sd or args.sd_format is not None:
+                parser.error(
+                    "--sd/--sd-format are firmware-mode options; "
+                    "host mode tests FAT32 and FAT16 automatically"
+                )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
         if args.firmware is None:
             parser.error("--mode firmware requires --firmware <path>")
@@ -849,6 +884,8 @@ def main() -> int:
             args.backend_dir,
             args.cycles,
             args.keys,
+            args.sd,
+            args.sd_format,
             args.json_out,
         )
     if args.command == "verify":

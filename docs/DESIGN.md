@@ -25,14 +25,17 @@ BSP・テンプレート・実働プロジェクトの扱いは
 * 実機確認済みの Canonical PicoCalc BSP とプロジェクトテンプレート
 * 実働プロジェクトから採取した正常画面、通信トレース、SD 操作結果
 * LCD: ST7365P の ILI9488 互換 SPI コマンド、320x480 GRAM、320x320 可視領域、RGB565/18-bit 転送
-* キーボード: STM32F103 側の I²C デバイス、アドレス `0x1f`、レジスタ/FIFO/修飾キー
+* キーボード: [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとするSTM32F103側I²Cデバイス、アドレス`0x1f`、レジスタ/FIFO/修飾キー
 * SD カード: FAT ファイルシステム、PicoCalc の `/firmware` および SD アプリ配置
 * RP2040/RP2350 の GPIO、SPI、I²C、タイマ、乱数、UART/stdio、PSRAM、PWM/音声のうち対象アプリが利用する部分
 * PicoCalc で使われる実行環境: Pico SDK C/C++、LVGL、PicoMite、uLisp、FUZIX の優先順
 
 同梱の ST7365P 仕様書では内部 GRAM は 320x480 である。一方、既存ドライバは ILI9488 互換コマンドを使い、320x320 を可視領域としている。このため、LCD コントローラー、物理 GRAM、可視領域、回転・オフセットを別々のプロファイル値として扱う。
 
-既存リポジトリには、LCD の GPIO 10〜15 と `spi1`、キーボード I²C の `i2c1`/SDA 6/SCL 7/アドレス `0x1f`、キーボードレジスタ定義が存在する。I²C 速度はアプリにより 10 kHz と 400 kHz が使われているため、デバイスの固定値ではなく各トランザクションの属性として扱う。
+公式PicoCalcリポジトリにはSTM32F103R8T6 keyboard firmware、7×8 matrix＋12 buttons、
+I²C target `0x1f`、register/FIFO/key state/modifier/repeat/overflowの定義が存在する。
+RP2040 consumerにはI2C1/SDA 6/SCL 7があり、I²C速度はアプリにより10 kHzと400 kHzが
+使われるため、デバイスの固定値ではなく各トランザクションの属性として扱う。
 
 ## 2. 成功条件
 

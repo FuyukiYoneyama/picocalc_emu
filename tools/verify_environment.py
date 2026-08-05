@@ -439,6 +439,7 @@ def verify_host_backend(checks: List[Check], root: Path) -> None:
         host / "include" / "pico" / "stdlib.h",
         host / "include" / "picocalc" / "host.h",
         host / "tests" / "emu_smoke.cpp",
+        host / "tests" / "sd_formats_test.cpp",
     ]
     missing = [str(path.relative_to(root)) for path in required if not path.is_file()]
     add_check(checks, "host-backend:sources", not missing, missing=missing)
@@ -461,6 +462,36 @@ def verify_host_backend(checks: List[Check], root: Path) -> None:
         absent.append("PICOCALC_BSP_ENABLE_SD_WRITE")
     add_check(checks, "host-backend:shares-device-filesystem", not absent,
               missing=absent)
+
+    try:
+        sd_source = (host / "src" / "sdcard.cpp").read_text(encoding="utf-8")
+        sd_header = (host / "include" / "picocalc" / "host.h").read_text(
+            encoding="utf-8"
+        )
+        sd_test = (host / "tests" / "sd_formats_test.cpp").read_text(encoding="utf-8")
+        required_sd = {
+            "fat32-default": "format_sd(SdFormat::Fat32)" in sd_source,
+            "fat16-explicit": "SdFormat::Fat16" in sd_source,
+            "public-format-api": "enum class SdFormat" in sd_header,
+            "dual-format-smoke": (
+                "check_fat32()" in sd_test
+                and "check_fat16()" in sd_test
+                and "smoke_test()" in sd_test
+            ),
+        }
+        add_check(
+            checks,
+            "host-backend:sd-fat32-default-fat16-compatible",
+            all(required_sd.values()),
+            properties=required_sd,
+        )
+    except (OSError, UnicodeError) as error:
+        add_check(
+            checks,
+            "host-backend:sd-fat32-default-fat16-compatible",
+            False,
+            **error_details(error),
+        )
 
 
 def verify_firmware_validation(checks: List[Check], root: Path) -> None:

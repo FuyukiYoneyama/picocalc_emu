@@ -19,10 +19,10 @@
  * host convenient would change what ships. So the layout is written
  * here, byte by byte.
  *
- * It is the same textbook FAT16 the emulator's card model lays down
- * (`picoem-picocalc/crates/picocalc-board/src/sdcard.rs`), which is
- * already known to mount: one reserved sector holding the boot record,
- * two allocation tables, a fixed-size root directory, then data.
+ * The default profile is FAT32, matching the filesystem used on current
+ * hardware validation cards. FAT16 remains available explicitly for
+ * compatibility tests. Both layouts are written directly and mounted by
+ * the shared ChanFatFS sources.
  */
 
 #include "picocalc/sdcard.h"
@@ -44,6 +44,7 @@ extern uint64_t g_sd_sectors_written;
 namespace picocalc::sdcard::detail {
 // Named so `host::format_sd` can re-lay the volume between tests.
 void format_fat16();
+void format_fat32();
 }  // namespace picocalc::sdcard::detail
 
 namespace picocalc::sdcard {
@@ -131,10 +132,81 @@ void format_fat16() {
     }
 }
 
+void format_fat32() {
+    constexpr uint8_t kSectorsPerCluster = 1;
+    constexpr uint16_t kReservedSectors = 32;
+    constexpr uint8_t kNumFats = 2;
+    constexpr uint32_t kFatSectors = 1009;
+    constexpr uint32_t kRootCluster = 2;
+    constexpr uint16_t kFsInfoSector = 1;
+    constexpr uint16_t kBackupBootSector = 6;
+
+    g_sectors.assign(static_cast<size_t>(kSectorCount) * kSectorSize, 0);
+
+    const uint32_t data_sectors =
+        kSectorCount - kReservedSectors - kNumFats * kFatSectors;
+    const uint32_t cluster_count = data_sectors / kSectorsPerCluster;
+
+    uint8_t* boot = g_sectors.data();
+    boot[0] = 0xEB;
+    boot[1] = 0x58;
+    boot[2] = 0x90;
+    memcpy(boot + 3, "MSWIN4.1", 8);
+    put16(boot + 11, kSectorSize);
+    boot[13] = kSectorsPerCluster;
+    put16(boot + 14, kReservedSectors);
+    boot[16] = kNumFats;
+    put16(boot + 17, 0);  // FAT32 has no fixed root directory.
+    put16(boot + 19, 0);
+    boot[21] = 0xF8;
+    put16(boot + 22, 0);  // FAT size is in BPB_FATSz32.
+    put16(boot + 24, 63);
+    put16(boot + 26, 255);
+    put32(boot + 28, 0);
+    put32(boot + 32, kSectorCount);
+    put32(boot + 36, kFatSectors);
+    put16(boot + 40, 0);  // Both FATs are active and mirrored.
+    put16(boot + 42, 0);  // FAT32 version 0.0.
+    put32(boot + 44, kRootCluster);
+    put16(boot + 48, kFsInfoSector);
+    put16(boot + 50, kBackupBootSector);
+    boot[64] = 0x80;
+    boot[66] = 0x29;
+    put32(boot + 67, 0x87654321u);
+    memcpy(boot + 71, "PICOCALC   ", 11);
+    memcpy(boot + 82, "FAT32   ", 8);
+    put16(boot + 510, 0xAA55);
+
+    uint8_t* fsinfo = g_sectors.data() +
+                      static_cast<size_t>(kFsInfoSector) * kSectorSize;
+    put32(fsinfo + 0, 0x41615252u);
+    put32(fsinfo + 484, 0x61417272u);
+    // Cluster 2 is allocated to the empty root directory.
+    put32(fsinfo + 488, cluster_count - 1);
+    put32(fsinfo + 492, 3);
+    put32(fsinfo + 508, 0xAA550000u);
+
+    memcpy(g_sectors.data() +
+               static_cast<size_t>(kBackupBootSector) * kSectorSize,
+           boot, kSectorSize);
+    memcpy(g_sectors.data() +
+               static_cast<size_t>(kBackupBootSector + kFsInfoSector) * kSectorSize,
+           fsinfo, kSectorSize);
+
+    for (uint8_t fat = 0; fat < kNumFats; ++fat) {
+        const size_t off =
+            (static_cast<size_t>(kReservedSectors) + fat * kFatSectors) * kSectorSize;
+        put32(g_sectors.data() + off + 0, 0x0FFFFFF8u);
+        put32(g_sectors.data() + off + 4, 0xFFFFFFFFu);
+        put32(g_sectors.data() + off + 8, 0x0FFFFFFFu);  // Root cluster EOC.
+    }
+}
+
 }  // namespace detail
 
 namespace {
 using detail::format_fat16;
+using detail::format_fat32;
 }  // namespace
 
 void set_log_callback(LogCallback callback) {
@@ -156,7 +228,7 @@ bool is_present() {
 
 bool init() {
     if (g_sectors.empty()) {
-        format_fat16();
+        format_fat32();
     }
     g_initialized = true;
     return true;
@@ -228,7 +300,18 @@ uint64_t sd_sectors_written() {
 }
 
 void format_sd() {
-    picocalc::sdcard::detail::format_fat16();
+    format_sd(SdFormat::Fat32);
+}
+
+void format_sd(SdFormat format) {
+    switch (format) {
+        case SdFormat::Fat32:
+            picocalc::sdcard::detail::format_fat32();
+            break;
+        case SdFormat::Fat16:
+            picocalc::sdcard::detail::format_fat16();
+            break;
+    }
     detail::g_sd_sectors_read = 0;
     detail::g_sd_sectors_written = 0;
 }

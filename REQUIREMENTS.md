@@ -206,6 +206,19 @@ picoem-picocalc (ExecutionModel::Serialを正しさの基準とする)
   PIO1 / GPIO 20,21,2,3 -> PSRAM model（後続段階）
 ```
 
+Keyboard modelの一次リファレンスはClockworkPi公式
+[`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
+（ローカル配置`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`、
+STM32F103R8T6 firmware）とする。RP2040側の
+`picocalc-life`およびCanonical BSPは、公式controller protocolを利用するconsumer実装と
+実機証拠であり、protocol producerの定義を置き換えない。
+
+SD modelはSPI block protocolとvolume provisioningを分離する。購入時付属の32 GBカードに
+合わせてFAT32をデフォルトとし、FAT16は互換・診断用の明示profileとする。
+firmware/host両backendでFAT32とFAT16を選択でき、同じ
+mount/write/sync/read/compare/remove試験に合格することを要求する。既存FAT16回帰を
+維持したまま、FAT32 profile、形式を記録するstructured report、target固定を追加する。
+
 `picoem-picocalc`は別リポジトリで保守し、固定commitを使用する。デュアルコア、
 SSI/flash write、PIO、DMAの対応状況をcapability manifestに記録し、未対応機能を
 無視せず明示的に停止または`hardware_required`と判定する。`rp2040js`はRP2040の
@@ -315,5 +328,6 @@ required during initialization: <= 400000 Hz
 5. エミュレーター合格・実機不合格となった重大障害が 0 件である
 6. 通常の開発セッションにおける実機検証回数が基準値から 80% 以上減少する
 7. 代表的な変更で実機確認が 1〜2 回以内に収まる
+8. host/firmware両backendがFAT16とFAT32のSD profileで同一filesystem smoke testに合格し、実行した形式をreportに記録する
 
 この環境の価値は、AI にハードウェア初期化を毎回推測させることではない。実機確認済みのハードウェア層を再利用し、PC 上で結果を観測し、正常系との差分を使って修正できる状態を提供することにある。

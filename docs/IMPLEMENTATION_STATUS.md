@@ -2,12 +2,12 @@
 
 ## 現在利用できるもの（BSP 0.8.8、template app 0.8.4-*、RGB565推奨デフォルト）
 
-この段階では「空のプロジェクトから AI にハードウェア初期化を書かせない」ための
-土台を実装している。本節が扱うのは、この土台（BSP・テンプレート・検証器）であり、
-アプリ開発の検証範囲はビルド、既知の実機契約、起動時スモークテストである。
-PC 上でファームウェアを実行するエミュレーターは公式サンプルの経路について
-到達済みだが、標準templateが使う B 系統は未対応である。到達状況は後述の
-「エミュレーターの現在地」を参照する。
+「空のプロジェクトからAIにハードウェア初期化を書かせない」ためのBSP・テンプレート・
+検証器に加え、PC上でRP2040 BINを走らせるfirmware backend、BSP APIのhost model、
+scenario runnerまで利用できる。公式サンプルのA系統と標準templateのB系統は、LCD、
+PSRAM、SD、keyboardを含めてエミュレーター上で観測できる。個別アプリがhost unit testや
+継続回帰targetへ接続済みかどうかは別に判定し、現在のhardening順序は
+[`MILESTONES.md`](MILESTONES.md)の「現在の実行順序」を参照する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -27,7 +27,7 @@ PC 上でファームウェアを実行するエミュレーターは公式サ�
 |---|---|---|
 | LCD A（互換・診断） | `general/lcd/src/main_hwspi_rgb888_probe.cpp` + `PicoCalc/Code/picocalc_helloworld/lcdspi` | `bsp/vendor/lcd_hwspi_rgb888.cpp`、SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB666を3-byte RGB888 containerで送信、CASET/RASET/RAMWRから画素列までCS保持、RAMRDは6 MHz |
 | LCD B（推奨デフォルト） | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、LCD DMA OFF、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
-| Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、register `0x04`/FIFO `0x09`、repeated-start |
+| Keyboard | **一次:** [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（ローカル`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）。**consumer実機証拠:** `picocalc-life` | STM32F103R8T6側はI2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、7×8 matrix＋12 buttons。RP2040側はI2C1 GP6/7、400 kHz、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。固定サイン参照とPCM streamを切替可能 |
 | PSRAM | `pico_rescue` | 8 MiB、実機検証済み通常候補（250 MHz: 2/false→3/false→1.5/true、125 MHz: 1/false→1.5/false→2/false→3/false→4/false）、24 byte chunk、read/write自己検証、Buffer API |
@@ -207,7 +207,8 @@ ClockworkPi PicoCalc `CPI2.0`とSanDisk Ultra SDHC 32 GB/FAT32での実機情報
 - LCD: 0.8.3の3回起動中2回はGRAM readback合格、1回は不合格で間欠性が残る
 - Keyboard: 過去の標準スモークでPressed/Releasedを確認済みだが、0.8.8台帳では未完了
 
-そのため0.8.8台帳の`overall_status`は`pending`である。残るLCDとkeyboardは
+この最初の0.8.8台帳`bsp-0.8.8-20260802-01.json`の`overall_status`は`pending`である。
+残るLCDとkeyboardは
 専用HV-1診断`diagnostics/bsp-quality`で独立して閉じる。この診断はSDへmount/writeせず、
 音声も起動せず、LCD GRAM write/readbackを100回繰り返し、
 Up/Down/Enter/Escapeを誘導して最後に`[BSP_DIAG_VERDICT]`を出力する。
@@ -216,7 +217,12 @@ BSP 0.8.4から0.8.8までの音声変更は、cross-core SPSC ring、quantizer 
 EOF drain half切替、DMA IRQ source再開、wrap-255 duty再構成の等価式への変更である。
 0.8.8の実機音声記録により、この経路の連続再生を確認した。
 
-## エミュレーターの現在地（2026-08-04）
+**後続の相関台帳でpendingを解消した（2026-08-05）。** 同一ソース・同一設定のUF2を
+3回起動し、LCD readbackは全回合格、keyboardは138イベントを記録した。
+`bsp-0.8.8-20260804-02.json`は`overall_status=pass`であり、上記の最初の台帳に残した
+pendingを閉じる。過去record自体は時点証拠なので書き換えない。
+
+## エミュレーターの現在地（2026-08-05）
 
 Firmware backend（Milestone 1）はGate 0〜5が完了し、**HELLO-FULLに到達した**。
 無改変の公式`Code/picocalc_helloworld`を`picoem-picocalc`の
@@ -232,10 +238,12 @@ Firmware backend（Milestone 1）はGate 0〜5が完了し、**HELLO-FULLに到�
 
 現時点で可能なのは、UART0ログの取得、symbol/PCによる到達判定、LCD framebufferの
 hash/PNG取得、PSRAM内容の範囲検証、キーシナリオの投入、PWM設定の観測である。
-`python3 tools/picocalc.py test --mode firmware --firmware <bin>`で実行でき、
 対応・未対応機能は`firmware-validation/capability.json`に記録している。
 Gate 6（`picocalc_emu`統合）も完了し、`python3 tools/picocalc.py test --mode firmware`
-から固定commitのbackendを駆動できる。
+から固定commitのbackendを駆動できる。ただし現在の上位CLIはtargetのscenario、SD、
+LCD variant等をすべて転送せず、非scenario実行の合否条件も十分に検査しない。
+登録conformance targetの権威ある合否は、R1/R2が完了するまでrunnerのstructured reportと
+必須UART markerを併せて確認する。修正計画は`MILESTONES.md`のR1/R2に定義する。
 
 **Gate 7（Canonical BSP B conformance）も完了した（2026-08-04）。**
 `tools/picocalc.py new`で生成した標準template（B: PIO0/RGB565/LCD DMA OFF）が
@@ -272,9 +280,10 @@ LCD・keyboard pendingを解消した（0.8.3で見られた間欠readback失敗
 ```
 
 SDカードモデルはSPIモードのbring-up（CMD0/CMD8/CMD55+ACMD41/CMD58）と
-単一ブロックread/writeを実装し、**空のFAT16でフォーマット済みの状態で始まる**
-（BSPはmountするだけでフォーマットしないため）。mount/write/sync/read/compare/remove
-の全系列が通る。
+単一ブロックread/writeを実装する。空volumeは購入時付属32 GBカードに合わせて
+**FAT32がデフォルト**で、FAT16は明示選択できる（BSPはmountするだけでformatしない）。
+両形式でmount/write/sync/read/compare/removeの全系列をhost/firmware両backendで通し、
+runner reportはschema 6の`sd.format`、block数、read/write数、unknown commandを記録する。
 
 **注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
 Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで
@@ -325,8 +334,8 @@ picocalc-run --bin app.bin --board picocalc --lcd-variant pio-rgb565 \
 python3 tools/picocalc.py test --mode host
 ```
 
-`bsp/host/tests/emu_smoke.cpp`が26項目を検査し、3回連続実行で出力がバイト一致する
-（Milestone 2の完了条件）。所要は1秒未満。
+`bsp/host/tests/emu_smoke.cpp`が25個の明示的checkと初期化前提を検査し、3回連続実行で
+出力がバイト一致する（Milestone 2の完了条件）。所要は1秒未満。
 
 **firmware backendが権威である。** hostにはPIO・DMA・I2C・割り込みが存在しないため、
 ハードウェアの挙動は問いとして成立しない。その代わり次の2点が効く。
@@ -337,6 +346,10 @@ python3 tools/picocalc.py test --mode host
 - **`src/filesystem.cpp`と`src/fatfs_diskio.cpp`はデバイスと同一ソースをコンパイル
   する**（Pico SDK依存が無いため）。差し替えるのは下のブロックデバイスだけで、
   hostのファイルシステム試験は代用品ではなく出荷するコードを動かしている
+
+これはhost基盤と専用`emu_smoke`の合格である。任意アプリのソースが自動的に
+`test --mode host`へ接続されるわけではない。PicoTetrisのライン消去・衝突判定など、
+アプリ固有のhost unit testはR3で追加する。
 
 **まだできないこと:** directory-backed Fast SDモードは未実装（カードはホストメモリ上の
 セクタ配列）。multicore・割り込み・DMA・PIOは存在しない。LCDのwire形式の違い（A/B）も
@@ -350,7 +363,8 @@ firmware backend専用で、hostのテストはC++で書く。
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
 最初の可視化到達点と公式サンプル完全合格、ならびにその後のBのFirmware conformanceは
-[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。作業単位の実行計画は
+[`EMULATOR_ROADMAP.md`](EMULATOR_ROADMAP.md)に定義する。現在の作業順序は
+[`MILESTONES.md`](MILESTONES.md)、実施済みGate計画は
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)にある。エミュレーターの最初の対象がAでも、
 Canonical BSPの推奨表示デフォルトはBのままである。
 

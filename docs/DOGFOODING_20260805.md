@@ -29,9 +29,10 @@
 
 > **その後（2026-08-05）:** 穴1・2・4はscenario runnerで解消した。詳細は
 > [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)、証拠は
-> `firmware-validation/records/milestone3-20260805-01/`。**穴3（ホストでの
-> 単体試験）は未解決**であり、Milestone 2の作業として残っている。
-> 各節の末尾に現状を追記した。
+> `firmware-validation/records/milestone3-20260805-01/`。穴3については**host device modelと
+> 専用`emu_smoke`の基盤が完成**した。ただしPicoTetris自身のライン消去・衝突判定を
+> 呼び出すhost unit testはまだ無い。基盤完成とアプリ接続完了を区別し、後者は
+> `MILESTONES.md`のR3で行う。各節の末尾に後続状態を追記した。
 
 ### 1. キー入力のタイミングを制御できない（最も重い）
 
@@ -84,11 +85,13 @@
 → Milestone 2のhost backendの価値はここにある。当初「firmware backendがあるので
 優先度が下がった」と評価したが、**アプリのロジック検証という別の用途がある**。
 
-> **解消（2026-08-05）。** host backendがBSPの公開APIをホストのモデルに対して
+> **基盤を解消（2026-08-05）。** host backendがBSPの公開APIをホストのモデルに対して
 > ビルドする。`python3 tools/picocalc.py test --mode host`で1秒未満で走る。
 > 詳細は[`HOST_BACKEND.md`](HOST_BACKEND.md)。
 >
-> これで4つの穴はすべて塞がった。ただし**firmware backendが権威である**ことは
+> このコマンドが現在走らせるのは汎用`emu_smoke`であり、PicoTetrisの
+> `clear_lines()`や`collides()`を直接試験しない。アプリ固有の穴はR3へ残る。
+> ただし**firmware backendが権威である**ことは
 > 変わらない。hostにはPIO・DMA・I2C・割り込みが無く、ハードウェアの挙動は
 > 問いとして成立しない。両者を繋ぐのはframebuffer digestで、正規形が同一なので
 > 同じ絵を描いたアプリは両方で同じhashを出す。
@@ -124,8 +127,13 @@
    [`HOST_BACKEND.md`](HOST_BACKEND.md)
 3. ~~定期スナップショット~~ — **完了**。scenarioの`snapshot`操作に含まれる
 
-**この記録から出た作業はすべて終わった。** 実際にアプリを1本書いたことで、
-計画からは出てこなかった要求が3つ出て、そのすべてが実装に至っている。
+**この時点で定義した基盤作業は完了した。** 実際にアプリを1本書いたことで、
+計画からは出てこなかった要求が3つ出て、その基盤実装まで到達した。
+
+> **後続レビュー（2026-08-05）:** PicoTetrisを継続回帰として運用するには、生成契約と
+> provenance、アプリ固有host unit test、再現可能BIN、target registry/CLI、CIがさらに必要と
+> 判明した。これは当時の観察を取り消すものではなく、基盤を実運用へ接続する次段階である。
+> 順序と受入条件は`MILESTONES.md`のR0〜R4を正典とする。
 
 ## 成果物
 
@@ -134,7 +142,8 @@
 420行を捨てないために版管理下へ移した。BSPは生成時のコピーのままで、
 変更していない。
 
-このゲームは以後、**エミュレーターの回帰試験の対象**でもある。
+このゲームはエミュレーターの**回帰候補かつ現在のscenario証拠**である。
 `scenarios/tetris-line-clear.json`が実行するのはこのバイナリであり、
 そこで見つかったキーボードモデルの欠陥は、実際のアプリを走らせなければ
-出てこなかった種類のものである。
+出てこなかった種類のものである。source identity、再現可能build、target登録、CIまでを
+満たす正式な継続回帰化はR3/R4で行う。

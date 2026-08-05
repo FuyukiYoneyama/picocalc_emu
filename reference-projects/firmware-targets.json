@@ -98,7 +98,12 @@
         "test_command": "cargo test -p rp2040-emu"
       },
       "runner": {
-        "arguments": "--board picocalc --lcd-variant pio-rgb565 --quantum 1",
+        "arguments": "--board picocalc --lcd-variant pio-rgb565 --quantum 1 --sd --sd-format fat32",
+        "sd": {
+          "attached": true,
+          "format": "fat32",
+          "note": "FAT32 is the PicoCalc default; FAT16 must be selected explicitly for compatibility tests."
+        },
         "accepted_at_gate": 7
       }
     }

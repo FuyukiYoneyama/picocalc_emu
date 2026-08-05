@@ -1,4 +1,4 @@
-# 詳細実装計画（Milestone 1: Firmware backend）
+# 詳細実装計画（Milestone 1: Firmware backend、実施済み）
 
 > **文書の位置付け:** 全体計画の正典は`MILESTONES.md`、Gateの受入条件の正典は
 > `EMULATOR_ROADMAP.md`である。本書はそれらを変更せず、Milestone 1を実行可能な
@@ -6,13 +6,19 @@
 > `EMULATOR_ROADMAP.md`で食い違う場合は`EMULATOR_ROADMAP.md`を優先する。
 >
 > 作成日: 2026-08-03。同日、計画レビュー（整合レビューと`picoem-picocalc`
-> 実リポジトリの実現可能性調査）の結果を反映して改訂。進捗欄は着手時に更新する。
+> 実リポジトリの実現可能性調査）の結果を反映して改訂。Gate 0〜7は2026-08-04に完了した。
+>
+> **現在の計画:** 本書は当時の判断、制限、受入過程を保存する実施済み計画である。
+> 2026-08-05レビュー後のcross-repository作業（生成契約、backend verdict、CLI/registry、
+> PicoTetris回帰、CI、実機相関）の順序と受入条件は[`MILESTONES.md`](MILESTONES.md)の
+> 「現在の実行順序」を正典とする。本書の「未対応」「残る制限」は、明示的な後続注記が
+> ない限り、そのGate受入時点の状態として読む。
 
 ## 1. 目標の再確認
 
 プロジェクトの目的は「AIがPicoCalc向けプログラムをエミュレーター上で観測・検証・
 修正できるようにし、人間の実機検証往復を最小化すること」である。この目的に対して
-現在欠けているのは第2段（エミュレーター）であり、その最初の到達目標は、
+計画作成時に欠けていたのは第2段（エミュレーター）であり、その最初の到達目標は、
 ClockworkPi公式の無改変`Code/picocalc_helloworld`を`picoem-picocalc`の
 `ExecutionModel::Serial`上で完全合格（HELLO-FULL）させ、続いてCanonical BSP Bの
 conformance（Gate 7）を通すことである。
@@ -356,6 +362,14 @@ backend内部、および`firmware-validation/records/`。Gate固有の禁止は
 I2C hookと新設controller model、および`firmware-validation/records/`。
 Gate固有の禁止は固定ACK・固定`0xff`応答などの即席実装。
 
+> **後続レビュー（2026-08-05）:** Gate 4で実装したmodelの一次リファレンスは、
+> [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
+> （ローカル`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）の
+> STM32F103R8T6 firmwareである。
+> `picocalc-life`やCanonical BSPはRP2040 consumerの実機証拠として使う。Gate 4の
+> workload合格は維持するが、公式firmwareのregister/FIFO/state/modifier/repeat/overflowとの
+> 完全なconformance棚卸しは`MILESTONES.md` R1で行う。
+
 ### Gate 5: full application acceptance → HELLO-FULL（実機不要）
 
 作業:
@@ -501,7 +515,12 @@ verifyも失敗する（fudge=0・clkdiv 2.00で、Gate 3のモデル較正は�
 fudge=true・clkdiv 1.00に合わせたもの）。いずれも
 `firmware-validation/records/gate7-20260804-01/`へ記録した。
 
-## 5. Track A: 0.8.8実機台帳クローズ
+> **後続状態（2026-08-05）:** 上記はGate 7受入時点の記録である。その後、実機相関で
+> 得たchip IDを根拠にPSRAM modelを修正し、SPI0 SD modelも実装した。現在は標準templateの
+> LCD・PSRAM・SDスモークが完走する。現在状態は`IMPLEMENTATION_STATUS.md`、時点証拠は
+> `hardware-validation/records/bsp-0.8.8-20260804-02.json`を参照する。
+
+## 5. Track A: 0.8.8実機台帳クローズ（完了）
 
 Gate作業と独立に、次の1セッションを人間へ依頼する。
 
@@ -520,6 +539,9 @@ Gate作業と独立に、次の1セッションを人間へ依頼する。
 価値がある。Gate 2の受入判定までにTrack Aの結果が揃わない場合、Gate 2は
 暫定合格とし、Track A完了後に実機RAMRD挙動と突き合わせて再確認する。
 Gate 0〜2の着手はTrack Aを待たない。
+
+> **完了（2026-08-05）:** `bsp-0.8.8-20260804-02.json`でLCD readbackは3回連続合格、
+> keyboardは138イベントを確認し、0.8.8台帳のLCD・keyboard pendingを解消した。
 
 ## 6. 検証と記録の規律
 
@@ -566,8 +588,8 @@ Gate 1のXIP/bootrom近道の成立確認と、Gate 2で新設する汎用device
 先行リスクであり、Gate 0の棚卸しで見積りを確定する。Gate 0開始時点の
 環境ブロッカー（Rust toolchain不在）は2026-08-03に解消済みである（§3.2）。
 
-## 8. Milestone 2以降への接続
+## 8. Milestone 2以降への接続（実施結果）
 
-Milestone 1完了後の順序は`MILESTONES.md`に従う（Host device models →
-Scenario runner → Hardware correlation → BSP lifecycle）。本書はMilestone 1の
-完了をもって役目を終え、後続Milestoneの詳細計画は着手時に別途起こす。
+Milestone 1完了後、Host device modelsとScenario runnerまで実装した。今後は
+`MILESTONES.md`の「現在の実行順序」に従い、完了済み基盤を再現可能な回帰へ固めてから
+Hardware correlationとBSP lifecycleへ進む。本書はMilestone 1の実施記録として残す。

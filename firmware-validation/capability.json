@@ -70,8 +70,8 @@
     {
       "id": "keyboard-controller",
       "what": "PicoCalc STM32 keyboard/power controller at address 0x1F on I2C1",
-      "detail": "Key FIFO, key count, battery and backlight registers. Register selection survives STOP, so both the official driver's write-STOP-read and the Canonical BSP's repeated START work against one model.",
-      "limitation": "Bus speed is not modelled, so 10 kHz and 400 kHz behave identically.",
+      "detail": "ClockworkPi's official PicoCalc/Code/picocalc_keyboard STM32F103R8T6 firmware is the primary behavioral reference. The model implements the consumer-visible key FIFO, key count, battery and keyboard-backlight registers. Register selection survives STOP, so both the official RP2040 driver's write-STOP-read and the Canonical BSP's repeated START work against one model.",
+      "limitation": "Only the RP2040-consumer subset is modelled. Firmware version/config/interrupt/LCD-backlight/debounce/poll/reset/C64/power-off registers, physical matrix scanning, modifiers and hold/repeat generation are absent. Bus speed is not modelled, so 10 kHz and 400 kHz behave identically.",
       "since_gate": 4
     },
     {
@@ -108,9 +108,9 @@
     {
       "id": "sd-card",
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
-      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The card arrives formatted with an empty FAT16 volume, because the BSP mounts and never formats. The template's full smoke sequence -- mount, write, sync, read, compare, remove -- completes.",
-      "limitation": "No multi-block transfer, no CSD/CID beyond bring-up, no removal or write-protect, and writes complete immediately rather than holding the host through a programming delay.",
-      "since_gate": "post-7"
+      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated card defaults to FAT32, matching PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 6 records the selected format and block counters.",
+      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect, raw-image persistence or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay.",
+      "since_gate": "post-7; fat32-default completed in R1-SD"
     },
     {
       "id": "scenario-runner",
@@ -128,8 +128,8 @@
     {
       "id": "keyboard-fifo-depth",
       "what": "The keyboard controller's queue is bounded at 31 events, the deepest its count register can express",
-      "detail": "The count register carries the depth in its low five bits and the Canonical BSP reads it as `key_info[0] & 0x1f`. An unbounded model queue could reach a multiple of 32, whereupon the driver reads zero and stops draining for good -- an emulator-only state. Overflow is counted in key_events_dropped and reported; picocalc-run warns when a scenario's input was discarded.",
-      "limitation": "Which end a full controller discards is unverified. The model drops the arriving event.",
+      "detail": "The official STM32 firmware defines FIFO_SIZE=31 and KEY_COUNT_MASK=0x1F; the Canonical BSP reads the same field as `key_info[0] & 0x1f`. The official default leaves CFG_OVERFLOW_ON clear and drops the arriving event, which is the policy the model implements. Overflow is counted in key_events_dropped and reported; picocalc-run warns when a scenario's input was discarded.",
+      "limitation": "The official alternative policy, enabled by CFG_OVERFLOW_ON, overwrites the oldest event. The configuration register and that alternative are not yet modelled.",
       "since_gate": "milestone-3"
     },
     {

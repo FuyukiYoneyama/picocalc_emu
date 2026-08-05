@@ -49,13 +49,14 @@ Solが要件、計画、設計、受入、レビュー、統合、commit/push、
 
 ## このリポジトリの現在の段階
 
-目的は3段階で達成します。現在は第1段だけが完成しています。
+目的は3段階で達成します。Canonical BSPとエミュレーター基盤（Milestone 0〜3）は
+完成し、現在はそれらを再現可能な継続回帰へ固めて実機相関を増やす段階です。
 
 | 段 | 内容 | 状態 | あなたへの影響 |
 |---|---|---|---|
-| 1 | Canonical BSP — 実績済みの転送契約と由来を固定し、あなたの変更範囲を`app/`へ限定する | ソース・portable基盤は**完了**（BSP 0.8.8）。0.8.8実機台帳はLCD/keyboard pending | ハードウェア初期化を書かない。既存APIを呼ぶ |
-| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A系統・B系統ともLCD・SD・キー入力を観測可能（Milestone 1〜3完了、2026-08-05）。**条件付きキー投入と画面の機械判定、アプリロジックのhost単体試験も可能** | 画面・キー・SDはPC上で確認できる。**実機の見た目・聞こえ方だけ人間に依頼する** |
-| 3 | 実機相関 — 実機結果を台帳へ記録し、予測精度を校正する | 一部 | 実機結果は必ず台帳へ記録する |
+| 1 | Canonical BSP — 実績済みの転送契約と由来を固定し、あなたの変更範囲を`app/`へ限定する | **完了**（BSP 0.8.8）。0.8.8実機台帳はLCD・keyboardを含め`pass` | ハードウェア初期化を書かない。既存APIを呼ぶ |
+| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A/BともLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成、個別アプリのhost test・継続target化は別途必要 | 画面・キー・SDはPC上で確認し、実機固有の見た目・聞こえ方だけ人間に依頼する |
+| 3 | 実機相関 — 実機結果を台帳へ記録し、予測精度を校正する | 最初の相関は完了。現行成果物の継続相関は進行前 | 実機結果は必ず台帳へ記録する |
 
 第2段はMilestone 1〜3が完了しました（2026-08-05）。ClockworkPi公式サンプル
 `picocalc_helloworld`（A系統）に加え、**あなたが`picocalc.py new`で生成する標準
@@ -66,6 +67,12 @@ mount/write/sync/read/compare/removeまで到達し`app_status=pass`を出せま
 ```sh
 python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 ```
+
+現行の上位CLIはfirmwareを起動するsmoke経路として使えますが、targetに宣言した
+scenario・SD・LCD variant等をすべて自動転送して合否判定する段階にはまだありません。
+このコマンドの終了だけで「全機能合格」と報告せず、R1/R2完了まではrunnerの
+structured report、scenario status、必須UART markerを確認してください。修正順序は
+[`docs/MILESTONES.md`](docs/MILESTONES.md)の「現在の実行順序」にあります。
 
 **画面の状態を見てキーを条件付きに投入したいときはscenario runnerを使います。**
 `--keys`は起動前に固定文字列を積むだけで、「この画面になったらこのキー」という
@@ -79,7 +86,9 @@ python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 python3 tools/picocalc.py test --mode host
 ```
 
-RP2040バイナリを作らずに1秒未満で検査できますが、**firmware backendが権威で
+このコマンドが現在実行するのはBSP基盤の専用`emu_smoke`です。任意アプリのロジックが
+自動的に試験されるわけではなく、アプリ側にhardware-freeなtest targetを用意する必要が
+あります。RP2040バイナリを作らずに1秒未満で検査できますが、**firmware backendが権威で
 あることは変わりません。** PIO・DMA・I2C・割り込み・LCDのwire形式はhostに
 存在しないため、それらに依存する挙動はfirmware backendでしか確認できません。
 詳細は[`docs/HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
@@ -94,7 +103,8 @@ RP2040バイナリを作らずに1秒未満で検査できますが、**firmware
 エミュレーターが今できること・できないことの一覧は
 [`firmware-validation/capability.json`](firmware-validation/capability.json)にあります。
 
-到達状況の詳細は[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §4の進捗表、
+到達状況と今後の順序は[`docs/MILESTONES.md`](docs/MILESTONES.md)、実施済みGateの詳細は
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §4、
 エミュレーターが今できること・できないことは
 [`firmware-validation/capability.json`](firmware-validation/capability.json)にあります。
 
@@ -250,9 +260,14 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 - `REQUIREMENTS.md`: 将来のエミュレーターを含む要求仕様
 - `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
 - `docs/EMULATOR_ROADMAP.md`: 無改変`picocalc_helloworld`から始める実装順と段階別受入条件
-- `docs/IMPLEMENTATION_PLAN.md`: Milestone 1をGate別の作業単位へ分解した実行計画
+- `docs/IMPLEMENTATION_PLAN.md`: 実施済みMilestone 1をGate別に分解した計画と判断記録
 - `docs/SCENARIO_RUNNER.md`: JSON scenarioの形式、条件付きキー投入、画面の機械判定
 - `docs/HOST_BACKEND.md`: アプリロジックをホストのモデルに対してビルドし単体試験する
+- keyboard controller/model作業: 一次リファレンスはClockworkPi公式
+  [`Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)。
+  このworkspaceのローカル配置は
+  `/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`である。RP2040アプリを
+  protocol producer仕様の代用にしない
 - `docs/DESIGN.md`: **未実装**エミュレーターの将来設計。Phase番号は旧体系であり、
   実行順序は`docs/MILESTONES.md`が優先する
 - `bsp/vendor/README.md`: driverごとの由来、変更規約、呼び出し粒度

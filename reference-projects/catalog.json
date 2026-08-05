@@ -1,7 +1,54 @@
 {
   "schema_version": 1,
-  "policy": "Working hardware projects are evidence. Canonical BSP code is changed only with a new hardware-correlated result.",
+  "policy": "Official controller firmware is the primary protocol reference. Working RP2040 hardware projects are consumer-side evidence. Canonical BSP code is changed only with a new hardware-correlated result.",
   "projects": [
+    {
+      "name": "PicoCalc",
+      "git_url": "https://github.com/clockworkpi/PicoCalc.git",
+      "official_source_url": "https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard",
+      "workspace_path": "PicoCalc",
+      "source_subpath": "Code/picocalc_keyboard",
+      "commit": "553da6f2408963b956779599d179d77fd611a4d7",
+      "hardware_verified": [
+        "keyboard-controller-stm32-firmware",
+        "keyboard-i2c-register-fifo-protocol",
+        "keyboard-physical-matrix-and-keymap"
+      ],
+      "evidence": [
+        {
+          "path": "Code/picocalc_keyboard/README.md",
+          "sha256": "a432dd8bf47a4b9fc7e94de84410539054710ba6a9f6730cb20f6a3219494299"
+        },
+        {
+          "path": "Code/picocalc_keyboard/conf_app.h",
+          "sha256": "69d58f3c004859863b39ec6055a9201d9c74a18c277c007c6b0f3f9fd783d466"
+        },
+        {
+          "path": "Code/picocalc_keyboard/reg.h",
+          "sha256": "29adb634aeb0632a2def6149e14146a1281c916d6da9a4d320291cd6e2d8fc6e"
+        },
+        {
+          "path": "Code/picocalc_keyboard/fifo.ino",
+          "sha256": "7312b9037fbdcd9080aee3d460d38564521759506b2149a2f9f6e670c122e273"
+        },
+        {
+          "path": "Code/picocalc_keyboard/keyboard.h",
+          "sha256": "fe6ccbf3f819e952c0bc21aa7228c308685d4867efc5f48f5b3b493541f7b42f"
+        },
+        {
+          "path": "Code/picocalc_keyboard/keyboard.ino",
+          "sha256": "bdbce418137aa6b826fbc41fd89c4bac1607b4f7202e1f45780e29930bf8e2be"
+        },
+        {
+          "path": "Code/picocalc_keyboard/picocalc_keyboard.ino",
+          "sha256": "281f9d2419235a5838d2af3908af67f24617d118def6ca2ad19e8efb72e39cc6"
+        },
+        {
+          "path": "Code/picocalc_keyboard/pins.h",
+          "sha256": "22ccb03e545f66ac12b14e6c046a25dff68dc3aec615f371a7e3bcd7c199b489"
+        }
+      ]
+    },
     {
       "name": "picocalc-life",
       "git_url": "https://github.com/FuyukiYoneyama/picocalc-life.git",

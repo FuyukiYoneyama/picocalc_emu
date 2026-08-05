@@ -9,13 +9,13 @@
  * test cannot see a bus failure here and `read_diagnostic` reports the
  * transaction results a healthy controller would have produced.
  *
- * The 31-event bound is not host bookkeeping — it is the constraint the
- * hardware imposes, reproduced so a test that overruns it fails the same
- * way it would on the device. The controller reports its depth in five
- * bits and the device driver reads it as `key_info[0] & 0x1f`; a
- * controller holding 32 would report itself empty and never be drained
- * again. The firmware backend hit exactly that (a backlog of 224) before
- * the bound was added, and the driver went permanently blind.
+ * The 31-event bound is not host bookkeeping. ClockworkPi's official
+ * `PicoCalc/Code/picocalc_keyboard` firmware defines `FIFO_SIZE 31` and
+ * `KEY_COUNT_MASK 0x1F`; the BSP driver reads the same field as
+ * `key_info[0] & 0x1f`. The firmware backend hit an impossible backlog of
+ * 224 before the bound was modelled, and the driver went permanently blind.
+ * This host queue implements the official firmware's default overflow policy:
+ * with `CFG_OVERFLOW_ON` clear, discard the arriving event.
  */
 
 #include "picocalc/keyboard.h"

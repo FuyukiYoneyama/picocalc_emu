@@ -68,11 +68,10 @@ uint64_t keys_dropped();
 
 /// The controller holds this many events and no more.
 ///
-/// The count register carries the depth in five bits, and the BSP driver
-/// reads it as `key_info[0] & 0x1f`, so a controller holding 32 would
-/// report itself empty and never be drained. The firmware backend models
-/// the same bound for the same reason; a host test that overruns the
-/// queue is reproducing a real constraint, not a host artefact.
+/// ClockworkPi's official STM32 firmware defines `FIFO_SIZE 31` and
+/// `KEY_COUNT_MASK 0x1F`; the BSP reads the same mask. The firmware backend
+/// models that primary-source constraint too, so a host test that overruns
+/// the queue is reproducing the controller's default behavior.
 constexpr size_t max_queued_events = 31;
 
 // --- display ----------------------------------------------------------
@@ -116,11 +115,21 @@ uint32_t sd_sector_count();
 uint64_t sd_sectors_read();
 uint64_t sd_sectors_written();
 
-/// Wipe the card and lay down a fresh empty FAT16 volume.
+/// Filesystem profile written to the in-memory SD card.
+enum class SdFormat : uint8_t {
+    Fat32,
+    Fat16,
+};
+
+/// Wipe the card and lay down the default fresh empty FAT32 profile.
 ///
 /// The card starts this way, because the BSP mounts and never formats —
-/// same reasoning as the emulator's card model.
+/// same reasoning as the emulator's card model. Kept as a no-argument
+/// overload so existing host tests continue to compile.
 void format_sd();
+
+/// Wipe the card and lay down an explicitly selected filesystem profile.
+void format_sd(SdFormat format);
 
 // --- audio ------------------------------------------------------------
 

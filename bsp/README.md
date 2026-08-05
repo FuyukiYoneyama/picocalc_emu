@@ -4,9 +4,12 @@
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
-この BSP は、`picocalc-life` の実機確認済み LCD/keyboard/SD 実装と、
-`pico_skyace` の LCD bring-up 記録を基準にしている。音声機能の実機基準は
-`Picocalc_ment` とする。
+キーボードのprotocol producerについては、ClockworkPi公式
+[`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
+（このworkspaceでは`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）の
+STM32F103R8T6 firmwareを一次リファレンスとする。
+`picocalc-life`はRP2040側consumerの実機確認済みLCD/keyboard/SD実装、
+`pico_skyace`はLCD bring-up記録、`Picocalc_ment`は音声の実機基準として使う。
 
 固定する重要条件（LCDは二つの独立BSPから選び、Bを推奨デフォルトとする）:
 
@@ -15,7 +18,8 @@
 * LCD B `pio-rgb565`（推奨デフォルト）: 250 MHz、`general/lcd`/`pico_skyace`互換PIO0 blocking送信（LCD DMA OFF、clkdiv 2.0、約62.5 MHz）、`COLMOD 0x65`、RGB565を2 bytes/pixelで送信、PIO停止後SIOでRAMRD
 * LCD: 公開APIはRGB565。A/Bの送信・初期化・読出し実装は混ぜず、CMakeの`PICOCALC_LCD_VARIANT`で一方だけをリンクする。AはSPI1 blocking/RGB666の3 bytes/pixel、BはPIO0 blocking/RGB565の2 bytes/pixelで、LCD DMAは使わない
 * LCD: `verify_pixels()`は選択したBSPのRAMRD形式をRGB565へそろえ、最大16 pixelを比較する診断API
-* keyboard: I2C1、SDA GP6、SCL GP7、400 kHz、address `0x1f`。起動時はバックライトの既定状態を変更しない
+* keyboard controller: 公式STM32 firmwareが7×8 matrix＋12 buttonsを走査し、I2C target `0x1f`、status `0x04`、FIFO `0x09`、最大31 eventsを提供する
+* keyboard RP2040 consumer: I2C1、SDA GP6、SCL GP7、400 kHz、repeated-start。起動時はバックライトの既定状態を変更しない
 * SD: SPI0、MISO GP16、CS GP17、SCK GP18、MOSI GP19、detect GP22
 * SD: 初期化 400 kHz、ready 後 12 MHz
 * audio: GP26/27、`Picocalc_ment`からコピーした固定1 kHz/-6 dBFS参照試験と、同じPWM/DMAの48 kHz PCM stream API。PWM wrap 255、128 sample DMA half、512 sample SPSC ring

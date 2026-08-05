@@ -204,13 +204,41 @@ class ToolTests(unittest.TestCase):
             for check in report["checks"]
             if check["name"].startswith("reference-commit:")
         ]
-        self.assertEqual(len(missing), 4)
+        self.assertEqual(len(missing), 5)
+        self.assertTrue(
+            any(check["name"] == "reference-commit:PicoCalc" for check in missing)
+        )
         self.assertTrue(all(check["actual"] == "missing" for check in missing))
 
     def test_strict_commit_requires_reference_mode(self):
         completed = run(VERIFY, "--strict-commit")
         self.assertEqual(completed.returncode, 2)
         self.assertIn("require --references", completed.stdout)
+
+    def test_sd_format_requires_attached_card(self):
+        completed = run(
+            PICOCALC,
+            "test",
+            "--mode",
+            "firmware",
+            "--sd-format",
+            "fat16",
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("--sd-format requires --sd", completed.stderr)
+
+    def test_host_mode_rejects_firmware_sd_selection(self):
+        completed = run(
+            PICOCALC,
+            "test",
+            "--mode",
+            "host",
+            "--sd",
+            "--sd-format",
+            "fat16",
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("host mode tests FAT32 and FAT16 automatically", completed.stderr)
 
     def test_lcd_transaction_test_detects_changed_sequence(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -504,6 +532,18 @@ class ToolTests(unittest.TestCase):
         self.assertIn("invalid picotool", completed.stderr)
 
     def test_reference_fetch_dry_run_uses_catalog_urls_and_commits(self):
+        catalog = json.loads(
+            (ROOT / "reference-projects/catalog.json").read_text(encoding="utf-8")
+        )
+        official = next(
+            project for project in catalog["projects"] if project["name"] == "PicoCalc"
+        )
+        self.assertEqual(
+            official["official_source_url"],
+            "https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard",
+        )
+        self.assertEqual(official["source_subpath"], "Code/picocalc_keyboard")
+
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "references"
             completed = run(
@@ -514,7 +554,9 @@ class ToolTests(unittest.TestCase):
                 "--dry-run",
             )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertEqual(completed.stdout.count("fetch https://github.com/"), 4)
+        self.assertEqual(completed.stdout.count("fetch https://github.com/"), 5)
+        self.assertIn("https://github.com/clockworkpi/PicoCalc.git", completed.stdout)
+        self.assertIn("553da6f2408963b956779599d179d77fd611a4d7", completed.stdout)
         self.assertIn("0d677d07cb0a037ee9cf331106400052622603ee", completed.stdout)
 
     def test_reference_fetch_refuses_existing_destination(self):

@@ -69,8 +69,8 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 
 | 段 | 手段 | 消す推測 | 状態 |
 |---|---|---|---|
-| 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | ソース・portable基盤は**実装済み**。0.8.8実機台帳はLCD/keyboard pending |
-| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A系統（公式サンプル）とB系統（標準template）の**LCD・SD・キー入力を観測可能**（Milestone 1〜3完了）。条件付きキー投入と画面の機械判定、アプリロジックのhost単体試験も可能 |
+| 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | **完了**。BSP 0.8.8実機台帳はLCD・keyboardを含め`pass` |
+| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A/BのLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成。個別アプリのhost test・継続target化は別途必要 |
 | 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
 
 第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
@@ -93,8 +93,8 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 第1段のCanonical BSPのソース、portable検証、テンプレート基盤は **0.8.8** として
 整備済みです（Milestone 0）。実機動作済みプロジェクトから抽出したBSP、アプリ
 テンプレート、プロジェクト生成器、証拠台帳、検証ツールが利用できます。標準templateの
-アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。ただし最新0.8.8自身の実機台帳は
-LCDとkeyboardがpendingであり、A/BのLCD個別合格記録は0.4.0時点のものです。
+アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。最新0.8.8自身の実機台帳は
+`bsp-0.8.8-20260804-02`でLCD・SD・keyboard・audio・PSRAMを含め`pass`です。
 
 **第2段のエミュレーターは、公式サンプルの縦断まで到達しました（2026-08-04）。**
 ClockworkPi公式の無改変`Code/picocalc_helloworld`が、Firmware backend
@@ -114,8 +114,18 @@ PC上で確認できます。3回連続実行でreport・UART・PNGがバイト�
 python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 ```
 
+この上位CLIは現在、firmware起動のsmoke経路です。targetに宣言したscenario、SD、
+LCD variant等をすべて転送し、structured reportの期待値まで自動判定するhardeningは
+未完です。R1/R2が完了するまでは、CLIの終了だけを全機能合格の根拠にせず、runnerの
+scenario status、停止理由、必須UART markerを併せて確認します。
+
 実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
 が全機能を完走します。
+
+SDのSPI block protocolはFAT形式に依存しません。購入時付属の32 GBカードに合わせて、
+firmware backendとhost backendは**FAT32をデフォルト**とし、FAT16は
+`--sd-format fat16`またはhost APIの明示指定で利用できます。両形式ともBSP自身の
+mount/write/sync/read/compare/removeを通し、各3回の決定性を確認済みです。
 
 ```text
 [PICOCALC][LCD][VERIFY] app_status=pass
@@ -150,6 +160,10 @@ RP2040バイナリを作らずに1秒未満で検査できるようにします�
 使ってよい根拠が取れます。ただし**firmware backendが権威であることは変わりません**。
 詳細は[`HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
 
+現行`test --mode host`はBSPの専用`emu_smoke`を実行します。Host backendが完成したことは、
+PicoTetrisなど任意アプリのロジック試験が既に接続済みという意味ではありません。
+アプリ固有のpure logic testは個別に追加します。
+
 このscenarioの実装中、エミュレーター側の欠陥も1件見つかりました。キーボード
 モデルのFIFOに上限がなく、滞留が32の倍数に達するとBSPの`key_info[0] & 0x1f`が0を
 読んでドライバが恒久停止していました。実機のコントローラは深さを5ビットでしか
@@ -159,6 +173,10 @@ RP2040バイナリを作らずに1秒未満で検査できるようにします�
 [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と経緯は
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
+
+次の作業は、生成契約・source identityとbackendの合否判定を先に固め、上位CLI/target
+registry、PicoTetris回帰、CI、同一BIN実機相関の順に進めます。詳細な依存関係と
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-05レビュー反映)が正典です。
 
 ## 読む順番
 
@@ -172,7 +190,7 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - AIの通常の変更範囲を生成プロジェクトの`app/`へ限定する
 - LCD初期化とCS分割をhost SPI fakeで実トランザクション検査する
 - JSON board profileからC++定数を一方向生成し、差分をCI検査する
-- SD、keyboard、audio pinのsource fingerprintを検査する
+- SD、audio pinに加え、公式STM32 keyboard firmwareとRP2040 consumerのsource fingerprintを検査する
 - SDのmount/write/sync/read/compare/removeスモークテストを実機で実行する
 - LCDのsolid fillとRAMRDによるGRAM readback一致検証を実機で実行する
 - Picocalc_ment実績ベースの48 kHz PWM/DMA音声ストリームと固定サイン参照試験を提供する
@@ -189,10 +207,12 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - symbol/PC一致で到達点を判定する（`main()`到達など）
 - LCD framebufferをRGB565 hashとPNGで取得する（A: SPI1/RGB666、B: PIO0/RGB565）
 - 8 MiB PSRAMの内容を範囲指定で検証する（実機一致するチップIDを含む）
-- SPI0のSDカードで、templateのmount/write/sync/read/compare/removeを完走する
+- SPI0のSDカードで、FAT32（既定）とFAT16（明示）の
+  mount/write/sync/read/compare/removeを完走する
 - **JSON scenarioで条件付きにキーを投入し、画面・UART出力を機械的に判定する**
 - PWM設定と未対応MMIOアクセスを観測する
-- `python3 tools/picocalc.py test --mode firmware --firmware <bin>`で上記を実行する
+- `python3 tools/picocalc.py test --mode firmware --firmware <bin>`でbackendを起動する。
+  全機能の自動合否判定はR1/R2でhardeningする
 
 host backendでは、アプリのロジックをRP2040バイナリを作らずに検査できます。
 
@@ -390,7 +410,7 @@ python3 tools/picocalc.py verify \
 |---|---|---|
 | LCD A（互換・診断） | `bsp/vendor/lcd_hwspi_rgb888.cpp` | SPI1 GP10–15、25 MHz、COLMOD `0x66`、RGB666を3-byte RGB888 containerで送信、MADCTL `0x48`、window transaction中CS保持 |
 | LCD B（推奨デフォルト） | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0 blocking、LCD DMAなし、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信、RAMRD時はSIOへ切替 |
-| Keyboard | `picocalc-life` | I2C1、GP6/7、400 kHz、address `0x1f`、repeated-start |
+| Keyboard | [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（STM32F103R8T6 firmware。ローカル: `/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`） | **protocol producerの一次リファレンス**。I2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、key state・modifier・repeat・overflow・backlight・battery・power。`picocalc-life`はRP2040 consumerの実機証拠 |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
 | Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer |
 | PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は2/0→3/0→1.5/1、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
@@ -438,12 +458,12 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 [Aの台帳](hardware-validation/records/bsp-0.4.0-20260730-02.json)と
 [Bの台帳](hardware-validation/records/bsp-0.4.0-20260730-01.json)です。
 
-この台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
-`overall_status=pending`を保持しています。最新BSP 0.8.8では、MusicPlayerの実機記録により
-SDと音声を確認済みです。基板はClockworkPi PicoCalc `CPI2.0`、SDはSanDisk Ultra
-32 GB/FAT32として記録しました。LCD RAMRDは0.8.3で間欠失敗があり、0.8.8台帳のLCDと
-keyboardはpendingです。専用HV-1診断でLCD readback 100回とguided keyboard入力を
-独立して閉じます。実機では一度に一方だけを
+この0.4.0台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
+`overall_status=pending`を保持しています。履歴recordは後から書き換えません。
+最新BSP 0.8.8では、ClockworkPi PicoCalc `CPI2.0`、SanDisk Ultra 32 GB/FAT32を使用し、
+LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しました。
+`bsp-0.8.8-20260804-02.json`は`overall_status=pass`であり、0.8.8のLCD・keyboard pendingを
+閉じています。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 
@@ -486,7 +506,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [要求仕様](REQUIREMENTS.md) — 全体要求と受け入れ条件
 - [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md) — `picoem-picocalc`の扱い
 - [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md) — Gate 0〜7の受入条件
-- [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) — Milestone 1をGate別の作業単位へ分解した実行計画
+- [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) — 実施済みMilestone 1をGate別に分解した計画と判断記録
 - [Scenario runner](docs/SCENARIO_RUNNER.md) — JSON scenarioの形式、条件付きキー投入、画面の機械判定
 - [Host backend](docs/HOST_BACKEND.md) — アプリロジックをホストのモデルに対してビルドし単体試験する
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
@@ -514,12 +534,14 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 
 **第一目的は、AIがPicoCalc向けプログラムを自ら観測・検証・修正できることです。**
 人間の実機検証回数は、その効果と予測精度を測る成果指標です。
-第1段（Canonical BSP）は整備済みで、第2段（エミュレーター）はMilestone 1を完了し、
+第1段（Canonical BSP）は整備済みで、第2段（エミュレーター）はMilestone 1〜3を完了し、
 **AIが自作アプリの画面とキー入力をPC上で検証できる**段階に到達しました。標準
 templateから生成したプロジェクトが、LCD描画とGRAM readbackまで通ります。
 
-ただし到達したのはそこまでです。SDを使う機能は未対応で、実機の色・向き・可読性・
-聴感はエミュレーターでは判定できません。**人間の実機検証はまだゼロになっていません。**
+LCD、PSRAM、SD、keyboardを使う標準templateと、条件付きscenarioまでPC上で観測できます。
+ただし上位CLIの厳密な自動合否、個別アプリのhost unit test、継続CIへのtarget登録は
+hardening中です。また実機の色・向き・可読性・聴感はエミュレーターでは判定できません。
+**人間の実機検証はまだゼロになっていません。**
 
 到達度は感覚ではなく、変更単位に`host_pass`、`host_fail`、`hardware_pass`、
 `hardware_fail`、`hardware_required`を記録して測ります。ただし実機回数の削減より
