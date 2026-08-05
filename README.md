@@ -70,7 +70,7 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 | 段 | 手段 | 消す推測 | 状態 |
 |---|---|---|---|
 | 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | ソース・portable基盤は**実装済み**。0.8.8実機台帳はLCD/keyboard pending |
-| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A系統（公式サンプル）とB系統（標準template）の**LCD・キー入力を観測可能**（Gate 0〜7完了）。SDは未対応 |
+| 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A系統（公式サンプル）とB系統（標準template）の**LCD・SD・キー入力を観測可能**（Milestone 1〜3完了）。条件付きキー投入と画面の機械判定、アプリロジックのhost単体試験も可能 |
 | 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
 
 第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
@@ -129,7 +129,33 @@ python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
 引き続き実機が必要です。
 
-Milestone 1（Firmware backend）はこれで完了です。実装順と受入条件は
+Milestone 1（Firmware backend）はこれで完了です。
+
+**続いてMilestone 3（scenario runner）とMilestone 2（host backend）も完了しました
+（2026-08-05）。** きっかけは実際にアプリを1本書いたことです。テトリス風ゲームを
+firmware backend上だけで作ってみたところ、`--keys`が起動前にキーを一括投入する
+だけで「画面を見て次のキーを決める」ことができず、**ライン消去のコードが一度も
+発火しないまま**残りました（記録:
+[`DOGFOODING_20260805.md`](docs/DOGFOODING_20260805.md)）。
+
+scenario runnerはこれに応えます。JSON手順を実行ループの内側で評価するため、
+1ステップが画面とUART出力を見てから次のキーを決められます。証拠として、
+このscenarioが実際に**ライン消去を発火させ**ました（13ライン、スコア1400、
+種を固定した乱数から事前計算した予測スコアと一致することを確認）。詳細は
+[`SCENARIO_RUNNER.md`](docs/SCENARIO_RUNNER.md)。
+
+host backendはBSPの公開APIをホストのモデルに対してビルドし、アプリのロジックを
+RP2040バイナリを作らずに1秒未満で検査できるようにします。framebuffer digestの
+正規形はfirmware backendと同一なので、安いhost実行を高いfirmware実行の代わりに
+使ってよい根拠が取れます。ただし**firmware backendが権威であることは変わりません**。
+詳細は[`HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
+
+このscenarioの実装中、エミュレーター側の欠陥も1件見つかりました。キーボード
+モデルのFIFOに上限がなく、滞留が32の倍数に達するとBSPの`key_info[0] & 0x1f`が0を
+読んでドライバが恒久停止していました。実機のコントローラは深さを5ビットでしか
+報告できずその状態になり得ないため、エミュレーター側の欠陥として修正済みです。
+
+実装順と受入条件は[Milestones](docs/MILESTONES.md)と
 [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)、作業単位と経緯は
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
@@ -156,25 +182,34 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - Canonical BSP自身の実機結果を構造化台帳へ記録する
 - RP2040用ELF/BIN/UF2を生成する
 
-エミュレーター（第2段）では、公式サンプルが使う経路について次ができます。
+エミュレーター（第2段）のfirmware backendでは、A/B両系統について次ができます。
 
 - Pico SDK形式のBINをPC上でdirect bootし、決定的に実行する
 - UART0の出力を取得する
 - symbol/PC一致で到達点を判定する（`main()`到達など）
-- LCD framebufferをRGB565 hashとPNGで取得する（LCD A系統: SPI1/RGB666）
-- 8 MiB PSRAMの内容を範囲指定で検証する
-- キーシナリオを投入し、LCDへのechoを確認する
+- LCD framebufferをRGB565 hashとPNGで取得する（A: SPI1/RGB666、B: PIO0/RGB565）
+- 8 MiB PSRAMの内容を範囲指定で検証する（実機一致するチップIDを含む）
+- SPI0のSDカードで、templateのmount/write/sync/read/compare/removeを完走する
+- **JSON scenarioで条件付きにキーを投入し、画面・UART出力を機械的に判定する**
 - PWM設定と未対応MMIOアクセスを観測する
 - `python3 tools/picocalc.py test --mode firmware --firmware <bin>`で上記を実行する
+
+host backendでは、アプリのロジックをRP2040バイナリを作らずに検査できます。
+
+- BSPの公開APIをホストのモデル（framebuffer・keyboard FIFO・PSRAM・SDカード）に
+  対してビルドし、ネイティブで直接実行する
+- `src/filesystem.cpp`はデバイスと同一ソースを未改変で使う
+- framebuffer digestはfirmware backendと同一の正規形で、両者を直接比較できる
+- `python3 tools/picocalc.py test --mode host`で1秒未満・3回連続バイト一致を確認する
 
 ## 現在できないこと（これができないため、人間の実機検証がまだ必要です）
 
 - SPI/I2C故障の注入
 - 音声の実再生・multicore・UF2直接ロード
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
-- アプリロジックをPCネイティブ実行するhost backend（Milestone 2）
-- JSONシナリオによる再生と画面差分の自動判定（Milestone 3）
+- directory-backed Fast SDモード（host backend）
 - host合格と実機結果の相関を自動集計する（Milestone 4）
+- JUnit成果物、100回連続実行の決定性検査（Milestone 3の残り）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
 画面の向き、文字の可読性、音の聞こえ方です。エミュレーターは「firmwareが何を書いたか」
@@ -385,6 +420,11 @@ UF2を実機で3回起動し、予測と突き合わせました。
 モデルの欠陥です。記録は
 [bsp-0.8.8-20260804-02](hardware-validation/records/bsp-0.8.8-20260804-02.json)。
 
+**上表のPSRAMとSDの2件は、この相関確認と同じ日（2026-08-05）に解消しました。**
+PSRAMは実機が返したチップIDを根拠にRead IDを実装し、SDはSPI0のカードを実装して
+templateの全機能スモークが完走するようにしました。keyboardは別のscenario実行で
+138イベントを観測済みです。この表は相関確認の**時点の記録**として残しています。
+
 ## Canonical BSP自身の実機記録
 
 参照プロジェクトの証拠と、抽出後BSP自身の証拠は分離しています。実機検証時は
@@ -447,6 +487,8 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [Firmware backend開発方針](docs/FIRMWARE_BACKEND.md) — `picoem-picocalc`の扱い
 - [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md) — Gate 0〜7の受入条件
 - [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) — Milestone 1をGate別の作業単位へ分解した実行計画
+- [Scenario runner](docs/SCENARIO_RUNNER.md) — JSON scenarioの形式、条件付きキー投入、画面の機械判定
+- [Host backend](docs/HOST_BACKEND.md) — アプリロジックをホストのモデルに対してビルドし単体試験する
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系
@@ -461,6 +503,8 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [LCD不動作調査記録](docs/LCD_INVESTIGATION_20260729.md) — このプロジェクトが
   なぜエミュレーターを必要とするかを示す一次記録
 - [開発・実機検証総合履歴](docs/PROJECT_HISTORY_20260729.md)
+- [ドッグフーディング記録](docs/DOGFOODING_20260805.md) — 実アプリ（PicoTetris）を
+  書いて見つけたワークフローの穴と、その解消記録
 - [BSP変更履歴](bsp/CHANGELOG.md)
 
 ## プロジェクトの位置付け

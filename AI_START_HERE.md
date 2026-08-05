@@ -54,24 +54,42 @@ Solが要件、計画、設計、受入、レビュー、統合、commit/push、
 | 段 | 内容 | 状態 | あなたへの影響 |
 |---|---|---|---|
 | 1 | Canonical BSP — 実績済みの転送契約と由来を固定し、あなたの変更範囲を`app/`へ限定する | ソース・portable基盤は**完了**（BSP 0.8.8）。0.8.8実機台帳はLCD/keyboard pending | ハードウェア初期化を書かない。既存APIを呼ぶ |
-| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A系統・B系統ともLCDとキー入力を観測可能（Gate 0〜7完了、2026-08-04）。**SDは未対応** | 画面とキーはPC上で確認できる。**SDを使う機能と実機の見え方は人間に依頼する** |
+| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A系統・B系統ともLCD・SD・キー入力を観測可能（Milestone 1〜3完了、2026-08-05）。**条件付きキー投入と画面の機械判定、アプリロジックのhost単体試験も可能** | 画面・キー・SDはPC上で確認できる。**実機の見た目・聞こえ方だけ人間に依頼する** |
 | 3 | 実機相関 — 実機結果を台帳へ記録し、予測精度を校正する | 一部 | 実機結果は必ず台帳へ記録する |
 
-第2段はGate 0〜7が完了しました（2026-08-04）。ClockworkPi公式サンプル
+第2段はMilestone 1〜3が完了しました（2026-08-05）。ClockworkPi公式サンプル
 `picocalc_helloworld`（A系統）に加え、**あなたが`picocalc.py new`で生成する標準
-template（B系統: PIO0/RGB565）も、エミュレーター上でLCD描画とGRAM readbackまで
-到達し`app_status=pass`を出せます。** 次のコマンドでBINを実行できます。
+template（B系統: PIO0/RGB565）も、エミュレーター上でLCD描画・SDカードの
+mount/write/sync/read/compare/removeまで到達し`app_status=pass`を出せます。**
+次のコマンドでBINを実行できます。
 
 ```sh
 python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 ```
 
-**ただし、まだ人間の確認が要る範囲があります。** SPI0のSDカードは未対応で、
-標準templateのSDスモークは初期化で停止します。実機の色・向き・可読性・
-音の聞こえ方も、エミュレーターでは判定できません。したがって**SDを使う機能と、
-最終的な見た目の確認は、引き続き人間へ依頼してください。** 推測でハードウェア層を
-触らないことと、人間へ渡す1回のUF2の情報量を最大にすること（版の識別、
-機械可読ログ、合否の判定基準を先に決めておくこと）は、引き続きあなたの責務です。
+**画面の状態を見てキーを条件付きに投入したいときはscenario runnerを使います。**
+`--keys`は起動前に固定文字列を積むだけで、「この画面になったらこのキー」という
+記述ができません。JSONでscenarioを書けば、実行ループの内側で画面とUART出力を
+見てから次のキーを決められます。詳細は
+[`docs/SCENARIO_RUNNER.md`](docs/SCENARIO_RUNNER.md)。
+
+**アプリのロジックだけを高速に検査したいときはhost backendを使います。**
+
+```sh
+python3 tools/picocalc.py test --mode host
+```
+
+RP2040バイナリを作らずに1秒未満で検査できますが、**firmware backendが権威で
+あることは変わりません。** PIO・DMA・I2C・割り込み・LCDのwire形式はhostに
+存在しないため、それらに依存する挙動はfirmware backendでしか確認できません。
+詳細は[`docs/HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
+
+**それでも、まだ人間の確認が要る範囲があります。** multicoreと音声の実再生は
+未対応です。そして実機の色・向き・可読性・音の聞こえ方は、エミュレーターでは
+原理的に判定できません。したがって**最終的な見た目・聞こえ方の確認は、引き続き
+人間へ依頼してください。** 推測でハードウェア層を触らないことと、人間へ渡す
+1回のUF2の情報量を最大にすること（版の識別、機械可読ログ、合否の判定基準を
+先に決めておくこと）は、引き続きあなたの責務です。
 
 エミュレーターが今できること・できないことの一覧は
 [`firmware-validation/capability.json`](firmware-validation/capability.json)にあります。
@@ -233,6 +251,8 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 - `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
 - `docs/EMULATOR_ROADMAP.md`: 無改変`picocalc_helloworld`から始める実装順と段階別受入条件
 - `docs/IMPLEMENTATION_PLAN.md`: Milestone 1をGate別の作業単位へ分解した実行計画
+- `docs/SCENARIO_RUNNER.md`: JSON scenarioの形式、条件付きキー投入、画面の機械判定
+- `docs/HOST_BACKEND.md`: アプリロジックをホストのモデルに対してビルドし単体試験する
 - `docs/DESIGN.md`: **未実装**エミュレーターの将来設計。Phase番号は旧体系であり、
   実行順序は`docs/MILESTONES.md`が優先する
 - `bsp/vendor/README.md`: driverごとの由来、変更規約、呼び出し粒度
@@ -245,4 +265,6 @@ RGB565値と一致したという意味です。`stage=end status=drawn`だけ�
 
 - `docs/LCD_INVESTIGATION_20260729.md`: LCD問題の調査記録。本書の規則の根拠
 - `docs/PROJECT_HISTORY_20260729.md`: 開発・実機検証の総合履歴
+- `docs/DOGFOODING_20260805.md`: 実アプリ（PicoTetris）を書いて見つけたワークフローの
+  穴と、その解消記録
 - `bsp/CHANGELOG.md`: BSP版ごとの変更理由

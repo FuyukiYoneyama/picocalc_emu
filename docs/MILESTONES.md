@@ -64,10 +64,12 @@ golden の対象が確定して手戻りが少ないためです。`DESIGN.md §
 `firmware-validation/records/`にある。
 
 完了条件のうち、継承済みSerial回帰の全合格とGate 7のB conformanceは満たしている。
-ただし本Milestoneが目指した「AIが自作アプリを自力で検証できる」状態には、
-SPI0のSD（templateのSDスモークが停止する）とBSP側PSRAMドライバの読み出し較正が
-残っている。これらの範囲は`firmware-validation/capability.json`に未対応として
-記録し、Milestone 5の拡張対象とする。
+本Milestoneが目指した「AIが自作アプリを自力で検証できる」状態を妨げていた
+SPI0のSD（templateのSDスモークが停止していた）とPSRAM ID読み出しの不一致は、
+どちらも2026-08-05に解消した。実機相関で得たチップIDを根拠にPSRAM Read IDを
+実装し、SPI0のSDカードを実装してtemplateの全機能スモークが完走するようにした。
+証拠は`firmware-validation/records/`、実機との相関確認は
+`hardware-validation/records/bsp-0.8.8-20260804-02.json`にある。
 
 Milestone 1の作業単位分解と実行計画は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)に
 定義する。
@@ -109,22 +111,47 @@ Firmware backendはHost device modelの代替ではない。対象アプリが�
 
 ## Milestone 2: Host device models
 
-- native host App API/Pico SDK shim
-- headless LCD framebuffer
-- keyboard FIFO model
-- directory-backed Fast SD mode
-- 仮想時刻、固定乱数、stdout capture
+**完了（2026-08-05）。** BSPの公開APIをホストのモデルに対してビルドし、専用
+`emu_smoke`アプリ（`bsp/host/tests/emu_smoke.cpp`）がPC上で起動、画面・キー・
+ファイル結果を決定的に生成する（26項目、3回連続実行でバイト一致）。詳細は
+[`HOST_BACKEND.md`](HOST_BACKEND.md)、証拠は
+`firmware-validation/records/milestone2-20260805-01/`にある。
 
-完了条件は、専用`emu_smoke`アプリがPC上で起動し、画面・キー・ファイル結果を
-決定的に生成できることです。
+- native host App API/Pico SDK shim（`stdio_init_all`・`sleep_ms`のみ）
+- headless LCD framebuffer
+- keyboard FIFO model（上限31イベント、実機コントローラの5ビット深さ制約を反映）
+- 仮想時刻、stdout capture
+
+`directory-backed Fast SD mode`は**未実装のまま残っている**。カードはホストメモリ上の
+セクタ配列で、ホストのディレクトリを見せる経路がない。`固定乱数`は該当するアプリが
+なく検証していない。
+
+`src/filesystem.cpp`・`src/fatfs_diskio.cpp`はデバイスと同一ソースを未改変で使う
+（Pico SDK依存が無いため）。framebuffer digestの正規形はfirmware backendと同一で、
+両者は直接比較できる。**firmware backendが権威であることは変わらない**。PIO・DMA・
+I2C・割り込み・LCDのwire形式はhostに存在しない。
 
 ## Milestone 3: Scenario runner
 
-- JSONシナリオ
-- key/text/wait/reset操作
-- pixel、region hash、file、stdout assertion
-- PNG、trace JSON、JUnit成果物
-- 100回連続実行の決定性検査
+**完了（2026-08-05）。** JSON手順を実行ループの内側で評価し、条件付きキー投入と
+画面の機械判定ができるようになった。詳細は
+[`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)、証拠は
+`firmware-validation/records/milestone3-20260805-01/`にある。実例として、ドッグ
+フーディングで一度も発火させられなかったPicoTetrisのライン消去を実際に発火させた
+（`scenarios/tetris-line-clear.json`、13ライン、スコア1400）。
+
+- JSONシナリオ（`op`: wait / wait_cycles / wait_until / key / snapshot / assert）
+- pixel、region_non_black、region_hash、region_stable、region_changed、
+  uart_containsのassertion
+- PNGとJSON成果物
+
+`trace JSON`・`JUnit成果物`・`100回連続実行の決定性検査`は**未実装**。現状は
+UARTログとPSRAM/keyboard等の観測カウンタで足りているが、CI組み込み時には
+JUnit形式の出力が要る見込み。
+
+この作業がエミュレーターの欠陥を1件見つけた。キーボードモデルのFIFOに上限が
+なかったため、滞留が32の倍数に達するとBSPの`key_info[0] & 0x1f`が0を読み、
+ドライバが恒久停止していた。31で頭打ちにする修正を`picoem-picocalc`へ入れた。
 
 ## Milestone 4: Hardware correlation
 
