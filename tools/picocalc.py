@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -447,14 +448,139 @@ def resolve_backend(explicit: Optional[Path]) -> Optional[Path]:
 
 
 def load_firmware_target(target_id: str) -> Optional[dict]:
-    if not FIRMWARE_TARGETS.is_file():
-        return None
-    with FIRMWARE_TARGETS.open("r", encoding="utf-8") as source:
-        document = json.load(source)
-    for target in document.get("targets", []):
+    document = load_firmware_registry()
+    for target in document["targets"]:
         if target.get("id") == target_id:
             return target
     return None
+
+
+def load_firmware_registry() -> dict:
+    """Load the R2 registry and reject incomplete conformance contracts."""
+    if not FIRMWARE_TARGETS.is_file():
+        raise ValueError("firmware target registry is missing: {}".format(FIRMWARE_TARGETS))
+    with FIRMWARE_TARGETS.open("r", encoding="utf-8") as source:
+        document = json.load(source)
+    if document.get("schema_version") != 2:
+        raise ValueError("firmware target registry schema_version must be 2")
+    targets = document.get("targets")
+    if not isinstance(targets, list) or not targets:
+        raise ValueError("firmware target registry needs a non-empty targets array")
+    ids = set()
+    for index, target in enumerate(targets):
+        where = "targets[{}]".format(index)
+        if not isinstance(target, dict):
+            raise ValueError("{} must be an object".format(where))
+        target_id = target.get("id")
+        if not isinstance(target_id, str) or not target_id:
+            raise ValueError("{}.id must be a non-empty string".format(where))
+        if target_id in ids:
+            raise ValueError("duplicate firmware target id '{}'".format(target_id))
+        ids.add(target_id)
+        if target.get("status") not in ("active", "pending-revalidation"):
+            raise ValueError("{}.status must be active or pending-revalidation".format(where))
+        for field in ("source", "toolchain", "artifacts", "backend", "runner", "acceptance"):
+            if not isinstance(target.get(field), dict):
+                raise ValueError("{}.{} must be an object".format(where, field))
+        digest = target["artifacts"].get("bin_sha256")
+        if not is_sha256(digest):
+            raise ValueError("{}.artifacts.bin_sha256 must be a SHA-256".format(where))
+        accepted = target["backend"].get("accepted")
+        if not is_git_commit(accepted):
+            raise ValueError("{}.backend.accepted must be a full Git commit".format(where))
+        runner = target["runner"]
+        if runner.get("board") not in ("none", "picocalc"):
+            raise ValueError("{}.runner.board is invalid".format(where))
+        if runner.get("lcd_variant") not in ("hwspi-rgb888", "pio-rgb565"):
+            raise ValueError("{}.runner.lcd_variant is invalid".format(where))
+        if not isinstance(runner.get("cycles"), int) or runner["cycles"] <= 0:
+            raise ValueError("{}.runner.cycles must be positive".format(where))
+        if not isinstance(runner.get("quantum"), int) or runner["quantum"] <= 0:
+            raise ValueError("{}.runner.quantum must be positive".format(where))
+        for flag in ("psram", "keyboard"):
+            if not isinstance(runner.get(flag), bool):
+                raise ValueError("{}.runner.{} must be boolean".format(where, flag))
+        sd_contract = runner.get("sd")
+        if (
+            not isinstance(sd_contract, dict)
+            or not isinstance(sd_contract.get("attached"), bool)
+            or sd_contract.get("format") not in ("fat32", "fat16")
+        ):
+            raise ValueError("{}.runner.sd must contain attached and format".format(where))
+        scenario = target.get("scenario")
+        if scenario is not None:
+            if not isinstance(scenario, dict) or not isinstance(scenario.get("path"), str):
+                raise ValueError("{}.scenario must be null or contain path".format(where))
+            scenario_path = Path(scenario["path"])
+            if scenario_path.is_absolute() or ".." in scenario_path.parts:
+                raise ValueError("{}.scenario.path must stay inside the repository".format(where))
+            if not is_sha256(scenario.get("sha256")):
+                raise ValueError("{}.scenario.sha256 must be a SHA-256".format(where))
+        acceptance = target["acceptance"]
+        if acceptance.get("expected_stop_reason") not in (
+            "cycle_limit", "pc_match", "scenario_done"
+        ):
+            raise ValueError("{}.acceptance.expected_stop_reason is invalid".format(where))
+        markers = acceptance.get("required_uart_markers")
+        if not isinstance(markers, list) or not markers or not all(
+            isinstance(marker, str) and marker for marker in markers
+        ):
+            raise ValueError("{}.acceptance.required_uart_markers needs non-empty strings".format(where))
+        checks = acceptance.get("report_checks")
+        if not isinstance(checks, list) or not checks:
+            raise ValueError("{}.acceptance.report_checks must be non-empty".format(where))
+        for check_index, check in enumerate(checks):
+            check_where = "{}.acceptance.report_checks[{}]".format(where, check_index)
+            if not isinstance(check, dict) or not isinstance(check.get("path"), str):
+                raise ValueError("{} needs a path".format(check_where))
+            if check.get("op") not in ("eq", "length_eq") or "value" not in check:
+                raise ValueError("{} needs op eq|length_eq and value".format(check_where))
+    return document
+
+
+def is_sha256(value) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
+def is_git_commit(value) -> bool:
+    return isinstance(value, str) and len(value) == 40 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
+def report_value(report: object, path: str):
+    current = report
+    for component in path.split("."):
+        if not isinstance(current, dict) or component not in current:
+            raise KeyError(path)
+        current = current[component]
+    return current
+
+
+def check_report(report: dict, checks: List[dict]) -> List[str]:
+    failures: List[str] = []
+    for check in checks:
+        path = check["path"]
+        try:
+            actual = report_value(report, path)
+        except KeyError:
+            failures.append("{} is missing".format(path))
+            continue
+        expected = check["value"]
+        if check["op"] == "length_eq":
+            if not isinstance(actual, (list, dict, str)):
+                failures.append("{} has no length".format(path))
+            elif len(actual) != expected:
+                failures.append("{} length expected {} but got {}".format(
+                    path, expected, len(actual)
+                ))
+        elif type(actual) is not type(expected) or actual != expected:
+            failures.append("{} expected {!r} but got {!r}".format(
+                path, expected, actual
+            ))
+    return failures
 
 
 def host_test(
@@ -561,10 +687,12 @@ def firmware_test(
     target_id: str,
     firmware: Path,
     backend_dir: Optional[Path],
-    cycles: int,
+    cycles: Optional[int],
     keys: Optional[str],
-    sd: bool,
+    sd: Optional[bool],
     sd_format: Optional[str],
+    lcd_variant: Optional[str],
+    scenario_override: Optional[Path],
     json_out: Optional[Path],
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
@@ -573,11 +701,20 @@ def firmware_test(
     Code 2 is the "cannot judge" case — the caller should treat it as
     hardware_required rather than as a failing run.
     """
-    target = load_firmware_target(target_id)
+    try:
+        target = load_firmware_target(target_id)
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        print("cannot load firmware target registry: {}".format(error))
+        return 2
     if target is None:
         print("unknown firmware target '{}'".format(target_id))
         print("known targets are listed in {}".format(FIRMWARE_TARGETS))
         return 1
+    if target.get("status") != "active":
+        print("firmware target '{}' is not active: {}".format(
+            target_id, target.get("status_reason", target.get("status"))
+        ))
+        return 2
 
     if not firmware.is_file():
         print("firmware image not found: {}".format(firmware))
@@ -592,64 +729,175 @@ def firmware_test(
         print("rebuild it with the procedure in docs/IMPLEMENTATION_PLAN.md 3.2")
         return 1
 
+    runner_contract = target["runner"]
+    target_sd = runner_contract.get("sd", {"attached": False, "format": "fat32"})
+    conflicts = []
+    if cycles is not None and cycles != runner_contract["cycles"]:
+        conflicts.append("cycles {} (target requires {})".format(
+            cycles, runner_contract["cycles"]
+        ))
+    if keys is not None and keys != runner_contract.get("keys"):
+        conflicts.append("keys {!r} (target requires {!r})".format(
+            keys, runner_contract.get("keys")
+        ))
+    if sd is True and not target_sd.get("attached", False):
+        conflicts.append("SD attached (target requires detached)")
+    if sd_format is not None and sd_format != target_sd.get("format"):
+        conflicts.append("SD format {} (target requires {})".format(
+            sd_format, target_sd.get("format")
+        ))
+    if lcd_variant is not None and lcd_variant != runner_contract["lcd_variant"]:
+        conflicts.append("LCD variant {} (target requires {})".format(
+            lcd_variant, runner_contract["lcd_variant"]
+        ))
+    if conflicts:
+        print("command line conflicts with target '{}':".format(target_id))
+        for conflict in conflicts:
+            print("  {}".format(conflict))
+        return 1
+
+    scenario_contract = target.get("scenario")
+    if scenario_contract is None:
+        if scenario_override is not None:
+            print("target '{}' does not permit a scenario".format(target_id))
+            return 1
+        scenario_path = None
+    else:
+        scenario_path = scenario_override or (ROOT / scenario_contract["path"])
+        if not scenario_path.is_file():
+            print("target scenario not found: {}".format(scenario_path))
+            return 2
+        scenario_digest = hashlib.sha256(scenario_path.read_bytes()).hexdigest()
+        if scenario_digest != scenario_contract["sha256"]:
+            print("scenario does not match the pinned target")
+            print("  expected {}".format(scenario_contract["sha256"]))
+            print("  actual   {}".format(scenario_digest))
+            return 1
+
     backend = resolve_backend(backend_dir)
     if backend is None or not backend.is_dir():
         print("firmware backend checkout not found")
         print("set PICOEM_PICOCALC_DIR or pass --backend-dir")
         return 2
+    pinned = target["backend"]["accepted"]
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(backend), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        print("cannot inspect backend commit: {}".format(error))
+        return 2
+    if head.returncode != 0:
+        print("cannot determine backend commit")
+        return 2
+    actual_commit = head.stdout.strip()
+    if actual_commit != pinned:
+        print("backend does not match the pinned target")
+        print("  expected {}".format(pinned))
+        print("  actual   {}".format(actual_commit))
+        return 1
+    try:
+        dirty = subprocess.run(
+            ["git", "-C", str(backend), "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        print("cannot inspect backend worktree: {}".format(error))
+        return 2
+    if dirty.returncode != 0:
+        print("cannot inspect backend worktree")
+        return 2
+    if dirty.stdout.strip():
+        print("backend worktree has tracked changes; the accepted pin must be clean")
+        return 1
+
     runner = backend / "target/release/picocalc-run"
     if not runner.is_file():
         print("backend runner not built: {}".format(runner))
         print("build it with: cargo build --release -p picocalc-harness")
         return 2
 
-    pinned = target.get("backend", {}).get("accepted") or target.get("backend", {}).get(
-        "commit"
-    )
-    head = subprocess.run(
-        ["git", "-C", str(backend), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-    )
-    actual_commit = head.stdout.strip() if head.returncode == 0 else "unknown"
-    if pinned and actual_commit != pinned:
-        print("warning: backend is at {} but the target pins {}".format(
-            actual_commit[:12], str(pinned)[:12]
-        ))
+    with tempfile.TemporaryDirectory(prefix="picocalc-r2-") as temporary:
+        report_path = Path(temporary) / "report.json"
+        command = [
+            str(runner),
+            "--bin", str(firmware),
+            "--board", runner_contract["board"],
+            "--lcd-variant", runner_contract["lcd_variant"],
+            "--quantum", str(runner_contract["quantum"]),
+            "--cycles", str(runner_contract["cycles"]),
+            "--json", str(report_path),
+            "--backend-commit", pinned,
+            "--expect-stop", target["acceptance"]["expected_stop_reason"],
+        ]
+        for marker in target["acceptance"]["required_uart_markers"]:
+            command.extend(["--expect-uart", marker])
+        if runner_contract.get("stop_pc") is not None:
+            command.extend(["--stop-pc", str(runner_contract["stop_pc"])])
+        if runner_contract.get("psram", False):
+            command.append("--psram")
+        if runner_contract.get("psram_verify_range"):
+            command.extend(["--psram-verify-range", runner_contract["psram_verify_range"]])
+        if runner_contract.get("keyboard", False):
+            command.append("--keyboard")
+        if runner_contract.get("keys"):
+            command.extend(["--keys", runner_contract["keys"]])
+        if target_sd.get("attached", False):
+            command.extend(["--sd", "--sd-format", target_sd["format"]])
+        if scenario_path is not None:
+            command.extend(["--scenario", str(scenario_path)])
 
-    with_json = json_out or (ROOT / "artifacts/firmware-test.json")
-    with_json.parent.mkdir(parents=True, exist_ok=True)
-    command = [
-        str(runner),
-        "--bin",
-        str(firmware),
-        "--board",
-        "picocalc",
-        "--psram",
-        "--cycles",
-        str(cycles),
-        "--json",
-        str(with_json),
-        "--backend-commit",
-        actual_commit,
+        print("running {} on backend {}".format(target_id, actual_commit[:12]))
+        try:
+            result = subprocess.run(command, cwd=str(backend))
+        except OSError as error:
+            print("cannot run backend: {}".format(error))
+            return 2
+        if not report_path.is_file():
+            print("runner did not produce a report")
+            return 2
+        try:
+            report_bytes = report_path.read_bytes()
+            report = json.loads(report_bytes)
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            print("runner report is unreadable: {}".format(error))
+            return 2
+        if not isinstance(report, dict):
+            print("runner report must be a JSON object")
+            return 2
+        if json_out is not None:
+            json_out.parent.mkdir(parents=True, exist_ok=True)
+            json_out.write_bytes(report_bytes)
+
+    required_checks = [
+        {"path": "schema_version", "op": "eq", "value": 8},
+        {"path": "backend_commit", "op": "eq", "value": pinned},
+        {"path": "backend_build.commit", "op": "eq", "value": pinned},
+        {"path": "backend_build.dirty", "op": "eq", "value": False},
+        {"path": "firmware.sha256", "op": "eq", "value": digest},
+        {"path": "board", "op": "eq", "value": runner_contract["board"]},
+        {"path": "lcd_variant", "op": "eq", "value": runner_contract["lcd_variant"]},
+        {"path": "step_quantum", "op": "eq", "value": runner_contract["quantum"]},
+        {"path": "cycle_limit", "op": "eq", "value": runner_contract["cycles"]},
+        {"path": "exception", "op": "eq", "value": None},
+        {"path": "error", "op": "eq", "value": None},
+        {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
     ]
-    if keys:
-        command.extend(["--keys", keys])
-    if sd:
-        command.extend(["--sd", "--sd-format", sd_format or "fat32"])
+    failures = check_report(report, required_checks + target["acceptance"]["report_checks"])
+    verdict_status = report.get("verdict", {}).get("status")
+    expected_code = {"pass": 0, "fail": 1, "cannot_judge": 2}.get(verdict_status)
+    if expected_code is None:
+        print("runner report has no valid verdict.status")
+        return 2
+    elif result.returncode != expected_code:
+        print("runner exit {} disagrees with verdict.status {}".format(
+            result.returncode, verdict_status
+        ))
+        return 2
 
-    print("running {} on backend {}".format(target_id, actual_commit[:12]))
-    # The runner resolves its default bootrom path relative to its own
-    # repository root, so run it from there.
-    result = subprocess.run(command, cwd=str(backend))
-    if result.returncode != 0:
-        print("runner exited {}".format(result.returncode))
-        return 1
-
-    with with_json.open("r", encoding="utf-8") as source:
-        report = json.load(source)
-    unsupported = report.get("unsupported_mmio", [])
-    exception = report.get("exception")
     print("stop_reason={} cycles={}".format(
         report.get("stop_reason"), report.get("cycles")
     ))
@@ -660,16 +908,24 @@ def firmware_test(
         ))
     if report.get("framebuffer"):
         print("framebuffer {}".format(report["framebuffer"].get("rgb565_sha256")))
-    print("report written to {}".format(with_json))
-
-    failed = False
-    if exception is not None:
-        print("FAIL exception: {}".format(exception))
-        failed = True
-    if unsupported:
-        print("FAIL {} unsupported MMIO accesses".format(len(unsupported)))
-        failed = True
-    return 1 if failed else 0
+    if json_out is not None:
+        print("report written to {}".format(json_out))
+    if any(failure.endswith(" is missing") or failure.endswith(" has no length")
+           for failure in failures):
+        print("runner report is missing required structured fields:")
+        for failure in failures:
+            print("  {}".format(failure))
+        return 2
+    if result.returncode == 2:
+        return 2
+    if result.returncode == 1:
+        return 1
+    if failures:
+        print("target report does not satisfy the registry contract:")
+        for failure in failures:
+            print("  FAIL {}".format(failure))
+        return 1
+    return result.returncode
 
 
 def verify(
@@ -826,11 +1082,26 @@ def main() -> int:
         type=Path,
         help="picoem-picocalc checkout (default: PICOEM_PICOCALC_DIR or ../picoem-picocalc)",
     )
-    test_parser.add_argument("--cycles", type=int, default=9_500_000_000)
+    test_parser.add_argument(
+        "--cycles",
+        type=int,
+        help="firmware mode: must match the selected target contract",
+    )
     test_parser.add_argument("--keys", help="keys to inject through the keyboard FIFO")
+    test_parser.add_argument(
+        "--lcd-variant",
+        choices=("hwspi-rgb888", "pio-rgb565"),
+        help="firmware mode: optional assertion; must match the target",
+    )
+    test_parser.add_argument(
+        "--scenario",
+        type=Path,
+        help="firmware mode: optional scenario override with the target's exact SHA-256",
+    )
     test_parser.add_argument(
         "--sd",
         action="store_true",
+        default=None,
         help="firmware mode: attach an SD card; FAT32 is the default profile",
     )
     test_parser.add_argument(
@@ -902,9 +1173,16 @@ def main() -> int:
         if args.sd_format is not None and not args.sd:
             parser.error("--sd-format requires --sd")
         if args.mode == "host":
-            if args.sd or args.sd_format is not None:
+            if (
+                args.sd
+                or args.sd_format is not None
+                or args.cycles is not None
+                or args.keys is not None
+                or args.lcd_variant is not None
+                or args.scenario is not None
+            ):
                 parser.error(
-                    "--sd/--sd-format are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--sd/--sd-format are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -918,6 +1196,8 @@ def main() -> int:
             args.keys,
             args.sd,
             args.sd_format,
+            args.lcd_variant,
+            args.scenario,
             args.json_out,
         )
     if args.command == "verify":

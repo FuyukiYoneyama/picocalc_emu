@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/firmware-targets.schema.json",
+  "title": "PicoCalc firmware conformance target registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "policy", "targets"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "policy": {"type": "string", "minLength": 1},
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/target"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "target": {
+      "type": "object",
+      "required": [
+        "id", "status", "source", "toolchain", "build", "artifacts",
+        "backend", "runner", "scenario", "acceptance"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["active", "pending-revalidation"]},
+        "status_reason": {"type": "string"},
+        "source": {"type": "object", "minProperties": 2},
+        "toolchain": {"type": "object", "minProperties": 2},
+        "build": {"type": "object", "minProperties": 1},
+        "artifacts": {
+          "type": "object",
+          "required": ["bin_basename", "bin_sha256"],
+          "properties": {
+            "bin_basename": {"type": "string", "minLength": 1},
+            "bin_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "backend": {
+          "type": "object",
+          "required": ["repo", "branch", "accepted", "report_schema"],
+          "properties": {
+            "repo": {"const": "picoem-picocalc"},
+            "branch": {"type": "string", "minLength": 1},
+            "accepted": {"$ref": "#/$defs/commit"},
+            "report_schema": {"const": 8}
+          }
+        },
+        "runner": {
+          "type": "object",
+          "required": [
+            "board", "lcd_variant", "cycles", "quantum", "psram",
+            "keyboard", "sd"
+          ],
+          "properties": {
+            "board": {"enum": ["none", "picocalc"]},
+            "lcd_variant": {"enum": ["hwspi-rgb888", "pio-rgb565"]},
+            "cycles": {"type": "integer", "minimum": 1},
+            "quantum": {"type": "integer", "minimum": 1},
+            "stop_pc": {"type": ["string", "null"]},
+            "psram": {"type": "boolean"},
+            "psram_verify_range": {"type": "string"},
+            "keyboard": {"type": "boolean"},
+            "keys": {"type": ["string", "null"]},
+            "sd": {
+              "type": "object",
+              "required": ["attached", "format"],
+              "properties": {
+                "attached": {"type": "boolean"},
+                "format": {"enum": ["fat32", "fat16"]}
+              }
+            }
+          }
+        },
+        "scenario": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"$ref": "#/$defs/sha256"}
+              }
+            }
+          ]
+        },
+        "acceptance": {
+          "type": "object",
+          "required": ["expected_stop_reason", "required_uart_markers", "report_checks"],
+          "properties": {
+            "expected_stop_reason": {
+              "enum": ["cycle_limit", "pc_match", "scenario_done"]
+            },
+            "required_uart_markers": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "report_checks": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "op", "value"],
+                "properties": {
+                  "path": {"type": "string", "minLength": 1},
+                  "op": {"enum": ["eq", "length_eq"]},
+                  "value": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

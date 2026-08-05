@@ -1,4 +1,5 @@
 import json
+import hashlib
 import importlib.util
 import os
 import shutil
@@ -6,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -30,6 +32,130 @@ def run(*arguments, env=None):
 
 
 class ToolTests(unittest.TestCase):
+    def load_picocalc_module(self):
+        specification = importlib.util.spec_from_file_location("picocalc_r2", PICOCALC)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        return module
+
+    def make_firmware_fixture(self, temporary, with_scenario=True):
+        root = Path(temporary)
+        backend = root / "backend"
+        backend.mkdir()
+        subprocess.run(["git", "init", "-q", backend], check=True)
+        subprocess.run(["git", "-C", backend, "config", "user.email", "r2@example.invalid"], check=True)
+        subprocess.run(["git", "-C", backend, "config", "user.name", "R2 Test"], check=True)
+        (backend / "tracked").write_text("backend\n", encoding="utf-8")
+        subprocess.run(["git", "-C", backend, "add", "tracked"], check=True)
+        subprocess.run(["git", "-C", backend, "commit", "-qm", "fixture"], check=True)
+        commit = subprocess.run(
+            ["git", "-C", backend, "rev-parse", "HEAD"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+        firmware = root / "firmware.bin"
+        firmware.write_bytes(b"R2 firmware fixture\n")
+        firmware_sha = hashlib.sha256(firmware.read_bytes()).hexdigest()
+        scenario = root / "scenario.json"
+        scenario.write_text('{"schema_version":1,"name":"fixture","steps":[]}\n', encoding="utf-8")
+        scenario_contract = None
+        if with_scenario:
+            scenario_contract = {
+                "path": "scenarios/fixture.json",
+                "sha256": hashlib.sha256(scenario.read_bytes()).hexdigest(),
+            }
+
+        registry = root / "firmware-targets.json"
+        registry.write_text(json.dumps({
+            "schema_version": 2,
+            "policy": "test",
+            "targets": [{
+                "id": "fixture",
+                "status": "active",
+                "source": {"repo": "fixture", "commit": "0" * 40},
+                "toolchain": {"pico_sdk": "2.2.0", "gcc": "13.2.1"},
+                "build": {"command": "fixture"},
+                "artifacts": {"bin_basename": firmware.name, "bin_sha256": firmware_sha},
+                "backend": {
+                    "repo": "picoem-picocalc", "branch": "main",
+                    "accepted": commit, "report_schema": 8,
+                },
+                "runner": {
+                    "board": "picocalc", "lcd_variant": "hwspi-rgb888",
+                    "cycles": 123, "quantum": 1, "psram": True,
+                    "psram_verify_range": "0:16", "keyboard": True,
+                    "keys": "HI", "sd": {"attached": True, "format": "fat32"},
+                },
+                "scenario": scenario_contract,
+                "acceptance": {
+                    "expected_stop_reason": "scenario_done" if with_scenario else "cycle_limit",
+                    "required_uart_markers": ["READY"],
+                    "report_checks": [{"path": "probe", "op": "eq", "value": "ok"}],
+                },
+            }],
+        }), encoding="utf-8")
+
+        runner = backend / "target/release/picocalc-run"
+        runner.parent.mkdir(parents=True)
+        runner.write_text("""#!/usr/bin/env python3
+import hashlib, json, sys
+from pathlib import Path
+args = sys.argv[1:]
+root = Path(__file__).resolve().parents[2]
+(root / "argv.json").write_text(json.dumps(args), encoding="utf-8")
+mode_path = root / "mode"
+mode = mode_path.read_text(encoding="utf-8").strip() if mode_path.exists() else "pass"
+def value(flag):
+    return args[args.index(flag) + 1]
+if mode == "missing":
+    raise SystemExit(0)
+report_path = Path(value("--json"))
+if mode == "malformed":
+    report_path.write_text("not json", encoding="utf-8")
+    raise SystemExit(0)
+if mode == "nonobject":
+    report_path.write_text("[]", encoding="utf-8")
+    raise SystemExit(0)
+status = {"fail": "fail", "cannot": "cannot_judge"}.get(mode, "pass")
+code = {"fail": 1, "cannot": 2, "rc-mismatch": 1}.get(mode, 0)
+commit = value("--backend-commit")
+report = {
+    "schema_version": 8,
+    "backend_commit": commit,
+    "backend_build": {"commit": "wrong" if mode == "wrong-built" else commit, "dirty": False},
+    "firmware": {"sha256": hashlib.sha256(Path(value("--bin")).read_bytes()).hexdigest()},
+    "execution_model": "Serial",
+    "board": value("--board"),
+    "lcd_variant": "pio-rgb565" if mode == "wrong-lcd" else value("--lcd-variant"),
+    "step_quantum": int(value("--quantum")),
+    "cycle_limit": int(value("--cycles")),
+    "cycles": int(value("--cycles")),
+    "stop_reason": value("--expect-stop"),
+    "exception": None,
+    "error": None,
+    "unsupported_mmio": [],
+    "unsupported_mmio_truncated": False,
+    "verdict": {"status": status},
+    "probe": "ok",
+}
+if mode == "missing-field":
+    del report["backend_build"]
+report_path.write_text(json.dumps(report), encoding="utf-8")
+raise SystemExit(code)
+""", encoding="utf-8")
+        runner.chmod(0o755)
+        return backend, commit, firmware, scenario, registry
+
+    def run_firmware_fixture(self, module, backend, firmware, scenario, registry, **overrides):
+        arguments = dict(
+            target_id="fixture", firmware=firmware, backend_dir=backend,
+            cycles=None, keys=None, sd=None, sd_format=None,
+            lcd_variant=None, scenario_override=scenario, json_out=None,
+        )
+        arguments.update(overrides)
+        with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+            return module.firmware_test(**arguments)
+
     def test_bsp_quality_diagnostic_is_focused_and_bounded(self):
         project = ROOT / "diagnostics/bsp-quality"
         cmake = (project / "CMakeLists.txt").read_text(encoding="utf-8")
@@ -590,6 +716,86 @@ class ToolTests(unittest.TestCase):
             )
         self.assertEqual(completed.returncode, 2)
         self.assertIn("destination already exists", completed.stderr)
+
+    def test_r2_target_drives_the_complete_runner_command(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            output = Path(temporary) / "accepted.json"
+            result = self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry, json_out=output
+            )
+            self.assertEqual(result, 0)
+            self.assertTrue(output.is_file())
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            for item in (
+                "--lcd-variant", "hwspi-rgb888", "--quantum", "1",
+                "--psram", "--psram-verify-range", "0:16", "--keyboard",
+                "--keys", "HI", "--sd", "--sd-format", "fat32",
+                "--scenario", "--expect-stop", "scenario_done", "--expect-uart", "READY",
+            ):
+                self.assertIn(item, argv)
+
+    def test_r2_rejects_wrong_bin_scenario_lcd_and_backend_before_running(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            wrong_bin = Path(temporary) / "wrong.bin"
+            wrong_bin.write_bytes(firmware.read_bytes() + b"x")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, wrong_bin, scenario, registry
+            ), 1)
+            self.assertFalse((backend / "argv.json").exists())
+
+            wrong_scenario = Path(temporary) / "wrong.json"
+            wrong_scenario.write_text("{}\n", encoding="utf-8")
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, wrong_scenario, registry
+            ), 1)
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry,
+                lcd_variant="pio-rgb565",
+            ), 1)
+
+            (backend / "tracked").write_text("second\n", encoding="utf-8")
+            subprocess.run(["git", "-C", backend, "add", "tracked"], check=True)
+            subprocess.run(["git", "-C", backend, "commit", "-qm", "wrong head"], check=True)
+            self.assertEqual(self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry
+            ), 1)
+
+    def test_r2_report_must_be_new_well_formed_and_match_the_device(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            stale = Path(temporary) / "stale.json"
+            stale.write_text('{"old":true}\n', encoding="utf-8")
+            for mode in ("missing", "malformed", "nonobject"):
+                (backend / "mode").write_text(mode, encoding="utf-8")
+                self.assertEqual(self.run_firmware_fixture(
+                    module, backend, firmware, scenario, registry, json_out=stale
+                ), 2, mode)
+            self.assertEqual(stale.read_text(encoding="utf-8"), '{"old":true}\n')
+            for mode in ("missing-field", "rc-mismatch"):
+                (backend / "mode").write_text(mode, encoding="utf-8")
+                self.assertEqual(self.run_firmware_fixture(
+                    module, backend, firmware, scenario, registry, json_out=stale
+                ), 2, mode)
+            for mode in ("wrong-lcd", "wrong-built"):
+                (backend / "mode").write_text(mode, encoding="utf-8")
+                self.assertEqual(self.run_firmware_fixture(
+                    module, backend, firmware, scenario, registry, json_out=stale
+                ), 1, mode)
+
+    def test_r2_preserves_judged_failure_and_cannot_judge_exit_codes(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            for mode, expected in (("fail", 1), ("cannot", 2)):
+                (backend / "mode").write_text(mode, encoding="utf-8")
+                self.assertEqual(self.run_firmware_fixture(
+                    module, backend, firmware, scenario, registry
+                ), expected)
 
 
 if __name__ == "__main__":

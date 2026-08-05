@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import generate_board_header
+import picocalc
 from provenance import directory_sha256
 
 
@@ -750,6 +751,43 @@ def verify_catalog(checks: List[Check], root: Path) -> None:
         add_check(checks, "catalog-schema", False, **error_details(error))
 
 
+def verify_firmware_targets(checks: List[Check], root: Path) -> None:
+    try:
+        registry = picocalc.load_firmware_registry()
+        schema = load_json(root / "reference-projects/firmware-targets.schema.json")
+        targets = registry["targets"]
+        active = [target for target in targets if target["status"] == "active"]
+        problems: List[str] = []
+        if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            problems.append("firmware target schema is not draft 2020-12")
+        if schema.get("properties", {}).get("schema_version", {}).get("const") != 2:
+            problems.append("firmware target schema does not pin version 2")
+        if not active:
+            problems.append("registry has no active target")
+        for target in active:
+            scenario = target.get("scenario")
+            if scenario is not None:
+                path = root / scenario["path"]
+                actual = sha256(path) if path.is_file() else "missing"
+                if actual != scenario["sha256"]:
+                    problems.append("{} scenario fingerprint mismatch".format(target["id"]))
+        add_check(
+            checks,
+            "firmware-targets:schema-and-contracts",
+            not problems,
+            targets=len(targets),
+            active=len(active),
+            errors=problems,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, AttributeError) as error:
+        add_check(
+            checks,
+            "firmware-targets:schema-and-contracts",
+            False,
+            **error_details(error),
+        )
+
+
 def verify_template_smoke(checks: List[Check], root: Path) -> None:
     path = root / "templates/rp2040-basic/app/main.cpp"
     try:
@@ -1159,6 +1197,7 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     )
     verify_template_smoke(checks, root)
     verify_catalog(checks, root)
+    verify_firmware_targets(checks, root)
     verify_hardware_validation(checks, root)
     verify_firmware_validation(checks, root)
     verify_host_backend(checks, root)
