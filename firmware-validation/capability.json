@@ -4,7 +4,7 @@
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "6a618010dc8b8217b6035951b361dc859f472301",
+    "commit": "914fcef65b5fe662142c3bdf529c5754aada4954",
     "execution_model": "Serial",
     "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
   },
@@ -109,7 +109,7 @@
     {
       "id": "sd-card",
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
-      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 6 records the selected format and block counters.",
+      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 7 retains the selected format and block counters introduced in schema 6.",
       "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect, raw-image persistence or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay.",
       "since_gate": "post-7; fat32-default completed in R1-SD"
     },
@@ -129,9 +129,15 @@
     {
       "id": "keyboard-fifo-depth",
       "what": "The keyboard controller's queue is bounded at 31 events, the deepest its count register can express",
-      "detail": "The official STM32 firmware defines FIFO_SIZE=31 and KEY_COUNT_MASK=0x1F; the Canonical BSP reads the same field as `key_info[0] & 0x1f`. The official default leaves CFG_OVERFLOW_ON clear and drops the arriving event, which is the policy the model implements. Overflow is counted in key_events_dropped and reported; picocalc-run warns when a scenario's input was discarded.",
+      "detail": "The official STM32 firmware defines FIFO_SIZE=31 and KEY_COUNT_MASK=0x1F; the Canonical BSP reads the same field as `key_info[0] & 0x1f`. The official default leaves CFG_OVERFLOW_ON clear and drops the arriving event, which is the policy the model implements. Overflow is counted in key_events_dropped and reported; schema 7 makes any dropped event a failed verdict.",
       "limitation": "The official alternative policy, enabled by CFG_OVERFLOW_ON, overwrites the oldest event. The configuration register and that alternative are not yet modelled.",
       "since_gate": "milestone-3"
+    },
+    {
+      "id": "firmware-verdict",
+      "what": "Fail-closed firmware verdict shared by the structured report and process exit code",
+      "detail": "Runner schema 7 records verdict.status, stable reason codes, the accepted stop reason, required UART markers, and missing markers. Exit 0 is pass, 1 is a judged failure, and 2 is cannot_judge. Exception, emulator error, unsupported or truncated MMIO, keyboard drop, scenario assertion/timeout/incomplete, stop mismatch, and missing markers cannot pass. A raw cycle limit without an accepted stop is cannot_judge; a scenario infrastructure fault is also cannot_judge.",
+      "since_gate": "R1-verdict"
     },
     {
       "id": "host-backend",

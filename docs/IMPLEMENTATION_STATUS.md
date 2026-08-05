@@ -11,8 +11,8 @@ PSRAM、SD、keyboardを含めてエミュレーター上で観測できる。�
 
 R0の生成契約・source identity固定は完了した。schema 2 metadata、生成時BSP版・commit・
 実体SHA-256、license/notices、PicoTetrisの履歴復元とGit bundleを
-[`R0_BASELINE.md`](R0_BASELINE.md)に記録している。次の未完了作業はR1のbackend verdictと
-公式keyboard firmwareを一次資料にしたconformance testである。
+[`R0_BASELINE.md`](R0_BASELINE.md)に記録している。R1のbackend verdictはschema 7で完了した。
+次の未完了作業は公式keyboard firmwareを一次資料にしたconformance testである。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -289,7 +289,14 @@ SDカードモデルはSPIモードのbring-up（CMD0/CMD8/CMD55+ACMD41/CMD58）
 filesystemは購入時付属32 GBカードに合わせて**FAT32がデフォルト**で、FAT16は
 明示選択できる（BSPはmountするだけでformatしない）。
 両形式でmount/write/sync/read/compare/removeの全系列をhost/firmware両backendで通し、
-runner reportはschema 6の`sd.format`、block数、read/write数、unknown commandを記録する。
+runner reportはschema 7でschema 6の`sd.format`、block数、read/write数、unknown commandを
+保持し、さらに規範的な`verdict`を記録する。
+
+schema 7ではcycle limitを暗黙のPassにしない。許可stop reasonと必須UART markerを明示し、
+exception、emulator error、unsupported/truncated MMIO、keyboard drop、scenario失敗、stop
+mismatch、marker不足を終了コード1にする。判定条件不足またはscenario基盤faultは終了コード2、
+すべての条件を満たす場合だけ0である。backend固定commitは
+`914fcef65b5fe662142c3bdf529c5754aada4954`。上位CLI/target registryへの構造化接続はR2で行う。
 
 **注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
 Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで

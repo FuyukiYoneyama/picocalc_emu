@@ -176,7 +176,7 @@ PicoTetrisなど任意アプリのロジック試験が既に接続済みとい�
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
-生成契約・source identityの固定（R0）は完了しました。次の作業はbackendの合否判定と
+生成契約・source identityの固定（R0）とbackendの合否判定は完了しました。次の作業は
 公式keyboard conformance（R1残件）を固め、上位CLI/target registry、PicoTetris回帰、
 CI、同一BIN実機相関の順に進めます。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-05レビュー反映)が正典です。

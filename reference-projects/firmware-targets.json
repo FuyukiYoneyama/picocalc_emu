@@ -97,10 +97,11 @@
         "accepted": "6a618010dc8b8217b6035951b361dc859f472301",
         "history": {
           "gate7_accepted": "b285fa22e7df45917d7a29b8aab1a32130025146",
-          "r1_sd_tested": "6a618010dc8b8217b6035951b361dc859f472301"
+          "r1_sd_tested": "6a618010dc8b8217b6035951b361dc859f472301",
+          "r1_verdict_contract": "914fcef65b5fe662142c3bdf529c5754aada4954"
         },
         "test_command": "cargo test -p picocalc-board -p picocalc-harness",
-        "note": "The current pin supports schema 6 and --sd-format. R1 verdict hardening is still pending, so a runner exit code alone is not yet the authoritative target verdict."
+        "note": "accepted remains the R1-SD target pin using report schema 6. R1 verdict hardening is implemented at history.r1_verdict_contract with schema 7. R2 will promote a complete target pin and pass this target's structured expectations to the runner; until then this registry entry is historical input, not a schema-7 one-command acceptance contract."
       },
       "runner": {
         "arguments": "--board picocalc --lcd-variant pio-rgb565 --quantum 1 --sd --sd-format fat32",
