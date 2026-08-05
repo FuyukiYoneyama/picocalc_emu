@@ -180,7 +180,8 @@ hardware-freeなゲーム規則へ分離し、666 checksの個別host unit test�
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
 conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
-次はCI、同一BIN実機相関の順に進めます。R3の全SHAと受入結果は
+次はR4の3リポジトリfull品質ゲート/CI、R5の同一BIN実機相関の順に進めます。既存CIは
+portable検証・Python test・標準template compileまでで、R4全体の完了を意味しません。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r3完了反映)が正典です。
@@ -236,7 +237,7 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
 - directory-backed Fast SDモード（host backend）
 - host合格と実機結果の相関を自動集計する（Milestone 4）
-- JUnit成果物、100回連続実行の決定性検査（Milestone 3の残り）
+- JUnit成果物、100回連続実行の決定性検査（R4へ繰越）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
 画面の向き、文字の可読性、音の聞こえ方です。エミュレーターは「firmwareが何を書いたか」
@@ -270,8 +271,8 @@ Canonical BSPの教訓は、エミュレーター本体にもそのまま適用�
 `Hello World PicoCalc`を320×320 framebufferへ決定的に描画し、その後、PSRAM全域試験、
 I2C keyboard controller、scripted key echoまで通して完全合格とします。
 
-これはCanonical BSPの推奨表示デフォルトを変更するものではありません。BのPIO0/RGB565/
-LCD DMA OFFは、公式サンプルAの縦断合格後に検証する次のFirmware conformance対象です。
+これはCanonical BSPの推奨表示デフォルトを変更するものではありません。公式サンプルAの
+縦断合格後、BのPIO0/RGB565/LCD DMA OFFもGate 7でFirmware conformanceを完了しています。
 詳細な実装順と受入条件は
 [Emulator implementation roadmap](docs/EMULATOR_ROADMAP.md)を参照してください。
 

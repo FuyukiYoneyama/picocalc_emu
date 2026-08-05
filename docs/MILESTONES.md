@@ -135,8 +135,8 @@ PicoTetrisは元の生成commitを推測せず、完全一致するcanonical BSP
 `cbfc90467e2b8392fbd0429c83925b94ca365824`を根拠に`kind: reconstructed`として復元した。
 remoteを作らない方針を維持し、R0固定commitを含む完全Git bundleとSHA-256を保存した。
 `picocalc.py verify --r0 --workspace-root ..`が固定commit、metadata、BSP hash、license/notices、
-bundleを検査する。R1-SDは完了済みだが、verdictと公式keyboard conformanceは引き続きR1の
-未完了項目である。
+bundleを検査する。R0完了時点ではR1-SDだけが先に完了し、verdictと公式keyboard conformanceは
+未完了だった。両項目はその後2026-08-05に完了している。
 
 ### R1-SD実装結果（2026-08-05）
 
@@ -282,7 +282,7 @@ Primary backendとして`picoem-picocalc`を使用する。ソースは
 - `Hello World PicoCalc`を最初の可視化到達点として取得
 - PIO1/DMA PSRAM全域試験、I2C1 keyboard controller、battery、backlightの接続
 - シナリオ入力したキーのLCD echoを含む`picocalc_helloworld`完全合格
-- 次のconformance対象としてBのPIO0/RGB565/LCD DMA OFFを接続
+- Aの次のconformance対象だったBのPIO0/RGB565/LCD DMA OFFを接続（Gate 7完了）
 - 必要範囲のPIO/DMA、PNG、UART、trace、capability成果物への接続
 
 最初のFirmware縦断対象は、ClockworkPi公式の無改変`Code/picocalc_helloworld`とする。

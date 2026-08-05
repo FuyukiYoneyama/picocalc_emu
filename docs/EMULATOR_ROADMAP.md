@@ -171,7 +171,7 @@ framebufferは共有できるが、AのSPI1/RGB666とBのPIO0/RGB565を同じ転
 
 - 最初のFirmware縦断試験: A、SPI1、RGB666 3-byte、`picocalc_helloworld`
 - Canonical BSP推奨デフォルト: B、PIO0、RGB565 2-byte、LCD DMA OFF
-- A合格後の次のFirmware conformance: B、Canonical BSP診断
+- A合格後に完了したFirmware conformance: B、Canonical BSP診断（Gate 7）
 
 ## 6. 実装境界
 

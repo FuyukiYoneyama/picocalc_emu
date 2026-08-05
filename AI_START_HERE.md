@@ -55,7 +55,7 @@ Solが要件、計画、設計、受入、レビュー、統合、commit/push、
 | 段 | 内容 | 状態 | あなたへの影響 |
 |---|---|---|---|
 | 1 | Canonical BSP — 実績済みの転送契約と由来を固定し、あなたの変更範囲を`app/`へ限定する | **完了**（BSP 0.8.8）。0.8.8実機台帳はLCD・keyboardを含め`pass` | ハードウェア初期化を書かない。既存APIを呼ぶ |
-| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A/BともLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成、個別アプリのhost test・継続target化は別途必要 | 画面・キー・SDはPC上で確認し、実機固有の見た目・聞こえ方だけ人間に依頼する |
+| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A/BともLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成。個別アプリのhost test・継続target化は原則別途必要で、PicoTetrisはR3で接続済み | 画面・キー・SDはPC上で確認し、実機固有の見た目・聞こえ方だけ人間に依頼する |
 | 3 | 実機相関 — 実機結果を台帳へ記録し、予測精度を校正する | 最初の相関は完了。現行成果物の継続相関は進行前 | 実機結果は必ず台帳へ記録する |
 
 第2段はMilestone 1〜3が完了しました（2026-08-05）。ClockworkPi公式サンプル
@@ -89,8 +89,9 @@ python3 tools/picocalc.py test --mode host
 
 このコマンドが現在実行するのはBSP基盤の専用`emu_smoke`です。任意アプリのロジックが
 自動的に試験されるわけではなく、アプリ側にhardware-freeなtest targetを用意する必要が
-あります。RP2040バイナリを作らずに1秒未満で検査できますが、**firmware backendが権威で
-あることは変わりません。** PIO・DMA・I2C・割り込み・LCDのwire形式はhostに
+あります。PicoTetrisはその具体例で、R3により666 checksのhost testと`picotetris-r3`
+firmware targetへ接続済みです。RP2040バイナリを作らずに1秒未満で検査できますが、
+**firmware backendが権威であることは変わりません。** PIO・DMA・I2C・割り込み・LCDのwire形式はhostに
 存在しないため、それらに依存する挙動はfirmware backendでしか確認できません。
 詳細は[`docs/HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
 

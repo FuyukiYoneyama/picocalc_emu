@@ -40,7 +40,7 @@ shared device path.
 - Incorporate upstream changes selectively after review and regression testing; do not merge them automatically.
 - General-purpose fixes suitable for the original project may be prepared separately for upstream contribution.
 
-## Initial implementation order
+## Initial implementation order and current status
 
 1. Build and run the inherited `rp2040-emu` Serial test suite without PicoCalc modifications.
 2. Build the unmodified ClockworkPi `Code/picocalc_helloworld` source and pin its source commit, SDK/toolchain identity, and ELF/BIN hashes.
@@ -61,8 +61,14 @@ first agree with the official register/FIFO/key-state implementation, then be ch
 known-good consumer and hardware records.
 R1の固定済みregister、matrix、modifier、repeat、overflow契約と、GPIO scan/PMU lifecycleの
 意図的な境界は[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)に記録している。
-10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path as the next firmware conformance target.
+10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path (completed by Gate 7).
 11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
+
+SPI0 SD is also complete, with FAT32 as the default and FAT16 as an explicit compatibility
+profile. Item 11 otherwise remains a requirement-driven extension queue rather than a statement
+that every listed subsystem is already implemented. The Gate 0–7 acceptance sequence reached
+item 10; detailed completion evidence and any narrower capability limits remain authoritative in
+`MILESTONES.md` and `firmware-validation/capability.json`.
 
 The first end-to-end firmware target is the unmodified ClockworkPi
 `picocalc_helloworld`. Its LCD path is variant A: hardware SPI1 with RGB666 in a
