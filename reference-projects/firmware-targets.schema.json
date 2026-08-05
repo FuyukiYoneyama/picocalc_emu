@@ -19,6 +19,7 @@
     "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "target": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "id", "status", "source", "toolchain", "build", "artifacts",
         "backend", "runner", "scenario", "acceptance"
@@ -32,14 +33,18 @@
         "build": {"type": "object", "minProperties": 1},
         "artifacts": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["bin_basename", "bin_sha256"],
           "properties": {
             "bin_basename": {"type": "string", "minLength": 1},
-            "bin_sha256": {"$ref": "#/$defs/sha256"}
+            "bin_sha256": {"$ref": "#/$defs/sha256"},
+            "elf_sha256": {"$ref": "#/$defs/sha256"},
+            "uf2_sha256": {"$ref": "#/$defs/sha256"}
           }
         },
         "backend": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["repo", "branch", "accepted", "report_schema"],
           "properties": {
             "repo": {"const": "picoem-picocalc"},
@@ -50,6 +55,7 @@
         },
         "runner": {
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "board", "lcd_variant", "cycles", "quantum", "psram",
             "keyboard", "sd"
@@ -66,6 +72,7 @@
             "keys": {"type": ["string", "null"]},
             "sd": {
               "type": "object",
+              "additionalProperties": false,
               "required": ["attached", "format"],
               "properties": {
                 "attached": {"type": "boolean"},
@@ -79,6 +86,7 @@
             {"type": "null"},
             {
               "type": "object",
+              "additionalProperties": false,
               "required": ["path", "sha256"],
               "properties": {
                 "path": {"type": "string", "minLength": 1},
@@ -89,6 +97,7 @@
         },
         "acceptance": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["expected_stop_reason", "required_uart_markers", "report_checks"],
           "properties": {
             "expected_stop_reason": {

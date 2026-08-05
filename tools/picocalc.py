@@ -461,8 +461,12 @@ def load_firmware_registry() -> dict:
         raise ValueError("firmware target registry is missing: {}".format(FIRMWARE_TARGETS))
     with FIRMWARE_TARGETS.open("r", encoding="utf-8") as source:
         document = json.load(source)
+    if not isinstance(document, dict):
+        raise ValueError("firmware target registry must be a JSON object")
     if document.get("schema_version") != 2:
         raise ValueError("firmware target registry schema_version must be 2")
+    if not isinstance(document.get("policy"), str) or not document["policy"]:
+        raise ValueError("firmware target registry needs a non-empty policy")
     targets = document.get("targets")
     if not isinstance(targets, list) or not targets:
         raise ValueError("firmware target registry needs a non-empty targets array")
@@ -479,13 +483,33 @@ def load_firmware_registry() -> dict:
         ids.add(target_id)
         if target.get("status") not in ("active", "pending-revalidation"):
             raise ValueError("{}.status must be active or pending-revalidation".format(where))
-        for field in ("source", "toolchain", "artifacts", "backend", "runner", "acceptance"):
+        for field in (
+            "source", "toolchain", "build", "artifacts", "backend", "runner", "acceptance"
+        ):
             if not isinstance(target.get(field), dict):
                 raise ValueError("{}.{} must be an object".format(where, field))
+        for field in ("source", "toolchain", "build"):
+            if not target[field]:
+                raise ValueError("{}.{} must not be empty".format(where, field))
+        basename = target["artifacts"].get("bin_basename")
+        if not isinstance(basename, str) or not basename:
+            raise ValueError("{}.artifacts.bin_basename must be non-empty".format(where))
         digest = target["artifacts"].get("bin_sha256")
         if not is_sha256(digest):
             raise ValueError("{}.artifacts.bin_sha256 must be a SHA-256".format(where))
-        accepted = target["backend"].get("accepted")
+        for artifact in ("elf_sha256", "uf2_sha256"):
+            if artifact in target["artifacts"] and not is_sha256(
+                target["artifacts"][artifact]
+            ):
+                raise ValueError("{}.artifacts.{} must be a SHA-256".format(where, artifact))
+        backend = target["backend"]
+        if backend.get("repo") != "picoem-picocalc":
+            raise ValueError("{}.backend.repo must be picoem-picocalc".format(where))
+        if not isinstance(backend.get("branch"), str) or not backend["branch"]:
+            raise ValueError("{}.backend.branch must be non-empty".format(where))
+        if backend.get("report_schema") != 8:
+            raise ValueError("{}.backend.report_schema must be 8".format(where))
+        accepted = backend.get("accepted")
         if not is_git_commit(accepted):
             raise ValueError("{}.backend.accepted must be a full Git commit".format(where))
         runner = target["runner"]
@@ -493,13 +517,30 @@ def load_firmware_registry() -> dict:
             raise ValueError("{}.runner.board is invalid".format(where))
         if runner.get("lcd_variant") not in ("hwspi-rgb888", "pio-rgb565"):
             raise ValueError("{}.runner.lcd_variant is invalid".format(where))
-        if not isinstance(runner.get("cycles"), int) or runner["cycles"] <= 0:
+        if type(runner.get("cycles")) is not int or runner["cycles"] <= 0:
             raise ValueError("{}.runner.cycles must be positive".format(where))
-        if not isinstance(runner.get("quantum"), int) or runner["quantum"] <= 0:
+        if type(runner.get("quantum")) is not int or runner["quantum"] <= 0:
             raise ValueError("{}.runner.quantum must be positive".format(where))
         for flag in ("psram", "keyboard"):
             if not isinstance(runner.get(flag), bool):
                 raise ValueError("{}.runner.{} must be boolean".format(where, flag))
+        stop_pc = runner.get("stop_pc")
+        if stop_pc is not None and not isinstance(stop_pc, str):
+            raise ValueError("{}.runner.stop_pc must be a string or null".format(where))
+        verify_range = runner.get("psram_verify_range")
+        if verify_range is not None and (
+            not isinstance(verify_range, str) or not verify_range or not runner["psram"]
+        ):
+            raise ValueError(
+                "{}.runner.psram_verify_range needs attached PSRAM and a non-empty string".format(
+                    where
+                )
+            )
+        keys = runner.get("keys")
+        if keys is not None and (not isinstance(keys, str) or not runner["keyboard"]):
+            raise ValueError(
+                "{}.runner.keys needs an attached keyboard and a string or null".format(where)
+            )
         sd_contract = runner.get("sd")
         if (
             not isinstance(sd_contract, dict)
@@ -509,7 +550,11 @@ def load_firmware_registry() -> dict:
             raise ValueError("{}.runner.sd must contain attached and format".format(where))
         scenario = target.get("scenario")
         if scenario is not None:
-            if not isinstance(scenario, dict) or not isinstance(scenario.get("path"), str):
+            if (
+                not isinstance(scenario, dict)
+                or not isinstance(scenario.get("path"), str)
+                or not scenario["path"]
+            ):
                 raise ValueError("{}.scenario must be null or contain path".format(where))
             scenario_path = Path(scenario["path"])
             if scenario_path.is_absolute() or ".." in scenario_path.parts:
@@ -521,6 +566,10 @@ def load_firmware_registry() -> dict:
             "cycle_limit", "pc_match", "scenario_done"
         ):
             raise ValueError("{}.acceptance.expected_stop_reason is invalid".format(where))
+        if acceptance["expected_stop_reason"] == "scenario_done" and scenario is None:
+            raise ValueError("{}.scenario_done needs a scenario".format(where))
+        if acceptance["expected_stop_reason"] == "pc_match" and stop_pc is None:
+            raise ValueError("{}.pc_match needs runner.stop_pc".format(where))
         markers = acceptance.get("required_uart_markers")
         if not isinstance(markers, list) or not markers or not all(
             isinstance(marker, str) and marker for marker in markers
@@ -531,10 +580,20 @@ def load_firmware_registry() -> dict:
             raise ValueError("{}.acceptance.report_checks must be non-empty".format(where))
         for check_index, check in enumerate(checks):
             check_where = "{}.acceptance.report_checks[{}]".format(where, check_index)
-            if not isinstance(check, dict) or not isinstance(check.get("path"), str):
+            if (
+                not isinstance(check, dict)
+                or not isinstance(check.get("path"), str)
+                or not check["path"]
+            ):
                 raise ValueError("{} needs a path".format(check_where))
             if check.get("op") not in ("eq", "length_eq") or "value" not in check:
                 raise ValueError("{} needs op eq|length_eq and value".format(check_where))
+            if check["op"] == "length_eq" and (
+                type(check["value"]) is not int or check["value"] < 0
+            ):
+                raise ValueError("{} length_eq value must be a non-negative integer".format(
+                    check_where
+                ))
     return document
 
 

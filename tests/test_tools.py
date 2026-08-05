@@ -736,6 +736,27 @@ raise SystemExit(code)
             ):
                 self.assertIn(item, argv)
 
+    def test_r2_registry_rejects_incomplete_or_old_contracts(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            _, _, _, _, registry = self.make_firmware_fixture(temporary)
+            original = json.loads(registry.read_text(encoding="utf-8"))
+            mutations = (
+                lambda value: value.pop("build"),
+                lambda value: value["backend"].update(report_schema=7),
+                lambda value: value["runner"].update(cycles=True),
+                lambda value: value["acceptance"]["report_checks"].append(
+                    {"path": "items", "op": "length_eq", "value": True}
+                ),
+            )
+            for mutate in mutations:
+                document = json.loads(json.dumps(original))
+                mutate(document["targets"][0])
+                registry.write_text(json.dumps(document), encoding="utf-8")
+                with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                    with self.assertRaises(ValueError):
+                        module.load_firmware_registry()
+
     def test_r2_rejects_wrong_bin_scenario_lcd_and_backend_before_running(self):
         module = self.load_picocalc_module()
         with tempfile.TemporaryDirectory() as temporary:
