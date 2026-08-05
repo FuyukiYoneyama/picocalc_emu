@@ -519,6 +519,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [Scenario runner](docs/SCENARIO_RUNNER.md) — JSON scenarioの形式、条件付きキー投入、画面の機械判定
 - [Host backend](docs/HOST_BACKEND.md) — アプリロジックをホストのモデルに対してビルドし単体試験する
 - [R0 baseline](docs/R0_BASELINE.md) — 開始点、生成契約、PicoTetris source identityと再取得bundle
+- [R2 Template B再現手順](docs/R2_TEMPLATE_B_REPRODUCTION.md) — clean generator cloneとGit管理外生成先を分離し、固定BIN/UF2を再生成する契約
 - [R3 PicoTetris正式回帰](docs/R3_PICOTETRIS_REGRESSION.md) — host logic、再現可能build、firmware 3回決定性と現行bundle
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件

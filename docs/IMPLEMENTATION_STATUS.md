@@ -305,7 +305,10 @@ backend commitとdirty状態を記録するため、古いrunner binaryへCLIか
 
 R2のactive Template B targetはgenerator commit `82e943ab...0361`、BIN
 `1e6abac2...a3d`、PIO-RGB565、PSRAM、keyboard、FAT32を固定する。2回のfresh buildでBIN/UF2が
-一致し、1コマンド実走で12億cycle、LCD/SD/READY marker、SD read/write、drop 0、unknown
+一致した。sourceは`.git`を保持したclean clone、生成先は全Git working treeの外とし、
+`bsp_git=82e943ab1942`と`app_git=untracked`を同時に埋め込む。正規手順は
+[`R2_TEMPLATE_B_REPRODUCTION.md`](R2_TEMPLATE_B_REPRODUCTION.md)にある。1コマンド実走で
+12億cycle、LCD/SD/READY marker、SD read/write、drop 0、unknown
 command/MMIO 0、schema 8 verdict passを確認した。詳細は
 `firmware-validation/records/r2-20260806-01/`に記録している。activeの公式A targetも同じ経路で
 95億cycle、PSRAM全8 MiB一致、keyboard 4 event、必須marker不足0としてpassした。

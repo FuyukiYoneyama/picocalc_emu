@@ -206,7 +206,10 @@ runner exitとverdictの不一致を終了2にする。判定済みfailureの1�
 
 Template Bをgenerator commit `82e943ab1942ef869e9bff38ae6fcf8074930361`から2回fresh buildし、
 BIN `1e6abac...a3d`とUF2 `1ab0d16f...c757`が一致した。異なる絶対build pathを含むELFは一致
-しなかったため、ELFのpath非依存再現性は主張しない。このBINをbackend
+しなかったため、ELFのpath非依存再現性は主張しない。再現には、上記commitのclean Git cloneを
+sourceとして保持し、生成先だけを全Git working treeの外へ置く必要がある。これにより埋込み値は
+`bsp_git=82e943ab1942`、`app_git=untracked`となる。完全な環境・コマンド・SHA検査は
+[`R2_TEMPLATE_B_REPRODUCTION.md`](R2_TEMPLATE_B_REPRODUCTION.md)に固定した。このBINをbackend
 `0d434d789ed2aa0743520eb0d411fa2ced1974e4`で1コマンド実行し、12億cycle、FAT32 read 9/write 10、
 LCD/SD/READY marker、drop 0、unknown SD/MMIO 0、schema 8 verdict passを確認した。wrong BIN、
 scenario、backend、LCD variant、missing/malformed/stale reportの異常系も回帰試験に固定した。

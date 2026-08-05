@@ -90,14 +90,31 @@
       },
       "toolchain": {
         "pico_sdk": "2.2.0",
-        "arm_none_eabi_gcc": "13.2.1"
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "generator": "Unix Makefiles",
+        "gnu_make": "4.3",
+        "picotool": "v2.2.0-a4",
+        "picotool_cmake_dir": "/usr/local/lib/cmake/picotool",
+        "python": "3.12.3"
       },
       "build": {
         "commands": [
-          "python3 tools/picocalc.py new R2Template --output <fresh-dir>",
-          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-06T00:00:00Z"
+          "git clone https://github.com/FuyukiYoneyama/picocalc_emu.git <repro-root>/source",
+          "git -C <repro-root>/source checkout --detach 82e943ab1942ef869e9bff38ae6fcf8074930361",
+          "python3 <repro-root>/source/tools/picocalc.py new R2Template --output <repro-root>/run",
+          "python3 <repro-root>/source/tools/picocalc.py build --project <repro-root>/run --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-06T00:00:00Z"
         ],
+        "reproduction_document": "docs/R2_TEMPLATE_B_REPRODUCTION.md",
+        "source_checkout_requires_git": true,
+        "generated_project_must_be_outside_git": true,
+        "expected_embedded_identity": {
+          "bsp_git": "82e943ab1942",
+          "app_git": "untracked"
+        },
         "timestamp_used": "2026-08-06T00:00:00Z",
+        "generator": "Unix Makefiles",
         "builds_compared": 2,
         "bin_reproducible": true,
         "uf2_reproducible": true,

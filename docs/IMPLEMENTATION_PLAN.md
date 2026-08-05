@@ -130,6 +130,12 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 - 継承済みSerial回帰の範囲は`cargo test -p rp2040-emu`と定義する。
   2026-08-03時点のbaselineは1225テスト全合格（backend commit`a4e23ca`）。
 
+> **R2 Template Bの別契約（2026-08-06）:** 上記は公式A targetのNinja buildである。
+> `picocalc-template-b`の履歴再現はUnix Makefilesを使い、generatorのclean Git cloneと
+> Git管理外の生成先を兄弟directoryに置く。`bsp_git=82e943ab1942`と
+> `app_git=untracked`の両方が必要である。完全な手順は
+> [`R2_TEMPLATE_B_REPRODUCTION.md`](R2_TEMPLATE_B_REPRODUCTION.md)を正典とする。
+
 ## 3.3 成果物の保存規約
 
 - Gate受入の証拠（JSONレポート、UARTログ、framebuffer PNG、hash一覧、
