@@ -4,7 +4,7 @@
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "914fcef65b5fe662142c3bdf529c5754aada4954",
+    "commit": "fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4",
     "execution_model": "Serial",
     "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
   },
@@ -71,8 +71,8 @@
     {
       "id": "keyboard-controller",
       "what": "PicoCalc STM32 keyboard/power controller at address 0x1F on I2C1",
-      "detail": "ClockworkPi's official PicoCalc/Code/picocalc_keyboard STM32F103R8T6 firmware is the primary behavioral reference. The model implements the consumer-visible key FIFO, key count, battery and keyboard-backlight registers. Register selection survives STOP, so both the official RP2040 driver's write-STOP-read and the Canonical BSP's repeated START work against one model.",
-      "limitation": "Only the RP2040-consumer subset is modelled. Firmware version/config/interrupt/LCD-backlight/debounce/poll/reset/C64/power-off registers, physical matrix scanning, modifiers and hold/repeat generation are absent. Bus speed is not modelled, so 10 kHz and 400 kHz behave identically.",
+      "detail": "ClockworkPi's official PicoCalc/Code/picocalc_keyboard STM32F103R8T6 firmware is the primary behavioral reference. The model covers the consumer-visible 0x01..0x0E register replies, 31-event FIFO, lock flags, LCD/keyboard backlight quantisation, battery, reset, C64 matrix/joystick and power-off request. It also pins the official 7x8 matrix plus 12-button map, modifier codes, Caps/Num behavior, state encoding, and strict hold/repeat thresholds. Register selection survives STOP, and a new read request resends the latched reply from byte zero as the controller does.",
+      "limitation": "The model accepts physical matrix/button transitions through a conformance API but does not simulate GPIO electrical scanning, debounce, 16 ms polling, or PMU-driven battery/power-key lifecycle. Scenario key steps remain logical FIFO injection for backward compatibility. Bus speed is not modelled, so 10 kHz and 400 kHz behave identically. CFG/INT/DEB/FRQ stay internal because the current official receiveEvent switch does not expose them over I2C.",
       "since_gate": 4
     },
     {
@@ -129,14 +129,14 @@
     {
       "id": "keyboard-fifo-depth",
       "what": "The keyboard controller's queue is bounded at 31 events, the deepest its count register can express",
-      "detail": "The official STM32 firmware defines FIFO_SIZE=31 and KEY_COUNT_MASK=0x1F; the Canonical BSP reads the same field as `key_info[0] & 0x1f`. The official default leaves CFG_OVERFLOW_ON clear and drops the arriving event, which is the policy the model implements. Overflow is counted in key_events_dropped and reported; schema 7 makes any dropped event a failed verdict.",
-      "limitation": "The official alternative policy, enabled by CFG_OVERFLOW_ON, overwrites the oldest event. The configuration register and that alternative are not yet modelled.",
+      "detail": "The official STM32 firmware defines FIFO_SIZE=31 and KEY_COUNT_MASK=0x1F; the Canonical BSP reads the same field as `key_info[0] & 0x1f`. The official default leaves CFG_OVERFLOW_ON clear and drops the arriving event. The model also covers the internal CFG_OVERFLOW_ON alternative, which overwrites the oldest event while keeping count 31. Loss, overwrite and the overflow interrupt latch are reported; schema 7 makes any lost event a failed verdict.",
+      "limitation": "The current official receiveEvent switch has no CFG register case, so the alternative policy is reachable only through a conformance-test internal setter, not a fictitious I2C write.",
       "since_gate": "milestone-3"
     },
     {
       "id": "firmware-verdict",
       "what": "Fail-closed firmware verdict shared by the structured report and process exit code",
-      "detail": "Runner schema 7 records verdict.status, stable reason codes, the accepted stop reason, required UART markers, and missing markers. Exit 0 is pass, 1 is a judged failure, and 2 is cannot_judge. Exception, emulator error, unsupported or truncated MMIO, keyboard drop, scenario assertion/timeout/incomplete, stop mismatch, and missing markers cannot pass. A raw cycle limit without an accepted stop is cannot_judge; a scenario infrastructure fault is also cannot_judge.",
+      "detail": "Runner schema 7 records verdict.status, stable reason codes, the accepted stop reason, required UART markers, and missing markers. Exit 0 is pass, 1 is a judged failure, and 2 is cannot_judge. Exception, emulator error, unsupported or truncated MMIO, keyboard drop, unknown keyboard register access, scenario assertion/timeout/incomplete, stop mismatch, and missing markers cannot pass. A raw cycle limit without an accepted stop is cannot_judge; a scenario infrastructure fault is also cannot_judge.",
       "since_gate": "R1-verdict"
     },
     {

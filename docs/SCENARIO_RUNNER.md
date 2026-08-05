@@ -120,9 +120,11 @@ at most 31 events.
 **これが出た走行の結果は信用してはならない。** 投入したキーと、ファームウェアが
 見たキーが違うからである。`gap_ms`で間隔を空けるか、バーストを短くする。
 
-なお、実機のコントローラが満杯のときどちら側を捨てるかは未確認である。モデルは
-到着した側を捨てる。確実なのは「31を超える深さは報告できない」ことだけであり、
-そこだけを根拠にしている。
+公式controllerの既定CFGは到着した側を捨て、overflow interruptをlatchする。
+内部`CFG_OVERFLOW_ON`を有効にした場合だけoldestを上書きする。ただし現行公式firmwareの
+I2C `receiveEvent()`にはCFG write caseがないため、後者はconformance test用の内部設定でのみ
+到達させ、consumerがI2Cから変更できるとは扱わない。詳細は
+[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)にある。
 
 ## レポート
 

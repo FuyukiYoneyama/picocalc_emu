@@ -116,7 +116,7 @@ python3 tools/picocalc.py test --mode firmware --firmware <path-to.bin>
 
 この上位CLIは現在、firmware起動のsmoke経路です。targetに宣言したscenario、SD、
 LCD variant等をすべて転送し、structured reportの期待値まで自動判定するhardeningは
-未完です。R1/R2が完了するまでは、CLIの終了だけを全機能合格の根拠にせず、runnerの
+未完です。R2が完了するまでは、CLIの終了だけを全機能合格の根拠にせず、runnerの
 scenario status、停止理由、必須UART markerを併せて確認します。
 
 実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
@@ -176,9 +176,10 @@ PicoTetrisなど任意アプリのロジック試験が既に接続済みとい�
 [詳細実装計画](docs/IMPLEMENTATION_PLAN.md) §4、エミュレーターの対応・未対応の
 一覧は[capability manifest](firmware-validation/capability.json)にあります。
 
-生成契約・source identityの固定（R0）とbackendの合否判定は完了しました。次の作業は
-公式keyboard conformance（R1残件）を固め、上位CLI/target registry、PicoTetris回帰、
-CI、同一BIN実機相関の順に進めます。詳細な依存関係と
+生成契約・source identityの固定（R0）とR1（SD/FAT32、backend verdict、公式keyboard
+conformance）は完了しました。次の作業は上位CLI/target registry（R2）、PicoTetris回帰、
+CI、同一BIN実機相関の順に進めます。keyboard conformanceの固定内容は
+[`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-05レビュー反映)が正典です。
 
 ## 読む順番
@@ -215,7 +216,7 @@ AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.m
 - **JSON scenarioで条件付きにキーを投入し、画面・UART出力を機械的に判定する**
 - PWM設定と未対応MMIOアクセスを観測する
 - `python3 tools/picocalc.py test --mode firmware --firmware <bin>`でbackendを起動する。
-  全機能の自動合否判定はR1/R2でhardeningする
+  runner側の合否判定はR1で完了し、上位CLIとの自動接続はR2でhardeningする
 
 host backendでは、アプリのロジックをRP2040バイナリを作らずに検査できます。
 

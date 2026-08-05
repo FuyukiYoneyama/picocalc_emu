@@ -63,7 +63,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | 順序 | 作業パッケージ | 主な対象 | 受入条件 | 状態 |
 |---|---|---|---|---|
 | R0 | 基準点・生成契約・provenanceの固定 | `picocalc_emu`、`picotetris` | 開始baselineとして3リポジトリのcommitと合否契約schemaを記録する。生成後metadataのBSP版が`bsp/VERSION`と一致し、必要なlicense/noticesとローカル参照が揃う。PicoTetrisを固定source identityから再取得できる | **完了（2026-08-05）** |
-| R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **R1-SD・verdict完了**。keyboardは未着手 |
+| R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **完了 2026-08-05**。R1-SD、verdict、公式keyboard conformanceを完了 |
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | R0・R1後 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | R2後 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | R3後 |
@@ -175,8 +175,22 @@ backend commit `914fcef65b5fe662142c3bdf529c5754aada4954`でrunner reportをsche
 
 Rust board 61件、runner 33件、doctest 1件、Clippyが合格し、実processで2/0/1の終了コードと
 schema 7 verdictの一致を確認した。上位`picocalc.py`とtarget registryがこの期待値を構造化して
-runnerへ渡す作業は計画どおりR2で行う。R1の残件は公式keyboard firmwareとの完全conformance
-だけである。
+runnerへ渡す作業は計画どおりR2で行う。
+
+### R1-keyboard実装結果（2026-08-05）
+
+backend commit `fdd14dc8865f1d3fa7d9420c6e1f338f0b1721e4`で、公式STM32 firmwareを一次資料に
+consumer-visibleなregister `0x01`から`0x0e`、31-event FIFO、state、modifier、lock、
+hold/repeat、overflow、両backlight、battery、reset、C64、power-offを固定した。公式7×8 matrixと
+12 direct buttonのkeymapも物理transition APIに写し、既存の論理key injectionとは分離した。
+
+runner reportはdrop/overwrite、内部config/interrupt、lock、両backlight、unknown register
+select/writeを記録する。未知selectまたはunsupported writeを`keyboard_protocol_error`としてfailに
+するため、実装していないkeyboard registerをACK後に捨ててPassにする判定漏れも解消した。
+
+Rust board 71件、runner 33件、doctest 1件、Clippyが合格した。一次ソースidentity、実装範囲と
+GPIO scan/PMU lifecycle等の意図的な境界は[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)に
+記録した。これでR1は全項目完了し、次はR2である。
 
 ## Milestone 0: Canonical BSP — implemented
 

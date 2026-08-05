@@ -56,6 +56,8 @@ STM32F103R8T6 firmware. The local workspace checkout is
 `picocalc-life` is consumer-side hardware evidence, not the protocol definition. Model changes must
 first agree with the official register/FIFO/key-state implementation, then be checked against the
 known-good consumer and hardware records.
+R1の固定済みregister、matrix、modifier、repeat、overflow契約と、GPIO scan/PMU lifecycleの
+意図的な境界は[`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md)に記録している。
 10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path as the next firmware conformance target.
 11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
 
