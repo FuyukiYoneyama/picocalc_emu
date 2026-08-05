@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "milestone": 3,
+  "record_id": "milestone3-20260805-01",
+  "title": "Scenario runner: timed input and mechanical screen checks, proven by firing a path that had never run",
+  "backend_commit": {
+    "base": "2fe90fe46cfd4a5b49c2d28f83ca2fb9a8c7abf4",
+    "accepted": "71d66fb06260746cce56cea78ccb2ab23a51ef1f",
+    "repo": "picoem-picocalc",
+    "branch": "main"
+  },
+  "why": {
+    "gap": "Until now --keys queued a fixed string before the firmware started, and nothing afterwards could choose an input from what the program was doing. Screen checking was a human looking at a PNG.",
+    "evidence_the_gap_was_real": "docs/DOGFOODING_20260805.md — writing a game against the emulator left its line-clearing code unreachable, because 'wait until the piece lands, then move left three and drop' could not be expressed. That code was backed by nothing but reading it.",
+    "claim_being_tested": "A scenario can drive a program into a state that blind input cannot reach, and can decide pass or fail without a human looking at the picture."
+  },
+  "target": {
+    "id": "picotetris",
+    "what": "PicoTetris, the game written during dogfooding, unmodified",
+    "firmware": "picocalc_app.bin",
+    "firmware_sha256": "b49486cce1eb3ca7e7c7ca55bfb500c53699e90601dcb2b57d70534c1f03a0ad",
+    "bsp": "0.8.8",
+    "app": "0.8.4-b-pio-rgb565-default",
+    "source": "~/pico_dvl/codex/picotetris (own repository, commit 51d0191)"
+  },
+  "invocation": {
+    "runner": "picocalc-run",
+    "arguments": "--board picocalc --lcd-variant pio-rgb565 --psram --sd --scenario scenarios/tetris-line-clear.json --cycles 8000000000",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "execution_model": "Serial"
+  },
+  "implementation": {
+    "engine": {
+      "crate": "picocalc-harness",
+      "module": "src/scenario.rs",
+      "shape": "A step list evaluated inside the run loop, so a step sees the panel and the UART stream before choosing the next key.",
+      "operations": ["wait", "wait_cycles", "wait_until", "key", "snapshot", "assert"],
+      "conditions": [
+        "pixel",
+        "region_non_black",
+        "region_hash",
+        "region_stable",
+        "region_changed",
+        "uart_contains"
+      ]
+    },
+    "virtual_time": {
+      "what": "Milliseconds come from emulated cycles divided by the system clock the firmware has currently programmed.",
+      "why_not_a_constant": "Firmware boots on ROSC and moves to a PLL. A fixed divisor would put every timestamp taken before the switch off by a factor of twenty.",
+      "how": "The conversion is re-based whenever clk_sys changes: elapsed time keeps the rate it was measured at, and only the new stretch uses the new rate.",
+      "no_wall_clock": true
+    },
+    "cost_control": {
+      "conditions": "Evaluated on a cadence (poll_ms, default 5 ms), not per cycle — region hashing is linear in area.",
+      "waits": "Exact regardless of the cadence: the engine asks to be polled at the deadline itself, so a timeout is reported at the moment it expires."
+    },
+    "exit_codes": {
+      "0": "every step ran and passed",
+      "1": "a step ran and its expectation did not hold, or the run ended with steps outstanding",
+      "2": "the run could not be judged at all — missing file, unparsable scenario"
+    }
+  },
+  "defect_found_and_fixed": {
+    "id": "keyboard-fifo-unbounded",
+    "found_by": "scenarios/tetris-line-clear.json, first attempt",
+    "symptom": "The firmware stopped consuming key events at exactly 968 delivered, with 224 still queued. Identical at 80 ms and 240 ms between bursts, so not a rate problem. reg_selects kept growing, so the firmware was still polling — the controller simply handed over nothing.",
+    "cause": "The count register carries the FIFO depth in its low five bits; the Canonical BSP reads it as `key_info[0] & 0x1f` (bsp/src/keyboard.cpp:53, hardware-verified). The model's queue was unbounded, so the backlog reached 224 and `224 & 0x1f == 0` — the driver concluded the controller was empty and never read again.",
+    "why_it_is_an_emulator_defect": "A real controller cannot hold 32 events: at that depth it would report zero and its own firmware could never drain it. The model could reach a state the hardware cannot, and correct firmware appeared to hang.",
+    "fix": "Keyboard::MAX_QUEUED_EVENTS = 31, with overflow counted in key_events_dropped and reported. picocalc-run warns on stderr when a scenario's input was discarded, because every step after the first drop measures something other than the scripted input.",
+    "unverified": "Which end a full controller discards. The model drops the arriving event. What is established is only that a depth above 31 cannot be reported.",
+    "tests": [
+      "keyboard::overflow_tests::a_full_controller_never_reports_itself_empty",
+      "keyboard::overflow_tests::the_queue_never_exceeds_what_the_count_register_can_express",
+      "keyboard::overflow_tests::a_drained_controller_still_reports_empty",
+      "keyboard::overflow_tests::a_controller_with_one_slot_left_keeps_the_press_and_loses_the_release"
+    ]
+  },
+  "result": {
+    "status": "pass",
+    "scenario_status": "pass",
+    "steps_total": 85,
+    "stop_reason": "scenario_done",
+    "elapsed_virtual_ms": 3715,
+    "wall_clock_minutes": 1,
+    "key_events_delivered": 362,
+    "key_events_dropped": 0,
+    "key_events_remaining": 0,
+    "conditions_met": [
+      {
+        "what": "the line-clearing path ran",
+        "how": "uart_contains '[TETRIS] cleared=' — the game prints that string from nowhere else",
+        "significance": "This is the path the dogfooding record says could not be made to fire at all."
+      },
+      {
+        "what": "the emulator agrees with the rules the planner used",
+        "how": "uart_contains 'score=1400 lines=13' — the exact final score computed offline before the run",
+        "significance": "Not 'something cleared'. The placement plan was derived from the game's seeded xorshift, and the emulator reproduced its arithmetic exactly."
+      },
+      {
+        "what": "the stack stayed where the plan put it",
+        "how": "region_non_black over well rows 6..13 came to 4160, which is precisely bare grid — every cell empty",
+        "significance": "A machine-checked statement about the picture. No human looked at it."
+      }
+    ]
+  },
+  "gaps_closed": {
+    "dogfooding_1_key_timing": "closed — wait_until lets a step choose the next key from the panel or the UART stream",
+    "dogfooding_2_screen_by_eye": "closed — pixel, region_non_black, region_hash give a mechanical verdict",
+    "dogfooding_4_only_the_final_frame": "closed — snapshot steps write a PNG and record its digest at any point in the run",
+    "dogfooding_3_host_unit_test": "still open — Milestone 2"
+  },
+  "known_limitations": [
+    "No loop or branch construct. 'Keep dropping until the row fills' has to be unrolled by whatever generates the scenario.",
+    "Conditions are evaluated at poll_ms, so a state that appears and disappears inside one cadence tick is missed. Timed waits are exact; observation is not.",
+    "region_stable and region_changed compare against an earlier moment and are rejected in assert, which checks one instant.",
+    "Snapshot PNGs are written under --snapshot-dir; only basenames reach the report, so the report stays free of host paths.",
+    "The scenario cannot assert on report fields such as key_events_dropped. The harness warns on stderr instead."
+  ],
+  "determinism": {
+    "wall_clock_read": false,
+    "host_paths_in_report": false,
+    "note": "Step order, virtual timestamps and cycle counts are functions of the inputs. Field order in the scenario section is fixed by the writer, not by a serialiser."
+  }
+}

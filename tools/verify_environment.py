@@ -482,8 +482,16 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             problems: List[str] = []
             if record.get("schema_version") != 1:
                 problems.append("schema_version must be 1")
-            if not isinstance(record.get("gate"), int):
-                problems.append("gate must be an integer")
+            # Every record says which unit of work it is evidence for.
+            # Gates 0-7 were Milestone 1's internal steps; work after
+            # that is numbered by milestone instead, so either key
+            # identifies a record and exactly one of them must.
+            has_gate = isinstance(record.get("gate"), int)
+            has_milestone = isinstance(record.get("milestone"), int)
+            if has_gate == has_milestone:
+                problems.append(
+                    "record must carry exactly one of gate or milestone, as an integer"
+                )
             if record.get("record_id") != path.parent.name:
                 problems.append("record_id must match the directory name")
             # Where the backend commit is recorded varies: the first
@@ -493,11 +501,16 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             # rewritten after acceptance, so only the top-level form is
             # shape-checked; every record is separately required to
             # mention the backend commit somewhere.
+            # `base` alone is enough when the work needed no fix on top
+            # of the commit it started from; `accepted` records the
+            # commit a gate was signed off at.
             backend_commit = record.get("backend_commit")
             if isinstance(backend_commit, dict) and not (
-                backend_commit.get("accepted") or backend_commit.get("commit")
+                backend_commit.get("accepted")
+                or backend_commit.get("commit")
+                or backend_commit.get("base")
             ):
-                problems.append("backend_commit needs accepted or commit")
+                problems.append("backend_commit needs accepted, commit or base")
             if "backend_commit" not in json.dumps(record):
                 problems.append("record does not name the backend commit")
             if problems:

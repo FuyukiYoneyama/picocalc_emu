@@ -111,6 +111,26 @@
       "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The card arrives formatted with an empty FAT16 volume, because the BSP mounts and never formats. The template's full smoke sequence -- mount, write, sync, read, compare, remove -- completes.",
       "limitation": "No multi-block transfer, no CSD/CID beyond bring-up, no removal or write-protect, and writes complete immediately rather than holding the host through a programming delay.",
       "since_gate": "post-7"
+    },
+    {
+      "id": "scenario-runner",
+      "what": "JSON scenarios evaluated inside the run loop: timed key input, and pixel / region / UART assertions",
+      "detail": "Operations are wait, wait_cycles, wait_until, key, snapshot and assert; conditions are pixel, region_non_black, region_hash, region_stable, region_changed and uart_contains. A step can therefore choose the next key from what the program is currently showing, which --keys cannot. Milliseconds are virtual, taken from emulated cycles over the system clock the firmware has programmed, and re-based whenever clk_sys changes. Exit code 1 means a step failed; 2 still means the run could not be judged.",
+      "limitation": "No loop or branch construct -- repetition has to be unrolled by whatever generates the scenario. Conditions are sampled at poll_ms (default 5 ms), so a state that appears and disappears inside one tick is missed; timed waits themselves are exact. Scenarios cannot assert on report fields such as key_events_dropped.",
+      "since_gate": "milestone-3"
+    },
+    {
+      "id": "snapshot-mid-run",
+      "what": "Framebuffer PNG and RGB565 digest captured at any point during a run, not only at the end",
+      "detail": "A snapshot step writes to --snapshot-dir and records the digest in the scenario section. Only basenames reach the report.",
+      "since_gate": "milestone-3"
+    },
+    {
+      "id": "keyboard-fifo-depth",
+      "what": "The keyboard controller's queue is bounded at 31 events, the deepest its count register can express",
+      "detail": "The count register carries the depth in its low five bits and the Canonical BSP reads it as `key_info[0] & 0x1f`. An unbounded model queue could reach a multiple of 32, whereupon the driver reads zero and stops draining for good -- an emulator-only state. Overflow is counted in key_events_dropped and reported; picocalc-run warns when a scenario's input was discarded.",
+      "limitation": "Which end a full controller discards is unverified. The model drops the arriving event.",
+      "since_gate": "milestone-3"
     }
   ],
   "unsupported": [

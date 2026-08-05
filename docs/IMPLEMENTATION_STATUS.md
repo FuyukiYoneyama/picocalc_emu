@@ -279,21 +279,49 @@ SDカードモデルはSPIモードのbring-up（CMD0/CMD8/CMD55+ACMD41/CMD58）
 **注意:** `--lcd-variant`の選択は性能に影響する。B系統はpin監視デバイスを接続し、
 Serial実行をper-cycle GPIO観測へ切り替えるため、A系統のファームウェアで
 B（既定値）のまま実行すると到達サイクルが約3分の1に減る。公式サンプルを走らせる
-場合は`--lcd-variant hwspi-rgb888`を明示する。
-**ただしSPI0のSDは未対応で、templateのSDスモークは`component=init status=begin`で
-停止する。** BSP側PSRAMドライバのverifyも、Gate 3のモデル較正が公式サンプルの
-設定に合わせてあるため失敗する。どちらも
-`firmware-validation/capability.json`へ未対応として記録している。経緯は
-[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4.7、証拠は
-`firmware-validation/records/`にある。
+場合は`--lcd-variant hwspi-rgb888`を明示する。どの系統で走ったかはレポートの
+`lcd_variant`に記録される。経緯は[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §4.7、
+証拠は`firmware-validation/records/`にある。
+
+### Scenario runner（Milestone 3、2026-08-05）
+
+**キー投入のタイミングを制御でき、画面を機械的に判定できるようになった。**
+JSONで書いた手順を実行ループの内側で評価するため、1ステップが画面とUART出力を
+見てから次のキーを決められる。形式は[`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)にある。
+
+```sh
+picocalc-run --bin app.bin --board picocalc --lcd-variant pio-rgb565 \
+  --scenario scenarios/tetris-line-clear.json --snapshot-dir out/
+```
+
+- 操作: `wait` / `wait_cycles` / `wait_until` / `key` / `snapshot` / `assert`
+- 条件: `pixel` / `region_non_black` / `region_hash` / `region_stable` /
+  `region_changed` / `uart_contains`
+- msは仮想時間（ファームウェアが設定したクロックから換算、`clk_sys`変更で再基準化）
+- 終了コード 0=合格、1=判定して不合格、2=判定できず
+
+**証明として、ドッグフーディングで一度も発火させられなかったPicoTetrisの
+ライン消去を発火させた。** 13ライン、スコア1400。しかも「たまたま何か消えた」では
+なく、種を固定した乱数からオフラインで計算した**予測スコアと一致すること**を
+`assert`している。証拠は`firmware-validation/records/milestone3-20260805-01/`。
+
+このscenarioが**エミュレーターの欠陥を1件見つけた**。キーボードモデルのFIFOに
+上限がなく、滞留が32の倍数に達するとBSPの`key_info[0] & 0x1f`が0を読み、
+ドライバが恒久的に停止していた。実機のコントローラは深さを5ビットでしか報告できず
+その状態になり得ないため、エミュレーター側の欠陥である。31で頭打ちにし、
+溢れを`key_events_dropped`へ数えて警告するよう修正した。
+
+**まだできないこと:** ループ・分岐の構文がない（繰り返しはscenario生成側で展開する）。
+条件の評価は`poll_ms`ごとなので、1周期の内側で現れて消える状態は見落とす
+（時間待ちの精度は別で、こちらは正確）。レポート項目（`key_events_dropped`など）に
+対する`assert`は書けない。
 
 また、次の機能は今後のエミュレーター段階である。
 
-- 無改変`Code/picocalc_helloworld`のELF/BINを`picoem-picocalc`でdirect bootし、
-  AのSPI1/RGB666表示、PSRAM全域試験、I2C keyboard echoまで通す最初の縦断試験
-- SPI/I2C デバイスモデルと LCD framebuffer/PNG
+- **ホストでのアプリロジック単体試験（Milestone 2）** — `clear_lines()`のような
+  純粋関数をRP2040バイナリを作らずに検査する。ドッグフーディングの穴3は未解決
 - FAT イメージを使う仮想 SD と故障注入
-- キーシナリオ再生、画面差分、JUnit/JSON 成果物
+- JUnit成果物、100回連続実行の決定性検査
 - PIO/DMA、multicoreを使う既存アプリのPC上での実行
 
 最初の可視化到達点と公式サンプル完全合格、ならびにその後のBのFirmware conformanceは
