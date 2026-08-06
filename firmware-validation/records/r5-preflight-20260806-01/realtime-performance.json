@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "record_id": "r5-preflight-20260806-01",
+  "roadmap_package": "R5",
+  "scope": "preflight_realtime_performance_only",
+  "hardware_correlation_completed": false,
+  "metric": "real_time_percent = emulated_seconds / wall_seconds * 100",
+  "environment": {
+    "date": "2026-08-06",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "distribution": "Ubuntu 24.04.4 LTS",
+    "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+    "logical_cpus": 12,
+    "measurement_cpu": 0,
+    "reported_cpu_mhz": 3693.098,
+    "load_average_1m_range": [0.50, 1.06]
+  },
+  "target": {
+    "id": "picotetris-r4",
+    "revision": 2,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "backend_commit": "3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81",
+    "runner_sha256": "8bb214b05ef7bb4906d2852e97ed0094b9419f9b2cc1fd32783a9217d0d639b1",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "cycles": 927528660,
+    "emulated_us": 3715000
+  },
+  "method": {
+    "warmup_runs_excluded": 1,
+    "measured_runs": 10,
+    "timer": "nanosecond wall-clock timestamps via date +%s%N around the release runner process",
+    "cpu_affinity": "taskset -c 0",
+    "build_time_included": false,
+    "target_validation_included": false,
+    "runner_startup_and_artifact_writes_included": true,
+    "all_measured_runs_accepted": true
+  },
+  "theory": {
+    "real_time_target_percent": 100.0,
+    "ideal_wall_seconds": 3.715,
+    "required_emulated_cycles_per_wall_second": 249671240.91520864,
+    "host_cycles_per_dispatch_budget_at_100_percent": 14.791843812,
+    "one_host_cycle_per_dispatch_ceiling_percent": 1479.184381214,
+    "ceiling_is_a_prediction": false
+  },
+  "measurements": [
+    {"run": 1, "wall_ns": 64267120776, "real_time_percent": 5.780561, "slowdown": 17.299360},
+    {"run": 2, "wall_ns": 61003965572, "real_time_percent": 6.089768, "slowdown": 16.420987},
+    {"run": 3, "wall_ns": 62560363811, "real_time_percent": 5.938265, "slowdown": 16.839936},
+    {"run": 4, "wall_ns": 63157130840, "real_time_percent": 5.882154, "slowdown": 17.000574},
+    {"run": 5, "wall_ns": 62895334260, "real_time_percent": 5.906638, "slowdown": 16.930103},
+    {"run": 6, "wall_ns": 63982773697, "real_time_percent": 5.806250, "slowdown": 17.222819},
+    {"run": 7, "wall_ns": 62167212290, "real_time_percent": 5.975819, "slowdown": 16.734108},
+    {"run": 8, "wall_ns": 68340056658, "real_time_percent": 5.436051, "slowdown": 18.395708},
+    {"run": 9, "wall_ns": 63336884626, "real_time_percent": 5.865461, "slowdown": 17.048960},
+    {"run": 10, "wall_ns": 63744329037, "real_time_percent": 5.827969, "slowdown": 17.158635}
+  ],
+  "statistics": {
+    "wall_seconds": {
+      "mean": 63.545517157,
+      "median": 63.247007733,
+      "sample_stddev": 1.934651430,
+      "minimum": 61.003965572,
+      "maximum": 68.340056658,
+      "mean_ci95": [62.161550995, 64.929483318]
+    },
+    "real_time_percent": {
+      "mean": 5.850893618,
+      "median": 5.873807529,
+      "sample_stddev": 0.171321007,
+      "minimum": 5.436050512,
+      "maximum": 6.089768042,
+      "mean_ci95": [5.728337961, 5.973449275]
+    },
+    "emulated_cycles_per_wall_second": {
+      "mean": 14607998.700021306,
+      "median": 14665208.146193309,
+      "sample_stddev": 427739.284751565,
+      "minimum": 13572254.770605639,
+      "maximum": 15204399.440316437,
+      "mean_ci95": [14302012.470739901, 14913984.929302711]
+    },
+    "slowdown": {
+      "mean": 17.105119019,
+      "median": 17.024766550,
+      "sample_stddev": 0.520767545,
+      "minimum": 16.420986695,
+      "maximum": 18.395708387,
+      "mean_ci95": [16.732584386, 17.477653652]
+    }
+  },
+  "determinism": {
+    "all_reports_identical": true,
+    "report_sha256": "bbe92bd77aa5932ce18835b335db67c740b8f621d96e67a80c49efcd279b72e9",
+    "all_uart_identical": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "all_snapshots_identical": true,
+    "snapshot_png_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "result": "pass"
+}

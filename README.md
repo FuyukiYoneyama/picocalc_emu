@@ -190,6 +190,10 @@ clean runnerで合格させました。次はR5の同一BIN実機相関です。
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r4完了反映)が正典です。
 
+R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotetris-r4`を10回測定し、
+実時間比中央値5.874%（仮想3.715秒をwall 63.247秒、約17.025倍遅い）を記録しました。
+全runのreport/UART/PNGは一致しています。これは実機合格ではなく、実機相関前の速度基準です。
+
 ## 読む順番
 
 AIがアプリを作る場合は、まず [AI向け開始手順](AI_START_HERE.md) を読みます。
@@ -532,6 +536,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R3 PicoTetris正式回帰](docs/R3_PICOTETRIS_REGRESSION.md) — host logic、再現可能build、firmware 3回決定性と現行bundle
 - [Versioned validation](docs/VERSIONED_VALIDATION.md) — schema 3 target revision、attestation、時点証拠の不変契約
 - [R4 品質ゲートとCI](docs/R4_CI.md) — 3リポジトリのclean-runner full gate、job境界、private backend認証
+- [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PICOCALC = ROOT / "tools/picocalc.py"
 VERIFY = ROOT / "tools/verify_environment.py"
 GENERATE_BOARD = ROOT / "tools/generate_board_header.py"
+BENCHMARK_REALTIME = ROOT / "tools/benchmark_firmware_realtime.py"
 
 
 def run(*arguments, env=None):
@@ -37,6 +38,42 @@ class ToolTests(unittest.TestCase):
         module = importlib.util.module_from_spec(specification)
         specification.loader.exec_module(module)
         return module
+
+    def load_realtime_benchmark_module(self):
+        specification = importlib.util.spec_from_file_location(
+            "benchmark_firmware_realtime", BENCHMARK_REALTIME
+        )
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        return module
+
+    def test_realtime_benchmark_statistics_and_target_command(self):
+        module = self.load_realtime_benchmark_module()
+        summary = module.summarize([1.0, 2.0, 3.0])
+        self.assertEqual(summary["mean"], 2.0)
+        self.assertEqual(summary["median"], 2.0)
+        self.assertEqual(summary["sample_stddev"], 1.0)
+        self.assertEqual(summary["minimum"], 1.0)
+        self.assertEqual(summary["maximum"], 3.0)
+        self.assertLess(summary["mean_ci95"][0], 2.0)
+        self.assertGreater(summary["mean_ci95"][1], 2.0)
+
+        target = self.load_picocalc_module().load_firmware_target("picotetris-r4")
+        command = module.target_command(
+            target,
+            Path("firmware.bin"),
+            Path("picocalc-run"),
+            Path("report.json"),
+            Path("uart.bin"),
+            Path("snapshots"),
+        )
+        self.assertEqual(command[0], "picocalc-run")
+        self.assertIn("--quantum", command)
+        self.assertEqual(command[command.index("--quantum") + 1], "1")
+        self.assertIn("--psram", command)
+        self.assertIn("--keyboard", command)
+        self.assertIn("--sd", command)
+        self.assertIn("--scenario", command)
 
     def test_normalized_json_sha256_is_order_independent_and_utf8(self):
         module = self.load_picocalc_module()

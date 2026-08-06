@@ -4,9 +4,11 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -1327,6 +1329,177 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_firmware_targets(checks, root)
     verify_firmware_validation(checks, root)
     verify_r3_contract(checks, root)
+    verify_r5_performance(checks, root)
+
+
+def verify_r5_performance(checks: List[Check], root: Path) -> None:
+    """Verify the R5-preflight wall-time record against the active R4 target."""
+    try:
+        def summary_matches(recorded: dict, values: List[float]) -> bool:
+            mean = statistics.mean(values)
+            deviation = statistics.stdev(values)
+            half_width = 2.262157 * deviation / math.sqrt(len(values))
+            expected = {
+                "mean": mean,
+                "median": statistics.median(values),
+                "sample_stddev": deviation,
+                "minimum": min(values),
+                "maximum": max(values),
+            }
+            scalars_match = all(
+                math.isclose(
+                    recorded.get(key, math.nan),
+                    value,
+                    rel_tol=1e-12,
+                    abs_tol=1e-9,
+                )
+                for key, value in expected.items()
+            )
+            interval = recorded.get("mean_ci95")
+            return (
+                scalars_match
+                and isinstance(interval, list)
+                and len(interval) == 2
+                and math.isclose(
+                    interval[0], mean - half_width, rel_tol=1e-12, abs_tol=1e-9
+                )
+                and math.isclose(
+                    interval[1], mean + half_width, rel_tol=1e-12, abs_tol=1e-9
+                )
+            )
+
+        record = load_json(
+            root
+            / "firmware-validation/records/r5-preflight-20260806-01/realtime-performance.json"
+        )
+        r4_record = load_json(
+            root / "firmware-validation/records/r4-20260806-01/report.json"
+        )
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(item for item in registry["targets"] if item["id"] == "picotetris-r4")
+        target_record = record["target"]
+        measurements = record["measurements"]
+        emulated_seconds = target_record["emulated_us"] / 1_000_000
+        wall_seconds = [item["wall_ns"] / 1_000_000_000 for item in measurements]
+        percentages = [emulated_seconds / wall * 100 for wall in wall_seconds]
+        slowdowns = [wall / emulated_seconds for wall in wall_seconds]
+        throughputs = [target_record["cycles"] / wall for wall in wall_seconds]
+        recorded_wall = record["statistics"]["wall_seconds"]
+        recorded_percent = record["statistics"]["real_time_percent"]
+        recorded_throughput = record["statistics"]["emulated_cycles_per_wall_second"]
+        recorded_slowdown = record["statistics"]["slowdown"]
+        theory = record["theory"]
+        virtual_hz = target_record["cycles"] / emulated_seconds
+        host_hz = record["environment"]["reported_cpu_mhz"] * 1_000_000
+        dispatch_hz = virtual_hz / target_record["step_quantum"]
+        host_cycle_budget = host_hz / dispatch_hz
+        per_run_valid = all(
+            item.get("run") == index
+            and isinstance(item.get("wall_ns"), int)
+            and item["wall_ns"] > 0
+            and math.isclose(
+                item.get("real_time_percent", -1), percentages[index - 1], abs_tol=0.000001
+            )
+            and math.isclose(
+                item.get("slowdown", -1), slowdowns[index - 1], abs_tol=0.000001
+            )
+            for index, item in enumerate(measurements, 1)
+        )
+        summaries_valid = all(
+            (
+                summary_matches(recorded_wall, wall_seconds),
+                summary_matches(recorded_percent, percentages),
+                summary_matches(recorded_throughput, throughputs),
+                summary_matches(recorded_slowdown, slowdowns),
+            )
+        )
+        theory_valid = all(
+            (
+                theory.get("real_time_target_percent") == 100.0,
+                math.isclose(
+                    theory.get("ideal_wall_seconds", math.nan), emulated_seconds
+                ),
+                math.isclose(
+                    theory.get("required_emulated_cycles_per_wall_second", math.nan),
+                    virtual_hz,
+                    rel_tol=1e-12,
+                ),
+                math.isclose(
+                    theory.get("host_cycles_per_dispatch_budget_at_100_percent", math.nan),
+                    host_cycle_budget,
+                    rel_tol=1e-12,
+                    abs_tol=1e-9,
+                ),
+                math.isclose(
+                    theory.get("one_host_cycle_per_dispatch_ceiling_percent", math.nan),
+                    host_cycle_budget * 100,
+                    rel_tol=1e-12,
+                ),
+                theory.get("ceiling_is_a_prediction") is False,
+            )
+        )
+        deterministic = record["determinism"]
+        firmware_regression = r4_record["firmware_regression"]
+        aligned = all(
+            (
+                record.get("schema_version") == 1,
+                record.get("record_id") == "r5-preflight-20260806-01",
+                record.get("roadmap_package") == "R5",
+                record.get("scope") == "preflight_realtime_performance_only",
+                record.get("hardware_correlation_completed") is False,
+                record.get("metric")
+                == "real_time_percent = emulated_seconds / wall_seconds * 100",
+                record.get("result") == "pass",
+                target_record.get("id") == target["id"],
+                target_record.get("revision") == target["revision"],
+                target_record.get("firmware_sha256")
+                == target["artifacts"]["bin_sha256"],
+                target_record.get("backend_commit") == target["backend"]["accepted"],
+                target_record.get("scenario_sha256") == target["scenario"]["sha256"],
+                target_record.get("step_quantum") == target["runner"]["quantum"] == 1,
+                target_record.get("cycles") == firmware_regression["cycles"],
+                target_record.get("emulated_us") == firmware_regression["elapsed_us"],
+                len(measurements) == record["method"].get("measured_runs") == 10,
+                record["method"].get("warmup_runs_excluded") == 1,
+                record["method"].get("build_time_included") is False,
+                record["method"].get("target_validation_included") is False,
+                record["method"].get("runner_startup_and_artifact_writes_included")
+                is True,
+                record["method"].get("all_measured_runs_accepted") is True,
+                per_run_valid,
+                summaries_valid,
+                theory_valid,
+                deterministic.get("all_reports_identical") is True,
+                deterministic.get("report_sha256")
+                == firmware_regression["raw_report_sha256"],
+                deterministic.get("all_uart_identical") is True,
+                deterministic.get("uart_sha256") == firmware_regression["uart_sha256"],
+                deterministic.get("all_snapshots_identical") is True,
+                deterministic.get("snapshot_png_sha256")
+                == firmware_regression["snapshot_png_sha256"],
+            )
+        )
+        add_check(
+            checks,
+            "r5:realtime-performance-baseline",
+            aligned,
+            target=target["id"],
+            measured_runs=len(measurements),
+            median_real_time_percent=recorded_percent["median"],
+            hardware_correlation_completed=record["hardware_correlation_completed"],
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, "r5:realtime-performance-baseline", False, **error_details(error))
 
 
 def verify_r3_contract(checks: List[Check], root: Path) -> None:

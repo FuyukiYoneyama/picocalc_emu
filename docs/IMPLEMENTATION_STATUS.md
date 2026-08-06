@@ -30,11 +30,15 @@ Python tools、target/schema、host、SDK 2.0互換build、固定PicoTetris firm
 独立jobへ接続した。run `31103564391`で全6 jobが合格し、3リポジトリのclean-runner full
 gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。PicoTetrisのprivate GitHub repositoryは
 同日に追加済みである。R0/R3のbundleと`remote: null`は各時点の復旧証拠なので保持する。
-現在の次工程はR5の同一BIN実機相関である。
+R5実機着手前のWSL性能baselineでは、`picotetris-r4`の実時間比中央値を5.874%
+（仮想3.715秒をwall 63.247秒、約17.025倍遅い）と測定し、全10 runのreport/UART/PNG一致を
+確認した。詳細は[`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)にある。
+現在の次工程は、同一BINを使うR5実機相関である。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
+- `tools/benchmark_firmware_realtime.py`: 登録済みfirmware targetの仮想時間／wall time比を反復測定
 - `picocalc.py build --build-timestamp ...`: 実機記録用に UTC build timestamp を固定した evidence build
 - `tools/verify_environment.py`: portable fingerprint と基準証拠の段階別検査
 - `profiles/picocalc-rp2040.json`: 機械可読なboard contract

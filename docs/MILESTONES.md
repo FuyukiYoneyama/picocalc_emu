@@ -68,7 +68,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | **完了 2026-08-06**。666 host checks、再現可能BIN/UF2、active target、3回決定一致 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | **完了 2026-08-06**。3リポジトリのclean-runner full gate合格 |
-| R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | **次に着手** |
+| R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | **実機着手前**。WSL実時間性能baselineは完了 |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | R5後 |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
@@ -288,6 +288,15 @@ SHAを検査して復元し、SDK 2.2.0の固定条件で登録BIN `0784d80d...e
 backend run `31098630797`、PicoTetris run `31101591668`と上記runを合わせ、3リポジトリの
 clean-runner full gateは完了した。R4の完全なjob境界、pin、認証境界は
 [`R4_CI.md`](R4_CI.md)に記録した。次はR5の同一BIN実機相関へ進む。
+
+### R5実機着手前の性能baseline（2026-08-06）
+
+実機との機能相関に入る前に、`picotetris-r4`の仮想時間とWSL wall timeの比を固定した。
+AMD Ryzen 5 5600X上のWSL2で、1 warm-up後に同一CPUへ固定して10回測定した結果、仮想
+3.715秒に対するwall time中央値は63.247秒、実時間比中央値は5.874%（約17.025倍遅い）だった。
+全runのreport/UART/PNGは一致した。これはR5実機合格ではなくpreflightであり、実機検証は
+未着手のままである。定義、理論上限、全測定値、再測定コマンドは
+[`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)に記録した。
 
 ## Milestone 0: Canonical BSP — implemented
 
