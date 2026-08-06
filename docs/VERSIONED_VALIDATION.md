@@ -47,3 +47,8 @@ backend commitがreportに含まれるためnormalized reportだけがR4固有�
 `40b64168...020b`です。集約証拠は
 `firmware-validation/records/r4-20260806-01/report.json`、attestationは
 `firmware-validation/validations/picotetris-r4-r2.json`にあります。
+
+PicoTetris repositoryのcommit `6cd16eb075120140d9073a72db665482f3c2fe95`では、この固定sourceと
+SDK/toolchain/timestamp/identityをGitHub Actionsで再構築し、登録済みBIN/UF2 SHAを直接照合
+します。run `31101591668`でunit 666 checksと再現buildの両jobが合格しました。このCIは
+既存revisionを再pinせず、固定された成果物を第三者環境で再現できることを継続検査します。

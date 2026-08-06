@@ -22,9 +22,11 @@ firmware conformanceを完了し、R2でschema 2 target registry、schema 8 back
 target registryはschema 3へ進め、revision、`supersedes`、SHA固定attestationと不変evidence
 recordを接続した。`picotetris-r4` revision 2をbackend `3bc6bbd...bd81`で3回実行し、全runの
 exit 0とraw/normalized report、timeline、UART、framebuffer、PNG一致を記録した。
-R4全体は未完了で、`picocalc_emu`と`picotetris`のCI接続、clean-clone full gateが残る。
-clean-clone CI準備として、PicoTetrisには
-同日にprivate GitHub repository `FuyukiYoneyama/picotetris`を追加した。R0/R3のbundleと
+PicoTetrisはcommit `6cd16eb075120140d9073a72db665482f3c2fe95`で、現行sourceの666 host
+checksと、R3固定source・SDK 2.2.0・Ubuntu 24.04標準toolchainから登録済みBIN/UF2を
+再現する二つのCI jobを接続した。GitHub Actions run `31101591668`で両jobとSHA完全一致を
+確認した。R4全体は未完了で、`picocalc_emu`の層別CI接続と3リポジトリのclean-clone full
+gateが残る。PicoTetrisのprivate GitHub repositoryは同日に追加済みである。R0/R3のbundleと
 `remote: null`は各時点の復旧証拠なので保持する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
