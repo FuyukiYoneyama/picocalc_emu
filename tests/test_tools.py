@@ -399,6 +399,25 @@ raise SystemExit(code)
         self.assertEqual(report["failed"], 0)
         self.assertTrue(report["checks"])
 
+    def test_ci_scopes_separate_core_from_target_schema(self):
+        core = run(VERIFY, "--scope", "core", "--json")
+        core_report = json.loads(core.stdout)
+        self.assertEqual(core.returncode, 0, core_report)
+        self.assertEqual(core_report["mode"], "portable-core")
+        core_names = {check["name"] for check in core_report["checks"]}
+        self.assertNotIn("firmware-targets:schema-and-contracts", core_names)
+        self.assertFalse(any(name.startswith("r3:") for name in core_names))
+
+        contracts = run(VERIFY, "--scope", "target-schema", "--json")
+        contract_report = json.loads(contracts.stdout)
+        self.assertEqual(contracts.returncode, 0, contract_report)
+        self.assertEqual(contract_report["mode"], "target-schema")
+        contract_names = {check["name"] for check in contract_report["checks"]}
+        self.assertIn("firmware-targets:schema-and-contracts", contract_names)
+        self.assertIn("firmware-targets:versioned-validations", contract_names)
+        self.assertIn("r3:picotetris-contract", contract_names)
+        self.assertFalse(any(name.startswith("source-fingerprint:") for name in contract_names))
+
     def test_versioned_target_validation_fails_closed_on_tampering(self):
         mutations = ("attestation", "target", "evidence")
         for mutation in mutations:

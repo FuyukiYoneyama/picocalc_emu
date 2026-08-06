@@ -1,5 +1,9 @@
 name: CI
 
+# R4 keeps each verification layer in a separate job. A source fingerprint,
+# host-model, target contract, cross-compile, or firmware-emulation failure must
+# identify itself without being hidden behind an earlier failure in one script.
+
 on:
   push:
   pull_request:
@@ -7,9 +11,18 @@ on:
 permissions:
   contents: read
 
+env:
+  PICO_SDK_COMMIT: a1438dff1d38bd9c65dbd693f0e5db4b9ae91779
+  PICOTETRIS_SOURCE_COMMIT: fed84f358d7dcadb1457752e687355ddb1875c48
+  PICOTETRIS_BSP_COMMIT: cbfc90467e2b8392fbd0429c83925b94ca365824
+  PICOTETRIS_BUNDLE_SHA256: 205b35da1a153ac6c3935e42f0cb36a782238eb02bb59f0b2c523987974b5fb4
+  PICOTETRIS_BIN_SHA256: 0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62
+  PICOEM_COMMIT: 3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81
+  RUST_TOOLCHAIN: "1.97.1"
+
 jobs:
   portable:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -17,13 +30,77 @@ jobs:
           python-version: "3.11"
       - name: Check generated board header
         run: python tools/generate_board_header.py --check
-      - name: Verify portable fingerprints
-        run: python tools/verify_environment.py
-      - name: Run Python tests
+      - name: Verify portable BSP and provenance contracts
+        run: python tools/verify_environment.py --scope core
+
+  python-tools:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Run Python tool and fail-closed tests
         run: python -m unittest discover -s tests -v
 
-  rp2040-compile:
-    runs-on: ubuntu-latest
+  target-schema:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Verify registry, schemas, attestations, and evidence
+        run: python tools/verify_environment.py --scope target-schema
+      - name: Exercise target contract fail-closed paths
+        run: |
+          python -m unittest -v \
+            tests.test_tools.ToolTests.test_normalized_json_sha256_is_order_independent_and_utf8 \
+            tests.test_tools.ToolTests.test_target_contract_hash_excludes_only_validation_attestation \
+            tests.test_tools.ToolTests.test_versioned_target_validation_fails_closed_on_tampering \
+            tests.test_tools.ToolTests.test_r2_target_drives_the_complete_runner_command \
+            tests.test_tools.ToolTests.test_r2_registry_rejects_incomplete_or_old_contracts \
+            tests.test_tools.ToolTests.test_r2_rejects_wrong_bin_scenario_lcd_and_backend_before_running \
+            tests.test_tools.ToolTests.test_r2_report_must_be_new_well_formed_and_match_the_device \
+            tests.test_tools.ToolTests.test_r2_preserves_judged_failure_and_cannot_judge_exit_codes \
+            tests.test_tools.ToolTests.test_r3_target_pins_normalized_report_and_timeline
+
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Install host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+      - name: Build and run deterministic host backend
+        run: |
+          python tools/picocalc.py test --mode host \
+            --build-dir "$RUNNER_TEMP/picocalc-host" \
+            --repeat 3 \
+            --json "$RUNNER_TEMP/host-report.json"
+      - name: Verify host report contract
+        run: |
+          python - "$RUNNER_TEMP/host-report.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          report = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert report["status"] == "pass"
+          assert report["runs"] == 3
+          assert report["deterministic"] is True
+          assert report["exit_codes"] == [0, 0, 0]
+          assert report["stdout_sha256"] == "84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b"
+          PY
+
+  # SDK 2.0.0 is the declared minimum compatibility build. The registered
+  # reproducibility and firmware jobs below use the exact SDK 2.2.0 pin.
+  rp2040-compat:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Install ARM toolchain
@@ -33,11 +110,11 @@ jobs:
       - name: Fetch Pico SDK 2.0.0
         run: |
           git clone --branch 2.0.0 --depth 1 \
-            https://github.com/raspberrypi/pico-sdk.git /tmp/pico-sdk
-          git -C /tmp/pico-sdk submodule update --init --depth 1
+            https://github.com/raspberrypi/pico-sdk.git /tmp/pico-sdk-2.0.0
+          git -C /tmp/pico-sdk-2.0.0 submodule update --init --depth 1
       - name: Configure RP2040 template
         env:
-          PICO_SDK_PATH: /tmp/pico-sdk
+          PICO_SDK_PATH: /tmp/pico-sdk-2.0.0
         run: |
           cmake -S templates/rp2040-basic -B build-ci \
             -DPICO_BOARD=pico \
@@ -45,3 +122,85 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
       - name: Compile RP2040 template
         run: cmake --build build-ci -j2
+
+  firmware-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Checkout accepted private backend
+        env:
+          PICOEM_DEPLOY_KEY: ${{ secrets.PICOEM_DEPLOY_KEY }}
+        run: |
+          test -n "$PICOEM_DEPLOY_KEY" || {
+            echo "PICOEM_DEPLOY_KEY repository secret is required" >&2
+            exit 2
+          }
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          printf '%s\n' "$PICOEM_DEPLOY_KEY" > "$RUNNER_TEMP/ssh/id_ed25519"
+          chmod 600 "$RUNNER_TEMP/ssh/id_ed25519"
+          ssh-keyscan -t ed25519 github.com > "$RUNNER_TEMP/ssh/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/ssh/known_hosts"
+          git clone --no-checkout git@github.com:FuyukiYoneyama/picoem-picocalc.git /tmp/picoem-picocalc
+          git -C /tmp/picoem-picocalc checkout --detach "$PICOEM_COMMIT"
+          git -C /tmp/picoem-picocalc submodule update --init --depth 1
+          test "$(git -C /tmp/picoem-picocalc rev-parse HEAD)" = "$PICOEM_COMMIT"
+          test -z "$(git -C /tmp/picoem-picocalc status --porcelain)"
+      - name: Build accepted firmware runner
+        working-directory: /tmp/picoem-picocalc
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal --no-self-update
+          rustup override set "$RUST_TOOLCHAIN"
+          cargo build --locked --release -p picocalc-harness
+      - name: Install fixed RP2040 toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+          test "$(/usr/bin/arm-none-eabi-gcc -dumpfullversion)" = "13.2.1"
+          test "$(/usr/bin/cmake --version | sed -n '1s/^cmake version //p')" = "3.28.3"
+          test "$(/usr/bin/ninja --version)" = "1.11.1"
+      - name: Fetch exact Pico SDK
+        run: |
+          git clone --branch 2.2.0 --depth 1 \
+            https://github.com/raspberrypi/pico-sdk.git /tmp/pico-sdk-2.2.0
+          test "$(git -C /tmp/pico-sdk-2.2.0 rev-parse HEAD)" = "$PICO_SDK_COMMIT"
+          git -C /tmp/pico-sdk-2.2.0 submodule update --init --depth 1
+          test -z "$(git -C /tmp/pico-sdk-2.2.0 status --porcelain)"
+      - name: Recover pinned PicoTetris source
+        run: |
+          printf '%s  %s\n' "$PICOTETRIS_BUNDLE_SHA256" \
+            provenance/picotetris-r3.bundle | sha256sum --check
+          git clone -b main provenance/picotetris-r3.bundle /tmp/picotetris-r4
+          git -C /tmp/picotetris-r4 checkout --detach "$PICOTETRIS_SOURCE_COMMIT"
+          test "$(git -C /tmp/picotetris-r4 rev-parse HEAD)" = "$PICOTETRIS_SOURCE_COMMIT"
+          test -z "$(git -C /tmp/picotetris-r4 status --porcelain)"
+      - name: Build registered PicoTetris BIN
+        env:
+          PICO_SDK_PATH: /tmp/pico-sdk-2.2.0
+          CFLAGS: -DPICO_NO_BI_PROGRAM_BUILD_DATE=1
+          CXXFLAGS: -DPICO_NO_BI_PROGRAM_BUILD_DATE=1
+        run: |
+          /usr/bin/cmake -S /tmp/picotetris-r4 -B /tmp/picotetris-r4/build -G Ninja \
+            -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
+            -DPICO_BOARD=pico \
+            -DPICO_NO_PICOTOOL=1 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPICOCALC_BUILD_TIMESTAMP=2026-08-06T00:00:00Z \
+            -DPICOCALC_BSP_GIT="${PICOTETRIS_BSP_COMMIT:0:12}" \
+            -DPICOCALC_APP_GIT="${PICOTETRIS_SOURCE_COMMIT:0:12}" \
+            -DPICOCALC_LCD_VARIANT=pio-rgb565 \
+            -DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF
+          /usr/bin/cmake --build /tmp/picotetris-r4/build --parallel 2
+          printf '%s  %s\n' "$PICOTETRIS_BIN_SHA256" \
+            /tmp/picotetris-r4/build/PicoTetris.bin | sha256sum --check
+      - name: Run authoritative firmware regression
+        run: |
+          python tools/picocalc.py test --mode firmware \
+            --target picotetris-r4 \
+            --firmware /tmp/picotetris-r4/build/PicoTetris.bin \
+            --backend-dir /tmp/picoem-picocalc \
+            --json "$RUNNER_TEMP/firmware-report.json" \
+            --uart "$RUNNER_TEMP/firmware-uart.bin"

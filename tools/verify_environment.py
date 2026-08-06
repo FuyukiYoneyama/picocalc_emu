@@ -1015,7 +1015,9 @@ def verify_vendored_lcd_pio(checks: List[Check], root: Path) -> None:
     )
 
 
-def verify_portable(checks: List[Check], root: Path) -> None:
+def verify_portable(
+    checks: List[Check], root: Path, include_target_schema: bool = True
+) -> None:
     verify_generated_board(checks, root)
     require_text(
         checks,
@@ -1312,12 +1314,18 @@ def verify_portable(checks: List[Check], root: Path) -> None:
     )
     verify_template_smoke(checks, root)
     verify_catalog(checks, root)
-    verify_firmware_targets(checks, root)
     verify_hardware_validation(checks, root)
-    verify_firmware_validation(checks, root)
     verify_host_backend(checks, root)
     verify_release_conditions(checks, root)
     verify_r0_contract(checks, root)
+    if include_target_schema:
+        verify_target_schema(checks, root)
+
+
+def verify_target_schema(checks: List[Check], root: Path) -> None:
+    """Verify the registry, schemas, attestations, and pinned R3 evidence."""
+    verify_firmware_targets(checks, root)
+    verify_firmware_validation(checks, root)
     verify_r3_contract(checks, root)
 
 
@@ -1793,8 +1801,23 @@ def main() -> int:
         default=DEFAULT_ROOT,
         help=argparse.SUPPRESS,
     )
+    parser.add_argument(
+        "--scope",
+        choices=("all", "core", "target-schema"),
+        default="all",
+        help=(
+            "verification layer: all portable checks (default), core BSP checks "
+            "without firmware contracts, or only target/schema contracts"
+        ),
+    )
     args = parser.parse_args()
-    mode_parts = ["portable"]
+    mode_parts = [
+        "portable"
+        if args.scope == "all"
+        else "portable-core"
+        if args.scope == "core"
+        else "target-schema"
+    ]
     if args.references:
         mode_parts.append("references")
     if args.r0:
@@ -1822,6 +1845,16 @@ def main() -> int:
         report = make_report(checks, "invalid")
         emit_report(report, args.json)
         return 2
+    if args.scope == "target-schema" and (args.references or args.r0):
+        add_check(
+            checks,
+            "invocation:arguments",
+            False,
+            error="--scope target-schema cannot be combined with --references or --r0",
+        )
+        report = make_report(checks, "invalid")
+        emit_report(report, args.json)
+        return 2
 
     try:
         root = args.project_root.resolve()
@@ -1830,7 +1863,14 @@ def main() -> int:
             if args.reference_root is not None
             else root.parent
         )
-        verify_portable(checks, root)
+        if args.scope == "target-schema":
+            verify_target_schema(checks, root)
+        else:
+            verify_portable(
+                checks,
+                root,
+                include_target_schema=args.scope == "all",
+            )
         if args.references:
             verify_references(checks, root, reference_root, args.strict_commit)
         if args.r0:
