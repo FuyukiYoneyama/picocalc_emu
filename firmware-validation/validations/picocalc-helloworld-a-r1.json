@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picocalc-helloworld-a-r1",
+  "roadmap_package": "R4",
+  "target_id": "picocalc-helloworld-a",
+  "target_revision": 1,
+  "target_contract_sha256": "a700fcec98d3af9692795f5a93130ac1a02bb9293a7d6cc64b2e7f6cd0c248e4",
+  "evidence": {
+    "record": "firmware-validation/records/r2-20260806-01/report.json",
+    "sha256": "b3ac55164df2386700cc62b3755b701f0ebf25eec86b0dc9a5a660bbf92a5e54",
+    "record_id": "r2-20260806-01",
+    "section": "official_a_acceptance"
+  },
+  "result": "accepted"
+}

@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schema_version", "policy", "targets"],
   "properties": {
-    "schema_version": {"const": 2},
+    "schema_version": {"const": 3},
     "policy": {"type": "string", "minLength": 1},
     "targets": {
       "type": "array",
@@ -21,11 +21,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id", "status", "source", "toolchain", "build", "artifacts",
-        "backend", "runner", "scenario", "acceptance"
+        "id", "revision", "status", "source", "toolchain", "build", "artifacts",
+        "backend", "runner", "scenario", "acceptance", "validation"
       ],
       "properties": {
         "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "integer", "minimum": 1},
+        "supersedes": {"type": ["string", "null"]},
         "status": {"enum": ["active", "pending-revalidation"]},
         "status_reason": {"type": "string"},
         "source": {"type": "object", "minProperties": 2},
@@ -124,6 +126,15 @@
                 }
               }
             }
+          }
+        },
+        "validation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["record", "sha256"],
+          "properties": {
+            "record": {"type": "string", "minLength": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
           }
         }
       }

@@ -761,15 +761,17 @@ def verify_catalog(checks: List[Check], root: Path) -> None:
 
 def verify_firmware_targets(checks: List[Check], root: Path) -> None:
     try:
-        registry = picocalc.load_firmware_registry()
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
         schema = load_json(root / "reference-projects/firmware-targets.schema.json")
         targets = registry["targets"]
         active = [target for target in targets if target["status"] == "active"]
         problems: List[str] = []
         if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
             problems.append("firmware target schema is not draft 2020-12")
-        if schema.get("properties", {}).get("schema_version", {}).get("const") != 2:
-            problems.append("firmware target schema does not pin version 2")
+        if schema.get("properties", {}).get("schema_version", {}).get("const") != 3:
+            problems.append("firmware target schema does not pin version 3")
         if not active:
             problems.append("registry has no active target")
         for target in active:
@@ -786,6 +788,111 @@ def verify_firmware_targets(checks: List[Check], root: Path) -> None:
             targets=len(targets),
             active=len(active),
             errors=problems,
+        )
+
+        validation_schema = load_json(
+            root / "firmware-validation/target-validation.schema.json"
+        )
+        validation_problems: List[str] = []
+        if validation_schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            validation_problems.append("target validation schema is not draft 2020-12")
+        if validation_schema.get("properties", {}).get("schema_version", {}).get("const") != 1:
+            validation_problems.append("target validation schema does not pin version 1")
+        root_resolved = root.resolve()
+        for target in targets:
+            target_id = target["id"]
+            validation_contract = target["validation"]
+            validation_path = (root / validation_contract["record"]).resolve()
+            try:
+                validation_path.relative_to(root_resolved)
+            except ValueError:
+                validation_problems.append("{} validation path escapes repository".format(target_id))
+                continue
+            if not validation_path.is_file():
+                validation_problems.append("{} validation record is missing".format(target_id))
+                continue
+            if sha256(validation_path) != validation_contract["sha256"]:
+                validation_problems.append("{} validation record fingerprint mismatch".format(target_id))
+                continue
+            validation = load_json(validation_path)
+            evidence = validation.get("evidence")
+            if not isinstance(evidence, dict):
+                validation_problems.append("{} validation evidence is invalid".format(target_id))
+                continue
+            expected_validation_keys = {
+                "schema_version", "validation_id", "roadmap_package", "target_id",
+                "target_revision", "target_contract_sha256", "evidence", "result",
+            }
+            expected_evidence_keys = {"record", "sha256", "record_id", "section"}
+            if set(validation) != expected_validation_keys or set(evidence) != expected_evidence_keys:
+                validation_problems.append("{} validation record has unexpected fields".format(target_id))
+                continue
+            expected_validation_id = "{}-r{}".format(target_id, target["revision"])
+            if (
+                validation.get("schema_version") != 1
+                or validation.get("validation_id") != expected_validation_id
+                or validation.get("roadmap_package") != "R4"
+                or validation.get("target_id") != target_id
+                or validation.get("target_revision") != target["revision"]
+                or validation.get("target_contract_sha256")
+                != picocalc.firmware_target_contract_sha256(target)
+                or validation.get("result") != "accepted"
+            ):
+                validation_problems.append("{} validation does not match target contract".format(target_id))
+                continue
+            evidence_path = (root / evidence["record"]).resolve()
+            try:
+                evidence_path.relative_to(root_resolved)
+            except ValueError:
+                validation_problems.append("{} evidence path escapes repository".format(target_id))
+                continue
+            if not evidence_path.is_file() or sha256(evidence_path) != evidence.get("sha256"):
+                validation_problems.append("{} evidence fingerprint mismatch".format(target_id))
+                continue
+            evidence_record = load_json(evidence_path)
+            section = evidence.get("section")
+            section_data = evidence_record.get(section) if isinstance(section, str) else None
+            section_target = (
+                section_data.get("target") if isinstance(section_data, dict) else None
+            )
+            if isinstance(section_target, dict):
+                section_target = section_target.get("id")
+            if section_target is None and isinstance(section_data, dict):
+                command = section_data.get("command")
+                if isinstance(command, str) and "--target {} ".format(target_id) in command:
+                    section_target = target_id
+            section_backend = (
+                section_data.get("backend_commit")
+                if isinstance(section_data, dict) else None
+            )
+            record_contract = evidence_record.get("target", {})
+            record_contract_sha = (
+                record_contract.get("contract_sha256")
+                if isinstance(record_contract, dict) else None
+            )
+            if (
+                evidence_record.get("record_id") != evidence.get("record_id")
+                or evidence_record.get("result") != "pass"
+                or not isinstance(section, str)
+                or not isinstance(section_data, dict)
+                or section_target != target_id
+                or (
+                    section_backend is not None
+                    and section_backend != target["backend"]["accepted"]
+                )
+                or (
+                    record_contract_sha is not None
+                    and record_contract_sha
+                    != picocalc.firmware_target_contract_sha256(target)
+                )
+            ):
+                validation_problems.append("{} evidence record does not substantiate validation".format(target_id))
+        add_check(
+            checks,
+            "firmware-targets:versioned-validations",
+            not validation_problems,
+            validations=len(targets),
+            errors=validation_problems,
         )
     except (OSError, UnicodeError, ValueError, TypeError, KeyError, AttributeError) as error:
         add_check(
@@ -1221,7 +1328,9 @@ def verify_r3_contract(checks: List[Check], root: Path) -> None:
         record = load_json(
             root / "firmware-validation/records/r3-20260806-01/report.json"
         )
-        registry = picocalc.load_firmware_registry()
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
         target = next(
             item for item in registry["targets"] if item["id"] == "picotetris-r3"
         )

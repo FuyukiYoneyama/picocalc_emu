@@ -51,6 +51,20 @@ class ToolTests(unittest.TestCase):
         ).hexdigest()
         self.assertEqual(module.normalized_json_sha256(left), expected)
 
+    def test_target_contract_hash_excludes_only_validation_attestation(self):
+        module = self.load_picocalc_module()
+        target = {
+            "id": "fixture",
+            "revision": 1,
+            "backend": {"accepted": "a" * 40},
+            "validation": {"record": "first.json", "sha256": "b" * 64},
+        }
+        original = module.firmware_target_contract_sha256(target)
+        target["validation"] = {"record": "second.json", "sha256": "c" * 64}
+        self.assertEqual(module.firmware_target_contract_sha256(target), original)
+        target["backend"]["accepted"] = "d" * 40
+        self.assertNotEqual(module.firmware_target_contract_sha256(target), original)
+
     def make_firmware_fixture(self, temporary, with_scenario=True):
         root = Path(temporary)
         backend = root / "backend"
@@ -80,10 +94,11 @@ class ToolTests(unittest.TestCase):
 
         registry = root / "firmware-targets.json"
         registry.write_text(json.dumps({
-            "schema_version": 2,
+            "schema_version": 3,
             "policy": "test",
             "targets": [{
                 "id": "fixture",
+                "revision": 1,
                 "status": "active",
                 "source": {"repo": "fixture", "commit": "0" * 40},
                 "toolchain": {"pico_sdk": "2.2.0", "gcc": "13.2.1"},
@@ -104,6 +119,10 @@ class ToolTests(unittest.TestCase):
                     "expected_stop_reason": "scenario_done" if with_scenario else "cycle_limit",
                     "required_uart_markers": ["READY"],
                     "report_checks": [{"path": "probe", "op": "eq", "value": "ok"}],
+                },
+                "validation": {
+                    "record": "firmware-validation/validations/fixture.json",
+                    "sha256": "0" * 64,
                 },
             }],
         }), encoding="utf-8")
@@ -379,6 +398,44 @@ raise SystemExit(code)
         self.assertEqual(report["status"], "pass")
         self.assertEqual(report["failed"], 0)
         self.assertTrue(report["checks"])
+
+    def test_versioned_target_validation_fails_closed_on_tampering(self):
+        mutations = ("attestation", "target", "evidence")
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                project = self.copy_project(temporary)
+                registry_path = project / "reference-projects/firmware-targets.json"
+                registry = json.loads(registry_path.read_text(encoding="utf-8"))
+                target = next(
+                    item for item in registry["targets"]
+                    if item["id"] == "picocalc-template-b"
+                )
+                if mutation == "attestation":
+                    path = project / target["validation"]["record"]
+                    path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+                elif mutation == "target":
+                    target["backend"]["accepted"] = "b" * 40
+                    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+                else:
+                    validation = json.loads(
+                        (project / target["validation"]["record"]).read_text(encoding="utf-8")
+                    )
+                    path = project / validation["evidence"]["record"]
+                    path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+                completed = run(
+                    VERIFY,
+                    "--project-root",
+                    project,
+                    "--json",
+                )
+                report = json.loads(completed.stdout)
+                validation_check = next(
+                    check for check in report["checks"]
+                    if check["name"] == "firmware-targets:versioned-validations"
+                )
+                self.assertEqual(completed.returncode, 1)
+                self.assertEqual(validation_check["status"], "fail")
+                self.assertTrue(validation_check["errors"])
 
     def test_audio_dma_restart_check_detects_missing_channel_reenable(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -860,6 +917,8 @@ raise SystemExit(code)
             _, _, _, _, registry = self.make_firmware_fixture(temporary)
             original = json.loads(registry.read_text(encoding="utf-8"))
             mutations = (
+                lambda value: value.update(revision=0),
+                lambda value: value.update(supersedes="missing-target"),
                 lambda value: value.pop("build"),
                 lambda value: value["backend"].update(report_schema=7),
                 lambda value: value["runner"].update(cycles=True),
@@ -869,6 +928,7 @@ raise SystemExit(code)
                 lambda value: value["acceptance"].update(
                     normalized_report_sha256="not-a-sha"
                 ),
+                lambda value: value["validation"].update(record="../escape.json"),
             )
             for mutate in mutations:
                 document = json.loads(json.dumps(original))

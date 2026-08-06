@@ -503,16 +503,17 @@ def load_firmware_target(target_id: str) -> Optional[dict]:
     return None
 
 
-def load_firmware_registry() -> dict:
-    """Load the R2 registry and reject incomplete conformance contracts."""
-    if not FIRMWARE_TARGETS.is_file():
-        raise ValueError("firmware target registry is missing: {}".format(FIRMWARE_TARGETS))
-    with FIRMWARE_TARGETS.open("r", encoding="utf-8") as source:
+def load_firmware_registry(path: Optional[Path] = None) -> dict:
+    """Load the versioned registry and reject incomplete conformance contracts."""
+    registry_path = path if path is not None else FIRMWARE_TARGETS
+    if not registry_path.is_file():
+        raise ValueError("firmware target registry is missing: {}".format(registry_path))
+    with registry_path.open("r", encoding="utf-8") as source:
         document = json.load(source)
     if not isinstance(document, dict):
         raise ValueError("firmware target registry must be a JSON object")
-    if document.get("schema_version") != 2:
-        raise ValueError("firmware target registry schema_version must be 2")
+    if document.get("schema_version") != 3:
+        raise ValueError("firmware target registry schema_version must be 3")
     if not isinstance(document.get("policy"), str) or not document["policy"]:
         raise ValueError("firmware target registry needs a non-empty policy")
     targets = document.get("targets")
@@ -529,6 +530,13 @@ def load_firmware_registry() -> dict:
         if target_id in ids:
             raise ValueError("duplicate firmware target id '{}'".format(target_id))
         ids.add(target_id)
+        if type(target.get("revision")) is not int or target["revision"] <= 0:
+            raise ValueError("{}.revision must be a positive integer".format(where))
+        supersedes = target.get("supersedes")
+        if supersedes is not None and (
+            not isinstance(supersedes, str) or not supersedes or supersedes == target_id
+        ):
+            raise ValueError("{}.supersedes must name another target or be null".format(where))
         if target.get("status") not in ("active", "pending-revalidation"):
             raise ValueError("{}.status must be active or pending-revalidation".format(where))
         for field in (
@@ -649,6 +657,26 @@ def load_firmware_registry() -> dict:
                 raise ValueError("{} length_eq value must be a non-negative integer".format(
                     check_where
                 ))
+        validation = target.get("validation")
+        if not isinstance(validation, dict):
+            raise ValueError("{}.validation must be an object".format(where))
+        if set(validation) != {"record", "sha256"}:
+            raise ValueError("{}.validation must contain only record and sha256".format(where))
+        record = validation.get("record")
+        if not isinstance(record, str) or not record:
+            raise ValueError("{}.validation.record must be non-empty".format(where))
+        record_path = Path(record)
+        if record_path.is_absolute() or ".." in record_path.parts:
+            raise ValueError("{}.validation.record must stay inside the repository".format(where))
+        if not is_sha256(validation.get("sha256")):
+            raise ValueError("{}.validation.sha256 must be a SHA-256".format(where))
+    targets_by_id = {target["id"]: target for target in targets}
+    for index, target in enumerate(targets):
+        supersedes = target.get("supersedes")
+        if supersedes is not None and supersedes not in ids:
+            raise ValueError("targets[{}].supersedes names an unknown target".format(index))
+        if supersedes is not None and target["revision"] <= targets_by_id[supersedes]["revision"]:
+            raise ValueError("targets[{}].revision must increase over supersedes".format(index))
     return document
 
 
@@ -664,6 +692,12 @@ def normalized_json_sha256(value: object) -> str:
         value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ) + "\n"
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def firmware_target_contract_sha256(target: dict) -> str:
+    """Hash a target contract without its external validation attestation."""
+    contract = {key: value for key, value in target.items() if key != "validation"}
+    return normalized_json_sha256(contract)
 
 
 def is_git_commit(value) -> bool:

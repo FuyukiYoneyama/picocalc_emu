@@ -19,8 +19,11 @@ firmware conformanceを完了し、R2でschema 2 target registry、schema 8 back
 `picoem-picocalc` commit `3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81`で完了した。generatorは
 `app_git`をproject自身のGit rootだけから取得するよう修正し、親repository内・外の生成先が
 同じ`untracked`になる回帰試験を追加した。`bsp_git`のmetadata由来契約は維持している。
-R4全体は未完了で、versioned validation、`picocalc_emu`と`picotetris`のCI接続、
-clean-clone full gateが残る。clean-clone CI準備として、PicoTetrisには
+target registryはschema 3へ進め、revision、`supersedes`、SHA固定attestationと不変evidence
+recordを接続した。`picotetris-r4` revision 2をbackend `3bc6bbd...bd81`で3回実行し、全runの
+exit 0とraw/normalized report、timeline、UART、framebuffer、PNG一致を記録した。
+R4全体は未完了で、`picocalc_emu`と`picotetris`のCI接続、clean-clone full gateが残る。
+clean-clone CI準備として、PicoTetrisには
 同日にprivate GitHub repository `FuyukiYoneyama/picotetris`を追加した。R0/R3のbundleと
 `remote: null`は各時点の復旧証拠なので保持する。
 

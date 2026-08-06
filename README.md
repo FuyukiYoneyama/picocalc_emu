@@ -120,6 +120,8 @@ scenarioのSHA-256、backend build commit、LCD/PSRAM/keyboard/SD設定、停止
 structured report期待値を1つの契約として固定します。CLIは宣言をrunnerへ全転送し、毎回
 新しいreportだけを読み、runnerの終了コード0/1/2とschema 8 verdictの一致まで検査します。
 引数overrideが契約と違う場合やBIN・scenario・backendが違う場合は実行前に失敗します。
+R4ではschema 3へ更新し、revisionとvalidation attestationを追加しました。新しいtargetは
+旧targetを上書きせず`supersedes`で結び、各契約を不変のevidence recordへSHA-256で接続します。
 
 実機検証（2026-08-05）の後、**SPI0のSDカードも実装しました。** これで標準template
 が全機能を完走します。
@@ -180,9 +182,9 @@ hardware-freeなゲーム規則へ分離し、666 checksの個別host unit test�
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
 conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
-R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gateとgeneratorの
-親Git継承修正は完了しました。残りのversioned validation契約と`picocalc_emu`・
-`picotetris`のCIを終えてから、R5の
+R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gate、generatorの
+親Git継承修正、schema 3 versioned validationとPicoTetris R4 revisionは完了しました。
+残りの`picocalc_emu`・`picotetris`のCIを終えてから、R5の
 同一BIN実機相関へ進みます。既存CIとbackend gateだけではR4全体の完了を意味しません。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
@@ -528,6 +530,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R0 baseline](docs/R0_BASELINE.md) — 開始点、生成契約、PicoTetris source identityと再取得bundle
 - [R2 Template B再現手順](docs/R2_TEMPLATE_B_REPRODUCTION.md) — clean generator cloneとGit管理外生成先を分離し、固定BIN/UF2を再生成する契約
 - [R3 PicoTetris正式回帰](docs/R3_PICOTETRIS_REGRESSION.md) — host logic、再現可能build、firmware 3回決定性と現行bundle
+- [Versioned validation](docs/VERSIONED_VALIDATION.md) — schema 3 target revision、attestation、時点証拠の不変契約
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "r4-20260806-01",
+  "title": "PicoTetris target revision validated against the R4 backend quality-gate commit",
+  "target": {
+    "id": "picotetris-r4",
+    "revision": 2,
+    "supersedes": "picotetris-r3",
+    "contract_sha256": "c6726fe6a5d2f1a9f54526d7360aa8d927c3ba19110de576512470dde32e1e72"
+  },
+  "source": {
+    "repo": "picotetris",
+    "remote": "https://github.com/FuyukiYoneyama/picotetris.git",
+    "commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+    "bsp_version": "0.8.8",
+    "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+    "bsp_tree_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d"
+  },
+  "build": {
+    "clean_clone": true,
+    "timestamp": "2026-08-06T00:00:00Z",
+    "pico_sdk": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "generator": "Ninja",
+    "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "matches_r3_artifacts": true
+  },
+  "firmware_regression": {
+    "target": "picotetris-r4",
+    "target_revision": 2,
+    "runs": 3,
+    "passes": 3,
+    "backend_commit": "3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81",
+    "backend_dirty": false,
+    "report_schema": 8,
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "steps_passed": 85,
+    "steps_total": 85,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "lines": 13,
+    "score": 1400,
+    "key_events_delivered": 362,
+    "key_events_remaining": 0,
+    "key_events_dropped": 0,
+    "unknown_keyboard_register_accesses": 0,
+    "unknown_sd_commands": 0,
+    "unsupported_mmio": 0,
+    "exception": null,
+    "error": null,
+    "raw_report_sha256": "bbe92bd77aa5932ce18835b335db67c740b8f621d96e67a80c49efcd279b72e9",
+    "normalized_report_sha256": "40b641683e3d1f946ac49abd8063fdccbbdd51c55751411e92ad429c5b00020b",
+    "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "snapshot_png_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958",
+    "all_compared_outputs_identical": true,
+    "runner_exit_codes": [0, 0, 0]
+  },
+  "historical_evidence": {
+    "r3_record": "firmware-validation/records/r3-20260806-01/report.json",
+    "r3_record_sha256": "6ad6cf337387ab28cd08f69a0ce19fcea28752be7be2fa0644654df3bb0211cf",
+    "r3_record_modified": false
+  },
+  "result": "pass"
+}

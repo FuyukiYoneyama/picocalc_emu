@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/target-validation.schema.json",
+  "title": "PicoCalc versioned firmware target validation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "validation_id", "roadmap_package", "target_id",
+    "target_revision", "target_contract_sha256", "evidence", "result"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "validation_id": {"type": "string", "minLength": 1},
+    "roadmap_package": {"const": "R4"},
+    "target_id": {"type": "string", "minLength": 1},
+    "target_revision": {"type": "integer", "minimum": 1},
+    "target_contract_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record", "sha256", "record_id", "section"],
+      "properties": {
+        "record": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "record_id": {"type": "string", "minLength": 1},
+        "section": {"type": "string", "minLength": 1}
+      }
+    },
+    "result": {"const": "accepted"}
+  }
+}

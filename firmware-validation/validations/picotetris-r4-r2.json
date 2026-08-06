@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picotetris-r4-r2",
+  "roadmap_package": "R4",
+  "target_id": "picotetris-r4",
+  "target_revision": 2,
+  "target_contract_sha256": "c6726fe6a5d2f1a9f54526d7360aa8d927c3ba19110de576512470dde32e1e72",
+  "evidence": {
+    "record": "firmware-validation/records/r4-20260806-01/report.json",
+    "sha256": "64f9ea767831d0689c7556c494b89a58cad7b52e243b05191cc6cac18eab7afd",
+    "record_id": "r4-20260806-01",
+    "section": "firmware_regression"
+  },
+  "result": "accepted"
+}
