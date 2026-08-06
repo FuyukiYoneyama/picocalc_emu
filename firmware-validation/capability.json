@@ -4,9 +4,9 @@
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "0d434d789ed2aa0743520eb0d411fa2ced1974e4",
+    "commit": "3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This file is a snapshot of what the pinned backend can do, so `picocalc.py verify` stays complete on a clone with no backend checked out."
+    "note": "Source is never vendored here. This is the current R4 capability snapshot; historical targets retain their own exact backend pins in the target registry. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out."
   },
   "supported": [
     {
@@ -142,14 +142,14 @@
     {
       "id": "firmware-target-contract",
       "what": "A schema-validated one-command contract for each registered firmware target",
-      "detail": "Registry schema 2 binds source and toolchain identity, exact BIN and optional scenario SHA-256, compiled backend commit, device profile, accepted stop, required UART markers, and dotted structured-report checks. picocalc.py creates a fresh report for every run, forwards every declared runner option, rejects conflicting CLI overrides before execution, and preserves the runner's 0/1/2 verdict classes.",
+      "detail": "R2 registry schema 2 bound source and toolchain identity, exact BIN and optional scenario SHA-256, compiled backend commit, device profile, accepted stop, required UART markers, and dotted structured-report checks. R4 schema 3 adds immutable target revisions, supersedes links, and SHA-pinned validation attestations without rewriting historical evidence. picocalc.py creates a fresh report for every run, forwards every declared runner option, rejects conflicting CLI overrides before execution, and preserves the runner's 0/1/2 verdict classes.",
       "since_gate": "R2"
     },
     {
       "id": "picotetris-r3-regression",
       "what": "Formal PicoTetris application regression across native game logic and the RP2040 firmware path",
-      "detail": "The game rules are hardware-free and covered by 666 native checks. Target picotetris-r3 pins source/BSP/toolchain/BIN/backend/FAT32/scenario/report expectations. Two fresh builds produced identical BIN and UF2 payloads; three firmware runs produced identical UART, RGB565 framebuffer, PNG, raw and normalized reports, and 85-step timelines while clearing 13 lines for score 1400 with 362 delivered and zero dropped key events.",
-      "limitation": "R3 is emulator evidence. CI wiring is R4 and correlation of the exact registered BIN SHA on a physical PicoCalc is R5.",
+      "detail": "The game rules are hardware-free and covered by 666 native checks. Historical target picotetris-r3 pins the original source/BSP/toolchain/BIN/backend/FAT32/scenario/report expectations; picotetris-r4 revision 2 preserves the same firmware artifact and validates it against the R4 backend commit. Two fresh builds produced identical BIN and UF2 payloads, three recorded firmware runs produced identical UART, RGB565 framebuffer, PNG, raw and normalized reports, and 85-step timelines while clearing 13 lines for score 1400 with 362 delivered and zero dropped key events, and the three repositories now run independent clean-runner CI gates.",
+      "limitation": "R3/R4 are emulator and CI evidence. Correlation of the exact registered BIN SHA on a physical PicoCalc remains R5.",
       "since_gate": "R3"
     },
     {

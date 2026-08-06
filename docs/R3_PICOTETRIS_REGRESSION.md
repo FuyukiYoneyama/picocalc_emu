@@ -86,8 +86,8 @@ unknown keyboard register 0、unknown SD command 0で合格した。
 ## 境界と次工程
 
 R3はゲーム規則、固定build、firmware統合の継続回帰契約を完成させた。実機での正しさは
-まだ主張しない。次はR4でclean cloneからunit/build/backend/registry/firmware regressionを
-CIの品質ゲートへ接続し、R5でこの同一BIN SHAを実機相関する。
+まだ主張しない。R3完了時点の次工程は、R4でclean cloneからunit/build/backend/registry/
+firmware regressionをCIの品質ゲートへ接続し、R5でこの同一BIN SHAを実機相関することだった。
 
 > **R4追記（2026-08-06）:** PicoTetris commit `6cd16eb075120140d9073a72db665482f3c2fe95`
 > でunit testと固定RP2040再現buildをGitHub Actionsへ接続した。run `31101591668`で666

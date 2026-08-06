@@ -563,7 +563,7 @@ templateから生成したプロジェクトが、LCD描画とGRAM readbackま�
 
 LCD、PSRAM、SD、keyboardを使う標準templateと、条件付きscenarioまでPC上で観測できます。
 上位CLIのfail-closed判定とtarget registryはR2、PicoTetrisの個別host unit testと正式targetは
-R3で完了しました。継続CIへの接続はR4です。また実機の色・向き・可読性・聴感は
+R3、3リポジトリの継続CIへの接続はR4で完了しました。また実機の色・向き・可読性・聴感は
 エミュレーターでは判定できません。
 **人間の実機検証はまだゼロになっていません。**
 

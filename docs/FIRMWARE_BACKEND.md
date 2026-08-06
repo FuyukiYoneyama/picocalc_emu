@@ -11,7 +11,7 @@ The current firmware backend direct-boots a raw Pico SDK BIN. That BIN is genera
 The firmware backend complements the host-device-model backend; it does not replace it.
 
 - **Host backend:** fast native execution for application logic, UI, input, files, sanitizers, and repeated scenario tests.
-- **Firmware backend:** same-binary verification for RP2040-specific behavior, including GPIO, PIO, DMA, interrupts, multicore execution, and peripheral register use.
+- **Firmware backend:** same-binary verification for RP2040-specific behavior currently declared in the capability manifest, including GPIO, PIO, DMA, interrupts, and peripheral register use. Multicore execution remains unsupported until a conformance target proves it.
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
@@ -21,9 +21,11 @@ Cycle exhaustion is not implicitly successful; conformance targets must name an 
 their required UART markers. Exception, emulator error, unsupported/truncated MMIO, keyboard event
 loss, scenario failure, stop mismatch, and marker absence cannot silently pass. Connecting these
 expectations through the cross-repository target CLI was completed in R2. Schema 8 additionally
-reports the commit and dirty state compiled into the runner. Registry schema 2 binds that identity,
-the exact BIN/scenario hashes, device arguments, stop, markers, and report checks into one contract;
-the CLI rejects mismatches and never accepts a stale report from an earlier run.
+reports the commit and dirty state compiled into the runner. R2 introduced registry schema 2 to bind
+that identity, the exact BIN/scenario hashes, device arguments, stop, markers, and report checks into
+one contract. R4 advanced the registry to schema 3 with target revisions, `supersedes`, and
+SHA-pinned validation attestations while preserving the schema 2 fields. The CLI rejects mismatches
+and never accepts a stale report from an earlier run.
 
 `rp2040js` remains a comparison reference for RP2040 peripheral behavior,
 implementation techniques, and test structure. It is not the primary backend

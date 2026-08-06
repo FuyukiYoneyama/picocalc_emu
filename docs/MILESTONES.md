@@ -5,7 +5,8 @@
 他文書に出てくる段階表現は本書のMilestone番号へ対応付けます。
 
 Milestone 0〜3の中核受入条件は完了しています。Milestone 4は最初の実機相関まで
-到達しましたが、現行成果物を一意に再現して継続回帰へ載せる作業が残っています。
+到達しています。現行PicoTetris成果物の一意な再現と継続CIへの接続はR3/R4で完了し、
+残っているのは、その登録済みBINと同一SHAを使う実機相関（R5）です。
 次に行う作業は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -238,7 +239,7 @@ clean-clone CI準備として2026-08-06にprivate GitHub repositoryを追加し�
 [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)、機械可読証跡は
 `firmware-validation/records/r3-20260806-01/`にある。完了後はR4へ進んだ。
 
-### R4実装状況（2026-08-06）
+### R4実装結果（2026-08-06）
 
 R4に着手し、最初の変更単位として`picoem-picocalc`のbackend品質ゲートを完了した。
 backend commit `3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81`から、固定した
