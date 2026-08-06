@@ -180,8 +180,9 @@ hardware-freeなゲーム規則へ分離し、666 checksの個別host unit test�
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
 conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
-R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gateは完了しました。
-残りのgenerator/validation契約と`picocalc_emu`・`picotetris`のCIを終えてから、R5の
+R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gateとgeneratorの
+親Git継承修正は完了しました。残りのversioned validation契約と`picocalc_emu`・
+`picotetris`のCIを終えてから、R5の
 同一BIN実機相関へ進みます。既存CIとbackend gateだけではR4全体の完了を意味しません。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
@@ -371,6 +372,11 @@ SHA-256をプロジェクト直下の`.picocalc-build-history.json`へ記録し�
 
 `build`はビルド開始時刻です。UF2を実機へ
 書き込む前に、コマンドが出力するSHA-256と実機ログの版・時刻を記録してください。
+
+`app_git`は、`--project`で指定したdirectory自身がGit working treeのrootである場合だけ
+そのcommitを記録します。生成先が別repositoryの子directoryに偶然置かれても、親のcommitを
+継承せず`untracked`になります。`bsp_git`はこれとは別の由来情報で、生成時metadataに固定した
+canonical BSP source commitと、コピー後BSP treeのdirty状態から決まります。
 
 ## 検証レベル
 

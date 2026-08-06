@@ -270,6 +270,57 @@ raise SystemExit(code)
             (bsp / "VERSION").write_text("changed\n", encoding="utf-8")
             self.assertEqual(module.bsp_build_identity(project), "a" * 12 + "-dirty")
 
+    def test_project_commit_does_not_inherit_parent_repository(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            parent = root / "source"
+            parent.mkdir()
+            subprocess.run(["git", "init", "-q", parent], check=True)
+            subprocess.run(
+                ["git", "-C", parent, "config", "user.email", "build@example.invalid"],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", parent, "config", "user.name", "Build Test"],
+                check=True,
+            )
+            (parent / "tracked").write_text("source\n", encoding="utf-8")
+            subprocess.run(["git", "-C", parent, "add", "tracked"], check=True)
+            subprocess.run(
+                ["git", "-C", parent, "commit", "-qm", "fixture"], check=True
+            )
+
+            inside_parent = parent / "generated-project"
+            outside_parent = root / "generated-project"
+            inside_parent.mkdir()
+            outside_parent.mkdir()
+
+            self.assertEqual(module.project_commit(inside_parent), "untracked")
+            self.assertEqual(module.project_commit(outside_parent), "untracked")
+
+            subprocess.run(["git", "init", "-q", inside_parent], check=True)
+            subprocess.run(
+                [
+                    "git", "-C", inside_parent, "config", "user.email",
+                    "app@example.invalid",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "-C", inside_parent, "config", "user.name", "App Test"],
+                check=True,
+            )
+            (inside_parent / "tracked").write_text("app\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "-C", inside_parent, "add", "tracked"], check=True
+            )
+            subprocess.run(
+                ["git", "-C", inside_parent, "commit", "-qm", "app fixture"],
+                check=True,
+            )
+            self.assertNotEqual(module.project_commit(inside_parent), "untracked")
+
     def copy_project(self, temporary):
         project = Path(temporary) / "project"
         shutil.copytree(

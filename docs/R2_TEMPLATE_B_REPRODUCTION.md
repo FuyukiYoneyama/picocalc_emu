@@ -146,5 +146,6 @@ BINとUF2が両方一致した場合だけ再現成功です。ELFは絶対build
 6. 外部`CFLAGS`等を消し、固定timestampでbuild directoryを新規作成する。
 
 履歴証拠`firmware-validation/records/r2-20260806-01/report.json`は時点記録なので
-書き換えません。現行generatorの親Git継承を将来修正しても、このR2成果物の再現には
+書き換えません。現行generatorではR4で親Git継承を修正し、project directory自身がGit rootで
+ない限り`app_git=untracked`とするようになりました。このR2成果物の再現には引き続き
 固定commitのtoolと本書の境界条件を使用します。

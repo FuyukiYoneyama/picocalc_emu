@@ -117,7 +117,22 @@ def git_build_identity(path: Path) -> str:
 
 
 def project_commit(project: Path) -> str:
-    """Return the app repository commit, or untracked for a source directory."""
+    """Return an app-owned commit without inheriting a parent repository."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(project), "rev-parse", "--show-toplevel"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return "untracked"
+    if completed.returncode != 0 or not completed.stdout.strip():
+        return "untracked"
+    repository_root = Path(completed.stdout.strip()).resolve()
+    if repository_root != project.resolve():
+        return "untracked"
     return git_build_identity(project)
 
 

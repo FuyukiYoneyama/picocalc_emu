@@ -16,9 +16,11 @@ firmware conformanceを完了し、R2でschema 2 target registry、schema 8 back
 上位Firmware CLIのfail-closed接続まで完了した。R3ではPicoTetrisの666 host checks、
 再現可能BIN/UF2、active firmware target、3回決定性回帰まで完了した。R4の品質ゲートとCIは
 2026-08-06に着手し、backendのtest・fmt・Clippyを独立して実行するGitHub Actionsを
-`picoem-picocalc` commit `3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81`で完了した。
-R4全体は未完了で、generatorの親Git継承修正、versioned validation、`picocalc_emu`と
-`picotetris`のCI接続、clean-clone full gateが残る。clean-clone CI準備として、PicoTetrisには
+`picoem-picocalc` commit `3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81`で完了した。generatorは
+`app_git`をproject自身のGit rootだけから取得するよう修正し、親repository内・外の生成先が
+同じ`untracked`になる回帰試験を追加した。`bsp_git`のmetadata由来契約は維持している。
+R4全体は未完了で、versioned validation、`picocalc_emu`と`picotetris`のCI接続、
+clean-clone full gateが残る。clean-clone CI準備として、PicoTetrisには
 同日にprivate GitHub repository `FuyukiYoneyama/picotetris`を追加した。R0/R3のbundleと
 `remote: null`は各時点の復旧証拠なので保持する。
 
