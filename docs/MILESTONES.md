@@ -66,7 +66,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R1 | backend verdict・reportの厳密化 | `picoem-picocalc`＋`picocalc_emu` host | cycle切れ、必須marker不足、scenario失敗、exception、未対応MMIO、key dropを誤ってPassにしない。SDを含む必須観測値をstructured reportへ出す。keyboard modelは[公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)を一次リファレンスとしてregister/FIFO/state/modifier/repeat/overflowをconformance testする。SDはFAT32既定/FAT16明示profileを両backendで通す。正常系・異常系のRust/C++ testが合格する | **完了 2026-08-05**。R1-SD、verdict、公式keyboard conformanceを完了 |
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | **完了 2026-08-06**。666 host checks、再現可能BIN/UF2、active target、3回決定一致 |
-| R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | R3後 |
+| R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | **進行中（2026-08-06着手）**。backend品質ゲート完了、残りはgenerator/validation契約と2リポジトリのCI接続 |
 | R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | R4後 |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | R5後 |
 
@@ -236,7 +236,29 @@ R3完了時点まで維持し、`provenance/picotetris-r3.bundle`へR3完全履�
 clean-clone CI準備として2026-08-06にprivate GitHub repositoryを追加したが、R3のbundleと
 `remote: null`は時点証拠として変更しない。詳細と全SHAは
 [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)、機械可読証跡は
-`firmware-validation/records/r3-20260806-01/`にある。次はR4である。
+`firmware-validation/records/r3-20260806-01/`にある。完了後はR4へ進んだ。
+
+### R4実装状況（2026-08-06）
+
+R4に着手し、最初の変更単位として`picoem-picocalc`のbackend品質ゲートを完了した。
+backend commit `3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81`から、固定した
+Ubuntu 24.04/Rust 1.97.1上でtest、fmt、Clippyを独立jobとして実行する。testは
+`picocalc-board`、`picocalc-harness`、`rp2040-emu`とrelease build、fmt/Clippyは
+保守責任を持つPicoCalc固有crateを対象とする。GitHub Actions run `31098630797`で全jobの
+成功を確認した。
+
+このcommitはbackendのcurrent mainに対する品質ゲートであり、既存firmware targetの
+accepted backend pinを更新しない。履歴targetはregistryに記録したcommitの専用checkoutを
+`--backend-dir`へ渡して実行する。したがってR2/R3のtarget、record、SHAは変更していない。
+
+R4の残件は次の順序で行う。
+
+1. 生成先が親Git repositoryを誤って継承しないよう`app_git`判定を修正し、`bsp_git`の
+   正当なsource identityは維持する。Git内外一致の回帰試験を追加する。
+2. 既存の時点証拠を書き換えず、R4 target revisionとversioned validation recordを追加する。
+3. `picocalc_emu`へportable、host、target/schema、firmware regressionの層別CIを接続する。
+4. `picotetris`へunit testと固定SDK/toolchainによるRP2040再現buildのCIを接続する。
+5. clean cloneから各pinと成果物を再現し、3リポジトリのfull gateを通す。
 
 ## Milestone 0: Canonical BSP — implemented
 

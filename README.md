@@ -180,8 +180,9 @@ hardware-freeなゲーム規則へ分離し、666 checksの個別host unit test�
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
 conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
-次はR4の3リポジトリfull品質ゲート/CI、R5の同一BIN実機相関の順に進めます。既存CIは
-portable検証・Python test・標準template compileまでで、R4全体の完了を意味しません。R3の全SHAと受入結果は
+R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gateは完了しました。
+残りのgenerator/validation契約と`picocalc_emu`・`picotetris`のCIを終えてから、R5の
+同一BIN実機相関へ進みます。既存CIとbackend gateだけではR4全体の完了を意味しません。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r3完了反映)が正典です。
