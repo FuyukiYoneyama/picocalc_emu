@@ -33,7 +33,9 @@ gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。PicoTetrisのpr
 R5実機着手前のWSL性能baselineでは、`picotetris-r4`の実時間比中央値を5.874%
 （仮想3.715秒をwall 63.247秒、約17.025倍遅い）と測定し、全10 runのreport/UART/PNG一致を
 確認した。詳細は[`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)にある。
-現在の次工程は、同一BINを使うR5実機相関である。
+現在の次工程は、同一BINを使うR5実機相関と、その前に観測契約を追加するOPT0である。
+高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
+[`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

@@ -4,6 +4,9 @@
 どの速度で進むかを固定した性能baselineである。実機合否の証拠ではなく、R5 hardware
 correlation自体はまだ完了していない。
 
+このbaselineを起点とする高速化の目的、正確性契約、計測、採否条件、R5との順序は
+[`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)に定義する。
+
 ## 指標
 
 本書の「実時間比」は次で定義する。

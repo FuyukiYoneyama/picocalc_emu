@@ -185,7 +185,8 @@ conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3
 R4の3リポジトリfull品質ゲート/CIも完了しました。backendのtest・fmt・Clippy gate、generatorの
 親Git継承修正、schema 3 versioned validation、PicoTetris R4 revision、PicoTetrisの
 unit＋固定RP2040再現build、`picocalc_emu`のportable/host/target-schema/firmware regressionを
-clean runnerで合格させました。次はR5の同一BIN実機相関です。R3の全SHAと受入結果は
+clean runnerで合格させました。次はR5の同一BIN実機相関と、相関前に観測契約を整える
+OPT0です。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r4完了反映)が正典です。
@@ -193,6 +194,9 @@ clean runnerで合格させました。次はR5の同一BIN実機相関です。
 R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotetris-r4`を10回測定し、
 実時間比中央値5.874%（仮想3.715秒をwall 63.247秒、約17.025倍遅い）を記録しました。
 全runのreport/UART/PNGは一致しています。これは実機合格ではなく、実機相関前の速度基準です。
+この値を起点とする高速化は、実機相当の正確性を速度より優先します。blocked/safe区間の計測、
+streaming event digest、採否gate、R5前後の暫定・正式採用を含む計画は
+[`EMULATOR_OPTIMIZATION_PLAN.md`](docs/EMULATOR_OPTIMIZATION_PLAN.md)に固定しました。
 
 ## 読む順番
 
@@ -537,6 +541,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [Versioned validation](docs/VERSIONED_VALIDATION.md) — schema 3 target revision、attestation、時点証拠の不変契約
 - [R4 品質ゲートとCI](docs/R4_CI.md) — 3リポジトリのclean-runner full gate、job境界、private backend認証
 - [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
+- [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

@@ -6,7 +6,8 @@
 
 Milestone 0〜3の中核受入条件は完了しています。Milestone 4は最初の実機相関まで
 到達しています。現行PicoTetris成果物の一意な再現と継続CIへの接続はR3/R4で完了し、
-残っているのは、その登録済みBINと同一SHAを使う実機相関（R5）です。
+残っているのは、その登録済みBINと同一SHAを使う実機相関（R5）です。R5前に観測契約を
+整えるOPT0と、正確性を維持する最初の高速化候補を並行作業列として実施します。
 次に行う作業は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -76,7 +77,8 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 ```text
 R0 生成契約・source identity ─┐
                                ├→ R2 CLI/registry → R3 PicoTetris → R4 CI
-R1 backend verdict/report ─────┘                                  → R5 実機 → R6 配布
+R1 backend verdict/report ─────┘                                  ├→ OPT0/OPT1候補 ─┐
+                                                                 └→ R5 実機 ←──────┘ → R6 配布
 ```
 
 各パッケージの終了時にREADME・`IMPLEMENTATION_STATUS.md`・capability・target/recordの
@@ -287,7 +289,8 @@ SHAを検査して復元し、SDK 2.2.0の固定条件で登録BIN `0784d80d...e
 
 backend run `31098630797`、PicoTetris run `31101591668`と上記runを合わせ、3リポジトリの
 clean-runner full gateは完了した。R4の完全なjob境界、pin、認証境界は
-[`R4_CI.md`](R4_CI.md)に記録した。次はR5の同一BIN実機相関へ進む。
+[`R4_CI.md`](R4_CI.md)に記録した。次はR5の同一BIN実機相関と、その相関で使う観測契約を
+整えるOPT0へ進む。
 
 ### R5実機着手前の性能baseline（2026-08-06）
 
@@ -297,6 +300,12 @@ AMD Ryzen 5 5600X上のWSL2で、1 warm-up後に同一CPUへ固定して10回測
 全runのreport/UART/PNGは一致した。これはR5実機合格ではなくpreflightであり、実機検証は
 未着手のままである。定義、理論上限、全測定値、再測定コマンドは
 [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)に記録した。
+
+このbaselineを起点に、実機相当の正確性を維持したまま開発turnaroundを短縮する高速化を
+R5と並行する作業列として行う。OPT0の観測契約と最初のOPT1候補はR5前に実施できるが、
+実機相関前は暫定候補であり、R5で一致した後に正式採用する。blocked上界と安全に飛ばせる
+下界を分離した計測、event horizon、正確性・性能gate、OPT0〜OPT3の実施順序は
+[`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)を正典とする。
 
 ## Milestone 0: Canonical BSP — implemented
 
