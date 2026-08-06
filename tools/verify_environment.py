@@ -1334,7 +1334,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
 
 
 def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
-    """Verify the immutable OPT0-A diagnostic profile and its target inputs."""
+    """Verify the immutable OPT0-A profile, cost samples, and target inputs."""
     try:
         profile_path = (
             root
@@ -1425,6 +1425,95 @@ def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
         json.JSONDecodeError,
     ) as error:
         add_check(checks, "opt0-a:serial-idle-profile", False, **error_details(error))
+
+    try:
+        cost_path = (
+            root / "firmware-validation/records/opt0-a-20260806-02/idle-cost.json"
+        )
+        expected_cost_sha = (
+            "98be437f5485c68b26609dd19119ccbb1a4d57964514489f0cae35c0524e0f30"
+        )
+        cost = load_json(cost_path)
+        measurements = cost["measurements"]
+        loop_median = measurements["loop_overhead"]["median_ns_per_op"]
+
+        def measurement_valid(measurement: dict, subtract_loop: bool = True) -> bool:
+            samples = measurement.get("samples_ns_per_op", [])
+            raw_median = statistics.median(samples) if samples else math.nan
+            expected_net = (
+                max(0.0, raw_median - loop_median) if subtract_loop else raw_median
+            )
+            return (
+                len(samples) == cost.get("retained_samples") == 10
+                and all(isinstance(value, (int, float)) and value > 0 for value in samples)
+                and math.isclose(
+                    measurement.get("median_ns_per_op", math.nan),
+                    raw_median,
+                    rel_tol=1e-12,
+                )
+                and math.isclose(
+                    measurement.get("median_net_of_loop_ns_per_op", math.nan),
+                    expected_net,
+                    rel_tol=1e-12,
+                )
+            )
+
+        advances = measurements["quiescent_tick_peripherals_by_advance_cycles"]
+        screening = cost["screening"]
+        aligned = all(
+            (
+                sha256(cost_path) == expected_cost_sha,
+                cost.get("schema_version") == 1,
+                cost.get("kind") == "rp2040_serial_idle_cost_microbenchmark",
+                cost.get("backend_build")
+                == {
+                    "commit": "5d01c8072c70841336cf48e46bc5aa7b8a669349",
+                    "dirty": False,
+                },
+                cost.get("execution_model") == "Serial",
+                cost.get("diagnostic") is True,
+                cost.get("valid_for_realtime_baseline") is False,
+                cost.get("iterations_per_sample") == 1_000_000,
+                cost.get("warmup_iterations_per_family") == 10_000,
+                cost.get("current_probe_scope", {}).get("complete_event_horizon")
+                is False,
+                cost.get("current_probe_scope", {}).get("lazy_deadline_sources")
+                == ["timer"],
+                measurement_valid(measurements["loop_overhead"], subtract_loop=False),
+                measurement_valid(measurements["current_conservative_probe"]),
+                measurement_valid(measurements["blocked_step_quantum_1"]),
+                set(advances) == {"1", "64", "1024", "1048576"},
+                all(measurement_valid(value) for value in advances.values()),
+                screening.get("eligible_for_optimization_priority_decision")
+                is False,
+                screening.get("event_fire_and_route_cost_measured") is False,
+                screening.get("clock_update_and_wake_check_cost_measured") is False,
+                screening.get("full_all_source_horizon_cost_measured") is False,
+            )
+        )
+        add_check(
+            checks,
+            "opt0-a:idle-cost-microbenchmark",
+            aligned,
+            backend_commit=cost.get("backend_build", {}).get("commit"),
+            retained_samples=cost.get("retained_samples"),
+            eligible_for_priority=screening.get(
+                "eligible_for_optimization_priority_decision"
+            ),
+            record_sha256=sha256(cost_path),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(
+            checks, "opt0-a:idle-cost-microbenchmark", False, **error_details(error)
+        )
 
 
 def verify_r5_performance(checks: List[Check], root: Path) -> None:

@@ -315,6 +315,15 @@ proven-safe下限は0 cycleだった。記録は
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
 に保存した。OPT0-Aはcost modelの実測が残るため進行中である。
 
+続いてbackend `5d01c8072c70841336cf48e46bc5aa7b8a669349`に同一release build内で
+blocked step、保守的probe、quiescent bulk advanceを比較する専用microbenchmarkを追加した。
+CPU 0固定・各100万iteration・10 sampleでは、それぞれ52.647255 ns、10.771746 ns、
+37.108583〜37.825914 nsだった。全source horizon、clock更新、boundary/event、IRQ route、
+wake checkは未測定なので、これはscreeningの部分値であり優先順位はまだ確定しない。raw sampleと
+再現手順は
+[`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
+に保存した。
+
 ## Milestone 0: Canonical BSP — implemented
 
 - 実働プロジェクトを根拠にしたLCD・keyboard・SD/FatFS BSP

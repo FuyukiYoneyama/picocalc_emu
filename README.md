@@ -202,7 +202,10 @@ OPT0-Aのfeature-gated profilerと初回PicoTetris計測も完了し、両core�
 ではなく、CPU停止だけではfast-forwardを正当化できないという診断結果です。raw profileと
 再現手順は
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](firmware-validation/records/opt0-a-20260806-01/notes.md)
-にあります。cost modelの実測は未完です。
+にあります。部分costもCPU固定10 sampleで記録しましたが、全source horizonとevent/IRQ/wake
+costは未完です。詳細は
+[`firmware-validation/records/opt0-a-20260806-02/notes.md`](firmware-validation/records/opt0-a-20260806-02/notes.md)
+にあります。
 
 ## 読む順番
 

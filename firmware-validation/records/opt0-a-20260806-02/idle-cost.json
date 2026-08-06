@@ -1,0 +1,150 @@
+{
+  "backend_build": {
+    "commit": "5d01c8072c70841336cf48e46bc5aa7b8a669349",
+    "dirty": false
+  },
+  "current_probe_scope": {
+    "active_sources_are_blockers_not_deadlines": true,
+    "complete_event_horizon": false,
+    "initial_probe": {
+      "blocker_count": 0,
+      "master_cycle": 0,
+      "next_lazy_deadline": 24000000000,
+      "proven_quiescent": true
+    },
+    "lazy_deadline_sources": [
+      "timer"
+    ]
+  },
+  "diagnostic": true,
+  "execution_model": "Serial",
+  "iterations_per_sample": 1000000,
+  "kind": "rp2040_serial_idle_cost_microbenchmark",
+  "measurements": {
+    "blocked_step_quantum_1": {
+      "median_net_of_loop_ns_per_op": 52.647255,
+      "median_ns_per_op": 53.065735000000004,
+      "samples_ns_per_op": [
+        51.652629,
+        53.72116,
+        54.635411,
+        58.816273,
+        53.513286,
+        52.348148,
+        52.201702,
+        52.110383,
+        52.618184,
+        55.241468
+      ]
+    },
+    "current_conservative_probe": {
+      "median_net_of_loop_ns_per_op": 10.771745999999998,
+      "median_ns_per_op": 11.190226,
+      "samples_ns_per_op": [
+        12.29431,
+        11.637925,
+        10.730441,
+        10.909309,
+        11.368364,
+        11.251243,
+        11.129209,
+        12.624965,
+        11.019288,
+        10.861064
+      ]
+    },
+    "loop_overhead": {
+      "median_net_of_loop_ns_per_op": 0.41847999999999996,
+      "median_ns_per_op": 0.41847999999999996,
+      "samples_ns_per_op": [
+        0.500299,
+        0.41373,
+        0.42323,
+        0.413701,
+        0.425526,
+        0.41371,
+        0.413691,
+        0.428367,
+        0.413711,
+        0.425296
+      ]
+    },
+    "quiescent_tick_peripherals_by_advance_cycles": {
+      "1": {
+        "median_net_of_loop_ns_per_op": 37.746424499999996,
+        "median_ns_per_op": 38.1649045,
+        "samples_ns_per_op": [
+          38.028952,
+          38.300857,
+          37.468154,
+          39.378614,
+          40.140087,
+          38.462316,
+          37.856072,
+          38.54582,
+          37.70228,
+          37.092585
+        ]
+      },
+      "1024": {
+        "median_net_of_loop_ns_per_op": 37.566470499999994,
+        "median_ns_per_op": 37.9849505,
+        "samples_ns_per_op": [
+          44.549909,
+          37.452843,
+          37.846411,
+          39.955613,
+          38.12349,
+          38.94588,
+          37.603263,
+          38.837459,
+          37.186984,
+          37.720863
+        ]
+      },
+      "1048576": {
+        "median_net_of_loop_ns_per_op": 37.825914499999996,
+        "median_ns_per_op": 38.2443945,
+        "samples_ns_per_op": [
+          37.255994,
+          37.857319,
+          37.280452,
+          38.217533,
+          39.162193,
+          38.271256,
+          37.870106,
+          39.131971,
+          38.405744,
+          39.0483
+        ]
+      },
+      "64": {
+        "median_net_of_loop_ns_per_op": 37.108583499999995,
+        "median_ns_per_op": 37.5270635,
+        "samples_ns_per_op": [
+          37.581939,
+          38.045407,
+          37.300096,
+          37.552742,
+          38.30171,
+          36.726928,
+          36.744386,
+          37.501385,
+          37.022474,
+          37.941837
+        ]
+      }
+    }
+  },
+  "retained_samples": 10,
+  "schema_version": 1,
+  "screening": {
+    "clock_update_and_wake_check_cost_measured": false,
+    "eligible_for_optimization_priority_decision": false,
+    "event_fire_and_route_cost_measured": false,
+    "full_all_source_horizon_cost_measured": false,
+    "optimistic_break_even_cycles_excluding_boundary_and_routing_cost": 1
+  },
+  "valid_for_realtime_baseline": false,
+  "warmup_iterations_per_family": 10000
+}

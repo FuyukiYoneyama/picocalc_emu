@@ -38,7 +38,11 @@ OPT0-Aではbackend `ace66df91f87cfe18c7bec0ba47bcbc12f5c9345`に通常buildか�
 cycle、UART、framebuffer、85/85 scenarioは一致した。両core停止の上界は66.692909%だったが、
 activeなUART/PIO/DMA/PWM/I2Cを考慮した保守的なproven-safe下限は0 cycleだった。詳細と再現
 手順は[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
-にある。現在の次工程はOPT0-Aのcost計測、その後OPT0-B観測契約とR5実機相関である。
+にある。続く部分cost計測では、CPU固定10 sampleで現行blocked step 52.647255 ns、保守的probe
+10.771746 ns、quiescent bulk advance約37.1〜37.8 nsを得た。ただし全source horizonと
+event/IRQ/wake costは未測定で、優先順位決定は保留している。記録は
+[`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
+にある。現在の次工程はOPT0-Aの残るcost/next-event設計、その後OPT0-B観測契約とR5実機相関である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 
