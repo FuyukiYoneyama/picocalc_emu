@@ -139,7 +139,11 @@
 > **R3完了（2026-08-06）:** source `fed84f358d...`からBIN/UF2を2回再現し、
 > `picotetris-r3` targetでscenarioを3回実行した。3回とも85/85、13 lines、score 1400、
 > key 362/drop 0で、UART・framebuffer・PNG・report・timeline SHAが一致した。詳細は
-> [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)にある。CI接続はR4へ残る。
+> [`R3_PICOTETRIS_REGRESSION.md`](R3_PICOTETRIS_REGRESSION.md)にある。このR3完了時点では
+> CI接続をR4へ残した。
+>
+> **R4完了（2026-08-06）:** backend、PicoTetris、`picocalc_emu`の3リポジトリを独立した
+> clean-runner gateへ接続し、full gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。
 
 ## 成果物
 
@@ -152,4 +156,4 @@
 `scenarios/tetris-line-clear.json`が実行するのはこのバイナリであり、
 そこで見つかったキーボードモデルの欠陥は、実際のアプリを走らせなければ
 出てこなかった種類のものである。source identity、再現可能build、target登録はR3で完了した。
-CIへの品質ゲート接続はR4で行う。
+CIへの品質ゲート接続はR4で完了した。

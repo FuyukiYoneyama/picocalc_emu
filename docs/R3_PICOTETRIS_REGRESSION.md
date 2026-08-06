@@ -91,5 +91,6 @@ CIの品質ゲートへ接続し、R5でこの同一BIN SHAを実機相関する
 
 > **R4追記（2026-08-06）:** PicoTetris commit `6cd16eb075120140d9073a72db665482f3c2fe95`
 > でunit testと固定RP2040再現buildをGitHub Actionsへ接続した。run `31101591668`で666
-> checksと、上記BIN/UF2 SHAのclean runner上での完全一致を確認した。R4全体はまだ未完了で、
-> `picocalc_emu`の層別CIと3リポジトリfull gateが残る。
+> checksと、上記BIN/UF2 SHAのclean runner上での完全一致を確認した。続いて`picocalc_emu`
+> run `31103564391`で同じBINの再構築と権威あるfirmware regressionを含む全6 jobが合格した。
+> 3リポジトリfull gateを完了し、次はR5でこの同一BINを実機相関する。

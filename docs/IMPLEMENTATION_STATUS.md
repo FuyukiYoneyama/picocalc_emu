@@ -25,9 +25,12 @@ exit 0とraw/normalized report、timeline、UART、framebuffer、PNG一致を記
 PicoTetrisはcommit `6cd16eb075120140d9073a72db665482f3c2fe95`で、現行sourceの666 host
 checksと、R3固定source・SDK 2.2.0・Ubuntu 24.04標準toolchainから登録済みBIN/UF2を
 再現する二つのCI jobを接続した。GitHub Actions run `31101591668`で両jobとSHA完全一致を
-確認した。R4全体は未完了で、`picocalc_emu`の層別CI接続と3リポジトリのclean-clone full
-gateが残る。PicoTetrisのprivate GitHub repositoryは同日に追加済みである。R0/R3のbundleと
-`remote: null`は各時点の復旧証拠なので保持する。
+確認した。`picocalc_emu` commit `f9b596fe01163d69f2396bb3d50aafb44965c825`ではportable、
+Python tools、target/schema、host、SDK 2.0互換build、固定PicoTetris firmware regressionを
+独立jobへ接続した。run `31103564391`で全6 jobが合格し、3リポジトリのclean-runner full
+gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。PicoTetrisのprivate GitHub repositoryは
+同日に追加済みである。R0/R3のbundleと`remote: null`は各時点の復旧証拠なので保持する。
+現在の次工程はR5の同一BIN実機相関である。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

@@ -52,3 +52,9 @@ PicoTetris repositoryのcommit `6cd16eb075120140d9073a72db665482f3c2fe95`では�
 SDK/toolchain/timestamp/identityをGitHub Actionsで再構築し、登録済みBIN/UF2 SHAを直接照合
 します。run `31101591668`でunit 666 checksと再現buildの両jobが合格しました。このCIは
 既存revisionを再pinせず、固定された成果物を第三者環境で再現できることを継続検査します。
+
+`picocalc_emu` run `31103564391`は、同じbundle/source/toolchainからBINを再構築し、accepted
+backendをcommit固定でclean clone/buildしてから`picotetris-r4`を実行しました。target/schema
+jobとfirmware regression jobの双方が合格しているため、attestationの静的整合だけでなく、
+固定contractの実走までclean runnerで継続検査されます。R4 full gateの全体は
+[`R4_CI.md`](R4_CI.md)に記録しています。

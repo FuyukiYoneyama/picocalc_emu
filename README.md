@@ -182,14 +182,13 @@ hardware-freeなゲーム規則へ分離し、666 checksの個別host unit test�
 
 生成契約・source identityの固定（R0）、R1（SD/FAT32、backend verdict、公式keyboard
 conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3）は完了しました。
-R4の3リポジトリfull品質ゲート/CIに着手し、backendのtest・fmt・Clippy gate、generatorの
+R4の3リポジトリfull品質ゲート/CIも完了しました。backendのtest・fmt・Clippy gate、generatorの
 親Git継承修正、schema 3 versioned validation、PicoTetris R4 revision、PicoTetrisの
-unit＋固定RP2040再現build CIは完了しました。残りは`picocalc_emu`の層別CIと3リポジトリの
-clean-clone full gateです。これらを終えてからR5の同一BIN実機相関へ進みます。backendと
-PicoTetrisの個別gateだけではR4全体の完了を意味しません。R3の全SHAと受入結果は
+unit＋固定RP2040再現build、`picocalc_emu`のportable/host/target-schema/firmware regressionを
+clean runnerで合格させました。次はR5の同一BIN実機相関です。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r3完了反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r4完了反映)が正典です。
 
 ## 読む順番
 
@@ -242,7 +241,7 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
 - directory-backed Fast SDモード（host backend）
 - host合格と実機結果の相関を自動集計する（Milestone 4）
-- JUnit成果物、100回連続実行の決定性検査（R4へ繰越）
+- JUnit成果物、100回連続実行の決定性検査（R4受入条件外。必要時は独立したsoak作業にする）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
 画面の向き、文字の可読性、音の聞こえ方です。エミュレーターは「firmwareが何を書いたか」
@@ -532,6 +531,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R2 Template B再現手順](docs/R2_TEMPLATE_B_REPRODUCTION.md) — clean generator cloneとGit管理外生成先を分離し、固定BIN/UF2を再生成する契約
 - [R3 PicoTetris正式回帰](docs/R3_PICOTETRIS_REGRESSION.md) — host logic、再現可能build、firmware 3回決定性と現行bundle
 - [Versioned validation](docs/VERSIONED_VALIDATION.md) — schema 3 target revision、attestation、時点証拠の不変契約
+- [R4 品質ゲートとCI](docs/R4_CI.md) — 3リポジトリのclean-runner full gate、job境界、private backend認証
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系
