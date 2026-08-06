@@ -197,6 +197,12 @@ R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotet
 この値を起点とする高速化は、実機相当の正確性を速度より優先します。blocked/safe区間の計測、
 streaming event digest、採否gate、R5前後の暫定・正式採用を含む計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](docs/EMULATOR_OPTIMIZATION_PLAN.md)に固定しました。
+OPT0-Aのfeature-gated profilerと初回PicoTetris計測も完了し、両core停止の上界66.692909%に
+対して、active deviceを考慮した保守的なproven-safe下限は0 cycleでした。これは速度向上率
+ではなく、CPU停止だけではfast-forwardを正当化できないという診断結果です。raw profileと
+再現手順は
+[`firmware-validation/records/opt0-a-20260806-01/notes.md`](firmware-validation/records/opt0-a-20260806-01/notes.md)
+にあります。cost modelの実測は未完です。
 
 ## 読む順番
 

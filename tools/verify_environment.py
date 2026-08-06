@@ -1330,6 +1330,101 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_firmware_validation(checks, root)
     verify_r3_contract(checks, root)
     verify_r5_performance(checks, root)
+    verify_opt0_idle_profile(checks, root)
+
+
+def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
+    """Verify the immutable OPT0-A diagnostic profile and its target inputs."""
+    try:
+        profile_path = (
+            root
+            / "firmware-validation/records/opt0-a-20260806-01/idle-profile.json"
+        )
+        expected_profile_sha = (
+            "435c10d1e108ece74a8ff931f855f93fb8f04e9d61bdbde3c10ce8ae6ea6152d"
+        )
+        profile = load_json(profile_path)
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(
+            item for item in registry["targets"] if item["id"] == "picotetris-r4"
+        )
+        counters = profile["counters"]
+        thresholds = profile["histogram_thresholds_cycles"]
+        blocked = profile["blocked_lengths"]
+        safe = profile["proven_safe_lengths"]
+        horizon = profile["initial_horizon_distances"]
+        blocker_cycles = profile["blocker_cycles"]
+        blocker_episodes = profile["blocker_episodes"]
+        blocked_episodes = blocked["episodes_ge"][0]
+
+        histograms_valid = all(
+            len(histogram[field]) == 64
+            and all(
+                left >= right
+                for left, right in zip(histogram[field], histogram[field][1:])
+            )
+            for histogram in (blocked, safe, horizon)
+            for field in ("episodes_ge", "cycle_mass_ge")
+        )
+        aligned = all(
+            (
+                sha256(profile_path) == expected_profile_sha,
+                profile.get("schema_version") == 1,
+                profile.get("kind") == "rp2040_serial_idle_profile",
+                profile.get("execution_model") == "Serial",
+                profile.get("instrumented") is True,
+                profile.get("valid_for_wall_time") is False,
+                profile.get("step_quantum") == target["runner"]["quantum"] == 1,
+                profile.get("stop_reason") == "scenario_done",
+                profile.get("backend_build")
+                == {
+                    "commit": "ace66df91f87cfe18c7bec0ba47bcbc12f5c9345",
+                    "dirty": False,
+                },
+                profile.get("firmware", {}).get("sha256")
+                == target["artifacts"]["bin_sha256"],
+                profile.get("run_cycles") == counters.get("total_master_cycles"),
+                counters.get("total_master_cycles") == 927_528_660,
+                counters.get("core0_executed_cycles") == 308_932_816,
+                counters.get("core1_executed_cycles") == 0,
+                counters.get("both_blocked_cycles") == 618_595_844,
+                counters.get("proven_safe_cycles") == 0,
+                counters.get("core0_executed_cycles")
+                + counters.get("both_blocked_cycles")
+                == counters.get("total_master_cycles"),
+                blocked_episodes == 139,
+                thresholds == [1 << bit for bit in range(64)],
+                histograms_valid,
+                blocked["cycle_mass_ge"][0] == counters["both_blocked_cycles"],
+                safe["cycle_mass_ge"][0] == counters["proven_safe_cycles"],
+                all(
+                    value <= counters["both_blocked_cycles"]
+                    for value in blocker_cycles.values()
+                ),
+                all(value <= blocked_episodes for value in blocker_episodes.values()),
+            )
+        )
+        add_check(
+            checks,
+            "opt0-a:serial-idle-profile",
+            aligned,
+            backend_commit=profile.get("backend_build", {}).get("commit"),
+            both_blocked_cycles=counters.get("both_blocked_cycles"),
+            proven_safe_cycles=counters.get("proven_safe_cycles"),
+            profile_sha256=sha256(profile_path),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, "opt0-a:serial-idle-profile", False, **error_details(error))
 
 
 def verify_r5_performance(checks: List[Check], root: Path) -> None:

@@ -33,7 +33,12 @@ gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。PicoTetrisのpr
 R5実機着手前のWSL性能baselineでは、`picotetris-r4`の実時間比中央値を5.874%
 （仮想3.715秒をwall 63.247秒、約17.025倍遅い）と測定し、全10 runのreport/UART/PNG一致を
 確認した。詳細は[`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)にある。
-現在の次工程は、同一BINを使うR5実機相関と、その前に観測契約を追加するOPT0である。
+OPT0-Aではbackend `ace66df91f87cfe18c7bec0ba47bcbc12f5c9345`に通常buildから完全に
+分離した`idle-profiler` featureを追加し、clean buildでPicoTetrisを初回計測した。既存の
+cycle、UART、framebuffer、85/85 scenarioは一致した。両core停止の上界は66.692909%だったが、
+activeなUART/PIO/DMA/PWM/I2Cを考慮した保守的なproven-safe下限は0 cycleだった。詳細と再現
+手順は[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
+にある。現在の次工程はOPT0-Aのcost計測、その後OPT0-B観測契約とR5実機相関である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 

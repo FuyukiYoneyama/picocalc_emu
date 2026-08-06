@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** 計画確定、実装未着手  
+**状態:** 計画確定、OPT0-A profiler実装・初回計測済み（cost計測は未完）
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -315,7 +315,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 順序 | 作業 | 状態 | 完了条件 |
 |---:|---|---|---|
 | 0 | R4 CIとR5前性能baseline | **完了** | 3 repo CI合格、10 run baseline固定 |
-| 1 | OPT0-A blocked/safe profiler | 未着手 | 上界・下界・source別理由・`S(K)`・costが取得できる |
+| 1 | OPT0-A blocked/safe profiler | **進行中** | 計測器・初回profile完了。`Cblocked`等のcost計測が残る |
 | 2 | OPT0-B behavior/streaming trace契約 | 未着手 | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | 未着手 | idle fast-forwardとhot pathの期待値を同一尺度で比較する |
 | 4 | OPT1-AまたはOPT1-Bの第一候補 | 未着手 | 正確性gate＋性能gate合格、candidateとしてrecord化 |
@@ -348,6 +348,12 @@ cost model -> OPT1 first candidate -> R5 hardware correlation
 - R3/R4/R5以前のrecordは書き換えない。
 - 性能結果はhost、OS/WSL、CPU affinity、toolchain、run数を必ず伴う。
 - 不採用候補も、理由と検出した不一致を記録し、同じ誤りを再試行しない。
+
+OPT0-Aの初回PicoTetris profileは
+[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
+に保存した。両core停止は全cycleの66.692909%だったが、active sourceを考慮した現在の
+保守的なproven-safe下限は0 cycleである。この結果からCPU停止率を速度向上率へ読み替えず、
+残るcost計測とsource別next-event設計を経て優先順位を決める。
 
 ## 16. 最終判断規則
 

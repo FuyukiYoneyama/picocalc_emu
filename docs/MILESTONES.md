@@ -307,6 +307,14 @@ R5と並行する作業列として行う。OPT0の観測契約と最初のOPT1�
 下界を分離した計測、event horizon、正確性・性能gate、OPT0〜OPT3の実施順序は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)を正典とする。
 
+OPT0-Aの最初の変更単位として、backend `ace66df91f87cfe18c7bec0ba47bcbc12f5c9345`に
+feature-gated Serial idle profilerを実装した。通常buildとschema 8 reportは変更せず、診断build
+だけがschema 1 profileを別出力する。登録済みPicoTetris BINのclean実測では既存契約値を維持し、
+both-blocked上界618,595,844 cycle（66.692909%、139 episodes）に対して、現行の保守的な
+proven-safe下限は0 cycleだった。記録は
+[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
+に保存した。OPT0-Aはcost modelの実測が残るため進行中である。
+
 ## Milestone 0: Canonical BSP — implemented
 
 - 実働プロジェクトを根拠にしたLCD・keyboard・SD/FatFS BSP
