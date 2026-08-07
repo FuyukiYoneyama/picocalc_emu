@@ -1427,6 +1427,125 @@ def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
         add_check(checks, "opt0-a:serial-idle-profile", False, **error_details(error))
 
     try:
+        semantic_path = (
+            root
+            / "firmware-validation/records/opt0-a-20260807-03/idle-profile.json"
+        )
+        expected_semantic_sha = (
+            "03051600a195b05de067be65d264ccfb21238e70498520b32781dbb9ad237b2f"
+        )
+        semantic = load_json(semantic_path)
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(
+            item for item in registry["targets"] if item["id"] == "picotetris-r4"
+        )
+        counters = semantic["counters"]
+        thresholds = semantic["histogram_thresholds_cycles"]
+        blocked = semantic["blocked_lengths"]
+        safe = semantic["proven_safe_lengths"]
+        horizon = semantic["initial_horizon_distances"]
+        source_groups = (
+            semantic["blocker_cycles"],
+            semantic["blocker_episodes"],
+            semantic["stationary_source_cycles"],
+            semantic["stationary_source_episodes"],
+            semantic["exact_bulk_source_cycles"],
+            semantic["exact_bulk_source_episodes"],
+        )
+        expected_sources = {
+            "pio",
+            "dma",
+            "pwm",
+            "systick",
+            "uart",
+            "spi",
+            "i2c",
+            "adc",
+            "timer",
+            "pending_irq",
+        }
+        histograms_valid = all(
+            len(histogram[field]) == 64
+            and all(
+                left >= right
+                for left, right in zip(histogram[field], histogram[field][1:])
+            )
+            for histogram in (blocked, safe, horizon)
+            for field in ("episodes_ge", "cycle_mass_ge")
+        )
+        blocked_episodes = blocked["episodes_ge"][0]
+        aligned = all(
+            (
+                sha256(semantic_path) == expected_semantic_sha,
+                semantic.get("schema_version") == 2,
+                semantic.get("kind") == "rp2040_serial_idle_profile",
+                semantic.get("execution_model") == "Serial",
+                semantic.get("instrumented") is True,
+                semantic.get("valid_for_wall_time") is False,
+                semantic.get("step_quantum") == target["runner"]["quantum"] == 1,
+                semantic.get("stop_reason") == "scenario_done",
+                semantic.get("backend_build")
+                == {
+                    "commit": "9135f5ad09fe86a2330e51cd9a3ee106cb7c9642",
+                    "dirty": False,
+                },
+                semantic.get("firmware", {}).get("sha256")
+                == target["artifacts"]["bin_sha256"],
+                semantic.get("run_cycles") == counters.get("total_master_cycles"),
+                counters.get("total_master_cycles") == 927_528_660,
+                counters.get("core0_executed_cycles") == 308_932_816,
+                counters.get("core1_executed_cycles") == 0,
+                counters.get("both_blocked_cycles") == 618_595_844,
+                counters.get("proven_safe_cycles") == 618_595_844,
+                counters.get("core0_executed_cycles")
+                + counters.get("both_blocked_cycles")
+                == counters.get("total_master_cycles"),
+                blocked_episodes == safe["episodes_ge"][0] == 139,
+                thresholds == [1 << bit for bit in range(64)],
+                histograms_valid,
+                blocked["cycle_mass_ge"][0] == counters["both_blocked_cycles"],
+                safe["cycle_mass_ge"][0] == counters["proven_safe_cycles"],
+                all(set(group) == expected_sources for group in source_groups),
+                all(value == 0 for value in semantic["blocker_cycles"].values()),
+                all(value == 0 for value in semantic["blocker_episodes"].values()),
+                semantic["stationary_source_cycles"]["uart"]
+                == counters["both_blocked_cycles"],
+                semantic["exact_bulk_source_cycles"]["pwm"] == 528_360_292,
+                all(
+                    value <= counters["both_blocked_cycles"]
+                    for value in semantic["stationary_source_cycles"].values()
+                ),
+                all(
+                    value <= blocked_episodes
+                    for value in semantic["stationary_source_episodes"].values()
+                ),
+            )
+        )
+        add_check(
+            checks,
+            "opt0-a:semantic-idle-profile",
+            aligned,
+            backend_commit=semantic.get("backend_build", {}).get("commit"),
+            both_blocked_cycles=counters.get("both_blocked_cycles"),
+            proven_safe_cycles=counters.get("proven_safe_cycles"),
+            profile_sha256=sha256(semantic_path),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(
+            checks, "opt0-a:semantic-idle-profile", False, **error_details(error)
+        )
+
+    try:
         cost_path = (
             root / "firmware-validation/records/opt0-a-20260806-02/idle-cost.json"
         )

@@ -313,7 +313,16 @@ feature-gated Serial idle profilerを実装した。通常buildとschema 8 repor
 both-blocked上界618,595,844 cycle（66.692909%、139 episodes）に対して、現行の保守的な
 proven-safe下限は0 cycleだった。記録は
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
-に保存した。OPT0-Aはcost modelの実測が残るため進行中である。
+に不変証拠として保存した。
+
+この0 cycleはproduction用`is_idle()`が時間変化するworkと静的FIFO/IRQ stateを同一視したためで、
+backend `9135f5ad09fe86a2330e51cd9a3ee106cb7c9642`では通常実行経路を変えずに計測専用の意味分類を
+追加した。schema 2はtemporal/wake blocker、stationary state、existing exact-bulk workを分離する。
+同じPicoTetris回帰で全618,595,844 blocked cycleが観測境界上proven-safeとなり、85/85、cycle、
+UART、framebufferは従来値と一致した。記録は
+[`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
+に保存した。これはvirtual-cycle dispatch削減余地であってwall-time speedupではない。OPT0-Aは
+full horizonとboundary/event cost modelが残るため進行中である。
 
 続いてbackend `5d01c8072c70841336cf48e46bc5aa7b8a669349`に同一release build内で
 blocked step、保守的probe、quiescent bulk advanceを比較する専用microbenchmarkを追加した。

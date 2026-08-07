@@ -35,14 +35,20 @@ R5実機着手前のWSL性能baselineでは、`picotetris-r4`の実時間比中�
 確認した。詳細は[`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)にある。
 OPT0-Aではbackend `ace66df91f87cfe18c7bec0ba47bcbc12f5c9345`に通常buildから完全に
 分離した`idle-profiler` featureを追加し、clean buildでPicoTetrisを初回計測した。既存の
-cycle、UART、framebuffer、85/85 scenarioは一致した。両core停止の上界は66.692909%だったが、
-activeなUART/PIO/DMA/PWM/I2Cを考慮した保守的なproven-safe下限は0 cycleだった。詳細と再現
-手順は[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
-にある。続く部分cost計測では、CPU固定10 sampleで現行blocked step 52.647255 ns、保守的probe
+cycle、UART、framebuffer、85/85 scenarioは一致した。初回schema 1のproven-safe下限0 cycleは、
+production用`is_idle()`が時間変化するworkと静的FIFO/IRQ stateを同一視した結果だったため、
+backend `9135f5ad09fe86a2330e51cd9a3ee106cb7c9642`で計測専用の意味分類へ修正した。通常実行経路は
+変更していない。schema 2再計測では同じ正確性契約を維持し、両core停止618,595,844 cycle
+（66.692909%）すべてが観測境界上proven-safeとなった。初回証拠は
+[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)、
+修正後の証拠は
+[`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
+にある。これは最大3.002364倍のvirtual-cycle dispatch削減余地であってwall-time予測ではない。
+続く部分cost計測では、CPU固定10 sampleで現行blocked step 52.647255 ns、保守的probe
 10.771746 ns、quiescent bulk advance約37.1〜37.8 nsを得た。ただし全source horizonと
 event/IRQ/wake costは未測定で、優先順位決定は保留している。記録は
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
-にある。現在の次工程はOPT0-Aの残るcost/next-event設計、その後OPT0-B観測契約とR5実機相関である。
+にある。現在の次工程はOPT0-Aの残るfull horizon・boundary/event cost設計、その後OPT0-B観測契約とR5実機相関である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 

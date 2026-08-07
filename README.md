@@ -197,13 +197,17 @@ R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotet
 この値を起点とする高速化は、実機相当の正確性を速度より優先します。blocked/safe区間の計測、
 streaming event digest、採否gate、R5前後の暫定・正式採用を含む計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](docs/EMULATOR_OPTIMIZATION_PLAN.md)に固定しました。
-OPT0-Aのfeature-gated profilerと初回PicoTetris計測も完了し、両core停止の上界66.692909%に
-対して、active deviceを考慮した保守的なproven-safe下限は0 cycleでした。これは速度向上率
-ではなく、CPU停止だけではfast-forwardを正当化できないという診断結果です。raw profileと
-再現手順は
+OPT0-Aのfeature-gated profilerと初回PicoTetris計測も完了しました。初回schema 1では
+production用`is_idle()`が静的FIFO/IRQ stateまでblockerに含めるため、両core停止の上界
+66.692909%に対するproven-safe下限が0 cycleになりました。この診断を受けて通常実行経路を
+変えずに計測専用の意味分類を導入し、schema 2では停止中に時間変化するblocker、静的state、
+既存のexact bulk workを分離しました。同じPicoTetris 85/85回帰で618,595,844 blocked cycle
+すべてが観測境界上proven-safeとなり、UART/画面/cycleも従来値と一致しました。初回記録は
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](firmware-validation/records/opt0-a-20260806-01/notes.md)
-にあります。部分costもCPU固定10 sampleで記録しましたが、全source horizonとevent/IRQ/wake
-costは未完です。詳細は
+に不変証拠として保持し、修正後の記録と再現手順は
+[`firmware-validation/records/opt0-a-20260807-03/notes.md`](firmware-validation/records/opt0-a-20260807-03/notes.md)
+にあります。66.692909%はwall-time速度向上率ではありません。部分costもCPU固定10 sampleで
+記録しましたが、全source horizonとevent/IRQ/wake costは未完です。詳細は
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](firmware-validation/records/opt0-a-20260806-02/notes.md)
 にあります。
 

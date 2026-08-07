@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** 計画確定、OPT0-A profile・部分cost計測済み（全source/event costは未完）
+**状態:** 計画確定、OPT0-A semantic profile・部分cost計測済み（full horizon/event costは未完）
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -315,7 +315,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 順序 | 作業 | 状態 | 完了条件 |
 |---:|---|---|---|
 | 0 | R4 CIとR5前性能baseline | **完了** | 3 repo CI合格、10 run baseline固定 |
-| 1 | OPT0-A blocked/safe profiler | **進行中** | profileと部分cost完了。全source horizon・event/routing costが残る |
+| 1 | OPT0-A blocked/safe profiler | **進行中** | schema 2 semantic profileと部分cost完了。full horizon・event/routing costが残る |
 | 2 | OPT0-B behavior/streaming trace契約 | 未着手 | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | 未着手 | idle fast-forwardとhot pathの期待値を同一尺度で比較する |
 | 4 | OPT1-AまたはOPT1-Bの第一候補 | 未着手 | 正確性gate＋性能gate合格、candidateとしてrecord化 |
@@ -352,8 +352,16 @@ cost model -> OPT1 first candidate -> R5 hardware correlation
 OPT0-Aの初回PicoTetris profileは
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
 に保存した。両core停止は全cycleの66.692909%だったが、active sourceを考慮した現在の
-保守的なproven-safe下限は0 cycleである。この結果からCPU停止率を速度向上率へ読み替えず、
-残るcost計測とsource別next-event設計を経て優先順位を決める。
+保守的なproven-safe下限は0 cycleだった。このschema 1結果はproduction用`is_idle()`が静的な
+FIFO/IRQ stateまでblockerとした診断であり、不変証拠として保持する。
+
+計測専用predicateをtemporal/wake blocker、stationary state、existing exact-bulk workへ分離した
+schema 2再計測は
+[`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
+に保存した。同一PicoTetrisの全618,595,844 blocked cycleが観測境界上proven-safeで、85/85、
+cycle、UART、framebufferも一致した。全blocked cycleを除去した場合の3.002364倍はvirtual-cycle
+dispatchの上限比であり、wall-time speedup予測ではない。残るfull horizon、boundary/event、
+IRQ/wake costを同一尺度で測ってからOPT1の優先順位を決める。
 
 同じhost・CPU固定で取得した部分costは
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
