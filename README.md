@@ -191,7 +191,7 @@ PicoCalc実機相関を完了しました。全周辺機器と67/67、`io_errors
 promotedです。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-08-r5-hardware-correlation完了反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-08-opt1-b-promoted反映)が正典です。
 
 R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotetris-r4`を10回測定し、
 実時間比中央値5.874%（仮想3.715秒をwall 63.247秒、約17.025倍遅い）を記録しました。
@@ -230,6 +230,14 @@ one-cycle referenceと一致しました。CPU固定10 runのwall中央値は63.
 となりました。参照音、UART全文、安定した最終PASS画面、SD進捗を新規recordへ保存済みです。
 一部キーの反応品質は到達性試験と分離した未測定課題として明記しています。詳細は
 [`R5_HARDWARE_CORRELATION.md`](docs/R5_HARDWARE_CORRELATION.md)です。
+
+R5後のOPT1-BではSerial fast-pathの判定順を整理し、PIO active時に不要なperipheral predicateを
+短絡しました。cycle処理やevent順序は変えていません。PicoTetrisのbehavior/event全9 domainは
+OPT1-A/R5 backendと一致し、trace OFF 10 runのwall中央値は27.123秒から25.382秒へ6.420%短縮、
+実時間比は14.637%になりました。Template Bの中央値退行は1.357%で3%上限内、公式Helloは
+8 MiB PSRAM全域照合を合格しました。R5相関firmwareも既存preflightとbackend identity以外で
+byte-identicalだったため、既存実機recordとの同値性によりOPT1-Bをpromotedとします。詳細は
+[`OPT1_B_SERIAL_FAST_PATH.md`](docs/OPT1_B_SERIAL_FAST_PATH.md)です。次はOPT2 exact event batchingです。
 
 ## 読む順番
 
@@ -576,6 +584,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
 - [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
+- [OPT1-B serial fast-path gate](docs/OPT1_B_SERIAL_FAST_PATH.md) — event完全一致、6.420%追加短縮、代表workloadとR5同値性
 - [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件

@@ -6,7 +6,7 @@
     "branch": "main",
     "commit": "612b48510452d4012e4ac6639960ca3983b48f66",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This is the current post-R5 capability snapshot; historical targets retain their own exact backend pins in the target registry. Backend 612b485 keeps the OPT1-A execution model and adds explicit raw keyboard events for the R5 scenario. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. R5 physical-device correlation passed and OPT1-A is promoted."
+    "note": "Source is never vendored here. This is the current post-R5 and OPT1-B capability snapshot; historical targets retain their own exact backend pins in the target registry. Backend e985a9d adds the promoted serial fast-path predicate optimization to the OPT1-A/R5 execution model. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. R5 physical-device correlation passed; OPT1-A and the exact-equivalent OPT1-B are promoted."
   },
   "supported": [
     {
@@ -165,6 +165,13 @@
       "detail": "Target picotetris-opt1a revision 3 preserves the registered PicoTetris firmware, scenario, 927528660 cycles, UART, RGB565 framebuffer and 85-step timeline on backend c68c58f6c37fb31eb9313566c8b16883db9063b6. Behavior trace schema 2 separates UART guest-byte events from host diagnostic draining and preserves all nine event-domain counts and hashes against a one-cycle reference. Ten trace-off runs reduced median wall time from 63.2470 s to 27.1229 s, a 2.3319x speedup, while deterministic report, UART and PNG artifacts remained identical. R5 then correlated the same registered firmware family on physical PicoCalc hardware, so OPT1-A is promoted.",
       "limitation": "Promotion applies to the exactness and workloads covered by OPT1-A and R5; later batching or CPU optimizations require their own correctness, determinism, performance and hardware-correlation decisions.",
       "since_gate": "R5"
+    },
+    {
+      "id": "serial-fast-path-gate",
+      "what": "Short-circuit read-only Serial fast-path predicates after active PIO has already selected the slow path",
+      "detail": "Target picotetris-opt1b revision 5 pins backend e985a9d7ecb51ef760506a105edd34e31cf9b5f1. Against the promoted OPT1-A/R5 backend, PicoTetris preserves 927528660 cycles, the 85-step timeline, UART, framebuffer, behavior SHA-256, 173498680 streaming events and every count/hash in all nine domains. Ten trace-off runs reduced median wall time from 27.122874 s to 25.381594 s (6.419972%) and raised real-time ratio to 14.636593%. Template B stayed within the 3% non-regression gate, official Hello passed an 8 MiB PSRAM verification, and the R5 correlation firmware reproduced the immutable emulator preflight except for backend identity. Existing physical evidence therefore transfers through exact equivalence and OPT1-B is promoted.",
+      "limitation": "The optimization only changes predicate evaluation order and removes a duplicate DMA idle query. PIO/device edge batching remains OPT2 and must pass its own exactness, performance and hardware-correlation decision.",
+      "since_gate": "OPT1-B"
     },
     {
       "id": "host-backend",

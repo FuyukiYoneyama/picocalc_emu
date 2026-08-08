@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A promoted・R5 PicoCalc実機相関完了。次は残るOPT1候補またはOPT2
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。次はOPT2
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -245,6 +245,18 @@ event horizonは少なくとも次の最小値である。
 
 PIO、PSRAM、LCDのedge順序を変えるまとめ処理はOPT1-Bへ混ぜず、OPT2で扱う。
 
+最初のOPT1-B変更はbackend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`で実装した。
+PIO idleを最初に評価し、activeなら結果を変えない残りのread-only predicateを短絡する。また、
+`all_peripherals_idle()`に含まれるDMAの重複判定を除いた。tick、edge、IRQ、event horizonの順序は
+変更していない。
+
+PicoTetrisはbaselineとbehavior SHA、173,498,680 event、全9 domain、cycle、timeline、UART、
+framebufferが一致した。trace OFF 10 runのwall中央値は27.122874秒から25.381594秒へ
+6.419972%短縮した。Template Bの3 run中央値退行は1.357247%で3%上限内、公式Helloは95億cycleと
+8 MiB PSRAM全域照合を合格した。R5相関firmwareでも既存preflightと同じ観測契約を再現し、
+既存hardware evidenceへの同値性を確認したためpromotedとする。詳細は
+[`OPT1_B_SERIAL_FAST_PATH.md`](OPT1_B_SERIAL_FAST_PATH.md)にある。
+
 ## 9. OPT2: exact event batching
 
 OPT1とR5の相関後、CPUがrunningの区間にもevent horizon方式を広げる。batchは次の境界で必ず
@@ -335,8 +347,8 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
-| 6 | 残るOPT1候補 | 次候補 | 独立変更単位で正確性・性能gate合格 |
-| 7 | OPT2 exact event batching | R5完了後 | 全boundary eventのcycle/order一致 |
+| 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
+| 7 | OPT2 exact event batching | **次候補** | 全boundary eventのcycle/order一致 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。
@@ -348,10 +360,10 @@ R4 + baseline
 OPT0 profiler + exactness contract
       |
       v
-cost model -> OPT1 first candidate -> R5 hardware correlation
-                                      |
-                                      v
-                         remaining OPT1 -> OPT2 -> OPT3
+cost model -> OPT1-A -> R5 hardware correlation
+                            |
+                            v
+                         OPT1-B -> OPT2 -> OPT3
 ```
 
 ## 15. 記録と変更単位

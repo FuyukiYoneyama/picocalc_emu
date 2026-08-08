@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "record_id": "opt1-b-20260808-01",
+  "title": "OPT1-B serial fast-path gate validation",
+  "roadmap_package": "OPT1-B",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "contract_sha256": "f3e8c251f6f9d9e6da0c8e2e43b474890db740474ac0b6a762927f316a1afc6f"
+  },
+  "baseline": {
+    "backend_commit": "612b48510452d4012e4ac6639960ca3983b48f66",
+    "optimization": "OPT1-A promoted plus R5 raw-key support",
+    "hardware_record": "firmware-validation/records/r5-hardware-20260808-01/record.json"
+  },
+  "exactness": {
+    "target": "picotetris-opt1b",
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "backend_dirty": false,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "runs": 10,
+    "passes": 10,
+    "all_normal_reports_identical": true,
+    "all_uart_identical": true,
+    "all_snapshots_identical": true,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "steps_passed": 85,
+    "steps_total": 85,
+    "normalized_report_sha256": "6c63ab48729684f8391498ff1e1b6486c3a3e19db62c191f0b6637ee29d2d917",
+    "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "snapshot_png_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "behavior_contract": {
+    "schema_version": 2,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "total_events": 173498680,
+    "domains": 9,
+    "baseline_projection_byte_identical": true,
+    "all_domain_counts_and_hashes_identical": true,
+    "trace_valid_for_wall_time": false
+  },
+  "performance": {
+    "trace_enabled": false,
+    "warmup_runs_excluded": 1,
+    "measured_runs": 10,
+    "measurement_cpu": 0,
+    "baseline_wall_seconds_median": 27.122874483,
+    "candidate_wall_seconds_median": 25.38159353,
+    "wall_time_reduction_percent": 6.419972020632974,
+    "speedup_ratio": 1.068604083149542,
+    "baseline_real_time_percent_median": 13.696960105316276,
+    "candidate_real_time_percent_median": 14.636592963176707,
+    "candidate_cycles_per_wall_second_median": 36543363.27887139,
+    "candidate_wall_seconds_mean": 25.5360049402,
+    "candidate_wall_seconds_mean_ci95": [25.153603154319146, 25.918406726080857]
+  },
+  "additional_workloads": {
+    "picocalc_template_b": {
+      "firmware_sha256": "1e6abac252c28a349d172254c0bc08976786023597a1c44002bfcb1bfbd02a3d",
+      "uf2_sha256": "1ab0d16f4f05207934f6d63b77d2ae5437231ee3762381b82505a3d4acefc757",
+      "runs_per_backend": 3,
+      "baseline_wall_seconds": [20.48, 20.63, 20.83],
+      "candidate_wall_seconds": [20.78, 20.91, 21.2],
+      "baseline_median": 20.63,
+      "candidate_median": 20.91,
+      "median_regression_percent": 1.357246728065929,
+      "maximum_allowed_regression_percent": 3.0,
+      "candidate_result": "pass",
+      "uart_sha256": "b38268edf38e20698d037106964a9ac764fdaca3319078234ff6a200199171e0",
+      "framebuffer_rgb565_sha256": "d22729c05ef814b473c90d97b54d9074d8761bf0bc94c0201c6d2df393d5e71b",
+      "behavior_report_without_backend_byte_identical": true
+    },
+    "official_picocalc_hello": {
+      "firmware_sha256": "925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086",
+      "uf2_sha256": "c0ac7577457c11aa6abbadc0d8ab8726ebf302d88ddc6c1f26879790371fca01",
+      "cycles": 9500000000,
+      "candidate_result": "pass",
+      "wall_seconds": 622.51,
+      "wall_time_is_formal_benchmark": false,
+      "psram_matched": 8388608,
+      "psram_mismatched": 0,
+      "uart_sha256": "5559f2f1de9dc7517bd99044d590fb4b0bed32a6aa50f9018e3d74f7ffeec56f",
+      "framebuffer_rgb565_sha256": "a7351e954d8699e876c0529de72ce109ca48be00be12e1324f6a264d86860b47"
+    }
+  },
+  "r5_equivalence": {
+    "target": "picotetris-r5",
+    "firmware_sha256": "8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0",
+    "candidate_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "verdict": "pass",
+    "steps_passed": 5,
+    "steps_total": 5,
+    "cycles": 9879987214,
+    "elapsed_us": 39525002,
+    "normalized_report_sha256": "8666887a44e71b4dc5102bb03eea80dc2e22a32c3c338c226786df4882dddaf7",
+    "timeline_sha256": "d2bfa45832408c909460cd7579d211b0c05730751549d76617a9d36662a16d19",
+    "uart_sha256": "202f5b83617147a1536b4729c33a31168072001169c104f2dbffcd768251bb83",
+    "framebuffer_rgb565_sha256": "3f630e04d2fb2c6c9fcd8446052d48d03a4a00aab797d7aef21e67a459830abe",
+    "report_without_backend_byte_identical_to_r5_preflight": true,
+    "physical_evidence_reused": "firmware-validation/records/r5-hardware-20260808-01/record.json"
+  },
+  "artifacts": {
+    "normal_report": "run-report.json",
+    "behavior_trace": "behavior-trace.json",
+    "realtime_performance": "realtime-performance.json",
+    "template_b_report": "template-b-report.json",
+    "hello_report": "hello-report.json",
+    "r5_equivalence_report": "r5-equivalence-report.json",
+    "notes": "notes.md"
+  },
+  "hardware_correlation_completed": true,
+  "hardware_correlation_method": "transitive exact equivalence to the immutable R5 emulator preflight and physical-device record",
+  "optimization_status": "promoted"
+}

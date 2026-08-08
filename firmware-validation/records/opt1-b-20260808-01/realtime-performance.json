@@ -1,0 +1,266 @@
+{
+  "determinism": {
+    "all_reports_identical": true,
+    "all_snapshots_identical": true,
+    "all_uart_identical": true,
+    "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+    "snapshot_sha256": {
+      "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+    },
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+  },
+  "environment": {
+    "cpu": {
+      "logical_cpus": 12,
+      "model": "AMD Ryzen 5 5600X 6-Core Processor",
+      "reported_mhz": 3693.1
+    },
+    "cpu_affinity_before": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "measurement_cpu": 0,
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39"
+  },
+  "measurements": [
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 34290840.72910208,
+      "emulated_us": 3715000,
+      "real_time_percent": 13.734397523480753,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 1,
+      "slowdown": 7.28098919730821,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 27048874868,
+      "wall_seconds": 27.048874868
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36624265.84117672,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.668996600058861,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 2,
+      "slowdown": 6.817098860026918,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25325522265,
+      "wall_seconds": 25.325522265
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36610815.907615215,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.663609542457753,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 3,
+      "slowdown": 6.819603298250336,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25334826253,
+      "wall_seconds": 25.334826253
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36615263.63689861,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.665390976822035,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 4,
+      "slowdown": 6.818774907402424,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25331748781,
+      "wall_seconds": 25.331748781
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36529527.266577676,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.631051270732275,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 5,
+      "slowdown": 6.834778865141319,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25391203484,
+      "wall_seconds": 25.391203484
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36440182.2370878,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.595266200268266,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 6,
+      "slowdown": 6.851536561776582,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25453458327,
+      "wall_seconds": 25.453458327
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36557199.291165106,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.642134655621138,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 7,
+      "slowdown": 6.829605269448184,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25371983576,
+      "wall_seconds": 25.371983576
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36714503.83217077,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.70513932545377,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 8,
+      "slowdown": 6.800343593270525,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25263276449,
+      "wall_seconds": 25.263276449
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36507758.93454838,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.622332472383897,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 9,
+      "slowdown": 6.838854210767161,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25406343393,
+      "wall_seconds": 25.406343393
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 36469764.325752944,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.60711461683267,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 10,
+      "slowdown": 6.845979005652759,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25432812006,
+      "wall_seconds": 25.432812006
+    }
+  ],
+  "method": {
+    "build_time_included": false,
+    "measured_runs": 10,
+    "runner_startup_and_artifact_writes_included": true,
+    "target_validation_included": false,
+    "timer": "time.perf_counter_ns around the release runner process",
+    "warmup_runs_excluded": 1
+  },
+  "metric": "emulated-time-to-wall-time",
+  "schema_version": 1,
+  "statistics": {
+    "emulated_cycles_per_wall_second": {
+      "maximum": 36714503.83217077,
+      "mean": 36336012.20020953,
+      "mean_ci95": [
+        35818665.2171828,
+        36853359.183236256
+      ],
+      "median": 36543363.27887139,
+      "minimum": 34290840.72910208,
+      "sample_stddev": 723201.2663050973
+    },
+    "real_time_percent": {
+      "maximum": 14.70513932545377,
+      "mean": 14.553543318411142,
+      "mean_ci95": [
+        14.346332034832658,
+        14.760754601989627
+      ],
+      "median": 14.636592963176707,
+      "minimum": 13.734397523480753,
+      "sample_stddev": 0.28966142181778415
+    },
+    "slowdown": {
+      "maximum": 7.28098919730821,
+      "mean": 6.873756376904442,
+      "mean_ci95": [
+        6.770821845038801,
+        6.976690908770083
+      ],
+      "median": 6.832192067294751,
+      "minimum": 6.800343593270525,
+      "sample_stddev": 0.1438925638576831
+    },
+    "wall_seconds": {
+      "maximum": 27.048874868,
+      "mean": 25.5360049402,
+      "mean_ci95": [
+        25.153603154319146,
+        25.918406726080857
+      ],
+      "median": 25.38159353,
+      "minimum": 25.263276449,
+      "sample_stddev": 0.5345608747312929
+    }
+  },
+  "target": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "cycles": 927528660,
+    "emulated_us": 3715000,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "runner_sha256": "0e955f6fbaad67fe2d1a9dbf79f3a1930ce0b164af8aa526919b83f5c0708aa2",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "step_quantum": 1
+  },
+  "theory": {
+    "ceiling_note": "An unattainable instruction-count lower bound, not a performance prediction.",
+    "definition": "real_time_percent = emulated_seconds / wall_seconds * 100",
+    "host_cycles_per_dispatch_budget_at_100_percent": 14.791851822670361,
+    "host_reported_hz": 3693100000.0,
+    "ideal_wall_seconds": 3.715,
+    "one_host_cycle_per_dispatch_ceiling_percent": 1479.1851822670362,
+    "real_time_target_percent": 100.0,
+    "required_emulated_cycles_per_wall_second": 249671240.91520864,
+    "step_quantum": 1
+  }
+}

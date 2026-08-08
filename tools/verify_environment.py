@@ -1340,6 +1340,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt0_idle_profile(checks, root)
     verify_opt0_behavior_contract(checks, root)
     verify_opt1a_exact_idle_fast_forward(checks, root)
+    verify_opt1b_serial_fast_path(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -1529,6 +1530,163 @@ def verify_opt1a_exact_idle_fast_forward(checks: List[Check], root: Path) -> Non
         add_check(checks, name, aligned, target=target.get("id"), backend_commit=exact.get("backend_commit"),
                   behavior_sha256=behavior.get("behavior_sha256"), event_sha256=trace.get("sha256"),
                   total_events=trace.get("total_events"), measured_runs=len(performance.get("measurements", [])))
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, StopIteration, json.JSONDecodeError) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt1b_serial_fast_path(checks: List[Check], root: Path) -> None:
+    """Verify the immutable promoted OPT1-B record and cross-artifact digests."""
+    name = "opt1-b:serial-fast-path"
+    try:
+        record_root = root / "firmware-validation/records/opt1-b-20260808-01"
+        record = load_json(record_root / "record.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "realtime-performance.json")
+        template_report = load_json(record_root / "template-b-report.json")
+        r5_equivalence = load_json(record_root / "r5-equivalence-report.json")
+        hello_report = load_json(record_root / "hello-report.json")
+        opt1a_root = root / "firmware-validation/records/opt1-a-20260808-01"
+        opt1a_behavior = load_json(opt1a_root / "behavior-trace.json")
+        opt1a_template_report = load_json(opt1a_root / "template-b-report.json")
+        r5_preflight_report = load_json(
+            root / "firmware-validation/records/r5-preflight-20260808-01/run-report.json"
+        )
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+        exact = record["exactness"]
+        contract = record["target"]
+        behavior_contract = record["behavior_contract"]
+        template = record["additional_workloads"]["picocalc_template_b"]
+        hello = record["additional_workloads"]["official_picocalc_hello"]
+        trace = behavior["behavior_projection"]["event_trace"]
+
+        projection = json.dumps(
+            behavior["behavior_projection"], ensure_ascii=False, sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        wall_seconds = performance.get("statistics", {}).get("wall_seconds", {})
+        wall_seconds_median = wall_seconds.get("median", performance.get("statistics", {}).get("median"))
+        r5_equivalence_reference = record.get("r5_equivalence", {})
+        without_backend = lambda value: {
+            key: item for key, item in value.items()
+            if key not in {"backend_commit", "backend_build"}
+        }
+        aligned = all((
+            record.get("record_id") == "opt1-b-20260808-01",
+            record.get("result") == "pass",
+            record.get("optimization_status") == "promoted",
+            record.get("hardware_correlation_completed") is True,
+            target.get("id") == contract.get("id") == exact.get("target") == "picotetris-opt1b",
+            target.get("revision") == contract.get("revision") == 5,
+            contract.get("contract_sha256")
+            == picocalc.firmware_target_contract_sha256(target)
+            == "f3e8c251f6f9d9e6da0c8e2e43b474890db740474ac0b6a762927f316a1afc6f",
+            target.get("backend", {}).get("accepted") == exact.get("backend_commit") == "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+            report.get("backend_build", {}).get("commit") == exact.get("backend_commit"),
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("verdict", {}).get("status") == "pass",
+            report.get("cycles") == exact.get("cycles") == 927528660,
+            report.get("elapsed_us") == exact.get("elapsed_us") == 3715000,
+            report.get("uart", {}).get("sha256") == exact.get("uart_sha256"),
+            report.get("framebuffer", {}).get("rgb565_sha256")
+            == exact.get("framebuffer_rgb565_sha256"),
+            report.get("scenario", {}).get("status") == "pass",
+            report.get("scenario", {}).get("steps_total") == 85,
+            len(report.get("scenario", {}).get("steps", [])) == exact.get("steps_total") == 85,
+            picocalc.normalized_json_sha256(report) == exact.get("normalized_report_sha256"),
+            picocalc.normalized_json_sha256(report.get("scenario", {}).get("steps"))
+            == exact.get("timeline_sha256"),
+            behavior.get("schema_version") == 1,
+            trace.get("schema_version") == behavior_contract.get("schema_version") == 2,
+            behavior_contract.get("behavior_sha256")
+            == hashlib.sha256(projection).hexdigest()
+            == behavior.get("behavior_sha256"),
+            behavior.get("behavior_projection")
+            == opt1a_behavior.get("behavior_projection"),
+            trace.get("sha256") == behavior_contract.get("event_stream_sha256"),
+            trace.get("total_events") == behavior_contract.get("total_events"),
+            len(trace.get("domains", [])) == behavior_contract.get("domains") == 9,
+            len(performance.get("measurements", []))
+            == exact.get("runs")
+            == record.get("performance", {}).get("measured_runs")
+            == 10,
+            performance.get("method", {}).get("warmup_runs_excluded")
+            == record.get("performance", {}).get("warmup_runs_excluded")
+            == 1,
+            performance.get("determinism", {}).get("all_reports_identical") is True,
+            performance.get("determinism", {}).get("all_uart_identical") is True,
+            performance.get("determinism", {}).get("all_snapshots_identical") is True,
+            wall_seconds_median
+            == record.get("performance", {}).get("candidate_wall_seconds_median"),
+            record.get("performance", {}).get("wall_time_reduction_percent")
+            == 6.419972020632974,
+            template.get("median_regression_percent")
+            <= template.get("maximum_allowed_regression_percent", math.inf),
+            template.get("maximum_allowed_regression_percent", math.inf)
+            <= 3.0,
+            template.get("behavior_report_without_backend_byte_identical") is True,
+            record.get("r5_equivalence", {}).get("report_without_backend_byte_identical_to_r5_preflight")
+            is True,
+            without_backend(r5_equivalence) == without_backend(r5_preflight_report),
+            hello.get("psram_matched") == 8388608,
+            hello.get("psram_mismatched") == 0,
+            hello_report.get("verdict", {}).get("status") == "pass",
+            hello_report.get("backend_build", {}).get("commit") == exact.get("backend_commit"),
+            hello_report.get("backend_build", {}).get("dirty") is False,
+            hello_report.get("psram", {}).get("verify", {}).get("matched")
+            == hello.get("psram_matched"),
+            hello_report.get("psram", {}).get("verify", {}).get("mismatched")
+            == hello.get("psram_mismatched"),
+            hello_report.get("uart", {}).get("sha256") == hello.get("uart_sha256"),
+            hello_report.get("framebuffer", {}).get("rgb565_sha256")
+            == hello.get("framebuffer_rgb565_sha256"),
+            all(
+                (
+                    (record_root / path).is_file()
+                    for path in record.get("artifacts", {}).values()
+                )
+            ),
+            r5_equivalence.get("verdict", {}).get("status") == "pass",
+            r5_equivalence.get("backend_commit") == exact.get("backend_commit"),
+            r5_equivalence.get("firmware", {}).get("sha256")
+            == record.get("r5_equivalence", {}).get("firmware_sha256"),
+            record.get("r5_equivalence", {}).get("target") == "picotetris-r5",
+            r5_equivalence.get("cycles") == r5_equivalence_reference.get("cycles"),
+            r5_equivalence.get("elapsed_us") == r5_equivalence_reference.get("elapsed_us"),
+            r5_equivalence.get("uart", {}).get("sha256")
+            == r5_equivalence_reference.get("uart_sha256"),
+            r5_equivalence.get("framebuffer", {}).get("rgb565_sha256")
+            == r5_equivalence_reference.get("framebuffer_rgb565_sha256"),
+            r5_equivalence.get("scenario", {}).get("status") == "pass",
+            r5_equivalence.get("scenario", {}).get("steps_total")
+            == r5_equivalence_reference.get("steps_total"),
+            r5_equivalence.get("backend_build", {}).get("dirty") is False,
+            template_report.get("backend_build", {}).get("commit")
+            == exact.get("backend_commit"),
+            template_report.get("backend_build", {}).get("dirty") is False,
+            template.get("firmware_sha256")
+            == template_report.get("firmware", {}).get("sha256"),
+            template.get("candidate_result") == "pass",
+            template_report.get("schema_version") == 8,
+            template_report.get("verdict", {}).get("status") == "pass",
+            template_report.get("uart", {}).get("sha256") == template.get("uart_sha256"),
+            template_report.get("framebuffer", {}).get("rgb565_sha256")
+            == template.get("framebuffer_rgb565_sha256"),
+            template_report.get("stop_reason") == "cycle_limit",
+            without_backend(template_report) == without_backend(opt1a_template_report),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target.get("id"),
+            backend_commit=exact.get("backend_commit"),
+            reduction_percent=record.get("performance", {}).get("wall_time_reduction_percent"),
+            measured_runs=len(performance.get("measurements", [])),
+        )
     except (OSError, UnicodeError, ValueError, TypeError, KeyError, StopIteration, json.JSONDecodeError) as error:
         add_check(checks, name, False, **error_details(error))
 

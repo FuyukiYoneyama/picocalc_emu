@@ -99,3 +99,17 @@ timelineをtargetへpinしている。evidenceは
 preflight recordと上記attestationは当時のcandidate時点証拠として変更しない。
 このR5相関が証明するkeyboard範囲は67キーのpress/release到達性であり、Caps状態遷移、終了時
 Caps off、操作UXは含まない。
+
+## OPT1-B PicoTetris revision 5
+
+`picotetris-opt1b` revision 5は時間順で`picotetris-r5`をsupersedeし、製品PicoTetrisの固定BINと
+scenarioへ戻してserial fast-path gateを検証する。backendは
+`e985a9d7ecb51ef760506a105edd34e31cf9b5f1`、candidate固有normalized reportは
+`6c63ab48729684f8391498ff1e1b6486c3a3e19db62c191f0b6637ee29d2d917`である。R5の診断targetや
+hardware recordを上書きしない。
+
+新規record `firmware-validation/records/opt1-b-20260808-01/record.json`は、OPT1-A/R5 backendとの
+behavior/event全domain一致、trace OFF 10 run性能、Template B、公式Hello、R5相関firmwareの
+同値性を固定する。attestationは`firmware-validation/validations/picotetris-opt1b-r5.json`である。
+新しい実機操作を省略する根拠は速度だけではなく、candidateが既存の実機相関済みR5 emulator
+contractを完全再現したことにある。

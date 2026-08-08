@@ -101,6 +101,17 @@ audio経路、line-clear、game-over、restart、公式FW由来67キーを全自
 高速化は引き続き実機相当の正確性を最優先する。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 
+R5後のOPT1-Bはbackend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`でSerial fast-path gateを
+短絡評価する。PIO active時だけ結果を変えない後続predicateを省き、重複DMA判定を除いた。
+PicoTetrisのbehavior SHA、173,498,680 event、全9 domain、cycle、timeline、UART、framebufferは
+baselineと一致した。trace OFF 10 runのwall中央値は27.122874秒から25.381594秒へ6.419972%短縮、
+実時間比は14.636593%となった。Template Bは3 run中央値1.357247%退行で3%以内、公式Helloは
+95億cycleと8 MiB PSRAM全域照合を合格した。R5相関firmwareも既存preflightとbackend identity
+以外でbyte-identicalであり、既存hardware recordとの推移的同値性を根拠にpromotedである。
+証拠は[`OPT1_B_SERIAL_FAST_PATH.md`](OPT1_B_SERIAL_FAST_PATH.md)と
+[`firmware-validation/records/opt1-b-20260808-01/`](../firmware-validation/records/opt1-b-20260808-01/)
+にある。次の高速化作業はOPT2 exact event batchingである。
+
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
