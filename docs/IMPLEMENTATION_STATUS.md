@@ -110,7 +110,11 @@ baselineと一致した。trace OFF 10 runのwall中央値は27.122874秒から2
 以外でbyte-identicalであり、既存hardware recordとの推移的同値性を根拠にpromotedである。
 証拠は[`OPT1_B_SERIAL_FAST_PATH.md`](OPT1_B_SERIAL_FAST_PATH.md)と
 [`firmware-validation/records/opt1-b-20260808-01/`](../firmware-validation/records/opt1-b-20260808-01/)
-にある。次の高速化作業はOPT2 exact event batchingである。
+にある。OPT2 exact event batchingは継続中である。最初のdispatcher-only候補は、途中で
+`clk_sys`変更をbatch境界に含めない誤りをbehavior/event契約が検出した。境界修正後は全eventが
+一致したが、同時A/B中央値がOPT1-B `26.16 s`、候補`26.54 s`で約1.45%遅かったためrevertした。
+active targetは変更しておらず、次候補は実際のper-cycle orchestrationを減らせるevent horizonを
+先に測定してから設計する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

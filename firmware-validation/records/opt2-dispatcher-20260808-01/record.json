@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-dispatcher-20260808-01",
+  "title": "OPT2 dispatcher-only candidate investigation",
+  "roadmap_package": "OPT2",
+  "result": "rejected",
+  "optimization_status": "reverted",
+  "opt2_overall_status": "incomplete",
+  "scope": "outer dispatcher aggregation only; hardware quantum remains 1",
+  "baseline": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "target": "picotetris-opt1b",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "candidate": {
+    "backend_commit": "d43693cf26f7f947b389ea9f673995a686fda602",
+    "max_dispatch_batch_cycles": 64,
+    "hardware_quantum": 1,
+    "revert_commit": "9a7387c9aca50aba6434323d2d5e24566a6e9436"
+  },
+  "initial_exactness_failure": {
+    "cause": "batch crossed a clk_sys change before the outer runner rebased VirtualClock",
+    "baseline_cycles": 927528660,
+    "candidate_cycles": 927527264,
+    "baseline_first_scenario_cycle": 127528660,
+    "candidate_first_scenario_cycle": 127527263,
+    "baseline_total_events": 173498680,
+    "candidate_total_events": 173498675,
+    "candidate_behavior_sha256": "ba2f89a0b0e20116e095428d23efaf05568a51f685b0f41721c870d7fae467fc",
+    "candidate_event_stream_sha256": "cfe9ca017ae8d26431b2379171215ea6ea195c1dd3206f65ffa94cd132a16b51",
+    "uart_and_final_framebuffer_matched": true
+  },
+  "corrected_exactness": {
+    "projection_byte_identical_except_backend_identity": true,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "steps_passed": 85,
+    "steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "total_events": 173498680,
+    "all_nine_domain_counts_and_hashes_identical": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+  },
+  "performance_screening": {
+    "trace_enabled": false,
+    "measurement_cpu": 0,
+    "paired_runs": 3,
+    "baseline_wall_seconds": [27.30, 24.99, 26.16],
+    "candidate_wall_seconds": [26.71, 26.54, 26.39],
+    "baseline_median_wall_seconds": 26.16,
+    "candidate_median_wall_seconds": 26.54,
+    "candidate_median_regression_percent": 1.4525993883791993,
+    "promotion_improvement_threshold_percent": 5.0,
+    "formal_ten_run_measurement_performed": false
+  },
+  "decision": {
+    "accepted": false,
+    "reason": "exact after correction, but no turnaround improvement and a measured median regression",
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "hardware_correlation_required": false
+  },
+  "artifacts": {
+    "notes": "notes.md"
+  }
+}

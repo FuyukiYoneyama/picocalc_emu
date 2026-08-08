@@ -237,7 +237,9 @@ OPT1-A/R5 backendと一致し、trace OFF 10 runのwall中央値は27.123秒か�
 実時間比は14.637%になりました。Template Bの中央値退行は1.357%で3%上限内、公式Helloは
 8 MiB PSRAM全域照合を合格しました。R5相関firmwareも既存preflightとbackend identity以外で
 byte-identicalだったため、既存実機recordとの同値性によりOPT1-Bをpromotedとします。詳細は
-[`OPT1_B_SERIAL_FAST_PATH.md`](docs/OPT1_B_SERIAL_FAST_PATH.md)です。次はOPT2 exact event batchingです。
+[`OPT1_B_SERIAL_FAST_PATH.md`](docs/OPT1_B_SERIAL_FAST_PATH.md)です。OPT2 exact event batchingは
+継続中です。最初のdispatcher-only候補は全event一致まで修正したものの、同時A/Bで約1.45%遅く、
+不採用としてrevertしました。active targetはOPT1-Bのままです。
 
 ## 読む順番
 
