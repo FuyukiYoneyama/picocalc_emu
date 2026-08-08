@@ -87,9 +87,12 @@ R5の実装とemulator preflightも完了した。PicoTetris source
 `PicoTetris_R5.bin`（SHA-256 `8b4ac5c...adc0`）とUF2（`0e990cff...4f1`）を得た。
 登録target `picotetris-r5` revision 4はbackend `612b485...f66`で、LCD 100回、PSRAM、FAT32 SD、
 audio経路、line-clear、game-over、restart、公式FW由来67キーを全自動または回復可能な入力で
-合格した。キーは任意順、個別retry、timeoutなし、SD progress resumeであり、途中写真を要求しない。
+合格した。`CAPS`以外の66キーは任意順・個別retry・timeoutなし・SD progress resumeであり、
+`CAPS`は途中で押さず`66/67`の後に最後に押す必須操作とする。途中写真は要求しない。
 同じUF2のPicoCalc実機セッションも完了した。LCD、PSRAM、FAT32、audio、PicoTetris、67/67キーが
 `io_errors=0 progress=saved overall=pass`で一致し、最終写真、参照音、CRC-validなSD進捗も固定した。
+67/67が証明するのは全物理キーのpress/release到達性であり、Caps状態遷移、終了時Caps off、
+操作UXはこのR5合格範囲に含めない。
 操作・結果の正典は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)、preflight証拠は
 [`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
 、実機証拠は

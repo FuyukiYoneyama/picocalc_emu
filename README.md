@@ -223,8 +223,9 @@ one-cycle referenceと一致しました。CPU固定10 runのwall中央値は63.
 57.116%短縮し、実時間比中央値は5.874%から13.697%へ向上しました。詳細と不変証拠は
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にあります。
 この結果はR5前はcandidateでした。R5 preflightでは別々の製品BIN/診断BINを使わず、同じ
-`PicoTetris_R5` BIN/UF2に自動LCD/PSRAM/FAT32/audio/line-clear/game-over/restartと、任意順・
-個別retry・SD resume可能な公式67キー診断を統合しました。エミュレーターは67/67と最終verdictを
+`PicoTetris_R5` BIN/UF2に自動LCD/PSRAM/FAT32/audio/line-clear/game-over/restartと、`CAPS`を
+最後の必須操作とする個別retry・SD resume可能な公式67キー診断を統合しました。`CAPS`以外の
+66キーは任意順ですが、`CAPS`は途中で押さず`66/67`の後に押す必要があります。エミュレーターは67/67と最終verdictを
 合格し、PicoCalc実機でも同一UF2が全項目pass、67/67、`io_errors=0 progress=saved overall=pass`
 となりました。参照音、UART全文、安定した最終PASS画面、SD進捗を新規recordへ保存済みです。
 一部キーの反応品質は到達性試験と分離した未測定課題として明記しています。詳細は

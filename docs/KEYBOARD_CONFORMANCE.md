@@ -55,3 +55,10 @@ R1はRP2040 consumerから観測できるproducer契約を固定します。STM3
 実時間lifecycleは実行していません。物理mapとstate変換は純粋なtransition APIで検証し、scenarioの
 仮想時計に結合する作業が必要になった場合は、論理注入とは別schemaで追加します。またI2C bus速度、
 NACK、timeout、short transferの故障注入も今回のproducer register conformance外です。
+
+R5相関firmwareの67キー診断は、このR1 producer conformance全体を実機で再試験するものでは
+ありません。R5のscenarioはraw FIFO eventを投入し、実機recordは全物理キーのpress/release
+到達性を確認しますが、診断appはstatus registerのCaps bitを利用しません。そのためCaps toggle、
+後続英字の大小文字変換、開始・終了時のCaps状態はR5の合格主張に含めません。R5 artifact固有の
+必須操作条件と既知の表示上の制約は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)
+を参照してください。

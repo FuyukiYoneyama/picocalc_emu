@@ -83,7 +83,7 @@ BIN/UF2をエミュレーターとPicoCalc実機の両方で使う。
 
 source `9a40a905...`のclean clone build 2回はBIN `8b4ac5c...adc0`とUF2
 `0e990cff...4f1`で一致した。emulator preflightでは自動LCD/PSRAM/FAT32/audio/PicoTetris検査と、
-任意順・個別retry可能な67キーscenarioが5/5で合格した。UART、framebuffer、normalized report、
+`CAPS`を最後に置いたraw eventによる67キーscenarioが5/5で合格した。UART、framebuffer、normalized report、
 timelineをtargetへpinしている。evidenceは
 `firmware-validation/records/r5-preflight-20260808-01/record.json`、attestationは
 `firmware-validation/validations/picotetris-r5-r4.json`である。
@@ -97,3 +97,5 @@ timelineをtargetへpinしている。evidenceは
 完全verdict、最終PASS写真、参照音抜粋、CRC-validな`PCR5KEY.DAT` 67/67をSHA固定した。
 したがって現在の相関状態は`hardware_correlation_completed=true`、OPT1-Aは`promoted`である。
 preflight recordと上記attestationは当時のcandidate時点証拠として変更しない。
+このR5相関が証明するkeyboard範囲は67キーのpress/release到達性であり、Caps状態遷移、終了時
+Caps off、操作UXは含まない。

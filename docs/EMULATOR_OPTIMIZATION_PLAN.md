@@ -311,8 +311,9 @@ OPT0と最初のOPT1候補は、R5実機相関を豊かにする観測契約を�
 ただしR5前の合格は**candidate optimization**であり、現在のエミュレーター内部の一致を示すだけである。
 
 R5では`picotetris-r5`の同一BIN/UF2 SHAを使う。firmwareはLCD、PSRAM、SD、audio、line clear、
-game-over、restartを自動検査した後、公式keyboard firmware由来67キーを任意順・個別retry・
-SD progress resumeで確認する。別の診断BIN、ゲーム途中の写真、連続入力成功は要求しない。
+game-over、restartを自動検査した後、公式keyboard firmware由来67キーを確認する。`CAPS`以外の
+66キーは任意順・個別retry・SD progress resumeとし、`CAPS`は途中で押さず`66/67`の後に
+最後に押す。別の診断BIN、ゲーム途中の写真、連続入力成功は要求しない。
 エミュレーターpreflightは完了しており、実機のUART全文、参照音確認、安定した最終PASS写真1枚と
 一致範囲を記録して初めて**promoted optimization**とする。操作契約は
 [`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)を正典とする。
