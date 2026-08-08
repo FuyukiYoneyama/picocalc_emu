@@ -58,3 +58,18 @@ backendをcommit固定でclean clone/buildしてから`picotetris-r4`を実行�
 jobとfirmware regression jobの双方が合格しているため、attestationの静的整合だけでなく、
 固定contractの実走までclean runnerで継続検査されます。R4 full gateの全体は
 [`R4_CI.md`](R4_CI.md)に記録しています。
+
+## OPT1-A PicoTetris revision 3
+
+`picotetris-opt1a` revision 3は`picotetris-r4`をsupersedeし、exact idle fast-forwardを実装した
+backend `c68c58f6c37fb31eb9313566c8b16883db9063b6`を受理します。firmware BIN、scenario、
+device profileはrevision 2と同じで、既存revisionとR3/R4の時点証拠は変更していません。
+
+新規record
+`firmware-validation/records/opt1-a-20260808-01/record.json`は、85/85 timeline、cycle、UART、
+framebufferに加え、one-cycle referenceと候補のbehavior trace schema 2全9 domain一致、trace OFF
+10回の決定性と性能、Template Bの追加screeningを固定します。attestationは
+`firmware-validation/validations/picotetris-opt1a-r3.json`です。
+
+このrevisionは自動回帰と性能gateを通った**candidate**です。R5で同一BIN SHAを実機と相関する
+までは正式採用へ昇格させず、R5で不一致があれば速度にかかわらず棄却または修正します。

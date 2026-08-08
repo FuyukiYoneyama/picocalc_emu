@@ -99,3 +99,10 @@ ON時とbyte-identicalだった。
 
 このartifactは現在の正確性baselineを固定するものであり、実機相関の代用ではない。OPT1-A候補は
 このbehavior/domain契約と従来のnormal report契約をすべて維持して初めてR5へ進める。
+
+## 後継schema
+
+この文書とrecordはschema 1の時点証拠として変更しない。OPT1-Aの比較でUART source 1がhost側の
+diagnostic drain cadenceに依存することが判明したため、backend `c68c58f...`は各UARTDR writeを
+独立eventにするschema 2へ更新した。理由、one-cycle referenceとの全domain一致、新しいhashは
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)に記録している。

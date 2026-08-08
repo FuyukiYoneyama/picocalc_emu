@@ -185,8 +185,8 @@ conformance）、上位CLI/target registry（R2）、PicoTetris正式回帰（R3
 R4の3リポジトリfull品質ゲート/CIも完了しました。backendのtest・fmt・Clippy gate、generatorの
 親Git継承修正、schema 3 versioned validation、PicoTetris R4 revision、PicoTetrisの
 unit＋固定RP2040再現build、`picocalc_emu`のportable/host/target-schema/firmware regressionを
-clean runnerで合格させました。次はR5の同一BIN実機相関と、相関前に観測契約を整える
-OPT0です。R3の全SHAと受入結果は
+clean runnerで合格させました。R5前のOPT0観測契約とOPT1-A高速化candidateも完了し、次は
+同一BINによるR5実機相関です。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
 受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-06-r4完了反映)が正典です。
@@ -214,8 +214,13 @@ production用`is_idle()`が静的FIFO/IRQ stateまでblockerに含めるため�
 優先順位選択用の算術投影33.329秒・実時間比11.146%を得ました。これは最適化後の実測値では
 ありません。完全なcost、SHA-256、再現手順は
 [`firmware-validation/records/opt0-a-20260808-04/notes.md`](firmware-validation/records/opt0-a-20260808-04/notes.md)
-にあります。OPT0-Aは完了し、次はOPT0-B behavior/streaming event契約、その後の最初の候補は
-OPT1-A exact idle fast-forwardです。
+にあります。OPT0-B behavior/streaming event契約も完了しました。続くOPT1-A exact idle
+fast-forwardは、両core blocked時だけ全source horizonとscenario/input境界まで等価に進めます。
+PicoTetrisのcycle、UART、framebuffer、85/85 timelineを維持し、behavior schema 2の全9 domainも
+one-cycle referenceと一致しました。CPU固定10 runのwall中央値は63.247秒から27.123秒へ
+57.116%短縮し、実時間比中央値は5.874%から13.697%へ向上しました。詳細と不変証拠は
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にあります。
+これはR5前のcandidateであり、次は同一BINによる実機相関です。
 
 ## 読む順番
 
@@ -543,7 +548,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [現在の実装状況](docs/IMPLEMENTATION_STATUS.md) — 今どこまで動くか
 - [Canonical BSP](bsp/README.md) — 守るべきハードウェア契約（**現行のみ**）
 - [Milestones](docs/MILESTONES.md) — **実装順序の正典**。他文書の段階番号はここへ対応付ける
-- [Sol / Luna 開発運用](docs/DEVELOPMENT_WORKFLOW.md) — 役割と受入の境界
+- [Sol / Spark / Luna 開発運用](docs/DEVELOPMENT_WORKFLOW.md) — worker構成、委譲、受入、構成不調時の停止規則
 - [実機検証台帳](hardware-validation/README.md) — 実機結果の記録方法
 
 ### ③ 該当作業のときだけ参照する
@@ -561,6 +566,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R4 品質ゲートとCI](docs/R4_CI.md) — 3リポジトリのclean-runner full gate、job境界、private backend認証
 - [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
 - [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
+- [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

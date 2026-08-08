@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "record_id": "opt1-a-20260808-01",
+  "title": "OPT1-A exact idle fast-forward candidate validation",
+  "roadmap_package": "OPT1-A",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-opt1a",
+    "revision": 3,
+    "contract_sha256": "12151d51a47bac4164a4664dae4e354dbe18c4342298402efba6ff9898f7a9b1"
+  },
+  "exactness": {
+    "target": "picotetris-opt1a",
+    "backend_commit": "c68c58f6c37fb31eb9313566c8b16883db9063b6",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "runs": 10,
+    "passes": 10,
+    "all_normal_reports_identical": true,
+    "all_uart_identical": true,
+    "all_snapshots_identical": true,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "steps_passed": 85,
+    "steps_total": 85,
+    "normalized_report_sha256": "4988d22dc703f939a603920c94ed3a74bd590ca729c4e170a9a80fd48bb5a03d",
+    "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "snapshot_png_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "behavior_contract": {
+    "schema_version": 2,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "total_events": 173498680,
+    "one_cycle_reference_projection_byte_identical": true,
+    "all_domain_counts_and_hashes_identical": true,
+    "trace_valid_for_wall_time": false
+  },
+  "performance": {
+    "trace_enabled": false,
+    "warmup_runs_excluded": 1,
+    "measured_runs": 10,
+    "measurement_cpu": 0,
+    "baseline_wall_seconds_median": 63.247007733,
+    "candidate_wall_seconds_median": 27.122874483,
+    "wall_time_reduction_percent": 57.115956224,
+    "speedup_ratio": 2.331869647,
+    "baseline_real_time_percent_median": 5.873807529,
+    "candidate_real_time_percent_median": 13.696960105,
+    "candidate_cycles_per_wall_second_median": 34197370.26260421,
+    "candidate_wall_seconds_mean_ci95": [25.273195278507366, 31.93229470549263]
+  },
+  "additional_workloads": {
+    "picocalc_template_b": {
+      "firmware_sha256": "1e6abac252c28a349d172254c0bc08976786023597a1c44002bfcb1bfbd02a3d",
+      "uf2_sha256": "1ab0d16f4f05207934f6d63b77d2ae5437231ee3762381b82505a3d4acefc757",
+      "candidate_result": "pass",
+      "behavior_report_without_backend_byte_identical": true,
+      "uart_byte_identical": true,
+      "baseline_screening_wall_seconds": 70.55,
+      "candidate_screening_wall_seconds": 26.37,
+      "screening_is_formal_benchmark": false
+    }
+  },
+  "artifacts": {
+    "normal_report": "run-report.json",
+    "behavior_trace": "behavior-trace.json",
+    "realtime_performance": "realtime-performance.json",
+    "template_b_report": "template-b-report.json"
+  },
+  "hardware_correlation_completed": false,
+  "optimization_status": "candidate"
+}

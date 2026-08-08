@@ -1,0 +1,79 @@
+{
+  "schema_version": 8,
+  "backend_commit": "c68c58f6c37fb31eb9313566c8b16883db9063b6",
+  "backend_build": {"commit": "c68c58f6c37fb31eb9313566c8b16883db9063b6", "dirty": false},
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "1e6abac252c28a349d172254c0bc08976786023597a1c44002bfcb1bfbd02a3d"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1200000000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 1200000000,
+  "elapsed_us": 4805028,
+  "pc": "0x100016b6",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "cycle_limit", "required_uart_markers": ["[PICOCALC][LCD][VERIFY] app_status=pass", "[PICOCALC][SD][SMOKE] stage=end status=ok", "[PICOCALC][READY] keyboard=waiting"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 49, "raset": 49, "ramwr": 43, "ramrd": 6,
+    "pixels_written": 890180, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "d22729c05ef814b473c90d97b54d9074d8761bf0bc94c0201c6d2df393d5e71b", "non_black_pixels": 52032, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 185313725, "cs_falling_count": 7,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 28, "blocks_read": 9, "blocks_written": 10,
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 342, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "uart": {"bytes": 5773, "sha256": "b38268edf38e20698d037106964a9ac764fdaca3319078234ff6a200199171e0"}
+}

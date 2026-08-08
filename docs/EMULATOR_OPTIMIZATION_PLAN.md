@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT0-A・OPT0-B完了、OPT1-A exact idle fast-forwardが次
+**状態:** OPT1-A candidate完了、R5実機相関が次
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -325,8 +325,8 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 1 | OPT0-A blocked/safe profiler | **完了** | schema 3 full horizon、boundary分布、production costを固定 |
 | 2 | OPT0-B behavior/streaming trace契約 | **完了** | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
-| 4 | OPT1-A第一候補 | **次** | 正確性gate＋性能gate合格、candidateとしてrecord化 |
-| 5 | R5実機相関 | 実機着手前 | 同一BINと追加観測値で相関し、候補を正式採用または棄却する |
+| 4 | OPT1-A第一候補 | **candidate完了** | 正確性gate＋性能gate合格、candidateとしてrecord化 |
+| 5 | R5実機相関 | **次** | 同一BINと追加観測値で相関し、候補を正式採用または棄却する |
 | 6 | 残るOPT1候補 | R5後 | 独立変更単位で正確性・性能gate合格 |
 | 7 | OPT2 exact event batching | R5後 | 全boundary eventのcycle/order一致 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
@@ -388,6 +388,16 @@ TIMER event/route/wake増分`7.122434 ns`で、損益分岐は2 cycleだった�
 33.329秒・実時間比11.146%はscreening用の算術投影であり、最適化実測ではない。この差により
 OPT1-A exact idle fast-forwardをOPT1-Bより先に実装する。実装前にOPT0-Bを完了し、OPT1-Aでは
 runner所有のscenario/input horizonも必ず境界へ接続する。
+
+OPT1-A candidateはbackend `c68c58f6c37fb31eb9313566c8b16883db9063b6`で完了した。
+両core blocked時だけ全source horizonとrunner所有の外部境界までexact bulk advanceし、未証明
+sourceは1 cycle fallbackする。PicoTetrisは85/85、cycle、UART、framebuffer、timelineを維持した。
+behavior traceはhost UART drain cadence依存を除いたschema 2へversion upし、one-cycle referenceと
+全9 domainで一致した。CPU固定10 runのwall中央値は63.247秒から27.123秒へ57.116%短縮し、
+実時間比中央値は5.874%から13.697%へ向上した。詳細は
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)と
+[`firmware-validation/records/opt1-a-20260808-01/notes.md`](../firmware-validation/records/opt1-a-20260808-01/notes.md)
+に固定した。R5前なので状態はcandidateであり、次は同一BINによる実機相関である。
 
 ## 16. 最終判断規則
 

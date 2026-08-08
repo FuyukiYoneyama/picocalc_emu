@@ -4,9 +4,9 @@
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81",
+    "commit": "c68c58f6c37fb31eb9313566c8b16883db9063b6",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This is the current R4 capability snapshot; historical targets retain their own exact backend pins in the target registry. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out."
+    "note": "Source is never vendored here. This is the current OPT1-A candidate capability snapshot; historical targets retain their own exact backend pins in the target registry. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. OPT1-A remains a candidate until R5 physical-device correlation."
   },
   "supported": [
     {
@@ -151,6 +151,13 @@
       "detail": "The game rules are hardware-free and covered by 666 native checks. Historical target picotetris-r3 pins the original source/BSP/toolchain/BIN/backend/FAT32/scenario/report expectations; picotetris-r4 revision 2 preserves the same firmware artifact and validates it against the R4 backend commit. Two fresh builds produced identical BIN and UF2 payloads, three recorded firmware runs produced identical UART, RGB565 framebuffer, PNG, raw and normalized reports, and 85-step timelines while clearing 13 lines for score 1400 with 362 delivered and zero dropped key events, and the three repositories now run independent clean-runner CI gates.",
       "limitation": "R3/R4 are emulator and CI evidence. Correlation of the exact registered BIN SHA on a physical PicoCalc remains R5.",
       "since_gate": "R3"
+    },
+    {
+      "id": "exact-idle-fast-forward",
+      "what": "Exact event-horizon fast-forward while both RP2040 cores are blocked",
+      "detail": "Target picotetris-opt1a revision 3 preserves the registered PicoTetris firmware, scenario, 927528660 cycles, UART, RGB565 framebuffer and 85-step timeline on backend c68c58f6c37fb31eb9313566c8b16883db9063b6. Behavior trace schema 2 separates UART guest-byte events from host diagnostic draining and preserves all nine event-domain counts and hashes against a one-cycle reference. Ten trace-off runs reduced median wall time from 63.2470 s to 27.1229 s, a 2.3319x speedup, while deterministic report, UART and PNG artifacts remained identical.",
+      "limitation": "This is an emulator-internal candidate result. It is not promoted as physical-device-equivalent until R5 correlates the exact registered BIN SHA on a PicoCalc.",
+      "since_gate": "OPT1-A"
     },
     {
       "id": "host-backend",

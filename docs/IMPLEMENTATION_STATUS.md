@@ -72,8 +72,14 @@ byte-identicalで、feature無しproduction binaryのnormal reportもtrace ON時
 証拠は
 [`firmware-validation/records/opt0-b-20260808-01/notes.md`](../firmware-validation/records/opt0-b-20260808-01/notes.md)、
 契約詳細は[`OPT0_B_BEHAVIOR_CONTRACT.md`](OPT0_B_BEHAVIOR_CONTRACT.md)にある。これでOPT0-Bは
-完了し、現在の次工程はOPT1-A exact idle fast-forwardである。runner所有のscenario/input horizonは
-OPT1-Aで接続する必須境界である。
+完了した。OPT1-Aはbackend `c68c58f6c37fb31eb9313566c8b16883db9063b6`で、両core blocked時の
+全source horizonとrunner所有scenario/input境界を`step_until()`へ接続した。PicoTetrisのcycle、
+UART、framebuffer、85/85 timelineを維持し、host UART drain cadence依存を除いたbehavior schema 2
+でもone-cycle referenceと全9 domainが一致した。CPU固定10 runのwall中央値は63.247秒から
+27.123秒へ57.116%短縮し、実時間比は5.874%から13.697%へ向上した。versioned target
+`picotetris-opt1a` revision 3と不変recordを追加済みである。詳細は
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にある。R5前のため
+状態はcandidateであり、現在の次工程は同一BINによるR5実機相関である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 

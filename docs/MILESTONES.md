@@ -6,8 +6,8 @@
 
 Milestone 0〜3の中核受入条件は完了しています。Milestone 4は最初の実機相関まで
 到達しています。現行PicoTetris成果物の一意な再現と継続CIへの接続はR3/R4で完了し、
-残っているのは、その登録済みBINと同一SHAを使う実機相関（R5）です。R5前に観測契約を
-整えるOPT0と、正確性を維持する最初の高速化候補を並行作業列として実施します。
+残っているのは、その登録済みBINと同一SHAを使う実機相関（R5）です。R5前の観測契約OPT0と、
+正確性を維持する最初の高速化候補OPT1-Aはcandidateとして完了しました。
 次に行う作業は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -69,7 +69,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | **完了 2026-08-06**。666 host checks、再現可能BIN/UF2、active target、3回決定一致 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | **完了 2026-08-06**。3リポジトリのclean-runner full gate合格 |
-| R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | **実機着手前**。WSL実時間性能baselineは完了 |
+| R5 | 現行成果物の実機相関 | `picocalc_emu`＋実機 | 回帰登録済みPicoTetris BINと同一SHAでLCD・ゲーム操作キー・line clear・game-over・restart・PSRAM・SD・audio初期化仕様を確認する。全67キーは別のBSP diagnostic BINで確認し、両BINのSHA、UART、写真、操作記録を新規台帳へ保存する | **次・実機着手前**。WSL baselineとOPT1-A candidateは完了 |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | R5後 |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
@@ -83,8 +83,9 @@ R1 backend verdict/report ─────┘                                  �
 
 各パッケージの終了時にREADME・`IMPLEMENTATION_STATUS.md`・capability・target/recordの
 該当箇所を同じ変更単位で更新します。旧hardware/firmware recordは時点証拠なので書き換えず、
-後続recordまたは現在状態の文書から参照します。Solが仕様・受入・統合を担当し、Lunaは
-限定された実装、定型更新、独立照合を行います。責任境界は`DEVELOPMENT_WORKFLOW.md`に従います。
+後続recordまたは現在状態の文書から参照します。Solが仕様・受入・統合を担当し、Spark workerは
+小さく明確なコード修正、Luna workerは明確で反復的・大量な作業を行います。責任境界と構成不調時の
+停止規則は`DEVELOPMENT_WORKFLOW.md`に従います。
 
 ### R1のSD/FAT32受入条件
 
@@ -289,8 +290,8 @@ SHAを検査して復元し、SDK 2.2.0の固定条件で登録BIN `0784d80d...e
 
 backend run `31098630797`、PicoTetris run `31101591668`と上記runを合わせ、3リポジトリの
 clean-runner full gateは完了した。R4の完全なjob境界、pin、認証境界は
-[`R4_CI.md`](R4_CI.md)に記録した。次はR5の同一BIN実機相関と、その相関で使う観測契約を
-整えるOPT0へ進む。
+[`R4_CI.md`](R4_CI.md)に記録した。その後、R5の同一BIN実機相関で使う観測契約と最初の
+高速化candidateをOPT0〜OPT1-Aで整備した。
 
 ### R5実機着手前の性能baseline（2026-08-06）
 
@@ -347,7 +348,13 @@ OPT0-Bではbackend `763595fedefa08886b41298be79bff69324ac51f`にfeature分離�
 behavior/streaming event契約を追加した。PicoTetrisのtrace ON二重走行とtrace OFF走行で既存の
 cycle、UART、framebuffer、85/85 scenarioを維持し、`behavior_sha256`、全体/domain別event hashと
 countを固定した。詳細は[`OPT0_B_BEHAVIOR_CONTRACT.md`](OPT0_B_BEHAVIOR_CONTRACT.md)にある。
-現在の次工程はOPT1-A exact idle fast-forwardである。
+OPT1-Aではbackend `c68c58f6c37fb31eb9313566c8b16883db9063b6`に両core blocked時だけの
+exact fast-forwardを実装した。runner所有のscenario/input境界を接続し、未証明sourceは1 cycle
+fallbackする。PicoTetrisは85/85、cycle、UART、framebuffer、timelineを維持し、host UART drain
+cadence依存を除いたbehavior schema 2でもone-cycle referenceと全9 domainが一致した。CPU固定
+10 runのwall中央値は63.247秒から27.123秒へ57.116%短縮した。詳細は
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にある。実機相関前の
+candidateなので、現在の次工程はR5で同一BINを実機と相関し、正式採用または棄却することである。
 
 ## Milestone 0: Canonical BSP — implemented
 
