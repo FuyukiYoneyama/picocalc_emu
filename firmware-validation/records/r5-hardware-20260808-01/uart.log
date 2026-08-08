@@ -1,0 +1,2386 @@
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=10
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=fixed_sine rate=48000 tone=1000 amp_db=-6 pwm_wrap=255 carrier=976562 dma_half=128 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=reference-fixed-sine output=1khz
+[R5] schema=1 app=picotetris-r5-correlation bsp=0.8.8 bsp_git=cbfc90467e2b app_git=9a40a905f3dd build=2026-08-08T00:00:00Z operator_actions=key_coverage_then_one_photo
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x20 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x003f value=0x003f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e1 value=0x07e1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf808 value=0xf808
+[PICOCALC][LCD][READ] pixel=3 raw=0xfffd value=0xfffd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x005f value=0x005f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e2 value=0x07e2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf810 value=0xf810
+[PICOCALC][LCD][READ] pixel=3 raw=0xfffb value=0xfffb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x007f value=0x007f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e3 value=0x07e3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf818 value=0xf818
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff9 value=0xfff9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x009f value=0x009f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e4 value=0x07e4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf820 value=0xf820
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff7 value=0xfff7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00bf value=0x00bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e5 value=0x07e5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf828 value=0xf828
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff5 value=0xfff5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00df value=0x00df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e6 value=0x07e6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf830 value=0xf830
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff3 value=0xfff3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00ff value=0x00ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e7 value=0x07e7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf838 value=0xf838
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff1 value=0xfff1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x011f value=0x011f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e8 value=0x07e8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf840 value=0xf840
+[PICOCALC][LCD][READ] pixel=3 raw=0xffef value=0xffef
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x013f value=0x013f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e9 value=0x07e9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf848 value=0xf848
+[PICOCALC][LCD][READ] pixel=3 raw=0xffed value=0xffed
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x015f value=0x015f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ea value=0x07ea
+[PICOCALC][LCD][READ] pixel=2 raw=0xf850 value=0xf850
+[PICOCALC][LCD][READ] pixel=3 raw=0xffeb value=0xffeb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x017f value=0x017f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07eb value=0x07eb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf858 value=0xf858
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe9 value=0xffe9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x019f value=0x019f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ec value=0x07ec
+[PICOCALC][LCD][READ] pixel=2 raw=0xf860 value=0xf860
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe7 value=0xffe7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01bf value=0x01bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ed value=0x07ed
+[PICOCALC][LCD][READ] pixel=2 raw=0xf868 value=0xf868
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe5 value=0xffe5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01df value=0x01df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ee value=0x07ee
+[PICOCALC][LCD][READ] pixel=2 raw=0xf870 value=0xf870
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe3 value=0xffe3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01ff value=0x01ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ef value=0x07ef
+[PICOCALC][LCD][READ] pixel=2 raw=0xf878 value=0xf878
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe1 value=0xffe1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x021f value=0x021f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f0 value=0x07f0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf880 value=0xf880
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdf value=0xffdf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x023f value=0x023f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f1 value=0x07f1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf888 value=0xf888
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdd value=0xffdd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x025f value=0x025f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f2 value=0x07f2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf890 value=0xf890
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdb value=0xffdb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x027f value=0x027f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f3 value=0x07f3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf898 value=0xf898
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd9 value=0xffd9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x029f value=0x029f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f4 value=0x07f4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8a0 value=0xf8a0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd7 value=0xffd7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02bf value=0x02bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f5 value=0x07f5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8a8 value=0xf8a8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd5 value=0xffd5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02df value=0x02df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f6 value=0x07f6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8b0 value=0xf8b0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd3 value=0xffd3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02ff value=0x02ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f7 value=0x07f7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8b8 value=0xf8b8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd1 value=0xffd1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x031f value=0x031f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f8 value=0x07f8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8c0 value=0xf8c0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcf value=0xffcf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x033f value=0x033f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f9 value=0x07f9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8c8 value=0xf8c8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcd value=0xffcd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x035f value=0x035f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fa value=0x07fa
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8d0 value=0xf8d0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcb value=0xffcb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x037f value=0x037f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fb value=0x07fb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8d8 value=0xf8d8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc9 value=0xffc9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x039f value=0x039f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fc value=0x07fc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8e0 value=0xf8e0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc7 value=0xffc7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03bf value=0x03bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fd value=0x07fd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8e8 value=0xf8e8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc5 value=0xffc5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03df value=0x03df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fe value=0x07fe
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8f0 value=0xf8f0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc3 value=0xffc3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03ff value=0x03ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ff value=0x07ff
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8f8 value=0xf8f8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc1 value=0xffc1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x041f value=0x041f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c0 value=0x07c0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf900 value=0xf900
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbf value=0xffbf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x043f value=0x043f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c1 value=0x07c1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf908 value=0xf908
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbd value=0xffbd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x045f value=0x045f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c2 value=0x07c2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf910 value=0xf910
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbb value=0xffbb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x047f value=0x047f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c3 value=0x07c3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf918 value=0xf918
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb9 value=0xffb9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x049f value=0x049f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c4 value=0x07c4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf920 value=0xf920
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb7 value=0xffb7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04bf value=0x04bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c5 value=0x07c5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf928 value=0xf928
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb5 value=0xffb5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04df value=0x04df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c6 value=0x07c6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf930 value=0xf930
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb3 value=0xffb3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04ff value=0x04ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c7 value=0x07c7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf938 value=0xf938
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb1 value=0xffb1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x051f value=0x051f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c8 value=0x07c8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf940 value=0xf940
+[PICOCALC][LCD][READ] pixel=3 raw=0xffaf value=0xffaf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x053f value=0x053f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c9 value=0x07c9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf948 value=0xf948
+[PICOCALC][LCD][READ] pixel=3 raw=0xffad value=0xffad
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x055f value=0x055f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ca value=0x07ca
+[PICOCALC][LCD][READ] pixel=2 raw=0xf950 value=0xf950
+[PICOCALC][LCD][READ] pixel=3 raw=0xffab value=0xffab
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x057f value=0x057f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cb value=0x07cb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf958 value=0xf958
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa9 value=0xffa9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x059f value=0x059f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cc value=0x07cc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf960 value=0xf960
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa7 value=0xffa7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05bf value=0x05bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cd value=0x07cd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf968 value=0xf968
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa5 value=0xffa5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05df value=0x05df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ce value=0x07ce
+[PICOCALC][LCD][READ] pixel=2 raw=0xf970 value=0xf970
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa3 value=0xffa3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05ff value=0x05ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cf value=0x07cf
+[PICOCALC][LCD][READ] pixel=2 raw=0xf978 value=0xf978
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa1 value=0xffa1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x061f value=0x061f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d0 value=0x07d0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf980 value=0xf980
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9f value=0xff9f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x063f value=0x063f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d1 value=0x07d1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf988 value=0xf988
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9d value=0xff9d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x065f value=0x065f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d2 value=0x07d2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf990 value=0xf990
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9b value=0xff9b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x067f value=0x067f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d3 value=0x07d3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf998 value=0xf998
+[PICOCALC][LCD][READ] pixel=3 raw=0xff99 value=0xff99
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x069f value=0x069f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d4 value=0x07d4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9a0 value=0xf9a0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff97 value=0xff97
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06bf value=0x06bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d5 value=0x07d5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9a8 value=0xf9a8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff95 value=0xff95
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06df value=0x06df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d6 value=0x07d6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9b0 value=0xf9b0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff93 value=0xff93
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06ff value=0x06ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d7 value=0x07d7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9b8 value=0xf9b8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff91 value=0xff91
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x071f value=0x071f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d8 value=0x07d8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9c0 value=0xf9c0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8f value=0xff8f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x073f value=0x073f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d9 value=0x07d9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9c8 value=0xf9c8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8d value=0xff8d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x075f value=0x075f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07da value=0x07da
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9d0 value=0xf9d0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8b value=0xff8b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x077f value=0x077f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07db value=0x07db
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9d8 value=0xf9d8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff89 value=0xff89
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x079f value=0x079f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07dc value=0x07dc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9e0 value=0xf9e0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff87 value=0xff87
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07bf value=0x07bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07dd value=0x07dd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9e8 value=0xf9e8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff85 value=0xff85
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07df value=0x07df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07de value=0x07de
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9f0 value=0xf9f0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff83 value=0xff83
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07ff value=0x07ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07df value=0x07df
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9f8 value=0xf9f8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff81 value=0xff81
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x081f value=0x081f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a0 value=0x07a0
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa00 value=0xfa00
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7f value=0xff7f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x083f value=0x083f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a1 value=0x07a1
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa08 value=0xfa08
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7d value=0xff7d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x085f value=0x085f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a2 value=0x07a2
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa10 value=0xfa10
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7b value=0xff7b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x087f value=0x087f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a3 value=0x07a3
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa18 value=0xfa18
+[PICOCALC][LCD][READ] pixel=3 raw=0xff79 value=0xff79
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x089f value=0x089f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a4 value=0x07a4
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa20 value=0xfa20
+[PICOCALC][LCD][READ] pixel=3 raw=0xff77 value=0xff77
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08bf value=0x08bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a5 value=0x07a5
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa28 value=0xfa28
+[PICOCALC][LCD][READ] pixel=3 raw=0xff75 value=0xff75
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08df value=0x08df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a6 value=0x07a6
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa30 value=0xfa30
+[PICOCALC][LCD][READ] pixel=3 raw=0xff73 value=0xff73
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08ff value=0x08ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a7 value=0x07a7
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa38 value=0xfa38
+[PICOCALC][LCD][READ] pixel=3 raw=0xff71 value=0xff71
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x091f value=0x091f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a8 value=0x07a8
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa40 value=0xfa40
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6f value=0xff6f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x093f value=0x093f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a9 value=0x07a9
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa48 value=0xfa48
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6d value=0xff6d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x095f value=0x095f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07aa value=0x07aa
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa50 value=0xfa50
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6b value=0xff6b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x097f value=0x097f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ab value=0x07ab
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa58 value=0xfa58
+[PICOCALC][LCD][READ] pixel=3 raw=0xff69 value=0xff69
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x099f value=0x099f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ac value=0x07ac
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa60 value=0xfa60
+[PICOCALC][LCD][READ] pixel=3 raw=0xff67 value=0xff67
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09bf value=0x09bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ad value=0x07ad
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa68 value=0xfa68
+[PICOCALC][LCD][READ] pixel=3 raw=0xff65 value=0xff65
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09df value=0x09df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ae value=0x07ae
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa70 value=0xfa70
+[PICOCALC][LCD][READ] pixel=3 raw=0xff63 value=0xff63
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09ff value=0x09ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07af value=0x07af
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa78 value=0xfa78
+[PICOCALC][LCD][READ] pixel=3 raw=0xff61 value=0xff61
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a1f value=0x0a1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b0 value=0x07b0
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa80 value=0xfa80
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5f value=0xff5f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a3f value=0x0a3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b1 value=0x07b1
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa88 value=0xfa88
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5d value=0xff5d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a5f value=0x0a5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b2 value=0x07b2
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa90 value=0xfa90
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5b value=0xff5b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a7f value=0x0a7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b3 value=0x07b3
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa98 value=0xfa98
+[PICOCALC][LCD][READ] pixel=3 raw=0xff59 value=0xff59
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a9f value=0x0a9f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b4 value=0x07b4
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaa0 value=0xfaa0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff57 value=0xff57
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0abf value=0x0abf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b5 value=0x07b5
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaa8 value=0xfaa8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff55 value=0xff55
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0adf value=0x0adf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b6 value=0x07b6
+[PICOCALC][LCD][READ] pixel=2 raw=0xfab0 value=0xfab0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff53 value=0xff53
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0aff value=0x0aff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b7 value=0x07b7
+[PICOCALC][LCD][READ] pixel=2 raw=0xfab8 value=0xfab8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff51 value=0xff51
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b1f value=0x0b1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b8 value=0x07b8
+[PICOCALC][LCD][READ] pixel=2 raw=0xfac0 value=0xfac0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4f value=0xff4f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b3f value=0x0b3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b9 value=0x07b9
+[PICOCALC][LCD][READ] pixel=2 raw=0xfac8 value=0xfac8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4d value=0xff4d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b5f value=0x0b5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ba value=0x07ba
+[PICOCALC][LCD][READ] pixel=2 raw=0xfad0 value=0xfad0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4b value=0xff4b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b7f value=0x0b7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bb value=0x07bb
+[PICOCALC][LCD][READ] pixel=2 raw=0xfad8 value=0xfad8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff49 value=0xff49
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b9f value=0x0b9f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bc value=0x07bc
+[PICOCALC][LCD][READ] pixel=2 raw=0xfae0 value=0xfae0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff47 value=0xff47
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bbf value=0x0bbf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bd value=0x07bd
+[PICOCALC][LCD][READ] pixel=2 raw=0xfae8 value=0xfae8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff45 value=0xff45
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bdf value=0x0bdf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07be value=0x07be
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaf0 value=0xfaf0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff43 value=0xff43
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bff value=0x0bff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bf value=0x07bf
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaf8 value=0xfaf8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff41 value=0xff41
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c1f value=0x0c1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0780 value=0x0780
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb00 value=0xfb00
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3f value=0xff3f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c3f value=0x0c3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0781 value=0x0781
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb08 value=0xfb08
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3d value=0xff3d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c5f value=0x0c5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0782 value=0x0782
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb10 value=0xfb10
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3b value=0xff3b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c7f value=0x0c7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0783 value=0x0783
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb18 value=0xfb18
+[PICOCALC][LCD][READ] pixel=3 raw=0xff39 value=0xff39
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][LCD] iterations=100 pass=100 fail=0 result=pass
+[R5][AUDIO] refill=1287 irq=1285 underrun=0 carrier_hz=976562 result=pass human_audible=record_separately
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=6 read_us=5
+[R5][PSRAM] available=1 address=102464 bytes=24 mismatches=0 result=pass
+[R5][SD] filesystem=fat32 default=fat32 fat16=optional stage=ok detail=0 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=line_clear score=100 lines=1 over=0 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xc1 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xf800 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=game_over score=100 lines=1 over=1 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x001f value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=restart score=0 lines=0 over=0 result=pass
+[R5][KEY] source=official_picocalc_keyboard commit=a61c1f2f18185b32a667dde5c9393ced9ddd19ca total=67 resumed=0 complete=0
+[R5][KEY] key=UP state=1 code=0xb5 complete=0 count=0/67
+[R5][KEY] key=UP state=3 code=0xb5 complete=0 count=0/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=0 count=0/67
+[R5][KEY] key=RIGHT state=3 code=0xb7 complete=1 count=1/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=0 count=1/67
+[R5][KEY] key=DOWN state=3 code=0xb6 complete=0 count=1/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=0 count=1/67
+[R5][KEY] key=LEFT state=3 code=0xb4 complete=1 count=2/67
+[R5][KEY] key=F1 state=1 code=0x81 complete=0 count=2/67
+[R5][KEY] key=F1 state=3 code=0x81 complete=1 count=3/67
+[R5][KEY] key=F2 state=1 code=0x82 complete=0 count=3/67
+[R5][KEY] key=F2 state=3 code=0x82 complete=1 count=4/67
+[R5][KEY] key=F3 state=1 code=0x83 complete=0 count=4/67
+[R5][KEY] key=F3 state=3 code=0x83 complete=1 count=5/67
+[R5][KEY] key=F4 state=1 code=0x84 complete=0 count=5/67
+[R5][KEY] key=F4 state=2 code=0x84 complete=0 count=5/67
+[R5][KEY] key=F4 state=2 code=0x84 complete=0 count=5/67
+[R5][KEY] key=F4 state=3 code=0x84 complete=1 count=6/67
+[R5][KEY] key=F5 state=1 code=0x85 complete=0 count=6/67
+[R5][KEY] key=F5 state=3 code=0x85 complete=1 count=7/67
+[R5][KEY] key=ESC state=1 code=0xb1 complete=0 count=7/67
+[R5][KEY] key=` state=1 code=0x60 complete=0 count=7/67
+[R5][KEY] key=` state=3 code=0x60 complete=1 count=8/67
+[R5][KEY] key=ESC state=3 code=0xb1 complete=1 count=9/67
+[R5][KEY] key=TAB state=1 code=0x09 complete=0 count=9/67
+[R5][KEY] key=TAB state=3 code=0x09 complete=1 count=10/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=DEL event=ignored reason=caps_restore_required
+[R5][KEY] key=DEL event=ignored reason=caps_restore_required
+[R5][KEY] key=BACKSPACE event=ignored reason=caps_restore_required
+[R5][KEY] key=F5 event=ignored reason=caps_restore_required
+[R5][KEY] key=F5 event=ignored reason=caps_restore_required
+[R5][KEY] key=BACKSPACE event=ignored reason=caps_restore_required
+[R5][KEY] key=BACKSPACE event=ignored reason=caps_restore_required
+[R5][KEY] key=BACKSPACE event=ignored reason=caps_restore_required
+[R5][KEY] key=` event=ignored reason=caps_restore_required
+[R5][KEY] key=` event=ignored reason=caps_restore_required
+[R5][KEY] key=/ event=ignored reason=caps_restore_required
+[R5][KEY] key=/ event=ignored reason=caps_restore_required
+[R5][KEY] key=\ event=ignored reason=caps_restore_required
+[R5][KEY] key=\ event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=[ event=ignored reason=caps_restore_required
+[R5][KEY] key== event=ignored reason=caps_restore_required
+[R5][KEY] key== event=ignored reason=caps_restore_required
+[R5][KEY] key=[ event=ignored reason=caps_restore_required
+[R5][KEY] key=[ event=ignored reason=caps_restore_required
+[R5][KEY] key=] event=ignored reason=caps_restore_required
+[R5][KEY] key=[ event=ignored reason=caps_restore_required
+[R5][KEY] key=] event=ignored reason=caps_restore_required
+[R5][KEY] key=7 event=ignored reason=caps_restore_required
+[R5][KEY] key=8 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x55 recovery=retry_any_key
+[R5][KEY] key=9 event=ignored reason=caps_restore_required
+[R5][KEY] key=9 event=ignored reason=caps_restore_required
+[R5][KEY] key=7 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x55 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x49 recovery=retry_any_key
+[R5][KEY] key=8 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x53 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x45 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x57 recovery=retry_any_key
+[R5][KEY] key=1 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x44 recovery=retry_any_key
+[R5][KEY] key=3 event=ignored reason=caps_restore_required
+[R5][KEY] key=2 event=ignored reason=caps_restore_required
+[R5][KEY] key=` event=ignored reason=caps_restore_required
+[R5][KEY] key=4 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x52 recovery=retry_any_key
+[R5][KEY] key=` event=ignored reason=caps_restore_required
+[R5][KEY] key=4 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x53 recovery=retry_any_key
+[R5][KEY] key=1 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x44 recovery=retry_any_key
+[R5][KEY] key=2 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x57 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x59 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x55 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x48 recovery=retry_any_key
+[R5][KEY] key=3 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x45 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4b recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x59 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x48 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x44 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4b recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x55 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x53 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x45 recovery=retry_any_key
+[R5][KEY] key=4 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] key=' event=ignored reason=caps_restore_required
+[R5][KEY] key=SPACE event=ignored reason=caps_restore_required
+[R5][KEY] key=4 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x45 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] key=' event=ignored reason=caps_restore_required
+[R5][KEY] key=SPACE event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4b recovery=retry_any_key
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x53 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4d recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x43 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x44 recovery=retry_any_key
+[R5][KEY] key=. event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4f recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x55 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4f recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x55 recovery=retry_any_key
+[R5][KEY] key=. event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x4b recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4a recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4d recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] key=CTRL event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x56 recovery=retry_any_key
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] key=ALT event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4c recovery=retry_any_key
+[R5][KEY] key=ALT event=ignored reason=caps_restore_required
+[R5][KEY] key=ENTER event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4c recovery=retry_any_key
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x56 recovery=retry_any_key
+[R5][KEY] key=CTRL event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4f recovery=retry_any_key
+[R5][KEY] key=8 event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x49 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4b recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x43 recovery=retry_any_key
+[R5][KEY] key=RIGHT_SHIFT event=ignored reason=caps_restore_required
+[R5][KEY] key=RIGHT_SHIFT event=ignored reason=caps_restore_required
+[R5][KEY] key=O event=ignored reason=caps_restore_required
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] key=L event=ignored reason=caps_restore_required
+[R5][KEY] key=8 event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=ENTER event=ignored reason=caps_restore_required
+[R5][KEY] key=CTRL event=ignored reason=caps_restore_required
+[R5][KEY] key=. event=ignored reason=caps_restore_required
+[R5][KEY] key=C event=ignored reason=caps_restore_required
+[R5][KEY] key=V event=ignored reason=caps_restore_required
+[R5][KEY] key=ALT event=ignored reason=caps_restore_required
+[R5][KEY] key=CTRL event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=1 code=0x4d recovery=retry_any_key
+[R5][KEY] key=ALT event=ignored reason=caps_restore_required
+[R5][KEY] event=unexpected state=3 code=0x43 recovery=retry_any_key
+[R5][KEY] key=V event=ignored reason=caps_restore_required
+[R5][KEY] key=; event=ignored reason=caps_restore_required
+[R5][KEY] key=; event=ignored reason=caps_restore_required
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] key=V event=ignored reason=caps_restore_required
+[R5][KEY] key=F event=ignored reason=caps_restore_required
+[R5][KEY] key=G event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=B event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=M event=ignored reason=caps_restore_required
+[R5][KEY] key=V event=ignored reason=caps_restore_required
+[R5][KEY] key=F event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=M event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=T event=ignored reason=caps_restore_required
+[R5][KEY] key=, event=ignored reason=caps_restore_required
+[R5][KEY] key=M event=ignored reason=caps_restore_required
+[R5][KEY] key=B event=ignored reason=caps_restore_required
+[R5][KEY] key=T event=ignored reason=caps_restore_required
+[R5][KEY] key=G event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=R event=ignored reason=caps_restore_required
+[R5][KEY] key=F event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=T event=ignored reason=caps_restore_required
+[R5][KEY] key=G event=ignored reason=caps_restore_required
+[R5][KEY] key=T event=ignored reason=caps_restore_required
+[R5][KEY] key=G event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=F event=ignored reason=caps_restore_required
+[R5][KEY] key=R event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=I event=ignored reason=caps_restore_required
+[R5][KEY] key=U event=ignored reason=caps_restore_required
+[R5][KEY] key=J event=ignored reason=caps_restore_required
+[R5][KEY] key=K event=ignored reason=caps_restore_required
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=10
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=fixed_sine rate=48000 tone=1000 amp_db=-6 pwm_wrap=255 carrier=976562 dma_half=128 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=reference-fixed-sine output=1khz
+[R5] schema=1 app=picotetris-r5-correlation bsp=0.8.8 bsp_git=cbfc90467e2b app_git=9a40a905f3dd build=2026-08-08T00:00:00Z operator_actions=key_coverage_then_one_photo
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x20 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xffff value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x003f value=0x003f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e1 value=0x07e1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf808 value=0xf808
+[PICOCALC][LCD][READ] pixel=3 raw=0xfffd value=0xfffd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x005f value=0x005f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e2 value=0x07e2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf810 value=0xf810
+[PICOCALC][LCD][READ] pixel=3 raw=0xfffb value=0xfffb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x007f value=0x007f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e3 value=0x07e3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf818 value=0xf818
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff9 value=0xfff9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x009f value=0x009f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e4 value=0x07e4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf820 value=0xf820
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff7 value=0xfff7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00bf value=0x00bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e5 value=0x07e5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf828 value=0xf828
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff5 value=0xfff5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00df value=0x00df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e6 value=0x07e6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf830 value=0xf830
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff3 value=0xfff3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x00ff value=0x00ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e7 value=0x07e7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf838 value=0xf838
+[PICOCALC][LCD][READ] pixel=3 raw=0xfff1 value=0xfff1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x011f value=0x011f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e8 value=0x07e8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf840 value=0xf840
+[PICOCALC][LCD][READ] pixel=3 raw=0xffef value=0xffef
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x013f value=0x013f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e9 value=0x07e9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf848 value=0xf848
+[PICOCALC][LCD][READ] pixel=3 raw=0xffed value=0xffed
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x015f value=0x015f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ea value=0x07ea
+[PICOCALC][LCD][READ] pixel=2 raw=0xf850 value=0xf850
+[PICOCALC][LCD][READ] pixel=3 raw=0xffeb value=0xffeb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x017f value=0x017f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07eb value=0x07eb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf858 value=0xf858
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe9 value=0xffe9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x019f value=0x019f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ec value=0x07ec
+[PICOCALC][LCD][READ] pixel=2 raw=0xf860 value=0xf860
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe7 value=0xffe7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01bf value=0x01bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ed value=0x07ed
+[PICOCALC][LCD][READ] pixel=2 raw=0xf868 value=0xf868
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe5 value=0xffe5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01df value=0x01df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ee value=0x07ee
+[PICOCALC][LCD][READ] pixel=2 raw=0xf870 value=0xf870
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe3 value=0xffe3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x01ff value=0x01ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ef value=0x07ef
+[PICOCALC][LCD][READ] pixel=2 raw=0xf878 value=0xf878
+[PICOCALC][LCD][READ] pixel=3 raw=0xffe1 value=0xffe1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x021f value=0x021f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f0 value=0x07f0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf880 value=0xf880
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdf value=0xffdf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x023f value=0x023f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f1 value=0x07f1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf888 value=0xf888
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdd value=0xffdd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x025f value=0x025f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f2 value=0x07f2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf890 value=0xf890
+[PICOCALC][LCD][READ] pixel=3 raw=0xffdb value=0xffdb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x027f value=0x027f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f3 value=0x07f3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf898 value=0xf898
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd9 value=0xffd9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x029f value=0x029f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f4 value=0x07f4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8a0 value=0xf8a0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd7 value=0xffd7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02bf value=0x02bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f5 value=0x07f5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8a8 value=0xf8a8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd5 value=0xffd5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02df value=0x02df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f6 value=0x07f6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8b0 value=0xf8b0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd3 value=0xffd3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x02ff value=0x02ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f7 value=0x07f7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8b8 value=0xf8b8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffd1 value=0xffd1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x031f value=0x031f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f8 value=0x07f8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8c0 value=0xf8c0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcf value=0xffcf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x033f value=0x033f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07f9 value=0x07f9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8c8 value=0xf8c8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcd value=0xffcd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x035f value=0x035f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fa value=0x07fa
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8d0 value=0xf8d0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffcb value=0xffcb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x037f value=0x037f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fb value=0x07fb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8d8 value=0xf8d8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc9 value=0xffc9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x039f value=0x039f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fc value=0x07fc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8e0 value=0xf8e0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc7 value=0xffc7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03bf value=0x03bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fd value=0x07fd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8e8 value=0xf8e8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc5 value=0xffc5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03df value=0x03df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07fe value=0x07fe
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8f0 value=0xf8f0
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc3 value=0xffc3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x03ff value=0x03ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ff value=0x07ff
+[PICOCALC][LCD][READ] pixel=2 raw=0xf8f8 value=0xf8f8
+[PICOCALC][LCD][READ] pixel=3 raw=0xffc1 value=0xffc1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x041f value=0x041f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c0 value=0x07c0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf900 value=0xf900
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbf value=0xffbf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x043f value=0x043f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c1 value=0x07c1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf908 value=0xf908
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbd value=0xffbd
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x045f value=0x045f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c2 value=0x07c2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf910 value=0xf910
+[PICOCALC][LCD][READ] pixel=3 raw=0xffbb value=0xffbb
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x047f value=0x047f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c3 value=0x07c3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf918 value=0xf918
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb9 value=0xffb9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x049f value=0x049f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c4 value=0x07c4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf920 value=0xf920
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb7 value=0xffb7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04bf value=0x04bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c5 value=0x07c5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf928 value=0xf928
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb5 value=0xffb5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04df value=0x04df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c6 value=0x07c6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf930 value=0xf930
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb3 value=0xffb3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x04ff value=0x04ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c7 value=0x07c7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf938 value=0xf938
+[PICOCALC][LCD][READ] pixel=3 raw=0xffb1 value=0xffb1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x051f value=0x051f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c8 value=0x07c8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf940 value=0xf940
+[PICOCALC][LCD][READ] pixel=3 raw=0xffaf value=0xffaf
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x053f value=0x053f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07c9 value=0x07c9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf948 value=0xf948
+[PICOCALC][LCD][READ] pixel=3 raw=0xffad value=0xffad
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x055f value=0x055f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ca value=0x07ca
+[PICOCALC][LCD][READ] pixel=2 raw=0xf950 value=0xf950
+[PICOCALC][LCD][READ] pixel=3 raw=0xffab value=0xffab
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x057f value=0x057f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cb value=0x07cb
+[PICOCALC][LCD][READ] pixel=2 raw=0xf958 value=0xf958
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa9 value=0xffa9
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x059f value=0x059f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cc value=0x07cc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf960 value=0xf960
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa7 value=0xffa7
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05bf value=0x05bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cd value=0x07cd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf968 value=0xf968
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa5 value=0xffa5
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05df value=0x05df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ce value=0x07ce
+[PICOCALC][LCD][READ] pixel=2 raw=0xf970 value=0xf970
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa3 value=0xffa3
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x05ff value=0x05ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07cf value=0x07cf
+[PICOCALC][LCD][READ] pixel=2 raw=0xf978 value=0xf978
+[PICOCALC][LCD][READ] pixel=3 raw=0xffa1 value=0xffa1
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x061f value=0x061f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d0 value=0x07d0
+[PICOCALC][LCD][READ] pixel=2 raw=0xf980 value=0xf980
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9f value=0xff9f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x063f value=0x063f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d1 value=0x07d1
+[PICOCALC][LCD][READ] pixel=2 raw=0xf988 value=0xf988
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9d value=0xff9d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x065f value=0x065f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d2 value=0x07d2
+[PICOCALC][LCD][READ] pixel=2 raw=0xf990 value=0xf990
+[PICOCALC][LCD][READ] pixel=3 raw=0xff9b value=0xff9b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x067f value=0x067f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d3 value=0x07d3
+[PICOCALC][LCD][READ] pixel=2 raw=0xf998 value=0xf998
+[PICOCALC][LCD][READ] pixel=3 raw=0xff99 value=0xff99
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x069f value=0x069f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d4 value=0x07d4
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9a0 value=0xf9a0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff97 value=0xff97
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06bf value=0x06bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d5 value=0x07d5
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9a8 value=0xf9a8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff95 value=0xff95
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06df value=0x06df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d6 value=0x07d6
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9b0 value=0xf9b0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff93 value=0xff93
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x06ff value=0x06ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d7 value=0x07d7
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9b8 value=0xf9b8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff91 value=0xff91
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x071f value=0x071f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d8 value=0x07d8
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9c0 value=0xf9c0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8f value=0xff8f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x073f value=0x073f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07d9 value=0x07d9
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9c8 value=0xf9c8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8d value=0xff8d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x075f value=0x075f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07da value=0x07da
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9d0 value=0xf9d0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff8b value=0xff8b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x077f value=0x077f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07db value=0x07db
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9d8 value=0xf9d8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff89 value=0xff89
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x079f value=0x079f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07dc value=0x07dc
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9e0 value=0xf9e0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff87 value=0xff87
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07bf value=0x07bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07dd value=0x07dd
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9e8 value=0xf9e8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff85 value=0xff85
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07df value=0x07df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07de value=0x07de
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9f0 value=0xf9f0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff83 value=0xff83
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07ff value=0x07ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07df value=0x07df
+[PICOCALC][LCD][READ] pixel=2 raw=0xf9f8 value=0xf9f8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff81 value=0xff81
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x081f value=0x081f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a0 value=0x07a0
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa00 value=0xfa00
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7f value=0xff7f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x083f value=0x083f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a1 value=0x07a1
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa08 value=0xfa08
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7d value=0xff7d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x085f value=0x085f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a2 value=0x07a2
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa10 value=0xfa10
+[PICOCALC][LCD][READ] pixel=3 raw=0xff7b value=0xff7b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x087f value=0x087f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a3 value=0x07a3
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa18 value=0xfa18
+[PICOCALC][LCD][READ] pixel=3 raw=0xff79 value=0xff79
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x089f value=0x089f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a4 value=0x07a4
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa20 value=0xfa20
+[PICOCALC][LCD][READ] pixel=3 raw=0xff77 value=0xff77
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08bf value=0x08bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a5 value=0x07a5
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa28 value=0xfa28
+[PICOCALC][LCD][READ] pixel=3 raw=0xff75 value=0xff75
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08df value=0x08df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a6 value=0x07a6
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa30 value=0xfa30
+[PICOCALC][LCD][READ] pixel=3 raw=0xff73 value=0xff73
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x08ff value=0x08ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a7 value=0x07a7
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa38 value=0xfa38
+[PICOCALC][LCD][READ] pixel=3 raw=0xff71 value=0xff71
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x091f value=0x091f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a8 value=0x07a8
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa40 value=0xfa40
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6f value=0xff6f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x093f value=0x093f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07a9 value=0x07a9
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa48 value=0xfa48
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6d value=0xff6d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x095f value=0x095f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07aa value=0x07aa
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa50 value=0xfa50
+[PICOCALC][LCD][READ] pixel=3 raw=0xff6b value=0xff6b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x097f value=0x097f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ab value=0x07ab
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa58 value=0xfa58
+[PICOCALC][LCD][READ] pixel=3 raw=0xff69 value=0xff69
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x099f value=0x099f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ac value=0x07ac
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa60 value=0xfa60
+[PICOCALC][LCD][READ] pixel=3 raw=0xff67 value=0xff67
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09bf value=0x09bf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ad value=0x07ad
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa68 value=0xfa68
+[PICOCALC][LCD][READ] pixel=3 raw=0xff65 value=0xff65
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09df value=0x09df
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ae value=0x07ae
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa70 value=0xfa70
+[PICOCALC][LCD][READ] pixel=3 raw=0xff63 value=0xff63
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x09ff value=0x09ff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07af value=0x07af
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa78 value=0xfa78
+[PICOCALC][LCD][READ] pixel=3 raw=0xff61 value=0xff61
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a1f value=0x0a1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b0 value=0x07b0
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa80 value=0xfa80
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5f value=0xff5f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a3f value=0x0a3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b1 value=0x07b1
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa88 value=0xfa88
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5d value=0xff5d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a5f value=0x0a5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b2 value=0x07b2
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa90 value=0xfa90
+[PICOCALC][LCD][READ] pixel=3 raw=0xff5b value=0xff5b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a7f value=0x0a7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b3 value=0x07b3
+[PICOCALC][LCD][READ] pixel=2 raw=0xfa98 value=0xfa98
+[PICOCALC][LCD][READ] pixel=3 raw=0xff59 value=0xff59
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0a9f value=0x0a9f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b4 value=0x07b4
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaa0 value=0xfaa0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff57 value=0xff57
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0abf value=0x0abf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b5 value=0x07b5
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaa8 value=0xfaa8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff55 value=0xff55
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0adf value=0x0adf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b6 value=0x07b6
+[PICOCALC][LCD][READ] pixel=2 raw=0xfab0 value=0xfab0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff53 value=0xff53
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0aff value=0x0aff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b7 value=0x07b7
+[PICOCALC][LCD][READ] pixel=2 raw=0xfab8 value=0xfab8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff51 value=0xff51
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b1f value=0x0b1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b8 value=0x07b8
+[PICOCALC][LCD][READ] pixel=2 raw=0xfac0 value=0xfac0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4f value=0xff4f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b3f value=0x0b3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07b9 value=0x07b9
+[PICOCALC][LCD][READ] pixel=2 raw=0xfac8 value=0xfac8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4d value=0xff4d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b5f value=0x0b5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07ba value=0x07ba
+[PICOCALC][LCD][READ] pixel=2 raw=0xfad0 value=0xfad0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff4b value=0xff4b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b7f value=0x0b7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bb value=0x07bb
+[PICOCALC][LCD][READ] pixel=2 raw=0xfad8 value=0xfad8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff49 value=0xff49
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0b9f value=0x0b9f
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bc value=0x07bc
+[PICOCALC][LCD][READ] pixel=2 raw=0xfae0 value=0xfae0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff47 value=0xff47
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bbf value=0x0bbf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bd value=0x07bd
+[PICOCALC][LCD][READ] pixel=2 raw=0xfae8 value=0xfae8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff45 value=0xff45
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bdf value=0x0bdf
+[PICOCALC][LCD][READ] pixel=1 raw=0x07be value=0x07be
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaf0 value=0xfaf0
+[PICOCALC][LCD][READ] pixel=3 raw=0xff43 value=0xff43
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0bff value=0x0bff
+[PICOCALC][LCD][READ] pixel=1 raw=0x07bf value=0x07bf
+[PICOCALC][LCD][READ] pixel=2 raw=0xfaf8 value=0xfaf8
+[PICOCALC][LCD][READ] pixel=3 raw=0xff41 value=0xff41
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c1f value=0x0c1f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0780 value=0x0780
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb00 value=0xfb00
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3f value=0xff3f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x3e format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c3f value=0x0c3f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0781 value=0x0781
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb08 value=0xfb08
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3d value=0xff3d
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x7f format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c5f value=0x0c5f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0782 value=0x0782
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb10 value=0xfb10
+[PICOCALC][LCD][READ] pixel=3 raw=0xff3b value=0xff3b
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xbe format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x0c7f value=0x0c7f
+[PICOCALC][LCD][READ] pixel=1 raw=0x0783 value=0x0783
+[PICOCALC][LCD][READ] pixel=2 raw=0xfb18 value=0xfb18
+[PICOCALC][LCD][READ] pixel=3 raw=0xff39 value=0xff39
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][LCD] iterations=100 pass=100 fail=0 result=pass
+[R5][AUDIO] refill=1287 irq=1285 underrun=0 carrier_hz=976562 result=pass human_audible=record_separately
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=5 read_us=4
+[R5][PSRAM] available=1 address=102464 bytes=24 mismatches=0 result=pass
+[R5][SD] filesystem=fat32 default=fat32 fat16=optional stage=ok detail=0 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xff format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=1 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=2 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][READ] pixel=3 raw=0x07e0 value=0x07e0
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=line_clear score=100 lines=1 over=0 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0xc1 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=1 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=2 raw=0xf800 value=0xf800
+[PICOCALC][LCD][READ] pixel=3 raw=0xf800 value=0xf800
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=game_over score=100 lines=1 over=1 result=pass
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=life-capture ramrd dummy=0x00 format=rgb565 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=1 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=2 raw=0x001f value=0x001f
+[PICOCALC][LCD][READ] pixel=3 raw=0x001f value=0x001f
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[R5][GAME] phase=restart score=0 lines=0 over=0 result=pass
+[R5][KEY] source=official_picocalc_keyboard commit=a61c1f2f18185b32a667dde5c9393ced9ddd19ca total=67 resumed=1 complete=10
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=- state=1 code=0x2d complete=0 count=10/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=11/67
+[R5][KEY] key=DEL state=1 code=0xd4 complete=0 count=11/67
+[R5][KEY] key=DEL state=1 code=0xd4 complete=0 count=11/67
+[R5][KEY] key=DEL state=1 code=0xd4 complete=0 count=11/67
+[R5][KEY] key=DEL state=1 code=0xd4 complete=0 count=11/67
+[R5][KEY] key=DEL state=3 code=0xd4 complete=1 count=12/67
+[R5][KEY] key=BACKSPACE state=1 code=0x08 complete=0 count=12/67
+[R5][KEY] key=BACKSPACE state=1 code=0x08 complete=0 count=12/67
+[R5][KEY] key=BACKSPACE state=1 code=0x08 complete=0 count=12/67
+[R5][KEY] key=BACKSPACE state=3 code=0x08 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=ESC state=1 code=0xb1 complete=1 count=13/67
+[R5][KEY] key=ESC state=3 code=0xb1 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=3 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=ESC state=1 code=0xb1 complete=1 count=13/67
+[R5][KEY] key=ESC state=3 code=0xb1 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=13/67
+[R5][KEY] key=` state=3 code=0x60 complete=1 count=13/67
+[R5][KEY] key=/ state=1 code=0x2f complete=0 count=13/67
+[R5][KEY] key=/ state=1 code=0x2f complete=0 count=13/67
+[R5][KEY] key=/ state=1 code=0x2f complete=0 count=13/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=14/67
+[R5][KEY] key=\ state=1 code=0x5c complete=0 count=14/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=14/67
+[R5][KEY] key=\ state=1 code=0x5c complete=0 count=14/67
+[R5][KEY] key=\ state=1 code=0x5c complete=0 count=14/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=14/67
+[R5][KEY] key=\ state=1 code=0x5c complete=0 count=14/67
+[R5][KEY] key=\ state=3 code=0x5c complete=1 count=15/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=15/67
+[R5][KEY] key== state=1 code=0x3d complete=0 count=15/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=15/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=15/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=16/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=16/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=16/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=16/67
+[R5][KEY] key=[ state=1 code=0x5b complete=0 count=16/67
+[R5][KEY] key=[ state=3 code=0x5b complete=1 count=17/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=17/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=17/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=17/67
+[R5][KEY] key=[ state=1 code=0x5b complete=1 count=17/67
+[R5][KEY] key=[ state=1 code=0x5b complete=1 count=17/67
+[R5][KEY] key=[ state=1 code=0x5b complete=1 count=17/67
+[R5][KEY] key=[ state=3 code=0x5b complete=1 count=17/67
+[R5][KEY] key=] state=1 code=0x5d complete=0 count=17/67
+[R5][KEY] key=] state=1 code=0x5d complete=0 count=17/67
+[R5][KEY] key=] state=1 code=0x5d complete=0 count=17/67
+[R5][KEY] key=] state=1 code=0x5d complete=0 count=17/67
+[R5][KEY] key=] state=3 code=0x5d complete=1 count=18/67
+[R5][KEY] key=1 state=1 code=0x31 complete=0 count=18/67
+[R5][KEY] key=1 state=1 code=0x31 complete=0 count=18/67
+[R5][KEY] key=1 state=1 code=0x31 complete=0 count=18/67
+[R5][KEY] key=1 state=3 code=0x31 complete=1 count=19/67
+[R5][KEY] key=2 state=1 code=0x32 complete=0 count=19/67
+[R5][KEY] key=1 state=1 code=0x31 complete=1 count=19/67
+[R5][KEY] key=1 state=3 code=0x31 complete=1 count=19/67
+[R5][KEY] key=2 state=3 code=0x32 complete=1 count=20/67
+[R5][KEY] key=3 state=1 code=0x33 complete=0 count=20/67
+[R5][KEY] key=3 state=3 code=0x33 complete=1 count=21/67
+[R5][KEY] key=4 state=1 code=0x34 complete=0 count=21/67
+[R5][KEY] key=4 state=3 code=0x34 complete=1 count=22/67
+[R5][KEY] key=5 state=1 code=0x35 complete=0 count=22/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=22/67
+[R5][KEY] key=4 state=3 code=0x34 complete=1 count=22/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=23/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=23/67
+[R5][KEY] key=6 state=1 code=0x36 complete=0 count=23/67
+[R5][KEY] key=6 state=3 code=0x36 complete=1 count=24/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=24/67
+[R5][KEY] key=6 state=1 code=0x36 complete=1 count=24/67
+[R5][KEY] key=7 state=1 code=0x37 complete=0 count=24/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=25/67
+[R5][KEY] key=6 state=3 code=0x36 complete=1 count=25/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=25/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=25/67
+[R5][KEY] key=8 state=1 code=0x38 complete=0 count=25/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=25/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=25/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=26/67
+[R5][KEY] key=9 state=1 code=0x39 complete=0 count=26/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=26/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=26/67
+[R5][KEY] key=9 state=3 code=0x39 complete=1 count=27/67
+[R5][KEY] key=0 state=1 code=0x30 complete=0 count=27/67
+[R5][KEY] key=0 state=3 code=0x30 complete=1 count=28/67
+[R5][KEY] key=Q state=1 code=0x71 complete=0 count=28/67
+[R5][KEY] key=Q state=3 code=0x71 complete=1 count=29/67
+[R5][KEY] key=W state=1 code=0x77 complete=0 count=29/67
+[R5][KEY] key=W state=3 code=0x77 complete=1 count=30/67
+[R5][KEY] key=E state=1 code=0x65 complete=0 count=30/67
+[R5][KEY] key=E state=3 code=0x65 complete=1 count=31/67
+[R5][KEY] key=R state=1 code=0x72 complete=0 count=31/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=31/67
+[R5][KEY] key=E state=3 code=0x65 complete=1 count=31/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=32/67
+[R5][KEY] key=R state=1 code=0x72 complete=1 count=32/67
+[R5][KEY] key=T state=1 code=0x74 complete=0 count=32/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=33/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=33/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=33/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=33/67
+[R5][KEY] key=Y state=1 code=0x79 complete=0 count=33/67
+[R5][KEY] key=Y state=1 code=0x79 complete=0 count=33/67
+[R5][KEY] key=Y state=3 code=0x79 complete=1 count=34/67
+[R5][KEY] key=U state=1 code=0x75 complete=0 count=34/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=35/67
+[R5][KEY] key=I state=1 code=0x69 complete=0 count=35/67
+[R5][KEY] key=I state=3 code=0x69 complete=1 count=36/67
+[R5][KEY] key=O state=1 code=0x6f complete=0 count=36/67
+[R5][KEY] key=O state=3 code=0x6f complete=1 count=37/67
+[R5][KEY] key=P state=1 code=0x70 complete=0 count=37/67
+[R5][KEY] key=P state=3 code=0x70 complete=1 count=38/67
+[R5][KEY] key=ENTER state=1 code=0x0a complete=0 count=38/67
+[R5][KEY] key=ENTER state=3 code=0x0a complete=1 count=39/67
+[R5][KEY] key=L state=1 code=0x6c complete=0 count=39/67
+[R5][KEY] key=L state=3 code=0x6c complete=1 count=40/67
+[R5][KEY] key=K state=1 code=0x6b complete=0 count=40/67
+[R5][KEY] key=K state=3 code=0x6b complete=1 count=41/67
+[R5][KEY] key=J state=1 code=0x6a complete=0 count=41/67
+[R5][KEY] key=J state=3 code=0x6a complete=1 count=42/67
+[R5][KEY] key=H state=1 code=0x68 complete=0 count=42/67
+[R5][KEY] key=H state=3 code=0x68 complete=1 count=43/67
+[R5][KEY] key=G state=1 code=0x67 complete=0 count=43/67
+[R5][KEY] key=G state=3 code=0x67 complete=1 count=44/67
+[R5][KEY] key=F state=1 code=0x66 complete=0 count=44/67
+[R5][KEY] key=F state=3 code=0x66 complete=1 count=45/67
+[R5][KEY] key=D state=1 code=0x64 complete=0 count=45/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=46/67
+[R5][KEY] key=S state=1 code=0x73 complete=0 count=46/67
+[R5][KEY] key=S state=3 code=0x73 complete=1 count=47/67
+[R5][KEY] key=A state=1 code=0x61 complete=0 count=47/67
+[R5][KEY] key=A state=3 code=0x61 complete=1 count=48/67
+[R5][KEY] key=Z state=1 code=0x7a complete=0 count=48/67
+[R5][KEY] key=Z state=3 code=0x7a complete=1 count=49/67
+[R5][KEY] key=X state=1 code=0x78 complete=0 count=49/67
+[R5][KEY] key=X state=3 code=0x78 complete=1 count=50/67
+[R5][KEY] key=C state=1 code=0x63 complete=0 count=50/67
+[R5][KEY] key=C state=3 code=0x63 complete=1 count=51/67
+[R5][KEY] key=V state=1 code=0x76 complete=0 count=51/67
+[R5][KEY] key=V state=3 code=0x76 complete=1 count=52/67
+[R5][KEY] key=B state=1 code=0x62 complete=0 count=52/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=53/67
+[R5][KEY] key=N state=1 code=0x6e complete=0 count=53/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=54/67
+[R5][KEY] key=M state=1 code=0x6d complete=0 count=54/67
+[R5][KEY] key=M state=3 code=0x6d complete=1 count=55/67
+[R5][KEY] key=, state=1 code=0x2c complete=0 count=55/67
+[R5][KEY] key=, state=3 code=0x2c complete=1 count=56/67
+[R5][KEY] key=. state=1 code=0x2e complete=0 count=56/67
+[R5][KEY] key=. state=3 code=0x2e complete=1 count=57/67
+[R5][KEY] key=RIGHT_SHIFT state=1 code=0xa3 complete=0 count=57/67
+[R5][KEY] key=RIGHT_SHIFT state=3 code=0xa3 complete=1 count=58/67
+[R5][KEY] key=' state=1 code=0x27 complete=0 count=58/67
+[R5][KEY] key=' state=3 code=0x27 complete=1 count=59/67
+[R5][KEY] key=; state=1 code=0x3b complete=0 count=59/67
+[R5][KEY] key=; state=3 code=0x3b complete=1 count=60/67
+[R5][KEY] key=SPACE state=1 code=0x20 complete=0 count=60/67
+[R5][KEY] key=SPACE state=3 code=0x20 complete=1 count=61/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=0 count=61/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=62/67
+[R5][KEY] key=CTRL state=1 code=0xa5 complete=0 count=62/67
+[R5][KEY] key=CTRL state=3 code=0xa5 complete=1 count=63/67
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=0 count=63/67
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=[ state=1 code=0x5b complete=1 count=64/67
+[R5][KEY] key=[ state=3 code=0x5b complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=64/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=- event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=DOWN event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=LEFT event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=UP event=ignored reason=caps_restore_required
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=64/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=64/67
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=CAPS event=early recovery=press_caps_again
+[R5][KEY] key=CAPS event=early recovery=restored_continue
+[R5][KEY] key=[ state=1 code=0x5b complete=1 count=64/67
+[R5][KEY] key=] state=1 code=0x5d complete=1 count=64/67
+[R5][KEY] key=9 state=1 code=0x39 complete=1 count=64/67
+[R5][KEY] key=9 state=3 code=0x39 complete=1 count=64/67
+[R5][KEY] key=] state=3 code=0x5d complete=1 count=64/67
+[R5][KEY] key=[ state=3 code=0x5b complete=1 count=64/67
+[R5][KEY] key=9 state=1 code=0x39 complete=1 count=64/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=64/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=64/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=64/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=64/67
+[R5][KEY] key=I state=3 code=0x69 complete=1 count=64/67
+[R5][KEY] key=9 state=3 code=0x39 complete=1 count=64/67
+[R5][KEY] key=R state=1 code=0x72 complete=1 count=64/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=64/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=64/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=64/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=64/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=64/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=64/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=64/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=64/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=4 state=3 code=0x34 complete=1 count=64/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=64/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=64/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=64/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=64/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=64/67
+[R5][KEY] key=I state=3 code=0x69 complete=1 count=64/67
+[R5][KEY] key=S state=1 code=0x73 complete=1 count=64/67
+[R5][KEY] key=D state=1 code=0x64 complete=1 count=64/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=64/67
+[R5][KEY] key=W state=1 code=0x77 complete=1 count=64/67
+[R5][KEY] key=1 state=1 code=0x31 complete=1 count=64/67
+[R5][KEY] key=X state=1 code=0x78 complete=1 count=64/67
+[R5][KEY] key=Q state=1 code=0x71 complete=1 count=64/67
+[R5][KEY] key=X state=3 code=0x78 complete=1 count=64/67
+[R5][KEY] key=Q state=3 code=0x71 complete=1 count=64/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=64/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=64/67
+[R5][KEY] key=W state=3 code=0x77 complete=1 count=64/67
+[R5][KEY] key=1 state=3 code=0x31 complete=1 count=64/67
+[R5][KEY] key=E state=3 code=0x65 complete=1 count=64/67
+[R5][KEY] key=S state=1 code=0x73 complete=1 count=64/67
+[R5][KEY] key=S state=1 code=0x73 complete=1 count=64/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=64/67
+[R5][KEY] key=S state=3 code=0x73 complete=1 count=64/67
+[R5][KEY] key=J state=1 code=0x6a complete=1 count=64/67
+[R5][KEY] key=H state=1 code=0x68 complete=1 count=64/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=64/67
+[R5][KEY] key=J state=3 code=0x6a complete=1 count=64/67
+[R5][KEY] key=H state=3 code=0x68 complete=1 count=64/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=64/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=64/67
+[R5][KEY] key=Y state=3 code=0x79 complete=1 count=64/67
+[R5][KEY] key=Z state=1 code=0x7a complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=64/67
+[R5][KEY] event=unexpected state=3 code=0x5a recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=64/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=65/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=LEFT state=3 code=0xb4 complete=1 count=65/67
+[R5][KEY] key=RIGHT state=3 code=0xb7 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=DOWN state=3 code=0xb6 complete=1 count=65/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=3 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=LEFT state=3 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=UP state=1 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=UP state=3 code=0xb5 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=LEFT state=1 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=DOWN state=3 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=LEFT state=3 code=0xb4 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=DOWN state=1 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=1 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=DOWN state=3 code=0xb6 complete=1 count=66/67
+[R5][KEY] key=RIGHT state=3 code=0xb7 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=Y state=3 code=0x79 complete=1 count=66/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=66/67
+[R5][KEY] key=D state=1 code=0x64 complete=1 count=66/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=66/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=66/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=66/67
+[R5][KEY] key=E state=1 code=0x65 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=E state=3 code=0x65 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=66/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=66/67
+[R5][KEY] key=A state=1 code=0x61 complete=1 count=66/67
+[R5][KEY] key=S state=1 code=0x73 complete=1 count=66/67
+[R5][KEY] key=A state=1 code=0x61 complete=1 count=66/67
+[R5][KEY] key=A state=1 code=0x61 complete=1 count=66/67
+[R5][KEY] key=S state=3 code=0x73 complete=1 count=66/67
+[R5][KEY] key=A state=1 code=0x61 complete=1 count=66/67
+[R5][KEY] key=A state=3 code=0x61 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=J state=1 code=0x6a complete=1 count=66/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=66/67
+[R5][KEY] key=K state=1 code=0x6b complete=1 count=66/67
+[R5][KEY] key=K state=3 code=0x6b complete=1 count=66/67
+[R5][KEY] key=J state=3 code=0x6a complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=I state=3 code=0x69 complete=1 count=66/67
+[R5][KEY] key=X state=1 code=0x78 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=66/67
+[R5][KEY] key=X state=3 code=0x78 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=C state=3 code=0x63 complete=1 count=66/67
+[R5][KEY] key=M state=1 code=0x6d complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=M state=3 code=0x6d complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x4e recovery=retry_any_key
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=66/67
+[R5][KEY] key=SPACE state=1 code=0x20 complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=SPACE state=1 code=0x20 complete=1 count=66/67
+[R5][KEY] key=SPACE state=3 code=0x20 complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x4e recovery=retry_any_key
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=SPACE state=3 code=0x20 complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=SPACE state=1 code=0x20 complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=B state=1 code=0x62 complete=1 count=66/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=SPACE state=3 code=0x20 complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=1 code=0x6e complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x4d recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4e recovery=retry_any_key
+[R5][KEY] key=SPACE state=1 code=0x20 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=; state=1 code=0x3b complete=1 count=66/67
+[R5][KEY] key=Y state=3 code=0x79 complete=1 count=66/67
+[R5][KEY] key=N state=3 code=0x6e complete=1 count=66/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=66/67
+[R5][KEY] key=M state=3 code=0x6d complete=1 count=66/67
+[R5][KEY] key=; state=3 code=0x3b complete=1 count=66/67
+[R5][KEY] key=SPACE state=3 code=0x20 complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=; state=1 code=0x3b complete=1 count=66/67
+[R5][KEY] key=' state=1 code=0x27 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x4d recovery=retry_any_key
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=M state=3 code=0x6d complete=1 count=66/67
+[R5][KEY] key=X state=1 code=0x78 complete=1 count=66/67
+[R5][KEY] key=RIGHT_SHIFT state=1 code=0xa3 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x3a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3a recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x3c recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x3a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x22 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x22 recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x22 recovery=retry_any_key
+[R5][KEY] key=CTRL state=1 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x5a recovery=retry_any_key
+[R5][KEY] key=CTRL state=3 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] key=RIGHT_SHIFT state=2 code=0xa3 complete=1 count=66/67
+[R5][KEY] key=RIGHT_SHIFT state=2 code=0xa3 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0xd1 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3e recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3a recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x5a recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x3a recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x3e recovery=retry_any_key
+[R5][KEY] key=RIGHT_SHIFT state=2 code=0xa3 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0xd1 recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=66/67
+[R5][KEY] key=RIGHT_SHIFT state=2 code=0xa3 complete=1 count=66/67
+[R5][KEY] key=RIGHT_SHIFT state=3 code=0xa3 complete=1 count=66/67
+[R5][KEY] key=LEFT_SHIFT state=1 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] key=CTRL state=1 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x5a recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0xd1 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3e recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x43 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3a recovery=retry_any_key
+[R5][KEY] key=RIGHT_SHIFT state=1 code=0xa3 complete=1 count=66/67
+[R5][KEY] key=CTRL state=3 code=0xa5 complete=1 count=66/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=66/67
+[R5][KEY] key=LEFT_SHIFT state=2 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x22 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x51 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x51 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x5a recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x3a recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x22 recovery=retry_any_key
+[R5][KEY] key=LEFT_SHIFT state=3 code=0xa2 complete=1 count=66/67
+[R5][KEY] event=unexpected state=2 code=0xd1 recovery=retry_any_key
+[R5][KEY] event=unexpected state=2 code=0xd1 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3e recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x3e recovery=retry_any_key
+[R5][KEY] key=RIGHT_SHIFT state=2 code=0xa3 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] key=CTRL state=1 code=0xa5 complete=1 count=66/67
+[R5][KEY] key=RIGHT_SHIFT state=3 code=0xa3 complete=1 count=66/67
+[R5][KEY] key=L state=1 code=0x6c complete=1 count=66/67
+[R5][KEY] key=F state=1 code=0x66 complete=1 count=66/67
+[R5][KEY] key=V state=1 code=0x76 complete=1 count=66/67
+[R5][KEY] key=ALT state=1 code=0xa1 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] key=ENTER state=1 code=0x0a complete=1 count=66/67
+[R5][KEY] key=ENTER state=3 code=0x0a complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x58 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] key=; state=1 code=0x3b complete=1 count=66/67
+[R5][KEY] key=' state=1 code=0x27 complete=1 count=66/67
+[R5][KEY] key=ENTER state=1 code=0x0a complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x58 recovery=retry_any_key
+[R5][KEY] key=; state=3 code=0x3b complete=1 count=66/67
+[R5][KEY] key=' state=3 code=0x27 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x4c recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x50 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] key=CTRL state=2 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x43 recovery=retry_any_key
+[R5][KEY] key=CTRL state=2 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x56 recovery=retry_any_key
+[R5][KEY] key=ALT state=2 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=CTRL state=3 code=0xa5 complete=1 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x56 recovery=retry_any_key
+[R5][KEY] key=ALT state=3 code=0xa1 complete=1 count=66/67
+[R5][KEY] key=. state=3 code=0x2e complete=1 count=66/67
+[R5][KEY] key=V state=3 code=0x76 complete=1 count=66/67
+[R5][KEY] key=O state=1 code=0x6f complete=1 count=66/67
+[R5][KEY] key=D state=1 code=0x64 complete=1 count=66/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=66/67
+[R5][KEY] key=F state=3 code=0x66 complete=1 count=66/67
+[R5][KEY] key=C state=3 code=0x63 complete=1 count=66/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=66/67
+[R5][KEY] key=O state=3 code=0x6f complete=1 count=66/67
+[R5][KEY] key=L state=3 code=0x6c complete=1 count=66/67
+[R5][KEY] key=V state=1 code=0x76 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=ENTER state=1 code=0x0a complete=1 count=66/67
+[R5][KEY] key=ENTER state=1 code=0x0a complete=1 count=66/67
+[R5][KEY] key=P state=3 code=0x70 complete=1 count=66/67
+[R5][KEY] key=. state=1 code=0x2e complete=1 count=66/67
+[R5][KEY] key=L state=1 code=0x6c complete=1 count=66/67
+[R5][KEY] key=F state=1 code=0x66 complete=1 count=66/67
+[R5][KEY] key=ENTER state=3 code=0x0a complete=1 count=66/67
+[R5][KEY] key=. state=3 code=0x2e complete=1 count=66/67
+[R5][KEY] key=L state=3 code=0x6c complete=1 count=66/67
+[R5][KEY] key=B state=1 code=0x62 complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=66/67
+[R5][KEY] key=G state=1 code=0x67 complete=1 count=66/67
+[R5][KEY] key=D state=1 code=0x64 complete=1 count=66/67
+[R5][KEY] key=P state=1 code=0x70 complete=1 count=66/67
+[R5][KEY] key=0 state=1 code=0x30 complete=1 count=66/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=66/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=66/67
+[R5][KEY] key=G state=3 code=0x67 complete=1 count=66/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=66/67
+[R5][KEY] key=ENTER state=1 code=0x0a complete=1 count=66/67
+[R5][KEY] key=. state=1 code=0x2e complete=1 count=66/67
+[R5][KEY] key=L state=1 code=0x6c complete=1 count=66/67
+[R5][KEY] key=O state=1 code=0x6f complete=1 count=66/67
+[R5][KEY] key=ENTER state=3 code=0x0a complete=1 count=66/67
+[R5][KEY] key=. state=3 code=0x2e complete=1 count=66/67
+[R5][KEY] key=L state=3 code=0x6c complete=1 count=66/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=66/67
+[R5][KEY] key=9 state=1 code=0x39 complete=1 count=66/67
+[R5][KEY] key=F state=3 code=0x66 complete=1 count=66/67
+[R5][KEY] key=V state=1 code=0x76 complete=1 count=66/67
+[R5][KEY] key=V state=1 code=0x76 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=V state=3 code=0x76 complete=1 count=66/67
+[R5][KEY] key=C state=3 code=0x63 complete=1 count=66/67
+[R5][KEY] key=9 state=3 code=0x39 complete=1 count=66/67
+[R5][KEY] key=O state=3 code=0x6f complete=1 count=66/67
+[R5][KEY] key=F state=1 code=0x66 complete=1 count=66/67
+[R5][KEY] key=0 state=3 code=0x30 complete=1 count=66/67
+[R5][KEY] key=G state=1 code=0x67 complete=1 count=66/67
+[R5][KEY] key=V state=1 code=0x76 complete=1 count=66/67
+[R5][KEY] key=P state=3 code=0x70 complete=1 count=66/67
+[R5][KEY] key=D state=1 code=0x64 complete=1 count=66/67
+[R5][KEY] key=R state=1 code=0x72 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=66/67
+[R5][KEY] key=B state=1 code=0x62 complete=1 count=66/67
+[R5][KEY] key=C state=1 code=0x63 complete=1 count=66/67
+[R5][KEY] key=B state=3 code=0x62 complete=1 count=66/67
+[R5][KEY] key=D state=3 code=0x64 complete=1 count=66/67
+[R5][KEY] key=O state=1 code=0x6f complete=1 count=66/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=66/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=66/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=66/67
+[R5][KEY] key=9 state=1 code=0x39 complete=1 count=66/67
+[R5][KEY] key=I state=1 code=0x69 complete=1 count=66/67
+[R5][KEY] key=F state=3 code=0x66 complete=1 count=66/67
+[R5][KEY] key=V state=3 code=0x76 complete=1 count=66/67
+[R5][KEY] key=C state=3 code=0x63 complete=1 count=66/67
+[R5][KEY] key=K state=1 code=0x6b complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=K state=3 code=0x6b complete=1 count=66/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=66/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=66/67
+[R5][KEY] key=G state=1 code=0x67 complete=1 count=66/67
+[R5][KEY] key=G state=3 code=0x67 complete=1 count=66/67
+[R5][KEY] key=9 state=3 code=0x39 complete=1 count=66/67
+[R5][KEY] key=O state=3 code=0x6f complete=1 count=66/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=66/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=66/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=66/67
+[R5][KEY] key=I state=3 code=0x69 complete=1 count=66/67
+[R5][KEY] key=6 state=1 code=0x36 complete=1 count=66/67
+[R5][KEY] key=Y state=1 code=0x79 complete=1 count=66/67
+[R5][KEY] key=R state=1 code=0x72 complete=1 count=66/67
+[R5][KEY] key=R state=3 code=0x72 complete=1 count=66/67
+[R5][KEY] key=6 state=3 code=0x36 complete=1 count=66/67
+[R5][KEY] key=Y state=3 code=0x79 complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=U state=1 code=0x75 complete=1 count=66/67
+[R5][KEY] key=U state=3 code=0x75 complete=1 count=66/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=66/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=66/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=66/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=66/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=66/67
+[R5][KEY] key=\ state=1 code=0x5c complete=1 count=66/67
+[R5][KEY] key=6 state=1 code=0x36 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=66/67
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=66/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=66/67
+[R5][KEY] key=\ state=3 code=0x5c complete=1 count=66/67
+[R5][KEY] key=6 state=3 code=0x36 complete=1 count=66/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=T state=1 code=0x74 complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=T state=3 code=0x74 complete=1 count=66/67
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=4 state=3 code=0x34 complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=5 state=1 code=0x35 complete=1 count=66/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=7 state=1 code=0x37 complete=1 count=66/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=66/67
+[R5][KEY] key=4 state=1 code=0x34 complete=1 count=66/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=66/67
+[R5][KEY] key=7 state=3 code=0x37 complete=1 count=66/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=66/67
+[R5][KEY] key=F4 state=1 code=0x84 complete=1 count=66/67
+[R5][KEY] key=DEL state=1 code=0xd4 complete=1 count=66/67
+[R5][KEY] key== state=1 code=0x3d complete=1 count=66/67
+[R5][KEY] key=8 state=1 code=0x38 complete=1 count=66/67
+[R5][KEY] key=F1 state=1 code=0x81 complete=1 count=66/67
+[R5][KEY] key=ESC state=1 code=0xb1 complete=1 count=66/67
+[R5][KEY] key=F4 state=3 code=0x84 complete=1 count=66/67
+[R5][KEY] key=F1 state=3 code=0x81 complete=1 count=66/67
+[R5][KEY] key=` state=3 code=0x60 complete=1 count=66/67
+[R5][KEY] key=CAPS state=1 code=0xc1 complete=0 count=66/67
+[R5][KEY] event=unexpected state=1 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=1 code=0x46 recovery=retry_any_key
+[R5][KEY] key=8 state=3 code=0x38 complete=1 count=66/67
+[R5][KEY] key=ESC state=3 code=0xb1 complete=1 count=66/67
+[R5][KEY] key=/ state=3 code=0x2f complete=1 count=66/67
+[R5][KEY] key=4 state=3 code=0x34 complete=1 count=66/67
+[R5][KEY] event=unexpected state=3 code=0x52 recovery=retry_any_key
+[R5][KEY] event=unexpected state=3 code=0x46 recovery=retry_any_key
+[R5][KEY] key=- state=1 code=0x2d complete=1 count=66/67
+[R5][KEY] key=5 state=3 code=0x35 complete=1 count=66/67
+[R5][KEY] key=CAPS state=3 code=0xc1 complete=1 count=67/67
+[R5][KEY] key=- state=3 code=0x2d complete=1 count=67/67
+[R5][KEY] key=DEL state=3 code=0xd4 complete=1 count=67/67
+[R5][KEY] key== state=3 code=0x3d complete=1 count=67/67
+[R5][KEY] key=/ state=1 code=0x2f complete=1 count=67/67
+[R5][KEY] key=` state=1 code=0x60 complete=1 count=67/67
+[R5_DIAG_VERDICT] lcd=pass psram=pass sd=pass audio=pass tetris=pass keyboard=67/67 io_errors=0 progress=saved overall=pass

@@ -1,6 +1,6 @@
 # OPT1-A exact idle fast-forward
 
-**状態:** candidate完了、R5実機相関待ち
+**状態:** promoted。正確性・性能gateとR5同一artifact実機相関を完了
 
 **backend:** `picoem-picocalc` `c68c58f6c37fb31eb9313566c8b16883db9063b6`
 
@@ -53,7 +53,12 @@ timelineが一致した。trace OFFの10 runはreport/UART/PNGがすべて決定
 | 実時間比中央値 | 5.8738% | 13.6970% | 2.3319倍 |
 | emulated cycle/s中央値 | 14.665 M | 34.197 M | 2.3319倍 |
 
-これはcandidate gateの合格である。実機と同じ結果であることの正式なpromotionはR5相関後に行う。
+これはR5前にcandidate gateを合格した結果である。その後、同一R5 UF2がPicoCalc実機でLCD、
+PSRAM、FAT32、audio、PicoTetris、keyboard 67/67をすべて合格し、最終
+`io_errors=0 progress=saved overall=pass`となった。証拠は
+[`firmware-validation/records/r5-hardware-20260808-01/`](../firmware-validation/records/r5-hardware-20260808-01/)
+へ固定したため、現在の状態はpromotedである。一部キーの物理的な反応品質は、この到達性試験と
+分離した未測定課題として残る。
 
 ## 再現
 

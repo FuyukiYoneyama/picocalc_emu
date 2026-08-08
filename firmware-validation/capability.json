@@ -6,7 +6,7 @@
     "branch": "main",
     "commit": "612b48510452d4012e4ac6639960ca3983b48f66",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This is the current R5 emulator-preflight capability snapshot; historical targets retain their own exact backend pins in the target registry. Backend 612b485 keeps the OPT1-A execution model and adds explicit raw keyboard events for the R5 scenario. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. OPT1-A remains a candidate until R5 physical-device correlation."
+    "note": "Source is never vendored here. This is the current post-R5 capability snapshot; historical targets retain their own exact backend pins in the target registry. Backend 612b485 keeps the OPT1-A execution model and adds explicit raw keyboard events for the R5 scenario. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. R5 physical-device correlation passed and OPT1-A is promoted."
   },
   "supported": [
     {
@@ -155,16 +155,16 @@
     {
       "id": "picotetris-r5-correlation",
       "what": "One reproducible PicoTetris R5 firmware artifact for emulator preflight and physical PicoCalc correlation",
-      "detail": "Target picotetris-r5 revision 4 pins source 9a40a905, backend 612b485, one BIN/UF2 pair, FAT32, and the official ClockworkPi keyboard source commit. The firmware automatically checks 100 LCD readbacks, audio stream counters, PSRAM, SD smoke, deterministic line clear, game over and restart, then accepts all 67 physical keys in arbitrary order. Individual keys can be retried without timeout; checksum-protected SD progress resumes after power loss. Host coverage is 690 checks. Emulator preflight passed 5/5 steps with 136 raw events, 67/67 keys and no drops.",
-      "limitation": "The reproducible build and emulator half are complete, but the physical PicoCalc UART, final PASS photograph and audible-tone observation are still pending. OPT1-A remains a candidate until that evidence is recorded.",
-      "since_gate": "R5-preflight"
+      "detail": "Target picotetris-r5 revision 4 pins source 9a40a905, backend 612b485, one BIN/UF2 pair, FAT32, and the official ClockworkPi keyboard source commit. The firmware automatically checks 100 LCD readbacks, audio stream counters, PSRAM, SD smoke, deterministic line clear, game over and restart, then accepts all 67 physical keys in arbitrary order. Individual keys can be retried without timeout; checksum-protected SD progress resumes after power loss. Host coverage is 690 checks. Emulator preflight passed 5/5 steps with 136 raw events, 67/67 keys and no drops. The same UF2 passed on CPI2.0/RP2040 hardware with the exact final verdict, final PASS photograph, acoustic reference-tone evidence, and CRC-valid SD progress fixed in r5-hardware-20260808-01.",
+      "limitation": "Keyboard 67/67 proves eventual press/release reachability, not missed physical presses, actuation force or response latency. The operator observed that some keys felt less responsive; input-quality measurement remains separate from protocol conformance.",
+      "since_gate": "R5"
     },
     {
       "id": "exact-idle-fast-forward",
       "what": "Exact event-horizon fast-forward while both RP2040 cores are blocked",
-      "detail": "Target picotetris-opt1a revision 3 preserves the registered PicoTetris firmware, scenario, 927528660 cycles, UART, RGB565 framebuffer and 85-step timeline on backend c68c58f6c37fb31eb9313566c8b16883db9063b6. Behavior trace schema 2 separates UART guest-byte events from host diagnostic draining and preserves all nine event-domain counts and hashes against a one-cycle reference. Ten trace-off runs reduced median wall time from 63.2470 s to 27.1229 s, a 2.3319x speedup, while deterministic report, UART and PNG artifacts remained identical.",
-      "limitation": "This is an emulator-internal candidate result. It is not promoted as physical-device-equivalent until R5 correlates the exact registered BIN SHA on a PicoCalc.",
-      "since_gate": "OPT1-A"
+      "detail": "Target picotetris-opt1a revision 3 preserves the registered PicoTetris firmware, scenario, 927528660 cycles, UART, RGB565 framebuffer and 85-step timeline on backend c68c58f6c37fb31eb9313566c8b16883db9063b6. Behavior trace schema 2 separates UART guest-byte events from host diagnostic draining and preserves all nine event-domain counts and hashes against a one-cycle reference. Ten trace-off runs reduced median wall time from 63.2470 s to 27.1229 s, a 2.3319x speedup, while deterministic report, UART and PNG artifacts remained identical. R5 then correlated the same registered firmware family on physical PicoCalc hardware, so OPT1-A is promoted.",
+      "limitation": "Promotion applies to the exactness and workloads covered by OPT1-A and R5; later batching or CPU optimizations require their own correctness, determinism, performance and hardware-correlation decisions.",
+      "since_gate": "R5"
     },
     {
       "id": "host-backend",

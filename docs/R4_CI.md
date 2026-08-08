@@ -68,6 +68,6 @@ host 3回バイト一致、PicoTetris build SHA、R3/R4で記録したfirmware 3
 権威あるfirmware 1回を組み合わせている。100回soakや別形式のreportが必要になった場合は、
 所要時間と保存方針を定めた独立作業パッケージとして追加する。
 
-R5の実装・emulator preflight・CI接続後に残るのは、CIが再現したものと同一SHAの
-`PicoTetris_R5.uf2`を実機へ書き込み、UART全文、参照音、67/67、最終PASS写真1枚を相関する
-1回のPicoCalcセッションである。
+R5の実装・emulator preflight・CI接続後、CIが再現したものと同一SHAの
+`PicoTetris_R5.uf2`を実機へ書き込み、UART全文、参照音、67/67、最終PASS写真1枚を相関した。
+結果は`firmware-validation/records/r5-hardware-20260808-01/`に保存し、R5を完了した。

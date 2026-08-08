@@ -144,6 +144,11 @@
 >
 > **R4完了（2026-08-06）:** backend、PicoTetris、`picocalc_emu`の3リポジトリを独立した
 > clean-runner gateへ接続し、full gateを完了した。詳細は[`R4_CI.md`](R4_CI.md)にある。
+>
+> **R5/R6完了（2026-08-08）:** 後続の単一R5 artifactはemulator preflightとPicoCalc実機で
+> LCD、PSRAM、FAT32、audio、ゲーム、keyboard 67/67が一致した。UART、写真、参照音、SD進捗は
+> `firmware-validation/records/r5-hardware-20260808-01/`へ固定し、OPT1-Aをpromotedとした。
+> 一部キーの反応品質は、67/67到達性とは別の未測定課題として記録している。
 
 ## 成果物
 

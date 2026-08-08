@@ -91,3 +91,9 @@ timelineをtargetへpinしている。evidenceは
 このattestationの`accepted`はtarget contractとemulator preflightの妥当性を示す。
 実機合格を意味しない。recordの`hardware_correlation_completed=false`を維持し、実機UART全文、
 最終PASS写真1枚、参照音確認が新しいhardware evidenceへ記録されるまでOPT1-Aはcandidateである。
+
+後続の実機record
+`firmware-validation/records/r5-hardware-20260808-01/record.json`は同一UF2のPicoCalc実行を記録し、
+完全verdict、最終PASS写真、参照音抜粋、CRC-validな`PCR5KEY.DAT` 67/67をSHA固定した。
+したがって現在の相関状態は`hardware_correlation_completed=true`、OPT1-Aは`promoted`である。
+preflight recordと上記attestationは当時のcandidate時点証拠として変更しない。

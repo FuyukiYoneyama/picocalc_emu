@@ -6,9 +6,9 @@
 
 Milestone 0〜3の中核受入条件は完了しています。Milestone 4は最初の実機相関まで
 到達しています。現行PicoTetris成果物の一意な再現と継続CIへの接続はR3/R4で完了し、
-R5専用の単一BIN、回復可能な67キー診断、emulator preflightも完了しました。残っているのは、
-登録済みUF2をPicoCalcへ一度導入して同一artifactを実機相関する操作です。R5前の観測契約OPT0と、
-正確性を維持する最初の高速化候補OPT1-Aはcandidateとして完了しました。
+R5専用の単一BIN、回復可能な67キー診断、emulator preflight、同一artifactのPicoCalc実機相関も
+完了しました。R5前の観測契約OPT0と、正確性を維持する最初の高速化OPT1-Aは実機相関を通過して
+promotedとなりました。R5の現在状態、時点証拠、配布境界を文書と機械検証へ統合し、R6も完了しました。
 次に行う作業は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -45,7 +45,7 @@ Firmware backendを分割したものであり、本書と競合しません。
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
 
-## 現在の実行順序（2026-08-08 R5 preflight反映）
+## 現在の実行順序（2026-08-08 R5 hardware correlation完了反映）
 
 以下は新しいMilestone体系ではありません。完了済みMilestone 0〜3を再現可能な
 継続回帰として固め、Milestone 4の継続相関へ進むための作業パッケージです。
@@ -70,8 +70,8 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R2 | Firmware CLI・target registryの一般化 | `picocalc_emu`＋backend | R1完了commitをaccepted backend pinとし、source/toolchain/BSP/BIN/device/scenario/期待reportを構造化登録する。CLIが宣言どおりrunnerへ渡し、wrong BIN・scenario・backend・LCD variantが明示的に失敗し、正しいtargetが1コマンドで合格する | **完了 2026-08-06**。schema 2 registry、schema 8 backend build identity、Template B実走合格 |
 | R3 | PicoTetrisの正式回帰化 | `picotetris`＋`picocalc_emu` | ゲームロジックをhardware-freeに分離し、全7形状・回転・境界衝突・1〜4ライン・score・固定seed・game-over/resetをhostで検査する。固定条件のfresh build 2回でBIN SHAが一致する。firmware scenario 3回が85/85、13 lines、score 1400、key delivered 362/drop 0、exceptionなし、unsupported MMIO 0となり、UART SHA・framebuffer SHA・正規化report/timelineが一致する | **完了 2026-08-06**。666 host checks、再現可能BIN/UF2、active target、3回決定一致 |
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | **完了 2026-08-06**。3リポジトリのclean-runner full gate合格 |
-| R5 | 現行成果物の実機相関 | `picotetris`＋`picocalc_emu`＋実機 | `picotetris-r5`の同一BIN/UF2でLCD・line clear・game-over・restart・PSRAM・SD・audioと公式FW由来67キーを確認する。自動ゲーム診断後、キーは任意順・個別retry・SD進捗resume可能とし、途中写真を求めない。UF2 SHA、UART全文、最終PASS写真1枚、音確認を新規台帳へ保存する | **emulator preflight完了・実機操作pending**。単一BIN、690 host checks、再現build、67/67 scenario合格 |
-| R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | R5後 |
+| R5 | 現行成果物の実機相関 | `picotetris`＋`picocalc_emu`＋実機 | `picotetris-r5`の同一BIN/UF2でLCD・line clear・game-over・restart・PSRAM・SD・audioと公式FW由来67キーを確認する。自動ゲーム診断後、キーは任意順・個別retry・SD進捗resume可能とし、途中写真を求めない。UF2 SHA、UART全文、最終PASS写真1枚、音確認を新規台帳へ保存する | **完了 2026-08-08**。`r5-hardware-20260808-01`で最終verdict、写真、参照音、SD進捗67/67を固定。OPT1-A promoted |
+| R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | **完了 2026-08-08**。R5 recordを機械検証へ接続し、README/status/Milestones/dogfood/OPT1-AとPicoTetris文書を現在状態へ同期。既存CI再現契約とlicense/noticesを確認 |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
 
@@ -355,15 +355,15 @@ fallbackする。PicoTetrisは85/85、cycle、UART、framebuffer、timelineを�
 cadence依存を除いたbehavior schema 2でもone-cycle referenceと全9 domainが一致した。CPU固定
 10 runのwall中央値は63.247秒から27.123秒へ57.116%短縮した。詳細は
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にある。実機相関前の
-candidateなので、現在の次工程はR5で同一BINを実機と相関し、正式採用または棄却することである。
+この時点ではcandidateだった。その後、R5で同一artifactの実機相関に合格し、現在はpromotedである。
 
 R5 preflightではPicoTetris source `9a40a905...`から、製品targetとは別名だが相関では単一の
 `PicoTetris_R5.bin`/UF2を再現buildした。firmware自身がLCD 100回readback、audio、PSRAM、
 FAT32 SD、line-clear、game-over、restartを自動実行した後、公式keyboard firmware由来の
 67物理キーを任意順・個別retry・SD進捗resumeで確認する。エミュレーターでは全5 scenario step、
-67/67、最終verdictが合格した。実機に必要なのは同じUF2の1セッション、参照音確認、未完了キーの
-入力、UART全文、安定した最終PASS画面1枚だけである。固定値、誤入力・電源断時の復旧手順、
-preflight SHAは[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)を正典とする。
+67/67、最終verdictが合格した。同じUF2のPicoCalc実機相関も、参照音、未完了キーのresume、
+UART全文、安定した最終PASS画面、CRC-validなSD進捗を含めて完了した。固定値、復旧手順、
+preflight SHA、実機結果は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)を正典とする。
 
 ## Milestone 0: Canonical BSP — implemented
 

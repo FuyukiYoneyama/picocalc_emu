@@ -94,3 +94,7 @@ firmware regressionをCIの品質ゲートへ接続し、R5でこの同一BIN SH
 > checksと、上記BIN/UF2 SHAのclean runner上での完全一致を確認した。続いて`picocalc_emu`
 > run `31103564391`で同じBINの再構築と権威あるfirmware regressionを含む全6 jobが合格した。
 > 3リポジトリfull gateを完了し、次はR5でこの同一BINを実機相関する。
+
+> **R5追記（2026-08-08）:** R3の時点証拠は変更せず、後続の単一R5 artifactをemulatorと
+> PicoCalc実機で相関した。LCD、PSRAM、FAT32、audio、PicoTetris、keyboard 67/67が一致し、
+> `r5-hardware-20260808-01`へ証拠を固定した。

@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A candidate・R5 emulator preflight完了、PicoCalc実機相関が次
+**状態:** OPT1-A promoted・R5 PicoCalc実機相関完了。次は残るOPT1候補またはOPT2
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -317,6 +317,10 @@ SD progress resumeで確認する。別の診断BIN、ゲーム途中の写真�
 一致範囲を記録して初めて**promoted optimization**とする。操作契約は
 [`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)を正典とする。
 
+2026-08-08の実機runは同一UF2でLCD、PSRAM、FAT32、audio、PicoTetris、keyboard 67/67を合格し、
+`io_errors=0 progress=saved overall=pass`となった。UART、最終写真、参照音、SD進捗は
+`firmware-validation/records/r5-hardware-20260808-01/`へ固定したため、OPT1-Aをpromotedとする。
+
 OPT2以降は原則として最初のR5相関後に行う。R5で基準modelのずれが判明した場合は、速度より先に
 正確性を修正してbaselineとversioned validationを更新する。
 
@@ -328,10 +332,10 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 1 | OPT0-A blocked/safe profiler | **完了** | schema 3 full horizon、boundary分布、production costを固定 |
 | 2 | OPT0-B behavior/streaming trace契約 | **完了** | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
-| 4 | OPT1-A第一候補 | **candidate完了** | 正確性gate＋性能gate合格、candidateとしてrecord化 |
-| 5 | R5実機相関 | **emulator preflight完了・実機pending** | 同一BIN/UF2、67キー、UART、音、最終写真を相関し、候補を正式採用または棄却する |
-| 6 | 残るOPT1候補 | R5後 | 独立変更単位で正確性・性能gate合格 |
-| 7 | OPT2 exact event batching | R5後 | 全boundary eventのcycle/order一致 |
+| 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
+| 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
+| 6 | 残るOPT1候補 | 次候補 | 独立変更単位で正確性・性能gate合格 |
+| 7 | OPT2 exact event batching | R5完了後 | 全boundary eventのcycle/order一致 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。
@@ -401,8 +405,8 @@ behavior traceはhost UART drain cadence依存を除いたschema 2へversion up�
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)と
 [`firmware-validation/records/opt1-a-20260808-01/notes.md`](../firmware-validation/records/opt1-a-20260808-01/notes.md)
 に固定した。R5 emulator preflightでは単一の`PicoTetris_R5` artifactを再現し、自動周辺機器・
-ゲーム診断と67/67キーscenarioを合格させた。実機相関はまだ完了していないため状態はcandidateであり、
-次は同じUF2をPicoCalcで確認する1回の実機セッションである。
+ゲーム診断と67/67キーscenarioを合格させた。同一UF2のPicoCalc実機runも全項目pass、67/67、
+`io_errors=0`で一致し、`r5-hardware-20260808-01`へ固定したため、OPT1-Aはpromotedとなった。
 
 ## 16. 最終判断規則
 

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "record_id": "r5-hardware-20260808-01",
+  "title": "R5 single-BIN PicoCalc physical-device correlation",
+  "roadmap_package": "R5",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-r5",
+    "revision": 4,
+    "contract_sha256": "4d47d0c044382effa6bf138b7336cd7eee2416968bb5706b192090c12df82b87"
+  },
+  "source": {
+    "repo": "picotetris",
+    "commit": "9a40a905f3ddcc6dc835655e2a332fce88f98800",
+    "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+    "official_keyboard_source_commit": "a61c1f2f18185b32a667dde5c9393ced9ddd19ca"
+  },
+  "artifact": {
+    "bin_sha256": "8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0",
+    "uf2_sha256": "0e990cff819b8542a7a96765cd7004c7b23cb52b77494c745b914afd32f084f1",
+    "build_timestamp": "2026-08-08T00:00:00Z",
+    "r5_identity_line": "[R5] schema=1 app=picotetris-r5-correlation bsp=0.8.8 bsp_git=cbfc90467e2b app_git=9a40a905f3dd build=2026-08-08T00:00:00Z operator_actions=key_coverage_then_one_photo"
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "board_revision": "CPI2.0",
+    "mcu": "RP2040",
+    "identity_reference": "hardware-validation/records/bsp-0.8.8-20260804-02.json",
+    "sd_card": {
+      "manufacturer": "SanDisk",
+      "model": "Ultra SDHC I, Class 10, 100 MB/s label",
+      "capacity": "32 GB",
+      "filesystem": "FAT32"
+    }
+  },
+  "physical_run": {
+    "validation_date": "2026-08-08",
+    "operator": "Fuyuki Yoneyama",
+    "sessions_in_uart_log": 2,
+    "progress_resume_observed": true,
+    "automatic_checks": {
+      "lcd_readback_iterations": 100,
+      "lcd_failures": 0,
+      "psram": "pass",
+      "sd_fat32": "pass",
+      "audio_path": "pass",
+      "tetris_line_clear": "pass",
+      "tetris_game_over": "pass",
+      "tetris_restart": "pass",
+      "keyboard": "67/67"
+    },
+    "keyboard": {
+      "physical_keys_completed": 67,
+      "io_errors": 0,
+      "progress_saved": true,
+      "unexpected_events": 135,
+      "caps_recovery_events": 73,
+      "reachability_result": "pass",
+      "responsiveness_result": "not_measured",
+      "operator_observation": "Some physical keys felt less responsive and required retries. The coverage contract proves eventual press/release reachability, not missed-press rate, actuation force, or response latency."
+    },
+    "final_verdict": "[R5_DIAG_VERDICT] lcd=pass psram=pass sd=pass audio=pass tetris=pass keyboard=67/67 io_errors=0 progress=saved overall=pass",
+    "final_photo_result": "pass"
+  },
+  "audible_tone": {
+    "result": "pass",
+    "expected_hz": 1000,
+    "recorded_fft_peak_hz": 984.375,
+    "analysis_note": "The peak is the nearest dominant FFT bin in the microphone recording and is consistent with the 1 kHz firmware reference tone.",
+    "source_video": "/home/fuyuki/pico_dvl/codex/log/IMG_8923.MOV",
+    "source_video_sha256": "15dba4d17f4596a36cbba46c780f18b7761cb8094e75acff06050a61b3859996",
+    "stored_excerpt": "reference-tone.flac",
+    "stored_excerpt_sha256": "5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19",
+    "stored_excerpt_seconds": 10.0
+  },
+  "progress_file": {
+    "path": "PCR5KEY.DAT",
+    "sha256": "0e6e09a6f787c2ee95ccc4671ef2bd67caab8d6434456071cf125ded1ca0c16e",
+    "bytes": 48,
+    "magic_hex": "504352354b455900",
+    "schema": 1,
+    "app_tag": "0x1309e999",
+    "crc32": "0x64ea1c91",
+    "crc32_valid": true,
+    "pressed_keys": 67,
+    "released_keys": 67,
+    "up_repeat": true,
+    "down_repeat": true,
+    "physical_keys_completed": 67,
+    "unused_bits_zero": true
+  },
+  "correlation": {
+    "emulator_preflight_record": "firmware-validation/records/r5-preflight-20260808-01/record.json",
+    "emulator_preflight_record_sha256": "d63f9d77fa99f35025452a697da1b7657eea601cc8ad55ff07216dcefd40f3e6",
+    "same_registered_artifact": true,
+    "hardware_correlation_completed": true,
+    "emulator_pass_hardware_fail_count": 0,
+    "verdict": "pass"
+  },
+  "optimization": {
+    "id": "OPT1-A",
+    "candidate_record": "firmware-validation/records/opt1-a-20260808-01/record.json",
+    "candidate_record_sha256": "0720ff9024de968e17ce32996eadb44a5a29ab3e994a0234886325d6c55f57d2",
+    "status": "promoted"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "uart.log",
+      "sha256": "d9b2b8417bb88af4f6a5432235fd12a0bbe83e86500668998b6c349093b0181a"
+    },
+    "final_photo": {
+      "path": "final.jpg",
+      "sha256": "7cb0e8789476b82168e8d0250385267290bfaa0fef42ea0bbfab48a38690ab1a"
+    },
+    "keyboard_progress": {
+      "path": "PCR5KEY.DAT",
+      "sha256": "0e6e09a6f787c2ee95ccc4671ef2bd67caab8d6434456071cf125ded1ca0c16e"
+    },
+    "audible_tone_excerpt": {
+      "path": "reference-tone.flac",
+      "sha256": "5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19"
+    },
+    "notes": "notes.md"
+  }
+}

@@ -2,6 +2,7 @@
 """Verify portable BSP contracts and optional hardware reference evidence."""
 
 import argparse
+import binascii
 import hashlib
 import json
 import math
@@ -9,6 +10,7 @@ import os
 import re
 import shutil
 import statistics
+import struct
 import subprocess
 import sys
 import tempfile
@@ -43,6 +45,10 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def bit_is_set(values: bytes, index: int) -> bool:
+    return (values[index // 8] & (1 << (index % 8))) != 0
 
 
 def git_head(path: Path) -> str:
@@ -1330,6 +1336,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_firmware_validation(checks, root)
     verify_r3_contract(checks, root)
     verify_r5_performance(checks, root)
+    verify_r5_hardware_correlation(checks, root)
     verify_opt0_idle_profile(checks, root)
     verify_opt0_behavior_contract(checks, root)
     verify_opt1a_exact_idle_fast_forward(checks, root)
@@ -2144,6 +2151,182 @@ def verify_r5_performance(checks: List[Check], root: Path) -> None:
         json.JSONDecodeError,
     ) as error:
         add_check(checks, "r5:realtime-performance-baseline", False, **error_details(error))
+
+
+def verify_r5_hardware_correlation(checks: List[Check], root: Path) -> None:
+    """Verify the R5 hardware correlation evidence record and its artifacts."""
+    try:
+        record_root = root / "firmware-validation/records/r5-hardware-20260808-01"
+        record = load_json(record_root / "record.json")
+        target_id = record.get("target", {}).get("id")
+        target_revision = record.get("target", {}).get("revision")
+        target_contract = record.get("target", {}).get("contract_sha256")
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(
+            item
+            for item in registry["targets"]
+            if item.get("id") == target_id and item.get("revision") == target_revision
+        )
+        target_contract_expected = (
+            picocalc.firmware_target_contract_sha256(target)
+            if target_id and target_revision is not None
+            else None
+        )
+
+        uart_path = record_root / record["artifacts"]["uart_log"]["path"]
+        final_photo_path = record_root / record["artifacts"]["final_photo"]["path"]
+        pcr_path = record_root / record["artifacts"]["keyboard_progress"]["path"]
+        excerpt_path = record_root / record["artifacts"]["audible_tone_excerpt"]["path"]
+
+        uart_text = uart_path.read_text(encoding="utf-8", errors="replace")
+        preflight_record_path = root / record["correlation"]["emulator_preflight_record"]
+        candidate_record_path = root / record["optimization"]["candidate_record"]
+        preflight_record = load_json(preflight_record_path)
+        candidate_record = load_json(candidate_record_path)
+
+        progress = pcr_path.read_bytes()
+        if len(progress) != 48:
+            raise ValueError(
+                f"PCR5KEY.DAT must be exactly 48 bytes, got {len(progress)}"
+            )
+        pressed = progress[16:25]
+        released = progress[25:34]
+        repeated = progress[34:43]
+        progress_crc_target = struct.unpack("<I", progress[44:48])[0]
+        progress_crc_actual = binascii.crc32(progress[:44]) & 0xFFFFFFFF
+        bit_count = 67
+        used_mask_last = (1 << (bit_count % 8)) - 1
+        unused_bits_zero = all(
+            (values[-1] & ~used_mask_last) == 0
+            for values in (pressed, released, repeated)
+        )
+        reserved_byte_zero = progress[43] == 0
+        pressed_count = sum(bit_is_set(pressed, index) for index in range(bit_count))
+        released_count = sum(bit_is_set(released, index) for index in range(bit_count))
+        up_repeat = bit_is_set(repeated, 64)
+        down_repeat = bit_is_set(repeated, 65)
+        completed = (
+            pressed_count >= bit_count
+            and released_count >= bit_count
+            and up_repeat
+            and down_repeat
+        )
+
+        artifact_checks = {
+            "uart_log": (
+                uart_path,
+                "d9b2b8417bb88af4f6a5432235fd12a0bbe83e86500668998b6c349093b0181a",
+            ),
+            "final_photo": (
+                final_photo_path,
+                "7cb0e8789476b82168e8d0250385267290bfaa0fef42ea0bbfab48a38690ab1a",
+            ),
+            "keyboard_progress": (
+                pcr_path,
+                "0e6e09a6f787c2ee95ccc4671ef2bd67caab8d6434456071cf125ded1ca0c16e",
+            ),
+            "audible_tone_excerpt": (
+                excerpt_path,
+                "5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19",
+            ),
+        }
+        artifact_records = record.get("artifacts", {})
+        artifact_hashes_ok = set(artifact_checks).issubset(artifact_records) and all(
+            artifact_records[name].get("sha256") == expected_sha
+            and sha256(path) == expected_sha
+            for name, (path, expected_sha) in artifact_checks.items()
+        )
+        artifact_files_exist = all(path.is_file() for path, _ in artifact_checks.values())
+
+        optimized_promoted = record.get("optimization", {}).get("status") == "promoted"
+        final_verdict_line = record.get("physical_run", {}).get("final_verdict", "")
+        audible = record.get("audible_tone", {})
+        aligned = all(
+            (
+                record.get("result") == "pass",
+                record.get("record_id") == "r5-hardware-20260808-01",
+                target_id == "picotetris-r5",
+                target_revision == 4,
+                target_contract is not None,
+                target_contract == target_contract_expected,
+                record.get("source", {}).get("commit")
+                == "9a40a905f3ddcc6dc835655e2a332fce88f98800",
+                record.get("source", {}).get("bsp_source_commit")
+                == "cbfc90467e2b8392fbd0429c83925b94ca365824",
+                record.get("artifact", {}).get("bin_sha256")
+                == "8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0",
+                record.get("artifact", {}).get("uf2_sha256")
+                == "0e990cff819b8542a7a96765cd7004c7b23cb52b77494c745b914afd32f084f1",
+                artifact_files_exist,
+                artifact_hashes_ok,
+                sha256(preflight_record_path)
+                == record["correlation"].get("emulator_preflight_record_sha256")
+                == "d63f9d77fa99f35025452a697da1b7657eea601cc8ad55ff07216dcefd40f3e6",
+                sha256(candidate_record_path)
+                == record["optimization"].get("candidate_record_sha256")
+                == "0720ff9024de968e17ce32996eadb44a5a29ab3e994a0234886325d6c55f57d2",
+                preflight_record.get("result") == "pass",
+                candidate_record.get("result") == "pass",
+                record.get("correlation", {}).get("hardware_correlation_completed") is True,
+                record.get("correlation", {}).get("verdict") == "pass",
+                record.get("artifact", {}).get("r5_identity_line", "")
+                in uart_text,
+                final_verdict_line in uart_text,
+                final_photo_path.read_bytes()[:2] == b"\xFF\xD8",
+                progress[:8] == b"PCR5KEY\x00",
+                struct.unpack("<I", progress[8:12])[0] == 1,
+                struct.unpack("<I", progress[12:16])[0]
+                == binascii.crc32(
+                    record.get("source", {}).get("commit", "")[:12].encode("ascii")
+                )
+                & 0xFFFFFFFF
+                == 0x1309E999,
+                progress_crc_actual == progress_crc_target,
+                pressed_count == bit_count,
+                released_count == bit_count,
+                up_repeat,
+                down_repeat,
+                unused_bits_zero,
+                reserved_byte_zero,
+                completed is True,
+                record.get("progress_file", {}).get("bytes") == len(progress),
+                record.get("progress_file", {}).get("crc32")
+                == f"0x{progress_crc_target:08x}",
+                record.get("progress_file", {}).get("unused_bits_zero") is True,
+                optimized_promoted,
+                audible.get("result") == "pass",
+                audible.get("expected_hz") == 1000,
+                sha256(excerpt_path)
+                == audible.get("stored_excerpt_sha256", ""),
+            )
+        )
+        add_check(
+            checks,
+            "r5:hardware-correlation-evidence",
+            aligned,
+            record_id=record.get("record_id"),
+            target=target_id,
+            target_revision=target_revision,
+            preflight_record=record["correlation"].get("emulator_preflight_record"),
+            candidate_record=record["optimization"].get("candidate_record"),
+            preflight_sha256=sha256(preflight_record_path),
+            candidate_sha256=sha256(candidate_record_path),
+            pressed_keys=pressed_count,
+            released_keys=released_count,
+            completed=completed,
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, "r5:hardware-correlation-evidence", False, **error_details(error))
 
 
 def verify_r3_contract(checks: List[Check], root: Path) -> None:

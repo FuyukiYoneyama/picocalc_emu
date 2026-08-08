@@ -78,8 +78,8 @@ UART、framebuffer、85/85 timelineを維持し、host UART drain cadence依存�
 でもone-cycle referenceと全9 domainが一致した。CPU固定10 runのwall中央値は63.247秒から
 27.123秒へ57.116%短縮し、実時間比は5.874%から13.697%へ向上した。versioned target
 `picotetris-opt1a` revision 3と不変recordを追加済みである。詳細は
-[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にある。R5前のため
-状態はcandidateである。
+[`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にある。この時点では
+R5前のcandidateだったが、後述の同一artifact実機相関を通過して現在はpromotedである。
 
 R5の実装とemulator preflightも完了した。PicoTetris source
 `9a40a905f3ddcc6dc835655e2a332fce88f98800`は、既存666 checksを履歴として維持しながら、
@@ -88,11 +88,14 @@ R5の実装とemulator preflightも完了した。PicoTetris source
 登録target `picotetris-r5` revision 4はbackend `612b485...f66`で、LCD 100回、PSRAM、FAT32 SD、
 audio経路、line-clear、game-over、restart、公式FW由来67キーを全自動または回復可能な入力で
 合格した。キーは任意順、個別retry、timeoutなし、SD progress resumeであり、途中写真を要求しない。
-現在の次工程は、同じUF2をPicoCalcへ導入する1回の実機セッションである。操作と復旧の正典は
-[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)、preflight証拠は
+同じUF2のPicoCalc実機セッションも完了した。LCD、PSRAM、FAT32、audio、PicoTetris、67/67キーが
+`io_errors=0 progress=saved overall=pass`で一致し、最終写真、参照音、CRC-validなSD進捗も固定した。
+操作・結果の正典は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)、preflight証拠は
 [`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
-にある。`hardware_correlation_completed=false`なのでOPT1-Aは引き続きcandidateである。
-高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
+、実機証拠は
+[`firmware-validation/records/r5-hardware-20260808-01/`](../firmware-validation/records/r5-hardware-20260808-01/)
+にある。後続recordで`hardware_correlation_completed=true`となりOPT1-Aはpromotedである。
+高速化は引き続き実機相当の正確性を最優先する。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う

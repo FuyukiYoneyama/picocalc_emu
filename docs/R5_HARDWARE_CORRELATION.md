@@ -1,6 +1,6 @@
 # R5 PicoTetris同一BIN実機相関
 
-**状態:** 実装・再現build・emulator preflight完了。PicoCalc実機セッションだけがpending。
+**状態:** 実装・再現build・emulator preflight・PicoCalc実機相関完了。OPT1-Aはpromoted。
 
 ## 目的と判定境界
 
@@ -99,7 +99,32 @@ UARTログ保存1件である。途中写真、26キーの連続操作、ゲー�
 preflight証拠は
 [`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
 に保存する。`result=pass`は再現buildとemulator preflightだけを意味し、同recordの
-`hardware_correlation_completed=false`が実機未完了の正典である。
+`hardware_correlation_completed=false`はpreflight時点の不変証拠として保持する。現在の実機相関状態は
+後続の`r5-hardware-20260808-01`を正典とする。
+
+## PicoCalc実機相関結果
+
+2026-08-08に、上記UF2をCPI2.0/RP2040のPicoCalcと32 GB SanDisk FAT32 SDで実行した。
+UARTは途中再起動と`resumed=1`を含み、回復契約を実地に通した後、次の完全な最終行で終了した。
+
+```text
+[R5_DIAG_VERDICT] lcd=pass psram=pass sd=pass audio=pass tetris=pass keyboard=67/67 io_errors=0 progress=saved overall=pass
+```
+
+| 証拠 | SHA-256 / 結果 |
+|---|---|
+| UART全文 `uart.log` | `d9b2b8417bb88af4f6a5432235fd12a0bbe83e86500668998b6c349093b0181a` |
+| 最終写真 `final.jpg` | `7cb0e8789476b82168e8d0250385267290bfaa0fef42ea0bbfab48a38690ab1a`、`R5 ALL PASS` |
+| SD進捗 `PCR5KEY.DAT` | `0e6e09a6f787c2ee95ccc4671ef2bd67caab8d6434456071cf125ded1ca0c16e`、CRC32一致、67/67 |
+| 参照音抜粋 `reference-tone.flac` | `5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19`、FFT peak 984.375 Hz |
+
+証拠と解析は
+[`firmware-validation/records/r5-hardware-20260808-01/`](../firmware-validation/records/r5-hardware-20260808-01/)
+に保存する。エミュレーターがpassで実機がfailになった項目は0件で、同一artifact相関は合格した。
+
+キーボードは67キーの到達性とI2C error 0を満たす一方、operatorは一部キーの反応が悪くretryを
+要したと報告した。本試験はイベントを発生しなかった物理押下を観測できないため、miss率、押下圧、
+latencyを測定したとは扱わない。この入力品質上の制約は67/67 conformanceとは分離して残す。
 
 ## 実機合格条件
 
@@ -110,5 +135,5 @@ preflight証拠は
 - 参照音が実機で聞こえた記録がある。
 - UART全文、最終写真、操作環境を新しい実機recordへ保存する。
 
-実機が一致するまでOPT1-Aはcandidateである。不一致があれば速度向上を理由に許容せず、まず
-modelまたはfirmwareの差を特定して正確性を修正する。
+全条件は`r5-hardware-20260808-01`で一致したためOPT1-Aはpromotedである。今後の高速化でも、
+実機不一致があれば速度向上を理由に許容せず、まずmodelまたはfirmwareの差を特定して正確性を修正する。

@@ -71,7 +71,7 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 |---|---|---|---|
 | 1 | **Canonical BSP** — 実機で確認した転送契約と由来を固定し、AIの変更範囲を`app/`に限定する | ハードウェア初期化をAIに再発明させない | **完了**。BSP 0.8.8実機台帳はLCD・keyboardを含め`pass` |
 | 2 | **エミュレーター** — PC上でアプリを実行し、画面・SPI/I²C・SD・キー入力をAI自身が観測して自力で直す | 「なぜ動かないか」をAIが自分で特定できる | A/BのLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成。個別アプリのhost test・継続target化は別途必要 |
-| 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 一部実装 |
+| 3 | **実機相関** — 実機結果を証拠台帳へ記録し、エミュレーターの予測精度を校正する | エミュレーター合格が実機合格を意味するかを測定で担保 | 最初の同一artifact相関R5まで完了。継続相関は今後も必要 |
 
 第2段のエミュレーターは、目的の異なる2つのバックエンドで構成します。
 
@@ -186,11 +186,12 @@ R4の3リポジトリfull品質ゲート/CIも完了しました。backendのtes
 親Git継承修正、schema 3 versioned validation、PicoTetris R4 revision、PicoTetrisの
 unit＋固定RP2040再現build、`picocalc_emu`のportable/host/target-schema/firmware regressionを
 clean runnerで合格させました。R5前のOPT0観測契約とOPT1-A高速化candidateも完了しました。
-さらにR5用の単一BIN、回復可能な67キー診断、再現build、emulator preflightを完了し、次は
-同じUF2をPicoCalcへ導入する実機セッションです。R3の全SHAと受入結果は
+さらにR5用の単一BIN、回復可能な67キー診断、再現build、emulator preflight、同じUF2の
+PicoCalc実機相関を完了しました。全周辺機器と67/67、`io_errors=0`が一致したためOPT1-Aは
+promotedです。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-08-r5-preflight反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-08-r5-hardware-correlation完了反映)が正典です。
 
 R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotetris-r4`を10回測定し、
 実時間比中央値5.874%（仮想3.715秒をwall 63.247秒、約17.025倍遅い）を記録しました。
@@ -221,11 +222,12 @@ PicoTetrisのcycle、UART、framebuffer、85/85 timelineを維持し、behavior 
 one-cycle referenceと一致しました。CPU固定10 runのwall中央値は63.247秒から27.123秒へ
 57.116%短縮し、実時間比中央値は5.874%から13.697%へ向上しました。詳細と不変証拠は
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md)にあります。
-これはR5前のcandidateです。R5 preflightでは別々の製品BIN/診断BINを使わず、同じ
+この結果はR5前はcandidateでした。R5 preflightでは別々の製品BIN/診断BINを使わず、同じ
 `PicoTetris_R5` BIN/UF2に自動LCD/PSRAM/FAT32/audio/line-clear/game-over/restartと、任意順・
 個別retry・SD resume可能な公式67キー診断を統合しました。エミュレーターは67/67と最終verdictを
-合格済みです。人間には途中写真や連続操作を求めず、同じUF2の1セッションで未完了キーを入力し、
-参照音、UART全文、安定した最終PASS画面1枚だけを記録します。詳細は
+合格し、PicoCalc実機でも同一UF2が全項目pass、67/67、`io_errors=0 progress=saved overall=pass`
+となりました。参照音、UART全文、安定した最終PASS画面、SD進捗を新規recordへ保存済みです。
+一部キーの反応品質は到達性試験と分離した未測定課題として明記しています。詳細は
 [`R5_HARDWARE_CORRELATION.md`](docs/R5_HARDWARE_CORRELATION.md)です。
 
 ## 読む順番
@@ -573,7 +575,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
 - [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
-- [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifact、emulator preflight、1回の実機操作、キーretry/resume手順
+- [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

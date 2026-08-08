@@ -1,0 +1,2 @@
+# Preserve raw hardware UART captures byte-for-byte, including CRLF framing.
+firmware-validation/records/**/uart.log binary
