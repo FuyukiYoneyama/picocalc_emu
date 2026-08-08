@@ -120,7 +120,12 @@ framebuffer一致を維持した。running 308,932,816 cycleのうちpost-hoc ca
 （15.0233%）、28,608,173 dispatch、2,388,571 intervalだった。これはsafe windowやwall-time上限
 ではない。記録は
 [`opt2-b-running-horizon-20260808-01/`](../firmware-validation/records/opt2-b-running-horizon-20260808-01/)
-に固定し、次は保守的horizonとCPU MMIOなし区間に限定したOPT2-C prototypeへ進む。
+に固定した。続くOPT2-Cは、core 1停止、完全horizon、decode-cache hit済みの逐次・bus-free・
+1-cycle命令だけをbatchし、behavior/event全9 domainと全counterの一致を確認した。しかし成立したのは
+8,420 batch、23,176 cycle（全runの0.002498%）で、trace OFF paired中央値が51.38秒から57.49秒へ
+11.89%退行した。candidate `815ef5d`は`c44c87f`でrevertし、active targetはOPT1-Bのままである。
+詳細は[`OPT2_C_EXACT_BATCHING.md`](OPT2_C_EXACT_BATCHING.md)にある。次はPIO/UART/DMA deadline
+promotionとCPU/decode block workを別々に測って優先順位を決める。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

@@ -243,7 +243,10 @@ byte-identicalだったため、既存実機recordとの同値性によりOPT1-B
 実装し、同一BINのexactnessを維持したままrunning cycleの15.0233%にpost-hoc candidateを
 観測しました。これはsafe windowやwall-time上限ではありません。証拠は
 [`opt2-b-running-horizon-20260808-01`](firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
-にあり、次は保守的horizon内に限定したOPT2-C prototypeです。active targetはOPT1-Bのままです。
+にあります。続くOPT2-C限定prototypeは全event一致を保ちましたが、全runの0.002498%しかbatchできず、
+paired中央値が11.89%遅かったためrevertしました。詳細は
+[`OPT2_C_EXACT_BATCHING.md`](docs/OPT2_C_EXACT_BATCHING.md)です。OPT2は継続中で、active targetは
+OPT1-Bのままです。
 
 ## 読む順番
 

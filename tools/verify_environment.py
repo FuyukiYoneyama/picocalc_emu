@@ -1342,6 +1342,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt1a_exact_idle_fast_forward(checks, root)
     verify_opt1b_serial_fast_path(checks, root)
     verify_opt2b_running_event_horizon(checks, root)
+    verify_opt2c_exact_batching(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -1825,6 +1826,134 @@ def verify_opt2b_running_event_horizon(checks: List[Check], root: Path) -> None:
         TypeError,
         KeyError,
         StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2c_exact_batching(checks: List[Check], root: Path) -> None:
+    """Verify the rejected OPT2-C prototype's exactness and screening evidence."""
+    name = "opt2-c:bounded-exact-batching"
+    expected_artifact_hashes = {
+        "performance": "a55c1cc1c46882bbc4a59501d37119396a9845bd78656b053ff28eeca1e03c54",
+        "run_report": "497edb7c625d6221b242bd2e34401370308ee1fc0e94c1a2ced1e0ac93b5cb1c",
+        "behavior_trace": "afed2d16bb77f823b10f1d6d2cb63ad974cc582f6fa4909719d3333e2ba2a147",
+    }
+    expected_domains = {
+        "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+        "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+    }
+    try:
+        record_root = root / "firmware-validation/records/opt2-c-exact-batching-20260808-01"
+        record = load_json(record_root / "record.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        baseline_behavior = load_json(
+            root
+            / "firmware-validation/records/opt2-b-running-horizon-20260808-01/behavior-trace.json"
+        )
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+
+        baseline = record["baseline"]
+        candidate = record["candidate"]
+        exact = record["exactness"]
+        screening = record["performance_screening"]
+        decision = record["decision"]
+        artifacts = record["artifacts"]
+        projection = behavior["behavior_projection"]
+        trace = projection["event_trace"]
+        domains = {item.get("name") for item in trace["domains"]}
+        baseline_samples = performance["baseline_wall_seconds"]
+        candidate_samples = performance["candidate_wall_seconds"]
+        median_regression = (
+            statistics.median(candidate_samples) / statistics.median(baseline_samples) - 1
+        ) * 100
+
+        aligned = all((
+            record.get("record_id") == "opt2-c-exact-batching-20260808-01",
+            record.get("result") == "rejected",
+            record.get("optimization_status") == "reverted",
+            record.get("opt2_overall_status") == "incomplete",
+            baseline.get("backend_commit") == "ac0c3052e6c28fcf235a33f98f3a96470d2966f1",
+            baseline.get("target") == target.get("id") == "picotetris-opt1b",
+            baseline.get("firmware_sha256") == target.get("artifacts", {}).get("bin_sha256"),
+            candidate.get("backend_commit") == "815ef5daa5117c29a8a7505d5e5f1929d92d5b99",
+            candidate.get("revert_commit") == "c44c87f1ed4235343c5fd18860fde47b64b54325",
+            candidate.get("hardware_quantum") == 1,
+            candidate.get("max_batch_cycles") == 64,
+            candidate.get("batches") == 8420,
+            candidate.get("batched_cycles") == 23176,
+            candidate.get("dispatches_elided") == 14756,
+            candidate.get("max_observed_batch_cycles") == 13,
+            report.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("firmware", {}).get("sha256") == baseline.get("firmware_sha256"),
+            report.get("verdict", {}).get("status") == "pass",
+            report.get("stop_reason") == "scenario_done",
+            report.get("cycles") == exact.get("cycles") == 927528660,
+            report.get("elapsed_us") == exact.get("elapsed_us") == 3715000,
+            report.get("scenario", {}).get("status") == "pass",
+            len(report.get("scenario", {}).get("steps", [])) == exact.get("steps_passed") == 85,
+            exact.get("steps_total") == 85,
+            exact.get("projection_byte_identical") is True,
+            projection == baseline_behavior.get("behavior_projection"),
+            behavior.get("behavior_sha256") == exact.get("behavior_sha256"),
+            trace.get("sha256") == exact.get("event_stream_sha256"),
+            trace.get("total_events") == exact.get("total_events"),
+            domains == expected_domains,
+            exact.get("all_nine_domain_counts_and_hashes_identical") is True,
+            report.get("uart", {}).get("sha256") == exact.get("uart_sha256"),
+            report.get("framebuffer", {}).get("rgb565_sha256")
+            == exact.get("framebuffer_rgb565_sha256"),
+            report.get("psram", {}).get("tick_count") == exact.get("psram_tick_count"),
+            performance.get("instrumented") is False,
+            performance.get("trace_enabled") is False,
+            performance.get("warmup_excluded") is True,
+            len(baseline_samples) == len(candidate_samples) == screening.get("paired_runs") == 3,
+            statistics.median(baseline_samples) == screening.get("baseline_median_wall_seconds"),
+            statistics.median(candidate_samples) == screening.get("candidate_median_wall_seconds"),
+            math.isclose(
+                median_regression,
+                screening.get("candidate_median_regression_percent"),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            screening.get("formal_ten_run_measurement_performed") is False,
+            performance.get("formal_ten_run_measurement_performed") is False,
+            performance.get("determinism", {}).get("all_runs_passed") is True,
+            decision.get("accepted") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("validation_attestation_added") is False,
+            decision.get("hardware_correlation_required") is False,
+            all(
+                artifacts.get(key + "_sha256") == digest
+                and sha256(record_root / artifacts[key]) == digest
+                for key, digest in expected_artifact_hashes.items()
+            ),
+            (record_root / artifacts.get("notes", "")).is_file(),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=baseline.get("target"),
+            candidate_commit=candidate.get("backend_commit"),
+            result=record.get("result"),
+            paired_runs=screening.get("paired_runs"),
+            median_regression_percent=screening.get("candidate_median_regression_percent"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        statistics.StatisticsError,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))

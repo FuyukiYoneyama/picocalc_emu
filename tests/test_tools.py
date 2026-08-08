@@ -475,6 +475,42 @@ raise SystemExit(code)
         )
         self.assertEqual(opt2b["status"], "fail")
 
+    def test_target_schema_verification_includes_opt2c_rejected_candidate(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt2c = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-c:bounded-exact-batching"
+        )
+        self.assertEqual(opt2c["status"], "pass")
+        self.assertEqual(opt2c["result"], "rejected")
+        self.assertEqual(opt2c["paired_runs"], 3)
+
+    def test_target_schema_rejects_opt2c_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = project / "firmware-validation/records/opt2-c-exact-batching-20260808-01/record.json"
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["projection_byte_identical"] = False
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        opt2c = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-c:bounded-exact-batching"
+        )
+        self.assertEqual(opt2c["status"], "fail")
+
     def test_ci_scopes_separate_core_from_target_schema(self):
         core = run(VERIFY, "--scope", "core", "--json")
         core_report = json.loads(core.stdout)

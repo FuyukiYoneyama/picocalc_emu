@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "instrumented": false,
+  "trace_enabled": false,
+  "measurement_cpu": 0,
+  "warmup_excluded": true,
+  "order": [
+    "pair 1: baseline, candidate",
+    "pair 2: candidate, baseline",
+    "pair 3: baseline, candidate"
+  ],
+  "baseline_wall_seconds": [51.38, 51.36, 54.66],
+  "candidate_wall_seconds": [57.49, 57.27, 59.34],
+  "baseline_real_time_percent": [7.230439859867651, 7.233255451713395, 6.796560556165386],
+  "candidate_real_time_percent": [6.461993390154809, 6.486816832547582, 6.260532524435456],
+  "baseline_median_wall_seconds": 51.38,
+  "candidate_median_wall_seconds": 57.49,
+  "candidate_median_regression_percent": 11.891786687427008,
+  "paired_regression_percent": [11.891786687427008, 11.507009345794405, 8.562019758507144],
+  "paired_mean_regression_percent": 10.653605263909519,
+  "promotion_improvement_threshold_percent": 5.0,
+  "formal_ten_run_measurement_performed": false,
+  "early_stop_reason": "all three pairs regressed and the candidate was far from the 5 percent improvement threshold",
+  "determinism": {
+    "all_runs_passed": true,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps": "85/85",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "snapshot_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113,
+    "keyboard_events_dropped": 0
+  }
+}

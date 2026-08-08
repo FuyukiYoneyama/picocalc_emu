@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-c-exact-batching-20260808-01",
+  "title": "OPT2-C bounded exact running event batching prototype",
+  "roadmap_package": "OPT2",
+  "result": "rejected",
+  "optimization_status": "reverted",
+  "opt2_overall_status": "incomplete",
+  "baseline": {
+    "backend_commit": "ac0c3052e6c28fcf235a33f98f3a96470d2966f1",
+    "target": "picotetris-opt1b",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "candidate": {
+    "backend_commit": "815ef5daa5117c29a8a7505d5e5f1929d92d5b99",
+    "revert_commit": "c44c87f1ed4235343c5fd18860fde47b64b54325",
+    "max_batch_cycles": 64,
+    "hardware_quantum": 1,
+    "accepted_cpu_subset": "cache-hit Thumb16 sequential bus-free one-cycle instructions",
+    "batches": 8420,
+    "batched_cycles": 23176,
+    "dispatches_elided": 14756,
+    "max_observed_batch_cycles": 13,
+    "batched_cycle_percent_of_run": 0.002498151761017248
+  },
+  "exactness": {
+    "projection_byte_identical": true,
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "steps_passed": 85,
+    "steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "total_events": 173498680,
+    "all_nine_domain_counts_and_hashes_identical": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113
+  },
+  "performance_screening": {
+    "paired_runs": 3,
+    "baseline_median_wall_seconds": 51.38,
+    "candidate_median_wall_seconds": 57.49,
+    "candidate_median_regression_percent": 11.891786687427008,
+    "promotion_improvement_threshold_percent": 5.0,
+    "formal_ten_run_measurement_performed": false
+  },
+  "decision": {
+    "accepted": false,
+    "reason": "the exact conservative subset covered only 0.0025 percent of run cycles and its pre-dispatch proof cost caused a repeatable wall-time regression",
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "hardware_correlation_required": false,
+    "next_investigation": "separate PIO/UART/DMA deadline promotion from CPU-side block/decode work and remeasure before another production candidate"
+  },
+  "artifacts": {
+    "notes": "notes.md",
+    "performance": "performance-screening.json",
+    "performance_sha256": "a55c1cc1c46882bbc4a59501d37119396a9845bd78656b053ff28eeca1e03c54",
+    "run_report": "run-report.json",
+    "run_report_sha256": "497edb7c625d6221b242bd2e34401370308ee1fc0e94c1a2ced1e0ac93b5cb1c",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "afed2d16bb77f823b10f1d6d2cb63ad974cc582f6fa4909719d3333e2ba2a147"
+  }
+}
