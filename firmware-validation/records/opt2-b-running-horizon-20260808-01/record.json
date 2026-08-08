@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-b-running-horizon-20260808-01",
+  "title": "OPT2-B running event-horizon profiler",
+  "roadmap_package": "OPT2-B",
+  "result": "profiler_complete",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "profiler": {
+    "backend_commit": "ac0c3052e6c28fcf235a33f98f3a96470d2966f1",
+    "backend_dirty": false,
+    "schema_version": 1,
+    "feature": "event-horizon-profiler",
+    "instrumented": true,
+    "valid_for_wall_time": false,
+    "observed_gaps_are_safe_windows": false,
+    "conservative_horizon_complete_for_current_model": true
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "matches_registered_target": true
+  },
+  "measurements": {
+    "running_steps": 172715307,
+    "running_cycles": 308932816,
+    "running_cycles_percent_of_total": 33.307091125,
+    "boundary_steps": 94014038,
+    "candidate_dispatches": 28608173,
+    "candidate_dispatches_percent_of_running": 16.563773933,
+    "candidate_cycles": 46411891,
+    "candidate_cycles_percent_of_running": 15.023295874,
+    "candidate_cycles_percent_of_total": 5.003822847,
+    "candidate_intervals": 2388571,
+    "candidate_average_dispatches": 11.977108070,
+    "candidate_average_cycles": 19.430819096,
+    "candidate_ge_2_dispatch_cycle_mass": 46191140,
+    "candidate_ge_2_dispatch_percent_of_total_cycles": 4.980022935,
+    "no_known_horizon_steps": 0,
+    "no_known_horizon_cycles": 0
+  },
+  "interpretation": {
+    "virtual_cycle_fraction_is_not_wall_time_ceiling": true,
+    "production_optimization_added": false,
+    "active_target_changed": false,
+    "decision": "continue_with_bounded_opt2_c_prototype"
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31258130408,
+    "head_sha": "ac0c3052e6c28fcf235a33f98f3a96470d2966f1",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "running_event_horizon_profile": "running-event-horizon-profile.json",
+    "running_event_horizon_profile_sha256": "27d462fd6acc98bcfd42de8ace12b43bccff168b47a624285ab1d42213ac6a80",
+    "run_report": "run-report.json",
+    "run_report_sha256": "75867be9188dc020941fcbe35fd8f9761191ac4e4b910346c78f564c9c1ab042",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "a7fc839a4f9381525018b2d21b0b425cb8e9b721d29e80cf1bf3390370585835",
+    "notes": "notes.md"
+  },
+  "optimization_status": "measurement_complete_candidate_not_implemented"
+}

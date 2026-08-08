@@ -436,6 +436,45 @@ raise SystemExit(code)
         self.assertEqual(report["failed"], 0)
         self.assertTrue(report["checks"])
 
+    def test_target_schema_verification_includes_opt2b_running_horizon_record(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        self.assertEqual(report["mode"], "target-schema")
+        self.assertEqual(report["status"], "pass")
+        opt2b = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-b:running-event-horizon-profile"
+        )
+        self.assertEqual(opt2b["status"], "pass")
+        self.assertEqual(opt2b["target"], "picotetris-opt1b")
+        self.assertGreaterEqual(opt2b.get("running_steps", 0), 0)
+
+    def test_target_schema_rejects_opt2b_running_horizon_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = project / "firmware-validation/records/opt2-b-running-horizon-20260808-01/record.json"
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt2b = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-b:running-event-horizon-profile"
+        )
+        self.assertEqual(opt2b["status"], "fail")
+
     def test_ci_scopes_separate_core_from_target_schema(self):
         core = run(VERIFY, "--scope", "core", "--json")
         core_report = json.loads(core.stdout)

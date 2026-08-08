@@ -1341,6 +1341,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt0_behavior_contract(checks, root)
     verify_opt1a_exact_idle_fast_forward(checks, root)
     verify_opt1b_serial_fast_path(checks, root)
+    verify_opt2b_running_event_horizon(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -1688,6 +1689,144 @@ def verify_opt1b_serial_fast_path(checks: List[Check], root: Path) -> None:
             measured_runs=len(performance.get("measurements", [])),
         )
     except (OSError, UnicodeError, ValueError, TypeError, KeyError, StopIteration, json.JSONDecodeError) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2b_running_event_horizon(checks: List[Check], root: Path) -> None:
+    """Verify the immutable OPT2-B running-horizon profile evidence."""
+    name = "opt2-b:running-event-horizon-profile"
+    expected_backend = "ac0c3052e6c28fcf235a33f98f3a96470d2966f1"
+    expected_profile_sha = "27d462fd6acc98bcfd42de8ace12b43bccff168b47a624285ab1d42213ac6a80"
+    expected_report_sha = "75867be9188dc020941fcbe35fd8f9761191ac4e4b910346c78f564c9c1ab042"
+    expected_behavior_sha = "a7fc839a4f9381525018b2d21b0b425cb8e9b721d29e80cf1bf3390370585835"
+    try:
+        record_root = root / "firmware-validation/records/opt2-b-running-horizon-20260808-01"
+        record = load_json(record_root / "record.json")
+        run_report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        profile = load_json(record_root / "running-event-horizon-profile.json")
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+
+        exact = record["exactness"]
+        contract = record["target"]
+        profiler = record["profiler"]
+        measurements = record["measurements"]
+        behavior_projection = behavior["behavior_projection"]
+        trace = behavior_projection["event_trace"]
+        projection = json.dumps(
+            behavior_projection,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+        exact_domains = set(item.get("name") for item in trace["domains"])
+        expected_domains = {
+            "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+            "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+        }
+        aligned = all((
+            record.get("record_id") == "opt2-b-running-horizon-20260808-01",
+            record.get("result") == "profiler_complete",
+            record.get("optimization_status") == "measurement_complete_candidate_not_implemented",
+            contract.get("id") == target.get("id") == "picotetris-opt1b",
+            contract.get("revision") == target.get("revision") == 5,
+            contract.get("firmware_sha256") == target.get("artifacts", {}).get("bin_sha256"),
+            contract.get("firmware_sha256") == profile.get("firmware", {}).get("sha256"),
+            contract.get("firmware_sha256") == run_report.get("firmware", {}).get("sha256"),
+            profiler.get("backend_commit") == expected_backend,
+            profiler.get("schema_version") == 1,
+            profiler.get("feature") == "event-horizon-profiler",
+            profiler.get("instrumented") is True,
+            profiler.get("valid_for_wall_time") is False,
+            profiler.get("observed_gaps_are_safe_windows") is False,
+            profiler.get("conservative_horizon_complete_for_current_model") is True,
+            profiler.get("backend_dirty") is False,
+            run_report.get("backend_build", {}).get("commit") == profiler.get("backend_commit"),
+            run_report.get("backend_build", {}).get("dirty") is False,
+            run_report.get("verdict", {}).get("status") == exact.get("verdict"),
+            run_report.get("cycles") == exact.get("cycles") == 927528660,
+            run_report.get("elapsed_us") == exact.get("elapsed_us") == 3715000,
+            run_report.get("scenario", {}).get("status") == "pass",
+            run_report.get("stop_reason") == exact.get("stop_reason") == "scenario_done",
+            run_report.get("scenario", {}).get("steps_total") == exact.get("scenario_steps_total") == 85,
+            len(run_report.get("scenario", {}).get("steps", [])) == exact.get("scenario_steps_passed") == 85,
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("valid_for_wall_time") is False,
+            trace.get("schema_version") == 2,
+            hashlib.sha256(projection).hexdigest() == exact.get("behavior_sha256")
+            == behavior.get("behavior_sha256"),
+            trace.get("sha256") == exact.get("event_stream_sha256"),
+            trace.get("total_events") == exact.get("event_stream_total_events"),
+            len(trace.get("domains", [])) == len(expected_domains),
+            exact_domains == expected_domains,
+            exact.get("all_nine_event_domains_match_opt1b") is True,
+            exact.get("matches_registered_target") is True,
+            exact.get("uart_sha256") == run_report.get("uart", {}).get("sha256"),
+            exact.get("framebuffer_rgb565_sha256")
+            == run_report.get("framebuffer", {}).get("rgb565_sha256"),
+            record.get("interpretation", {}).get("production_optimization_added") is False,
+            profile.get("schema_version") == 1,
+            profile.get("kind") == "rp2040_serial_running_event_horizon_profile",
+            profile.get("execution_model") == "Serial",
+            profile.get("instrumented") is True,
+            profile.get("valid_for_wall_time") is False,
+            profile.get("step_quantum") == 1,
+            profile.get("stop_reason") == "scenario_done",
+            profile.get("observed_gaps_are_safe_windows") is False,
+            profile.get("conservative_horizon_complete_for_current_model") is True,
+            profile.get("backend_build", {}).get("commit") == profiler.get("backend_commit"),
+            profile.get("backend_build", {}).get("dirty") is False,
+            profile.get("run_cycles") == exact.get("cycles") == run_report.get("cycles"),
+            profile.get("counters", {}).get("running_steps") == measurements.get("running_steps"),
+            profile.get("counters", {}).get("total_running_cycles") == measurements.get("running_cycles"),
+            profile.get("counters", {}).get("boundary_steps") == measurements.get("boundary_steps"),
+            profile.get("counters", {}).get("candidate_dispatches") == measurements.get("candidate_dispatches"),
+            profile.get("counters", {}).get("candidate_cycles") == measurements.get("candidate_cycles"),
+            record.get("artifacts", {}).get("running_event_horizon_profile_sha256")
+            == expected_profile_sha,
+            sha256(record_root / record.get("artifacts", {}).get("running_event_horizon_profile"))
+            == expected_profile_sha,
+            record.get("artifacts", {}).get("run_report_sha256") == expected_report_sha,
+            sha256(record_root / record.get("artifacts", {}).get("run_report"))
+            == expected_report_sha,
+            record.get("artifacts", {}).get("behavior_trace_sha256") == expected_behavior_sha,
+            sha256(record_root / record.get("artifacts", {}).get("behavior_trace"))
+            == expected_behavior_sha,
+            all(
+                (
+                    record_root / relpath
+                ).is_file()
+                for key, relpath in record.get("artifacts", {}).items()
+                if not key.endswith("_sha256")
+            ),
+            measurements.get("running_steps") > 0,
+            measurements.get("candidate_dispatches") > 0,
+            measurements.get("candidate_cycles") > 0,
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=contract.get("id"),
+            backend_commit=profiler.get("backend_commit"),
+            running_steps=measurements.get("running_steps"),
+            running_cycles=measurements.get("running_cycles"),
+            candidate_dispatches=measurements.get("candidate_dispatches"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
         add_check(checks, name, False, **error_details(error))
 
 

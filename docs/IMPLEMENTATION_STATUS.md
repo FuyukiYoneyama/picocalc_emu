@@ -114,7 +114,13 @@ baselineと一致した。trace OFF 10 runのwall中央値は27.122874秒から2
 `clk_sys`変更をbatch境界に含めない誤りをbehavior/event契約が検出した。境界修正後は全eventが
 一致したが、同時A/B中央値がOPT1-B `26.16 s`、候補`26.54 s`で約1.45%遅かったためrevertした。
 active targetは変更しておらず、次候補は実際のper-cycle orchestrationを減らせるevent horizonを
-先に測定してから設計する。
+先に測定してから設計する。OPT2-Bではfeature分離したrunning event-horizon profilerをbackend
+`ac0c3052e6c28fcf235a33f98f3a96470d2966f1`へ追加し、同一PicoTetrisで85/85、cycle、UART、
+framebuffer一致を維持した。running 308,932,816 cycleのうちpost-hoc candidateは46,411,891 cycle
+（15.0233%）、28,608,173 dispatch、2,388,571 intervalだった。これはsafe windowやwall-time上限
+ではない。記録は
+[`opt2-b-running-horizon-20260808-01/`](../firmware-validation/records/opt2-b-running-horizon-20260808-01/)
+に固定し、次は保守的horizonとCPU MMIOなし区間に限定したOPT2-C prototypeへ進む。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

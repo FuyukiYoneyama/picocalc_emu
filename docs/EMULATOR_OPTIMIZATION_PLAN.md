@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2 dispatcher-only候補は不採用、OPT2継続中
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-B running horizon計測完了、OPT2-C準備中
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -293,6 +293,28 @@ OPT1-Bと完全一致した。
 per-cycle orchestrationを削減できる範囲を測定してから設計する。詳細は
 [`opt2-dispatcher-20260808-01`](../firmware-validation/records/opt2-dispatcher-20260808-01/notes.md)に残す。
 
+### 9.2 OPT2-B running event-horizon profiler（完了）
+
+backend `ac0c3052e6c28fcf235a33f98f3a96470d2966f1`に、通常buildから完全に分離した
+`event-horizon-profiler` featureを追加した。CPU MMIO、SIO `GPIO_IN`、FIFO/DREQ、IRQ/exception、
+PIO/device、DMA、timer/SysTick/PWM、serial、clock、runner所有external boundaryを重複を許して
+数え、境界間dispatch/cycleと保守的horizon距離を`2^n`累積分布へ記録する。
+
+同一PicoTetris BINの計装runは85/85、927,528,660 cycle、virtual time、UART、framebufferが
+登録済みOPT1-B値と一致した。runningは308,932,816 cycle、172,715,307 dispatchで、post-hoc
+candidateは28,608,173 dispatch、46,411,891 cycle、2,388,571 intervalだった。candidateは
+running cycleの15.0233%、平均11.977 dispatch / 19.431 cycleである。PIO 217,027,394 cycle、
+UART 40,197,601 cycle、DMA 5,320,143 cycleが1-cycle fallbackに制限された。
+
+観測したgapは予測可能なsafe windowではないため、artifactは
+`observed_gaps_are_safe_windows=false`とする。また、candidateの全run virtual cycle比5.0038%を
+wall-time上限へ読み替えない。blockedとrunningでは1 cycle当たりcostが異なり、batch後もCPU
+decode/executeが残るためである。次のOPT2-Cでは、現在の保守的horizon内かつCPU MMIOなしの
+区間だけを対象に小規模prototypeを作り、per-dispatch costとtrace OFF A/Bを測る。PIO/UART/DMA
+deadlineの拡張は限定prototypeの結果後に別変更単位で判断する。証拠は
+[`opt2-b-running-horizon-20260808-01`](../firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
+に固定した。
+
 ## 10. OPT3: CPU/decode高速化
 
 event schedulingを安定させた後に、CPU側を最適化する。
@@ -368,7 +390,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
-| 7 | OPT2 exact event batching | **継続中**（dispatcher-only候補は不採用） | 全boundary eventのcycle/order一致＋有意な性能改善 |
+| 7 | OPT2 exact event batching | **継続中**（OPT2-B profiler完了、OPT2-C準備中） | 全boundary eventのcycle/order一致＋有意な性能改善 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。

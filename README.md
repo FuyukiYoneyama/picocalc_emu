@@ -239,7 +239,11 @@ OPT1-A/R5 backendと一致し、trace OFF 10 runのwall中央値は27.123秒か�
 byte-identicalだったため、既存実機recordとの同値性によりOPT1-Bをpromotedとします。詳細は
 [`OPT1_B_SERIAL_FAST_PATH.md`](docs/OPT1_B_SERIAL_FAST_PATH.md)です。OPT2 exact event batchingは
 継続中です。最初のdispatcher-only候補は全event一致まで修正したものの、同時A/Bで約1.45%遅く、
-不採用としてrevertしました。active targetはOPT1-Bのままです。
+不採用としてrevertしました。続くOPT2-Bではrunning event-horizon profilerをfeature分離して
+実装し、同一BINのexactnessを維持したままrunning cycleの15.0233%にpost-hoc candidateを
+観測しました。これはsafe windowやwall-time上限ではありません。証拠は
+[`opt2-b-running-horizon-20260808-01`](firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
+にあり、次は保守的horizon内に限定したOPT2-C prototypeです。active targetはOPT1-Bのままです。
 
 ## 読む順番
 
