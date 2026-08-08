@@ -1,0 +1,591 @@
+{
+  "schema": 1,
+  "name": "r5-correlation",
+  "description": "Official PicoCalc keyboard physical-key correlation. Source commit a61c1f2f18185b32a667dde5c9393ced9ddd19ca. Any order/retry is permitted; this scenario uses table order with CAPS last. Repeat after a failed session is permitted.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "official keyboard ready",
+      "timeout_ms": 60000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[R5][KEY] source=official_picocalc_keyboard"
+      }
+    },
+    {
+      "op": "key_events",
+      "label": "67 physical keys, CAPS last",
+      "events": [
+        {
+          "state": "pressed",
+          "code": 133
+        },
+        {
+          "state": "released",
+          "code": 133
+        },
+        {
+          "state": "pressed",
+          "code": 132
+        },
+        {
+          "state": "released",
+          "code": 132
+        },
+        {
+          "state": "pressed",
+          "code": 131
+        },
+        {
+          "state": "released",
+          "code": 131
+        },
+        {
+          "state": "pressed",
+          "code": 130
+        },
+        {
+          "state": "released",
+          "code": 130
+        },
+        {
+          "state": "pressed",
+          "code": 129
+        },
+        {
+          "state": "released",
+          "code": 129
+        },
+        {
+          "state": "pressed",
+          "code": 96
+        },
+        {
+          "state": "released",
+          "code": 96
+        },
+        {
+          "state": "pressed",
+          "code": 51
+        },
+        {
+          "state": "released",
+          "code": 51
+        },
+        {
+          "state": "pressed",
+          "code": 50
+        },
+        {
+          "state": "released",
+          "code": 50
+        },
+        {
+          "state": "pressed",
+          "code": 8
+        },
+        {
+          "state": "released",
+          "code": 8
+        },
+        {
+          "state": "pressed",
+          "code": 212
+        },
+        {
+          "state": "released",
+          "code": 212
+        },
+        {
+          "state": "pressed",
+          "code": 9
+        },
+        {
+          "state": "released",
+          "code": 9
+        },
+        {
+          "state": "pressed",
+          "code": 177
+        },
+        {
+          "state": "released",
+          "code": 177
+        },
+        {
+          "state": "pressed",
+          "code": 52
+        },
+        {
+          "state": "released",
+          "code": 52
+        },
+        {
+          "state": "pressed",
+          "code": 101
+        },
+        {
+          "state": "released",
+          "code": 101
+        },
+        {
+          "state": "pressed",
+          "code": 119
+        },
+        {
+          "state": "released",
+          "code": 119
+        },
+        {
+          "state": "pressed",
+          "code": 112
+        },
+        {
+          "state": "released",
+          "code": 112
+        },
+        {
+          "state": "pressed",
+          "code": 61
+        },
+        {
+          "state": "released",
+          "code": 61
+        },
+        {
+          "state": "pressed",
+          "code": 45
+        },
+        {
+          "state": "released",
+          "code": 45
+        },
+        {
+          "state": "pressed",
+          "code": 92
+        },
+        {
+          "state": "released",
+          "code": 92
+        },
+        {
+          "state": "pressed",
+          "code": 47
+        },
+        {
+          "state": "released",
+          "code": 47
+        },
+        {
+          "state": "pressed",
+          "code": 114
+        },
+        {
+          "state": "released",
+          "code": 114
+        },
+        {
+          "state": "pressed",
+          "code": 115
+        },
+        {
+          "state": "released",
+          "code": 115
+        },
+        {
+          "state": "pressed",
+          "code": 49
+        },
+        {
+          "state": "released",
+          "code": 49
+        },
+        {
+          "state": "pressed",
+          "code": 10
+        },
+        {
+          "state": "released",
+          "code": 10
+        },
+        {
+          "state": "pressed",
+          "code": 56
+        },
+        {
+          "state": "released",
+          "code": 56
+        },
+        {
+          "state": "pressed",
+          "code": 55
+        },
+        {
+          "state": "released",
+          "code": 55
+        },
+        {
+          "state": "pressed",
+          "code": 54
+        },
+        {
+          "state": "released",
+          "code": 54
+        },
+        {
+          "state": "pressed",
+          "code": 53
+        },
+        {
+          "state": "released",
+          "code": 53
+        },
+        {
+          "state": "pressed",
+          "code": 102
+        },
+        {
+          "state": "released",
+          "code": 102
+        },
+        {
+          "state": "pressed",
+          "code": 120
+        },
+        {
+          "state": "released",
+          "code": 120
+        },
+        {
+          "state": "pressed",
+          "code": 113
+        },
+        {
+          "state": "released",
+          "code": 113
+        },
+        {
+          "state": "pressed",
+          "code": 46
+        },
+        {
+          "state": "released",
+          "code": 46
+        },
+        {
+          "state": "pressed",
+          "code": 105
+        },
+        {
+          "state": "released",
+          "code": 105
+        },
+        {
+          "state": "pressed",
+          "code": 117
+        },
+        {
+          "state": "released",
+          "code": 117
+        },
+        {
+          "state": "pressed",
+          "code": 121
+        },
+        {
+          "state": "released",
+          "code": 121
+        },
+        {
+          "state": "pressed",
+          "code": 116
+        },
+        {
+          "state": "released",
+          "code": 116
+        },
+        {
+          "state": "pressed",
+          "code": 118
+        },
+        {
+          "state": "released",
+          "code": 118
+        },
+        {
+          "state": "pressed",
+          "code": 59
+        },
+        {
+          "state": "released",
+          "code": 59
+        },
+        {
+          "state": "pressed",
+          "code": 97
+        },
+        {
+          "state": "released",
+          "code": 97
+        },
+        {
+          "state": "pressed",
+          "code": 108
+        },
+        {
+          "state": "released",
+          "code": 108
+        },
+        {
+          "state": "pressed",
+          "code": 107
+        },
+        {
+          "state": "released",
+          "code": 107
+        },
+        {
+          "state": "pressed",
+          "code": 106
+        },
+        {
+          "state": "released",
+          "code": 106
+        },
+        {
+          "state": "pressed",
+          "code": 104
+        },
+        {
+          "state": "released",
+          "code": 104
+        },
+        {
+          "state": "pressed",
+          "code": 103
+        },
+        {
+          "state": "released",
+          "code": 103
+        },
+        {
+          "state": "pressed",
+          "code": 99
+        },
+        {
+          "state": "released",
+          "code": 99
+        },
+        {
+          "state": "pressed",
+          "code": 39
+        },
+        {
+          "state": "released",
+          "code": 39
+        },
+        {
+          "state": "pressed",
+          "code": 122
+        },
+        {
+          "state": "released",
+          "code": 122
+        },
+        {
+          "state": "pressed",
+          "code": 111
+        },
+        {
+          "state": "released",
+          "code": 111
+        },
+        {
+          "state": "pressed",
+          "code": 44
+        },
+        {
+          "state": "released",
+          "code": 44
+        },
+        {
+          "state": "pressed",
+          "code": 109
+        },
+        {
+          "state": "released",
+          "code": 109
+        },
+        {
+          "state": "pressed",
+          "code": 110
+        },
+        {
+          "state": "released",
+          "code": 110
+        },
+        {
+          "state": "pressed",
+          "code": 98
+        },
+        {
+          "state": "released",
+          "code": 98
+        },
+        {
+          "state": "pressed",
+          "code": 100
+        },
+        {
+          "state": "released",
+          "code": 100
+        },
+        {
+          "state": "pressed",
+          "code": 32
+        },
+        {
+          "state": "released",
+          "code": 32
+        },
+        {
+          "state": "pressed",
+          "code": 161
+        },
+        {
+          "state": "released",
+          "code": 161
+        },
+        {
+          "state": "pressed",
+          "code": 165
+        },
+        {
+          "state": "released",
+          "code": 165
+        },
+        {
+          "state": "pressed",
+          "code": 162
+        },
+        {
+          "state": "released",
+          "code": 162
+        },
+        {
+          "state": "pressed",
+          "code": 163
+        },
+        {
+          "state": "released",
+          "code": 163
+        },
+        {
+          "state": "pressed",
+          "code": 48
+        },
+        {
+          "state": "released",
+          "code": 48
+        },
+        {
+          "state": "pressed",
+          "code": 57
+        },
+        {
+          "state": "released",
+          "code": 57
+        },
+        {
+          "state": "pressed",
+          "code": 93
+        },
+        {
+          "state": "released",
+          "code": 93
+        },
+        {
+          "state": "pressed",
+          "code": 91
+        },
+        {
+          "state": "released",
+          "code": 91
+        },
+        {
+          "state": "pressed",
+          "code": 183
+        },
+        {
+          "state": "released",
+          "code": 183
+        },
+        {
+          "state": "pressed",
+          "code": 181
+        },
+        {
+          "state": "pressed",
+          "code": 181
+        },
+        {
+          "state": "released",
+          "code": 181
+        },
+        {
+          "state": "pressed",
+          "code": 182
+        },
+        {
+          "state": "pressed",
+          "code": 182
+        },
+        {
+          "state": "released",
+          "code": 182
+        },
+        {
+          "state": "pressed",
+          "code": 180
+        },
+        {
+          "state": "released",
+          "code": 180
+        },
+        {
+          "state": "pressed",
+          "code": 193
+        },
+        {
+          "state": "released",
+          "code": 193
+        }
+      ],
+      "gap_ms": 250
+    },
+    {
+      "op": "wait_until",
+      "label": "R5 verdict",
+      "timeout_ms": 120000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[R5_DIAG_VERDICT]"
+      }
+    },
+    {
+      "op": "wait_until",
+      "label": "R5 overall pass",
+      "timeout_ms": 120000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "overall=pass"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "R5 final snapshot"
+    }
+  ]
+}
+

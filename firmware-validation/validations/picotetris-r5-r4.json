@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picotetris-r5-r4",
+  "roadmap_package": "R4",
+  "target_id": "picotetris-r5",
+  "target_revision": 4,
+  "target_contract_sha256": "4d47d0c044382effa6bf138b7336cd7eee2416968bb5706b192090c12df82b87",
+  "evidence": {
+    "record": "firmware-validation/records/r5-preflight-20260808-01/record.json",
+    "sha256": "d63f9d77fa99f35025452a697da1b7657eea601cc8ad55ff07216dcefd40f3e6",
+    "record_id": "r5-preflight-20260808-01",
+    "section": "emulator_preflight"
+  },
+  "result": "accepted"
+}

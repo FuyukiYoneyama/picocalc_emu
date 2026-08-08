@@ -13,11 +13,12 @@ permissions:
 
 env:
   PICO_SDK_COMMIT: a1438dff1d38bd9c65dbd693f0e5db4b9ae91779
-  PICOTETRIS_SOURCE_COMMIT: fed84f358d7dcadb1457752e687355ddb1875c48
   PICOTETRIS_BSP_COMMIT: cbfc90467e2b8392fbd0429c83925b94ca365824
-  PICOTETRIS_BUNDLE_SHA256: 205b35da1a153ac6c3935e42f0cb36a782238eb02bb59f0b2c523987974b5fb4
-  PICOTETRIS_BIN_SHA256: 0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62
-  PICOEM_COMMIT: 3bc6bbd7833e45fbf94d640eb7fbe056dd9fbd81
+  PICOTETRIS_R5_SOURCE_COMMIT: 9a40a905f3ddcc6dc835655e2a332fce88f98800
+  PICOTETRIS_R5_BUNDLE_SHA256: 1187bccb9cc5b414e00c281db3e6782e7e936464bd634dfc7feae32573b707a3
+  PICOTETRIS_R5_BIN_SHA256: 8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0
+  PICOTETRIS_R5_UF2_SHA256: 0e990cff819b8542a7a96765cd7004c7b23cb52b77494c745b914afd32f084f1
+  PICOEM_COMMIT: 612b48510452d4012e4ac6639960ca3983b48f66
   RUST_TOOLCHAIN: "1.97.1"
 
 jobs:
@@ -169,38 +170,40 @@ jobs:
           test "$(git -C /tmp/pico-sdk-2.2.0 rev-parse HEAD)" = "$PICO_SDK_COMMIT"
           git -C /tmp/pico-sdk-2.2.0 submodule update --init --depth 1
           test -z "$(git -C /tmp/pico-sdk-2.2.0 status --porcelain)"
-      - name: Recover pinned PicoTetris source
+      - name: Recover pinned R5 PicoTetris source
         run: |
-          printf '%s  %s\n' "$PICOTETRIS_BUNDLE_SHA256" \
-            provenance/picotetris-r3.bundle | sha256sum --check
-          git clone -b main provenance/picotetris-r3.bundle /tmp/picotetris-r4
-          git -C /tmp/picotetris-r4 checkout --detach "$PICOTETRIS_SOURCE_COMMIT"
-          test "$(git -C /tmp/picotetris-r4 rev-parse HEAD)" = "$PICOTETRIS_SOURCE_COMMIT"
-          test -z "$(git -C /tmp/picotetris-r4 status --porcelain)"
-      - name: Build registered PicoTetris BIN
+          printf '%s  %s\n' "$PICOTETRIS_R5_BUNDLE_SHA256" \
+            provenance/picotetris-r5.bundle | sha256sum --check
+          git clone -b main provenance/picotetris-r5.bundle /tmp/picotetris-r5
+          git -C /tmp/picotetris-r5 checkout --detach "$PICOTETRIS_R5_SOURCE_COMMIT"
+          test "$(git -C /tmp/picotetris-r5 rev-parse HEAD)" = "$PICOTETRIS_R5_SOURCE_COMMIT"
+          test -z "$(git -C /tmp/picotetris-r5 status --porcelain)"
+      - name: Build registered R5 PicoTetris BIN and UF2
         env:
           PICO_SDK_PATH: /tmp/pico-sdk-2.2.0
           CFLAGS: -DPICO_NO_BI_PROGRAM_BUILD_DATE=1
           CXXFLAGS: -DPICO_NO_BI_PROGRAM_BUILD_DATE=1
         run: |
-          /usr/bin/cmake -S /tmp/picotetris-r4 -B /tmp/picotetris-r4/build -G Ninja \
+          /usr/bin/cmake -S /tmp/picotetris-r5 -B /tmp/picotetris-r5/build -G Ninja \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
             -DPICO_BOARD=pico \
-            -DPICO_NO_PICOTOOL=1 \
             -DCMAKE_BUILD_TYPE=Release \
-            -DPICOCALC_BUILD_TIMESTAMP=2026-08-06T00:00:00Z \
+            -DPICOTETRIS_R5_CORRELATION=ON \
+            -DPICOCALC_BUILD_TIMESTAMP=2026-08-08T00:00:00Z \
             -DPICOCALC_BSP_GIT="${PICOTETRIS_BSP_COMMIT:0:12}" \
-            -DPICOCALC_APP_GIT="${PICOTETRIS_SOURCE_COMMIT:0:12}" \
+            -DPICOCALC_APP_GIT="${PICOTETRIS_R5_SOURCE_COMMIT:0:12}" \
             -DPICOCALC_LCD_VARIANT=pio-rgb565 \
             -DPICOCALC_PSRAM_LCD_COEXIST_TEST=OFF
-          /usr/bin/cmake --build /tmp/picotetris-r4/build --parallel 2
-          printf '%s  %s\n' "$PICOTETRIS_BIN_SHA256" \
-            /tmp/picotetris-r4/build/PicoTetris.bin | sha256sum --check
-      - name: Run authoritative firmware regression
+          /usr/bin/cmake --build /tmp/picotetris-r5/build --parallel 2
+          printf '%s  %s\n' "$PICOTETRIS_R5_BIN_SHA256" \
+            /tmp/picotetris-r5/build/PicoTetris_R5.bin | sha256sum --check
+          printf '%s  %s\n' "$PICOTETRIS_R5_UF2_SHA256" \
+            /tmp/picotetris-r5/build/PicoTetris_R5.uf2 | sha256sum --check
+      - name: Run authoritative R5 firmware regression
         run: |
           python tools/picocalc.py test --mode firmware \
-            --target picotetris-r4 \
-            --firmware /tmp/picotetris-r4/build/PicoTetris.bin \
+            --target picotetris-r5 \
+            --firmware /tmp/picotetris-r5/build/PicoTetris_R5.bin \
             --backend-dir /tmp/picoem-picocalc \
             --json "$RUNNER_TEMP/firmware-report.json" \
             --uart "$RUNNER_TEMP/firmware-uart.bin"

@@ -44,6 +44,15 @@ python3 tools/picocalc.py test --mode host --repeat 3
 固定firmware回帰の完全なbuild/実行コマンドは`.github/workflows/ci.yml`を正本とする。
 ローカルではregistryが指定するcommitのclean backend checkoutを`--backend-dir`へ渡す。
 
+### R5による現行firmware jobの更新
+
+上のrun IDとR4成果物は時点証拠であり変更しない。R5 preflight後、現行
+`firmware-regression`は旧R3 bundle/R4 targetから、独立した
+`provenance/picotetris-r5.bundle`（SHA-256 `1187bccb...7a3`）、backend `612b485...f66`、
+target `picotetris-r5`へ進めた。clean checkoutからR5 BIN/UF2の両SHAを照合し、自動周辺機器・
+ゲーム診断と67キーscenarioを毎pushで実走する。旧R3/R4 target、bundle、attestationは履歴証拠
+としてそのまま保持する。
+
 ## Private backendの認証境界
 
 `GITHUB_TOKEN`は別private repositoryをcloneできないため、`picoem-picocalc`に
@@ -59,5 +68,6 @@ host 3回バイト一致、PicoTetris build SHA、R3/R4で記録したfirmware 3
 権威あるfirmware 1回を組み合わせている。100回soakや別形式のreportが必要になった場合は、
 所要時間と保存方針を定めた独立作業パッケージとして追加する。
 
-次はR5で、CIが使ったものと同一SHAのPicoTetris BINを実機へ書き込み、LCD、操作、line clear、
-game-over/restart、PSRAM、SD、audio初期化を相関する。
+R5の実装・emulator preflight・CI接続後に残るのは、CIが再現したものと同一SHAの
+`PicoTetris_R5.uf2`を実機へ書き込み、UART全文、参照音、67/67、最終PASS写真1枚を相関する
+1回のPicoCalcセッションである。

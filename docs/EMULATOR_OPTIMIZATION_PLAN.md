@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A candidate完了、R5実機相関が次
+**状態:** OPT1-A candidate・R5 emulator preflight完了、PicoCalc実機相関が次
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -310,9 +310,12 @@ hardware evidenceと仕様を根拠にmodelを修正し、新しいversioned val
 OPT0と最初のOPT1候補は、R5実機相関を豊かにする観測契約を先に用意するため、R5前に実施できる。
 ただしR5前の合格は**candidate optimization**であり、現在のエミュレーター内部の一致を示すだけである。
 
-R5では同一BIN SHAを使い、既存のLCD、keyboard、line clear、game-over、restart、PSRAM、SD、
-audio条件に加えて、取得可能なtimer、IRQ、PIO/GPIO、PSRAM transactionの相関を行う。実機と一致した
-範囲を明示して初めて**promoted optimization**とする。
+R5では`picotetris-r5`の同一BIN/UF2 SHAを使う。firmwareはLCD、PSRAM、SD、audio、line clear、
+game-over、restartを自動検査した後、公式keyboard firmware由来67キーを任意順・個別retry・
+SD progress resumeで確認する。別の診断BIN、ゲーム途中の写真、連続入力成功は要求しない。
+エミュレーターpreflightは完了しており、実機のUART全文、参照音確認、安定した最終PASS写真1枚と
+一致範囲を記録して初めて**promoted optimization**とする。操作契約は
+[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)を正典とする。
 
 OPT2以降は原則として最初のR5相関後に行う。R5で基準modelのずれが判明した場合は、速度より先に
 正確性を修正してbaselineとversioned validationを更新する。
@@ -326,7 +329,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 2 | OPT0-B behavior/streaming trace契約 | **完了** | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
 | 4 | OPT1-A第一候補 | **candidate完了** | 正確性gate＋性能gate合格、candidateとしてrecord化 |
-| 5 | R5実機相関 | **次** | 同一BINと追加観測値で相関し、候補を正式採用または棄却する |
+| 5 | R5実機相関 | **emulator preflight完了・実機pending** | 同一BIN/UF2、67キー、UART、音、最終写真を相関し、候補を正式採用または棄却する |
 | 6 | 残るOPT1候補 | R5後 | 独立変更単位で正確性・性能gate合格 |
 | 7 | OPT2 exact event batching | R5後 | 全boundary eventのcycle/order一致 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
@@ -397,7 +400,9 @@ behavior traceはhost UART drain cadence依存を除いたschema 2へversion up�
 実時間比中央値は5.874%から13.697%へ向上した。詳細は
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)と
 [`firmware-validation/records/opt1-a-20260808-01/notes.md`](../firmware-validation/records/opt1-a-20260808-01/notes.md)
-に固定した。R5前なので状態はcandidateであり、次は同一BINによる実機相関である。
+に固定した。R5 emulator preflightでは単一の`PicoTetris_R5` artifactを再現し、自動周辺機器・
+ゲーム診断と67/67キーscenarioを合格させた。実機相関はまだ完了していないため状態はcandidateであり、
+次は同じUF2をPicoCalcで確認する1回の実機セッションである。
 
 ## 16. 最終判断規則
 

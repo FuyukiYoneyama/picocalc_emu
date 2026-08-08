@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "record_id": "r5-preflight-20260808-01",
+  "title": "R5 single-BIN PicoCalc hardware-correlation emulator preflight",
+  "roadmap_package": "R5",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-r5",
+    "revision": 4,
+    "contract_sha256": "4d47d0c044382effa6bf138b7336cd7eee2416968bb5706b192090c12df82b87"
+  },
+  "source": {
+    "repo": "picotetris",
+    "commit": "9a40a905f3ddcc6dc835655e2a332fce88f98800",
+    "recovery_bundle": "provenance/picotetris-r5.bundle",
+    "recovery_bundle_sha256": "1187bccb9cc5b414e00c281db3e6782e7e936464bd634dfc7feae32573b707a3",
+    "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+    "official_keyboard_source_commit": "a61c1f2f18185b32a667dde5c9393ced9ddd19ca"
+  },
+  "reproducible_build": {
+    "clean_clone_builds": 2,
+    "timestamp": "2026-08-08T00:00:00Z",
+    "pico_sdk": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "bin_sha256": "8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0",
+    "uf2_sha256": "0e990cff819b8542a7a96765cd7004c7b23cb52b77494c745b914afd32f084f1",
+    "bin_and_uf2_byte_identical_across_builds": true
+  },
+  "emulator_preflight": {
+    "target": {
+      "id": "picotetris-r5",
+      "revision": 4
+    },
+    "backend_commit": "612b48510452d4012e4ac6639960ca3983b48f66",
+    "backend_dirty": false,
+    "firmware_sha256": "8b4ac5c0026bb582825fd767ecd26d5278710590a2e2312ce4b817d12c60adc0",
+    "scenario_sha256": "79ebaa3aac897f7b788f6005ff8cf77202c0c2e6d093c6271d1587f0f6ba8587",
+    "report_schema": 8,
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 9879987214,
+    "elapsed_us": 39525002,
+    "scenario_steps_passed": 5,
+    "scenario_steps_total": 5,
+    "key_events_delivered": 136,
+    "physical_keys_completed": 67,
+    "key_events_remaining": 0,
+    "key_events_dropped": 0,
+    "unknown_keyboard_register_accesses": 0,
+    "unknown_sd_commands": 0,
+    "unsupported_mmio_truncated": false,
+    "exception": null,
+    "error": null,
+    "sd_format": "fat32",
+    "normalized_report_sha256": "f983959ae020f1633046e73fedb843485d1f52617615f3e1b5638c6cd7b020ce",
+    "timeline_sha256": "d2bfa45832408c909460cd7579d211b0c05730751549d76617a9d36662a16d19",
+    "raw_report_sha256": "38ee66e6b6663509217752bd61ac528123f706ff24d3382529c941348dc76656",
+    "uart_sha256": "202f5b83617147a1536b4729c33a31168072001169c104f2dbffcd768251bb83",
+    "framebuffer_rgb565_sha256": "3f630e04d2fb2c6c9fcd8446052d48d03a4a00aab797d7aef21e67a459830abe",
+    "snapshot_png_sha256": "a17ce3a79226ad05663ca6bcd3f9358863a27fa68cd7c70a94298eef3cbeb57d",
+    "automatic_checks": {
+      "lcd_readback_iterations": 100,
+      "lcd_failures": 0,
+      "psram": "pass",
+      "sd": "pass",
+      "audio_stream": "pass",
+      "tetris_line_clear": "pass",
+      "tetris_game_over": "pass",
+      "tetris_restart": "pass",
+      "keyboard": "67/67"
+    }
+  },
+  "operator_contract": {
+    "continuous_sequence_required": false,
+    "key_order": "arbitrary",
+    "retry_without_reset": true,
+    "timeout": false,
+    "progress_persisted_to_sd": true,
+    "mid_game_photo_required": false,
+    "final_stable_pass_photo_count": 1,
+    "uart_log_required": true,
+    "audible_tone_confirmation_required": true
+  },
+  "hardware_correlation_completed": false,
+  "optimization_status": "candidate",
+  "artifacts": {
+    "normal_report": "run-report.json",
+    "uart_log": "uart.log",
+    "final_snapshot": "final.png",
+    "notes": "notes.md"
+  }
+}

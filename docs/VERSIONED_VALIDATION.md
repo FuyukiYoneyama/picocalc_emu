@@ -73,3 +73,21 @@ framebufferに加え、one-cycle referenceと候補のbehavior trace schema 2全
 
 このrevisionは自動回帰と性能gateを通った**candidate**です。R5で同一BIN SHAを実機と相関する
 までは正式採用へ昇格させず、R5で不一致があれば速度にかかわらず棄却または修正します。
+
+## R5 correlation revision 4
+
+`picotetris-r5` revision 4は`picotetris-opt1a`をsupersedeする。backendはraw keyboard eventを
+scenarioへ投入できる`612b48510452d4012e4ac6639960ca3983b48f66`、firmwareはR5相関専用
+`PicoTetris_R5.bin`である。製品firmwareと診断firmwareを二つ使う契約ではなく、この1つの
+BIN/UF2をエミュレーターとPicoCalc実機の両方で使う。
+
+source `9a40a905...`のclean clone build 2回はBIN `8b4ac5c...adc0`とUF2
+`0e990cff...4f1`で一致した。emulator preflightでは自動LCD/PSRAM/FAT32/audio/PicoTetris検査と、
+任意順・個別retry可能な67キーscenarioが5/5で合格した。UART、framebuffer、normalized report、
+timelineをtargetへpinしている。evidenceは
+`firmware-validation/records/r5-preflight-20260808-01/record.json`、attestationは
+`firmware-validation/validations/picotetris-r5-r4.json`である。
+
+このattestationの`accepted`はtarget contractとemulator preflightの妥当性を示す。
+実機合格を意味しない。recordの`hardware_correlation_completed=false`を維持し、実機UART全文、
+最終PASS写真1枚、参照音確認が新しいhardware evidenceへ記録されるまでOPT1-Aはcandidateである。
