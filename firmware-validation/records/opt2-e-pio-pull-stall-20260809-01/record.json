@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-e-pio-pull-stall-20260809-01",
+  "title": "OPT2-E exact PIO pull-stall bulk prototype",
+  "roadmap_package": "OPT2-E",
+  "result": "rejected",
+  "optimization_status": "reverted",
+  "opt2_overall_status": "incomplete",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "candidate": {
+    "backend_commit": "a7ac9020b9861c1c4803187b7092512b65f60835",
+    "backend_dirty": false,
+    "revert_commit": "a7939e550aee3f604e0e052159243bf0872fc285",
+    "feature": "pio-exact-bulk-prototype",
+    "hardware_quantum": 1,
+    "accepted_state": "all enabled PIO state machines stalled on PULL with empty TX FIFO",
+    "fallback_state": "active, mixed-stall, WAIT, RX-full or refilled-TX state machines",
+    "accepted_calls": 371982564,
+    "accepted_system_cycles": 371982564,
+    "accepted_pio_ticks": 185895678,
+    "all_accepted_calls_single_cycle": true
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113
+  },
+  "performance_screening": {
+    "paired_runs": 3,
+    "baseline_median_wall_seconds": 25.70,
+    "candidate_median_wall_seconds": 25.64,
+    "candidate_median_improvement_percent": 0.233463035,
+    "promotion_improvement_threshold_percent": 5.0,
+    "formal_ten_run_measurement_performed": false,
+    "all_six_measured_runs_exact": true
+  },
+  "decision": {
+    "accepted": false,
+    "reason": "the exact inner PIO shortcut received only one-cycle calls and improved median wall time by 0.2335 percent, below the 5 percent promotion threshold",
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "hardware_correlation_required": false,
+    "next_investigation": "design an exact stationary pin-device bulk observation contract before coalescing the outer PIO and update_gpio loop",
+    "independent_alternative": "UART deadline promotion",
+    "cpu_block_work_deferred_to": "OPT3"
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31282717963,
+    "head_sha": "a7939e550aee3f604e0e052159243bf0872fc285",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "notes": "notes.md",
+    "performance": "performance-screening.json",
+    "performance_sha256": "7e2e17d6897768d524a4e9542e3299b1735ac2a714049d3dd0ef205f85ff6c73",
+    "run_report": "run-report.json",
+    "run_report_sha256": "20b0c5fec74e12d02bbe904d87b868a515392d10307dfa1c9fc9cfcaa05375b2",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "569c25aa3176c07287319e7adcec55bcf71ff40538c814ec7e1f911499773df3"
+  }
+}

@@ -503,6 +503,47 @@ raise SystemExit(code)
         )
         self.assertGreaterEqual(opt2d.get("fallback_union_cycles", 0), 0)
 
+    def test_target_schema_verification_includes_opt2e_pio_pull_stall(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt2e = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-e:pio-pull-stall"
+        )
+        self.assertEqual(opt2e["status"], "pass")
+        self.assertEqual(opt2e["target"], "picotetris-opt1b")
+        self.assertEqual(opt2e["backend_commit"], "a7ac9020b9861c1c4803187b7092512b65f60835")
+        self.assertTrue(opt2e.get("candidate_calls_single_cycle"))
+
+    def test_target_schema_rejects_opt2e_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = (
+                project
+                / "firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/record.json"
+            )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt2e = next(
+            check for check in report["checks"]
+            if check["name"] == "opt2-e:pio-pull-stall"
+        )
+        self.assertEqual(opt2e["status"], "fail")
+
     def test_target_schema_rejects_opt2c_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "measurement": "OPT2-E PIO pull-stall bulk prototype screening",
+  "valid_for_wall_time": true,
+  "host": {
+    "cpu_affinity": 0,
+    "execution_order": "alternating baseline/candidate pairs",
+    "warmup_runs_per_variant": 1,
+    "warmups_excluded": true
+  },
+  "baseline": {
+    "backend_commit": "a7939e5",
+    "wall_seconds": [26.00, 25.70, 25.67],
+    "median_wall_seconds": 25.70
+  },
+  "candidate": {
+    "backend_commit": "a7ac9020b9861c1c4803187b7092512b65f60835",
+    "wall_seconds": [25.81, 25.53, 25.64],
+    "median_wall_seconds": 25.64
+  },
+  "paired_improvement_percent": [
+    0.730769231,
+    0.661478599,
+    0.116867939
+  ],
+  "median_improvement_percent": 0.233463035,
+  "promotion_threshold_percent": 5.0,
+  "formal_ten_run_measurement_performed": false,
+  "exact_outputs_identical_across_all_six_measured_runs": true,
+  "result": "rejected_below_threshold"
+}

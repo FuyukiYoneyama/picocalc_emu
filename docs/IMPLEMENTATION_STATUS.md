@@ -132,6 +132,14 @@ PIO/UART/DMA重複signatureのunionはrunningの83.2696%、PIO-onlyは217,025,26
 CPU/decode block workはOPT3とした。証拠は
 [`OPT2_D_LEVER_COMPARISON.md`](OPT2_D_LEVER_COMPARISON.md)と
 [`opt2-d-lever-comparison-20260809-01/`](../firmware-validation/records/opt2-d-lever-comparison-20260809-01/)
+にある。続くOPT2-Eは、全enabled SMが空TX FIFOへの`PULL`で停止している限定状態だけを閉形式で
+進めた。candidate `a7ac902`は85/85、cycle、behavior/event全9 domain、UART、framebuffer、
+PSRAM tickを完全一致させたが、実workloadの371,982,564 callがすべて1 cycleだった。clean paired
+screeningの中央値改善は25.70秒から25.64秒、0.2335%で5%基準に届かず、`a7939e5`でrevertした。
+active targetはOPT1-Bのままである。次のPIO調査には、外側のpin/device観測をまとめる前提となる
+stationary pin-device bulk observation契約が必要である。詳細は
+[`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)と
+[`opt2-e-pio-pull-stall-20260809-01/`](../firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/)
 にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う

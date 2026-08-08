@@ -1344,6 +1344,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2b_running_event_horizon(checks, root)
     verify_opt2c_exact_batching(checks, root)
     verify_opt2d_lever_comparison(checks, root)
+    verify_opt2e_pio_pull_stall(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -2200,6 +2201,169 @@ def verify_opt2d_lever_comparison(checks: List[Check], root: Path) -> None:
         TypeError,
         KeyError,
         StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2e_pio_pull_stall(checks: List[Check], root: Path) -> None:
+    """Verify the exact PIO pull-stall bulk-advance prototype metrics and decision."""
+    name = "opt2-e:pio-pull-stall"
+    expected_artifact_hashes = {
+        "run_report": "20b0c5fec74e12d02bbe904d87b868a515392d10307dfa1c9fc9cfcaa05375b2",
+        "behavior_trace": (
+            "569c25aa3176c07287319e7adcec55bcf71ff40538c814ec7e1f911499773df3"
+        ),
+        "performance": (
+            "7e2e17d6897768d524a4e9542e3299b1735ac2a714049d3dd0ef205f85ff6c73"
+        ),
+    }
+    expected_domains = {
+        "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+        "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+    }
+    try:
+        record_root = root / "firmware-validation/records/opt2-e-pio-pull-stall-20260809-01"
+        record = load_json(record_root / "record.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        opt1b_behavior = load_json(
+            root / "firmware-validation/records/opt1-b-20260808-01/behavior-trace.json"
+        )
+        artifacts = record["artifacts"]
+        performance_record = record["performance_screening"]
+        exact = record["exactness"]
+        candidate = record["candidate"]
+        decision = record["decision"]
+        target_record = record["target"]
+        target = next(
+            item
+            for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+        profile_trace = behavior["behavior_projection"]["event_trace"]
+        profile_domains = {item.get("name") for item in profile_trace["domains"]}
+        baseline_samples = performance["baseline"]["wall_seconds"]
+        candidate_samples = performance["candidate"]["wall_seconds"]
+        baseline_median = statistics.median(baseline_samples)
+        candidate_median = statistics.median(candidate_samples)
+        improvement_percent = (baseline_median - candidate_median) / baseline_median * 100
+
+        aligned = all((
+            record.get("record_id") == "opt2-e-pio-pull-stall-20260809-01",
+            record.get("result") == "rejected",
+            record.get("optimization_status") == "reverted",
+            record.get("opt2_overall_status") == "incomplete",
+            record.get("roadmap_package") == "OPT2-E",
+            target_record.get("id") == target.get("id") == "picotetris-opt1b",
+            target_record.get("revision") == target.get("revision") == 5,
+            target_record.get("firmware_sha256")
+            == target.get("artifacts", {}).get("bin_sha256"),
+            target_record.get("scenario_sha256") == target.get("scenario", {}).get("sha256"),
+            report.get("firmware", {}).get("sha256") == target_record.get("firmware_sha256"),
+            report.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("schema_version") == 8,
+            report.get("verdict", {}).get("status") == "pass",
+            report.get("stop_reason") == exact.get("stop_reason") == "scenario_done",
+            report.get("cycles") == exact.get("cycles") == 927_528_660,
+            report.get("elapsed_us") == exact.get("elapsed_us") == 3_715_000,
+            report.get("scenario", {}).get("status") == "pass",
+            len(report.get("scenario", {}).get("steps", [])) == 85,
+            exact.get("scenario_steps_passed") == exact.get("scenario_steps_total") == 85,
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            behavior.get("backend_build", {}).get("dirty") is False,
+            behavior.get("mode") == "correctness_trace_on",
+            behavior.get("valid_for_wall_time") is False,
+            behavior.get("behavior_sha256") == exact.get("behavior_sha256"),
+            behavior.get("behavior_projection") == opt1b_behavior.get("behavior_projection"),
+            profile_trace.get("schema_version") == 2,
+            profile_trace.get("sha256") == exact.get("event_stream_sha256"),
+            profile_trace.get("total_events") == exact.get("event_stream_total_events"),
+            set(profile_domains) == expected_domains,
+            exact.get("all_nine_event_domains_match_opt1b") is True,
+            exact.get("uart_sha256") == report.get("uart", {}).get("sha256"),
+            exact.get("framebuffer_rgb565_sha256")
+            == report.get("framebuffer", {}).get("rgb565_sha256"),
+            exact.get("psram_tick_count") == report.get("psram", {}).get("tick_count"),
+            performance.get("schema_version") == 1,
+            performance.get("result") == "rejected_below_threshold",
+            performance.get("valid_for_wall_time") is True,
+            performance.get("measurement") == "OPT2-E PIO pull-stall bulk prototype screening",
+            math.isclose(
+                performance.get("median_improvement_percent"),
+                improvement_percent,
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            ),
+            performance.get("promotion_threshold_percent") == 5.0,
+            performance.get("paired_improvement_percent") == [0.730769231, 0.661478599, 0.116867939],
+            math.isclose(
+                performance_record.get("candidate_median_improvement_percent"),
+                improvement_percent,
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            ),
+            performance_record.get("promotion_improvement_threshold_percent") == 5.0,
+            performance_record.get("formal_ten_run_measurement_performed") is False,
+            performance_record.get("all_six_measured_runs_exact") is True,
+            performance_record.get("baseline_median_wall_seconds") == baseline_median == 25.70,
+            performance_record.get("candidate_median_wall_seconds") == candidate_median == 25.64,
+            len(baseline_samples)
+            == len(candidate_samples)
+            == performance_record.get("paired_runs") == 3,
+            performance.get("baseline", {}).get("median_wall_seconds") == baseline_median,
+            performance.get("candidate", {}).get("median_wall_seconds") == candidate_median,
+            candidate.get("backend_commit") == "a7ac9020b9861c1c4803187b7092512b65f60835",
+            candidate.get("revert_commit") == "a7939e550aee3f604e0e052159243bf0872fc285",
+            candidate.get("feature") == "pio-exact-bulk-prototype",
+            candidate.get("hardware_quantum") == 1,
+            candidate.get("accepted_state") == "all enabled PIO state machines stalled on PULL with empty TX FIFO",
+            candidate.get("fallback_state")
+            == "active, mixed-stall, WAIT, RX-full or refilled-TX state machines",
+            candidate.get("all_accepted_calls_single_cycle") is True,
+            candidate.get("accepted_calls") == candidate.get("accepted_system_cycles"),
+            candidate.get("accepted_system_cycles") == 371_982_564,
+            candidate.get("accepted_pio_ticks") == 185_895_678,
+            decision.get("accepted") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("validation_attestation_added") is False,
+            decision.get("hardware_correlation_required") is False,
+            decision.get("next_investigation")
+            == "design an exact stationary pin-device bulk observation contract before coalescing the outer PIO and update_gpio loop",
+            record.get("ci", {}).get("repository") == "FuyukiYoneyama/picoem-picocalc",
+            record.get("ci", {}).get("run_id") == 31_282_717_963,
+            record.get("ci", {}).get("head_sha") == candidate.get("revert_commit"),
+            record.get("ci", {}).get("conclusion") == "success",
+            all(
+                artifacts.get(key + "_sha256") == digest
+                and artifacts.get(key) is not None
+                and (record_root / artifacts.get(key)).is_file()
+                and sha256(record_root / artifacts.get(key)) == digest
+                for key, digest in expected_artifact_hashes.items()
+            ),
+            (record_root / artifacts.get("notes", "")).is_file(),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=record.get("target", {}).get("id"),
+            backend_commit=candidate.get("backend_commit"),
+            candidate_median_improvement_percent=performance.get("median_improvement_percent"),
+            candidate_calls_single_cycle=candidate.get("all_accepted_calls_single_cycle"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        statistics.StatisticsError,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))

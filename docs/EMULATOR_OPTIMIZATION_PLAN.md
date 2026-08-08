@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-C限定prototypeは不採用・revert、OPT2継続中
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-E PIO pull-stall prototypeは正確性合格・性能不採用・revert、OPT2継続中
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -345,6 +345,25 @@ one-cycle fallback unionはrunningの83.2696%で、PIO-onlyが217,025,266 cycle�
 PIO exact event horizon / bulk advanceを選ぶ。UARTはその次、CPU/decode block cacheはOPT3へ残す。
 詳細は[`OPT2_D_LEVER_COMPARISON.md`](OPT2_D_LEVER_COMPARISON.md)に固定した。
 
+### 9.5 OPT2-E PIO pull-stall bulk prototype（完了、不採用）
+
+一般PIO schedulerの前に、全enabled SMが空TX FIFOへの`PULL`で停止している最小subsetを試作した。
+同一`step_n_with_pins(n)`内ではCPU/DMAがFIFOを補充できないため、命令実行、pin、FIFO、DREQ、IRQ
+eventは起きず、divider phaseとstall診断値だけを閉形式で更新できる。active/mixed stall、`WAIT`、
+RX-full、TX refillは従来tickへfallbackし、GPIO/PSRAM/LCD観測と外側dispatchは省略しなかった。
+
+clean candidate `a7ac9020b9861c1c4803187b7092512b65f60835`は85/85、927,528,660 cycle、
+behavior SHA、173,498,680 event、全9 domain、UART、framebuffer、PSRAM tickをOPT1-Bと完全一致させた。
+しかし受理した371,982,564 call / system cycleはすべて1 cycleで、対応PIO tickは185,895,678だった。
+外側が各PIO tick直後にpin/deviceを観測するため、内部bulkへ複数cycleを渡せなかった。
+
+trace OFFのclean 3 paired screeningはbaseline中央値25.70秒、candidate 25.64秒、改善0.233463%で、
+5%採用基準未達だった。候補は`a7939e5`でrevertし、active targetとpinは変更していない。次のPIO
+調査は、constant-pin区間に対するPSRAM/LCDのexact bulk observation契約を設計した後、外側の
+`tick_pio + update_gpio`を同じ静止証明下でまとめる。UART deadline promotionは独立した次点、
+CPU/decode block cacheはOPT3に残す。詳細は
+[`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)に固定した。
+
 ## 10. OPT3: CPU/decode高速化
 
 event schedulingを安定させた後に、CPU側を最適化する。
@@ -420,7 +439,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
-| 7 | OPT2 exact event batching | **継続中**（OPT2-D比較完了、次はPIO exact horizon/bulk prototype） | 全boundary eventのcycle/order一致＋有意な性能改善 |
+| 7 | OPT2 exact event batching | **継続中**（OPT2-E限定PIO prototypeは正確性合格・性能不採用・revert。次はstationary pin-device bulk observation契約） | 全boundary eventのcycle/order一致＋有意な性能改善 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。
