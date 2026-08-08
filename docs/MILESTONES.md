@@ -343,7 +343,11 @@ production blocked-path baselineを分離し、CPU固定10 sampleで`Cblocked=48
 値は優先順位選択用の算術投影であり、最適化実測ではない。完全な証拠は
 [`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
 に保存した。これでOPT0-Aは完了し、OPT1-A exact idle fast-forwardを第一候補に選んだ。
-現在の次工程はOPT0-B behavior/streaming event契約であり、その後OPT1-Aへ進む。
+OPT0-Bではbackend `763595fedefa08886b41298be79bff69324ac51f`にfeature分離した
+behavior/streaming event契約を追加した。PicoTetrisのtrace ON二重走行とtrace OFF走行で既存の
+cycle、UART、framebuffer、85/85 scenarioを維持し、`behavior_sha256`、全体/domain別event hashと
+countを固定した。詳細は[`OPT0_B_BEHAVIOR_CONTRACT.md`](OPT0_B_BEHAVIOR_CONTRACT.md)にある。
+現在の次工程はOPT1-A exact idle fast-forwardである。
 
 ## Milestone 0: Canonical BSP — implemented
 

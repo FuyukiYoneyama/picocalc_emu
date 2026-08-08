@@ -64,8 +64,16 @@ TIMER event/route/wake増分`7.122434 ns`で、損益分岐は2 cycleだった�
 完全なraw data、SHA-256、再現手順は
 [`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
 に固定した。これでOPT0-Aは優先順位決定まで完了し、最初の候補はOPT1-A exact idle
-fast-forwardに決定した。現在の次工程はOPT0-B behavior/streaming event契約であり、その後に
-OPT1-Aを実装する。runner所有のscenario/input horizonはOPT1-Aで接続する必須境界である。
+fast-forwardに決定した。OPT0-Bではbackend `763595fedefa08886b41298be79bff69324ac51f`へ
+通常buildから完全分離した`behavior-trace` featureを追加した。canonical eventを配列へ保持せず
+全体/domain別SHA-256へ逐次投入し、明示allow-list projectionからprovenance-freeな
+`behavior_sha256`を作る。PicoTetris全走行2回のnormal report、behavior artifact、UARTは
+byte-identicalで、feature無しproduction binaryのnormal reportもtrace ON時とbyte-identicalだった。
+証拠は
+[`firmware-validation/records/opt0-b-20260808-01/notes.md`](../firmware-validation/records/opt0-b-20260808-01/notes.md)、
+契約詳細は[`OPT0_B_BEHAVIOR_CONTRACT.md`](OPT0_B_BEHAVIOR_CONTRACT.md)にある。これでOPT0-Bは
+完了し、現在の次工程はOPT1-A exact idle fast-forwardである。runner所有のscenario/input horizonは
+OPT1-Aで接続する必須境界である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 

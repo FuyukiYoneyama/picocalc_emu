@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT0-A完了、OPT0-B behavior/streaming event契約が次
+**状態:** OPT0-A・OPT0-B完了、OPT1-A exact idle fast-forwardが次
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -140,6 +140,13 @@ backend commit、host path、wall-clock timestamp、実行機名などprovenance
 
 event数自体もdomain別に記録し、hashの偶然一致だけに依存しない。trace実装はbackendの
 通常実行順序を変更してはならない。
+
+backend `763595fedefa08886b41298be79bff69324ac51f`でこの契約をfeature分離して実装した。
+PicoTetris全走行2回の`behavior_sha256`は
+`3ee0dff39b10b5863aa28326189f70ba553e714c1e9ada403db1ad4622a1daf3`、event streamは
+`448b0a00575b6748445906a5863c508f2fb86910fba73137605d66147bd191d9`で一致した。
+trace OFF production binaryのnormal reportもtrace ON時とbyte-identicalである。schema、CLI、
+domain mapping、受入結果は[`OPT0_B_BEHAVIOR_CONTRACT.md`](OPT0_B_BEHAVIOR_CONTRACT.md)に固定した。
 
 ### 6.4 blocked/safe区間の計測
 
@@ -316,9 +323,9 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 |---:|---|---|---|
 | 0 | R4 CIとR5前性能baseline | **完了** | 3 repo CI合格、10 run baseline固定 |
 | 1 | OPT0-A blocked/safe profiler | **完了** | schema 3 full horizon、boundary分布、production costを固定 |
-| 2 | OPT0-B behavior/streaming trace契約 | **次** | trace ONで全digest、trace OFFで無歪み測定が可能 |
+| 2 | OPT0-B behavior/streaming trace契約 | **完了** | trace ONで全digest、trace OFFで無歪み測定が可能 |
 | 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
-| 4 | OPT1-A第一候補 | 未着手 | 正確性gate＋性能gate合格、candidateとしてrecord化 |
+| 4 | OPT1-A第一候補 | **次** | 正確性gate＋性能gate合格、candidateとしてrecord化 |
 | 5 | R5実機相関 | 実機着手前 | 同一BINと追加観測値で相関し、候補を正式採用または棄却する |
 | 6 | 残るOPT1候補 | R5後 | 独立変更単位で正確性・性能gate合格 |
 | 7 | OPT2 exact event batching | R5後 | 全boundary eventのcycle/order一致 |

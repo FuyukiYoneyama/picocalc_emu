@@ -1331,6 +1331,104 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_r3_contract(checks, root)
     verify_r5_performance(checks, root)
     verify_opt0_idle_profile(checks, root)
+    verify_opt0_behavior_contract(checks, root)
+
+
+def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
+    """Verify the immutable OPT0-B behavior projection and event digests."""
+    try:
+        record_root = root / "firmware-validation/records/opt0-b-20260808-01"
+        artifact_path = record_root / "behavior-trace.json"
+        report_path = record_root / "run-report.json"
+        artifact = load_json(artifact_path)
+        report = load_json(report_path)
+        trace = artifact["behavior_projection"]["event_trace"]
+        domains = {item["name"]: item for item in trace["domains"]}
+        expected_counts = {
+            "clock": 8,
+            "irq_exception": 1_110,
+            "pio_gpio": 1,
+            "psram": 85_621_393,
+            "lcd": 84_708_286,
+            "dma_dreq": 82,
+            "timer_pwm": 3_154_379,
+            "serial_bus": 12_847,
+            "scenario_input": 146,
+        }
+        canonical_projection = json.dumps(
+            artifact["behavior_projection"],
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        aligned = all(
+            (
+                sha256(artifact_path)
+                == "6a4e9c09afb3870eda6fd04ecef0016f740fd1138fbf417b6e3a8dfc4c2a1160",
+                sha256(report_path)
+                == "8e583d9526903bc9e4254a0818cd9dcca89fa2d289aff768273743fca12f054a",
+                artifact.get("schema_version") == 1,
+                artifact.get("mode") == "correctness_trace_on",
+                artifact.get("valid_for_wall_time") is False,
+                artifact.get("backend_build")
+                == {
+                    "commit": "763595fedefa08886b41298be79bff69324ac51f",
+                    "dirty": False,
+                },
+                artifact.get("normal_report_schema_version") == 8,
+                artifact.get("behavior_projection_encoding") == "sorted-json-v1",
+                artifact.get("behavior_sha256")
+                == hashlib.sha256(canonical_projection).hexdigest()
+                == "3ee0dff39b10b5863aa28326189f70ba553e714c1e9ada403db1ad4622a1daf3",
+                trace.get("schema_version") == 1,
+                trace.get("canonical_encoding") == "PICOEM-EVENT-v1",
+                trace.get("streaming") is True,
+                trace.get("retains_event_array") is False,
+                trace.get("sha256")
+                == "448b0a00575b6748445906a5863c508f2fb86910fba73137605d66147bd191d9",
+                set(domains) == set(expected_counts),
+                all(
+                    domains[name].get("events") == count
+                    and re.fullmatch(r"[0-9a-f]{64}", domains[name].get("sha256", ""))
+                    for name, count in expected_counts.items()
+                ),
+                trace.get("total_events") == sum(expected_counts.values()),
+                report.get("schema_version") == 8,
+                report.get("backend_build") == artifact.get("backend_build"),
+                report.get("verdict", {}).get("status") == "pass",
+                report.get("stop_reason") == "scenario_done",
+                report.get("cycles") == 927_528_660,
+                report.get("elapsed_us") == 3_715_000,
+                report.get("uart", {}).get("sha256")
+                == "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+                report.get("framebuffer", {}).get("rgb565_sha256")
+                == "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+                len(report.get("scenario", {}).get("steps", [])) == 85,
+            )
+        )
+        add_check(
+            checks,
+            "opt0-b:behavior-streaming-contract",
+            aligned,
+            backend_commit=artifact.get("backend_build", {}).get("commit"),
+            behavior_sha256=artifact.get("behavior_sha256"),
+            event_sha256=trace.get("sha256"),
+            total_events=trace.get("total_events"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(
+            checks,
+            "opt0-b:behavior-streaming-contract",
+            False,
+            **error_details(error),
+        )
 
 
 def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
