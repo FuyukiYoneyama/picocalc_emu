@@ -246,7 +246,9 @@ byte-identicalだったため、既存実機recordとの同値性によりOPT1-B
 にあります。続くOPT2-C限定prototypeは全event一致を保ちましたが、全runの0.002498%しかbatchできず、
 paired中央値が11.89%遅かったためrevertしました。詳細は
 [`OPT2_C_EXACT_BATCHING.md`](docs/OPT2_C_EXACT_BATCHING.md)です。OPT2は継続中で、active targetは
-OPT1-Bのままです。
+OPT1-Bのままです。OPT2-DではPIO/UART/DMA overlapとCPU decode hit runを同一runで比較し、
+PIO exact event horizon / bulk advanceを次candidateに選びました。詳細は
+[`OPT2_D_LEVER_COMPARISON.md`](docs/OPT2_D_LEVER_COMPARISON.md)です。
 
 ## 読む順番
 
@@ -592,6 +594,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [R4 品質ゲートとCI](docs/R4_CI.md) — 3リポジトリのclean-runner full gate、job境界、private backend認証
 - [R5実機相関前の実時間性能](docs/R5_REALTIME_PERFORMANCE.md) — 理論上限、WSL 10回実測、再測定手順
 - [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
+- [OPT2-D候補レバー比較](docs/OPT2_D_LEVER_COMPARISON.md) — peripheral horizon overlapとCPU decode runの実測比較、PIO-first判断
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
 - [OPT1-B serial fast-path gate](docs/OPT1_B_SERIAL_FAST_PATH.md) — event完全一致、6.420%追加短縮、代表workloadとR5同値性
 - [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約

@@ -329,6 +329,22 @@ candidate `815ef5d`を`c44c87f`でrevertした。次はPIO/UART/DMA deadline pro
 block workを別々に測り、優先順位を決める。詳細は
 [`OPT2_C_EXACT_BATCHING.md`](OPT2_C_EXACT_BATCHING.md)に固定した。
 
+### 9.4 OPT2-D 候補レバー比較（完了）
+
+backend `e482172565fc3073ba0960eb5e2642968a65ae52`でprofiler schemaを2へ上げ、PIO/UART/DMAの
+one-cycle fallback重複signatureと、core別decode hit/miss・動的sequential hit run分布を同じ
+PicoTetrisで採取した。計装runは85/85、cycle、UART、framebufferに一致し、別trace runも
+behavior SHA、173,498,680 event、全9 domainに一致した。
+
+one-cycle fallback unionはrunningの83.2696%で、PIO-onlyが217,025,266 cycle、runningの
+70.2500%を占めた。UART-onlyは34,901,586 cycle、DMA-onlyは22,000 cycleだった。decode cacheは
+99.8279% hitだが、動的sequential hit runは平均4.563命令で、16命令以上に属するhit massは
+13.5240%だった。
+
+どちらもsafe windowやwall speedup予測ではない。その制限をartifactへ明記したうえで、次candidateは
+PIO exact event horizon / bulk advanceを選ぶ。UARTはその次、CPU/decode block cacheはOPT3へ残す。
+詳細は[`OPT2_D_LEVER_COMPARISON.md`](OPT2_D_LEVER_COMPARISON.md)に固定した。
+
 ## 10. OPT3: CPU/decode高速化
 
 event schedulingを安定させた後に、CPU側を最適化する。
@@ -404,7 +420,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
-| 7 | OPT2 exact event batching | **継続中**（OPT2-B完了、OPT2-C限定候補はexactだが遅くrevert） | 全boundary eventのcycle/order一致＋有意な性能改善 |
+| 7 | OPT2 exact event batching | **継続中**（OPT2-D比較完了、次はPIO exact horizon/bulk prototype） | 全boundary eventのcycle/order一致＋有意な性能改善 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。

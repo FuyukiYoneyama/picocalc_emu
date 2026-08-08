@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "opt2_d_candidate_lever_comparison",
+  "input_profile_schema_version": 2,
+  "semantics": {
+    "fallback_occupancy_is_safe_window": false,
+    "decode_hit_runs_are_speedup_prediction": false,
+    "cycle_masses_from_different_levers_are_not_additive": true
+  },
+  "peripheral_horizon": {
+    "running_cycles": 308932816,
+    "one_cycle_fallback_union_cycles": 257246995,
+    "one_cycle_fallback_percent_of_running": 83.26955948894727,
+    "one_cycle_fallback_percent_of_total_run": 27.73466805866678,
+    "exclusive_and_overlap_cycle_mass": {
+      "pio_only": 217025266,
+      "uart_only": 34901586,
+      "dma_only": 22000,
+      "pio_dma": 2128,
+      "uart_dma": 5296015,
+      "pio_uart": 0,
+      "pio_uart_dma": 0
+    },
+    "pio_only_percent_of_running": 70.24998794559914,
+    "pio_only_percent_of_total_run": 23.39822750059281,
+    "interpretation": "PIO is the dominant exclusive one-cycle limiter; UART is secondary and DMA is almost entirely negligible or overlapped"
+  },
+  "cpu_decode": {
+    "core0": {
+      "cacheable_hits": 172417748,
+      "cacheable_misses": 297282,
+      "noncacheable_fetches": 0,
+      "cache_hit_percent": 99.82787716853593,
+      "sequential_hit_run_episodes": 37786899,
+      "average_sequential_hit_run_instructions": 4.562897526997386,
+      "hit_instruction_mass_ge_4": 86811548,
+      "hit_instruction_mass_ge_8": 47058537,
+      "hit_instruction_mass_ge_16": 23317771,
+      "hit_instruction_mass_ge_32": 942517,
+      "hit_instruction_mass_ge_64": 18085,
+      "hit_instruction_percent_ge_4": 50.349542902045094,
+      "hit_instruction_percent_ge_8": 27.293325394784762,
+      "hit_instruction_percent_ge_16": 13.523996961148107,
+      "hit_instruction_percent_ge_32": 0.5466473207850969,
+      "hit_instruction_percent_ge_64": 0.01048905939775991
+    },
+    "core1": {
+      "cacheable_hits": 0,
+      "cacheable_misses": 0,
+      "noncacheable_fetches": 0
+    },
+    "interpretation": "decode reuse is nearly universal, but dynamic straight-line runs are short; a block cache remains plausible but has a smaller grouping span and belongs to OPT3"
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "lever": "PIO exact event horizon and bulk advance",
+      "reason": "PIO alone occupies 217025266 cycles, 70.25 percent of running cycles, and must be solved before the largest running batches can exist"
+    },
+    {
+      "rank": 2,
+      "lever": "UART exact deadline promotion",
+      "reason": "UART-only plus UART-DMA overlap occupies 40197601 cycles; useful after PIO no longer fixes the horizon at one cycle"
+    },
+    {
+      "rank": 3,
+      "lever": "CPU decode/execute block cache",
+      "reason": "99.83 percent cache hits show reuse, but the mean sequential hit run is only 4.56 instructions and only 13.52 percent of hit mass lies in runs of at least 16"
+    },
+    {
+      "rank": 4,
+      "lever": "standalone DMA deadline promotion",
+      "reason": "DMA-only occupancy is only 22000 cycles and most DMA occupancy overlaps UART"
+    }
+  ],
+  "decision": {
+    "selected_next_prototype": "PIO exact event horizon and bulk advance",
+    "production_optimization_added": false,
+    "active_target_changed": false,
+    "next_gate": "prove exact PIO state, pin transition, device response, DREQ and IRQ equivalence before any wall-time measurement"
+  }
+}

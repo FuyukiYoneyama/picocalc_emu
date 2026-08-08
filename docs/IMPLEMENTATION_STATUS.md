@@ -125,7 +125,14 @@ framebuffer一致を維持した。running 308,932,816 cycleのうちpost-hoc ca
 8,420 batch、23,176 cycle（全runの0.002498%）で、trace OFF paired中央値が51.38秒から57.49秒へ
 11.89%退行した。candidate `815ef5d`は`c44c87f`でrevertし、active targetはOPT1-Bのままである。
 詳細は[`OPT2_C_EXACT_BATCHING.md`](OPT2_C_EXACT_BATCHING.md)にある。次はPIO/UART/DMA deadline
-promotionとCPU/decode block workを別々に測って優先順位を決める。
+promotionとCPU/decode block workを別々に測って優先順位を決める。OPT2-Dではこの比較を完了した。
+PIO/UART/DMA重複signatureのunionはrunningの83.2696%、PIO-onlyは217,025,266 cycle
+（runningの70.2500%）だった。decode cache hit率は99.8279%だが、動的sequential hit runは
+平均4.563命令だった。このため次prototypeはPIO exact event horizon / bulk advance、UARTは次点、
+CPU/decode block workはOPT3とした。証拠は
+[`OPT2_D_LEVER_COMPARISON.md`](OPT2_D_LEVER_COMPARISON.md)と
+[`opt2-d-lever-comparison-20260809-01/`](../firmware-validation/records/opt2-d-lever-comparison-20260809-01/)
+にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

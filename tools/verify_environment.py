@@ -1343,6 +1343,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt1b_serial_fast_path(checks, root)
     verify_opt2b_running_event_horizon(checks, root)
     verify_opt2c_exact_batching(checks, root)
+    verify_opt2d_lever_comparison(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -1954,6 +1955,251 @@ def verify_opt2c_exact_batching(checks: List[Check], root: Path) -> None:
         KeyError,
         StopIteration,
         statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2d_lever_comparison(checks: List[Check], root: Path) -> None:
+    """Verify OPT2-D lever-ranking comparison and overlap/decode summary."""
+    name = "opt2-d:lever-comparison"
+    expected_backend = "e482172565fc3073ba0960eb5e2642968a65ae52"
+    expected_artifact_hashes = {
+        "comparison": "60ff25f44e855da4dbd171d0906e52a70a254570e8e0c11de088ddbec4014b13",
+        "running_event_horizon_profile": (
+            "436ae7288a6f01aca8aa0e5232452eb5456a19e86e91570bd2c02601d5723a0a"
+        ),
+        "run_report": "73b9aeedbc02baa712d91317b50783442bbc1a217518ee2a36d7f977332b4d0c",
+        "behavior_trace": "97c3a7faeecd5b75012d068d5a6f86af4deaa4eab001abe45000797b32b2e264",
+    }
+    expected_decode = {
+        "core0_cacheable_hits": 172_417_748,
+        "core0_cacheable_misses": 297_282,
+        "core0_noncacheable_fetches": 0,
+        "core0_cache_hit_percent": 99.82787716853593,
+        "core0_avg_sequential_hit_run_instructions": 4.562897526997386,
+        "core0_hit_run_ge_4_mass": 86_811_548,
+    }
+    try:
+        record_root = root / "firmware-validation/records/opt2-d-lever-comparison-20260809-01"
+        record = load_json(record_root / "record.json")
+        run_report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        comparison = load_json(record_root / "comparison.json")
+        record_comparison = record["comparison"]
+        profile = load_json(record_root / "running-event-horizon-profile.json")
+        artifacts = record["artifacts"]
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+        exact = record["exactness"]
+        profiler = record["profiler"]
+        decision = record["decision"]
+        ranking = comparison["decision"]
+        compare_peripheral = comparison["peripheral_horizon"]
+        profile_decision_cpu = comparison["cpu_decode"]["core0"]
+        running_profile_trace = behavior["behavior_projection"]["event_trace"]
+        running_profile_domains = {item.get("name") for item in running_profile_trace["domains"]}
+        expected_domains = {
+            "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+            "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+        }
+
+        decode_core0 = profile["decode_opportunity_by_core"][0]
+        decode_core1 = profile["decode_opportunity_by_core"][1]
+        signatures = profile["one_cycle_fallback_signatures"]
+        signature_mass = signatures["cycle_mass"]
+        signature_steps = signatures["steps"]
+
+        union_signature_cycles = sum(signature_mass)
+        profile_decode_hit_mass = decode_core0["sequential_cache_hit_runs"]["cycle_mass_ge"][0]
+        record_decode_hit_percent = (
+            decode_core0["cacheable_hits"]
+            / (decode_core0["cacheable_hits"] + decode_core0["cacheable_misses"])
+            * 100.0
+        )
+
+        aligned = all((
+            record.get("record_id") == "opt2-d-lever-comparison-20260809-01",
+            record.get("result") == "measurement_complete",
+            record.get("opt2_overall_status") == "incomplete",
+            record.get("target", {}).get("id") == target.get("id") == "picotetris-opt1b",
+            record.get("target", {}).get("revision") == target.get("revision") == 5,
+            record.get("target", {}).get("firmware_sha256")
+            == target.get("artifacts", {}).get("bin_sha256"),
+            record.get("target", {}).get("scenario_sha256")
+            == target.get("scenario", {}).get("sha256"),
+            record["target"].get("firmware_sha256") == run_report.get("firmware", {}).get("sha256"),
+            profiler.get("backend_commit") == expected_backend,
+            profiler.get("schema_version") == 2,
+            profiler.get("feature") == "event-horizon-profiler",
+            profiler.get("instrumented") is True,
+            profiler.get("valid_for_wall_time") is False,
+            profiler.get("fallback_occupancy_is_safe_window") is False,
+            profiler.get("decode_hit_runs_are_speedup_prediction") is False,
+            profiler.get("backend_dirty") is False,
+            record.get("profiler", {}).get("fallback_occupancy_is_safe_window") is False,
+            run_report.get("backend_build", {}).get("commit") == profiler.get("backend_commit"),
+            run_report.get("backend_build", {}).get("dirty") is False,
+            run_report.get("schema_version") == 8,
+            run_report.get("verdict", {}).get("status") == exact.get("verdict"),
+            run_report.get("stop_reason") == exact.get("stop_reason") == "scenario_done",
+            run_report.get("cycles") == exact.get("cycles") == 927_528_660,
+            run_report.get("elapsed_us") == exact.get("elapsed_us") == 3_715_000,
+            run_report.get("scenario", {}).get("status") == "pass",
+            len(run_report.get("scenario", {}).get("steps", [])) == exact.get("scenario_steps_passed") == 85,
+            exact.get("scenario_steps_total") == 85,
+            exact.get("all_nine_event_domains_match_opt1b") is True,
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("backend_build", {}).get("commit") == profiler.get("backend_commit"),
+            behavior.get("behavior_sha256") == exact.get("behavior_sha256"),
+            behavior.get("behavior_projection", {}).get("event_trace", {}).get("schema_version") == 2,
+            running_profile_trace.get("sha256") == exact.get("event_stream_sha256"),
+            running_profile_trace.get("total_events") == exact.get("event_stream_total_events"),
+            set(running_profile_domains) == expected_domains,
+            exact.get("uart_sha256") == run_report.get("uart", {}).get("sha256"),
+            exact.get("framebuffer_rgb565_sha256")
+            == run_report.get("framebuffer", {}).get("rgb565_sha256"),
+            run_report.get("psram", {}).get("tick_count") == 305_747_113,
+            profile.get("schema_version") == 2,
+            profile.get("kind") == "rp2040_serial_running_event_horizon_profile",
+            profile.get("execution_model") == "Serial",
+            profile.get("instrumented") is True,
+            profile.get("valid_for_wall_time") is False,
+            profile.get("observed_gaps_are_safe_windows") is False,
+            profile.get("fallback_occupancy_is_safe_window") is False,
+            profile.get("decode_hit_runs_are_speedup_prediction") is False,
+            profile.get("conservative_horizon_complete_for_current_model") is True,
+            profile.get("run_cycles") == exact.get("cycles"),
+            profile.get("firmware", {}).get("sha256")
+            == record.get("target", {}).get("firmware_sha256"),
+            profile.get("step_quantum") == 1,
+            profile.get("backend_build", {}).get("dirty") is False,
+            record.get("comparison", {}).get("peripheral_fallback_union_cycles") == union_signature_cycles,
+            record_comparison.get("peripheral_fallback_union_cycles") == union_signature_cycles,
+            record_comparison.get("peripheral_fallback_union_cycles") == 257_246_995,
+            compare_peripheral.get("one_cycle_fallback_union_cycles") == 257_246_995,
+            math.isclose(
+                record_comparison.get("peripheral_fallback_percent_of_running"),
+                83.26955948894727,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            record_comparison.get("pio_only_cycles") == 217_025_266,
+            math.isclose(
+                record_comparison.get("pio_only_percent_of_running"),
+                70.24998794559914,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            math.isclose(
+                record_comparison.get("decode_cache_hit_percent"),
+                expected_decode["core0_cache_hit_percent"],
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            ranking.get("selected_next_prototype") == "PIO exact event horizon and bulk advance",
+            comparison.get("input_profile_schema_version") == 2,
+            comparison.get("semantics", {}).get("fallback_occupancy_is_safe_window") is False,
+            comparison.get("semantics", {}).get("decode_hit_runs_are_speedup_prediction") is False,
+            comparison.get("semantics", {}).get("cycle_masses_from_different_levers_are_not_additive") is True,
+            decision.get("selected_next_prototype") == "PIO exact event horizon and bulk advance",
+            decision.get("production_optimization_added") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("cpu_decode_work_deferred_to") == "OPT3",
+            decision.get("validation_attestation_added") is False,
+            record.get("ci", {}).get("repository") == "FuyukiYoneyama/picoem-picocalc",
+            record.get("ci", {}).get("run_id") == 31_280_667_153,
+            record.get("ci", {}).get("head_sha") == expected_backend,
+            record.get("ci", {}).get("conclusion") == "success",
+            signatures.get("bit_order") == ["pio", "uart", "dma", "any_other"],
+            signature_steps[1] == 121_389_006,
+            signature_mass[1] == 217_025_266,
+            signature_steps[2] == 17_462_905,
+            signature_mass[2] == 34_901_586,
+            signature_steps[4] == 12_098,
+            signature_mass[4] == 22_000,
+            signature_mass[5] == 2_128,
+            signature_mass[6] == 5_296_015,
+            decode_core0.get("cacheable_hits") == expected_decode["core0_cacheable_hits"],
+            decode_core0.get("cacheable_misses") == expected_decode["core0_cacheable_misses"],
+            decode_core0.get("noncacheable_fetches") == expected_decode["core0_noncacheable_fetches"],
+            decode_core1.get("cacheable_hits") == 0,
+            decode_core1.get("cacheable_misses") == 0,
+            decode_core1.get("noncacheable_fetches") == 0,
+            math.isclose(
+                record_decode_hit_percent,
+                expected_decode["core0_cache_hit_percent"],
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            decode_core0["sequential_cache_hit_runs"].get("episodes_ge")[4] == 1_029_459,
+            decode_core0["sequential_cache_hit_runs"]["cycle_mass_ge"][4] == 23_317_771,
+            profile_decision_cpu.get("cacheable_hits") == expected_decode["core0_cacheable_hits"],
+            profile_decision_cpu.get("cacheable_misses") == expected_decode["core0_cacheable_misses"],
+            profile_decision_cpu.get("noncacheable_fetches")
+            == expected_decode["core0_noncacheable_fetches"],
+            math.isclose(
+                profile_decision_cpu.get("cache_hit_percent"),
+                expected_decode["core0_cache_hit_percent"],
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            math.isclose(
+                profile_decision_cpu.get("average_sequential_hit_run_instructions"),
+                expected_decode["core0_avg_sequential_hit_run_instructions"],
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            math.isclose(
+                profile_decision_cpu.get("hit_instruction_percent_ge_4"),
+                (expected_decode["core0_hit_run_ge_4_mass"] / profile_decode_hit_mass) * 100.0,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            profile_decision_cpu.get("hit_instruction_mass_ge_4") == expected_decode["core0_hit_run_ge_4_mass"],
+            compare_peripheral["exclusive_and_overlap_cycle_mass"].get("pio_only")
+            == 217_025_266,
+            compare_peripheral["exclusive_and_overlap_cycle_mass"].get("uart_only")
+            == 34_901_586,
+            compare_peripheral["exclusive_and_overlap_cycle_mass"].get("dma_only") == 22_000,
+            compare_peripheral["exclusive_and_overlap_cycle_mass"].get("pio_dma") == 2_128,
+            compare_peripheral["exclusive_and_overlap_cycle_mass"].get("uart_dma") == 5_296_015,
+            all(
+                artifacts.get(key + "_sha256") == digest
+                and artifacts.get(key) is not None
+                and (record_root / artifacts.get(key)).is_file()
+                and sha256(record_root / artifacts.get(key)) == digest
+                for key, digest in expected_artifact_hashes.items()
+            ),
+            all((record_root / value).is_file() for key, value in artifacts.items() if not key.endswith("_sha256")),
+            record_comparison.get("pio_only_cycles")
+            == compare_peripheral["exclusive_and_overlap_cycle_mass"]["pio_only"],
+            profile_decode_hit_mass == decode_core0["cacheable_hits"],
+            profile.get("counters", {}).get("candidate_cycles") > 0,
+            profile.get("counters", {}).get("candidate_dispatches") > 0,
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target.get("id"),
+            backend_commit=profiler.get("backend_commit"),
+            running_steps=profile.get("counters", {}).get("running_steps"),
+            running_cycles=profile.get("counters", {}).get("total_running_cycles"),
+            fallback_union_cycles=record_comparison.get("peripheral_fallback_union_cycles"),
+            cache_hit_percent=expected_decode["core0_cache_hit_percent"],
+            decision_selected_next_prototype=decision.get("selected_next_prototype"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))

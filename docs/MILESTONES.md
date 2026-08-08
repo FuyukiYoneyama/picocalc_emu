@@ -79,7 +79,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R5 | 現行成果物の実機相関 | `picotetris`＋`picocalc_emu`＋実機 | `picotetris-r5`の同一BIN/UF2でLCD・line clear・game-over・restart・PSRAM・SD・audioと公式FW由来67キーを確認する。自動ゲーム診断後、`CAPS`以外の66キーは任意順・個別retry・SD進捗resume可能とし、`CAPS`は途中で押さず`66/67`の後に必ず最後に押す。途中写真を求めない。UF2 SHA、UART全文、最終PASS写真1枚、音確認を新規台帳へ保存する | **完了 2026-08-08**。`r5-hardware-20260808-01`で最終verdict、写真、参照音、SD進捗67/67を固定。67/67は到達性の証拠であり、Caps状態遷移・終了時Caps off・操作UXは合格範囲外。OPT1-A promoted |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | **完了 2026-08-08**。R5 recordを機械検証へ接続し、README/status/Milestones/dogfood/OPT1-AとPicoTetris文書を現在状態へ同期。既存CI再現契約とlicense/noticesを確認 |
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
-| OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **継続中**。dispatcher-only候補とOPT2-C限定候補はrevert。OPT2-B計測を基に次レバーを比較する |
+| OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **継続中**。OPT2-D比較完了。PIO-onlyがrunningの70.25%を占めたため、次はPIO exact event horizon / bulk advance prototype |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
 

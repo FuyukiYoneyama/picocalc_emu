@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-d-lever-comparison-20260809-01",
+  "title": "OPT2-D candidate-lever comparison",
+  "roadmap_package": "OPT2-D",
+  "result": "measurement_complete",
+  "opt2_overall_status": "incomplete",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "profiler": {
+    "backend_commit": "e482172565fc3073ba0960eb5e2642968a65ae52",
+    "backend_dirty": false,
+    "schema_version": 2,
+    "feature": "event-horizon-profiler",
+    "instrumented": true,
+    "valid_for_wall_time": false,
+    "fallback_occupancy_is_safe_window": false,
+    "decode_hit_runs_are_speedup_prediction": false
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+  },
+  "comparison": {
+    "peripheral_fallback_union_cycles": 257246995,
+    "peripheral_fallback_percent_of_running": 83.26955948894727,
+    "pio_only_cycles": 217025266,
+    "pio_only_percent_of_running": 70.24998794559914,
+    "decode_cache_hit_percent": 99.82787716853593,
+    "average_sequential_cache_hit_run_instructions": 4.562897526997386
+  },
+  "decision": {
+    "selected_next_prototype": "PIO exact event horizon and bulk advance",
+    "production_optimization_added": false,
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "cpu_decode_work_deferred_to": "OPT3"
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31280667153,
+    "head_sha": "e482172565fc3073ba0960eb5e2642968a65ae52",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "comparison": "comparison.json",
+    "comparison_sha256": "60ff25f44e855da4dbd171d0906e52a70a254570e8e0c11de088ddbec4014b13",
+    "running_event_horizon_profile": "running-event-horizon-profile.json",
+    "running_event_horizon_profile_sha256": "436ae7288a6f01aca8aa0e5232452eb5456a19e86e91570bd2c02601d5723a0a",
+    "run_report": "run-report.json",
+    "run_report_sha256": "73b9aeedbc02baa712d91317b50783442bbc1a217518ee2a36d7f977332b4d0c",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "97c3a7faeecd5b75012d068d5a6f86af4deaa4eab001abe45000797b32b2e264",
+    "notes": "notes.md"
+  }
+}
