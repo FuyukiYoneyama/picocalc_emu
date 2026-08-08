@@ -206,10 +206,16 @@ production用`is_idle()`が静的FIFO/IRQ stateまでblockerに含めるため�
 [`firmware-validation/records/opt0-a-20260806-01/notes.md`](firmware-validation/records/opt0-a-20260806-01/notes.md)
 に不変証拠として保持し、修正後の記録と再現手順は
 [`firmware-validation/records/opt0-a-20260807-03/notes.md`](firmware-validation/records/opt0-a-20260807-03/notes.md)
-にあります。66.692909%はwall-time速度向上率ではありません。部分costもCPU固定10 sampleで
-記録しましたが、全source horizonとevent/IRQ/wake costは未完です。詳細は
+にあります。66.692909%はwall-time速度向上率ではありません。部分costの履歴は
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](firmware-validation/records/opt0-a-20260806-02/notes.md)
-にあります。
+にあります。その後、全sourceを覆う保守的event horizonとboundary分割をschema 3へ実装し、
+618,595,844 safe cycleが2,064,042 segment（PWM境界2,063,903、TIMER境界138）になることを
+確認しました。診断featureを含まないproduction baselineも分離して測定し、損益分岐2 cycle、
+優先順位選択用の算術投影33.329秒・実時間比11.146%を得ました。これは最適化後の実測値では
+ありません。完全なcost、SHA-256、再現手順は
+[`firmware-validation/records/opt0-a-20260808-04/notes.md`](firmware-validation/records/opt0-a-20260808-04/notes.md)
+にあります。OPT0-Aは完了し、次はOPT0-B behavior/streaming event契約、その後の最初の候補は
+OPT1-A exact idle fast-forwardです。
 
 ## 読む順番
 

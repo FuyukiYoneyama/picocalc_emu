@@ -1,0 +1,97 @@
+{
+  "backend_build": {
+    "commit": "67fc4bce7934885b439bc80629175dafeab2299f",
+    "dirty": false
+  },
+  "configured_sys_clk_hz": 125000000,
+  "execution_model": "Serial",
+  "idle_profiler_compiled": false,
+  "iterations_per_sample": 1000000,
+  "kind": "rp2040_serial_blocked_production_baseline",
+  "measurements": {
+    "blocked_step_by_advance_cycles": {
+      "1": {
+        "median_net_of_loop_ns_per_op": 48.6211745,
+        "median_ns_per_op": 49.065919,
+        "samples_ns_per_op": [
+          49.177309,
+          47.708032,
+          50.716235,
+          48.538483,
+          49.189234,
+          48.954529,
+          48.469188,
+          49.726208,
+          48.332865,
+          56.457337
+        ]
+      },
+      "1024": {
+        "median_net_of_loop_ns_per_op": 47.999379000000005,
+        "median_ns_per_op": 48.4441235,
+        "samples_ns_per_op": [
+          48.934993,
+          49.023914,
+          48.26641,
+          47.819897,
+          48.621837,
+          48.847993,
+          48.254596,
+          49.516576,
+          47.092288,
+          48.060659
+        ]
+      },
+      "125": {
+        "median_net_of_loop_ns_per_op": 48.349514,
+        "median_ns_per_op": 48.7942585,
+        "samples_ns_per_op": [
+          48.338391,
+          48.821158,
+          48.767359,
+          50.914025,
+          47.900457,
+          48.149373,
+          49.401458,
+          50.780317,
+          48.011943,
+          49.17558
+        ]
+      },
+      "64": {
+        "median_net_of_loop_ns_per_op": 47.623312999999996,
+        "median_ns_per_op": 48.068057499999995,
+        "samples_ns_per_op": [
+          47.866217,
+          47.884863,
+          48.743002,
+          48.094243,
+          49.45542,
+          49.412873,
+          48.041872,
+          48.730987,
+          47.969723,
+          47.90595
+        ]
+      }
+    },
+    "loop_overhead": {
+      "median_net_of_loop_ns_per_op": 0.4447445,
+      "median_ns_per_op": 0.4447445,
+      "samples_ns_per_op": [
+        0.444805,
+        0.444755,
+        0.459987,
+        0.444724,
+        0.444724,
+        0.444724,
+        0.502406,
+        0.452703,
+        0.444734,
+        0.444723
+      ]
+    }
+  },
+  "retained_samples": 10,
+  "schema_version": 1
+}

@@ -321,17 +321,29 @@ backend `9135f5ad09fe86a2330e51cd9a3ee106cb7c9642`では通常実行経路を変
 同じPicoTetris回帰で全618,595,844 blocked cycleが観測境界上proven-safeとなり、85/85、cycle、
 UART、framebufferは従来値と一致した。記録は
 [`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
-に保存した。これはvirtual-cycle dispatch削減余地であってwall-time speedupではない。OPT0-Aは
-full horizonとboundary/event cost modelが残るため進行中である。
+に保存した。これはvirtual-cycle dispatch削減余地であってwall-time speedupではない。この時点では
+full horizonとboundary/event cost modelが残っていた。
 
 続いてbackend `5d01c8072c70841336cf48e46bc5aa7b8a669349`に同一release build内で
 blocked step、保守的probe、quiescent bulk advanceを比較する専用microbenchmarkを追加した。
 CPU 0固定・各100万iteration・10 sampleでは、それぞれ52.647255 ns、10.771746 ns、
 37.108583〜37.825914 nsだった。全source horizon、clock更新、boundary/event、IRQ route、
-wake checkは未測定なので、これはscreeningの部分値であり優先順位はまだ確定しない。raw sampleと
+wake checkは未測定なので、この時点ではscreeningの部分値であり優先順位は確定しなかった。raw sampleと
 再現手順は
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
 に保存した。
+
+backend `8bd6809116ad9e38de9deea961603dfb2884101b`では現行modelの全sourceを覆う保守的horizonを
+実装し、schema 3 profileで618,595,844 safe cycleを2,064,042 segmentへ分割した。境界は
+PWM 2,063,903件、TIMER 138件であり、PicoTetrisの85/85、cycle、UART、framebufferは従来値と
+一致した。backend `67fc4bce7934885b439bc80629175dafeab2299f`では診断featureを含まない
+production blocked-path baselineを分離し、CPU固定10 sampleで`Cblocked=48.621175 ns`、
+`Chorizon=30.388395 ns`、`Cadvance(1)=39.412803 ns`、TIMER event/route/wake増分
+`7.122434 ns`を得た。損益分岐は2 cycleである。63.247秒から33.329秒・実時間比11.146%という
+値は優先順位選択用の算術投影であり、最適化実測ではない。完全な証拠は
+[`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
+に保存した。これでOPT0-Aは完了し、OPT1-A exact idle fast-forwardを第一候補に選んだ。
+現在の次工程はOPT0-B behavior/streaming event契約であり、その後OPT1-Aへ進む。
 
 ## Milestone 0: Canonical BSP — implemented
 

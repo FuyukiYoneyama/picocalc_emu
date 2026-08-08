@@ -45,10 +45,27 @@ backend `9135f5ad09fe86a2330e51cd9a3ee106cb7c9642`で計測専用の意味分類
 [`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
 にある。これは最大3.002364倍のvirtual-cycle dispatch削減余地であってwall-time予測ではない。
 続く部分cost計測では、CPU固定10 sampleで現行blocked step 52.647255 ns、保守的probe
-10.771746 ns、quiescent bulk advance約37.1〜37.8 nsを得た。ただし全source horizonと
-event/IRQ/wake costは未測定で、優先順位決定は保留している。記録は
+10.771746 ns、quiescent bulk advance約37.1〜37.8 nsを得た。この時点では全source horizonと
+event/IRQ/wake costが未測定だった。履歴記録は
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
-にある。現在の次工程はOPT0-Aの残るfull horizon・boundary/event cost設計、その後OPT0-B観測契約とR5実機相関である。
+にある。
+
+backend `8bd6809116ad9e38de9deea961603dfb2884101b`では、現行modelの全sourceを覆う
+保守的なevent horizonを実装し、schema 3 profileでblocked区間を実際のTIMER/PWM境界へ
+分割した。PicoTetrisは従来どおり85/85、927,528,660 cycle、UART SHA-256
+`bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c`、framebuffer SHA-256
+`f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2`で合格した。
+618,595,844 safe cycleは2,064,042 segmentへ分かれ、そのうちPWM境界が2,063,903件、
+TIMER境界が138件だった。続くbackend `67fc4bce7934885b439bc80629175dafeab2299f`で、診断featureを
+含まないproduction blocked-path baselineを分離した。CPU固定10 sampleの中央値は
+`Cblocked=48.621175 ns`、`Chorizon=30.388395 ns`、`Cadvance(1)=39.412803 ns`、
+TIMER event/route/wake増分`7.122434 ns`で、損益分岐は2 cycleだった。既存63.247秒baselineへの
+33.329秒・実時間比11.146%という値は優先順位選択用の算術投影であり、最適化実測ではない。
+完全なraw data、SHA-256、再現手順は
+[`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
+に固定した。これでOPT0-Aは優先順位決定まで完了し、最初の候補はOPT1-A exact idle
+fast-forwardに決定した。現在の次工程はOPT0-B behavior/streaming event契約であり、その後に
+OPT1-Aを実装する。runner所有のscenario/input horizonはOPT1-Aで接続する必須境界である。
 高速化は実機相当の正確性を最優先し、実機相関前の候補を正式採用しない。確定した全体計画は
 [`EMULATOR_OPTIMIZATION_PLAN.md`](EMULATOR_OPTIMIZATION_PLAN.md)にある。
 

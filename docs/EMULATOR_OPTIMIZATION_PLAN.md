@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** 計画確定、OPT0-A semantic profile・部分cost計測済み（full horizon/event costは未完）
+**状態:** OPT0-A完了、OPT0-B behavior/streaming event契約が次
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -315,10 +315,10 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 順序 | 作業 | 状態 | 完了条件 |
 |---:|---|---|---|
 | 0 | R4 CIとR5前性能baseline | **完了** | 3 repo CI合格、10 run baseline固定 |
-| 1 | OPT0-A blocked/safe profiler | **進行中** | schema 2 semantic profileと部分cost完了。full horizon・event/routing costが残る |
-| 2 | OPT0-B behavior/streaming trace契約 | 未着手 | trace ONで全digest、trace OFFで無歪み測定が可能 |
-| 3 | コストモデルによるOPT1優先順位決定 | 未着手 | idle fast-forwardとhot pathの期待値を同一尺度で比較する |
-| 4 | OPT1-AまたはOPT1-Bの第一候補 | 未着手 | 正確性gate＋性能gate合格、candidateとしてrecord化 |
+| 1 | OPT0-A blocked/safe profiler | **完了** | schema 3 full horizon、boundary分布、production costを固定 |
+| 2 | OPT0-B behavior/streaming trace契約 | **次** | trace ONで全digest、trace OFFで無歪み測定が可能 |
+| 3 | コストモデルによるOPT1優先順位決定 | **完了** | OPT1-A exact idle fast-forwardを第一候補に選択 |
+| 4 | OPT1-A第一候補 | 未着手 | 正確性gate＋性能gate合格、candidateとしてrecord化 |
 | 5 | R5実機相関 | 実機着手前 | 同一BINと追加観測値で相関し、候補を正式採用または棄却する |
 | 6 | 残るOPT1候補 | R5後 | 独立変更単位で正確性・性能gate合格 |
 | 7 | OPT2 exact event batching | R5後 | 全boundary eventのcycle/order一致 |
@@ -360,14 +360,27 @@ schema 2再計測は
 [`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
 に保存した。同一PicoTetrisの全618,595,844 blocked cycleが観測境界上proven-safeで、85/85、
 cycle、UART、framebufferも一致した。全blocked cycleを除去した場合の3.002364倍はvirtual-cycle
-dispatchの上限比であり、wall-time speedup予測ではない。残るfull horizon、boundary/event、
-IRQ/wake costを同一尺度で測ってからOPT1の優先順位を決める。
+dispatchの上限比であり、wall-time speedup予測ではない。この時点ではfull horizon、
+boundary/event、IRQ/wake costが未測定だった。
 
 同じhost・CPU固定で取得した部分costは
 [`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
 に保存した。現行blocked stepは52.647255 ns、現在の保守的probeは10.771746 ns、quiescentな
 `tick_peripherals(L)`はL=1〜1,048,576で37.108583〜37.825914 nsだった。ただしfull horizon、
-clock更新、boundary event、IRQ route、wake checkを含まないため、まだ優先順位決定には使わない。
+clock更新、boundary event、IRQ route、wake checkを含まないため、この履歴値だけでは優先順位を
+決めなかった。
+
+OPT0-Aの完了記録は
+[`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
+に保存した。現行modelの全sourceを覆う保守的horizonは、TIMER alarm、PWM wrap、caller所有の
+外部境界にexact deadlineを使い、長いdeadlineをまだ証明していないsourceには1 cycle fallbackを
+使う。PicoTetrisの618,595,844 safe cycleは2,064,042 event-bounded segmentへ分かれ、
+2,063,903件がPWM、138件がTIMER境界だった。production featureを含まない別binaryで測った
+`Cblocked=48.621175 ns`に対し、`Chorizon=30.388395 ns`、`Cadvance(1)=39.412803 ns`、
+TIMER event/route/wake増分`7.122434 ns`で、損益分岐は2 cycleだった。既存baselineへ適用した
+33.329秒・実時間比11.146%はscreening用の算術投影であり、最適化実測ではない。この差により
+OPT1-A exact idle fast-forwardをOPT1-Bより先に実装する。実装前にOPT0-Bを完了し、OPT1-Aでは
+runner所有のscenario/input horizonも必ず境界へ接続する。
 
 ## 16. 最終判断規則
 

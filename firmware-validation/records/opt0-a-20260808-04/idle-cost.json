@@ -1,0 +1,291 @@
+{
+  "backend_build": {
+    "commit": "67fc4bce7934885b439bc80629175dafeab2299f",
+    "dirty": false
+  },
+  "configured_sys_clk_hz": 125000000,
+  "current_probe_scope": {
+    "complete_event_horizon": true,
+    "exact_deadline_sources": [
+      "timer",
+      "pwm",
+      "external"
+    ],
+    "initial_horizon": {
+      "complete_for_current_model": true,
+      "distance_cycles": 500000000000,
+      "limiting_sources": [
+        "timer"
+      ],
+      "master_cycle": 0,
+      "next_event_cycle": 500000000000,
+      "one_cycle_fallback_sources": []
+    },
+    "initial_probe": {
+      "blocker_count": 0,
+      "exact_bulk_source_count": 0,
+      "master_cycle": 0,
+      "next_lazy_deadline": 500000000000,
+      "proven_jump_safe": true,
+      "stationary_source_count": 0
+    },
+    "one_cycle_conservative_sources": [
+      "pio",
+      "dma",
+      "systick",
+      "uart",
+      "spi",
+      "i2c",
+      "adc",
+      "currently-routable timer/pwm"
+    ]
+  },
+  "diagnostic": true,
+  "execution_model": "Serial",
+  "iterations_per_sample": 1000000,
+  "kind": "rp2040_serial_idle_cost_microbenchmark",
+  "measurements": {
+    "blocked_step_by_advance_cycles": {
+      "1": {
+        "median_net_of_loop_ns_per_op": 103.0148785,
+        "median_ns_per_op": 103.4586775,
+        "samples_ns_per_op": [
+          98.014163,
+          103.456664,
+          103.367556,
+          103.813624,
+          106.308274,
+          103.684843,
+          101.618894,
+          103.460691,
+          103.051814,
+          103.577193
+        ]
+      },
+      "1024": {
+        "median_net_of_loop_ns_per_op": 107.50768950000001,
+        "median_ns_per_op": 107.95148850000001,
+        "samples_ns_per_op": [
+          113.832719,
+          103.351835,
+          98.482768,
+          103.005214,
+          113.093734,
+          103.310741,
+          110.877479,
+          108.961793,
+          110.824826,
+          106.941184
+        ]
+      },
+      "125": {
+        "median_net_of_loop_ns_per_op": 103.5203235,
+        "median_ns_per_op": 103.9641225,
+        "samples_ns_per_op": [
+          101.15999,
+          102.276609,
+          110.071303,
+          103.397039,
+          106.546269,
+          101.604144,
+          106.60563,
+          104.531206,
+          100.601206,
+          107.337412
+        ]
+      },
+      "64": {
+        "median_net_of_loop_ns_per_op": 103.35353300000001,
+        "median_ns_per_op": 103.79733200000001,
+        "samples_ns_per_op": [
+          103.401351,
+          128.62665,
+          108.080968,
+          102.160052,
+          104.481362,
+          102.680853,
+          101.899267,
+          104.193313,
+          105.036532,
+          102.994599
+        ]
+      }
+    },
+    "blocked_step_quantum_1": {
+      "median_net_of_loop_ns_per_op": 104.017534,
+      "median_ns_per_op": 104.461333,
+      "samples_ns_per_op": [
+        103.087617,
+        111.55406,
+        104.027358,
+        105.144967,
+        104.895308,
+        111.207896,
+        105.312253,
+        103.957268,
+        101.85556,
+        103.275658
+      ]
+    },
+    "current_conservative_probe": {
+      "median_net_of_loop_ns_per_op": 27.435255500000004,
+      "median_ns_per_op": 27.879054500000002,
+      "samples_ns_per_op": [
+        27.433306,
+        28.044574,
+        27.626059,
+        26.847933,
+        26.746239,
+        27.941706,
+        27.816403,
+        31.782347,
+        28.71541,
+        28.16747
+      ]
+    },
+    "full_all_source_horizon_probe": {
+      "median_net_of_loop_ns_per_op": 30.388394500000004,
+      "median_ns_per_op": 30.832193500000002,
+      "samples_ns_per_op": [
+        33.058333,
+        30.772452,
+        30.49606,
+        31.155693,
+        30.938407,
+        29.441845,
+        31.068706,
+        30.431108,
+        30.891935,
+        30.369799
+      ]
+    },
+    "loop_overhead": {
+      "median_net_of_loop_ns_per_op": 0.443799,
+      "median_ns_per_op": 0.443799,
+      "samples_ns_per_op": [
+        0.447458,
+        0.451749,
+        0.449874,
+        0.433544,
+        0.470416,
+        0.440631,
+        0.443759,
+        0.443839,
+        0.436,
+        0.431208
+      ]
+    },
+    "quiescent_tick_peripherals_by_advance_cycles": {
+      "1": {
+        "median_net_of_loop_ns_per_op": 39.412803,
+        "median_ns_per_op": 39.856601999999995,
+        "samples_ns_per_op": [
+          39.430121,
+          40.095613,
+          40.276641,
+          40.428546,
+          39.485028,
+          39.219808,
+          40.563545,
+          39.617591,
+          46.332174,
+          37.959399
+        ]
+      },
+      "1024": {
+        "median_net_of_loop_ns_per_op": 38.960276500000006,
+        "median_ns_per_op": 39.404075500000005,
+        "samples_ns_per_op": [
+          40.502154,
+          40.53708,
+          39.249912,
+          46.895073,
+          38.692074,
+          38.473488,
+          38.44542,
+          38.442415,
+          39.558239,
+          40.784049
+        ]
+      },
+      "1048576": {
+        "median_net_of_loop_ns_per_op": 39.2470895,
+        "median_ns_per_op": 39.6908885,
+        "samples_ns_per_op": [
+          39.683779,
+          38.647435,
+          38.336304,
+          40.949997,
+          39.8243,
+          39.767847,
+          39.697998,
+          39.339229,
+          40.215521,
+          38.813866
+        ]
+      },
+      "64": {
+        "median_net_of_loop_ns_per_op": 39.4900115,
+        "median_ns_per_op": 39.9338105,
+        "samples_ns_per_op": [
+          37.916218,
+          39.381702,
+          39.970357,
+          40.753397,
+          39.897264,
+          40.680858,
+          39.35593,
+          39.260401,
+          41.166169,
+          40.292213
+        ]
+      }
+    },
+    "timer_boundary_path_net_of_setup_ns": 110.64275700000002,
+    "timer_boundary_setup_and_step": {
+      "median_net_of_loop_ns_per_op": 113.61713250000001,
+      "median_ns_per_op": 114.06093150000001,
+      "samples_ns_per_op": [
+        114.293166,
+        115.09218,
+        114.356838,
+        119.810218,
+        113.828697,
+        115.463397,
+        112.257245,
+        110.526212,
+        111.727254,
+        110.609589
+      ]
+    },
+    "timer_boundary_setup_only": {
+      "median_net_of_loop_ns_per_op": 2.9743755000000003,
+      "median_ns_per_op": 3.4181745,
+      "samples_ns_per_op": [
+        3.330999,
+        3.315875,
+        3.363556,
+        3.492069,
+        3.42473,
+        3.358268,
+        3.411619,
+        3.495502,
+        5.164313,
+        5.299863
+      ]
+    },
+    "timer_event_route_wake_increment_over_no_event_125_ns": 7.122433500000014
+  },
+  "retained_samples": 10,
+  "schema_version": 3,
+  "screening": {
+    "clock_update_and_wake_check_included_in_blocked_step_measurements": true,
+    "eligible_for_optimization_priority_decision": false,
+    "event_fire_route_and_wake_increment_measured": true,
+    "full_all_source_horizon_cost_measured": true,
+    "optimistic_break_even_cycles_excluding_boundary_and_routing_cost": 1,
+    "requires_matching_workload_horizon_profile": true
+  },
+  "valid_for_realtime_baseline": false,
+  "warmup_iterations_per_family": 10000
+}

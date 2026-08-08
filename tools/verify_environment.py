@@ -1634,6 +1634,154 @@ def verify_opt0_idle_profile(checks: List[Check], root: Path) -> None:
             checks, "opt0-a:idle-cost-microbenchmark", False, **error_details(error)
         )
 
+    try:
+        complete_root = (
+            root / "firmware-validation/records/opt0-a-20260808-04"
+        )
+        profile_path = complete_root / "idle-profile.json"
+        cost_path = complete_root / "idle-cost.json"
+        baseline_path = complete_root / "blocked-production-baseline.json"
+        profile = load_json(profile_path)
+        cost = load_json(cost_path)
+        baseline = load_json(baseline_path)
+
+        def retained_measurement_valid(record: dict, measurement: dict) -> bool:
+            samples = measurement.get("samples_ns_per_op", [])
+            loop_samples = record["measurements"]["loop_overhead"][
+                "samples_ns_per_op"
+            ]
+            if not samples or not loop_samples:
+                return False
+            raw = statistics.median(samples)
+            loop = statistics.median(loop_samples)
+            return (
+                len(samples) == record.get("retained_samples") == 10
+                and all(value > 0 for value in samples)
+                and math.isclose(
+                    measurement.get("median_ns_per_op", math.nan),
+                    raw,
+                    rel_tol=1e-12,
+                )
+                and math.isclose(
+                    measurement.get("median_net_of_loop_ns_per_op", math.nan),
+                    max(0.0, raw - loop),
+                    rel_tol=1e-12,
+                )
+            )
+
+        counters = profile["counters"]
+        event_lengths = profile["event_bounded_safe_lengths"]
+        boundary_events = profile["horizon_boundary_events"]
+        profile_valid = all(
+            (
+                sha256(profile_path)
+                == "90eb5b92902e254e75e81fa84e17b70104bad0ba22f268057a234145e2abf447",
+                profile.get("schema_version") == 3,
+                profile.get("backend_build")
+                == {
+                    "commit": "8bd6809116ad9e38de9deea961603dfb2884101b",
+                    "dirty": False,
+                },
+                counters.get("total_master_cycles") == 927_528_660,
+                counters.get("both_blocked_cycles") == 618_595_844,
+                counters.get("proven_safe_cycles") == 618_595_844,
+                event_lengths["episodes_ge"][0] == 2_064_042,
+                event_lengths["cycle_mass_ge"][0] == 618_595_844,
+                boundary_events.get("pwm") == 2_063_903,
+                boundary_events.get("timer") == 138,
+                sum(boundary_events.values()) == 2_064_041,
+                all(
+                    left >= right
+                    for field in ("episodes_ge", "cycle_mass_ge")
+                    for left, right in zip(
+                        event_lengths[field], event_lengths[field][1:]
+                    )
+                ),
+            )
+        )
+
+        cost_measurements = cost["measurements"]
+        cost_screening = cost["screening"]
+        cost_valid = all(
+            (
+                sha256(cost_path)
+                == "3e7dc98b8ecc48a134619b00a8d300611dc1147386514c9a1eb9e849671edf7f",
+                cost.get("schema_version") == 3,
+                cost.get("backend_build")
+                == {
+                    "commit": "67fc4bce7934885b439bc80629175dafeab2299f",
+                    "dirty": False,
+                },
+                cost.get("current_probe_scope", {}).get("complete_event_horizon")
+                is True,
+                retained_measurement_valid(
+                    cost, cost_measurements["full_all_source_horizon_probe"]
+                ),
+                retained_measurement_valid(
+                    cost,
+                    cost_measurements[
+                        "quiescent_tick_peripherals_by_advance_cycles"
+                    ]["1"],
+                ),
+                cost_screening.get("full_all_source_horizon_cost_measured")
+                is True,
+                cost_screening.get("event_fire_route_and_wake_increment_measured")
+                is True,
+                cost_screening.get("requires_matching_workload_horizon_profile")
+                is True,
+                cost_screening.get("eligible_for_optimization_priority_decision")
+                is False,
+            )
+        )
+
+        baseline_measurements = baseline["measurements"]
+        baseline_valid = all(
+            (
+                sha256(baseline_path)
+                == "d296768c2bd729ff253615124881dca0584a98cf1247320d376d8f2047ab7a25",
+                baseline.get("schema_version") == 1,
+                baseline.get("backend_build")
+                == {
+                    "commit": "67fc4bce7934885b439bc80629175dafeab2299f",
+                    "dirty": False,
+                },
+                baseline.get("idle_profiler_compiled") is False,
+                set(baseline_measurements["blocked_step_by_advance_cycles"])
+                == {"1", "64", "125", "1024"},
+                all(
+                    retained_measurement_valid(baseline, measurement)
+                    for measurement in baseline_measurements[
+                        "blocked_step_by_advance_cycles"
+                    ].values()
+                ),
+            )
+        )
+        add_check(
+            checks,
+            "opt0-a:complete-horizon-cost-decision",
+            profile_valid and cost_valid and baseline_valid,
+            profile_sha256=sha256(profile_path),
+            cost_sha256=sha256(cost_path),
+            production_baseline_sha256=sha256(baseline_path),
+            event_bounded_segments=event_lengths["episodes_ge"][0],
+            pwm_boundaries=boundary_events.get("pwm"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(
+            checks,
+            "opt0-a:complete-horizon-cost-decision",
+            False,
+            **error_details(error),
+        )
+
 
 def verify_r5_performance(checks: List[Check], root: Path) -> None:
     """Verify the R5-preflight wall-time record against the active R4 target."""
