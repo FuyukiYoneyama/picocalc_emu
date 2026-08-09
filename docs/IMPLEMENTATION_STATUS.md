@@ -184,7 +184,16 @@ NEXT-1は新規blind app `PicoEdit`として開始した。実装結果へ期待
 [`picoedit-contract-v1.json`](../blind-validation/picoedit-contract-v1.json)へ実装前に固定した。
 基準BSP 0.8.8に不足していた一般write APIは、BSP 0.9.0のdevice/host共有公開filesystem APIへ
 追加した。create/truncate write、sync、stat、remove、renameと個別ErrorをFAT32/FAT16 hostで検査し、
-アプリからFatFsを直接使わない境界を維持する。次はこのclean generator sourceからPicoEditを生成する。
+アプリからFatFsを直接使わない境界を維持する。clean generator sourceから新規local repository
+`picoedit-picocalc`を生成し、hardware-free editor core、PSRAM正本、FAT32 file list/search/edit、
+`OUTPUT.TMP`/`OUTPUT.BAK`安全保存、保存後readback、320x320 UIを実装した。hostは247 assertionsと
+反復stdout byte-identical、RP2040 device buildに合格した。canonical buildはapp commit
+`82a6e4c76272e8f520d2f8cba42f1a7e549d4933`、BSP commit
+`a0041b56516ed56ddff23e80d1900a7c0fc6ab15`、固定時刻`2026-08-09T08:00:00Z`から生成し、BIN SHA-256は
+`17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6`、UF2 SHA-256は
+`730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73`である。固定scenario
+[`picoedit-blind-v1.json`](../scenarios/picoedit-blind-v1.json)は論理段階ごとにUART markerを待ち、
+公式keyboard codeを投入する。最初のfirmware blind runはまだ行っていない。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

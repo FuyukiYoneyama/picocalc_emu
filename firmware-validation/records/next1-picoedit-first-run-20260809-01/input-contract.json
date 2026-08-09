@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "record_id": "next1-picoedit-first-run-20260809-01",
+  "status_before_run": "frozen_pending_first_execution",
+  "blind_contract": {
+    "path": "blind-validation/picoedit-contract-v1.json",
+    "contract_id": "next1-picoedit-blind-v1-20260809"
+  },
+  "application": {
+    "repo": "picoedit-picocalc",
+    "commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+    "bsp_version": "0.9.0",
+    "bsp_source_commit": "a0041b56516ed56ddff23e80d1900a7c0fc6ab15",
+    "app_version": "1.0.0-next1-blind-v1"
+  },
+  "build": {
+    "timestamp": "2026-08-09T08:00:00Z",
+    "generator": "Ninja",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1"
+  },
+  "artifacts": {
+    "bin_basename": "picocalc_app.bin",
+    "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+    "uf2_basename": "picocalc_app.uf2",
+    "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73",
+    "elf_sha256": "f0494641bb9f091ef41fa7ca68dd9efc4d8fcc799965dbaff5ef8006b7c7718c"
+  },
+  "backend": {
+    "repo": "picoem-picocalc",
+    "commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "report_schema": 8
+  },
+  "scenario": {
+    "path": "scenarios/picoedit-blind-v1.json",
+    "sha256": "f9437ef824523f0955b3efd7de0f3d958513183e10cb3a90a45adf2bed66c7e1"
+  },
+  "runner": {
+    "board": "picocalc",
+    "lcd_variant": "pio-rgb565",
+    "cycles": 4000000000,
+    "quantum": 1,
+    "execution_model": "Serial",
+    "psram": true,
+    "keyboard": true,
+    "sd": true,
+    "sd_format": "fat32",
+    "expected_stop_reason": "scenario_done"
+  },
+  "required_observations": [
+    "scenario.status=pass",
+    "PSRAM authoritative store marker",
+    "OUTPUT.TXT read-back bytes=64",
+    "OUTPUT.TXT read-back SHA-256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e",
+    "keyboard.key_events_dropped=0",
+    "exceptions absent",
+    "unsupported MMIO absent",
+    "final framebuffer evidence"
+  ]
+}

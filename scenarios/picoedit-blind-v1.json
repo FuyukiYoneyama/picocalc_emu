@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "name": "picoedit-blind-v1",
+  "description": "Frozen NEXT-1 PicoEdit workflow. Uses official controller key codes and waits for application markers between logical phases.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "PicoEdit file list ready",
+      "timeout_ms": 60000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[PICOEDIT][READY] mode=file_list selected=INPUT.TXT"
+      }
+    },
+    {
+      "op": "key_events",
+      "label": "open selected INPUT.TXT",
+      "events": [
+        {"state": "pressed", "code": 10},
+        {"state": "released", "code": 10}
+      ],
+      "gap_ms": 100
+    },
+    {
+      "op": "wait_until",
+      "label": "61-byte seed loaded into PSRAM",
+      "timeout_ms": 60000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61"
+      }
+    },
+    {
+      "op": "key_events",
+      "label": "Ctrl+F",
+      "events": [
+        {"state": "pressed", "code": 165},
+        {"state": "pressed", "code": 102},
+        {"state": "released", "code": 102},
+        {"state": "released", "code": 165}
+      ],
+      "gap_ms": 100
+    },
+    {
+      "op": "key_events",
+      "label": "type draft and confirm",
+      "events": [
+        {"state": "pressed", "code": 100},
+        {"state": "released", "code": 100},
+        {"state": "pressed", "code": 114},
+        {"state": "released", "code": 114},
+        {"state": "pressed", "code": 97},
+        {"state": "released", "code": 97},
+        {"state": "pressed", "code": 102},
+        {"state": "released", "code": 102},
+        {"state": "pressed", "code": 116},
+        {"state": "released", "code": 116},
+        {"state": "pressed", "code": 10},
+        {"state": "released", "code": 10}
+      ],
+      "gap_ms": 100
+    },
+    {
+      "op": "wait_until",
+      "label": "draft found at frozen cursor",
+      "timeout_ms": 60000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[PICOEDIT][FIND] query=draft status=found cursor=34"
+      }
+    },
+    {
+      "op": "key_events",
+      "label": "End then insert space-o-k",
+      "events": [
+        {"state": "pressed", "code": 213},
+        {"state": "released", "code": 213},
+        {"state": "pressed", "code": 32},
+        {"state": "released", "code": 32},
+        {"state": "pressed", "code": 111},
+        {"state": "released", "code": 111},
+        {"state": "pressed", "code": 107},
+        {"state": "released", "code": 107}
+      ],
+      "gap_ms": 100
+    },
+    {
+      "op": "key_events",
+      "label": "Ctrl+S",
+      "events": [
+        {"state": "pressed", "code": 165},
+        {"state": "pressed", "code": 115},
+        {"state": "released", "code": 115},
+        {"state": "released", "code": 165}
+      ],
+      "gap_ms": 100
+    },
+    {
+      "op": "wait_until",
+      "label": "safe save readback and SHA pass",
+      "timeout_ms": 120000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "PicoEdit final screen",
+      "png": "picoedit-final.png"
+    }
+  ]
+}
