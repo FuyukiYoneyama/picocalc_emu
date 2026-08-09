@@ -763,11 +763,32 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
                     "experimental_main.commit must differ from hardware_correlated and promoted commits"
                 )
 
-        if not any(
+        audio_supported = next(
+            (
+                item
+                for item in supported
+                if isinstance(item, dict) and item.get("id") == "audio-output"
+            ),
+            None,
+        )
+        if audio_supported is None:
+            errors.append("supported must include the correlated audio-output capability")
+        else:
+            if audio_supported.get("status") != "same_artifact_hardware_correlated":
+                errors.append(
+                    "supported audio-output.status must be same_artifact_hardware_correlated"
+                )
+            if audio_supported.get("target") != "picocalc-audio-r1":
+                errors.append("supported audio-output.target must be picocalc-audio-r1")
+            for key in ("emulator_evidence", "evidence"):
+                evidence_path = audio_supported.get(key)
+                if not isinstance(evidence_path, str) or not (root / evidence_path).is_file():
+                    errors.append("supported audio-output.{} must exist".format(key))
+        if any(
             isinstance(item, dict) and item.get("id") == "audio-output"
             for item in unsupported
         ):
-            errors.append("unsupported must include audio-output")
+            errors.append("unsupported must not retain the correlated audio-output capability")
 
         for name, entries in (("supported", supported), ("unsupported", unsupported)):
             if not isinstance(entries, list) or not entries:
@@ -4405,6 +4426,10 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
         root
         / "firmware-validation/records/next2-audio-r1-20260809-01/negative-mutations.json"
     )
+    hardware_record_path = (
+        root
+        / "firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json"
+    )
     expected_producer_hash = (
         "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a"
     )
@@ -4426,6 +4451,7 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
         target = next(item for item in registry["targets"] if item["id"] == "picocalc-audio-r1")
         record = load_json(record_path)
         negative = load_json(negative_path)
+        hardware_record = load_json(hardware_record_path)
         producer_digest = hashlib.sha256()
         sink_digest = hashlib.sha256()
         frame_count = producer_vector["frame_count"]
@@ -4449,6 +4475,20 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
         producer_hash = producer_digest.hexdigest()
         sink_hash = sink_digest.hexdigest()
         doc = doc_path.read_text(encoding="utf-8")
+        hardware_root = hardware_record_path.parent
+        hardware_uart = hardware_record["physical_run"]["uart_capture"]
+        hardware_final = hardware_record["physical_run"]["final_screen"]
+        hardware_audio = hardware_record["physical_run"]["acoustic_capture"]
+        hardware_uart_path = (
+            hardware_root / hardware_record["artifacts"]["uart_log"]["path"]
+        )
+        hardware_photo_path = (
+            hardware_root / hardware_record["artifacts"]["final_photo"]["path"]
+        )
+        hardware_audio_path = (
+            hardware_root / hardware_record["artifacts"]["audio_capture"]["path"]
+        )
+        hardware_correlation = hardware_record["correlation"]
         aligned = all(
             (
                 sha256(contract_path)
@@ -4543,6 +4583,34 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
                 record.get("audio_sink", {}).get("pcm_sha256") == expected_sink_hash,
                 record.get("negative_conformance", {}).get("result") == "pass",
                 record.get("hardware_correlation", {}).get("status") == "pending",
+                hardware_record.get("schema_version") == 1,
+                hardware_record.get("result") == "pass",
+                hardware_record.get("contract", {}).get("id")
+                == "next2-audio-v3-20260809",
+                hardware_record.get("target", {}).get("id") == "picocalc-audio-r1",
+                hardware_record.get("target", {}).get("revision") == 1,
+                len(hardware_uart.get("marker_count_each", {})) == 5,
+                hardware_uart.get("complete_marker_blocks") == 18,
+                all(value == 18 for value in hardware_uart["marker_count_each"].values()),
+                hardware_uart.get("fail_marker_count") == 0,
+                hardware_final.get("result") == "pass",
+                all(
+                    hardware_final.get(field) == "pass"
+                    for field in ("init", "dma_cfg", "stream", "stats", "firmware")
+                ),
+                hardware_audio.get("result") == "pass",
+                hardware_correlation.get("same_registered_artifact") is True,
+                hardware_correlation.get("hardware_correlation_completed") is True,
+                hardware_correlation.get("false_accept") is False,
+                sha256(hardware_uart_path)
+                == hardware_record["artifacts"]["uart_log"]["sha256"]
+                == "75e822775cda4d4ce81d14c7b2aafbe3abfb5d413d4a8ae5587d178aee136965",
+                sha256(hardware_photo_path)
+                == hardware_record["artifacts"]["final_photo"]["sha256"]
+                == "302f92c6b40c5b2f727e1347fc6d9d7c6c69b4e473fb9692e64cb987197dea03",
+                sha256(hardware_audio_path)
+                == hardware_record["artifacts"]["audio_capture"]["sha256"]
+                == "ccb53ebf7c599581a90dc56c88bc2796b5dbe800c97fc7c99f1f09548eeba495",
                 negative.get("result") == "pass",
                 len(negative.get("mutations", [])) == 10,
                 all(item.get("rejected") is True for item in negative.get("mutations", [])),
@@ -4565,7 +4633,9 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
             frame_count=frame_count,
             producer_sha256=producer_hash,
             sample_sha256=sink_hash,
-            implementation="formal_emulator_accepted_hardware_pending",
+            implementation="same_artifact_hardware_correlated",
+            hardware_correlation=hardware_correlation.get("verdict"),
+            hardware_uart_blocks=hardware_uart.get("complete_marker_blocks"),
         )
     except (
         OSError,

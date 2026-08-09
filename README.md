@@ -146,7 +146,8 @@ firmwareはFAT32/FAT16を各3回実行して決定一致、hostは両形式のCT
 NEXT-2B audioはv3 canonical契約 `next2-audio-v3-20260809` でformal emulator acceptanceを完了しました。
 2 clean buildsと3 firmware runsが決定一致し、49152 DMA writes、post-quantizer sink SHA、384 block、
 383 boundary、timer/service timingを合格しました。誤count/hashのfull runと10 report mutationもfail-closedです。
-同一UF2のhardware correlationだけが未完了で、完了まではaudio-outputを保守的にunsupported扱いします。
+同一UF2も実機で18組の完全UART block、最終5-PASS画面、約1.05秒の録音を取得し、hardware correlationを完了しました。
+`audio-output`はこの凍結48 kHz stereo／DMA timer 0／PWM5契約に限ってsupportedです。
 そして何より、**実機の色・向き・可読性・聴感はエミュレーターでは
 判定できません。** エミュレーターは「firmwareが何を書いたか」は再現しますが、
 「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
@@ -572,13 +573,14 @@ LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しま
 
 従来のaudio合格はBSPとPicoCalc実機の再生経路に対する証拠だった。現在のfirmware emulatorは
 DMA-paced PCMをdigital sample sinkで観測し、量子化後のsample列とtimer/block境界を厳密判定する。
-ただし同一UF2の実機相関は未完了なので、machine-readableな現行境界は
-`firmware-validation/capability.json`の`audio-output` unsupported（hardware pending）を正典とする。
+同一UF2のUART・最終画面・音響実機相関も完了し、machine-readableな現行境界は
+`firmware-validation/capability.json`のbounded `audio-output` supportedを正典とする。
 NEXT-2Bのcanonicalは `next2-audio-v3-20260809` である。producer seed SHA `c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a` と
 post-quantizer sink SHA `1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f` を混同しない。
 backend d92db1bで49152 writes、384 blocks/383 boundaries、intra gap 5208=32640・5209=16128・unexpected=0、
 boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`を3回決定一致で合格した。
-formal emulator acceptanceとnegative conformanceは完了し、hardware correlationだけが未完了である。
+formal emulator acceptance、negative conformance、same-artifact hardware correlationはすべて完了した。
+実機証拠は`firmware-validation/records/next2-audio-r1-hardware-20260809-01/`に固定している。
 
 ## RAMRDの解釈
 

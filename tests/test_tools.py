@@ -776,6 +776,48 @@ raise SystemExit(code)
         self.assertEqual(next2.get("physical_function"), "pass")
         self.assertEqual(next2.get("hardware_correlation"), "pass")
 
+    def test_target_schema_verification_includes_next2_audio_contract_hardware_correlation(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:audio-contract"
+        )
+        self.assertEqual(next2["status"], "pass")
+        self.assertEqual(next2.get("implementation"), "same_artifact_hardware_correlated")
+        self.assertEqual(next2.get("contract_id"), "next2-audio-v3-20260809")
+        self.assertEqual(next2.get("hardware_correlation"), "pass")
+        self.assertEqual(next2.get("hardware_uart_blocks"), 18)
+
+    def test_next2_audio_hardware_evidence_tamper_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            uart_path = (
+                project
+                / "firmware-validation/records/next2-audio-r1-hardware-20260809-01"
+                / "usb-cdc.log"
+            )
+            uart_path.write_bytes(uart_path.read_bytes() + b"tampered\r\n")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:audio-contract"
+        )
+        self.assertEqual(next2["status"], "fail")
+
     def test_next2_audio_oracle_reports_expected_sha256(self):
         completed = run(
             NEXT2_AUDIO_ORACLE,
@@ -1258,6 +1300,33 @@ raise SystemExit(code)
             check for check in report["checks"] if check["name"] == "firmware-validation:capability"
         )
         self.assertEqual(capability["status"], "pass")
+
+    def test_capability_requires_correlated_audio_output_in_supported(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            capability_path = project / "firmware-validation/capability.json"
+            capability = json.loads(capability_path.read_text(encoding="utf-8"))
+            audio = next(
+                item for item in capability["supported"] if item["id"] == "audio-output"
+            )
+            capability["supported"].remove(audio)
+            capability["unsupported"].append(audio)
+            capability_path.write_text(json.dumps(capability), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        capability_check = next(
+            check for check in report["checks"] if check["name"] == "firmware-validation:capability"
+        )
+        self.assertEqual(capability_check["status"], "fail")
 
     def test_capability_rejects_tampered_promoted_commit(self):
         with tempfile.TemporaryDirectory() as temporary:

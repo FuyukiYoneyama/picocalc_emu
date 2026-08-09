@@ -1,7 +1,7 @@
 # NEXT-2A Serial multicore conformance
 
 **状態:** NEXT-2A正式完了（2026-08-09）。v2エミュレーター受入と、同一v2 UF2による
-PicoCalc実機相関の両方が合格した。次は独立契約のNEXT-2B audio。
+PicoCalc実機相関の両方が合格した。後続の独立契約NEXT-2B audioも現在は完了している。
 
 ## 固定artifact
 

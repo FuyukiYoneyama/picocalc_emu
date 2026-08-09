@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-audio-r1-hardware-20260809-01",
+  "title": "NEXT-2B audio v3 same-artifact PicoCalc physical-device correlation",
+  "roadmap_package": "NEXT-2B",
+  "result": "pass",
+  "classification": "same_artifact_hardware_correlation",
+  "contract": {
+    "id": "next2-audio-v3-20260809",
+    "path": "firmware-validation/contracts/next2-audio-v3.json",
+    "sha256": "d9624c236dfee27405c692e6ae844e0b722e2a30ffd064a89b54d714cccf71af",
+    "required_hardware_evidence_satisfied": true
+  },
+  "target": {
+    "id": "picocalc-audio-r1",
+    "revision": 1,
+    "contract_sha256": "f5417677f55a896f800d4c36e1b8aeb7994c2628408327acf9de59234ecd5132"
+  },
+  "application": {
+    "repo": "picocalc-audio",
+    "commit": "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+    "bsp_source_commit": "c55a63bdcbd06918267428b65031b94d4f483339",
+    "version": "0.8.4-b-pio-rgb565-default",
+    "bin_sha256": "acaaf220fa9912a4cbd09de923f002ffe1fc0748d7c295ea997c1d28319b0cb6",
+    "uf2_sha256": "d6986103e74e153fd23ea7ce25111bba0a5752331959367b0aa63f6eb1c28677",
+    "build_timestamp": "2026-08-09T12:00:00Z",
+    "operator_reported_using_specified_uf2": true
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "validation_date": "2026-08-09",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "human_key_input_required": false,
+    "uart_capture": {
+      "result": "pass",
+      "transport": "PicoCalc USB Type-C CDC",
+      "bytes": 9600,
+      "lines": 99,
+      "line_ending": "CRLF",
+      "complete_marker_blocks": 18,
+      "marker_count_each": {
+        "init": 18,
+        "dma_cfg": 18,
+        "stream": 18,
+        "stats": 18,
+        "firmware_verdict": 18
+      },
+      "all_fixed_values_match_contract": true,
+      "fail_marker_count": 0,
+      "late_attach_partial_prefix_lines": 1,
+      "late_attach_note": "The first captured LCD initialization line begins mid-byte and is outside the 18 complete periodic NEXT2 marker blocks. The frozen procedure explicitly permits attaching USB CDC after boot.",
+      "overall_verdict": "pass"
+    },
+    "final_screen": {
+      "result": "pass",
+      "observed_title": "NEXT2 AUDIO",
+      "init": "pass",
+      "dma_cfg": "pass",
+      "stream": "pass",
+      "stats": "pass",
+      "firmware": "pass",
+      "source_video_timestamp_seconds": 10.0
+    },
+    "acoustic_capture": {
+      "result": "pass",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "decoded_sample_frames": 746432,
+      "programmed_playback_duration_seconds": 1.024,
+      "analysis": {
+        "method": "FFmpeg silencedetect on the submitted camera AAC track",
+        "threshold_db": -35,
+        "minimum_silence_seconds": 0.08,
+        "principal_event_start_seconds": 2.68946,
+        "principal_event_end_seconds": 3.73975,
+        "principal_event_duration_seconds": 1.05029
+      },
+      "note": "The camera recording contains one approximately 1.05-second sustained playback event before the final PASS screen. Acoustic duration includes capture threshold and room/device response and is not used as the byte-exact digital sink oracle."
+    },
+    "evidence_pairing": {
+      "same_operator_submission": true,
+      "log_source_name": "20260809_231548.log",
+      "video_source_name": "IMG_8953.MOV",
+      "note": "The submitted video contains both the acoustic playback and the held final five-PASS screen; the USB CDC log contains the matching periodic v3 firmware marker block."
+    }
+  },
+  "correlation": {
+    "emulator_record": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
+    "emulator_record_sha256": "1b428d6795727472a86e78c2716fe61388dcce89966902db636307f500da6840",
+    "same_registered_artifact": true,
+    "hardware_correlation_completed": true,
+    "emulator_result": "pass",
+    "hardware_result": "pass",
+    "emulator_pass_hardware_fail_count": 0,
+    "false_accept": false,
+    "verdict": "pass"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "usb-cdc.log",
+      "bytes": 9600,
+      "lines": 99,
+      "sha256": "75e822775cda4d4ce81d14c7b2aafbe3abfb5d413d4a8ae5587d178aee136965",
+      "line_ending": "CRLF",
+      "preservation": "byte-identical to the supplied log"
+    },
+    "final_photo": {
+      "path": "final.jpg",
+      "sha256": "302f92c6b40c5b2f727e1347fc6d9d7c6c69b4e473fb9692e64cb987197dea03",
+      "decoded_rgb_sha256": "5c3c8485832ba47cb08b004b3bb63530bb68dd63c41e0af2277b9cb423a80e08",
+      "width": 1080,
+      "height": 1920,
+      "derived_from_video_timestamp_seconds": 10.0,
+      "metadata_policy": "repository JPEG was decoded from the submitted video with source metadata removed"
+    },
+    "audio_capture": {
+      "path": "audio-capture.flac",
+      "bytes": 2356330,
+      "sha256": "ccb53ebf7c599581a90dc56c88bc2796b5dbe800c97fc7c99f1f09548eeba495",
+      "decoded_pcm_s24le_sha256": "9a300e2c18562f2bf4d9cf63a305202580adfb5ddcc29719a93538ccb1adba22",
+      "source_original_video_sha256": "1ac0f75cb29d96e98777e8f441f23e145a49d336fcc4d15e2fd21ca6c64dba56",
+      "source_and_saved_decoded_pcm_match": true,
+      "metadata_policy": "repository FLAC contains the full decoded camera audio track with source metadata removed; the original video and its location/device metadata are not copied into the repository"
+    },
+    "notes": "notes.md"
+  }
+}

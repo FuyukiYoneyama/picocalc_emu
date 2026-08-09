@@ -4,7 +4,8 @@
 
 **audio境界:** 本書の`audio=pass`はfirmwareの設定・stream counterと実機で聞こえた参照音を
 相関した時点証拠であり、それ単独ではDMA-paced PCM sample sinkを意味しない。後続NEXT-2Bでdigital
-sinkのformal emulator acceptanceを追加したが、同一UF2実機相関までは`audio-output`をunsupported扱いする。
+sinkのformal emulator acceptanceと独立した同一UF2実機相関を追加した。bounded `audio-output`の現在状態は
+NEXT-2B recordと`firmware-validation/capability.json`を正典とする。
 
 ## 目的と判定境界
 

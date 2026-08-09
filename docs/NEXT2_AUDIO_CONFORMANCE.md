@@ -1,6 +1,6 @@
 # NEXT-2B Audio conformance
 
-**状態:** v3 canonicalのformal emulator acceptance完了。hardware correlationのみ未完了である。
+**状態:** v3 canonicalのformal emulator acceptanceとsame-artifact hardware correlationが完了した。
 
 ## 契約履歴
 
@@ -55,10 +55,15 @@ backendがDMA-origin PWM5_CC writes、post-quantizer sink hash、block境界、t
 producer seed SHAやR5 counters/録音はsink oracleの代用にならない。
 
 formal emulator要件（3 firmware runs、2 clean builds、byte-identical artifacts/report/timeline/sink、
-negative mutations）は完了した。残るのは同一UF2によるhardware correlationである。完了までは
-`audio-output`を保守的にunsupported扱いとし、状態を`emulator_accepted_hardware_pending`とする。
+negative mutations）は完了した。同一UF2の実機でも18組の完全marker block、最終5-PASS画面、
+約1.05秒の音響captureを確認した。実機recordは
+`firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json`である。
+`audio-output`はこの凍結targetの範囲に限り`supported`／`same_artifact_hardware_correlated`とする。
 
-## 同一UF2実機相関の人間手順
+音響captureは実機から音が出たことと継続時間の相関であり、byte-exact oracleではない。49152 DMA-origin
+writes、post-quantizer SHA、due cycle、block境界、gap、service latencyの権威は引き続きemulator recordにある。
+
+## 同一UF2実機相関の人間手順（完了済み・再採取用）
 
 使用するファイルは
 `/home/fuyuki/pico_dvl/codex/picocalc-audio/build/picocalc_app.uf2`、SHA-256は

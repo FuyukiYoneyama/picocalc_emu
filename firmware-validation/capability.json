@@ -33,7 +33,7 @@
   "scope": {
     "authority": "firmware-emulator-rp2040-binary-conformance",
     "hardware_or_bsp_audio_evidence_implies_emulator_audio_output": false,
-    "note": "R5 audio=pass by itself covers firmware configuration/counters plus physical reference-tone evidence and does not prove an emulator PCM sink. NEXT-2B now has separate formal digital-sink emulator evidence, while same-UF2 hardware correlation remains pending; audio-output therefore stays conservatively unsupported below."
+    "note": "R5 audio=pass by itself covers firmware configuration/counters plus physical reference-tone evidence and does not prove an emulator PCM sink. NEXT-2B separately combines an exact digital-sink emulator record with same-UF2 UART, final-screen and acoustic hardware evidence; only that bounded contract is supported below."
   },
   "supported": [
     {
@@ -223,15 +223,20 @@
       "emulator_evidence": "firmware-validation/records/next2-multicore-r2-20260809-01/record.json",
       "evidence": "firmware-validation/records/next2-multicore-r2-hardware-20260809-01/record.json",
       "since_gate": "NEXT-2A"
+    },
+    {
+      "id": "audio-output",
+      "what": "48 kHz stereo PWM audio playback through the frozen DMA path to an exact digital sample sink",
+      "status": "same_artifact_hardware_correlated",
+      "detail": "Target picocalc-audio-r1 and canonical contract next2-audio-v3-20260809 passed two clean reproducible BIN/UF2 builds and three byte-identical firmware runs on backend d92db1b. The sink observed 49152 post-quantizer writes with SHA 1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f, 384 blocks/383 boundaries, exact cadence and service-latency streams. Wrong-count/wrong-hash full runs and ten saved-report mutations failed closed. On 2026-08-09 the same registered UF2 passed physical correlation with 18 complete USB marker blocks, a final five-PASS screen and an approximately 1.05-second acoustic capture for the programmed 1.024-second stream.",
+      "limitation": "Support is bounded to the frozen Serial, quantum-1 target: 48 kHz stereo producer, canonical error-diffusion quantizer, DMA timer 0 at 3/15625, TREQ 59 and PWM slice 5 CC. It does not claim arbitrary codecs, sample rates, PWM slices, DMA layouts, mixing, speaker frequency response or byte equality between the digital sink and a microphone recording. Producer seed SHA c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a is not the sink oracle.",
+      "target": "picocalc-audio-r1",
+      "emulator_evidence": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
+      "evidence": "firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json",
+      "since_gate": "NEXT-2B"
     }
   ],
   "unsupported": [
-    {
-      "id": "audio-output",
-      "what": "PWM audio playback through DMA to a sample sink",
-      "status": "emulator_accepted_hardware_pending",
-      "detail": "Canonical contract next2-audio-v3-20260809 passed two clean reproducible BIN/UF2 builds and three byte-identical firmware runs on backend d92db1b. The sink observed 49152 post-quantizer writes with SHA 1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f, 384 blocks/383 boundaries, exact cadence and service-latency streams. Wrong-count/wrong-hash full runs and ten saved-report mutations failed closed. Same-UF2 hardware UART/photo/acoustic correlation remains pending, so this entry stays conservatively unsupported until that evidence is recorded. Producer seed SHA c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a is not the sink oracle."
-    },
     {
       "id": "bootrom-execution",
       "what": "Executing the real bootrom, including USB MSC boot",
