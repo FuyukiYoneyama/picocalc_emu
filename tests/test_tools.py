@@ -20,6 +20,8 @@ VERIFY = ROOT / "tools/verify_environment.py"
 GENERATE_BOARD = ROOT / "tools/generate_board_header.py"
 BENCHMARK_REALTIME = ROOT / "tools/benchmark_firmware_realtime.py"
 NEXT2_AUDIO_ORACLE = ROOT / "tools/next2_audio_oracle.py"
+NEXT2_AUDIO_ORACLE_V3 = ROOT / "tools/next2_audio_oracle_v3.py"
+NEXT2_AUDIO_NEGATIVE = ROOT / "tools/verify_next2_audio_negative.py"
 
 
 def run(*arguments, env=None):
@@ -801,6 +803,37 @@ raise SystemExit(code)
         self.assertEqual(completed.returncode, 1, completed.stderr + completed.stdout)
         payload = json.loads(completed.stdout)
         self.assertEqual(payload["verify"]["status"], "mismatch")
+
+    def test_next2_audio_v3_oracle_separates_producer_and_quantized_sink(self):
+        completed = run(NEXT2_AUDIO_ORACLE_V3, "--verify")
+        self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["contract_id"], "next2-audio-v3-20260809")
+        self.assertEqual(
+            payload["producer"]["sha256"],
+            "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+        )
+        self.assertEqual(
+            payload["sink"]["sha256"],
+            "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f",
+        )
+        self.assertEqual(payload["producer"]["first_words"][0], 0x00F80003)
+        self.assertEqual(payload["sink"]["first_words"][0], 0x00F90003)
+        self.assertEqual(payload["verify"]["status"], "match")
+
+    def test_next2_audio_v3_oracle_is_stateful_across_frames(self):
+        completed = run(NEXT2_AUDIO_ORACLE_V3, "--frame-count", "2")
+        self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["sink"]["first_words"], [0x00F90003, 0x00DB0014])
+
+    def test_next2_audio_v3_negative_matrix_is_fail_closed(self):
+        completed = run(NEXT2_AUDIO_NEGATIVE)
+        self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["result"], "pass")
+        self.assertEqual(len(payload["mutations"]), 10)
+        self.assertTrue(all(item["rejected"] for item in payload["mutations"]))
 
     def test_target_schema_rejects_next2_v2_hardware_uart_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1839,6 +1872,75 @@ raise SystemExit(code)
                 "--snapshot-dir", "--uart",
             ):
                 self.assertIn(item, argv)
+
+    def test_r2_target_driver_includes_audio_sink_expectations(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(
+                temporary
+            )
+            contract = json.loads(registry.read_text(encoding="utf-8"))
+            contract["targets"][0]["runner"]["audio_sink"] = {
+                "expected_count": 49_152,
+                "expected_sha256": "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+            }
+            registry.write_text(json.dumps(contract, ensure_ascii=False), encoding="utf-8")
+            output = Path(temporary) / "accepted.json"
+            result = self.run_firmware_fixture(
+                module, backend, firmware, scenario, registry, json_out=output
+            )
+            self.assertEqual(result, 0)
+            self.assertTrue(output.is_file())
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            for item in (
+                "--expect-audio-sink-count", "49152",
+                "--expect-audio-sink-sha256",
+                "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+            ):
+                self.assertIn(item, argv)
+
+    def test_r2_registry_rejects_audio_sink_missing_fields(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            _, _, _, _, registry = self.make_firmware_fixture(temporary)
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            document["targets"][0]["runner"]["audio_sink"] = {
+                "expected_count": 49_152,
+            }
+            registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+            with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                with self.assertRaises(ValueError):
+                    module.load_firmware_registry()
+
+    def test_r2_registry_rejects_audio_sink_invalid_count(self):
+        module = self.load_picocalc_module()
+        mutations = (
+            {"audio_sink": {"expected_count": 0, "expected_sha256": "a" * 64}},
+            {"audio_sink": {"expected_count": True, "expected_sha256": "a" * 64}},
+        )
+        for mutation in mutations:
+            with tempfile.TemporaryDirectory() as temporary:
+                _, _, _, _, registry = self.make_firmware_fixture(temporary)
+                document = json.loads(registry.read_text(encoding="utf-8"))
+                document["targets"][0]["runner"]["audio_sink"] = mutation["audio_sink"]
+                registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+                with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                    with self.assertRaises(ValueError):
+                        module.load_firmware_registry()
+
+    def test_r2_registry_rejects_audio_sink_invalid_sha256(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            _, _, _, _, registry = self.make_firmware_fixture(temporary)
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            document["targets"][0]["runner"]["audio_sink"] = {
+                "expected_count": 49_152,
+                "expected_sha256": "x" * 64,
+            }
+            registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+            with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                with self.assertRaises(ValueError):
+                    module.load_firmware_registry()
 
     def test_r2_registry_rejects_incomplete_or_old_contracts(self):
         module = self.load_picocalc_module()

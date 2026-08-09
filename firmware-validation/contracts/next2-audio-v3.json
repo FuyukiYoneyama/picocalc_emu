@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "contract_id": "next2-audio-v3-20260809",
+  "status": "versioned_after_fail_closed_first_run_before_formal_acceptance",
+  "roadmap_package": "NEXT-2B",
+  "supersedes": {
+    "contract_id": "next2-audio-v2-20260809",
+    "sha256": "8c2ca770a853dbb4077b05dce6293fce433c51d0f3b271e6a06ab07953ba64b5",
+    "reason": "the first backend run proved that v2 skipped the canonical error-diffusion quantizer in its sink oracle and incorrectly required the DMA timer cadence to remain uninterrupted across software-retriggered 128-frame DMA block boundaries"
+  },
+  "application": {
+    "name": "PicoCalc Audio Conformance",
+    "repository_directory": "picocalc-audio",
+    "commit": "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+    "kind": "DMA-paced stereo PCM playback via public picocalc::audio API",
+    "execution_model": "Serial",
+    "scheduler_instruction_quantum": 1,
+    "human_input_required": false,
+    "lcd_variant": "pio-rgb565"
+  },
+  "frozen_baseline": {
+    "backend_commit": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "build_timestamp": "2026-08-09T12:00:00Z"
+  },
+  "required_sdk_paths": [
+    "picocalc/audio.h",
+    "picocalc::audio::init",
+    "picocalc::audio::write_sample",
+    "picocalc::audio::writable_samples",
+    "picocalc::audio::start",
+    "picocalc::audio::request_drain",
+    "picocalc::audio::drain_complete",
+    "picocalc::audio::stop",
+    "picocalc::audio::stats"
+  ],
+  "prohibited_application_dependencies": [
+    "hardware register-level audio/MMIO manipulation",
+    "private picocalc::audio internals",
+    "host-only sample sinks",
+    "PICOEM_* compile definitions",
+    "emulator-only branches"
+  ],
+  "producer_vector": {
+    "frame_count": 49152,
+    "channels": 2,
+    "duration_seconds_at_48000_hz": 1.024,
+    "pattern_period_frames": 256,
+    "left_duty_seed": "(i * 17 + 3) & 255",
+    "right_duty_seed": "255 - ((i * 29 + 7) & 255)",
+    "pcm_transform": "duty * 257 - 32768",
+    "packed_seed_sha256": "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+    "authority": "firmware may identify this deterministic producer vector, but it is not the output-sink oracle"
+  },
+  "canonical_quantizer": {
+    "pwm_wrap": 255,
+    "input_bias": 32768,
+    "error_diffusion_percent": 100,
+    "round_before_shift": 128,
+    "quant_shift": 8,
+    "reconstruction": "duty * 257",
+    "state": "independent signed error state per channel; shaped input is clamped to 0..65535 before quantization",
+    "independent_oracle": "tools/next2_audio_oracle_v3.py"
+  },
+  "expected_dma_sink": {
+    "source": "successful 32-bit DMA bus writes to PWM5_CC after the canonical quantizer",
+    "frame_count": 49152,
+    "packing": "u32 little-endian, A=left bits [0..15], B=right bits [16..31]",
+    "sha256": "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f",
+    "first_words": [
+      "0x00f90003",
+      "0x00db0014",
+      "0x00be0025",
+      "0x00a10036",
+      "0x00840047",
+      "0x00660058",
+      "0x004a0069",
+      "0x002d007a"
+    ],
+    "last_words": [
+      "0x00e0007b",
+      "0x00c3008d",
+      "0x00a6009d",
+      "0x008900ae",
+      "0x006b00bf",
+      "0x004f00d0",
+      "0x003200e1",
+      "0x001500f2"
+    ]
+  },
+  "dma_and_timer_plan": {
+    "timer": {"index": 0, "x": 3, "y": 15625, "treq": 59},
+    "destination": {
+      "pwm_slice": 5,
+      "register": "CC",
+      "address": "0x40050070",
+      "gpio_pair": "GP26/GP27",
+      "address_mode": "fixed",
+      "transfer_width_bits": 32
+    },
+    "blocks": {
+      "frames_per_block": 128,
+      "block_count": 384,
+      "software_retriggered_boundary_count": 383,
+      "malformed_block_count": 0
+    },
+    "intra_block_due_cycle_gaps": {
+      "allowed": [5208, 5209],
+      "gap_5208_count": 32640,
+      "gap_5209_count": 16128,
+      "unexpected_gap_count": 0
+    },
+    "block_boundary_due_cycle_gaps": {
+      "count": 383,
+      "minimum_cycles": 5209,
+      "maximum_cycles": 10417,
+      "sha256": "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06",
+      "meaning": "the timer remains free-running while the completed half is refilled in the DMA IRQ and the next half is software-retriggered; these boundaries are observed separately and are never accepted as ordinary intra-block cadence"
+    },
+    "timer_due_cycle_sha256": "28337d71e91fd6e68a4c5d7521557152c8468ef64cbf2e2b34f1da4892890d32",
+    "service_latency": {
+      "minimum_cycles": 0,
+      "maximum_cycles": 6,
+      "sha256": "7c496ba3791e33ef5ae6071a6ec07956f6d1d1bd79f66d728a9acc230590a7a8"
+    }
+  },
+  "authority_split": {
+    "firmware_self_observation": [
+      "public API initialization succeeded",
+      "49152 source frames were accepted without producer drop",
+      "drain completed",
+      "underrun, drop and clip counters are zero",
+      "reported DMA fraction, PWM carrier and ring capacity match the BSP contract"
+    ],
+    "backend_authoritative_observation": [
+      "exactly 49152 successful DMA-origin 32-bit writes reached PWM5_CC",
+      "the post-quantizer little-endian write stream SHA-256 equals the v3 independent oracle",
+      "384 blocks contain exactly 128 writes each",
+      "all non-boundary timer due-cycle gaps are 5208 or 5209",
+      "all 383 software-retrigger block boundaries match the frozen boundary-gap stream",
+      "DMA service latency is reported and frozen separately"
+    ],
+    "overall_pass": "requires both firmware and backend authority; neither side may claim the other side's verdict"
+  },
+  "required_uart_markers": [
+    "[NEXT2][AUDIO][INIT] status=pass sample_frames=49152 timer0=3/15625",
+    "[NEXT2][AUDIO][DMA_CFG] status=pass treq=59 slice=5 dest=PWM5_CC width=32 fixed_dest=1 gpio=26/27",
+    "[NEXT2][AUDIO][STREAM] status=pass producer_vector=c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a accepted=49152 drain=complete underrun=0 drop=0 clip=0",
+    "[NEXT2][AUDIO][STATS] status=pass carrier=976562 ring_capacity=512",
+    "[NEXT2][AUDIO][FIRMWARE_VERDICT] producer=pass driver=pass overall=pass"
+  ],
+  "backend_required_report": {
+    "section": "audio_sink",
+    "required_fields": [
+      "status",
+      "dma_write_count",
+      "pcm_sha256",
+      "first_words",
+      "last_words",
+      "timer_index",
+      "treq",
+      "timer_fraction",
+      "timer_due_cycle_sha256",
+      "block_start_count",
+      "malformed_block_count",
+      "block_boundary_gap_count",
+      "block_boundary_gap_min_cycles",
+      "block_boundary_gap_max_cycles",
+      "block_boundary_gap_sha256",
+      "gap_5208_count",
+      "gap_5209_count",
+      "unexpected_gap_count",
+      "service_latency_min_cycles",
+      "service_latency_max_cycles",
+      "service_latency_sha256"
+    ]
+  },
+  "formal_acceptance": {
+    "firmware_runs": 3,
+    "clean_clone_reproducible_builds": 2,
+    "same_artifact_bin_and_uf2": true,
+    "uart_byte_identical": true,
+    "report_byte_identical": true,
+    "timeline_byte_identical": true,
+    "sample_sink_byte_identical": true,
+    "timer_due_cycle_stream_byte_identical": true,
+    "block_boundary_gap_stream_byte_identical": true,
+    "first_backend_run_recorded_even_if_failure": true
+  },
+  "first_run_findings": {
+    "record": "firmware-validation/records/next2-audio-first-run-20260809-01",
+    "invocation_preflight": "exit 2 before firmware because the runner was launched outside the backend cwd and could not resolve its bootrom",
+    "first_firmware_verdict": "fail",
+    "first_firmware_backend_commit": "94818f8a4c95a0d8e458843f163556be83411a6a",
+    "observed_dma_writes": 24895,
+    "observed_sink_sha256": "845ae384fa617b774c95aec35f2696e61c65328235b6afcc48e2222397bdc954",
+    "root_causes": [
+      "stale active level IRQ was re-pended and double-ran the DMA handler",
+      "v2 oracle omitted the error-diffusion quantizer",
+      "v2 cadence rule did not distinguish software-retriggered DMA block boundaries"
+    ]
+  },
+  "fail_closed_mutations": [
+    "saved sample stream word mutation",
+    "wrong DMA destination",
+    "wrong transfer width",
+    "wrong TREQ",
+    "intra-block timer cadence mismatch",
+    "block length or block count mismatch",
+    "block-boundary gap stream mismatch",
+    "sample count mismatch",
+    "firmware exception",
+    "unsupported MMIO"
+  ],
+  "hardware_correlation": {
+    "same_build_bin_and_uf2": true,
+    "required_evidence": [
+      "complete periodically repeated UART marker block",
+      "one final firmware PASS photo",
+      "acoustic capture containing the playback"
+    ],
+    "physical_audio_scope": "physical playback is secondary and non-byte-exact; it never overrides the backend sink oracle"
+  },
+  "out_of_scope": [
+    "analog PWM carrier reconstruction",
+    "speaker transfer-function equality",
+    "microphone byte-exact comparison",
+    "Threaded execution model",
+    "multicore audio producer",
+    "general audio file decoding"
+  ]
+}

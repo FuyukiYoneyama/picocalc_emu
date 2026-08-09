@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next2-audio-v2",
+  "description": "NEXT-2B serial DMA-paced audio conformance observation. No keyboard input; wait for the final firmware verdict marker, then snapshot once.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "audio verdict emitted",
+      "timeout_ms": 12000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NEXT2][AUDIO][FIRMWARE_VERDICT] producer=pass driver=pass overall=pass"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "NEXT-2B final PASS screen",
+      "png": "next2-audio-final.png"
+    }
+  ]
+}

@@ -24,9 +24,9 @@ separates three exact backend identities:
   same-artifact emulator/physical-device evidence.
 - **promoted:** `e985a9d...5f1`, used by active target `picotetris-opt1b`. It is exact-equivalent to
   the R5 observation contract and includes the accepted OPT1-B fast path.
-- **experimental main:** the observed `main` head, currently `38683d6...e7`. NEXT-2A accepts its
-  bounded multicore behavior through a separate target, but it does not replace the general
-  PicoTetris promoted role merely by being newest.
+- **experimental main:** the observed `main` head, currently `d92db1b...1a3`. NEXT-2B accepts its
+  bounded DMA-paced digital audio sink through `picocalc-audio-r1`, but it does not replace the
+  general PicoTetris promoted role merely by being newest.
 
 `picocalc_emu` CI keeps the first two roles as separate firmware jobs. Historical correlation must
 not silently move to a new backend, while the current promoted target must not be protected only by

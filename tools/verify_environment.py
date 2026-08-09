@@ -4391,47 +4391,79 @@ def verify_next2_multicore_contract(checks: List[Check], root: Path) -> None:
 
 
 def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
-    """Verify the frozen NEXT-2B contract against an independent vector oracle."""
+    """Verify the versioned NEXT-2B producer and post-quantizer sink contract."""
     name = "next2:audio-contract"
-    contract_path = root / "firmware-validation/contracts/next2-audio-v2.json"
-    superseded_path = root / "firmware-validation/contracts/next2-audio-v1.json"
-    oracle_path = root / "tools/next2_audio_oracle.py"
+    contract_path = root / "firmware-validation/contracts/next2-audio-v3.json"
+    superseded_path = root / "firmware-validation/contracts/next2-audio-v2.json"
+    legacy_path = root / "firmware-validation/contracts/next2-audio-v1.json"
+    oracle_path = root / "tools/next2_audio_oracle_v3.py"
     doc_path = root / "docs/NEXT2_AUDIO_CONFORMANCE.md"
-    expected_hash = (
+    record_path = (
+        root / "firmware-validation/records/next2-audio-r1-20260809-01/record.json"
+    )
+    negative_path = (
+        root
+        / "firmware-validation/records/next2-audio-r1-20260809-01/negative-mutations.json"
+    )
+    expected_producer_hash = (
         "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a"
+    )
+    expected_sink_hash = (
+        "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f"
     )
     try:
         contract = load_json(contract_path)
-        vector = contract["sample_vector"]
-        timer = contract["dma_and_timer_plan"]["timer"]
-        dma = contract["dma_and_timer_plan"]["dma"]
-        destination = dma["destination"]
-        digest = hashlib.sha256()
-        frame_count = vector["frame_count"]
+        producer_vector = contract["producer_vector"]
+        expected_sink = contract["expected_dma_sink"]
+        dma = contract["dma_and_timer_plan"]
+        timer = dma["timer"]
+        blocks = dma["blocks"]
+        intra = dma["intra_block_due_cycle_gaps"]
+        boundary = dma["block_boundary_due_cycle_gaps"]
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(item for item in registry["targets"] if item["id"] == "picocalc-audio-r1")
+        record = load_json(record_path)
+        negative = load_json(negative_path)
+        producer_digest = hashlib.sha256()
+        sink_digest = hashlib.sha256()
+        frame_count = producer_vector["frame_count"]
+        left_error = 0
+        right_error = 0
         for index in range(frame_count):
             left = (index * 17 + 3) & 0xFF
             right = 255 - ((index * 29 + 7) & 0xFF)
             left_pcm = left * 257 - 32768
             right_pcm = right * 257 - 32768
-            if (left_pcm + 32768) // 257 != left:
-                raise ValueError(f"left PCM oracle mismatch at frame {index}")
-            if (right_pcm + 32768) // 257 != right:
-                raise ValueError(f"right PCM oracle mismatch at frame {index}")
-            digest.update(struct.pack("<I", left | (right << 16)))
-        oracle_hash = digest.hexdigest()
+            producer_digest.update(struct.pack("<I", left | (right << 16)))
+
+            left_shaped = min(65535, max(0, left_pcm + 32768 + left_error))
+            right_shaped = min(65535, max(0, right_pcm + 32768 + right_error))
+            left_output = min(255, max(0, (left_shaped + 128) >> 8))
+            right_output = min(255, max(0, (right_shaped + 128) >> 8))
+            left_error = left_shaped - left_output * 257
+            right_error = right_shaped - right_output * 257
+            sink_digest.update(struct.pack("<I", left_output | (right_output << 16)))
+
+        producer_hash = producer_digest.hexdigest()
+        sink_hash = sink_digest.hexdigest()
         doc = doc_path.read_text(encoding="utf-8")
         aligned = all(
             (
                 sha256(contract_path)
-                == "8c2ca770a853dbb4077b05dce6293fce433c51d0f3b271e6a06ab07953ba64b5",
+                == "d9624c236dfee27405c692e6ae844e0b722e2a30ffd064a89b54d714cccf71af",
                 sha256(superseded_path)
+                == "8c2ca770a853dbb4077b05dce6293fce433c51d0f3b271e6a06ab07953ba64b5",
+                sha256(legacy_path)
                 == "040dd9ae78380d0a56461c5263dddb72ae3936172418173de51243c500535c30",
                 contract.get("schema_version") == 1,
-                contract.get("contract_id") == "next2-audio-v2-20260809",
-                contract.get("status") == "frozen_before_application_implementation",
+                contract.get("contract_id") == "next2-audio-v3-20260809",
+                contract.get("status")
+                == "versioned_after_fail_closed_first_run_before_formal_acceptance",
                 contract.get("roadmap_package") == "NEXT-2B",
                 contract.get("supersedes", {}).get("contract_id")
-                == "next2-audio-v1-20260809",
+                == "next2-audio-v2-20260809",
                 contract.get("supersedes", {}).get("sha256")
                 == sha256(superseded_path),
                 contract.get("application", {}).get("repository_directory")
@@ -4439,35 +4471,32 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
                 contract.get("application", {}).get("execution_model") == "Serial",
                 contract.get("application", {}).get("scheduler_instruction_quantum")
                 == 1,
-                contract.get("frozen_baseline", {}).get("picocalc_emu_commit")
-                == "c55a63bdcbd05f698b3e53a062ed4ae76d2746ad",
-                contract.get("frozen_baseline", {}).get(
-                    "backend_commit_before_audio_implementation"
-                )
-                == "38683d65800ef36026f674dd47228024d69eb5e7",
+                contract.get("application", {}).get("commit")
+                == "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+                contract.get("frozen_baseline", {}).get("backend_commit")
+                == "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
                 frame_count == 49_152,
-                vector.get("pattern_period_frames") == 256,
-                vector.get("duration_seconds_at_48000_hz") == 1.024,
-                vector.get("pcm_packing", {}).get("expected_sha256")
-                == expected_hash,
-                oracle_hash == expected_hash,
-                timer == {
-                    "index": 0,
-                    "x": 3,
-                    "y": 15625,
-                    "wrap_or_divider_note": "defines 48.0 kHz pace target",
+                producer_vector.get("pattern_period_frames") == 256,
+                producer_vector.get("packed_seed_sha256") == expected_producer_hash,
+                producer_hash == expected_producer_hash,
+                expected_sink.get("sha256") == expected_sink_hash,
+                sink_hash == expected_sink_hash,
+                timer == {"index": 0, "x": 3, "y": 15625, "treq": 59},
+                dma.get("destination", {}).get("address") == "0x40050070",
+                dma.get("destination", {}).get("transfer_width_bits") == 32,
+                blocks == {
+                    "frames_per_block": 128,
+                    "block_count": 384,
+                    "software_retriggered_boundary_count": 383,
+                    "malformed_block_count": 0,
                 },
-                dma.get("treq") == 59,
-                destination.get("pwm_slice") == 5,
-                destination.get("register") == "CC",
-                destination.get("address") == "0x40050070",
-                destination.get("address_mode") == "fixed",
-                destination.get("transfer_width_bits") == 32,
-                dma.get("source", {}).get("half_buffer_frames") == 128,
-                dma.get("source", {}).get("accepted_dma_write_count") == 49_152,
-                dma.get("expected_inter_sample_gaps_after_first") == [5208, 5209],
-                contract.get("formal_acceptance", {}).get("exact_sample_count")
-                == 49_152,
+                intra.get("allowed") == [5208, 5209],
+                intra.get("gap_5208_count") == 32640,
+                intra.get("gap_5209_count") == 16128,
+                intra.get("unexpected_gap_count") == 0,
+                boundary.get("count") == 383,
+                boundary.get("sha256")
+                == "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06",
                 len(contract.get("required_uart_markers", [])) == 5,
                 contract.get("formal_acceptance", {}).get(
                     "first_backend_run_recorded_even_if_failure"
@@ -4483,10 +4512,47 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
                 "backend_authoritative_observation"
                 in contract.get("authority_split", {}),
                 "audio_sink" == contract.get("backend_required_report", {}).get("section"),
+                contract.get("first_run_findings", {}).get("first_firmware_verdict")
+                == "fail",
+                contract.get("first_run_findings", {}).get("observed_dma_writes")
+                == 24895,
+                target.get("source", {}).get("commit")
+                == "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+                target.get("artifacts", {}).get("bin_sha256")
+                == "acaaf220fa9912a4cbd09de923f002ffe1fc0748d7c295ea997c1d28319b0cb6",
+                target.get("artifacts", {}).get("uf2_sha256")
+                == "d6986103e74e153fd23ea7ce25111bba0a5752331959367b0aa63f6eb1c28677",
+                target.get("backend", {}).get("accepted")
+                == "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
+                target.get("runner", {}).get("audio_sink", {}).get("expected_count")
+                == 49152,
+                target.get("runner", {}).get("audio_sink", {}).get("expected_sha256")
+                == expected_sink_hash,
+                record.get("result") == "pass",
+                record.get("target", {}).get("id") == "picocalc-audio-r1",
+                record.get("firmware_run", {}).get("runs") == 3,
+                record.get("firmware_run", {}).get("all_pass") is True,
+                record.get("firmware_run", {}).get("reports_byte_identical") is True,
+                record.get("firmware_run", {}).get("uart_byte_identical") is True,
+                record.get("firmware_run", {}).get("timelines_byte_identical") is True,
+                record.get("firmware_run", {}).get("snapshots_byte_identical") is True,
+                record.get("reproducible_build", {}).get("builds_compared") == 2,
+                record.get("reproducible_build", {}).get("bin_reproducible") is True,
+                record.get("reproducible_build", {}).get("uf2_reproducible") is True,
+                record.get("audio_sink", {}).get("dma_write_count") == 49152,
+                record.get("audio_sink", {}).get("pcm_sha256") == expected_sink_hash,
+                record.get("negative_conformance", {}).get("result") == "pass",
+                record.get("hardware_correlation", {}).get("status") == "pending",
+                negative.get("result") == "pass",
+                len(negative.get("mutations", [])) == 10,
+                all(item.get("rejected") is True for item in negative.get("mutations", [])),
                 oracle_path.is_file(),
                 doc_path.is_file(),
-                "next2-audio-v2-20260809" in doc,
-                expected_hash in doc,
+                "next2-audio-v3-20260809" in doc,
+                expected_producer_hash in doc,
+                expected_sink_hash in doc,
+                "formal emulator acceptance" in doc,
+                "hardware correlation" in doc,
                 "R5" in doc,
             )
         )
@@ -4497,8 +4563,9 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
             contract_id=contract.get("contract_id"),
             contract_status=contract.get("status"),
             frame_count=frame_count,
-            sample_sha256=oracle_hash,
-            implementation="not_started",
+            producer_sha256=producer_hash,
+            sample_sha256=sink_hash,
+            implementation="formal_emulator_accepted_hardware_pending",
         )
     except (
         OSError,

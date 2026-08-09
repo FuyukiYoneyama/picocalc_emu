@@ -21,11 +21,11 @@
         "meaning": "The current accepted backend for normal regression. It preserves the R5 behavior contract and adds the promoted OPT1-B serial fast path."
       },
       "experimental_main": {
-        "commit": "38683d65800ef36026f674dd47228024d69eb5e7",
+        "commit": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
         "status": "unpromoted",
         "promoted": false,
-        "ci_run_id": 31307835028,
-        "meaning": "Observed main after NEXT-2A added core-local Serial SIO FIFO IRQ projection and core 1 fatal-exception detection. The bounded multicore behavior is accepted by its own active target, but this commit does not replace the general promoted PicoTetris backend merely because it is branch head."
+        "ci_run_id": 31315420348,
+        "meaning": "Observed main after NEXT-2B added the exact DMA-paced digital audio sink, corrected active level IRQ repending, and classified software-retrigger block boundaries. The bounded audio behavior is accepted by picocalc-audio-r1, but this commit does not replace the general promoted PicoTetris backend merely because it is branch head."
       }
     },
     "note": "Source is never vendored here. Historical targets retain exact backend pins in the target registry. The three roles deliberately separate physical-device correlation, current promotion and an unpromoted moving development head."
@@ -33,7 +33,7 @@
   "scope": {
     "authority": "firmware-emulator-rp2040-binary-conformance",
     "hardware_or_bsp_audio_evidence_implies_emulator_audio_output": false,
-    "note": "R5 audio=pass covers firmware configuration/counters plus physical reference-tone evidence. It does not mean that the emulator produces a PCM waveform; audio-output remains unsupported below."
+    "note": "R5 audio=pass by itself covers firmware configuration/counters plus physical reference-tone evidence and does not prove an emulator PCM sink. NEXT-2B now has separate formal digital-sink emulator evidence, while same-UF2 hardware correlation remains pending; audio-output therefore stays conservatively unsupported below."
   },
   "supported": [
     {
@@ -229,7 +229,8 @@
     {
       "id": "audio-output",
       "what": "PWM audio playback through DMA to a sample sink",
-      "detail": "PWM configuration is observable; sample streaming is not modelled. NEXT-2B contract next2-audio-v2-20260809 and its independent oracle are frozen, but backend/app/target/evidence are not implemented. V2 supersedes the pre-implementation v1 draft because firmware UART cannot authoritatively claim backend-only timing PASS. Authority is 49152 stereo frames (1.024 seconds), DMA timer 0 fraction 3/15625, TREQ 59, and the DMA-origin PWM5_CC sample-sink hash; R5 counters and recordings are not substitutes."
+      "status": "emulator_accepted_hardware_pending",
+      "detail": "Canonical contract next2-audio-v3-20260809 passed two clean reproducible BIN/UF2 builds and three byte-identical firmware runs on backend d92db1b. The sink observed 49152 post-quantizer writes with SHA 1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f, 384 blocks/383 boundaries, exact cadence and service-latency streams. Wrong-count/wrong-hash full runs and ten saved-report mutations failed closed. Same-UF2 hardware UART/photo/acoustic correlation remains pending, so this entry stays conservatively unsupported until that evidence is recorded. Producer seed SHA c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a is not the sink oracle."
     },
     {
       "id": "bootrom-execution",

@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-audio-r1-20260809-01",
+  "roadmap_package": "NEXT-2B",
+  "result": "pass",
+  "contract": {
+    "id": "next2-audio-v3-20260809",
+    "path": "firmware-validation/contracts/next2-audio-v3.json",
+    "sha256": "d9624c236dfee27405c692e6ae844e0b722e2a30ffd064a89b54d714cccf71af",
+    "v1_v2_retained_as_history": true
+  },
+  "target": {
+    "id": "picocalc-audio-r1",
+    "revision": 1,
+    "contract_sha256": "f5417677f55a896f800d4c36e1b8aeb7994c2628408327acf9de59234ecd5132"
+  },
+  "application": {
+    "repo": "picocalc-audio",
+    "commit": "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+    "bsp_source_commit": "c55a63bdcbd06918267428b65031b94d4f483339",
+    "bin_sha256": "acaaf220fa9912a4cbd09de923f002ffe1fc0748d7c295ea997c1d28319b0cb6",
+    "bin_bytes": 52216,
+    "uf2_sha256": "d6986103e74e153fd23ea7ce25111bba0a5752331959367b0aa63f6eb1c28677",
+    "uf2_bytes": 104448,
+    "build_timestamp": "2026-08-09T12:00:00Z"
+  },
+  "backend": {
+    "repo": "picoem-picocalc",
+    "commit": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
+    "dirty": false,
+    "report_schema": 8
+  },
+  "reproducible_build": {
+    "clean_clone": true,
+    "builds_compared": 2,
+    "source_commit": "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+    "generator_source_commit": "c55a63bdcbd06918267428b65031b94d4f483339",
+    "timestamp_used": "2026-08-09T12:00:00Z",
+    "generator": "Ninja",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "bin_reproducible": true,
+    "uf2_reproducible": true,
+    "elf_reproducible_across_build_paths": false
+  },
+  "firmware_run": {
+    "target": {
+      "id": "picocalc-audio-r1",
+      "revision": 1
+    },
+    "backend_commit": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3",
+    "runs": 3,
+    "all_pass": true,
+    "reports_byte_identical": true,
+    "uart_byte_identical": true,
+    "timelines_byte_identical": true,
+    "snapshots_byte_identical": true,
+    "stop_reason": "scenario_done",
+    "cycles": 405523032,
+    "elapsed_us": 1627000,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "uart_sha256": "e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d",
+    "framebuffer_rgb565_sha256": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740",
+    "normalized_report_sha256": "c956af5314c85e5d89d95d632c3838b2d4a9669403610b297e2197bf745a689e",
+    "timeline_sha256": "828895d75e1b46bfb25d36bc4d4e1b5b9466ee9fdb900c582b1c4cb8272c3d55"
+  },
+  "audio_sink": {
+    "status": "pass",
+    "dma_write_count": 49152,
+    "pcm_sha256": "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f",
+    "timer_due_cycle_sha256": "28337d71e91fd6e68a4c5d7521557152c8468ef64cbf2e2b34f1da4892890d32",
+    "block_start_count": 384,
+    "block_boundary_gap_count": 383,
+    "block_boundary_gap_sha256": "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06",
+    "gap_5208_count": 32640,
+    "gap_5209_count": 16128,
+    "unexpected_gap_count": 0,
+    "malformed_block_count": 0,
+    "service_latency_min_cycles": 0,
+    "service_latency_max_cycles": 6,
+    "service_latency_sha256": "7c496ba3791e33ef5ae6071a6ec07956f6d1d1bd79f66d728a9acc230590a7a8"
+  },
+  "negative_conformance": {
+    "result": "pass",
+    "full_runner_mutations": [
+      {
+        "id": "wrong-count",
+        "expected_count": 49151,
+        "exit_code": 1,
+        "verdict_reason": "audio_sink_mismatch",
+        "report_sha256": "e34dfb0ce233d3fea62be48c758a21d258b643f639dc0502f3ddc9e4d5e133f3"
+      },
+      {
+        "id": "wrong-sha",
+        "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "exit_code": 1,
+        "verdict_reason": "audio_sink_mismatch",
+        "report_sha256": "a8ce4f3d612fb720dba7741ff0c65a0e7c493a66fca4821915b7abd5ef582d03"
+      }
+    ],
+    "saved_report_mutations": 10,
+    "all_field_gates_rejected": true,
+    "all_normalized_report_gates_rejected": true,
+    "matrix": "negative-mutations.json",
+    "matrix_sha256": "8bb1ec41a7d1883e91d9f1f1916d6f57eec8355fc57f36ad84e1d2a44aae0f2d"
+  },
+  "evidence": {
+    "run_report_sha256": "1b20230679adb2e1dd5aaa0c6574a0915191573685c28df827ccb843b581d216",
+    "uart_sha256": "e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d",
+    "snapshot_png_sha256": "fe7199278ec2821d0a70c9a62774a1ab58fdae305b997ce17ff9d113d86f7bba",
+    "run_directories": [
+      "firmware-validation/records/next2-audio-r1-20260809-01/runs/run-1",
+      "firmware-validation/records/next2-audio-r1-20260809-01/runs/run-2",
+      "firmware-validation/records/next2-audio-r1-20260809-01/runs/run-3"
+    ]
+  },
+  "hardware_correlation": {
+    "status": "pending",
+    "same_registered_uf2_required": true,
+    "human_key_input_required": false,
+    "required_evidence": [
+      "complete periodically repeated UART marker block",
+      "one final firmware PASS photograph",
+      "acoustic capture containing the playback"
+    ]
+  }
+}

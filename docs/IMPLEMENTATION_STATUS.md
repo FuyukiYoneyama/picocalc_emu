@@ -94,9 +94,9 @@ audio経路、line-clear、game-over、restart、公式FW由来67キーを全自
 67/67が証明するのは全物理キーのpress/release到達性であり、Caps状態遷移、終了時Caps off、
 操作UXはこのR5合格範囲に含めない。
 
-この`audio=pass`は、firmwareのPWM/DMA設定・stream counterとPicoCalc実機の参照音を相関した結果で
-ある。firmware emulator自身はPCM sample streamを生成・再生しておらず、`audio-output`は現在も
-capability上unsupportedである。BSP/実機audio evidenceとemulator audio capabilityを混同しない。
+このR5の`audio=pass`は、firmwareのPWM/DMA設定・stream counterとPicoCalc実機の参照音を相関した
+時点証拠であり、それ単独ではemulator sample sinkを意味しない。後続NEXT-2Bはdigital sinkのformal
+emulator acceptanceまで完了したが、同一UF2実機相関待ちのため`audio-output`は保守的にunsupportedである。
 操作・結果の正典は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)、preflight証拠は
 [`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
 、実機証拠は
@@ -493,11 +493,14 @@ scenario、SD、LCD variantを含む全device設定、停止理由、必須UART 
 - 3回連続実行でreport・UART・PNGがバイト一致
 
 これによりA（公式サンプル）とB（標準template）の両系統がPC上で観測可能になった。
-ここでの音声判定はPWM/DMA設定とcounter/underrunの観測であり、エミュレーターがPCM waveformを
-sample sinkへ出力した証拠ではない。実機相関で聞いた参照音とも役割を区別し、PCM出力は引き続き
-capabilityの`audio-output=unsupported`とする。
-NEXT-2Bは事前契約 `next2-audio-v2-20260809` と独立oracleを凍結済みだが、backend/app/target/evidenceは未実装である。
-authorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counters/録音は代用不可とする。
+この旧template音声判定はPWM/DMA設定とcounter/underrunの観測であり、それ自体はPCM sinkの証拠では
+ない。後続NEXT-2Bのdigital sink証拠と役割を区別し、同一UF2実機相関まではcapabilityの
+`audio-output=unsupported`を維持する。
+NEXT-2Bはv3 canonical契約 `next2-audio-v3-20260809` でformal emulator acceptanceを完了した。v1/v2は履歴として保持する。
+初回firmware marker/LCD pass後にbackendが24895/49152・hash mismatchを検出してfail-closedした。原因はactive level IRQ二重pending、
+v2 oracleのquantizer欠落、128-frame software-retrigger境界gap未分離。backend d92db1bの探索結果は49152 writes、post-quantizer SHA
+`1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f`、384 blocks/383 boundaries、intra gap 5208=32640・5209=16128・unexpected=0、
+boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`。2 clean builds、3 deterministic runs、誤count/hashのfull run、10 report mutationはすべて合格し、記録は`next2-audio-r1-20260809-01`へ固定した。残件は同一UF2のhardware correlationであり、それまではaudio-outputを保守的にunsupported扱いする。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

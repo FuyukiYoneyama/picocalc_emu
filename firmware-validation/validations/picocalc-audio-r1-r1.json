@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picocalc-audio-r1-r1",
+  "roadmap_package": "R4",
+  "target_id": "picocalc-audio-r1",
+  "target_revision": 1,
+  "target_contract_sha256": "f5417677f55a896f800d4c36e1b8aeb7994c2628408327acf9de59234ecd5132",
+  "evidence": {
+    "record": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
+    "sha256": "1b428d6795727472a86e78c2716fe61388dcce89966902db636307f500da6840",
+    "record_id": "next2-audio-r1-20260809-01",
+    "section": "firmware_run"
+  },
+  "result": "accepted"
+}

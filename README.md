@@ -143,9 +143,10 @@ firmwareはFAT32/FAT16を各3回実行して決定一致、hostは両形式のCT
 **ただし、人間の実機検証がゼロになったわけではありません。** Serial multicoreの限定契約は
 エミュレーターで正式合格し、2026-08-09にはv2同一UF2の完全USBログと最終5-PASS写真による
 実機相関も完了しました。v1でログを取り逃した履歴も、契約を緩めず未完了証拠として保持しています。
-次は独立したNEXT-2B audioであり、音声の実再生はまだ未対応です。
-NEXT-2Bは事前契約 `next2-audio-v2-20260809` と独立oracleを凍結済みですが、backend/app/target/evidenceは未実装です。
-契約のauthorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counterや実機録音の代用は認めません。
+NEXT-2B audioはv3 canonical契約 `next2-audio-v3-20260809` でformal emulator acceptanceを完了しました。
+2 clean buildsと3 firmware runsが決定一致し、49152 DMA writes、post-quantizer sink SHA、384 block、
+383 boundary、timer/service timingを合格しました。誤count/hashのfull runと10 report mutationもfail-closedです。
+同一UF2のhardware correlationだけが未完了で、完了まではaudio-outputを保守的にunsupported扱いします。
 そして何より、**実機の色・向き・可読性・聴感はエミュレーターでは
 判定できません。** エミュレーターは「firmwareが何を書いたか」は再現しますが、
 「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
@@ -334,7 +335,7 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 独立派生リポジトリです。`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
 正確なcommitを固定して利用します。backend identityは、R5実機相関済み`612b485...f66`、
 現在promotedされたOPT1-B `e985a9d...5f1`、NEXT-2A限定targetで受入済みだが一般promotedを
-置き換えていないexperimental main `38683d6...e7`の3役に分離します。CIは前二者を別jobで
+置き換えていないexperimental main `d92db1b...1a3`の3役に分離します。CIは前二者を別jobで
 実走し、最新mainを自動採用しません。
 `ExecutionModel::Serial`を正しさの基準とします。multicoreはactive target
 `picocalc-multicore-r2`がlaunch/FIFO/WFE-SEV/IRQ_PROC1を限定的に証明しました。v1実機の最終画面は
@@ -514,7 +515,7 @@ python3 tools/picocalc.py verify \
 | LCD B（推奨デフォルト） | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0 blocking、LCD DMAなし、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信、RAMRD時はSIOへ切替 |
 | Keyboard | [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（STM32F103R8T6 firmware。ローカル: `/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`） | **protocol producerの一次リファレンス**。I2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、key state・modifier・repeat・overflow・backlight・battery・power。`picocalc-life`はRP2040 consumerの実機証拠 |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
-| Audio evidence | `Picocalc_ment` | **BSP/実機証拠**。GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer。firmware emulatorのPCM sample sink対応を意味しない |
+| Audio evidence | `Picocalc_ment` | **BSP/実機証拠**。GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer。この証拠単独ではfirmware emulatorのPCM sink対応を意味せず、NEXT-2Bが別契約で判定する |
 | PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は2/0→3/0→1.5/1、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
@@ -569,12 +570,15 @@ LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しま
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
 
-ここでいうaudio合格はBSPとPicoCalc実機の再生経路に対する証拠である。firmware emulatorは
-PWM設定と関連counterを観測できるが、DMA-paced PCM waveformをsample sinkへ出力しない。
-machine-readableな現行境界は`firmware-validation/capability.json`の`audio-output` unsupportedを
-正典とする。
-NEXT-2Bの事前契約 `next2-audio-v2-20260809` と独立oracleは凍結済みだが、backend/app/target/evidenceは未実装である。
-authorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counters/録音は代用不可とする。
+従来のaudio合格はBSPとPicoCalc実機の再生経路に対する証拠だった。現在のfirmware emulatorは
+DMA-paced PCMをdigital sample sinkで観測し、量子化後のsample列とtimer/block境界を厳密判定する。
+ただし同一UF2の実機相関は未完了なので、machine-readableな現行境界は
+`firmware-validation/capability.json`の`audio-output` unsupported（hardware pending）を正典とする。
+NEXT-2Bのcanonicalは `next2-audio-v3-20260809` である。producer seed SHA `c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a` と
+post-quantizer sink SHA `1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f` を混同しない。
+backend d92db1bで49152 writes、384 blocks/383 boundaries、intra gap 5208=32640・5209=16128・unexpected=0、
+boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`を3回決定一致で合格した。
+formal emulator acceptanceとnegative conformanceは完了し、hardware correlationだけが未完了である。
 
 ## RAMRDの解釈
 

@@ -1,0 +1,113 @@
+{
+  "schema_version": 8,
+  "backend_commit": "94818f8a4c95a0d8e458843f163556be83411a6a",
+  "backend_build": {"commit": "94818f8a4c95a0d8e458843f163556be83411a6a", "dirty": false},
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "95ed84bf89381e6644f6650b0ad2fecf5d6604d75b3903367a63631ce02009ca"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 277523041,
+  "elapsed_us": 1115000,
+  "pc": "0x1000529c",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "fail", "reasons": ["audio_sink_mismatch"], "expected_stop_reason": "scenario_done", "required_uart_markers": ["[NEXT2][AUDIO][INIT] status=pass sample_frames=49152 timer0=3/15625", "[NEXT2][AUDIO][DMA_CFG] status=pass treq=59 slice=5 dest=PWM5_CC width=32 fixed_dest=1 gpio=26/27", "[NEXT2][AUDIO][STREAM] status=pass producer_vector=c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a accepted=49152 drain=complete underrun=0 drop=0 clip=0", "[NEXT2][AUDIO][STATS] status=pass carrier=976562 ring_capacity=512", "[NEXT2][AUDIO][FIRMWARE_VERDICT] producer=pass driver=pass overall=pass"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 600, "raset": 600, "ramwr": 600, "ramrd": 0,
+    "pixels_written": 270865, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740", "non_black_pixels": 61700, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 79933820, "cs_falling_count": 7,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 0, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x001500f2"}
+    ]
+  },
+  "audio_sink": {
+    "status": "fail",
+    "dma_write_count": 24895,
+    "target_write_attempt_count": 24895,
+    "other_pwm_cc_write_count": 0,
+    "wrong_width_count": 0,
+    "wrong_treq_count": 0,
+    "missing_due_cycle_count": 0,
+    "pcm_sha256": "845ae384fa617b774c95aec35f2696e61c65328235b6afcc48e2222397bdc954",
+    "expected_count": 49152,
+    "expected_sha256": "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+    "first_words": ["0x00f90003", "0x00db0014", "0x00be0025", "0x00a10036", "0x00840047", "0x00660058", "0x004a0069", "0x002d007a"],
+    "last_words": ["0x00e0007b", "0x00c3008d", "0x00a6009d", "0x008900ae", "0x006b00bf", "0x004f00d0", "0x003200e1", "0x001500f2"],
+    "timer_index": 0,
+    "treq": 59,
+    "timer_fraction": "3/15625",
+    "timer_event_count": 30182,
+    "timer_miss_count": 5287,
+    "timer_due_cycle_sha256": "9f86c0b8f42eacf77205fd7a28ccd7c905ffb9a8874bec416ea175acfce5c30e",
+    "gap_5208_count": 16468,
+    "gap_5209_count": 8235,
+    "unexpected_gap_count": 191,
+    "service_latency_min_cycles": 0,
+    "service_latency_max_cycles": 8,
+    "service_latency_sha256": "12ae6fe4c6a68a03cdab75cedb2bd80fbbdeeceb9e42c247b468e4fc1fc35250"
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "next2-audio-v2.json",
+    "name": "next2-audio-v2",
+    "description": "NEXT-2B serial DMA-paced audio conformance observation. No keyboard input; wait for the final firmware verdict marker, then snapshot once.",
+    "status": "pass",
+    "poll_ms": 1,
+    "steps_total": 2,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "audio verdict emitted", "status": "pass", "at_ms": 1115, "at_cycles": 277523041, "detail": "1782 UART bytes seen"},
+      {"index": 1, "op": "snapshot", "label": "NEXT-2B final PASS screen", "status": "pass", "at_ms": 1115, "at_cycles": 277523041, "detail": "61700 non-black pixels", "rgb565_sha256": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740", "png_basename": "next2-audio-final.png"}
+    ]
+  },
+  "uart": {"bytes": 1782, "sha256": "8abb072f135223644a4f1e10118c390c5c37edc214ec0597b1c52af62e2a7d9e"}
+}

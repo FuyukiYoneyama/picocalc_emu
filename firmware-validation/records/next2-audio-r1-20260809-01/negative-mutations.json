@@ -1,0 +1,121 @@
+{
+  "contract": "next2-audio-v3-20260809",
+  "expected_normalized_report_sha256": "c956af5314c85e5d89d95d632c3838b2d4a9669403610b297e2197bf745a689e",
+  "mutations": [
+    {
+      "field_failures": [
+        "audio_sink.pcm_sha256 expected '1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f' but got '0000000000000000000000000000000000000000000000000000000000000000'"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "1a2f43c2e83c44eeb092b6f3fafa13c0f369ad93f35463e9d62e0807f9225566",
+      "mutation": "saved_sample_stream_word",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.pcm_sha256",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.other_pwm_cc_write_count expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "b6aee2c6096b60b25cf546fcfde2e7333dd890cd9068b86d3cba27c0be44a638",
+      "mutation": "wrong_dma_destination",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.other_pwm_cc_write_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.wrong_width_count expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "e657ff226a6f5fba222acc6300bd3ced2e59036c70adabd614bfe450e5ad2d7c",
+      "mutation": "wrong_transfer_width",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.wrong_width_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.wrong_treq_count expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "2aedcaf76dfd6256ff8c5cbac6624c0aa2799696eb3e141766d401c2df5de354",
+      "mutation": "wrong_treq",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.wrong_treq_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.unexpected_gap_count expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "a91a1062a8d9ade2d97822dbf570a8c4b8af07c698cb7003335280da31ec30c6",
+      "mutation": "intra_block_cadence",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.unexpected_gap_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.malformed_block_count expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "e5c82b326e3bcf5ee3f2b406224608e2608375e6463815d2b436df4478aecc6c",
+      "mutation": "block_length_or_count",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.malformed_block_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.block_boundary_gap_sha256 expected 'bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06' but got '0000000000000000000000000000000000000000000000000000000000000000'"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "9bc1c0275fb4660b36767e0d1db7261abaeeb3ae8b26fcaf20bf9655e64e19c8",
+      "mutation": "block_boundary_gap_stream",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.block_boundary_gap_sha256",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "audio_sink.dma_write_count expected 49152 but got 49151"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "74028fd5f9349cff48ab2f712fa5ea109568540a2d8e129a63bd76076eafed31",
+      "mutation": "sample_count",
+      "normalized_gate_rejected": true,
+      "path": "audio_sink.dma_write_count",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "exception expected None but got 'HardFault'"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "45fc756630f4b3b0f4665211a190ad5ff731f2f12e0e55599c006e8994b024fe",
+      "mutation": "firmware_exception",
+      "normalized_gate_rejected": true,
+      "path": "exception",
+      "rejected": true
+    },
+    {
+      "field_failures": [
+        "unsupported_mmio length expected 0 but got 1"
+      ],
+      "field_gate_rejected": true,
+      "mutated_normalized_report_sha256": "27197f789323c32428b773a5418de4590f85405065a9e750f4a9a4255cdfb3d0",
+      "mutation": "unsupported_mmio",
+      "normalized_gate_rejected": true,
+      "path": "unsupported_mmio",
+      "rejected": true
+    }
+  ],
+  "result": "pass",
+  "schema_version": 1,
+  "source_normalized_report_sha256": "c956af5314c85e5d89d95d632c3838b2d4a9669403610b297e2197bf745a689e",
+  "source_report": "firmware-validation/records/next2-audio-r1-20260809-01/runs/run-1/report.json",
+  "target": "picocalc-audio-r1"
+}

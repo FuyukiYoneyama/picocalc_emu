@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next2-audio-v3",
+  "description": "NEXT-2B v3 serial DMA-paced audio observation. No keyboard input; stop after the firmware authority marker, while the backend independently judges the post-quantizer DMA sink and block timing.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "firmware authority verdict emitted",
+      "timeout_ms": 12000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NEXT2][AUDIO][FIRMWARE_VERDICT] producer=pass driver=pass overall=pass"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "NEXT-2B v3 final PASS screen",
+      "png": "next2-audio-v3-final.png"
+    }
+  ]
+}

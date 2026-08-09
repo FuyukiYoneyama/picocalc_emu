@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-audio-first-run-20260809-01",
+  "roadmap_package": "NEXT-2B",
+  "result": "fail",
+  "classification": "versioned_contract_first_backend_firmware_execution",
+  "contract": {
+    "path": "firmware-validation/contracts/next2-audio-v2.json",
+    "id": "next2-audio-v2-20260809",
+    "retained_as_historical": true,
+    "superseded_by": "next2-audio-v3-20260809"
+  },
+  "artifact": {
+    "application_commit": "dd95162ec161b05efa02a7f0ede78fca82d185aa",
+    "bin_sha256": "95ed84bf89381e6644f6650b0ad2fecf5d6604d75b3903367a63631ce02009ca"
+  },
+  "observed": {
+    "backend_commit": "94818f8a4c95a0d8e458843f163556be83411a6a",
+    "report_schema": 8,
+    "verdict": "fail",
+    "verdict_reasons": [
+      "audio_sink_mismatch"
+    ],
+    "firmware_authority_markers": "pass",
+    "final_lcd": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 277523041,
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "audio_sink_dma_write_count": 24895,
+    "audio_sink_expected_count": 49152,
+    "audio_sink_pcm_sha256": "845ae384fa617b774c95aec35f2696e61c65328235b6afcc48e2222397bdc954"
+  },
+  "evidence": {
+    "run_report": {
+      "path": "firmware-validation/records/next2-audio-first-run-20260809-01/run-report.json",
+      "sha256": "1a245f3e57470dfa1414cc1bad3b360b4bd87be4b5f1dea93124e67b26ec7ca5"
+    },
+    "uart": {
+      "path": "firmware-validation/records/next2-audio-first-run-20260809-01/uart.log",
+      "sha256": "8abb072f135223644a4f1e10118c390c5c37edc214ec0597b1c52af62e2a7d9e"
+    },
+    "final_framebuffer": {
+      "path": "firmware-validation/records/next2-audio-first-run-20260809-01/snapshots/next2-audio-final.png",
+      "sha256": "fe7199278ec2821d0a70c9a62774a1ab58fdae305b997ce17ff9d113d86f7bba"
+    }
+  },
+  "fail_closed_result": {
+    "firmware_self_report_would_have_passed": true,
+    "backend_sink_authority_rejected_run": true,
+    "failed_evidence_retained": true,
+    "expected_output_changed_in_place": false
+  }
+}

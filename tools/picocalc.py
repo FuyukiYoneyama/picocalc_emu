@@ -580,6 +580,29 @@ def load_firmware_registry(path: Optional[Path] = None) -> dict:
         for flag in ("psram", "keyboard"):
             if not isinstance(runner.get(flag), bool):
                 raise ValueError("{}.runner.{} must be boolean".format(where, flag))
+        audio_sink = runner.get("audio_sink")
+        if audio_sink is not None:
+            if not isinstance(audio_sink, dict):
+                raise ValueError("{}.runner.audio_sink must be an object".format(where))
+            if set(audio_sink) != {"expected_count", "expected_sha256"}:
+                raise ValueError(
+                    "{}.runner.audio_sink must contain expected_count and expected_sha256".format(
+                        where
+                    )
+                )
+            if (
+                type(audio_sink.get("expected_count")) is not int
+                or audio_sink["expected_count"] <= 0
+            ):
+                raise ValueError(
+                    "{}.runner.audio_sink.expected_count must be a positive integer".format(
+                        where
+                    )
+                )
+            if not is_sha256(audio_sink.get("expected_sha256")):
+                raise ValueError(
+                    "{}.runner.audio_sink.expected_sha256 must be a SHA-256".format(where)
+                )
         stop_pc = runner.get("stop_pc")
         if stop_pc is not None and not isinstance(stop_pc, str):
             raise ValueError("{}.runner.stop_pc must be a string or null".format(where))
@@ -1006,6 +1029,16 @@ def firmware_test(
             command.extend(["--keys", runner_contract["keys"]])
         if target_sd.get("attached", False):
             command.extend(["--sd", "--sd-format", target_sd["format"]])
+        audio_sink = runner_contract.get("audio_sink")
+        if audio_sink is not None:
+            command.extend(
+                [
+                    "--expect-audio-sink-count",
+                    str(audio_sink["expected_count"]),
+                    "--expect-audio-sink-sha256",
+                    audio_sink["expected_sha256"],
+                ]
+            )
         if scenario_path is not None:
             snapshots = (
                 snapshot_dir.resolve()

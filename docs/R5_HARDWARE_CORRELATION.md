@@ -3,8 +3,8 @@
 **状態:** 実装・再現build・emulator preflight・PicoCalc実機相関完了。OPT1-Aはpromoted。
 
 **audio境界:** 本書の`audio=pass`はfirmwareの設定・stream counterと実機で聞こえた参照音を
-相関した結果である。エミュレーターがDMA-paced PCM waveformをsample sinkへ生成したという意味では
-ない。後者は`firmware-validation/capability.json`で`audio-output` unsupportedのままである。
+相関した時点証拠であり、それ単独ではDMA-paced PCM sample sinkを意味しない。後続NEXT-2Bでdigital
+sinkのformal emulator acceptanceを追加したが、同一UF2実機相関までは`audio-output`をunsupported扱いする。
 
 ## 目的と判定境界
 

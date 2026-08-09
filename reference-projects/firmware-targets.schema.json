@@ -72,6 +72,15 @@
             "psram_verify_range": {"type": "string"},
             "keyboard": {"type": "boolean"},
             "keys": {"type": ["string", "null"]},
+            "audio_sink": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["expected_count", "expected_sha256"],
+              "properties": {
+                "expected_count": {"type": "integer", "minimum": 1},
+                "expected_sha256": {"$ref": "#/$defs/sha256"}
+              }
+            },
             "sd": {
               "type": "object",
               "additionalProperties": false,
