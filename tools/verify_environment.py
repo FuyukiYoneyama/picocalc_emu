@@ -1790,7 +1790,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
 
 
 def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
-    """Verify the frozen NEXT-3 definitions, zero-denominator KPI, and first audit."""
+    """Verify NEXT-3 definitions, audits, and the pre-hardware fault artifact."""
     name = "next3:negative-conformance-contract"
     base = root / "firmware-validation"
     paths = {
@@ -1799,7 +1799,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "contract": base / "contracts/next3-negative-conformance-v1.json",
         "initial_kpi": base / "records/next3-0-20260810-01/kpi.json",
         "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
-        "current_kpi": base / "records/next3-1-20260810-01/kpi.json",
+        "post_audit_kpi": base / "records/next3-1-20260810-01/kpi.json",
+        "fault": base / "records/next3-lcd-cs-fault-v1-20260810-01/record.json",
+        "current_kpi": base / "records/next3-fault-build-20260810-01/kpi.json",
+        "fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v1.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
     }
     expected_hashes = {
@@ -1808,8 +1811,11 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
         "initial_kpi": "afdf414550b7715531e5db3cdd2f355687853969e96eb0090374e86e6018ebdc",
         "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
-        "current_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
-        "document": "c9abd1578ec868b7c68d8ec227d8fefe3c27aefcd1e2ce0b28f9eed45451eddc",
+        "post_audit_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
+        "fault": "056642382c11d553b137054b4e2385557fa67b179bfd47965012ae9217c3c4ab",
+        "current_kpi": "4f98fff5d79c6cc355a52c8a360a01021209dbca3f5be0d138c06a84ba844bb5",
+        "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
+        "document": "30f2eb8b6713b9993879f16aa769296b413b6923563ddca8e65c3a030bc766f4",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1879,11 +1885,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         contract = load_json(paths["contract"])
         initial = load_json(paths["initial_kpi"])
         audit = load_json(paths["audit"])
+        post_audit = load_json(paths["post_audit_kpi"])
+        fault = load_json(paths["fault"])
         current = load_json(paths["current_kpi"])
         candidate = contract["first_candidate"]
         admission = contract["admission"]
         kpi_policy = contract["kpi_policy"]
         artifact = audit["artifact_audit"]
+        fault_artifact = fault["artifact_audit"]
         aligned = all(
             (
                 all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
@@ -1915,7 +1924,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 candidate.get("historical_uf2_sha256_claim")
                 == "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
                 snapshot_valid(initial, candidates=0, audit_failures=0, records=0),
-                snapshot_valid(current, candidates=1, audit_failures=1, records=1),
+                snapshot_valid(post_audit, candidates=1, audit_failures=1, records=1),
+                snapshot_valid(current, candidates=2, audit_failures=1, records=2),
                 audit.get("schema_version") == 1,
                 audit.get("record_id") == "next3-lcd-031-audit-20260810-01",
                 audit.get("status") == "artifact_audit_failed",
@@ -1939,6 +1949,34 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "correct_detection_delta": 0,
                     "false_accept_delta": 0,
                 },
+                fault.get("schema_version") == 1,
+                fault.get("record_id") == "next3-lcd-cs-fault-v1-20260810-01",
+                fault.get("status") == "artifact_reproduced",
+                fault.get("classification") == "pending",
+                fault.get("candidate", {}).get("source_kind")
+                == "explicit_fault_injection",
+                fault_artifact.get("reproducibility") == "reproduced",
+                fault_artifact.get("source_commit")
+                == "d7f0668db17e74dfa94d10458487e627a880c4bc",
+                fault_artifact.get("sdk_version") == "2.2.0",
+                fault_artifact.get("sdk_commit")
+                == "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+                fault_artifact.get("bin_sha256")
+                == "7ffc6335b3d65276f173954244c8eb481201c9805c6904f192b7b62ea87a5f0f",
+                fault_artifact.get("uf2_sha256")
+                == "74aa594d86666103f947b1905dafb25fd57cd6c49bf3397a9fb340d577c1d6c0",
+                fault_artifact.get("same_build_bin_and_uf2") is True,
+                fault_artifact.get("blocking_gaps") == [],
+                fault.get("defect_oracle", {}).get("frozen_before_emulator_run") is True,
+                fault.get("emulator_observation", {}).get("status") == "pending",
+                fault.get("hardware_observation", {}).get("status") == "pending",
+                fault.get("reason_match", {}).get("status") == "pending",
+                fault.get("kpi_effect")
+                == {
+                    "negative_denominator_delta": 0,
+                    "correct_detection_delta": 0,
+                    "false_accept_delta": 0,
+                },
             )
         )
         add_check(
@@ -1951,6 +1989,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             rate_state=current.get("rates", {}).get("state"),
             candidates_audited=current.get("negative_conformance", {}).get("candidates_audited"),
             first_candidate_classification=audit.get("classification"),
+            explicit_fault_status=fault.get("status"),
+            explicit_fault_classification=fault.get("classification"),
         )
     except (
         OSError,

@@ -1,8 +1,9 @@
 # NEXT-3 negative conformance
 
-**状態:** NEXT3-0の契約・KPI schemaは完了。NEXT3-1の旧LCD 0.3.1 artifact監査も完了したが、
-候補は再現性と同一artifact実機証拠を満たさずnegative母数へ採用しない。次は、現在の正常版へ
-LCD CS保持欠陥だけを注入する明示的fault版を、実装前oracleに従って作成する。
+**状態:** NEXT3-0の契約・KPI schema、NEXT3-1の旧LCD 0.3.1 artifact監査、および
+NEXT3-2の明示的fault版の再現可能buildまで完了した。旧候補は再現性と同一artifact実機証拠を
+満たさずnegative母数へ採用しない。fault版も、同一UF2の実機FAILを確認するまではnegative母数へ
+入れず、契約どおりエミュレーター初回実行を保留する。
 
 ## 目的
 
@@ -17,6 +18,9 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - KPI schema: `firmware-validation/negative-conformance-kpi.schema.json`
 - NEXT3-0開始時点: `firmware-validation/records/next3-0-20260810-01/kpi.json`
 - 0.3.1監査後: `firmware-validation/records/next3-1-20260810-01/kpi.json`
+- 明示的fault build: `firmware-validation/records/next3-lcd-cs-fault-v1-20260810-01/record.json`
+- fault build後KPI: `firmware-validation/records/next3-fault-build-20260810-01/kpi.json`
+- fault source bundle: `provenance/picocalc-next3-lcd-fault-v1.bundle`
 
 ## 分類
 
@@ -73,11 +77,16 @@ NEXT-2 audio、NEXT-2 multicoreの4件は直接実機相関、OPT1-Bは不変R5 
 `firmware-validation/records/next3-lcd-031-audit-20260810-01/record.json`にある。古いFAILログを
 無理に同一artifact証拠として扱わない。
 
-## 次のfault版
+## NEXT3-2: 明示的fault版
 
 現行の実機PASS済みLCD版をbaselineとし、loader-style transactionのうち
 「CASET/RASET/RAMWRから画素payloadまでCS Lowを保持する」条件だけを壊す。fault版は通常buildへ
-混入しない明示的なversioned sourceとして分離する。実装前oracleは次である。
+混入しない独立Git repository `picocalc-next3-lcd-fault`へ分離した。baseline commit
+`5e5e7e998cabea9861676700ec16d412ddfec8eb`に対し、fault source commitは
+`d7f0668db17e74dfa94d10458487e627a880c4bc`である。変更はfirmware identity、USB CDCへ1秒ごとに
+再掲する証拠marker、および`lcd_hwspi_rgb888`の`begin_window` CS framingに限定する。
+
+実装前oracleは次である。
 
 - 5色solid-fill readbackはすべてPASSする。
 - red/green/blue/whiteの4 pixel patternはred/red/red/redとして読まれる。
@@ -86,6 +95,49 @@ NEXT-2 audio、NEXT-2 multicoreの4件は直接実機相関、OPT1-Bは不変R5 
 
 この厳密な症状を実機で再現できなければ、fault版はnegative母数へ採用しない。別のFAILへ期待値を
 合わせることもしない。
+
+### 固定build
+
+build入力を次へ固定した。
+
+- generator/source: `picocalc_emu` commit `6bd826e7dcaf7b62f9633dc02552c032e65d9cee`
+- Pico SDK: 2.2.0 commit `a1438dff1d38bd9c65dbd693f0e5db4b9ae91779`
+- toolchain: arm-none-eabi-gcc 13.2.1、CMake 3.28.3、Ninja 1.11.1
+- CMake generator: Ninja
+- build timestamp: `2026-08-10T00:00:00Z`
+- LCD variant: `hwspi-rgb888`
+
+repository本体と別のclean cloneで同じコマンドを実行し、BINとUF2が一致した。
+
+```sh
+python3 ../picocalc_emu/tools/picocalc.py build \
+  --project . \
+  --sdk ../pico-sdk \
+  --picotool-dir /usr/local/lib/cmake/picotool \
+  --lcd-variant hwspi-rgb888 \
+  --jobs 2 \
+  --build-timestamp 2026-08-10T00:00:00Z \
+  --generator Ninja
+```
+
+固定artifactは次である。
+
+- BIN SHA-256: `7ffc6335b3d65276f173954244c8eb481201c9805c6904f192b7b62ea87a5f0f`
+- UF2 SHA-256: `74aa594d86666103f947b1905dafb25fd57cd6c49bf3397a9fb340d577c1d6c0`
+- source bundle SHA-256: `8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6`
+
+### 実機確認の境界
+
+次に行うのは同一UF2の実機確認だけである。キー操作は不要で、USB CDCは起動後に接続してもよい。
+最終証拠markerを1秒ごとに再掲するため、接続が遅れてboot logを失っても同じ起動を再実行する必要はない。
+次のmarkerを含むUART logと最終画面写真を保存する。
+
+```text
+[NEXT3][LCD_CS_FAULT][EVIDENCE] ... solid=pass pattern=fail mismatches=3 app=fail sd=pass
+```
+
+別の結果が出た場合は結果を保存し、oracleを結果へ合わせて変更しない。実機でoracleどおりFAILした後に
+限って、同一buildのBINを凍結backendで初回実行する。
 
 ## CI運用
 

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-lcd-cs-fault-v1-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "status": "artifact_reproduced",
+  "candidate": {
+    "candidate_id": "lcd-hwspi-rgb888-cs-hold-fault-v1",
+    "defect_class": "LCD CASET/RASET/RAMWR chip-select hold violation",
+    "source_kind": "explicit_fault_injection"
+  },
+  "artifact_audit": {
+    "reproducibility": "reproduced",
+    "source_commit": "d7f0668db17e74dfa94d10458487e627a880c4bc",
+    "sdk_version": "2.2.0",
+    "sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "toolchain": {
+      "arm_none_eabi_gcc": "13.2.1",
+      "cmake": "3.28.3",
+      "ninja": "1.11.1",
+      "generator": "Ninja",
+      "build_timestamp": "2026-08-10T00:00:00Z",
+      "lcd_variant": "hwspi-rgb888"
+    },
+    "bin_sha256": "7ffc6335b3d65276f173954244c8eb481201c9805c6904f192b7b62ea87a5f0f",
+    "uf2_sha256": "74aa594d86666103f947b1905dafb25fd57cd6c49bf3397a9fb340d577c1d6c0",
+    "same_build_bin_and_uf2": true,
+    "evidence": [
+      "generated passing baseline commit 5e5e7e998cabea9861676700ec16d412ddfec8eb from picocalc_emu 6bd826e7dcaf7b62f9633dc02552c032e65d9cee",
+      "fault source commit d7f0668db17e74dfa94d10458487e627a880c4bc changes only the application identity, repeated late-attach evidence marker, and lcd_hwspi_rgb888 begin_window CS framing",
+      "passing vendor source SHA-256 db629942728d672569015fdaa984bb92cd77197beee6d48c80219242482501b6",
+      "fault vendor source SHA-256 772a81f2ba098eca00ede3caf759044f348dacd2776fc20a39e052917c67f5a7",
+      "source bundle provenance/picocalc-next3-lcd-fault-v1.bundle SHA-256 8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
+      "two builds from the working repository and a separate clean clone produced identical BIN and UF2 SHA-256 values"
+    ],
+    "blocking_gaps": []
+  },
+  "defect_oracle": {
+    "frozen_before_emulator_run": true,
+    "expected_failure": "all five solid-fill readbacks pass, the red/green/blue/white pattern reads back as red/red/red/red with three mismatches, and app_status is fail",
+    "excluded_failure_causes": [
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "missing UART capture",
+      "wrong source or artifact identity"
+    ]
+  },
+  "emulator_observation": {
+    "status": "pending",
+    "result": "pending",
+    "reason": "the first emulator run is intentionally deferred until the same UF2 is hardware-confirmed negative",
+    "evidence": []
+  },
+  "hardware_observation": {
+    "status": "pending",
+    "result": "pending",
+    "reason": null,
+    "evidence": []
+  },
+  "reason_match": {
+    "status": "pending",
+    "expected_reason": "LCD window command and pixel payload are not held in one CS-low transaction",
+    "emulator_reason": null,
+    "hardware_reason": null
+  },
+  "classification": "pending",
+  "kpi_effect": {
+    "negative_denominator_delta": 0,
+    "correct_detection_delta": 0,
+    "false_accept_delta": 0
+  }
+}

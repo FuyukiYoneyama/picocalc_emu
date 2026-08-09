@@ -649,11 +649,13 @@ raise SystemExit(code)
         self.assertEqual(next3.get("positive_correlations"), 5)
         self.assertEqual(next3.get("negative_denominator"), 0)
         self.assertEqual(next3.get("rate_state"), "no_negative_denominator")
-        self.assertEqual(next3.get("candidates_audited"), 1)
+        self.assertEqual(next3.get("candidates_audited"), 2)
         self.assertEqual(
             next3.get("first_candidate_classification"),
             "artifact_not_reproducible",
         )
+        self.assertEqual(next3.get("explicit_fault_status"), "artifact_reproduced")
+        self.assertEqual(next3.get("explicit_fault_classification"), "pending")
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:

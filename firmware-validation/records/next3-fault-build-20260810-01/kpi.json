@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "next3-fault-build-kpi-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "as_of": "2026-08-10",
+  "positive_correlations": {
+    "completed_count": 5,
+    "emulator_pass_hardware_fail_count": 0,
+    "records": [
+      {
+        "record_id": "r5-hardware-20260808-01",
+        "path": "firmware-validation/records/r5-hardware-20260808-01/record.json",
+        "sha256": "bb16a7aa2c6cc7cb96cc6bb55ff96560ec092759fb2608766412d457c0ce0c39",
+        "kind": "direct_hardware"
+      },
+      {
+        "record_id": "next1-picoedit-hardware-20260809-01",
+        "path": "firmware-validation/records/next1-picoedit-hardware-20260809-01/record.json",
+        "sha256": "c38ab6b0d7ed70260e1403735c3407ac7ea5354717c242210474a75c4268d0e2",
+        "kind": "direct_hardware"
+      },
+      {
+        "record_id": "next2-audio-r1-hardware-20260809-01",
+        "path": "firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json",
+        "sha256": "777cb4474b064cf166db275b42b733a08ad3a1f83db026313e2cffaa75c4e41d",
+        "kind": "direct_hardware"
+      },
+      {
+        "record_id": "next2-multicore-r2-hardware-20260809-01",
+        "path": "firmware-validation/records/next2-multicore-r2-hardware-20260809-01/record.json",
+        "sha256": "cc1b5b4181ce2207f2ecdc04107133786729fecfbd87f7f91b080f89f5e1ad16",
+        "kind": "direct_hardware"
+      },
+      {
+        "record_id": "opt1-b-20260808-01",
+        "path": "firmware-validation/records/opt1-b-20260808-01/record.json",
+        "sha256": "047e710fa54da1f75303562cdd6ed510a80542b991e082a4000a9f62b4db1a95",
+        "kind": "transitive_exact_equivalence"
+      }
+    ]
+  },
+  "negative_conformance": {
+    "candidates_audited": 2,
+    "hardware_confirmed_cases": 0,
+    "correct_detections": 0,
+    "false_accepts": 0,
+    "wrong_reason_failures": 0,
+    "artifact_audit_failures": 1,
+    "inconclusive_cases": 0,
+    "records": [
+      {
+        "record_id": "next3-lcd-031-audit-20260810-01",
+        "path": "firmware-validation/records/next3-lcd-031-audit-20260810-01/record.json",
+        "sha256": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
+        "kind": "negative_case"
+      },
+      {
+        "record_id": "next3-lcd-cs-fault-v1-20260810-01",
+        "path": "firmware-validation/records/next3-lcd-cs-fault-v1-20260810-01/record.json",
+        "sha256": "056642382c11d553b137054b4e2385557fa67b179bfd47965012ae9217c3c4ab",
+        "kind": "negative_case"
+      }
+    ]
+  },
+  "rates": {
+    "state": "no_negative_denominator",
+    "denominator": 0,
+    "detection_rate": null,
+    "false_accept_rate": null
+  }
+}
