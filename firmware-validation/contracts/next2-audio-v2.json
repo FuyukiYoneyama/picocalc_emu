@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "contract_id": "next2-audio-v2-20260809",
+  "status": "frozen_before_application_implementation",
+  "roadmap_package": "NEXT-2B",
+  "supersedes": {
+    "contract_id": "next2-audio-v1-20260809",
+    "sha256": "040dd9ae78380d0a56461c5263dddb72ae3936172418173de51243c500535c30",
+    "reason": "v1 incorrectly let firmware UART claim backend-only timing PASS; v2 separates firmware self-observation from the authoritative DMA-write sink verdict before any application implementation"
+  },
+  "application": {
+    "name": "PicoCalc Audio Conformance",
+    "repository_directory": "picocalc-audio",
+    "kind": "DMA-paced stereo PCM playback via public picocalc::audio API",
+    "execution_model": "Serial",
+    "scheduler_instruction_quantum": 1,
+    "human_input_required": false,
+    "lcd_variant": "pio-rgb565"
+  },
+  "frozen_baseline": {
+    "picocalc_emu_commit": "c55a63bdcbd05f698b3e53a062ed4ae76d2746ad",
+    "backend_commit_before_audio_implementation": "38683d65800ef36026f674dd47228024d69eb5e7",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1"
+  },
+  "required_sdk_paths": [
+    "picocalc/audio.h",
+    "picocalc::audio::init",
+    "picocalc::audio::write_sample",
+    "picocalc::audio::writable_samples",
+    "picocalc::audio::start",
+    "picocalc::audio::request_drain",
+    "picocalc::audio::drain_complete",
+    "picocalc::audio::stop",
+    "picocalc::audio::stats"
+  ],
+  "prohibited_application_dependencies": [
+    "hardware register-level audio/MMIO manipulation",
+    "private picocalc::audio internals",
+    "host-only sample sinks",
+    "PICOEM_* compile definitions",
+    "emulator-only branches"
+  ],
+  "sample_vector": {
+    "frame_count": 49152,
+    "channels": 2,
+    "duration_seconds_at_48000_hz": 1.024,
+    "pattern_period_frames": 256,
+    "left_duty": "(i * 17 + 3) & 255",
+    "right_duty": "255 - ((i * 29 + 7) & 255)",
+    "pcm_transform": "duty * 257 - 32768",
+    "pcm_packing": {
+      "format": "u32",
+      "endianness": "little",
+      "mapping": "A=left_duty bits [0..15], B=right_duty bits [16..31]",
+      "stream_source": "successful 32-bit DMA bus writes to PWM5_CC; producer-side source hashing is not an acceptance oracle",
+      "expected_sha256": "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a"
+    }
+  },
+  "dma_and_timer_plan": {
+    "timer": {
+      "index": 0,
+      "x": 3,
+      "y": 15625,
+      "wrap_or_divider_note": "defines 48.0 kHz pace target"
+    },
+    "dma": {
+      "timer_gate": "timer0",
+      "treq": 59,
+      "destination": {
+        "pwm_slice": 5,
+        "register": "CC",
+        "address": "0x40050070",
+        "gpio_pair": "GP26/GP27",
+        "address_mode": "fixed",
+        "transfer_width_bits": 32
+      },
+      "source": {
+        "origin": "canonical BSP double buffer filled only through the public audio API",
+        "half_buffer_frames": 128,
+        "dma_retrigger_model": "one 128-word half at a time until the finite stream drains",
+        "accepted_dma_write_count": 49152
+      },
+      "expected_inter_sample_gaps_after_first": [5208, 5209],
+      "timing_observation": "hash and classify the DMA timer theoretical due cycle associated with each accepted transfer; separately report DMA service-cycle latency",
+      "maximum_service_latency": "one Serial scheduler instruction boundary"
+    }
+  },
+  "authority_split": {
+    "firmware_self_observation": [
+      "public API initialization succeeded",
+      "49152 source frames were accepted without producer drop",
+      "drain completed",
+      "underrun, drop and clip counters are zero",
+      "reported DMA fraction, PWM carrier and ring capacity match the BSP contract"
+    ],
+    "backend_authoritative_observation": [
+      "exactly 49152 successful DMA-origin 32-bit writes reached PWM5_CC",
+      "the little-endian write stream SHA-256 equals the independent oracle",
+      "each transfer was gated by DMA timer0 TREQ 59",
+      "theoretical DMA timer due-cycle gaps are only 5208 or 5209",
+      "the due-cycle stream is byte-identical across three runs",
+      "DMA service latency is reported separately"
+    ],
+    "overall_pass": "requires both firmware_self_observation and backend_authoritative_observation; neither side may claim the other side's verdict"
+  },
+  "required_uart_markers": [
+    "[NEXT2][AUDIO][INIT] status=pass sample_frames=49152 timer0=3/15625",
+    "[NEXT2][AUDIO][DMA_CFG] status=pass treq=59 slice=5 dest=PWM5_CC width=32 fixed_dest=1 gpio=26/27",
+    "[NEXT2][AUDIO][STREAM] status=pass producer_vector=c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a accepted=49152 drain=complete underrun=0 drop=0 clip=0",
+    "[NEXT2][AUDIO][STATS] status=pass carrier=976562 ring_capacity=512",
+    "[NEXT2][AUDIO][FIRMWARE_VERDICT] producer=pass driver=pass overall=pass"
+  ],
+  "backend_required_report": {
+    "section": "audio_sink",
+    "required_fields": [
+      "status",
+      "dma_write_count",
+      "pcm_sha256",
+      "first_words",
+      "last_words",
+      "timer_index",
+      "treq",
+      "timer_fraction",
+      "timer_due_cycle_sha256",
+      "gap_5208_count",
+      "gap_5209_count",
+      "unexpected_gap_count",
+      "service_latency_min_cycles",
+      "service_latency_max_cycles",
+      "service_latency_sha256"
+    ]
+  },
+  "formal_acceptance": {
+    "firmware_runs": 3,
+    "clean_clone_reproducible_builds": 2,
+    "same_artifact_bin_and_uf2": true,
+    "uart_byte_identical": true,
+    "report_byte_identical": true,
+    "timeline_byte_identical": true,
+    "sample_sink_byte_identical": true,
+    "timer_due_cycle_stream_byte_identical": true,
+    "no_underrun": true,
+    "no_drop": true,
+    "no_clip": true,
+    "drain_complete": true,
+    "exact_sample_count": 49152,
+    "expected_pcm_sha256": "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+    "first_backend_run_recorded_even_if_failure": true
+  },
+  "fail_closed_mutations": [
+    "saved sample stream word mutation",
+    "wrong DMA destination",
+    "wrong transfer width",
+    "wrong TREQ",
+    "timer due-cycle cadence mismatch",
+    "sample count mismatch",
+    "firmware exception",
+    "unsupported MMIO"
+  ],
+  "hardware_correlation": {
+    "same_build_bin_and_uf2": true,
+    "required_evidence": [
+      "complete periodically repeated UART marker block",
+      "one final firmware PASS photo",
+      "acoustic capture containing the 1.024 second playback"
+    ],
+    "emulator_oracle_note": "The backend sink observed DMA write stream is the emulator oracle. R5 config/counters and hardware audio capture cannot substitute for it; hardware audio capture is secondary and non-byte-exact.",
+    "physical_audio_scope": "Physical playback verifies the audible path only and never overrides a backend PCM hash mismatch"
+  },
+  "out_of_scope": [
+    "analog PWM carrier reconstruction",
+    "speaker transfer-function equality",
+    "microphone byte-exact comparison",
+    "Threaded execution model",
+    "multicore audio producer",
+    "general audio file decoding"
+  ]
+}

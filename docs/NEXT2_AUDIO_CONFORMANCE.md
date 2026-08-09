@@ -1,13 +1,15 @@
 # NEXT-2B Audio conformance
 
-**状態:** 実装前契約を凍結中。application、backend、target、実機証拠はまだ未実装である。
+**状態:** v2実装前契約を凍結済み。application、backend、target、実機証拠はまだ未実装である。
 
-この契約はNEXT-2B audio v1（`picocalc-audio`）の事前凍結版である。実装前に固定し、
+正典は`next2-audio-v2-20260809`である。v1はapplication実装前レビューで、firmware UARTに
+backendだけが観測できるtiming PASSを名乗らせていたため採用しない。v1を削除・書換えず、v2が
+SHA付きでsupersedeした。v2はNEXT-2B audio（`picocalc-audio`）の事前凍結版であり、
 Serial Quantum 1、公開 `picocalc::audio` API のみを許可する。
 
 ## 固定条件
 
-- 契約ID: `next2-audio-v1-20260809`
+- 契約ID: `next2-audio-v2-20260809`
 - 実行モデル: `Serial`
 - 実行量子: `1`
 - API境界: `picocalc::audio` の公開APIのみ（privateヘッダやMMIO直アクセスは不可）
@@ -46,13 +48,17 @@ timerの理論due cycleから遅れる場合がある。timer accumulatorが決�
 
 ### Emu側
 
-5つの固定UART markerを必須とし、最終レポートは PASS とする。
+5つの固定UART markerを必須とする。UARTとLCDが判定するのはfirmware自身が観測できるproducer、
+public audio driver、statsだけであり、backend sink/timingのPASSを名乗らない。
 
 - `[NEXT2][AUDIO][INIT] ...`
 - `[NEXT2][AUDIO][DMA_CFG] ...`
 - `[NEXT2][AUDIO][STREAM] ...`
-- `[NEXT2][AUDIO][HEARTBEAT] ...`
-- `[NEXT2][AUDIO][VERDICT] ...`
+- `[NEXT2][AUDIO][STATS] ...`
+- `[NEXT2][AUDIO][FIRMWARE_VERDICT] ...`
+
+最終emulator PASSはUART markerだけでは成立しない。structured reportの`audio_sink` sectionが
+DMA-origin sample count/hash、timer due-cycle列、service latencyを提示し、両側がPASSして初めて成立する。
 
 追加 fail-closed条件:
 

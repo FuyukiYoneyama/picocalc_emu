@@ -4393,7 +4393,8 @@ def verify_next2_multicore_contract(checks: List[Check], root: Path) -> None:
 def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
     """Verify the frozen NEXT-2B contract against an independent vector oracle."""
     name = "next2:audio-contract"
-    contract_path = root / "firmware-validation/contracts/next2-audio-v1.json"
+    contract_path = root / "firmware-validation/contracts/next2-audio-v2.json"
+    superseded_path = root / "firmware-validation/contracts/next2-audio-v1.json"
     oracle_path = root / "tools/next2_audio_oracle.py"
     doc_path = root / "docs/NEXT2_AUDIO_CONFORMANCE.md"
     expected_hash = (
@@ -4422,18 +4423,24 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
         aligned = all(
             (
                 sha256(contract_path)
+                == "8c2ca770a853dbb4077b05dce6293fce433c51d0f3b271e6a06ab07953ba64b5",
+                sha256(superseded_path)
                 == "040dd9ae78380d0a56461c5263dddb72ae3936172418173de51243c500535c30",
                 contract.get("schema_version") == 1,
-                contract.get("contract_id") == "next2-audio-v1-20260809",
+                contract.get("contract_id") == "next2-audio-v2-20260809",
                 contract.get("status") == "frozen_before_application_implementation",
                 contract.get("roadmap_package") == "NEXT-2B",
+                contract.get("supersedes", {}).get("contract_id")
+                == "next2-audio-v1-20260809",
+                contract.get("supersedes", {}).get("sha256")
+                == sha256(superseded_path),
                 contract.get("application", {}).get("repository_directory")
                 == "picocalc-audio",
                 contract.get("application", {}).get("execution_model") == "Serial",
                 contract.get("application", {}).get("scheduler_instruction_quantum")
                 == 1,
                 contract.get("frozen_baseline", {}).get("picocalc_emu_commit")
-                == "132cd542fac343b17ad54861550c48037132c6b0",
+                == "c55a63bdcbd05f698b3e53a062ed4ae76d2746ad",
                 contract.get("frozen_baseline", {}).get(
                     "backend_commit_before_audio_implementation"
                 )
@@ -4459,24 +4466,26 @@ def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
                 dma.get("source", {}).get("half_buffer_frames") == 128,
                 dma.get("source", {}).get("accepted_dma_write_count") == 49_152,
                 dma.get("expected_inter_sample_gaps_after_first") == [5208, 5209],
-                contract.get("pass_criteria", {}).get("exact_sample_count")
+                contract.get("formal_acceptance", {}).get("exact_sample_count")
                 == 49_152,
                 len(contract.get("required_uart_markers", [])) == 5,
-                contract.get("first_firmware_run", {}).get(
-                    "result_must_be_recorded_even_if_failure"
+                contract.get("formal_acceptance", {}).get(
+                    "first_backend_run_recorded_even_if_failure"
                 )
                 is True,
-                contract.get("first_firmware_run", {}).get(
-                    "firmware_runs_required"
-                )
+                contract.get("formal_acceptance", {}).get("firmware_runs")
                 == 3,
-                contract.get("first_firmware_run", {}).get(
-                    "clean_clone_reproducible_builds_required"
+                contract.get("formal_acceptance", {}).get(
+                    "clean_clone_reproducible_builds"
                 )
                 == 2,
+                "firmware_self_observation" in contract.get("authority_split", {}),
+                "backend_authoritative_observation"
+                in contract.get("authority_split", {}),
+                "audio_sink" == contract.get("backend_required_report", {}).get("section"),
                 oracle_path.is_file(),
                 doc_path.is_file(),
-                "next2-audio-v1-20260809" in doc,
+                "next2-audio-v2-20260809" in doc,
                 expected_hash in doc,
                 "R5" in doc,
             )

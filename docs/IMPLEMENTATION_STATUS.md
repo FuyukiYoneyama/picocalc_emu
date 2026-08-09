@@ -496,7 +496,7 @@ scenario、SD、LCD variantを含む全device設定、停止理由、必須UART 
 ここでの音声判定はPWM/DMA設定とcounter/underrunの観測であり、エミュレーターがPCM waveformを
 sample sinkへ出力した証拠ではない。実機相関で聞いた参照音とも役割を区別し、PCM出力は引き続き
 capabilityの`audio-output=unsupported`とする。
-NEXT-2Bは事前契約 `next2-audio-v1-20260809` と独立oracleを凍結済みだが、backend/app/target/evidenceは未実装である。
+NEXT-2Bは事前契約 `next2-audio-v2-20260809` と独立oracleを凍結済みだが、backend/app/target/evidenceは未実装である。
 authorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counters/録音は代用不可とする。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
