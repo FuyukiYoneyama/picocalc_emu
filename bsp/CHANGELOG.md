@@ -4,7 +4,15 @@
 > 現在守るべき契約は[`bsp/README.md`](README.md)にあります。過去の版の記述を
 > 現行仕様として実装・検証に使わないでください。
 
-現行版は `VERSION` の `0.8.8` です。
+現行版は `VERSION` の `0.9.0` です。
+
+## 0.9.0 public filesystem mutation API
+
+アプリが`ff.h`へ依存せず安全保存を実装できるよう、device/host共通の公開filesystem APIへ
+create/truncate write、write結果、sync、stat、remove、renameを追加した。not-foundと各I/O失敗を
+区別し、BSPが所有する単一fileとdirectory列挙が競合する操作は`Busy`でfail-closedにする。
+FAT32既定imageと明示FAT16 imageの両方で、write/sync/readback/rename/removeと負例を検査する。
+LCD、keyboard、PSRAM、audioの実装と既存0.8.8実機相関済み経路は変更していない。
 
 ## 0.8.8 exact 8-bit PWM reconstruction
 

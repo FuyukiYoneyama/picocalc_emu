@@ -1,6 +1,6 @@
 # 実装状況と利用手順
 
-## 現在利用できるもの（BSP 0.8.8、template app 0.8.4-*、RGB565推奨デフォルト）
+## 現在利用できるもの（BSP 0.9.0、template app 0.8.4-*、RGB565推奨デフォルト）
 
 「空のプロジェクトからAIにハードウェア初期化を書かせない」ためのBSP・テンプレート・
 検証器に加え、PC上でRP2040 BINを走らせるfirmware backend、BSP APIのhost model、
@@ -182,8 +182,9 @@ NEXT-1は新規blind app `PicoEdit`として開始した。実装結果へ期待
 `INPUT.TXT`、固定UI操作、64-byteの`OUTPUT.TXT`とSHA-256、promoted backend、host/firmware/実機の
 合否規則を[`NEXT1_PICOEDIT_BLIND_CONTRACT.md`](NEXT1_PICOEDIT_BLIND_CONTRACT.md)と
 [`picoedit-contract-v1.json`](../blind-validation/picoedit-contract-v1.json)へ実装前に固定した。
-現行BSP 0.8.8には一般write APIがないため、アプリからFatFsを直接使わず、device/host共有の公開
-filesystem APIを先に追加してからclean generator sourceとしてPicoEditを生成する。
+基準BSP 0.8.8に不足していた一般write APIは、BSP 0.9.0のdevice/host共有公開filesystem APIへ
+追加した。create/truncate write、sync、stat、remove、renameと個別ErrorをFAT32/FAT16 hostで検査し、
+アプリからFatFsを直接使わない境界を維持する。次はこのclean generator sourceからPicoEditを生成する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -375,8 +376,8 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 
 ## 最新BSPの実機確認
 
-Canonical BSPは`0.8.8`、標準templateのapp版は`0.8.4-*`であり、
-この二つは独立して管理する。`bsp-0.8.8-20260802-01.json`には、
+Canonical BSPのsource currentは`0.9.0`、最新の実機相関済み版は`0.8.8`、標準templateの
+app版は`0.8.4-*`であり、この三つを区別して管理する。`bsp-0.8.8-20260802-01.json`には、
 ClockworkPi PicoCalc `CPI2.0`とSanDisk Ultra SDHC 32 GB/FAT32での実機情報を記録した。
 
 - SD: filesystem smoke、`/MUSIC`列挙、MP3/MIDIのEOF到達を確認
@@ -569,14 +570,15 @@ firmware backend専用で、hostのテストはC++で書く。
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)にある。エミュレーターの最初の対象がAでも、
 Canonical BSPの推奨表示デフォルトはBのままである。
 
-0.8.8は、実機動作済みコードを基準にした参照経路と、AIが利用する汎用経路を
-同じBSP内に用意する現行版である。A/BのLCD経路は従来どおり独立しており、音声は
+0.9.0は、0.8.8の実機相関済み参照経路を維持したまま、AIが利用する汎用filesystem write APIを
+追加したsource currentである。A/BのLCD経路は従来どおり独立しており、音声は
 `PICOCALC_AUDIO_REFERENCE_TONE`で切り替える。ログ1行目の
 `app=0.8.4-b-pio-rgb565-default`、
 `app=0.8.4-b-pio-rgb565-psram-lcd-coexist`、または
 `app=0.8.4-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
-ソース検査とA/Bビルドを実施し、0.8.8のSD/音声実機検証まで完了している。標準アプリは
+ソース検査とA/Bビルドを実施し、0.8.8のSD/音声実機検証まで完了している。0.9.0の追加APIは
+FAT32/FAT16 hostで検査済みだが、実機相関はPicoEditの同一artifact試験で行う。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

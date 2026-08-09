@@ -30,8 +30,8 @@ OPT2は性能条件未達のまま追加promotionなしで終了しました。O
 blind app、multicore/audio、negative conformance、headless interfaceです。
 NEXT-1はPicoEdit（FAT32 ASCII editor）に決定し、実装前blind契約を
 [`NEXT1_PICOEDIT_BLIND_CONTRACT.md`](NEXT1_PICOEDIT_BLIND_CONTRACT.md)へ固定しました。現行BSPの
-一般write API不足を先に記録し、アプリからFatFsへ迂回せず、device/host共有の公開API追加を
-最初の前提作業とします。
+一般write API不足を先に記録したうえで、アプリからFatFsへ迂回せず、device/host共有の公開APIを
+BSP 0.9.0として追加しました。次はこのclean generator sourceからPicoEditを生成します。
 詳細な順序は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -99,7 +99,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
 | OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-C完了・不採用 2026-08-09**。全event一致、中央値4.1542%改善だが5%未達でrevert。性能最適化は一旦区切る |
-| NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **進行中**。PicoEdit v1 blind契約固定。次は共有BSP filesystem write API |
+| NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **進行中**。PicoEdit v1 blind契約とBSP 0.9.0共有filesystem write APIを実装。次はclean generator sourceからアプリ生成 |
 | NEXT-2 | capability範囲拡張 | backend＋新規app | multicore launch/SIO FIFO/WFE-SEV/IRQと、DMA-paced PCM sample sinkを別々のfail-closed gateで実装・相関する。設定/counter合格と実PCM出力を混同しない | 未着手 |
 | NEXT-3 | negative conformance | backend＋実機証拠 | 実機で壊れる既知版をエミュレーターもFAILにし、正常版→PASS、故障版→FAIL、修正版→PASSの履歴とfalse-acceptance KPI母数を増やす | 未着手 |
 | NEXT-4 | 安定headless machine API | backend＋scenario runner | `run` / `step` / `run_until` / `input` / `observe` / `subscribe` / `snapshot`の小さなAPIを定義し、既存scenario runnerを利用者として載せる | 未着手 |

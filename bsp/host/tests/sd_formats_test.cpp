@@ -55,6 +55,98 @@ void check_shared_smoke(const char* format_name) {
     check(fs::unmount() == fs::Error::Ok, "filesystem unmounts cleanly");
 }
 
+void check_public_file_api(const char* format_name) {
+    namespace fs = picocalc::filesystem;
+    char path[64] = {};
+    char renamed[64] = {};
+    snprintf(path, sizeof(path), "0:/API_%s.TXT", format_name);
+    snprintf(renamed, sizeof(renamed), "0:/API_%s.REN", format_name);
+
+    check(fs::mount() == fs::Error::Ok, "public file API mounts");
+
+    fs::FileHandle invalid{};
+    uint8_t invalid_byte = 0;
+    check(fs::read(&invalid, &invalid_byte, 1).error == fs::Error::InvalidArgument,
+          "invalid file handle read is rejected");
+    check(fs::write(&invalid, &invalid_byte, 1).error == fs::Error::InvalidArgument,
+          "invalid file handle write is rejected");
+    check(fs::sync(&invalid) == fs::Error::InvalidArgument,
+          "invalid file handle sync is rejected");
+    check(fs::close(&invalid) == fs::Error::InvalidArgument,
+          "invalid file handle close is rejected");
+
+    fs::FileInfo info{};
+    check(fs::stat("0:/API_DOES_NOT_EXIST.TXT", &info) == fs::Error::NotFound,
+          "stat reports not-found");
+    check(fs::remove("0:/API_DOES_NOT_EXIST.TXT") == fs::Error::NotFound,
+          "remove reports not-found");
+
+    fs::FileHandle file{};
+    check(fs::open_write_truncate(path, &file) == fs::Error::Ok,
+          "create/open-write-truncate succeeds");
+    const uint8_t payload[] = {'p', 'i', 'c', 'o', 'e', 'd', 'i', 't'};
+    const fs::WriteResult bounded = fs::write(&file, payload, 3);
+    check(bounded.ok() && bounded.bytes == 3, "bounded write succeeds");
+    const fs::WriteResult zero = fs::write(&file, payload, 0);
+    check(zero.ok() && zero.bytes == 0, "zero-byte write succeeds");
+    uint8_t read_during_write = 0;
+    check(fs::read(&file, &read_during_write, 1).error ==
+              fs::Error::InvalidArgument,
+          "read through a write-only handle is rejected");
+    check(fs::stat(path, &info) == fs::Error::Busy,
+          "stat is rejected while a file is open");
+    check(fs::remove(path) == fs::Error::Busy,
+          "remove is rejected while a file is open");
+    check(fs::rename(path, renamed) == fs::Error::Busy,
+          "rename is rejected while a file is open");
+    check(fs::sync(&file) == fs::Error::Ok, "write sync succeeds");
+    check(fs::close(&file) == fs::Error::Ok, "write close succeeds");
+
+    fs::DirectoryHandle directory{};
+    check(fs::open_dir("0:/", &directory) == fs::Error::Ok,
+          "root directory opens before mutation exclusion checks");
+    check(fs::stat(path, &info) == fs::Error::Busy,
+          "stat is rejected while a directory is open");
+    check(fs::remove(path) == fs::Error::Busy,
+          "remove is rejected while a directory is open");
+    check(fs::rename(path, renamed) == fs::Error::Busy,
+          "rename is rejected while a directory is open");
+    check(fs::close_dir(&directory) == fs::Error::Ok,
+          "root directory closes after mutation exclusion checks");
+
+    check(fs::stat(path, &info) == fs::Error::Ok, "stat after write succeeds");
+    check(info.size == 3 && !info.is_dir, "stat reports bounded file size");
+    check(fs::open_read(path, &file) == fs::Error::Ok, "read-open succeeds");
+    check(fs::write(&file, payload, 1).error == fs::Error::InvalidArgument,
+          "write through a read-only handle is rejected");
+    check(fs::sync(&file) == fs::Error::InvalidArgument,
+          "sync through a read-only handle is rejected");
+    uint8_t readback[3] = {};
+    const fs::ReadResult read = fs::read(&file, readback, sizeof(readback));
+    check(read.ok() && read.bytes == sizeof(readback) &&
+              memcmp(readback, payload, sizeof(readback)) == 0,
+          "partial file read matches");
+    check(fs::close(&file) == fs::Error::Ok, "read close succeeds");
+
+    check(fs::rename(path, renamed) == fs::Error::Ok, "rename succeeds");
+    check(fs::stat(path, &info) == fs::Error::NotFound,
+          "old path is not-found after rename");
+    check(fs::stat(renamed, &info) == fs::Error::Ok && info.size == 3,
+          "renamed path preserves file size");
+    check(fs::remove(renamed) == fs::Error::Ok, "remove succeeds");
+    check(fs::stat(renamed, &info) == fs::Error::NotFound,
+          "removed path is not-found");
+    check(fs::unmount() == fs::Error::Ok, "public file API unmounts cleanly");
+    check(fs::stat(path, &info) == fs::Error::NotMounted,
+          "stat rejects an unmounted filesystem");
+    check(fs::open_write_truncate(path, &file) == fs::Error::NotMounted,
+          "write-open rejects an unmounted filesystem");
+    check(fs::remove(path) == fs::Error::NotMounted,
+          "remove rejects an unmounted filesystem");
+    check(fs::rename(path, renamed) == fs::Error::NotMounted,
+          "rename rejects an unmounted filesystem");
+}
+
 void check_fat32() {
     picocalc::host::reset_all();
 
@@ -102,6 +194,7 @@ void check_fat32() {
     check(root == empty, "FAT32 root cluster starts empty");
 
     check_shared_smoke("default FAT32 mounts through shared ChanFatFS");
+    check_public_file_api("FAT32");
 }
 
 void check_fat16() {
@@ -125,6 +218,7 @@ void check_fat16() {
     check(fat0 == fat1, "FAT16 allocation tables start identically");
 
     check_shared_smoke("explicit FAT16 mounts through shared ChanFatFS");
+    check_public_file_api("FAT16");
 }
 
 }  // namespace

@@ -1,6 +1,6 @@
 # Canonical PicoCalc BSP
 
-現在版は `VERSION` の `0.8.8` です。このBSPはAIが通常編集する場所ではありません。
+現在版は `VERSION` の `0.9.0` です。このBSPはAIが通常編集する場所ではありません。
 アプリは `picocalc/bsp.h` 以下の公開APIを使い、LCD・SD・キーボード・PSRAMの
 初期化を再実装しません。
 
@@ -35,18 +35,22 @@ STM32F103R8T6 firmwareを一次リファレンスとする。
 [`CHANGELOG.md`](CHANGELOG.md)に記録する。いずれもPWMピン、DMA形式、音声
 フォーマットは変更していない。
 
-## Read-only filesystem API
+## Filesystem API
 
-`picocalc/filesystem.h` は、音楽アプリなどの長寿命 read-only 利用向けに、次の
+`picocalc/filesystem.h` は、音楽アプリなどの長寿命read利用と、アプリの安全保存向けに、次の
 opaque API を公開する。`FATFS`、`FIL`、`DIR`、`FRESULT` は app の include 面へ出ない。
 
 - `mount()` / `unmount()` / `mounted()`
-- `open_read()` / `read()` / `seek()` / `tell()` / `size()` / `close()`
+- `open_read()` / `open_write_truncate()` / `read()` / `write()` / `sync()`
+- `seek()` / `tell()` / `size()` / `stat()` / `close()`
+- `remove()` / `rename()`
 - `open_dir()` / `next_dir()` / `close_dir()`
 
-BSP 内では `FATFS` を1個だけ所有し、read file と directory は同時に開けない。
-directory 列挙を再生開始前に完了してから、file handle を開く。`smoke_test()`も同じ
-mountを再利用するため、app側で別の `FATFS` を mount しない。
+BSP内では`FATFS`とfile objectを1個だけ所有し、fileとdirectory列挙は同時に開けない。
+open中のfile/directoryと競合する`stat`、`remove`、`rename`も`Busy`を返す。directory列挙を
+完了してからfile handleを開き、安全保存はtemporary fileを`write`/`sync`/`close`してから
+既存backupの`remove`と`rename`を行う。`smoke_test()`も同じmountを再利用するため、app側で
+別の`FATFS`をmountしない。
 
 実機試験ではA/Bを同時に扱わず、一度に一方だけを同じ
 `build/picocalc_app.uf2`へ生成する。Aの合否にかかわらずBも独立して検証し、
@@ -70,7 +74,7 @@ PSRAM通常起動の250 MHz第一候補は`clkdiv=2.0/fudge=false`（62.5 MHz）
 ## 版ごとの変更履歴
 
 過去の版でどこを、なぜ変えたかは[`CHANGELOG.md`](CHANGELOG.md)へ分離した。
-本書には現行0.8.8の契約だけを置く。0.1.x〜0.2.xのLCD不動作調査の全経緯は
+本書には現行0.9.0の契約だけを置く。0.1.x〜0.2.xのLCD不動作調査の全経緯は
 [`../docs/LCD_INVESTIGATION_20260729.md`](../docs/LCD_INVESTIGATION_20260729.md)にある。
 
 過去の台帳記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard

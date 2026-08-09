@@ -16,6 +16,7 @@ DIR g_directories[kMaxOpenDirectories]{};
 bool g_directory_used[kMaxOpenDirectories]{};
 bool g_mounted = false;
 bool g_file_open = false;
+bool g_file_writable = false;
 size_t g_directory_count = 0;
 constexpr uint32_t kFileToken = 0x46494c45u;
 constexpr uint32_t kDirectoryToken = 0x44495231u;
@@ -51,12 +52,17 @@ const char* error_name(Error error) {
         case Error::InvalidArgument: return "invalid_argument";
         case Error::NotMounted: return "not_mounted";
         case Error::Busy: return "busy";
+        case Error::NotFound: return "not_found";
         case Error::MountFailed: return "mount_failed";
         case Error::OpenFailed: return "open_failed";
         case Error::ReadFailed: return "read_failed";
+        case Error::WriteFailed: return "write_failed";
         case Error::SeekFailed: return "seek_failed";
         case Error::CloseFailed: return "close_failed";
         case Error::DirectoryFailed: return "directory_failed";
+        case Error::SyncFailed: return "sync_failed";
+        case Error::RemoveFailed: return "remove_failed";
+        case Error::RenameFailed: return "rename_failed";
         case Error::EndOfDirectory: return "end_of_directory";
     }
     return "unknown";
@@ -88,18 +94,59 @@ Error open_read(const char* path, FileHandle* handle) {
     if (!g_mounted) return Error::NotMounted;
     if (g_file_open || g_directory_count != 0) return Error::Busy;
     const FRESULT result = f_open(&g_file, path, FA_READ);
+    if (result == FR_NO_FILE || result == FR_NO_PATH) return Error::NotFound;
     if (result != FR_OK) return Error::OpenFailed;
     g_file_open = true;
+    g_file_writable = false;
+    handle->token = kFileToken;
+    return Error::Ok;
+}
+
+Error stat(const char* path, FileInfo* info) {
+    if (path == nullptr || info == nullptr) return Error::InvalidArgument;
+    if (!g_mounted) return Error::NotMounted;
+    if (g_file_open || g_directory_count != 0) return Error::Busy;
+    FILINFO details{};
+    const FRESULT result = f_stat(path, &details);
+    if (result == FR_NO_FILE || result == FR_NO_PATH) return Error::NotFound;
+    if (result != FR_OK) return Error::OpenFailed;
+    info->size = static_cast<uint32_t>(details.fsize);
+    info->is_dir = (details.fattrib & AM_DIR) != 0;
+    return Error::Ok;
+}
+
+Error open_write_truncate(const char* path, FileHandle* handle) {
+    if (path == nullptr || handle == nullptr) return Error::InvalidArgument;
+    if (!g_mounted) return Error::NotMounted;
+    if (g_file_open || g_directory_count != 0) return Error::Busy;
+    const FRESULT result = f_open(&g_file, path, FA_CREATE_ALWAYS | FA_WRITE);
+    if (result == FR_NO_FILE || result == FR_NO_PATH) return Error::NotFound;
+    if (result != FR_OK) return Error::OpenFailed;
+    g_file_open = true;
+    g_file_writable = true;
     handle->token = kFileToken;
     return Error::Ok;
 }
 
 ReadResult read(FileHandle* handle, void* destination, size_t bytes) {
     if (!valid_file(handle) || destination == nullptr) return {0, Error::InvalidArgument};
+    if (g_file_writable) return {0, Error::InvalidArgument};
     if (bytes == 0) return {0, Error::Ok};
     UINT actual = 0;
     const FRESULT result = f_read(&g_file, destination, static_cast<UINT>(std::min<size_t>(bytes, UINT_MAX)), &actual);
     if (result != FR_OK) return {actual, Error::ReadFailed};
+    return {actual, Error::Ok};
+}
+
+WriteResult write(FileHandle* handle, const void* source, size_t bytes) {
+    if (!valid_file(handle) || source == nullptr) return {0, Error::InvalidArgument};
+    if (!g_file_writable) return {0, Error::InvalidArgument};
+    if (bytes == 0) return {0, Error::Ok};
+    UINT actual = 0;
+    const FRESULT result = f_write(
+        &g_file, source,
+        static_cast<UINT>(std::min<size_t>(bytes, UINT_MAX)), &actual);
+    if (result != FR_OK || actual != bytes) return {actual, Error::WriteFailed};
     return {actual, Error::Ok};
 }
 
@@ -124,8 +171,15 @@ Error close(FileHandle* handle) {
     if (!valid_file(handle)) return Error::InvalidArgument;
     const FRESULT result = f_close(&g_file);
     g_file_open = false;
+    g_file_writable = false;
     handle->token = 0;
     return result == FR_OK ? Error::Ok : Error::CloseFailed;
+}
+
+Error sync(FileHandle* handle) {
+    if (!valid_file(handle)) return Error::InvalidArgument;
+    if (!g_file_writable) return Error::InvalidArgument;
+    return f_sync(&g_file) == FR_OK ? Error::Ok : Error::SyncFailed;
 }
 
 Error open_dir(const char* path, DirectoryHandle* handle) {
@@ -164,6 +218,24 @@ Error close_dir(DirectoryHandle* handle) {
     --g_directory_count;
     handle->token = 0;
     return result == FR_OK ? Error::Ok : Error::CloseFailed;
+}
+
+Error remove(const char* path) {
+    if (path == nullptr) return Error::InvalidArgument;
+    if (!g_mounted) return Error::NotMounted;
+    if (g_file_open || g_directory_count != 0) return Error::Busy;
+    const FRESULT result = f_unlink(path);
+    if (result == FR_NO_FILE || result == FR_NO_PATH) return Error::NotFound;
+    return result == FR_OK ? Error::Ok : Error::RemoveFailed;
+}
+
+Error rename(const char* from, const char* to) {
+    if (from == nullptr || to == nullptr) return Error::InvalidArgument;
+    if (!g_mounted) return Error::NotMounted;
+    if (g_file_open || g_directory_count != 0) return Error::Busy;
+    const FRESULT result = f_rename(from, to);
+    if (result == FR_NO_FILE || result == FR_NO_PATH) return Error::NotFound;
+    return result == FR_OK ? Error::Ok : Error::RenameFailed;
 }
 
 SmokeResult smoke_test(const char* path) {

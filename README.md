@@ -90,11 +90,11 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 
 ## 現在地
 
-第1段のCanonical BSPのソース、portable検証、テンプレート基盤は **0.8.8** として
-整備済みです（Milestone 0）。実機動作済みプロジェクトから抽出したBSP、アプリ
+第1段のCanonical BSPのsource currentは **0.9.0** です。実機動作済みプロジェクトから抽出したBSP、アプリ
 テンプレート、プロジェクト生成器、証拠台帳、検証ツールが利用できます。標準templateの
-アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。最新0.8.8自身の実機台帳は
+アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。最新の実機相関済みBSPは0.8.8で、その台帳は
 `bsp-0.8.8-20260804-02`でLCD・SD・keyboard・audio・PSRAMを含め`pass`です。
+0.9.0はPicoEditに必要な公開filesystem write APIを追加し、FAT32/FAT16 host検査済みです。
 
 **第2段のエミュレーターは、公式サンプルの縦断まで到達しました（2026-08-04）。**
 ClockworkPi公式の無改変`Code/picocalc_helloworld`が、Firmware backend
@@ -404,7 +404,7 @@ python3 tools/picocalc.py build --project ../MyApp \
   --lcd-variant pio-rgb565 --psram-lcd-coexist-test
 ```
 
-このモードの起動ログ先頭は`bsp=0.8.8`かつ
+0.8.8 evidence buildにおけるこのモードの起動ログ先頭は`bsp=0.8.8`かつ
 `app=0.8.4-b-pio-rgb565-psram-lcd-coexist`です。
 
 ### UF2と版管理の運用規約
@@ -552,7 +552,7 @@ revision、toolchain、SDカード、UF2 SHA-256、ログ・写真を記録し�
 
 この0.4.0台帳は過去のA/B分離検証記録であり、Bのキーボードと装置識別情報が未記入のため
 `overall_status=pending`を保持しています。履歴recordは後から書き換えません。
-最新BSP 0.8.8では、ClockworkPi PicoCalc `CPI2.0`、SanDisk Ultra 32 GB/FAT32を使用し、
+最新の実機相関済みBSP 0.8.8では、ClockworkPi PicoCalc `CPI2.0`、SanDisk Ultra 32 GB/FAT32を使用し、
 LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しました。
 `bsp-0.8.8-20260804-02.json`は`overall_status=pass`であり、0.8.8のLCD・keyboard pendingを
 閉じています。実機では一度に一方だけを
@@ -578,7 +578,8 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 ## BSPの変更履歴
 
 版ごとの変更内容と理由は[`bsp/CHANGELOG.md`](bsp/CHANGELOG.md)に分離しました。
-本書と`bsp/README.md`には現行0.8.8の契約だけを置きます。過去版の記述を
+本書と`bsp/README.md`にはsource current 0.9.0の契約を置き、0.8.8は最新の実機相関済み
+baselineとして明記します。過去版の記述を
 現行仕様として実装・検証に使わないでください。
 
 ## 文書

@@ -1706,6 +1706,25 @@ def verify_portable(
             "f_unlink(",
         ],
     )
+    require_text(
+        checks,
+        root,
+        "bsp/include/picocalc/filesystem.h",
+        "public-filesystem-mutation-api",
+        [
+            "Error open_write_truncate(",
+            "WriteResult write(",
+            "Error sync(",
+            "Error stat(",
+            "Error remove(",
+            "Error rename(",
+            "NotFound",
+            "WriteFailed",
+            "SyncFailed",
+            "RemoveFailed",
+            "RenameFailed",
+        ],
+    )
     verify_template_smoke(checks, root)
     verify_catalog(checks, root)
     verify_hardware_validation(checks, root)

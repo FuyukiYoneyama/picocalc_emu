@@ -3,7 +3,7 @@
   "project_name": "GENERATED_PROJECT_NAME",
   "template": "rp2040-basic",
   "target": "picocalc-rp2040",
-  "bsp_version": "0.8.8",
+  "bsp_version": "0.9.0",
   "provenance": {
     "kind": "generated",
     "generator": {
@@ -14,7 +14,7 @@
     "template_path": "templates/rp2040-basic",
     "bsp": {
       "source_path": "bsp",
-      "version": "0.8.8",
+      "version": "0.9.0",
       "source_commit": "GENERATED_SOURCE_COMMIT",
       "source_dirty": true,
       "tree_sha256": "GENERATED_BSP_TREE_SHA256"
