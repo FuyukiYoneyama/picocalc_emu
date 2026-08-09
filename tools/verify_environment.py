@@ -1734,6 +1734,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2e_pio_pull_stall(checks, root)
     verify_opt2f_stationary_pin_bulk(checks, root)
     verify_opt2g_uart_deadline(checks, root)
+    verify_next1_picoedit_blind_contract(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
@@ -3846,6 +3847,231 @@ def verify_opt3c_compact_dispatch_key(checks: List[Check], root: Path) -> None:
         KeyError,
         StopIteration,
         statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_next1_picoedit_blind_contract(checks: List[Check], root: Path) -> None:
+    """Verify the fixed NEXT-1 blind-contract baseline and scenario constraints."""
+    name = "next1:picoedit-blind-contract"
+    contract_path = root / "blind-validation/picoedit-contract-v1.json"
+    doc_path = root / "docs/NEXT1_PICOEDIT_BLIND_CONTRACT.md"
+    expected_contract_sha256 = (
+        "82ca4bc9666631dd040bd40894ece5a344416b75f318025e02c8ffad662ffc31"
+    )
+    expected_doc_sha256 = (
+        "6189c4dbabf4f1a2204fdcacc89c355a3d66d7313524e0c9772dcc77816e5b13"
+    )
+    expected = {
+        "schema_version": 1,
+        "contract_id": "next1-picoedit-blind-v1-20260809",
+        "status": "frozen_before_application_implementation",
+        "application": {
+            "name": "PicoEdit",
+            "repository_directory": "picoedit-picocalc",
+            "kind": "single-core FAT32 ASCII text editor",
+            "max_document_bytes": 65_536,
+            "authoritative_document_store": "PSRAM",
+            "lcd_variant": "pio-rgb565",
+            "sd_format": "fat32",
+            "execution_model": "Serial",
+            "scheduler_instruction_quantum": 1,
+        },
+        "frozen_baseline": {
+            "picocalc_emu_commit": "08275fd0d5a58dc26d2ef8bf21d6f0125bbe355b",
+            "promoted_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+            "pico_sdk_version": "2.2.0",
+            "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+            "arm_none_eabi_gcc": "13.2.1",
+            "cmake": "3.28.3",
+            "ninja": "1.11.1",
+            "official_keyboard_source": "https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard",
+            "official_keyboard_commit": "553da6f2408963b956779599d179d77fd611a4d7",
+        },
+        "prohibited_application_dependencies": [
+            "ff.h",
+            "picocalc/host.h",
+            "emulator internal types",
+            "structured report internals",
+            "scenario runner internals",
+            "PICOEM_* compile definitions",
+            "emulator-only branches",
+        ],
+        "declared_prerequisite_gap": {
+            "baseline_public_filesystem_is_read_only_except_fixed_smoke": True,
+            "must_be_added_before_generation": [
+                "create/truncate write open",
+                "partial write result",
+                "sync",
+                "stat/existence query",
+                "remove",
+                "rename",
+                "distinct not-found/write/sync/remove/rename errors",
+            ],
+            "implementation_boundary": (
+                "shared Canonical BSP filesystem source used by device and host"
+            ),
+            "application_must_not_include_fatfs": True,
+        },
+        "fixed_ui_actions": [
+            "open selected INPUT.TXT with Enter",
+            "open search with Ctrl+F",
+            "type draft and confirm with Enter",
+            "move to line end with End",
+            "insert space-o-k",
+            "save with Ctrl+S",
+        ],
+        "seed_file": {
+            "path": "0:/INPUT.TXT",
+            "encoding": "ASCII",
+            "newline": "LF",
+            "bytes": 61,
+            "content": "PicoEdit blind validation\nstatus: draft\nalpha beta gamma\nend\n",
+            "sha256": "4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7",
+        },
+        "expected_output": {
+            "path": "0:/OUTPUT.TXT",
+            "temporary_path": "0:/OUTPUT.TMP",
+            "backup_path": "0:/OUTPUT.BAK",
+            "encoding": "ASCII",
+            "newline": "LF",
+            "bytes": 64,
+            "content": "PicoEdit blind validation\nstatus: draft ok\nalpha beta gamma\nend\n",
+            "sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e",
+        },
+        "host_acceptance": {
+            "minimum_assertions": 100,
+            "stdout_byte_identical": True,
+            "hardware_free_core": True,
+            "required_coverage": [
+                "empty and boundary cursor",
+                "insert delete backspace newline",
+                "vertical horizontal home end movement",
+                "forward search found and not found",
+                "65536-byte capacity boundary",
+                "chunked store behavior",
+                "SHA-256 known vectors and canonical output",
+            ],
+        },
+    }
+    expected_first_run = {
+        "backend_must_remain_frozen": True,
+        "result_must_be_recorded_even_if_failure": True,
+        "required_observations": [
+            "fail-closed scenario completion",
+            "PSRAM authoritative store used",
+            "OUTPUT.TXT read-back is 64 bytes",
+            "read-back SHA-256 matches expected",
+            "keyboard dropped events is zero",
+            "exception is absent",
+            "unsupported MMIO count is zero",
+            "final framebuffer evidence",
+        ],
+    }
+    expected_hardware = {
+        "same_build_bin_and_uf2": True,
+        "timed_input_required": False,
+        "continuous_successful_key_sequence_required": False,
+        "intermediate_photograph_required": False,
+        "required_evidence": [
+            "final screen photograph",
+            "UART log",
+            "OUTPUT.TXT",
+            "OUTPUT.TXT SHA-256",
+        ],
+        "emulator_pass_hardware_fail_classification": (
+            "false_accept_and_NEXT-3_negative_conformance_seed"
+        ),
+    }
+
+    def require_sha(value: Any) -> bool:
+        return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value) is not None
+
+    try:
+        contract = load_json(contract_path)
+        seed = contract["seed_file"]
+        output = contract["expected_output"]
+        seed_content = seed.get("content", "")
+        output_content = output.get("content", "")
+        seed_bytes = seed_content.encode("utf-8")
+        output_bytes = output_content.encode("utf-8")
+        aligned = all(
+            (
+                contract.get("schema_version") == expected["schema_version"],
+                contract.get("contract_id") == expected["contract_id"],
+                contract.get("status") == expected["status"],
+                contract.get("application") == expected["application"],
+                contract.get("frozen_baseline") == expected["frozen_baseline"],
+                contract.get("prohibited_application_dependencies")
+                == expected["prohibited_application_dependencies"],
+                contract.get("declared_prerequisite_gap") == expected["declared_prerequisite_gap"],
+                contract.get("fixed_ui_actions") == expected["fixed_ui_actions"],
+                seed == expected["seed_file"],
+                output == expected["expected_output"],
+                contract.get("host_acceptance", {}).get("minimum_assertions")
+                >= expected["host_acceptance"]["minimum_assertions"],
+                contract.get("host_acceptance", {}).get("minimum_assertions") is not None,
+                contract.get("host_acceptance", {}).get("stdout_byte_identical")
+                is expected["host_acceptance"]["stdout_byte_identical"],
+                contract.get("host_acceptance", {}).get("hardware_free_core")
+                is expected["host_acceptance"]["hardware_free_core"],
+                contract.get("host_acceptance", {}).get("required_coverage")
+                == expected["host_acceptance"]["required_coverage"],
+                contract.get("first_firmware_run", {}).get("backend_must_remain_frozen")
+                is expected_first_run["backend_must_remain_frozen"],
+                contract.get("first_firmware_run", {}).get("result_must_be_recorded_even_if_failure")
+                is expected_first_run["result_must_be_recorded_even_if_failure"],
+                contract.get("first_firmware_run", {}).get("required_observations")
+                == expected_first_run["required_observations"],
+                contract.get("hardware_correlation", {}).get("same_build_bin_and_uf2")
+                is expected_hardware["same_build_bin_and_uf2"],
+                contract.get("hardware_correlation", {}).get("timed_input_required")
+                is expected_hardware["timed_input_required"],
+                contract.get("hardware_correlation", {}).get("continuous_successful_key_sequence_required")
+                is expected_hardware["continuous_successful_key_sequence_required"],
+                contract.get("hardware_correlation", {}).get("intermediate_photograph_required")
+                is expected_hardware["intermediate_photograph_required"],
+                contract.get("hardware_correlation", {}).get("required_evidence")
+                == expected_hardware["required_evidence"],
+                contract.get("hardware_correlation", {}).get(
+                    "emulator_pass_hardware_fail_classification"
+                )
+                == expected_hardware["emulator_pass_hardware_fail_classification"],
+                doc_path.is_file(),
+                sha256(contract_path) == expected_contract_sha256,
+                sha256(doc_path) == expected_doc_sha256,
+                seed.get("bytes") == len(seed_bytes) == expected["seed_file"]["bytes"],
+                output.get("bytes") == len(output_bytes) == expected["expected_output"]["bytes"],
+                seed.get("sha256")
+                == hashlib.sha256(seed_bytes).hexdigest()
+                == expected["seed_file"]["sha256"],
+                output.get("sha256")
+                == hashlib.sha256(output_bytes).hexdigest()
+                == expected["expected_output"]["sha256"],
+                require_sha(contract.get("frozen_baseline", {}).get("picocalc_emu_commit")),
+                require_sha(contract.get("frozen_baseline", {}).get("promoted_backend_commit")),
+                require_sha(contract.get("frozen_baseline", {}).get("pico_sdk_commit")),
+                require_sha(contract.get("frozen_baseline", {}).get("official_keyboard_commit")),
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            contract_status=contract.get("status"),
+            contract_id=contract.get("contract_id"),
+            repo=contract.get("application", {}).get("repository_directory"),
+            seed_sha=seed.get("sha256"),
+            output_sha=output.get("sha256"),
+            host_min_assertions=contract.get("host_acceptance", {}).get("minimum_assertions"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))

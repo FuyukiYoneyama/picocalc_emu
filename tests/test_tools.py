@@ -612,6 +612,83 @@ raise SystemExit(code)
         )
         self.assertEqual(opt3c.get("opt3_overall_status"), "complete_no_additional_promotion")
 
+    def test_target_schema_verification_includes_next1_picoedit_blind_contract(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next1 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next1:picoedit-blind-contract"
+        )
+        self.assertEqual(next1["status"], "pass")
+        self.assertEqual(
+            next1.get("contract_id"),
+            "next1-picoedit-blind-v1-20260809",
+        )
+        self.assertEqual(next1.get("repo"), "picoedit-picocalc")
+        self.assertEqual(next1.get("host_min_assertions"), 100)
+
+    def test_target_schema_rejects_next1_seed_content_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            contract_path = (
+                project / "blind-validation/picoedit-contract-v1.json"
+            )
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            contract["seed_file"]["content"] = "tampered\n"
+            contract_path.write_text(
+                json.dumps(contract, ensure_ascii=False), encoding="utf-8"
+            )
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        next1 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next1:picoedit-blind-contract"
+        )
+        self.assertEqual(next1["status"], "fail")
+
+    def test_target_schema_rejects_next1_backend_pin_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            contract_path = (
+                project / "blind-validation/picoedit-contract-v1.json"
+            )
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            contract["frozen_baseline"]["promoted_backend_commit"] = "b" * 40
+            contract_path.write_text(
+                json.dumps(contract, ensure_ascii=False), encoding="utf-8"
+            )
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        next1 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next1:picoedit-blind-contract"
+        )
+        self.assertEqual(next1["status"], "fail")
+
     def test_target_schema_rejects_opt3c_compact_dispatch_key_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

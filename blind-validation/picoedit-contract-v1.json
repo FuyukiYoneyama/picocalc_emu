@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "contract_id": "next1-picoedit-blind-v1-20260809",
+  "status": "frozen_before_application_implementation",
+  "application": {
+    "name": "PicoEdit",
+    "repository_directory": "picoedit-picocalc",
+    "kind": "single-core FAT32 ASCII text editor",
+    "max_document_bytes": 65536,
+    "authoritative_document_store": "PSRAM",
+    "lcd_variant": "pio-rgb565",
+    "sd_format": "fat32",
+    "execution_model": "Serial",
+    "scheduler_instruction_quantum": 1
+  },
+  "frozen_baseline": {
+    "picocalc_emu_commit": "08275fd0d5a58dc26d2ef8bf21d6f0125bbe355b",
+    "promoted_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "official_keyboard_source": "https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard",
+    "official_keyboard_commit": "553da6f2408963b956779599d179d77fd611a4d7"
+  },
+  "prohibited_application_dependencies": [
+    "ff.h",
+    "picocalc/host.h",
+    "emulator internal types",
+    "structured report internals",
+    "scenario runner internals",
+    "PICOEM_* compile definitions",
+    "emulator-only branches"
+  ],
+  "declared_prerequisite_gap": {
+    "baseline_public_filesystem_is_read_only_except_fixed_smoke": true,
+    "must_be_added_before_generation": [
+      "create/truncate write open",
+      "partial write result",
+      "sync",
+      "stat/existence query",
+      "remove",
+      "rename",
+      "distinct not-found/write/sync/remove/rename errors"
+    ],
+    "implementation_boundary": "shared Canonical BSP filesystem source used by device and host",
+    "application_must_not_include_fatfs": true
+  },
+  "seed_file": {
+    "path": "0:/INPUT.TXT",
+    "encoding": "ASCII",
+    "newline": "LF",
+    "bytes": 61,
+    "content": "PicoEdit blind validation\nstatus: draft\nalpha beta gamma\nend\n",
+    "sha256": "4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7"
+  },
+  "expected_output": {
+    "path": "0:/OUTPUT.TXT",
+    "temporary_path": "0:/OUTPUT.TMP",
+    "backup_path": "0:/OUTPUT.BAK",
+    "encoding": "ASCII",
+    "newline": "LF",
+    "bytes": 64,
+    "content": "PicoEdit blind validation\nstatus: draft ok\nalpha beta gamma\nend\n",
+    "sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+  },
+  "fixed_ui_actions": [
+    "open selected INPUT.TXT with Enter",
+    "open search with Ctrl+F",
+    "type draft and confirm with Enter",
+    "move to line end with End",
+    "insert space-o-k",
+    "save with Ctrl+S"
+  ],
+  "host_acceptance": {
+    "minimum_assertions": 100,
+    "stdout_byte_identical": true,
+    "hardware_free_core": true,
+    "required_coverage": [
+      "empty and boundary cursor",
+      "insert delete backspace newline",
+      "vertical horizontal home end movement",
+      "forward search found and not found",
+      "65536-byte capacity boundary",
+      "chunked store behavior",
+      "SHA-256 known vectors and canonical output"
+    ]
+  },
+  "first_firmware_run": {
+    "backend_must_remain_frozen": true,
+    "result_must_be_recorded_even_if_failure": true,
+    "required_observations": [
+      "fail-closed scenario completion",
+      "PSRAM authoritative store used",
+      "OUTPUT.TXT read-back is 64 bytes",
+      "read-back SHA-256 matches expected",
+      "keyboard dropped events is zero",
+      "exception is absent",
+      "unsupported MMIO count is zero",
+      "final framebuffer evidence"
+    ]
+  },
+  "hardware_correlation": {
+    "same_build_bin_and_uf2": true,
+    "timed_input_required": false,
+    "continuous_successful_key_sequence_required": false,
+    "intermediate_photograph_required": false,
+    "required_evidence": [
+      "final screen photograph",
+      "UART log",
+      "OUTPUT.TXT",
+      "OUTPUT.TXT SHA-256"
+    ],
+    "emulator_pass_hardware_fail_classification": "false_accept_and_NEXT-3_negative_conformance_seed"
+  }
+}

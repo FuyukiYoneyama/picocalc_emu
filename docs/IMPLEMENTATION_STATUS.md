@@ -178,6 +178,13 @@ multicore/audio、negative conformance、headless interfaceである。詳細は
 [`opt3-a-xip-cursor-profile-20260809-01/`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/)、
 [`opt3-b-xip-decode-cursor-20260809-01/`](../firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/)にある。
 
+NEXT-1は新規blind app `PicoEdit`として開始した。実装結果へ期待値を合わせないよう、61-byteの
+`INPUT.TXT`、固定UI操作、64-byteの`OUTPUT.TXT`とSHA-256、promoted backend、host/firmware/実機の
+合否規則を[`NEXT1_PICOEDIT_BLIND_CONTRACT.md`](NEXT1_PICOEDIT_BLIND_CONTRACT.md)と
+[`picoedit-contract-v1.json`](../blind-validation/picoedit-contract-v1.json)へ実装前に固定した。
+現行BSP 0.8.8には一般write APIがないため、アプリからFatFsを直接使わず、device/host共有の公開
+filesystem APIを先に追加してからclean generator sourceとしてPicoEditを生成する。
+
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
 - `tools/picocalc.py`: 新規プロジェクト生成、ビルド、検証
