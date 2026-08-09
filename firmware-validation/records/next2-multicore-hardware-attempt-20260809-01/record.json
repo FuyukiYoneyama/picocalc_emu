@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-hardware-attempt-20260809-01",
+  "title": "NEXT-2A multicore same-artifact physical-device evidence attempt",
+  "roadmap_package": "NEXT-2A",
+  "result": "evidence_incomplete",
+  "classification": "hardware_function_pass_uart_evidence_missing",
+  "contract": {
+    "id": "next2-multicore-v1-20260809",
+    "path": "firmware-validation/contracts/next2-multicore-v1.json",
+    "sha256": "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03",
+    "required_evidence_satisfied": false,
+    "missing_evidence": ["complete UART log"]
+  },
+  "target": {
+    "id": "picocalc-multicore-r1",
+    "revision": 1,
+    "contract_sha256": "3080caf99a9fcad210edab50ef895b2ce72ee5566a8340fde1b8419a96285ca7"
+  },
+  "source": {
+    "repo": "picocalc-multicore",
+    "commit": "9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+    "backend_commit": "38683d65800ef36026f674dd47228024d69eb5e7"
+  },
+  "artifact": {
+    "bin_sha256": "4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675",
+    "uf2_sha256": "d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8",
+    "build_timestamp": "2026-08-09T10:00:00Z",
+    "operator_reported_using_specified_uf2": true
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "validation_date": "2026-08-09",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "human_key_input_required": false,
+    "final_screen": {
+      "result": "pass",
+      "observed_title": "NEXT2 MULTICORE",
+      "launch": "pass",
+      "fifo": "pass",
+      "wfe_sev": "pass",
+      "irq1": "pass",
+      "overall": "pass"
+    },
+    "uart_capture": {
+      "result": "missing",
+      "attempts": 2,
+      "bytes_each": [0, 0],
+      "diagnosis": "The firmware emits each marker once immediately after its phase, completes at about 615 ms, and then emits nothing while holding the final screen. pico_stdio_usb uses the SDK default zero-millisecond connection wait, so a USB CDC monitor opened after enumeration can miss every byte.",
+      "firmware_failure_indicated": false
+    }
+  },
+  "correlation": {
+    "emulator_record": "firmware-validation/records/next2-multicore-r1-20260809-01/record.json",
+    "emulator_result": "pass",
+    "hardware_function_result": "pass",
+    "hardware_correlation_completed": false,
+    "false_accept": false,
+    "formal_verdict": "pending_complete_uart_evidence"
+  },
+  "artifacts": {
+    "final_photo": {
+      "path": "final.jpg",
+      "sha256": "0771218a2a7b3173cc44d1d9fc6dbbd85dae97438cea9f7eb695bfb5fc6971fd",
+      "source_original_sha256": "66c2c286398a19dcc2f7a820bc1065d1ad4b8529c914d1b33f35a42fb747483e",
+      "decoded_rgb_sha256": "0e02149b88ef10e8061561696601a949b81d757b78d874884137e3dd1efca089",
+      "width": 3024,
+      "height": 3024,
+      "metadata_policy": "repository copy has EXIF, GPS, XMP, maker notes, and MPF removed; ICC profile retained; decoded pixels match the supplied original"
+    },
+    "uart_attempt_1": {
+      "path": "usb-cdc-attempt-1.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "uart_attempt_2": {
+      "path": "usb-cdc-attempt-2.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "notes": "notes.md"
+  },
+  "follow_up": {
+    "contract": "next2-multicore-hardware-evidence-v2-20260809",
+    "requirement": "repeat an immutable final evidence block after the screen verdict so USB CDC late attachment requires no timing coordination"
+  }
+}

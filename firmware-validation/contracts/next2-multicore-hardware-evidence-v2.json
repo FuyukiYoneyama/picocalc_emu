@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "contract_id": "next2-multicore-hardware-evidence-v2-20260809",
+  "status": "frozen_before_v2_application_implementation",
+  "roadmap_package": "NEXT-2A",
+  "purpose": "Preserve the accepted multicore test while making its required UART evidence observable through PicoCalc USB CDC without human timing coordination.",
+  "supersedes_hardware_evidence_transport_only": {
+    "contract_id": "next2-multicore-v1-20260809",
+    "path": "firmware-validation/contracts/next2-multicore-v1.json",
+    "sha256": "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03"
+  },
+  "frozen_application_baseline": {
+    "repo": "picocalc-multicore",
+    "commit": "9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+    "target": "picocalc-multicore-r1",
+    "bin_sha256": "4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675",
+    "uf2_sha256": "d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8"
+  },
+  "unchanged_requirements": [
+    "all four fixed v1 phases and values",
+    "phase evaluation logic",
+    "initial five UART markers",
+    "final LCD layout and five PASS or FAIL results",
+    "no human key input",
+    "Serial execution model with instruction quantum 1",
+    "core 1 remains parked and never returns"
+  ],
+  "new_requirement": {
+    "id": "late_attach_uart_evidence",
+    "start": "only after the initial final VERDICT marker and stable final screen",
+    "period_ms": 1000,
+    "behavior": "emit a complete evidence block containing the same five fixed v1 markers once per period forever",
+    "must_not": [
+      "rerun a multicore phase",
+      "change a phase result",
+      "clear or redraw the final screen",
+      "wait for USB connection before running the test",
+      "require a key, command, reset timing, or monitor-open timing"
+    ]
+  },
+  "required_uart_markers": [
+    "[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001",
+    "[NEXT2][MC][FIFO] status=pass vectors=4",
+    "[NEXT2][MC][WFE_SEV] status=pass before=1 after=2",
+    "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf",
+    "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"
+  ],
+  "emulator_acceptance": {
+    "formal_runs": 3,
+    "all_runs_pass": true,
+    "reports_uart_timeline_snapshots_byte_identical": true,
+    "exception_absent": true,
+    "unsupported_mmio_zero": true,
+    "clean_clone_reproducible_builds": 2,
+    "core1_fatal_exception_must_fail": true
+  },
+  "hardware_acceptance": {
+    "same_registered_uf2": true,
+    "required_evidence": [
+      "complete UART log containing at least one complete five-marker evidence block",
+      "one final photograph showing all five PASS results"
+    ],
+    "human_actions": "one UF2 write, start the serial monitor at any time after boot, save one final photograph and the captured log",
+    "retry_policy": "one retry only for an identified connection or capture error; repeated firmware FAIL is a false-accept candidate"
+  },
+  "out_of_scope": [
+    "Threaded execution model",
+    "simultaneous LCD or PSRAM access from both cores",
+    "spinlock contention timing",
+    "core 1 reset and relaunch",
+    "DMA-paced PCM sample output"
+  ]
+}
