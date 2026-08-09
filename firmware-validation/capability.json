@@ -217,10 +217,11 @@
     {
       "id": "multicore-serial-conformance",
       "what": "Firmware launch of core 1, bidirectional SIO FIFO, WFE/SEV and core-local SIO IRQ delivery under the Serial execution model",
-      "detail": "Active target picocalc-multicore-r2 pins application e9e99f0bfde7b2706fbe7f5a2a92331eed141c98 and backend 38683d65800ef36026f674dd47228024d69eb5e7. Three normal CLI runs are byte-identical in report, UART, scenario timeline and framebuffer snapshot; two clean clones reproduce the same BIN and UF2. The harness also fails closed on a core 1 NMI or HardFault. R2 preserves the accepted phase behavior and periodically repeats its final marker block so PicoCalc USB CDC can be attached after boot without losing the evidence.",
-      "limitation": "This proves the frozen NEXT-2A Serial workload only. Threaded execution, simultaneous LCD/PSRAM access from both cores, spinlock contention timing, core 1 reset/relaunch and DMA-paced PCM are not covered. The v1 UF2 passed all five physical-screen checks, but its one-shot startup UART was missed; complete same-UF2 correlation remains pending one v2 USB log and one v2 final photograph.",
+      "detail": "Active target picocalc-multicore-r2 pins application e9e99f0bfde7b2706fbe7f5a2a92331eed141c98 and backend 38683d65800ef36026f674dd47228024d69eb5e7. Three normal CLI runs are byte-identical in report, UART, scenario timeline and framebuffer snapshot; two clean clones reproduce the same BIN and UF2. The harness also fails closed on a core 1 NMI or HardFault. R2 preserves the accepted phase behavior and periodically repeats its final marker block so PicoCalc USB CDC can be attached after boot without losing the evidence. On 2026-08-09 the same registered v2 UF2 passed physical-device correlation with 72 complete USB marker blocks and a final photograph showing all five PASS results.",
+      "limitation": "This proves the frozen NEXT-2A Serial workload only. Threaded execution, simultaneous LCD/PSRAM access from both cores, spinlock contention timing, core 1 reset/relaunch and DMA-paced PCM are not covered. The separate v1 one-shot capture remains preserved as incomplete historical evidence and is not silently upgraded by the v2 result.",
       "target": "picocalc-multicore-r2",
-      "evidence": "firmware-validation/records/next2-multicore-r2-20260809-01/record.json",
+      "emulator_evidence": "firmware-validation/records/next2-multicore-r2-20260809-01/record.json",
+      "evidence": "firmware-validation/records/next2-multicore-r2-hardware-20260809-01/record.json",
       "since_gate": "NEXT-2A"
     }
   ],

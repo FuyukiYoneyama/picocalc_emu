@@ -758,6 +758,48 @@ raise SystemExit(code)
         )
         self.assertEqual(next2["status"], "fail")
 
+    def test_target_schema_verification_includes_next2_v2_hardware_evidence(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-v2-evidence"
+        )
+        self.assertEqual(next2["status"], "pass")
+        self.assertEqual(next2.get("target"), "picocalc-multicore-r2")
+        self.assertEqual(next2.get("hardware_uart_blocks"), 72)
+        self.assertEqual(next2.get("physical_function"), "pass")
+        self.assertEqual(next2.get("hardware_correlation"), "pass")
+
+    def test_target_schema_rejects_next2_v2_hardware_uart_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            uart_path = (
+                project
+                / "firmware-validation/records"
+                / "next2-multicore-r2-hardware-20260809-01/usb-cdc.log"
+            )
+            uart_path.write_bytes(uart_path.read_bytes() + b"tampered\r\n")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-v2-evidence"
+        )
+        self.assertEqual(next2["status"], "fail")
+
     def test_target_schema_rejects_next1_seed_content_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

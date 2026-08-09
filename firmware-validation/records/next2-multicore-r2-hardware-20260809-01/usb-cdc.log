@@ -1,0 +1,360 @@
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=pass before=1 after=2
+[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass

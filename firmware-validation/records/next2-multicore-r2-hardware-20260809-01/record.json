@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-r2-hardware-20260809-01",
+  "title": "NEXT-2A multicore v2 same-artifact PicoCalc physical-device correlation",
+  "roadmap_package": "NEXT-2A",
+  "result": "pass",
+  "classification": "same_artifact_hardware_correlation",
+  "contract": {
+    "id": "next2-multicore-hardware-evidence-v2-20260809",
+    "path": "firmware-validation/contracts/next2-multicore-hardware-evidence-v2.json",
+    "sha256": "5eb2a9090e255e2a59b85e9dd9b9f70d1e5e0f74eb8401108491d2c3a5d7c44b",
+    "required_evidence_satisfied": true
+  },
+  "target": {
+    "id": "picocalc-multicore-r2",
+    "revision": 2,
+    "contract_sha256": "7fcca08af8e37b1accaf1c74570851e2e3f8459769356c038b92b1b062ef6c5c"
+  },
+  "source": {
+    "repo": "picocalc-multicore",
+    "commit": "e9e99f0bfde7b2706fbe7f5a2a92331eed141c98",
+    "version": "1.0.1-next2-multicore-v2",
+    "backend_commit": "38683d65800ef36026f674dd47228024d69eb5e7"
+  },
+  "artifact": {
+    "bin_sha256": "a8816759038df060da3ead7a9e80b02f91e667822132b30c0c1b2436e81c0649",
+    "uf2_sha256": "2e19d56560add74267dfc7e1f3876c0034e51d07a5e499ce23e868e7fc7d573f",
+    "build_timestamp": "2026-08-09T11:30:00Z",
+    "operator_reported_using_specified_uf2": true
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "validation_date": "2026-08-09",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "human_key_input_required": false,
+    "uart_capture": {
+      "result": "pass",
+      "transport": "PicoCalc USB Type-C CDC",
+      "bytes": 20664,
+      "lines": 360,
+      "complete_marker_blocks": 72,
+      "marker_count_each": {
+        "launch": 72,
+        "fifo": 72,
+        "wfe_sev": 72,
+        "irq_proc1": 72,
+        "verdict": 72
+      },
+      "all_blocks_byte_identical": true,
+      "all_fixed_values_match_contract": true,
+      "overall_verdict": "pass"
+    },
+    "final_screen": {
+      "result": "pass",
+      "observed_title": "NEXT2 MULTICORE",
+      "launch": "pass",
+      "fifo": "pass",
+      "wfe_sev": "pass",
+      "irq1": "pass",
+      "overall": "pass"
+    },
+    "evidence_pairing": {
+      "same_operator_submission": true,
+      "log_source_name": "20260809_205928.log",
+      "photo_source_name": "IMG_8950.JPG",
+      "note": "The periodic 72-block UART capture identifies the v2 evidence transport. The final photograph was submitted immediately afterward as the final-screen evidence from that run."
+    }
+  },
+  "correlation": {
+    "emulator_record": "firmware-validation/records/next2-multicore-r2-20260809-01/record.json",
+    "emulator_record_sha256": "72418cc2fdd7e64b3a2854749ace7b0647c3d9eb9b8a44eed3f047860918f2db",
+    "prior_incomplete_attempt": "firmware-validation/records/next2-multicore-hardware-attempt-20260809-01/record.json",
+    "same_registered_artifact": true,
+    "hardware_correlation_completed": true,
+    "emulator_result": "pass",
+    "hardware_result": "pass",
+    "emulator_pass_hardware_fail_count": 0,
+    "false_accept": false,
+    "verdict": "pass"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "usb-cdc.log",
+      "bytes": 20664,
+      "lines": 360,
+      "sha256": "a5a367b8a2d614bf217a6ce96dddb9684df0f1a1bf1e09906ab406d537cf8ad2",
+      "line_ending": "CRLF"
+    },
+    "final_photo": {
+      "path": "final.jpg",
+      "sha256": "b86b826c7c26cd0883fd0ef5494ef40dc0e0fccbf56ff394f09517d8350ef343",
+      "source_original_sha256": "5cda6cb05b7b34ed8083b82741942751d3dd19a670623a7cd49ddf6b0d5ebac6",
+      "decoded_rgb_sha256": "e2e4729c364f40299bdeb1e8737251d9de7128fc1670c952d0b7f1d8fd989ecd",
+      "width": 3024,
+      "height": 3024,
+      "metadata_policy": "repository copy has EXIF, GPS, XMP, maker notes, and MPF removed; ICC profile retained; decoded pixels match the supplied original"
+    },
+    "notes": "notes.md"
+  }
+}

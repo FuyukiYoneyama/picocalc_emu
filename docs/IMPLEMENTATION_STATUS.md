@@ -239,8 +239,10 @@ USB CDC列挙前に失われて2回のcaptureが0 byteだった。写真だけ�
 
 後続`picocalc-multicore-r2`は実装前にlate-attach契約を固定し、phaseや最終画面を変更せず、最終結果
 blockだけを1秒周期で再送する。3回の通常CLI、500,000,000-cycle repeat probe、別々のclean clone
-2 buildはすべて合格した。NEXT-2Aの残件は同一v2 UF2から完全なUSB UART blockと最終PASS写真を
-各1件採取することだけで、その後NEXT-2B audioへ進む。
+2 buildはすべて合格した。2026-08-09、同一v2 UF2の実機ログで完全な5-marker blockを72回、
+最終写真で5項目すべてのPASSを確認し、NEXT-2Aを正式完了した。証拠は
+[`next2-multicore-r2-hardware-20260809-01/`](../firmware-validation/records/next2-multicore-r2-hardware-20260809-01/)
+に固定した。次は独立契約のNEXT-2B audioへ進む。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

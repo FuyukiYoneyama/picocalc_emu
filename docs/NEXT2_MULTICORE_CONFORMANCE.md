@@ -1,7 +1,7 @@
 # NEXT-2A Serial multicore conformance
 
-**状態:** v2エミュレーター正式受入完了（2026-08-09）。v1実機機能PASSを確認済み。
-同一v2 UF2の完全UART blockと最終写真待ち。
+**状態:** NEXT-2A正式完了（2026-08-09）。v2エミュレーター受入と、同一v2 UF2による
+PicoCalc実機相関の両方が合格した。次は独立契約のNEXT-2B audio。
 
 ## 固定artifact
 
@@ -45,6 +45,20 @@ MMIO 0、全phase PASSとなった。v1実機でも最終画面の全5項目がP
 [`next2-multicore-r2-20260809-01/`](../firmware-validation/records/next2-multicore-r2-20260809-01/)
 にある。
 
+## v2実機相関結果
+
+2026-08-09、上表の同一UF2をClockworkPi PicoCalcへ書き込み、凍結済みv2契約が要求する2点を
+同じ実機セッションから取得した。
+
+- USB CDCログは20,664 bytes、360行。固定5-marker blockを72回連続で含み、全blockが同一である。
+- 最終写真は`NEXT2 MULTICORE`とLAUNCH、FIFO、WFE/SEV、IRQ1、OVERALLの全PASSを示す。
+- エミュレーターPASS・実機FAILは0件で、同一artifact相関の判定はPASSである。
+
+完全な記録、保存用ログ、メタデータ除去済み写真は
+[`next2-multicore-r2-hardware-20260809-01/`](../firmware-validation/records/next2-multicore-r2-hardware-20260809-01/)
+に固定した。v1の0-byteログと最終PASS写真は、当時の契約未完了を示す時点証拠として別記録のまま
+保持する。v2合格によってv1履歴を書き換えない。
+
 ## 凍結した試験内容
 
 最初のrunに使うbaselineは`picocalc_emu` `76334780...c8`、promoted backend
@@ -68,7 +82,7 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
 | `0xffffffff` | `0xd2d52d2a` |
 | `0x0badcafe` | `0xe0890a4a` |
 
-## 実機で人間が行うこと
+## 実機で人間が行ったこと
 
 人間の操作は**v2 UF2書込みと証拠保存の1セッションだけ**である。キー入力、monitorを起動前に開く
 タイミング合わせ、SD内容の変更、途中写真は不要である。
@@ -103,7 +117,7 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
    [NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass
    ```
 
-提出物はUARTログ全文と最終写真1枚の2点だけである。
+提出物はUARTログ全文と最終写真1枚の2点だけであり、上記v2実機記録へ保存済みである。
 
 ## 失敗・無反応時の扱い
 

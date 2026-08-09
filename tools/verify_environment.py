@@ -4523,7 +4523,7 @@ def verify_next2_multicore_acceptance(checks: List[Check], root: Path) -> None:
 
 
 def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
-    """Verify the preserved v1 hardware attempt and v2 late-attach target."""
+    """Verify v1 history, the v2 target, and completed v2 hardware evidence."""
     name = "next2:multicore-v2-evidence"
     try:
         registry = picocalc.load_firmware_registry(
@@ -4547,6 +4547,12 @@ def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
             root / "firmware-validation/records/next2-multicore-r2-20260809-01"
         )
         record = load_json(record_root / "record.json")
+        hardware_root = (
+            root
+            / "firmware-validation/records/next2-multicore-r2-hardware-20260809-01"
+        )
+        hardware_record_path = hardware_root / "record.json"
+        hardware_record = load_json(hardware_record_path)
 
         report_hashes = []
         uart_hashes = []
@@ -4602,6 +4608,18 @@ def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
         firmware_run = record["firmware_run"]
         reproducible = record["reproducible_build"]
         probe = record["late_attach_evidence_probe"]
+        hardware_uart_path = (
+            hardware_root / hardware_record["artifacts"]["uart_log"]["path"]
+        )
+        hardware_photo_path = (
+            hardware_root / hardware_record["artifacts"]["final_photo"]["path"]
+        )
+        hardware_uart_bytes = hardware_uart_path.read_bytes()
+        hardware_uart_lines = hardware_uart_bytes.decode("utf-8").splitlines()
+        hardware_run = hardware_record["physical_run"]
+        hardware_uart = hardware_run["uart_capture"]
+        hardware_screen = hardware_run["final_screen"]
+        hardware_correlation = hardware_record["correlation"]
 
         aligned = all(
             (
@@ -4673,6 +4691,80 @@ def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
                 is False,
                 record.get("hardware_correlation", {}).get("status")
                 == "pending_complete_uart_evidence",
+                hardware_record.get("record_id")
+                == "next2-multicore-r2-hardware-20260809-01",
+                hardware_record.get("result") == "pass",
+                hardware_record.get("classification")
+                == "same_artifact_hardware_correlation",
+                hardware_record.get("contract", {}).get("id")
+                == contract.get("contract_id"),
+                hardware_record.get("contract", {}).get("sha256")
+                == sha256(contract_path),
+                hardware_record.get("contract", {}).get(
+                    "required_evidence_satisfied"
+                )
+                is True,
+                hardware_record.get("target", {}).get("id") == target.get("id"),
+                hardware_record.get("target", {}).get("revision")
+                == target.get("revision"),
+                hardware_record.get("target", {}).get("contract_sha256")
+                == picocalc.firmware_target_contract_sha256(target),
+                hardware_record.get("source", {}).get("commit")
+                == target.get("source", {}).get("commit"),
+                hardware_record.get("source", {}).get("backend_commit")
+                == target.get("backend", {}).get("accepted"),
+                hardware_record.get("artifact", {}).get("bin_sha256")
+                == target.get("artifacts", {}).get("bin_sha256"),
+                hardware_record.get("artifact", {}).get("uf2_sha256")
+                == target.get("artifacts", {}).get("uf2_sha256"),
+                hardware_record.get("artifact", {}).get(
+                    "operator_reported_using_specified_uf2"
+                )
+                is True,
+                sha256(hardware_uart_path)
+                == hardware_record["artifacts"]["uart_log"]["sha256"]
+                == "a5a367b8a2d614bf217a6ce96dddb9684df0f1a1bf1e09906ab406d537cf8ad2",
+                len(hardware_uart_bytes) == 20_664,
+                hardware_uart_bytes.count(b"\r\n") == 360,
+                hardware_uart_lines == markers * 72,
+                hardware_uart.get("result") == "pass",
+                hardware_uart.get("complete_marker_blocks") == 72,
+                hardware_uart.get("all_blocks_byte_identical") is True,
+                hardware_uart.get("all_fixed_values_match_contract") is True,
+                hardware_uart.get("overall_verdict") == "pass",
+                all(
+                    count == 72
+                    for count in hardware_uart["marker_count_each"].values()
+                ),
+                sha256(hardware_photo_path)
+                == hardware_record["artifacts"]["final_photo"]["sha256"]
+                == "b86b826c7c26cd0883fd0ef5494ef40dc0e0fccbf56ff394f09517d8350ef343",
+                hardware_record["artifacts"]["final_photo"][
+                    "source_original_sha256"
+                ]
+                == "5cda6cb05b7b34ed8083b82741942751d3dd19a670623a7cd49ddf6b0d5ebac6",
+                hardware_record["artifacts"]["final_photo"][
+                    "decoded_rgb_sha256"
+                ]
+                == "e2e4729c364f40299bdeb1e8737251d9de7128fc1670c952d0b7f1d8fd989ecd",
+                hardware_record["artifacts"]["final_photo"].get("width")
+                == 3024,
+                hardware_record["artifacts"]["final_photo"].get("height")
+                == 3024,
+                hardware_screen.get("result") == "pass",
+                all(
+                    hardware_screen.get(field) == "pass"
+                    for field in ("launch", "fifo", "wfe_sev", "irq1", "overall")
+                ),
+                hardware_correlation.get("emulator_record_sha256")
+                == sha256(record_root / "record.json"),
+                hardware_correlation.get("same_registered_artifact") is True,
+                hardware_correlation.get("hardware_correlation_completed") is True,
+                hardware_correlation.get("emulator_result") == "pass",
+                hardware_correlation.get("hardware_result") == "pass",
+                hardware_correlation.get("emulator_pass_hardware_fail_count") == 0,
+                hardware_correlation.get("false_accept") is False,
+                hardware_correlation.get("verdict") == "pass",
             )
         )
         add_check(
@@ -4682,10 +4774,9 @@ def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
             target=target.get("id"),
             runs=len(reports),
             repeat_blocks=probe.get("complete_marker_blocks"),
-            physical_function=attempt.get("correlation", {}).get(
-                "hardware_function_result"
-            ),
-            hardware_correlation=record.get("hardware_correlation", {}).get("status"),
+            hardware_uart_blocks=hardware_uart.get("complete_marker_blocks"),
+            physical_function=hardware_correlation.get("hardware_result"),
+            hardware_correlation=hardware_correlation.get("verdict"),
         )
     except (
         OSError,
