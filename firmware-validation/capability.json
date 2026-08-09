@@ -229,7 +229,7 @@
     {
       "id": "audio-output",
       "what": "PWM audio playback through DMA to a sample sink",
-      "detail": "PWM configuration is observable; sample streaming is not modelled."
+      "detail": "PWM configuration is observable; sample streaming is not modelled. NEXT-2B contract next2-audio-v1-20260809 and its independent oracle are frozen, but backend/app/target/evidence are not implemented. Authority is 49152 stereo frames (1.024 seconds), DMA timer 0 fraction 3/15625, TREQ 59, and the DMA-origin PWM5_CC sample-sink hash; R5 counters and recordings are not substitutes."
     },
     {
       "id": "bootrom-execution",

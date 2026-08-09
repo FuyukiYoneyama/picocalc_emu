@@ -1761,6 +1761,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_next2_multicore_contract(checks, root)
     verify_next2_multicore_acceptance(checks, root)
     verify_next2_multicore_v2_evidence(checks, root)
+    verify_next2_audio_contract(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
@@ -4377,6 +4378,118 @@ def verify_next2_multicore_contract(checks: List[Check], root: Path) -> None:
             backend=baseline.get("promoted_backend_commit"),
             phase_count=len(phases),
             marker_count=len(contract.get("required_uart_markers", [])),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_next2_audio_contract(checks: List[Check], root: Path) -> None:
+    """Verify the frozen NEXT-2B contract against an independent vector oracle."""
+    name = "next2:audio-contract"
+    contract_path = root / "firmware-validation/contracts/next2-audio-v1.json"
+    oracle_path = root / "tools/next2_audio_oracle.py"
+    doc_path = root / "docs/NEXT2_AUDIO_CONFORMANCE.md"
+    expected_hash = (
+        "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a"
+    )
+    try:
+        contract = load_json(contract_path)
+        vector = contract["sample_vector"]
+        timer = contract["dma_and_timer_plan"]["timer"]
+        dma = contract["dma_and_timer_plan"]["dma"]
+        destination = dma["destination"]
+        digest = hashlib.sha256()
+        frame_count = vector["frame_count"]
+        for index in range(frame_count):
+            left = (index * 17 + 3) & 0xFF
+            right = 255 - ((index * 29 + 7) & 0xFF)
+            left_pcm = left * 257 - 32768
+            right_pcm = right * 257 - 32768
+            if (left_pcm + 32768) // 257 != left:
+                raise ValueError(f"left PCM oracle mismatch at frame {index}")
+            if (right_pcm + 32768) // 257 != right:
+                raise ValueError(f"right PCM oracle mismatch at frame {index}")
+            digest.update(struct.pack("<I", left | (right << 16)))
+        oracle_hash = digest.hexdigest()
+        doc = doc_path.read_text(encoding="utf-8")
+        aligned = all(
+            (
+                sha256(contract_path)
+                == "040dd9ae78380d0a56461c5263dddb72ae3936172418173de51243c500535c30",
+                contract.get("schema_version") == 1,
+                contract.get("contract_id") == "next2-audio-v1-20260809",
+                contract.get("status") == "frozen_before_application_implementation",
+                contract.get("roadmap_package") == "NEXT-2B",
+                contract.get("application", {}).get("repository_directory")
+                == "picocalc-audio",
+                contract.get("application", {}).get("execution_model") == "Serial",
+                contract.get("application", {}).get("scheduler_instruction_quantum")
+                == 1,
+                contract.get("frozen_baseline", {}).get("picocalc_emu_commit")
+                == "132cd542fac343b17ad54861550c48037132c6b0",
+                contract.get("frozen_baseline", {}).get(
+                    "backend_commit_before_audio_implementation"
+                )
+                == "38683d65800ef36026f674dd47228024d69eb5e7",
+                frame_count == 49_152,
+                vector.get("pattern_period_frames") == 256,
+                vector.get("duration_seconds_at_48000_hz") == 1.024,
+                vector.get("pcm_packing", {}).get("expected_sha256")
+                == expected_hash,
+                oracle_hash == expected_hash,
+                timer == {
+                    "index": 0,
+                    "x": 3,
+                    "y": 15625,
+                    "wrap_or_divider_note": "defines 48.0 kHz pace target",
+                },
+                dma.get("treq") == 59,
+                destination.get("pwm_slice") == 5,
+                destination.get("register") == "CC",
+                destination.get("address") == "0x40050070",
+                destination.get("address_mode") == "fixed",
+                destination.get("transfer_width_bits") == 32,
+                dma.get("source", {}).get("half_buffer_frames") == 128,
+                dma.get("source", {}).get("accepted_dma_write_count") == 49_152,
+                dma.get("expected_inter_sample_gaps_after_first") == [5208, 5209],
+                contract.get("pass_criteria", {}).get("exact_sample_count")
+                == 49_152,
+                len(contract.get("required_uart_markers", [])) == 5,
+                contract.get("first_firmware_run", {}).get(
+                    "result_must_be_recorded_even_if_failure"
+                )
+                is True,
+                contract.get("first_firmware_run", {}).get(
+                    "firmware_runs_required"
+                )
+                == 3,
+                contract.get("first_firmware_run", {}).get(
+                    "clean_clone_reproducible_builds_required"
+                )
+                == 2,
+                oracle_path.is_file(),
+                doc_path.is_file(),
+                "next2-audio-v1-20260809" in doc,
+                expected_hash in doc,
+                "R5" in doc,
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            contract_id=contract.get("contract_id"),
+            contract_status=contract.get("status"),
+            frame_count=frame_count,
+            sample_sha256=oracle_hash,
+            implementation="not_started",
         )
     except (
         OSError,

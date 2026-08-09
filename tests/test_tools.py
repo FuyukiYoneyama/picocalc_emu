@@ -19,6 +19,7 @@ PICOCALC = ROOT / "tools/picocalc.py"
 VERIFY = ROOT / "tools/verify_environment.py"
 GENERATE_BOARD = ROOT / "tools/generate_board_header.py"
 BENCHMARK_REALTIME = ROOT / "tools/benchmark_firmware_realtime.py"
+NEXT2_AUDIO_ORACLE = ROOT / "tools/next2_audio_oracle.py"
 
 
 def run(*arguments, env=None):
@@ -772,6 +773,34 @@ raise SystemExit(code)
         self.assertEqual(next2.get("hardware_uart_blocks"), 72)
         self.assertEqual(next2.get("physical_function"), "pass")
         self.assertEqual(next2.get("hardware_correlation"), "pass")
+
+    def test_next2_audio_oracle_reports_expected_sha256(self):
+        completed = run(
+            NEXT2_AUDIO_ORACLE,
+            "--verify",
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["frame_count"], 49152)
+        self.assertEqual(payload["pattern_period"], 256)
+        self.assertAlmostEqual(payload["duration"], 49152 / 48000, places=12)
+        self.assertEqual(
+            payload["sha256"],
+            "c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a",
+        )
+        self.assertEqual(payload["first_words"][:4], [0x00F80003, 0x00DB0014, 0x00BE0025, 0x00A10036])
+        self.assertEqual(payload["verify"]["status"], "match")
+
+    def test_next2_audio_oracle_verify_mismatch_fails(self):
+        completed = run(
+            NEXT2_AUDIO_ORACLE,
+            "--verify",
+            "--expected-sha256",
+            "0" * 64,
+        )
+        self.assertEqual(completed.returncode, 1, completed.stderr + completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["verify"]["status"], "mismatch")
 
     def test_target_schema_rejects_next2_v2_hardware_uart_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:

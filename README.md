@@ -144,6 +144,8 @@ firmwareはFAT32/FAT16を各3回実行して決定一致、hostは両形式のCT
 エミュレーターで正式合格し、2026-08-09にはv2同一UF2の完全USBログと最終5-PASS写真による
 実機相関も完了しました。v1でログを取り逃した履歴も、契約を緩めず未完了証拠として保持しています。
 次は独立したNEXT-2B audioであり、音声の実再生はまだ未対応です。
+NEXT-2Bは事前契約 `next2-audio-v1-20260809` と独立oracleを凍結済みですが、backend/app/target/evidenceは未実装です。
+契約のauthorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counterや実機録音の代用は認めません。
 そして何より、**実機の色・向き・可読性・聴感はエミュレーターでは
 判定できません。** エミュレーターは「firmwareが何を書いたか」は再現しますが、
 「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
@@ -571,6 +573,8 @@ LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しま
 PWM設定と関連counterを観測できるが、DMA-paced PCM waveformをsample sinkへ出力しない。
 machine-readableな現行境界は`firmware-validation/capability.json`の`audio-output` unsupportedを
 正典とする。
+NEXT-2Bの事前契約 `next2-audio-v1-20260809` と独立oracleは凍結済みだが、backend/app/target/evidenceは未実装である。
+authorityは49152 stereo frames（1.024秒）、DMA timer 0の`3/15625`、TREQ 59、DMA-origin PWM5_CC sample sink hashであり、R5 counters/録音は代用不可とする。
 
 ## RAMRDの解釈
 
