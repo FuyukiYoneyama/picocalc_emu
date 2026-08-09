@@ -27,7 +27,8 @@ timelineを含むregistryの全条件に合格しなければjobは失敗する�
 - `target-schema`: registry、JSON schema、versioned attestation、evidence SHAとfail-closed
   異常系を検査する。
 - `host`: BSP host modelをbuildし、FAT32既定/FAT16明示を含むCTestと`emu_smoke`を3回実行する。
-  stdout SHA-256も`84afb65d...b4b`へ固定する。
+  R4時点の0.8.8 stdout SHA-256は`84afb65d...b4b`だった。BSP 0.9.0ではboot版表示だけが変わり、
+  current CIは`e8061a22...16aa`へ固定する。
 - `rp2040-compat`: 最低互換対象のPico SDK 2.0.0で標準templateをcompileする。
 - `hardware-correlated-firmware-regression`: R5の固定BIN/UF2をbackend `612b485...f66`で
   再実行し、実機相関済みbaselineを不変に保つ。

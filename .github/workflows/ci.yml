@@ -100,7 +100,7 @@ jobs:
           assert report["runs"] == 3
           assert report["deterministic"] is True
           assert report["exit_codes"] == [0, 0, 0]
-          assert report["stdout_sha256"] == "84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b"
+          assert report["stdout_sha256"] == "e8061a221d52d838ac89974737a4e254106988706ea8b761ae078cf3419d16aa"
           PY
 
   # SDK 2.0.0 is the declared minimum compatibility build. The registered

@@ -133,11 +133,12 @@ CIからそのまま使える。
 読んでいれば比較が落ちる。
 
 ```
-host backend: 3 run(s), byte-identical, output sha256 84afb65deb46c313
+host backend: 3 run(s), byte-identical, output sha256 e8061a221d52d838
 ```
 
-これはFAT32既定化後の現行出力で、完全なSHA-256は
-`84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b`である。
+これはBSP 0.9.0の現行出力で、完全なSHA-256は
+`e8061a221d52d838ac89974737a4e254106988706ea8b761ae078cf3419d16aa`である。
+0.8.8のFAT32既定化後は`84afb65d...b4b`であり、差はboot版表示による。
 `milestone2-20260805-01`に残る`3a4c400f...`はSD形式試験追加前の時点証拠なので書き換えない。
 
 ## まだできないこと

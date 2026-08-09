@@ -536,8 +536,8 @@ python3 tools/picocalc.py test --mode host
 ```
 
 `bsp/host/tests/emu_smoke.cpp`が25個の明示的checkと初期化前提を検査し、3回連続実行で
-出力がバイト一致する（Milestone 2の完了条件）。FAT32既定化後の現行stdout SHA-256は
-`84afb65deb46c3133f19ee22a2212e0e758722d7fa8564fe663dd61af8e82b4b`で、所要は1秒未満。
+出力がバイト一致する（Milestone 2の完了条件）。BSP 0.9.0の現行stdout SHA-256は
+`e8061a221d52d838ac89974737a4e254106988706ea8b761ae078cf3419d16aa`で、所要は1秒未満。
 
 **firmware backendが権威である。** hostにはPIO・DMA・I2C・割り込みが存在しないため、
 ハードウェアの挙動は問いとして成立しない。その代わり次の2点が効く。
