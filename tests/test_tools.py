@@ -586,6 +586,92 @@ raise SystemExit(code)
             "e58e67f1be69357edec0bd47e879039f47a42648",
         )
 
+    def test_target_schema_verification_includes_opt3c_compact_dispatch_key(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt3c = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt3-c:compact-dispatch-key"
+        )
+        self.assertEqual(opt3c["status"], "pass")
+        self.assertEqual(opt3c["target"], "picotetris-opt1b")
+        self.assertEqual(opt3c["result"], "rejected_performance_reverted")
+        self.assertEqual(
+            opt3c.get("baseline_backend"),
+            "e58e67f1be69357edec0bd47e879039f47a42648",
+        )
+        self.assertEqual(
+            opt3c.get("candidate_backend"),
+            "3819a9d093b8ce980a61724ac8ab33ffe3003ec3",
+        )
+        self.assertEqual(
+            opt3c.get("revert_backend"),
+            "04b2eb2fb26f126e848b5c041177324954a98290",
+        )
+        self.assertEqual(opt3c.get("opt3_overall_status"), "complete_no_additional_promotion")
+
+    def test_target_schema_rejects_opt3c_compact_dispatch_key_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = (
+                project
+                / "firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/record.json"
+            )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt3c = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt3-c:compact-dispatch-key"
+        )
+        self.assertEqual(opt3c["status"], "fail")
+
+    def test_target_schema_rejects_opt3c_compact_dispatch_key_artifact_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            artifact_path = (
+                project
+                / "firmware-validation/records/"
+                "opt3-c-compact-dispatch-key-20260809-01/run-report.json"
+            )
+            artifact_path.write_text(
+                artifact_path.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt3c = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt3-c:compact-dispatch-key"
+        )
+        self.assertEqual(opt3c["status"], "fail")
+
     def test_target_schema_rejects_opt3b_xip_decode_cursor_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

@@ -25,7 +25,9 @@ CPU 0固定clean A/B/A/B/A/B中央値が25.92秒から28.17秒へ`-8.6805555556%
 実際のrunning fast-forwardはCPU MMIO/DMA ordering未証明のため実装せず、fail-closed laneだけを試作しました。
 OPT2は性能条件未達のまま追加promotionなしで終了しました。OPT3-Aでimmutable-XIP decode cursorの
 機会分布を計測し、OPT3-Bで短いcursorを試作しました。全eventは一致しましたが、wall中央値が
-4.4265%退行したため不採用・revert済みです。次はeager copyを避けるOPT3-C dispatch keyを調査します。
+4.4265%退行したため不採用・revert済みです。OPT3-C compact dispatch keyも全event一致を維持しましたが、
+中央値4.1541916168%改善で5%閾値未達のため不採用・revert済みです。性能最適化は一旦区切り、次優先は
+blind app、multicore/audio、negative conformance、headless interfaceです。
 詳細な順序は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -92,7 +94,11 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R6-M | backend role/CI整合保守 | `picocalc_emu`＋backend | 実機相関済み、現在promoted、実験中mainを機械可読に分離し、相関baselineとpromoted targetを別々のCI jobで固定source/BIN/UF2/backendから再現する。audioの実機証拠と未実装PCM出力を混同しない | **完了 2026-08-09**。capability schema 2、role/target/CI相互検証、R5相関job＋OPT1-B promoted jobを接続 |
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
-| OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-B完了・不採用 2026-08-09**。短いXIP cursorは全event一致、中央値4.4265%退行でrevert。次はeager copyを避けるOPT3-C compact dispatch key |
+| OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-C完了・不採用 2026-08-09**。全event一致、中央値4.1542%改善だが5%未達でrevert。性能最適化は一旦区切る |
+| NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **次に着手** |
+| NEXT-2 | capability範囲拡張 | backend＋新規app | multicore launch/SIO FIFO/WFE-SEV/IRQと、DMA-paced PCM sample sinkを別々のfail-closed gateで実装・相関する。設定/counter合格と実PCM出力を混同しない | 未着手 |
+| NEXT-3 | negative conformance | backend＋実機証拠 | 実機で壊れる既知版をエミュレーターもFAILにし、正常版→PASS、故障版→FAIL、修正版→PASSの履歴とfalse-acceptance KPI母数を増やす | 未着手 |
+| NEXT-4 | 安定headless machine API | backend＋scenario runner | `run` / `step` / `run_until` / `input` / `observe` / `subscribe` / `snapshot`の小さなAPIを定義し、既存scenario runnerを利用者として載せる | 未着手 |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
 
@@ -524,7 +530,8 @@ audio pathが一致し、`emulator pass -> hardware fail`はR5範囲で0件だ�
 
 R5の`audio=pass`はfirmware設定/counterと実機参照音の相関であり、エミュレーターがPCM waveformを
 生成する意味ではない。PCM sample sinkはcapability上unsupportedである。また0件という値は一般的な
-false-acceptance率0%ではない。次のMilestone 4継続作業はnegative conformanceとKPI母数の追加である。
+false-acceptance率0%ではない。Milestone 4へ戻るときの継続作業はnegative conformanceとKPI母数の
+追加である。全体の直近順序では、その前にNEXT-1 blind appとNEXT-2 capability範囲拡張を行う。
 
 - 実機SPI/I2C/UART trace採取
 - host traceとのgolden比較

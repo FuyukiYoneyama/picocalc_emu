@@ -79,10 +79,13 @@ OPT3-Aのrun平均4.563命令に対して最大3件をeager copyする方式で�
 candidateはcommit `e58e67f1be69357edec0bd47e879039f47a42648`でrevertした。revert後のsourceは
 baselineとbyte-equivalentで、backend CI run `31293556450`のtest、fmt、Clippyはすべて成功した。
 
-次は**OPT3-C compact predecoded dispatch key**を調査する。既存cache entryにtop-level dispatch用の
-小さな分類値を保持し、hit時の分岐・decode補助を減らす一方、後続命令をeager copyしない。
+この文書作成時点の次候補は**OPT3-C compact predecoded dispatch key**だった。既存cache entryに
+top-level dispatch用の小さな分類値を保持し、hit時の分岐・decode補助を減らす一方、後続命令を
+eager copyしない。
 scheduler、exception/IRQ、invalidation、mutable codeの境界はOPT3-Bと同じgateで守る。これは次の
-調査方向であり、性能改善を保証するものではない。
+調査方向であり、性能改善を保証するものではなかった。OPT3-Cは後にexactnessへ合格したが
+4.1541916168%改善で5%性能gateに届かず、revertして終了した。現在状態は
+[`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)を参照する。
 
 完全な機械可読証拠は
 [`opt3-b-xip-decode-cursor-20260809-01`](../firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/notes.md)

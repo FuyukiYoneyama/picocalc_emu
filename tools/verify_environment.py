@@ -1736,6 +1736,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2g_uart_deadline(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
+    verify_opt3c_compact_dispatch_key(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -3596,6 +3597,254 @@ def verify_opt3b_xip_decode_cursor(checks: List[Check], root: Path) -> None:
         KeyError,
         StopIteration,
         IndexError,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt3c_compact_dispatch_key(checks: List[Check], root: Path) -> None:
+    """Verify the OPT3-C compact decode-key prototype and rejection decision."""
+    name = "opt3-c:compact-dispatch-key"
+    record_id = "opt3-c-compact-dispatch-key-20260809-01"
+    target_id = "picotetris-opt1b"
+    target_revision = 5
+    expected_domains = {
+        "clock",
+        "irq_exception",
+        "pio_gpio",
+        "psram",
+        "lcd",
+        "dma_dreq",
+        "timer_pwm",
+        "serial_bus",
+        "scenario_input",
+    }
+    expected_artifact_hashes = {
+        "run_report": "228659bd54ecf4fecb8fb819b1dbbd6ab08da0e80d9748812abd1ca087df0d72",
+        "behavior_trace": "cb9d195d5c6d39a0bc3a9a3c007f2e27962fdd03319bd6da96a7a3979a6b1d9b",
+        "performance_screening": (
+            "ab22775ea0c47345bf0c306576c701e50dd97a0a2d5e3688bc1b695ee7f92794"
+        ),
+        "notes": "8f7b05ca0c17130d608eb4212748d8d59731ada969f40ad1cc3317daeb833793",
+    }
+    expected_omission_reason = (
+        "The three-run median failed the 5% adoption threshold; "
+        "a ten-run promotion measurement was not performed."
+    )
+    expected_next_investigation = (
+        "pause performance optimization and prioritize blind app, multicore/audio, "
+        "negative conformance, and headless interface work"
+    )
+    try:
+        record_root = root / "firmware-validation/records" / record_id
+        record = load_json(record_root / "record.json")
+        run_report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        opt1b_behavior = load_json(
+            root / "firmware-validation/records/opt1-b-20260808-01/behavior-trace.json"
+        )
+        target_record = record["target"]
+        registry_target = next(
+            item
+            for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == target_id
+        )
+        artifacts = record["artifacts"]
+        exactness = record["exactness"]
+        performance_summary = record["performance"]
+        prototype = record["prototype"]
+        decision = record["decision"]
+        ci = record["ci"]
+        event_trace = behavior.get("behavior_projection", {}).get("event_trace", {})
+        event_domains = {item.get("name") for item in event_trace.get("domains", [])}
+        baseline_samples = performance.get("baseline", {}).get("wall_seconds", [])
+        candidate_samples = performance.get("candidate", {}).get("wall_seconds", [])
+        pair_improvements = performance.get("pair_improvement_percent", [])
+
+        artifact_checks = [
+            (artifact_name, record_root / artifact_path)
+            for artifact_name, artifact_path in (
+                ("run_report", artifacts["run_report"]),
+                ("behavior_trace", artifacts["behavior_trace"]),
+                ("performance_screening", artifacts["performance_screening"]),
+                ("notes", artifacts["notes"]),
+            )
+        ]
+
+        aligned = all(
+            (
+                record.get("schema_version") == 1,
+                record.get("record_id") == record_id,
+                record.get("result") == "rejected_performance_reverted",
+                record.get("roadmap_package") == "OPT3-C",
+                record.get("opt3_overall_status") == "complete_no_additional_promotion",
+                target_record.get("id") == target_id,
+                target_record.get("revision") == target_revision,
+                target_record.get("firmware_source_commit")
+                == registry_target.get("source", {}).get("commit"),
+                target_record.get("firmware_sha256")
+                == registry_target.get("artifacts", {}).get("bin_sha256"),
+                target_record.get("firmware_uf2_sha256")
+                == registry_target.get("artifacts", {}).get("uf2_sha256"),
+                target_record.get("scenario_sha256")
+                == registry_target.get("scenario", {}).get("sha256"),
+                prototype.get("baseline_backend_commit")
+                == "e58e67f1be69357edec0bd47e879039f47a42648",
+                prototype.get("candidate_backend_commit")
+                == "3819a9d093b8ce980a61724ac8ab33ffe3003ec3",
+                prototype.get("revert_backend_commit")
+                == "04b2eb2fb26f126e848b5c041177324954a98290",
+                prototype.get("candidate_backend_dirty") is False,
+                prototype.get("feature") == "compact-dispatch-key-prototype",
+                prototype.get("flags") == "bits1..6",
+                prototype.get("decoded_op_size_bytes") == 12,
+                prototype.get("successor_copy") is False,
+                prototype.get("staging") is False,
+                prototype.get("clear") is False,
+                prototype.get("serial_core0_only") is True,
+                prototype.get("scheduler_instruction_quantum") == 1,
+                prototype.get("production_optimization_added") is False,
+                exactness.get("verdict") == "pass",
+                exactness.get("stop_reason") == "scenario_done",
+                exactness.get("cycles") == 927_528_660,
+                exactness.get("elapsed_us") == 3_715_000,
+                exactness.get("scenario_steps_passed") == 85,
+                exactness.get("scenario_steps_total") == 85,
+                exactness.get("event_stream_total_events") == 173_498_680,
+                exactness.get("all_nine_event_domains_match_opt1b") is True,
+                exactness.get("uart_sha256")
+                == "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+                exactness.get("framebuffer_rgb565_sha256")
+                == "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+                exactness.get("psram_tick_count") == 305_747_113,
+                exactness.get("behavior_sha256")
+                == "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+                exactness.get("event_stream_sha256")
+                == "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+                performance_summary.get("method")
+                == "trace/proof-OFF clean A/B/A/B/A/B screening",
+                performance_summary.get("baseline_median_wall_seconds") == 26.72,
+                performance_summary.get("candidate_median_wall_seconds") == 25.61,
+                math.isclose(
+                    performance_summary.get("median_improvement_percent", 0.0),
+                    4.1541916168,
+                    rel_tol=0.0,
+                    abs_tol=1e-12,
+                ),
+                performance_summary.get("required_improvement_percent") == 5.0,
+                performance_summary.get("all_six_runs_exact") is True,
+                performance_summary.get("formal_ten_run_gate_executed") is False,
+                performance_summary.get("decision") == "reject_and_revert",
+                performance.get("schema_version") == 1,
+                performance.get("record_id") == record_id,
+                performance.get("method")
+                == "trace/proof-OFF clean A/B/A/B/A/B screening",
+                performance.get("cpu_affinity")
+                == "same host and measurement session; alternating baseline/candidate",
+                performance.get("all_six_runs_exact") is True,
+                performance.get("formal_ten_run_gate_executed") is False,
+                performance.get("formal_ten_run_gate_omission_reason")
+                == expected_omission_reason,
+                performance.get("decision") == "reject_and_revert",
+                baseline_samples == [27.18, 26.26, 26.72],
+                candidate_samples == [25.31, 25.61, 25.77],
+                pair_improvements == [6.8800588668, 2.4752475248, 3.5553892216],
+                math.isclose(
+                    performance.get("median_improvement_percent", 0.0),
+                    4.1541916168,
+                    rel_tol=0.0,
+                    abs_tol=1e-12,
+                ),
+                performance.get("required_improvement_percent") == 5.0,
+                performance.get("median_improvement_percent")
+                < performance.get("required_improvement_percent"),
+                performance.get("baseline", {}).get("backend_commit")
+                == prototype.get("baseline_backend_commit"),
+                performance.get("candidate", {}).get("backend_commit")
+                == prototype.get("candidate_backend_commit"),
+                performance.get("baseline", {}).get("runner_sha256")
+                == "332a6ea5938472447b313397fdd261c4e2a6753715b3b16659bb8f1077071a1c",
+                performance.get("candidate", {}).get("runner_sha256")
+                == "604d0bc5f7f615c31791a283159e1aad4811cf1990366e700dbd45e579addbf0",
+                performance.get("baseline", {}).get("median_wall_seconds") == 26.72,
+                performance.get("candidate", {}).get("median_wall_seconds") == 25.61,
+                record.get("decision", {}).get("candidate_rejected") is True,
+                record.get("decision", {}).get("candidate_reverted") is True,
+                record.get("decision", {}).get("active_target_changed") is False,
+                record.get("decision", {}).get("validation_attestation_added") is False,
+                record.get("decision", {}).get("selected_next_investigation")
+                == expected_next_investigation,
+                run_report.get("schema_version") == 8,
+                run_report.get("backend_build", {}).get("commit")
+                == prototype.get("candidate_backend_commit"),
+                run_report.get("backend_build", {}).get("dirty") is False,
+                run_report.get("firmware", {}).get("sha256")
+                == target_record.get("firmware_sha256"),
+                run_report.get("execution_model") == "Serial",
+                run_report.get("step_quantum") == 1,
+                run_report.get("stop_reason") == exactness.get("stop_reason"),
+                run_report.get("cycles") == exactness.get("cycles"),
+                run_report.get("elapsed_us") == exactness.get("elapsed_us"),
+                len(run_report.get("scenario", {}).get("steps", [])) == 85,
+                run_report.get("scenario", {}).get("status") == "pass",
+                run_report.get("verdict", {}).get("status") == "pass",
+                run_report.get("uart", {}).get("sha256") == exactness.get("uart_sha256"),
+                run_report.get("framebuffer", {}).get("rgb565_sha256")
+                == exactness.get("framebuffer_rgb565_sha256"),
+                run_report.get("psram", {}).get("tick_count") == exactness.get("psram_tick_count"),
+                behavior.get("schema_version") == 1,
+                behavior.get("normal_report_schema_version") == 8,
+                behavior.get("mode") == "correctness_trace_on",
+                behavior.get("backend_build", {}).get("commit")
+                == prototype.get("candidate_backend_commit"),
+                behavior.get("backend_build", {}).get("dirty") is False,
+                behavior.get("valid_for_wall_time") is False,
+                behavior.get("behavior_sha256") == exactness.get("behavior_sha256"),
+                behavior.get("behavior_projection")
+                == opt1b_behavior.get("behavior_projection"),
+                event_trace.get("total_events") == exactness.get("event_stream_total_events"),
+                event_trace.get("schema_version") == 2,
+                event_trace.get("sha256") == exactness.get("event_stream_sha256"),
+                set(event_domains) == expected_domains,
+                len(event_domains) == 9,
+                ci.get("repository") == "FuyukiYoneyama/picoem-picocalc",
+                ci.get("run_id") == 31_299_159_125,
+                ci.get("head_sha")
+                == "04b2eb2fb26f126e848b5c041177324954a98290",
+                ci.get("conclusion") == "success",
+                all(
+                    path.is_file()
+                    and artifacts.get(f"{artifact_name}_sha256")
+                    == expected_artifact_hashes[artifact_name]
+                    and sha256(path) == expected_artifact_hashes[artifact_name]
+                    for artifact_name, path in artifact_checks
+                ),
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target_record.get("id"),
+            result=record.get("result"),
+            baseline_backend=prototype.get("baseline_backend_commit"),
+            candidate_backend=prototype.get("candidate_backend_commit"),
+            revert_backend=prototype.get("revert_backend_commit"),
+            candidate_median_improvement_percent=performance.get("median_improvement_percent"),
+            baseline_median_wall_seconds=performance_summary.get("baseline_median_wall_seconds"),
+            candidate_median_wall_seconds=performance_summary.get("candidate_median_wall_seconds"),
+            opt3_overall_status=record.get("opt3_overall_status"),
+            domain_count=len(event_domains),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
         statistics.StatisticsError,
         json.JSONDecodeError,
     ) as error:

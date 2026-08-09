@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "record_id": "opt3-c-compact-dispatch-key-20260809-01",
+  "method": "trace/proof-OFF clean A/B/A/B/A/B screening",
+  "cpu_affinity": "same host and measurement session; alternating baseline/candidate",
+  "formal_ten_run_gate_executed": false,
+  "formal_ten_run_gate_omission_reason": "The three-run median failed the 5% adoption threshold; a ten-run promotion measurement was not performed.",
+  "baseline": {
+    "backend_commit": "e58e67f1be69357edec0bd47e879039f47a42648",
+    "runner_sha256": "332a6ea5938472447b313397fdd261c4e2a6753715b3b16659bb8f1077071a1c",
+    "wall_seconds": [27.18, 26.26, 26.72],
+    "median_wall_seconds": 26.72
+  },
+  "candidate": {
+    "backend_commit": "3819a9d093b8ce980a61724ac8ab33ffe3003ec3",
+    "runner_sha256": "604d0bc5f7f615c31791a283159e1aad4811cf1990366e700dbd45e579addbf0",
+    "wall_seconds": [25.31, 25.61, 25.77],
+    "median_wall_seconds": 25.61
+  },
+  "pair_improvement_percent": [6.8800588668, 2.4752475248, 3.5553892216],
+  "median_improvement_percent": 4.1541916168,
+  "required_improvement_percent": 5.0,
+  "all_six_runs_exact": true,
+  "decision": "reject_and_revert"
+}

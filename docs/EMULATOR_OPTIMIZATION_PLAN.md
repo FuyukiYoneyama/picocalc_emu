@@ -1,8 +1,11 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。backendの実機相関済み・promoted・experimental mainの役割と前二者の独立CIを固定済み。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B short immutable-XIP decode cursorはexactness合格・性能退行でrevert済み。次はOPT3-C compact predecoded dispatch keyの調査
-**基準日:** 2026-08-06  
-**対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。backendの実機相関済み・promoted・experimental mainの役割と前二者の独立CIを固定済み。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B・OPT3-Cもexactnessを維持したが性能gate不合格でrevert済み。追加promotionなしで性能最適化を一旦完了し、対象範囲の拡張へ移る
+
+**基準日:** 2026-08-09
+
+**対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression
+
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
 
 ## 1. 目的
@@ -431,8 +434,22 @@ PicoTetrisは85/85、927,528,660 cycle、UART、framebuffer、PSRAM、behavior S
 25.98秒から27.13秒へ悪化した（改善率`-4.4264819092%`）。正確性gateは合格、性能gateは不合格とし、
 `e58e67f1be69357edec0bd47e879039f47a42648`でrevertした。active targetとattestationは変更しない。
 
-次はeager successor copyを行わず、既存cache entryにcompactなtop-level dispatch分類を保持する
-OPT3-Cを調査する。詳細は[`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)にある。
+この時点の次候補として、eager successor copyを行わず、既存cache entryにcompactなtop-level
+dispatch分類を保持するOPT3-Cを選んだ。詳細は
+[`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)にある。
+
+### 10.3 OPT3-C compact predecoded dispatch key（完了・不採用）
+
+candidate `3819a9d093b8ce980a61724ac8ab33ffe3003ec3`は既存12-byte `DecodedOp`のflags bits
+1..6へtop-level dispatch keyを保持し、successor copy、staging、clearを追加しなかった。
+Serial core 0、scheduler quantum 1、cache tag/invalidation、mutable-code境界を維持した。
+
+PicoTetrisは85/85、927,528,660 cycle、UART、framebuffer、PSRAM、behavior SHA、
+173,498,680 event、全9 domain digestに完全一致した。trace/proof OFF clean A/B/A/B/A/Bの
+wall中央値はbaseline 26.72秒からcandidate 25.61秒へ4.1541916168%改善したが、5%採用条件に
+届かなかった。10-run promotion測定には進まず、`04b2eb2fb26f126e848b5c041177324954a98290`で
+revertした。active targetとattestationは変更しない。詳細は
+[`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)にある。
 
 ## 11. 正確性gate
 
@@ -499,7 +516,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
 | 7 | OPT2 exact event batching | **終了（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし | 全boundary eventのcycle/order一致＋有意な性能改善 |
-| 8 | OPT3 CPU/decode | **OPT3-B完了・不採用、OPT3-C調査が次** | eager copyを避けたcompact dispatch keyで完全回帰＋有意な性能改善を確認 |
+| 8 | OPT3 CPU/decode | **終了（追加promotionなし）**。OPT3-Bは4.4265%退行、OPT3-Cは4.1542%改善で5%未達。両candidateをrevert | 完全回帰を守り、有意な性能改善がないcandidateをproductionへ残さない |
 
 依存関係は次のとおりである。
 
@@ -570,6 +587,18 @@ behavior traceはhost UART drain cadence依存を除いたschema 2へversion up�
 に固定した。R5 emulator preflightでは単一の`PicoTetris_R5` artifactを再現し、自動周辺機器・
 ゲーム診断と67/67キーscenarioを合格させた。同一UF2のPicoCalc実機runも全項目pass、67/67、
 `io_errors=0`で一致し、`r5-hardware-20260808-01`へ固定したため、OPT1-Aはpromotedとなった。
+
+OPT3-Cでは既存`DecodedOp`の12 bytesを維持したcompact predecoded dispatch key（flags bits 1..6）を
+feature `compact-dispatch-key-prototype`で試作した。successor copy、staging、clearを追加せず、
+Serial core 0・scheduler quantum 1を維持した。candidate `3819a9d093b8ce980a61724ac8ab33ffe3003ec3`
+は85/85、927,528,660 cycle、UART、framebuffer、PSRAM、behavior/event全9 domainを一致させたが、
+trace/proof OFF clean A/B/A/B/A/Bの中央値は26.72秒から25.61秒、4.1541916168%改善に留まり、
+5%採用基準未達で`04b2eb2fb26f126e848b5c041177324954a98290`へrevertした。10-run promotion測定は
+行っていない。性能最適化はここで一旦区切り、次の優先順位はblind app、multicore/audio、negative
+conformance、headless interfaceとする。証拠は
+[`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)と
+[`opt3-c-compact-dispatch-key-20260809-01/`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)
+に固定する。
 
 ## 16. 最終判断規則
 

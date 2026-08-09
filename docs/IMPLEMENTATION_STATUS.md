@@ -166,7 +166,13 @@ behavior/event全9 domainは一致し、XIP hit率99.8287%、hit-only run平均4
 massは0.5468%だった。OPT3-Bではscheduler quantumを変えない短いXIP decode cursorを試作し、
 85/85、cycle、behavior/event全9 domainを維持したが、trace/proof OFF中央値が25.98秒から
 27.13秒へ4.4265%退行した。candidateはrevert済みで、active targetとattestationは変更していない。
-次はeager successor copyを避けるOPT3-C compact dispatch keyを調査する。詳細は
+OPT3-Cでは既存`DecodedOp`の12 bytesを維持したflags bits 1..6のcompact dispatch keyを試作した。
+successor copy、staging、clearなしで、85/85、cycle、UART、framebuffer、PSRAM、behavior/event全9 domainを
+一致させたが、trace/proof OFF中央値は26.72秒から25.61秒、4.1541916168%改善に留まり5%条件未達で
+revertした。10-run promotion測定は行っていない。性能最適化は一旦区切り、次優先はblind app、
+multicore/audio、negative conformance、headless interfaceである。詳細は
+[`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)と
+[`opt3-c-compact-dispatch-key-20260809-01/`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)にある。
 [`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)、
 [`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)、
 [`opt3-a-xip-cursor-profile-20260809-01/`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/)、

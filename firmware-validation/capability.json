@@ -21,12 +21,12 @@
         "meaning": "The current accepted backend for normal regression. It preserves the R5 behavior contract and adds the promoted OPT1-B serial fast path."
       },
       "experimental_main": {
-        "commit": "e58e67f1be69357edec0bd47e879039f47a42648",
+        "commit": "04b2eb2fb26f126e848b5c041177324954a98290",
         "status": "unpromoted",
         "promoted": false,
-        "source_equivalent_to": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
-        "ci_run_id": 31293556450,
-        "meaning": "Observed main after the rejected OPT3-B candidate was reverted. Main may advance during experiments and is never accepted merely because it is the branch head."
+        "source_equivalent_to": "e58e67f1be69357edec0bd47e879039f47a42648",
+        "ci_run_id": 31299159125,
+        "meaning": "Observed main after the rejected OPT3-C candidate was reverted. The reverted tree is source-equivalent to the post-OPT3-B main. Main may advance during experiments and is never accepted merely because it is the branch head."
       }
     },
     "note": "Source is never vendored here. Historical targets retain exact backend pins in the target registry. The three roles deliberately separate physical-device correlation, current promotion and an unpromoted moving development head."
@@ -198,7 +198,7 @@
       "id": "serial-fast-path-gate",
       "what": "Short-circuit read-only Serial fast-path predicates after active PIO has already selected the slow path",
       "detail": "Target picotetris-opt1b revision 5 pins backend e985a9d7ecb51ef760506a105edd34e31cf9b5f1. Against the promoted OPT1-A/R5 backend, PicoTetris preserves 927528660 cycles, the 85-step timeline, UART, framebuffer, behavior SHA-256, 173498680 streaming events and every count/hash in all nine domains. Ten trace-off runs reduced median wall time from 27.122874 s to 25.381594 s (6.419972%) and raised real-time ratio to 14.636593%. Template B stayed within the 3% non-regression gate, official Hello passed an 8 MiB PSRAM verification, and the R5 correlation firmware reproduced the immutable emulator preflight except for backend identity. Existing physical evidence therefore transfers through exact equivalence and OPT1-B is promoted.",
-      "limitation": "The optimization only changes predicate evaluation order and removes a duplicate DMA idle query. OPT2 event-batching candidates were exact where claimed but failed the performance gate and were reverted. OPT3-B's short immutable-XIP decode cursor also preserved all exactness observations but regressed median wall time by 4.4265% and was reverted. OPT3 CPU/decode work remains unpromoted and requires its own correctness, performance and hardware-correlation decision.",
+      "limitation": "The optimization only changes predicate evaluation order and removes a duplicate DMA idle query. OPT2 event-batching candidates were exact where claimed but failed the performance gate and were reverted. OPT3-B's short immutable-XIP decode cursor preserved exactness but regressed median wall time by 4.4265%; OPT3-C's compact dispatch key preserved exactness but improved by only 4.1542%, below the 5% gate. Both were reverted, no additional optimization was promoted, and performance work is paused while scope-expansion work proceeds.",
       "since_gate": "OPT1-B"
     },
     {
