@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-r2-20260809-01",
+  "roadmap_package": "NEXT-2A",
+  "result": "pass",
+  "contract": {
+    "id": "next2-multicore-hardware-evidence-v2-20260809",
+    "path": "firmware-validation/contracts/next2-multicore-hardware-evidence-v2.json",
+    "sha256": "5eb2a9090e255e2a59b85e9dd9b9f70d1e5e0f74eb8401108491d2c3a5d7c44b",
+    "base_contract_id": "next2-multicore-v1-20260809",
+    "base_contract_sha256": "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03"
+  },
+  "target": {
+    "id": "picocalc-multicore-r2",
+    "revision": 2,
+    "contract_sha256": "7fcca08af8e37b1accaf1c74570851e2e3f8459769356c038b92b1b062ef6c5c",
+    "supersedes": "picocalc-multicore-r1"
+  },
+  "application": {
+    "repo": "picocalc-multicore",
+    "commit": "e9e99f0bfde7b2706fbe7f5a2a92331eed141c98",
+    "version": "1.0.1-next2-multicore-v2",
+    "bin_sha256": "a8816759038df060da3ead7a9e80b02f91e667822132b30c0c1b2436e81c0649",
+    "uf2_sha256": "2e19d56560add74267dfc7e1f3876c0034e51d07a5e499ce23e868e7fc7d573f",
+    "build_timestamp": "2026-08-09T11:30:00Z"
+  },
+  "backend": {
+    "repo": "picoem-picocalc",
+    "commit": "38683d65800ef36026f674dd47228024d69eb5e7",
+    "dirty": false,
+    "core1_fatal_exception_test": "a_core1_hardfault_stops_the_run_fail_closed",
+    "core1_fatal_exception_result": "pass"
+  },
+  "scenario": {
+    "path": "scenarios/next2-multicore-v1.json",
+    "sha256": "079a7297ffa57624beefa5016d4b14e9ff0414eb473ce4164148fb5aeb10f986"
+  },
+  "firmware_run": {
+    "target": {
+      "id": "picocalc-multicore-r2",
+      "revision": 2
+    },
+    "backend_commit": "38683d65800ef36026f674dd47228024d69eb5e7",
+    "runs": 3,
+    "all_pass": true,
+    "reports_byte_identical": true,
+    "uart_byte_identical": true,
+    "timelines_byte_identical": true,
+    "snapshots_byte_identical": true,
+    "stop_reason": "scenario_done",
+    "cycles": 152548092,
+    "elapsed_us": 615000,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "uart_sha256": "2c1ebc312c9190d72a0a3d745ecc0ad40978378cd6225e49d54d191191684959",
+    "framebuffer_rgb565_sha256": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff",
+    "normalized_report_sha256": "c45b9ae38fea9a29883f812ae4fb5f92c24e55c38f324d4ee3335a3eead5c5f3",
+    "timeline_sha256": "c06b5c1fcdc25e71f48ee8a7cef2616df58aeb804c00ea4ffa82ee68e26c808d"
+  },
+  "late_attach_evidence_probe": {
+    "result": "pass",
+    "cycle_limit": 500000000,
+    "elapsed_us": 2004808,
+    "complete_marker_blocks": 2,
+    "marker_count_each": {
+      "launch": 2,
+      "fifo": 2,
+      "wfe_sev": 2,
+      "irq_proc1": 2,
+      "verdict": 2
+    },
+    "phase_rerun": false,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "report": "repeat-probe-report.json",
+    "report_sha256": "e22ed8756ecce981deeba84ffa776060f1fea1e74542ff4c549cd830aca598b4",
+    "uart": "repeat-probe-uart.log",
+    "uart_sha256": "958980b478d4b304cdb5b1b1b4c2ab139f6371ecad2efebde509247bc4925951"
+  },
+  "reproducible_build": {
+    "clean_clone": true,
+    "builds_compared": 2,
+    "source_commit": "e9e99f0bfde7b2706fbe7f5a2a92331eed141c98",
+    "generator_source_commit": "f954fff0ac379a7e86ce21ff5a5abb3cab0f156e",
+    "timestamp_used": "2026-08-09T11:30:00Z",
+    "generator": "Ninja",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "bin_reproducible": true,
+    "uf2_reproducible": true
+  },
+  "evidence": {
+    "run_report_sha256": "ae985165177254d8050f79d624e915a6c9aa4157d2450894daa961dd61140fbe",
+    "uart_sha256": "2c1ebc312c9190d72a0a3d745ecc0ad40978378cd6225e49d54d191191684959",
+    "snapshot_png_sha256": "9c452a44c611f47b58641a8570f43b4dd059ed56b461820f5303357774c0558c",
+    "run_directories": [
+      "firmware-validation/records/next2-multicore-r2-20260809-01/runs/run-1",
+      "firmware-validation/records/next2-multicore-r2-20260809-01/runs/run-2",
+      "firmware-validation/records/next2-multicore-r2-20260809-01/runs/run-3"
+    ]
+  },
+  "hardware_correlation": {
+    "status": "pending_complete_uart_evidence",
+    "prior_attempt": "firmware-validation/records/next2-multicore-hardware-attempt-20260809-01/record.json",
+    "prior_hardware_function_result": "pass",
+    "prior_photo_result": "pass",
+    "remaining_human_action": "flash the v2 UF2 once, open the USB serial monitor at any time after boot, and save one complete repeated marker block plus one photograph of the unchanged five-PASS final screen"
+  }
+}

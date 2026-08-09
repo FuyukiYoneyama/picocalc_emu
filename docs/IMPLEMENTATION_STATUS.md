@@ -225,13 +225,22 @@ core 0 IRQ15とcore 1 IRQ16を個別に再assertする。harnessはcore 1 NMI/Ha
 正式app commit `9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837`のBINは
 `4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675`、UF2は
 `d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8`である。別々のclean clone
-2本から両artifactを再現した。active target `picocalc-multicore-r1`を通常CLIで3回実行し、
+2本から両artifactを再現した。v1 target `picocalc-multicore-r1`を通常CLIで3回実行し、
 152,548,085 cycle、615 ms、全phase PASS、exception/unsupported MMIO 0となった。raw report、UART、
 2-step timeline、snapshotは3回byte-identicalである。正式証拠は
 [`next2-multicore-r1-20260809-01/`](../firmware-validation/records/next2-multicore-r1-20260809-01/)
 に固定した。これによりSerialの限定multicore capabilityはsupportedへ移ったが、Threaded、両coreの
 同時LCD/PSRAM、spinlock contention timing、core 1 relaunch、DMA-paced PCMは未証明である。
-NEXT-2Aの残件は同一UF2による実機UART全文と最終PASS写真の相関であり、その後NEXT-2B audioへ進む。
+
+同一v1 UF2の実機最終画面は全5項目PASSだったが、試験完了が約615 msと短く、one-shot markerが
+USB CDC列挙前に失われて2回のcaptureが0 byteだった。写真だけで凍結UART要件を満たしたことにはせず、
+[`next2-multicore-hardware-attempt-20260809-01/`](../firmware-validation/records/next2-multicore-hardware-attempt-20260809-01/)
+へ実機機能PASS・証拠未完了として保存した。
+
+後続`picocalc-multicore-r2`は実装前にlate-attach契約を固定し、phaseや最終画面を変更せず、最終結果
+blockだけを1秒周期で再送する。3回の通常CLI、500,000,000-cycle repeat probe、別々のclean clone
+2 buildはすべて合格した。NEXT-2Aの残件は同一v2 UF2から完全なUSB UART blockと最終PASS写真を
+各1件採取することだけで、その後NEXT-2B audioへ進む。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

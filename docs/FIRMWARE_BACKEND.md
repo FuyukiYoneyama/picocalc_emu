@@ -11,7 +11,7 @@ The current firmware backend direct-boots a raw Pico SDK BIN. That BIN is genera
 The firmware backend complements the host-device-model backend; it does not replace it.
 
 - **Host backend:** fast native execution for application logic, UI, input, files, sanitizers, and repeated scenario tests.
-- **Firmware backend:** same-binary verification for RP2040-specific behavior currently declared in the capability manifest, including GPIO, PIO, DMA, interrupts, peripheral register use and the bounded Serial multicore contract proven by `picocalc-multicore-r1`.
+- **Firmware backend:** same-binary verification for RP2040-specific behavior currently declared in the capability manifest, including GPIO, PIO, DMA, interrupts, peripheral register use and the bounded Serial multicore contract proven by `picocalc-multicore-r2`.
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
@@ -85,9 +85,11 @@ R1の固定済みregister、matrix、modifier、repeat、overflow契約と、GPI
 11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
 
 SPI0 SD is complete, with FAT32 as the default and FAT16 as an explicit compatibility profile.
-The Serial subset of multicore is also accepted by target `picocalc-multicore-r1`: real Pico SDK
+The Serial subset of multicore is also accepted by target `picocalc-multicore-r2`: real Pico SDK
 core 1 launch, bidirectional SIO FIFO, WFE/SEV and `SIO_IRQ_PROC1` pass three deterministic runs,
-while a core 1 fatal exception fails closed. Physical same-UF2 correlation is pending, and this does
+while a core 1 fatal exception fails closed. The v1 physical screen passed all five phases, but its
+one-shot startup UART was missed before USB CDC capture; v2 periodically repeats the immutable final
+marker block and now awaits one complete same-UF2 log plus one final photograph. This does
 not cover Threaded execution, concurrent off-chip devices, relaunch or spinlock timing. PWM/DMA PCM
 sample output, UF2 loading and debugger support remain in the requirement-driven extension queue.
 Detailed evidence and narrower limits remain authoritative in `MILESTONES.md` and

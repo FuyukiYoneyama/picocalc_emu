@@ -141,7 +141,8 @@ firmwareはFAT32/FAT16を各3回実行して決定一致、hostは両形式のCT
 ```
 
 **ただし、人間の実機検証がゼロになったわけではありません。** Serial multicoreの限定契約は
-エミュレーターで正式合格しましたが、同一UF2の実機相関は未完了で、音声の実再生も未対応です。
+エミュレーターで正式合格し、v1実機画面も全5項目PASSでした。ただしone-shot UARTがUSB CDC列挙前に
+失われたため、周期再送するv2同一UF2のログと最終写真が各1件残っています。音声の実再生も未対応です。
 そして何より、**実機の色・向き・可読性・聴感はエミュレーターでは
 判定できません。** エミュレーターは「firmwareが何を書いたか」は再現しますが、
 「人がそれをどう見るか、どう聞こえるか」は再現しません。最終的な確認には
@@ -333,7 +334,8 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 置き換えていないexperimental main `38683d6...e7`の3役に分離します。CIは前二者を別jobで
 実走し、最新mainを自動採用しません。
 `ExecutionModel::Serial`を正しさの基準とします。multicoreはactive target
-`picocalc-multicore-r1`がlaunch/FIFO/WFE-SEV/IRQ_PROC1を限定的に証明しました。未対応のPWM/DMA
+`picocalc-multicore-r2`がlaunch/FIFO/WFE-SEV/IRQ_PROC1を限定的に証明しました。v1実機の最終画面は
+全項目PASSで、v2はUSB late attach用marker再送だけを追加しています。未対応のPWM/DMA
 PCM outputや、範囲外のThreaded／concurrent-device／relaunchは、具体的workloadと新しい
 conformance targetを伴う場合にだけ拡張します。
 

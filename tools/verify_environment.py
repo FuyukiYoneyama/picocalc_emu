@@ -1760,6 +1760,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_next1_picoedit_hardware_correlation(checks, root)
     verify_next2_multicore_contract(checks, root)
     verify_next2_multicore_acceptance(checks, root)
+    verify_next2_multicore_v2_evidence(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
@@ -4508,6 +4509,183 @@ def verify_next2_multicore_acceptance(checks: List[Check], root: Path) -> None:
                 == "pass"
             ),
             hardware_correlation=record.get("hardware_correlation"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_next2_multicore_v2_evidence(checks: List[Check], root: Path) -> None:
+    """Verify the preserved v1 hardware attempt and v2 late-attach target."""
+    name = "next2:multicore-v2-evidence"
+    try:
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target = next(
+            item for item in registry["targets"]
+            if item["id"] == "picocalc-multicore-r2"
+        )
+        contract_path = (
+            root
+            / "firmware-validation/contracts/next2-multicore-hardware-evidence-v2.json"
+        )
+        contract = load_json(contract_path)
+        attempt_root = (
+            root
+            / "firmware-validation/records/next2-multicore-hardware-attempt-20260809-01"
+        )
+        attempt = load_json(attempt_root / "record.json")
+        record_root = (
+            root / "firmware-validation/records/next2-multicore-r2-20260809-01"
+        )
+        record = load_json(record_root / "record.json")
+
+        report_hashes = []
+        uart_hashes = []
+        snapshot_hashes = []
+        normalized_hashes = []
+        timeline_hashes = []
+        reports = []
+        for number in (1, 2, 3):
+            run_root = record_root / "runs" / "run-{}".format(number)
+            report_path = run_root / "run-report.json"
+            uart_path = run_root / "uart.log"
+            snapshot_path = run_root / "snapshots/next2-multicore-final.png"
+            report = load_json(report_path)
+            reports.append(report)
+            report_hashes.append(sha256(report_path))
+            uart_hashes.append(sha256(uart_path))
+            snapshot_hashes.append(sha256(snapshot_path))
+            normalized_hashes.append(picocalc.normalized_json_sha256(report))
+            timeline_hashes.append(
+                picocalc.normalized_json_sha256(report["scenario"]["steps"])
+            )
+
+        markers = target["acceptance"]["required_uart_markers"]
+        reports_valid = all(
+            report.get("backend_build")
+            == {"commit": target["backend"]["accepted"], "dirty": False}
+            and report.get("firmware", {}).get("sha256")
+            == target["artifacts"]["bin_sha256"]
+            and report.get("stop_reason") == "scenario_done"
+            and report.get("cycles") == 152_548_092
+            and report.get("elapsed_us") == 615_000
+            and report.get("exception") is None
+            and report.get("unsupported_mmio") == []
+            and report.get("unsupported_mmio_truncated") is False
+            and report.get("verdict", {}).get("status") == "pass"
+            and report.get("verdict", {}).get("required_uart_markers") == markers
+            and report.get("scenario", {}).get("status") == "pass"
+            and report.get("scenario", {}).get("steps_total") == 2
+            for report in reports
+        )
+
+        repeat_report_path = record_root / record["late_attach_evidence_probe"]["report"]
+        repeat_uart_path = record_root / record["late_attach_evidence_probe"]["uart"]
+        repeat_report = load_json(repeat_report_path)
+        repeat_uart = repeat_uart_path.read_text(encoding="utf-8")
+
+        photo_path = attempt_root / attempt["artifacts"]["final_photo"]["path"]
+        attempt_uart_paths = [
+            attempt_root / attempt["artifacts"]["uart_attempt_1"]["path"],
+            attempt_root / attempt["artifacts"]["uart_attempt_2"]["path"],
+        ]
+        final_screen = attempt["physical_run"]["final_screen"]
+        firmware_run = record["firmware_run"]
+        reproducible = record["reproducible_build"]
+        probe = record["late_attach_evidence_probe"]
+
+        aligned = all(
+            (
+                sha256(contract_path)
+                == "5eb2a9090e255e2a59b85e9dd9b9f70d1e5e0f74eb8401108491d2c3a5d7c44b",
+                contract.get("contract_id")
+                == "next2-multicore-hardware-evidence-v2-20260809",
+                contract.get("status") == "frozen_before_v2_application_implementation",
+                contract.get("new_requirement", {}).get("period_ms") == 1000,
+                contract.get("required_uart_markers") == markers,
+                target.get("revision") == 2,
+                target.get("supersedes") == "picocalc-multicore-r1",
+                target.get("source", {}).get("commit")
+                == "e9e99f0bfde7b2706fbe7f5a2a92331eed141c98",
+                target.get("artifacts", {}).get("bin_sha256")
+                == "a8816759038df060da3ead7a9e80b02f91e667822132b30c0c1b2436e81c0649",
+                target.get("artifacts", {}).get("uf2_sha256")
+                == "2e19d56560add74267dfc7e1f3876c0034e51d07a5e499ce23e868e7fc7d573f",
+                target.get("scenario", {}).get("sha256")
+                == sha256(root / target["scenario"]["path"]),
+                record.get("target", {}).get("contract_sha256")
+                == picocalc.firmware_target_contract_sha256(target),
+                record.get("result") == "pass",
+                firmware_run.get("runs") == 3,
+                firmware_run.get("all_pass") is True,
+                firmware_run.get("reports_byte_identical") is True,
+                firmware_run.get("uart_byte_identical") is True,
+                firmware_run.get("timelines_byte_identical") is True,
+                firmware_run.get("snapshots_byte_identical") is True,
+                reproducible.get("clean_clone") is True,
+                reproducible.get("builds_compared") == 2,
+                reproducible.get("bin_reproducible") is True,
+                reproducible.get("uf2_reproducible") is True,
+                reports_valid,
+                len(set(report_hashes)) == 1,
+                len(set(uart_hashes)) == 1,
+                len(set(snapshot_hashes)) == 1,
+                len(set(normalized_hashes)) == 1,
+                len(set(timeline_hashes)) == 1,
+                normalized_hashes[0]
+                == target["acceptance"]["normalized_report_sha256"]
+                == firmware_run.get("normalized_report_sha256"),
+                timeline_hashes[0]
+                == target["acceptance"]["timeline_sha256"]
+                == firmware_run.get("timeline_sha256"),
+                report_hashes[0] == record["evidence"]["run_report_sha256"],
+                uart_hashes[0] == record["evidence"]["uart_sha256"],
+                snapshot_hashes[0] == record["evidence"]["snapshot_png_sha256"],
+                sha256(repeat_report_path) == probe.get("report_sha256"),
+                sha256(repeat_uart_path) == probe.get("uart_sha256"),
+                repeat_report.get("stop_reason") == "cycle_limit",
+                repeat_report.get("cycles") == 500_000_000,
+                repeat_report.get("exception") is None,
+                repeat_report.get("unsupported_mmio") == [],
+                probe.get("complete_marker_blocks") == 2,
+                all(repeat_uart.count(marker) == 2 for marker in markers),
+                attempt.get("result") == "evidence_incomplete",
+                attempt.get("physical_run", {}).get("uart_capture", {}).get("bytes_each")
+                == [0, 0],
+                all(path.read_bytes() == b"" for path in attempt_uart_paths),
+                sha256(photo_path)
+                == attempt["artifacts"]["final_photo"]["sha256"],
+                final_screen.get("result") == "pass",
+                all(
+                    final_screen.get(field) == "pass"
+                    for field in ("launch", "fifo", "wfe_sev", "irq1", "overall")
+                ),
+                attempt.get("correlation", {}).get("hardware_correlation_completed")
+                is False,
+                record.get("hardware_correlation", {}).get("status")
+                == "pending_complete_uart_evidence",
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target.get("id"),
+            runs=len(reports),
+            repeat_blocks=probe.get("complete_marker_blocks"),
+            physical_function=attempt.get("correlation", {}).get(
+                "hardware_function_result"
+            ),
+            hardware_correlation=record.get("hardware_correlation", {}).get("status"),
         )
     except (
         OSError,

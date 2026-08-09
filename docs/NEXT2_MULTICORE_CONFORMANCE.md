@@ -1,18 +1,19 @@
 # NEXT-2A Serial multicore conformance
 
-**状態:** エミュレーター正式受入完了（2026-08-09）。同一UF2のPicoCalc実機相関待ち。
+**状態:** v2エミュレーター正式受入完了（2026-08-09）。v1実機機能PASSを確認済み。
+同一v2 UF2の完全UART blockと最終写真待ち。
 
 ## 固定artifact
 
 | 項目 | 値 |
 |---|---|
 | app repository | `picocalc-multicore` |
-| app commit | `9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837` |
+| app commit | `e9e99f0bfde7b2706fbe7f5a2a92331eed141c98` |
 | backend commit | `38683d65800ef36026f674dd47228024d69eb5e7` |
-| target | `picocalc-multicore-r1` revision 1 |
-| BIN SHA-256 | `4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675` |
-| UF2 SHA-256 | `d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8` |
-| build timestamp | `2026-08-09T10:00:00Z` |
+| target | `picocalc-multicore-r2` revision 2 |
+| BIN SHA-256 | `a8816759038df060da3ead7a9e80b02f91e667822132b30c0c1b2436e81c0649` |
+| UF2 SHA-256 | `2e19d56560add74267dfc7e1f3876c0034e51d07a5e499ce23e868e7fc7d573f` |
+| build timestamp | `2026-08-09T11:30:00Z` |
 
 実機には次のファイルだけを使用する。再buildした別UF2へ置き換えない。
 
@@ -28,11 +29,20 @@
 変更せず、SDK mutex由来のSEVを測定区間から分離し、Serial backendへcore-local SIO FIFO IRQを
 実装した。
 
-正式targetは通常CLIで3回実行し、全回が152,548,085 cycle、615 ms、exceptionなし、unsupported
-MMIO 0、全phase PASSとなった。raw report、UART、scenario timeline、snapshotはbyte-identicalで、
-別々のclean clone 2本からBIN/UF2も完全再現した。core 1 NMI/HardFaultがrunnerをFAILにする回帰も
-含む。証拠は
-[`next2-multicore-r1-20260809-01/`](../firmware-validation/records/next2-multicore-r1-20260809-01/)
+v1正式target `picocalc-multicore-r1`は通常CLIで3回実行し、全回が152,548,085 cycle、615 ms、exceptionなし、unsupported
+MMIO 0、全phase PASSとなった。v1実機でも最終画面の全5項目がPASSした。しかしmarkerは起動中に
+一度だけ出力され、その後無出力だったため、PicoCalc USB Type-Cのnative USB CDCを開く前に全byteが
+失われた。2回の0-byte logと最終写真は
+[`next2-multicore-hardware-attempt-20260809-01/`](../firmware-validation/records/next2-multicore-hardware-attempt-20260809-01/)
+へ、機能PASS・契約証拠未完了として保存した。
+
+この結果を見てv1契約を緩めず、v2実装前に
+[`next2-multicore-hardware-evidence-v2.json`](../firmware-validation/contracts/next2-multicore-hardware-evidence-v2.json)
+を固定した。v2は同じphase、固定値、初回marker、最終画面を保ち、最終判定後に同じ5-marker blockを
+1秒ごとに再送する。`picocalc-multicore-r2`は通常CLI 3回が152,548,092 cycle、615 msで決定一致し、
+500,000,000-cycle probeで各markerが2回になること、別々のclean clone 2本でBIN/UF2が完全一致する
+ことを確認した。core 1 NMI/HardFaultのfail-closedも維持する。証拠は
+[`next2-multicore-r2-20260809-01/`](../firmware-validation/records/next2-multicore-r2-20260809-01/)
 にある。
 
 ## 凍結した試験内容
@@ -60,8 +70,8 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
 
 ## 実機で人間が行うこと
 
-人間の操作は**UF2書込みと証拠保存の1セッションだけ**である。キー入力、タイミング合わせ、SD内容の
-変更、途中写真は不要である。
+人間の操作は**v2 UF2書込みと証拠保存の1セッションだけ**である。キー入力、monitorを起動前に開く
+タイミング合わせ、SD内容の変更、途中写真は不要である。
 
 1. 次を実行し、表示値が上表のUF2 SHA-256と一致することを確認する。
 
@@ -69,9 +79,8 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
    sha256sum /home/fuyuki/pico_dvl/codex/picocalc-multicore/build/picocalc_app.uf2
    ```
 
-2. UARTログを起動前から保存できるよう準備する。UART0を使う場合は115200 8N1である。
-3. 既知のPicoCalc UF2書込み手順でBOOTSEL mass-storage modeへ入り、上記UF2をコピーする。
-4. 起動後、画面に`NEXT2 MULTICORE`と次の5行がすべて緑の`PASS`で出るまで待つ。
+2. 既知のPicoCalc UF2書込み手順でBOOTSEL mass-storage modeへ入り、上記UF2をコピーする。
+3. 起動後、画面に`NEXT2 MULTICORE`と次の5行がすべて緑の`PASS`で出るまで待つ。
 
    ```text
    LAUNCH   PASS
@@ -81,8 +90,10 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
    OVERALL  PASS
    ```
 
+4. PicoCalcのUSB Type-C serialを115200 8N1で開き、ログ保存を開始する。**起動後に開いてよい。**
+   v2は次のblockを1秒ごとに再送するので、少なくとも5行が1組揃うまで待つ。
 5. 5行すべてが読める最終画面写真を1枚撮る。
-6. UARTログを保存してから電源を切る。ログには次の5 markerがすべて必要である。
+6. UARTログを保存してから電源を切る。ログには次の5 markerが同じblock内にすべて必要である。
 
    ```text
    [NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
@@ -96,10 +107,11 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
 
 ## 失敗・無反応時の扱い
 
-- 10秒待っても最終画面へ到達しない、赤い`FAIL`が1つでも出る、またはUART markerが欠ける場合、
+- 10秒待っても最終画面へ到達しない、赤い`FAIL`が1つでも出る場合、
   その試行を失敗証拠としてログと写真に残す。成功したように読み替えない。
-- USB/UART接続や電源投入順の明白な採取ミスなら、原因を直して最初から1回やり直せる。最初の失敗
-  ファイルは上書きせず、試行番号を分ける。
+- 画面が全PASSでもUSB monitorを開いて3秒以上0 byteなら、USB接続・device名・monitor設定の採取
+  問題として保存する。v2は周期再送するため、起動時markerの取り逃しでは説明できない。接続問題を
+  直して1回だけやり直し、最初の0-byte fileは上書きしない。
 - 同じartifactで再びfirmware側FAILまたは停止になる場合は、それ以上「通るまで」繰り返さない。
   `emulator PASS -> hardware FAIL`のfalse-accept候補としてNEXT-3へ渡す。
 - キー操作による復旧は行わない。このappは入力を一切要求せず、キーで状態を変えない。

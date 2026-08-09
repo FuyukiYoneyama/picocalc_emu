@@ -217,10 +217,10 @@
     {
       "id": "multicore-serial-conformance",
       "what": "Firmware launch of core 1, bidirectional SIO FIFO, WFE/SEV and core-local SIO IRQ delivery under the Serial execution model",
-      "detail": "Active target picocalc-multicore-r1 pins application 9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837 and backend 38683d65800ef36026f674dd47228024d69eb5e7. Three normal CLI runs are byte-identical in report, UART, scenario timeline and framebuffer snapshot; two clean clones reproduce the same BIN and UF2. The harness also fails closed on a core 1 NMI or HardFault.",
-      "limitation": "This proves the frozen NEXT-2A Serial workload only. Threaded execution, simultaneous LCD/PSRAM access from both cores, spinlock contention timing, core 1 reset/relaunch and DMA-paced PCM are not covered. Same-UF2 physical PicoCalc correlation is pending.",
-      "target": "picocalc-multicore-r1",
-      "evidence": "firmware-validation/records/next2-multicore-r1-20260809-01/record.json",
+      "detail": "Active target picocalc-multicore-r2 pins application e9e99f0bfde7b2706fbe7f5a2a92331eed141c98 and backend 38683d65800ef36026f674dd47228024d69eb5e7. Three normal CLI runs are byte-identical in report, UART, scenario timeline and framebuffer snapshot; two clean clones reproduce the same BIN and UF2. The harness also fails closed on a core 1 NMI or HardFault. R2 preserves the accepted phase behavior and periodically repeats its final marker block so PicoCalc USB CDC can be attached after boot without losing the evidence.",
+      "limitation": "This proves the frozen NEXT-2A Serial workload only. Threaded execution, simultaneous LCD/PSRAM access from both cores, spinlock contention timing, core 1 reset/relaunch and DMA-paced PCM are not covered. The v1 UF2 passed all five physical-screen checks, but its one-shot startup UART was missed; complete same-UF2 correlation remains pending one v2 USB log and one v2 final photograph.",
+      "target": "picocalc-multicore-r2",
+      "evidence": "firmware-validation/records/next2-multicore-r2-20260809-01/record.json",
       "since_gate": "NEXT-2A"
     }
   ],
