@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "record_id": "opt3-a-xip-cursor-profile-20260809-01",
+  "title": "OPT3-A immutable-XIP decode cursor opportunity profile",
+  "roadmap_package": "OPT3-A",
+  "result": "measurement_complete",
+  "opt3_overall_status": "incomplete",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "profiler": {
+    "backend_commit": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+    "backend_dirty": false,
+    "schema_version": 3,
+    "feature": "event-horizon-profiler",
+    "instrumented": true,
+    "valid_for_wall_time": false,
+    "immutable_xip_hit_runs_are_speedup_prediction": false
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113
+  },
+  "opportunity": {
+    "immutable_xip_hit_rate_percent": 99.82869379064594,
+    "average_immutable_xip_hit_run_instructions": 4.562986685686572,
+    "run_mass_ge_4": 86778680,
+    "run_mass_ge_4_percent": 50.34326705762055,
+    "run_mass_ge_16": 23313232,
+    "run_mass_ge_16_percent": 13.524799692185514,
+    "run_mass_ge_32": 942483,
+    "run_mass_ge_32_percent": 0.546766479580784,
+    "post_execute_redirect_terminations": 37756069,
+    "xip_invalidation_observations": 0
+  },
+  "decision": {
+    "selected_next_prototype": "short immutable-XIP decode cursor",
+    "prototype_package": "OPT3-B",
+    "long_basic_block_batching_selected": false,
+    "production_optimization_added": false,
+    "active_target_changed": false,
+    "validation_attestation_added": false
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31291223952,
+    "head_sha": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "analysis": "analysis.json",
+    "analysis_sha256": "dcd7c5986da42b96693c075fec3a42a124cfb25f1ee442bb3d51279ba35ace0d",
+    "running_event_horizon_profile": "running-event-horizon-profile.json",
+    "running_event_horizon_profile_sha256": "d0721a992c0894c1957aa8704341dd704049f376d480711e32d1dad813e20b4d",
+    "run_report": "run-report.json",
+    "run_report_sha256": "da42d93ef076b061b54d47f43b4bf3073ec3267c72a9550de36af40780f0329d",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "5904ecedfaf21b50410e9221f959051b0baba94ebc2ae79c5a2e85eaeccd0c22",
+    "notes": "notes.md",
+    "notes_sha256": "42985963297964f08b0799b85144edb6c5fd29782ba2b570e4fa31f5197e89ce"
+  }
+}

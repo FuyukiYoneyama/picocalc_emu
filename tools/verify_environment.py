@@ -1347,6 +1347,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2e_pio_pull_stall(checks, root)
     verify_opt2f_stationary_pin_bulk(checks, root)
     verify_opt2g_uart_deadline(checks, root)
+    verify_opt3a_xip_cursor_profile(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -2693,6 +2694,245 @@ def verify_opt2g_uart_deadline(checks: List[Check], root: Path) -> None:
         ValueError,
         TypeError,
         KeyError,
+        StopIteration,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt3a_xip_cursor_profile(checks: List[Check], root: Path) -> None:
+    """Verify the OPT3-A immutable XIP cursor profile and evidence."""
+    name = "opt3-a:xip-cursor-profile"
+    record_id = "opt3-a-xip-cursor-profile-20260809-01"
+    target_id = "picotetris-opt1b"
+    target_revision = 5
+    backend_commit = "0b99b2eabe23205b3c6ac194dcdf016a53de554d"
+    expected_domains = {
+        "clock",
+        "irq_exception",
+        "pio_gpio",
+        "psram",
+        "lcd",
+        "dma_dreq",
+        "timer_pwm",
+        "serial_bus",
+        "scenario_input",
+    }
+    try:
+        record_root = root / "firmware-validation/records" / record_id
+        record = load_json(record_root / "record.json")
+        profile = load_json(record_root / "running-event-horizon-profile.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        analysis = load_json(record_root / "analysis.json")
+        artifacts = record["artifacts"]
+        target = next(
+            item
+            for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == target_id
+        )
+
+        target_record = record["target"]
+        exactness = record["exactness"]
+        opportunity = record["opportunity"]
+        decision = record["decision"]
+        semantics = analysis.get("semantics", {})
+        core0 = analysis.get("core0", {})
+        core1 = analysis.get("core1", {})
+        analysis_decision = analysis.get("decision", {})
+        profile_core0 = profile["decode_opportunity_by_core"][0]
+        profile_core1 = profile["decode_opportunity_by_core"][1]
+        profile_xip_hits = profile_core0["lookup_hits_by_region"]["immutable_xip_flash_aliases"]
+        profile_xip_misses = profile_core0["lookup_misses_by_region"]["immutable_xip_flash_aliases"]
+        profile_runs = profile_core0["immutable_xip_hit_runs"]
+        profile_termination = profile_core0["immutable_xip_hit_run_termination_counters"]
+        profile_invalidations = profile_core0["decode_cache_invalidation_observations"]
+        event_trace = behavior.get("behavior_projection", {}).get("event_trace", {})
+        termination = core0.get("termination", {})
+        event_domains = {item.get("name") for item in event_trace.get("domains", [])}
+        termination_sum = (
+            termination.get("post_execute_next_pc_redirect", 0)
+            + termination.get("xip_miss", 0)
+            + termination.get("region_exit", 0)
+            + termination.get("prefetch_exception", 0)
+            + termination.get("fault", 0)
+            + termination.get("open_at_snapshot", 0)
+        )
+        artifact_checks = [
+            (artifact_name, record_root / artifact_path)
+            for artifact_name, artifact_path in (
+                ("analysis", artifacts["analysis"]),
+                ("running_event_horizon_profile", artifacts["running_event_horizon_profile"]),
+                ("run_report", artifacts["run_report"]),
+                ("behavior_trace", artifacts["behavior_trace"]),
+                ("notes", artifacts["notes"]),
+            )
+        ]
+
+        def sha_and_exists(name: str, path: Path) -> bool:
+            artifact_digest = artifacts.get("{}_sha256".format(name), "")
+            return (
+                path.is_file()
+                and artifact_digest == sha256(path)
+            )
+
+        aligned = all((
+            record.get("schema_version") == 1,
+            record.get("record_id") == record_id,
+            record.get("result") == "measurement_complete",
+            record.get("opt3_overall_status") == "incomplete",
+            record.get("roadmap_package") == "OPT3-A",
+            analysis.get("schema_version") == 1,
+            analysis.get("record_id") == record_id,
+            analysis.get("input_profile_schema_version") == 3,
+            target_record.get("id") == target_id,
+            target_record.get("revision") == target_revision,
+            target_record.get("firmware_sha256") == target.get("artifacts", {}).get("bin_sha256"),
+            target_record.get("firmware_uf2_sha256")
+            == target.get("artifacts", {}).get("uf2_sha256"),
+            target_record.get("scenario_sha256") == target.get("scenario", {}).get("sha256"),
+            record.get("profiler", {}).get("backend_commit") == backend_commit,
+            record.get("profiler", {}).get("backend_dirty") is False,
+            record.get("profiler", {}).get("schema_version") == 3,
+            record.get("profiler", {}).get("feature") == "event-horizon-profiler",
+            profile.get("schema_version") == 3,
+            profile.get("backend_build", {}).get("commit") == backend_commit,
+            profile.get("backend_build", {}).get("dirty") is False,
+            profile.get("execution_model") == "Serial",
+            profile.get("instrumented") is True,
+            profile.get("valid_for_wall_time") is False,
+            profile.get("decode_hit_runs_are_speedup_prediction") is False,
+            profile.get("immutable_xip_hit_runs_are_speedup_prediction") is False,
+            semantics.get("instrumented") is True,
+            semantics.get("valid_for_wall_time") is False,
+            semantics.get("run_mass_is_an_opportunity_bound") is True,
+            semantics.get("immutable_xip_hit_runs_are_speedup_prediction") is False,
+            report.get("schema_version") == 8,
+            report.get("backend_build", {}).get("commit") == backend_commit,
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("firmware", {}).get("sha256") == target_record.get("firmware_sha256"),
+            report.get("step_quantum") == 1,
+            report.get("stop_reason") == exactness.get("stop_reason") == "scenario_done",
+            report.get("cycles") == exactness.get("cycles") == 927_528_660,
+            report.get("elapsed_us") == exactness.get("elapsed_us") == 3_715_000,
+            report.get("scenario", {}).get("status") == "pass",
+            report.get("verdict", {}).get("status") == "pass",
+            len(report.get("scenario", {}).get("steps", [])) == 85,
+            exactness.get("scenario_steps_passed") == 85,
+            exactness.get("scenario_steps_total") == 85,
+            exactness.get("all_nine_event_domains_match_opt1b") is True,
+            report.get("uart", {}).get("sha256") == exactness.get("uart_sha256"),
+            report.get("framebuffer", {}).get("rgb565_sha256")
+            == exactness.get("framebuffer_rgb565_sha256"),
+            report.get("psram", {}).get("tick_count") == exactness.get("psram_tick_count"),
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("mode") == "correctness_trace_on",
+            behavior.get("backend_build", {}).get("commit") == backend_commit,
+            behavior.get("backend_build", {}).get("dirty") is False,
+            behavior.get("valid_for_wall_time") is False,
+            behavior.get("behavior_sha256") == exactness.get("behavior_sha256"),
+            event_trace.get("total_events") == 173_498_680,
+            event_trace.get("schema_version") == 2,
+            event_trace.get("sha256") == exactness.get("event_stream_sha256"),
+            event_trace.get("total_events") == exactness.get("event_stream_total_events"),
+            set(event_domains) == expected_domains,
+            len(event_domains) == 9,
+            profile_core0.get("cacheable_hits") == 172_417_748,
+            profile_core0.get("cacheable_misses") == 297_282,
+            profile_core0.get("noncacheable_fetches") == 0,
+            profile_core0.get("cacheable_hits_narrow")
+            + profile_core0.get("cacheable_hits_wide")
+            == profile_core0.get("cacheable_hits"),
+            sum(profile_core0.get("lookup_hits_by_region", {}).values())
+            == profile_core0.get("cacheable_hits"),
+            sum(profile_core0.get("lookup_misses_by_region", {}).values())
+            == profile_core0.get("cacheable_misses")
+            + profile_core0.get("noncacheable_fetches"),
+            profile_xip_hits == 172_373_954,
+            profile_xip_misses == 295_794,
+            profile_runs.get("episodes_ge", [])[0] == 37_776_563,
+            profile_runs.get("cycle_mass_ge", [])[0] == profile_xip_hits,
+            profile_runs.get("cycle_mass_ge", [])[2] == 86_778_680,
+            profile_runs.get("cycle_mass_ge", [])[4] == 23_313_232,
+            profile_runs.get("cycle_mass_ge", [])[5] == 942_483,
+            sum(profile_termination.values()) + 1 == profile_runs.get("episodes_ge", [])[0],
+            profile_termination.get("post_execute_next_pc_redirect") == 37_756_069,
+            profile_termination.get("xip_miss") == 20_218,
+            profile_termination.get("prefetch_exception") == 275,
+            profile_termination.get("region_exit") == 0,
+            profile_termination.get("fault") == 0,
+            profile_invalidations.get("entry_address_count") == 9_243_286,
+            profile_invalidations.get("rom") == 0,
+            profile_invalidations.get("xip") == 0,
+            profile_invalidations.get("sram") == 9_243_286,
+            profile_invalidations.get("bulk") == 0,
+            profile_invalidations.get("all") == 0,
+            all(
+                profile_core1.get(key) == 0
+                for key in (
+                    "cacheable_hits",
+                    "cacheable_misses",
+                    "noncacheable_fetches",
+                    "cacheable_hits_narrow",
+                    "cacheable_hits_wide",
+                )
+            ),
+            core0.get("cacheable_hits") == 172_417_748,
+            core0.get("cacheable_misses") == 297_282,
+            core0.get("immutable_xip_hits") == 172_373_954,
+            core0.get("immutable_xip_misses") == 295_794,
+            core0.get("immutable_xip_hit_runs") == 37_776_563,
+            core0.get("immutable_xip_hit_instruction_mass") == 172_373_954,
+            core0.get("immutable_xip_hits") == profile_xip_hits,
+            core0.get("immutable_xip_misses") == profile_xip_misses,
+            core0.get("immutable_xip_hit_runs") == profile_runs.get("episodes_ge", [])[0],
+            core0.get("average_immutable_xip_hit_run_instructions") == 4.562986685686572,
+            termination_sum == core0.get("immutable_xip_hit_runs", 0),
+            core0.get("run_mass", {}).get("ge_4") == 86_778_680,
+            core0.get("run_mass", {}).get("ge_32") == 942_483,
+            core1.get("executed_instructions") == 0,
+            core0.get("invalidation_observations", {}).get("xip") == 0,
+            core0.get("invalidation_observations", {}).get("rom") == 0,
+            core0.get("invalidation_observations", {}).get("bulk") == 0,
+            core0.get("invalidation_observations", {}).get("all") == 0,
+            opportunity.get("post_execute_redirect_terminations") == 37_756_069,
+            opportunity.get("run_mass_ge_4") == 86_778_680,
+            opportunity.get("run_mass_ge_32") == 942_483,
+            opportunity.get("xip_invalidation_observations") == 0,
+            decision.get("prototype_package") == "OPT3-B",
+            decision.get("selected_next_prototype") == "short immutable-XIP decode cursor",
+            decision.get("long_basic_block_batching_selected") is False,
+            decision.get("production_optimization_added") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("validation_attestation_added") is False,
+            analysis_decision.get("prototype_package") == decision.get("prototype_package"),
+            analysis_decision.get("selected_next_prototype")
+            == decision.get("selected_next_prototype"),
+            analysis_decision.get("long_basic_block_batching_selected") is False,
+            analysis_decision.get("production_optimization_added") is False,
+            record.get("ci", {}).get("run_id") == 31_291_223_952,
+            record.get("ci", {}).get("conclusion") == "success",
+            all(sha_and_exists(name, path) for name, path in artifact_checks),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target_record.get("id"),
+            result=record.get("result"),
+            next_prototype=decision.get("selected_next_prototype"),
+            run_episodes=core0.get("immutable_xip_hit_runs"),
+            immutable_xip_hits=core0.get("immutable_xip_hits"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        IndexError,
         StopIteration,
         statistics.StatisticsError,
         json.JSONDecodeError,

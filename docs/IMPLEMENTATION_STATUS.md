@@ -110,7 +110,7 @@ baselineと一致した。trace OFF 10 runのwall中央値は27.122874秒から2
 以外でbyte-identicalであり、既存hardware recordとの推移的同値性を根拠にpromotedである。
 証拠は[`OPT1_B_SERIAL_FAST_PATH.md`](OPT1_B_SERIAL_FAST_PATH.md)と
 [`firmware-validation/records/opt1-b-20260808-01/`](../firmware-validation/records/opt1-b-20260808-01/)
-にある。OPT2 exact event batchingは継続中である。最初のdispatcher-only候補は、途中で
+にある。OPT2 exact event batchingは性能条件未達のまま追加promotionなしで終了した。最初のdispatcher-only候補は、途中で
 `clk_sys`変更をbatch境界に含めない誤りをbehavior/event契約が検出した。境界修正後は全eventが
 一致したが、同時A/B中央値がOPT1-B `26.16 s`、候補`26.54 s`で約1.45%遅かったためrevertした。
 active targetは変更しておらず、次候補は実際のper-cycle orchestrationを減らせるevent horizonを
@@ -153,9 +153,15 @@ UART、framebuffer、PSRAM tickに完全一致したが、CPU 0固定clean A/B/A
 25.92秒、candidate 28.17秒（`-8.6805555556%`）で5%条件未達だった。exactnessは合格、性能は
 不採用とし、`335ecdd7f01cbc5d4f63e18403033bd629efbe77`でrevertした。最終内容はbaselineと一致し、
 backend CI run `31287315634`も成功した。active targetとvalidation attestationは変更しない。
-OPT2は性能条件未達のまま追加promotionなしで終了した。次工程はOPT3
-CPU/decode/execute block cacheである。詳細は[`OPT2_G_UART_EXACT_LANE.md`](OPT2_G_UART_EXACT_LANE.md)と
+OPT2は性能条件未達のまま追加promotionなしで終了した。詳細は
+[`OPT2_G_UART_EXACT_LANE.md`](OPT2_G_UART_EXACT_LANE.md)と
 [`opt2-g-uart-deadline-20260809-01/`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/)
+にある。OPT3-Aではbackend `0b99b2eabe23205b3c6ac194dcdf016a53de554d`のprofile schema 3で
+immutable-XIP lookup/run/invalidationを計測した。85/85、cycle、UART、framebuffer、PSRAM、
+behavior/event全9 domainは一致し、XIP hit率99.8287%、hit-only run平均4.563命令、長さ32以上の
+massは0.5468%だった。長いblock batchingは選ばず、次はscheduler quantumを変えない短いXIP
+decode cursorのOPT3-B試作である。詳細は[`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)と
+[`opt3-a-xip-cursor-profile-20260809-01/`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/)
 にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う

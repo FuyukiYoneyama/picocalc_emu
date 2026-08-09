@@ -238,14 +238,14 @@ OPT1-A/R5 backendと一致し、trace OFF 10 runのwall中央値は27.123秒か�
 8 MiB PSRAM全域照合を合格しました。R5相関firmwareも既存preflightとbackend identity以外で
 byte-identicalだったため、既存実機recordとの同値性によりOPT1-Bをpromotedとします。詳細は
 [`OPT1_B_SERIAL_FAST_PATH.md`](docs/OPT1_B_SERIAL_FAST_PATH.md)です。OPT2 exact event batchingは
-継続中です。最初のdispatcher-only候補は全event一致まで修正したものの、同時A/Bで約1.45%遅く、
+性能条件未達のまま追加promotionなしで終了しました。最初のdispatcher-only候補は全event一致まで修正したものの、同時A/Bで約1.45%遅く、
 不採用としてrevertしました。続くOPT2-Bではrunning event-horizon profilerをfeature分離して
 実装し、同一BINのexactnessを維持したままrunning cycleの15.0233%にpost-hoc candidateを
 観測しました。これはsafe windowやwall-time上限ではありません。証拠は
 [`opt2-b-running-horizon-20260808-01`](firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
 にあります。続くOPT2-C限定prototypeは全event一致を保ちましたが、全runの0.002498%しかbatchできず、
 paired中央値が11.89%遅かったためrevertしました。詳細は
-[`OPT2_C_EXACT_BATCHING.md`](docs/OPT2_C_EXACT_BATCHING.md)です。OPT2は継続中で、active targetは
+[`OPT2_C_EXACT_BATCHING.md`](docs/OPT2_C_EXACT_BATCHING.md)です。active targetは
 OPT1-Bのままです。OPT2-DではPIO/UART/DMA overlapとCPU decode hit runを同一runで比較し、
 PIO exact event horizon / bulk advanceを次candidateに選びました。詳細は
 [`OPT2_D_LEVER_COMPARISON.md`](docs/OPT2_D_LEVER_COMPARISON.md)です。続くOPT2-Eでは、全enabled
@@ -253,6 +253,11 @@ SMが空TX FIFOへの`PULL`で停止する限定状態を閉形式で進め、�
 実workloadでは371,982,564 callがすべて1 cycleで、wall中央値改善は0.2335%に留まりました。
 5%採用基準未達のため候補をrevertし、active targetはOPT1-Bのままです。詳細は
 [`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](docs/OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)です。
+その後のOPT2-Fは0.6875%改善、OPT2-G UART laneは8.681%退行で、いずれも5%条件未達として
+revertしました。OPT3-Aではimmutable-XIP decode cursorの機会をschema 3で計測し、XIP hit率
+99.8287%、hit-only run平均4.563命令を得ました。長さ32以上のmassは0.5468%だけなので、次は
+長いblock batchingではなくschedulerを1命令のまま保つ短いXIP cursorのOPT3-B試作です。詳細は
+[`OPT3_A_XIP_CURSOR_PROFILE.md`](docs/OPT3_A_XIP_CURSOR_PROFILE.md)です。
 
 ## 読む順番
 
@@ -600,6 +605,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [Firmware emulator高速化計画](docs/EMULATOR_OPTIMIZATION_PLAN.md) — 正確性優先のOPT0〜OPT3、計測、採否gate、R5との関係
 - [OPT2-D候補レバー比較](docs/OPT2_D_LEVER_COMPARISON.md) — peripheral horizon overlapとCPU decode runの実測比較、PIO-first判断
 - [OPT2-E PIO pull-stall試作](docs/OPT2_E_PIO_PULL_STALL_PROTOTYPE.md) — 限定exact bulkの証明、0.2335%で不採用、次の外側pin/device契約
+- [OPT3-A immutable-XIP cursor計測](docs/OPT3_A_XIP_CURSOR_PROFILE.md) — schema 3の領域別hit/run/invalidation実測と短いOPT3-B cursor判断
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
 - [OPT1-B serial fast-path gate](docs/OPT1_B_SERIAL_FAST_PATH.md) — event完全一致、6.420%追加短縮、代表workloadとR5同値性
 - [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約
