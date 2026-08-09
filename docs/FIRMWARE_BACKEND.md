@@ -15,6 +15,23 @@ The firmware backend complements the host-device-model backend; it does not repl
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
+### Backend identity roles
+
+A branch name or the newest commit is not an acceptance level. The capability manifest schema 2
+separates three exact backend identities:
+
+- **hardware-correlated:** `612b485...f66`, used by immutable target `picotetris-r5` for the
+  same-artifact emulator/physical-device evidence.
+- **promoted:** `e985a9d...5f1`, used by active target `picotetris-opt1b`. It is exact-equivalent to
+  the R5 observation contract and includes the accepted OPT1-B fast path.
+- **experimental main:** the observed `main` head, currently `e58e67f...648`. It may contain
+  feature-gated profiling work or reverted experiments and is not promoted by being newest.
+
+`picocalc_emu` CI keeps the first two roles as separate firmware jobs. Historical correlation must
+not silently move to a new backend, while the current promoted target must not be protected only by
+old evidence. Experimental main is protected by the backend repository's own test/fmt/Clippy gate
+and needs a new versioned validation decision before it can replace the promoted role.
+
 The current runner report schema is 8. Its top-level `verdict` is normative and is the single
 source for both the report status and process exit: 0 pass, 1 judged failure, 2 cannot judge.
 Cycle exhaustion is not implicitly successful; conformance targets must name an accepted stop and
@@ -51,7 +68,7 @@ shared device path.
 5. Reach the first visible checkpoint where the unmodified sample displays `Hello World PicoCalc`.
 6. Connect PIO1/DMA PSRAM and complete the sample's full 8 MiB multi-width test without reducing its test range.
 7. Connect the address `0x1f` I2C1 keyboard-controller model, including FIFO, battery, and backlight registers, and verify scripted key echo.
-8. Record PWM initialization. Audible output is not an acceptance condition for this sample because its `main()` does not start sample playback.
+8. Record PWM initialization. Audible output is not an acceptance condition for this sample because its `main()` does not start sample playback. Hardware/BSP audio evidence does not imply emulator PCM output support.
 9. Integrate UART, framebuffer, trace, PSRAM, keyboard, capability, commit, and firmware-hash artifacts with `picocalc_emu`.
 
 The primary behavioral reference for the keyboard controller is ClockworkPi's

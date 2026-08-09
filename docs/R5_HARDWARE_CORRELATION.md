@@ -2,6 +2,10 @@
 
 **状態:** 実装・再現build・emulator preflight・PicoCalc実機相関完了。OPT1-Aはpromoted。
 
+**audio境界:** 本書の`audio=pass`はfirmwareの設定・stream counterと実機で聞こえた参照音を
+相関した結果である。エミュレーターがDMA-paced PCM waveformをsample sinkへ生成したという意味では
+ない。後者は`firmware-validation/capability.json`で`audio-output` unsupportedのままである。
+
 ## 目的と判定境界
 
 R5は、エミュレーターが合格させたものと**同じfirmware artifact**をPicoCalc実機で動かし、

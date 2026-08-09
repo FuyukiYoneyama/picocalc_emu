@@ -97,6 +97,72 @@ def load_json(path: Path) -> Any:
         return json.load(source)
 
 
+def parse_ci_workflow(ci_path: Path) -> Dict[str, object]:
+    """Parse the tiny subset of GitHub Actions YAML needed for fail-closed checks."""
+    text = ci_path.read_text(encoding="utf-8").splitlines()
+    env: Dict[str, str] = {}
+    jobs: Dict[str, Dict[str, str]] = {}
+    in_env = False
+    in_jobs = False
+    current_job: Optional[str] = None
+    current_block: List[str] = []
+
+    def emit_job(job_id: Optional[str], block: List[str]) -> None:
+        if job_id is None:
+            return
+        jobs[job_id] = {"body": "\n".join(block)}
+
+    for raw_line in text:
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            if current_job is not None:
+                current_block.append(raw_line)
+            continue
+
+        indent = len(line) - len(line.lstrip(" "))
+        if indent == 0:
+            emit_job(current_job, current_block)
+            current_job = None
+            current_block = []
+            in_jobs = stripped == "jobs:"
+            in_env = stripped == "env:"
+            continue
+
+        if in_env and indent == 2:
+            match = re.match(r"^\s{2}([A-Z0-9_]+):\s*(.*)$", line)
+            if match:
+                key = match.group(1)
+                value = match.group(2).strip()
+                if value and (
+                    (value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")
+                ):
+                    value = value[1:-1]
+                env[key] = value
+            continue
+
+        if in_jobs:
+            job_match = re.match(r"^\s{2}([A-Za-z0-9_-]+):\s*$", line)
+            if indent == 2 and job_match:
+                emit_job(current_job, current_block)
+                current_job = job_match.group(1)
+                current_block = [raw_line]
+            elif current_job is not None:
+                current_block.append(raw_line)
+
+    emit_job(current_job, current_block)
+
+    for job_id, metadata in jobs.items():
+        name = None
+        for line in metadata["body"].splitlines():
+            match = re.match(r"^\s{4}name:\s*(.+)$", line)
+            if match:
+                name = match.group(1).strip()
+                break
+        metadata["name"] = name or job_id
+    return {"env": env, "jobs": jobs}
+
+
 def require_text(
     checks: List[Check],
     root: Path,
@@ -548,15 +614,158 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
     try:
         capability = load_json(capability_path)
         backend = capability.get("backend", {})
+        scope = capability.get("scope", {})
         supported = capability.get("supported", [])
         unsupported = capability.get("unsupported", [])
         errors: List[str] = []
-        if capability.get("schema_version") != 1:
-            errors.append("schema_version must be 1")
+
+        if capability.get("schema_version") != 2:
+            errors.append("schema_version must be 2")
         if not isinstance(backend, dict) or not backend.get("repo"):
             errors.append("backend.repo is required")
+        if "commit" in backend:
+            errors.append("backend.commit must be absent")
         if backend.get("execution_model") != "Serial":
-            errors.append("execution_model must be Serial while it is the reference")
+            errors.append("backend.execution_model must be Serial while it is the reference")
+        if not isinstance(scope, dict):
+            errors.append("scope must be an object")
+        else:
+            if scope.get("authority") != "firmware-emulator-rp2040-binary-conformance":
+                errors.append("scope.authority must be firmware-emulator-rp2040-binary-conformance")
+            if scope.get("hardware_or_bsp_audio_evidence_implies_emulator_audio_output") is not False:
+                errors.append(
+                    "scope.hardware_or_bsp_audio_evidence_implies_emulator_audio_output must be false"
+                )
+
+        roles = backend.get("roles")
+        if not isinstance(roles, dict):
+            errors.append("backend.roles is required and must be an object")
+            hardware = promoted = experimental = None
+            r5_accepted = None
+            opt1b_accepted = None
+            opt1b_validation = None
+        else:
+            required_roles = {"hardware_correlated", "promoted", "experimental_main"}
+            keys = set(roles.keys())
+            if keys != required_roles:
+                errors.append(
+                    "backend.roles must contain exactly {}".format(
+                        ", ".join(sorted(required_roles))
+                    )
+                )
+            hardware = roles.get("hardware_correlated")
+            promoted = roles.get("promoted")
+            experimental = roles.get("experimental_main")
+
+        try:
+            registry = picocalc.load_firmware_registry(
+                root / "reference-projects/firmware-targets.json"
+            )
+            targets_by_id = {item["id"]: item for item in registry.get("targets", [])}
+            r5_target = targets_by_id.get("picotetris-r5")
+            opt1b_target = targets_by_id.get("picotetris-opt1b")
+            r5_accepted = r5_target["backend"]["accepted"] if r5_target else None
+            opt1b_accepted = opt1b_target["backend"]["accepted"] if opt1b_target else None
+            opt1b_validation = (
+                opt1b_target.get("validation", {}).get("record")
+                if opt1b_target
+                else None
+            )
+            if (
+                not r5_target
+                or r5_target.get("status") != "active"
+                or not opt1b_target
+                or opt1b_target.get("status") != "active"
+            ):
+                errors.append(
+                    "registry must contain active picotetris-r5 and picotetris-opt1b targets"
+                )
+        except (
+            OSError,
+            UnicodeError,
+            ValueError,
+            TypeError,
+            KeyError,
+            json.JSONDecodeError,
+        ) as error:
+            errors.append("registry load failed: {}".format(error))
+            r5_accepted = None
+            opt1b_accepted = None
+            opt1b_validation = None
+
+        def require_sha(value: Any) -> bool:
+            return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value) is not None
+
+        if not isinstance(hardware, dict):
+            errors.append("hardware_correlated must be an object")
+        if not isinstance(promoted, dict):
+            errors.append("promoted must be an object")
+        if not isinstance(experimental, dict):
+            errors.append("experimental_main must be an object")
+
+        if isinstance(hardware, dict):
+            if not require_sha(hardware.get("commit")):
+                errors.append("hardware_correlated.commit must be a git commit")
+            elif r5_accepted is not None and hardware.get("commit") != r5_accepted:
+                errors.append("hardware_correlated.commit must match picotetris-r5 backend.accepted")
+            if hardware.get("target") != "picotetris-r5":
+                errors.append("hardware_correlated.target must be picotetris-r5")
+            if hardware.get("status") != "immutable_evidence":
+                errors.append("hardware_correlated.status must be immutable_evidence")
+            evidence = hardware.get("evidence")
+            if not isinstance(evidence, str):
+                errors.append("hardware_correlated.evidence must be a path")
+            elif not (root / evidence).is_file():
+                errors.append("hardware_correlated.evidence must exist")
+
+        if isinstance(promoted, dict):
+            if not require_sha(promoted.get("commit")):
+                errors.append("promoted.commit must be a git commit")
+            elif opt1b_accepted is not None and promoted.get("commit") != opt1b_accepted:
+                errors.append("promoted.commit must match picotetris-opt1b backend.accepted")
+            if promoted.get("target") != "picotetris-opt1b":
+                errors.append("promoted.target must be picotetris-opt1b")
+            if promoted.get("status") != "active":
+                errors.append("promoted.status must be active")
+            if promoted.get("validation") != opt1b_validation:
+                errors.append("promoted.validation must match picotetris-opt1b validation.record")
+            if not isinstance(opt1b_validation, str) or not (root / opt1b_validation).is_file():
+                errors.append("picotetris-opt1b validation record must exist")
+
+        if isinstance(experimental, dict):
+            if experimental.get("promoted") is not False:
+                errors.append("experimental_main.promoted must be false")
+            if experimental.get("status") != "unpromoted":
+                errors.append("experimental_main.status must be unpromoted")
+            if not require_sha(experimental.get("commit")):
+                errors.append("experimental_main.commit must be a git commit")
+            if not require_sha(experimental.get("source_equivalent_to")):
+                errors.append("experimental_main.source_equivalent_to must be a git commit")
+            if not isinstance(experimental.get("ci_run_id"), int) or experimental.get("ci_run_id") <= 0:
+                errors.append("experimental_main.ci_run_id must be a positive integer")
+
+        if isinstance(hardware, dict) and isinstance(promoted, dict) and isinstance(
+            experimental, dict
+        ):
+            if (
+                isinstance(hardware.get("commit"), str)
+                and isinstance(promoted.get("commit"), str)
+                and isinstance(experimental.get("commit"), str)
+                and (
+                    experimental.get("commit") == hardware.get("commit")
+                    or experimental.get("commit") == promoted.get("commit")
+                )
+            ):
+                errors.append(
+                    "experimental_main.commit must differ from hardware_correlated and promoted commits"
+                )
+
+        if not any(
+            isinstance(item, dict) and item.get("id") == "audio-output"
+            for item in unsupported
+        ):
+            errors.append("unsupported must include audio-output")
+
         for name, entries in (("supported", supported), ("unsupported", unsupported)):
             if not isinstance(entries, list) or not entries:
                 errors.append("{} must be a non-empty list".format(name))
@@ -642,6 +851,183 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
         add_check(
             checks,
             "firmware-validation:records",
+            False,
+            **error_details(error),
+        )
+
+
+def verify_r4_backend_role_ci(checks: List[Check], root: Path) -> None:
+    """Verify CI wiring matches capability roles and target registry expectations."""
+    errors: List[str] = []
+    try:
+        ci_path = root / ".github/workflows/ci.yml"
+        workflow = parse_ci_workflow(ci_path)
+        ci_env = workflow["env"]
+        if not isinstance(ci_env, dict):
+            raise TypeError("workflow env must be a mapping")
+        jobs = workflow["jobs"]
+        if not isinstance(jobs, dict):
+            raise TypeError("workflow jobs must be a mapping")
+
+        try:
+            capability = load_json(root / "firmware-validation/capability.json")
+            roles = capability["backend"]["roles"]
+        except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+            raise ValueError("capability roles load failed: {}".format(error))
+
+        try:
+            registry = picocalc.load_firmware_registry(
+                root / "reference-projects/firmware-targets.json"
+            )
+            registered = {target["id"]: target for target in registry.get("targets", [])}
+        except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+            raise ValueError("registry load failed: {}".format(error))
+
+        expected_jobs = [
+            {
+                "display_name": "hardware-correlated-firmware-regression",
+                "target": "picotetris-r5",
+                "backend_env": "PICOEM_HARDWARE_CORRELATED_COMMIT",
+                "target_source_env": "PICOTETRIS_R5_SOURCE_COMMIT",
+                "target_bin_env": "PICOTETRIS_R5_BIN_SHA256",
+                "target_uf2_env": "PICOTETRIS_R5_UF2_SHA256",
+                "target_bundle_env": "PICOTETRIS_R5_BUNDLE_SHA256",
+                "target_bundle_path": "provenance/picotetris-r5.bundle",
+                "backend_dir": "/tmp/picoem-picocalc",
+            },
+            {
+                "display_name": "promoted-opt1b-firmware-regression",
+                "target": "picotetris-opt1b",
+                "backend_env": "PICOEM_PROMOTED_COMMIT",
+                "target_source_env": "PICOTETRIS_OPT1B_SOURCE_COMMIT",
+                "target_bin_env": "PICOTETRIS_OPT1B_BIN_SHA256",
+                "target_uf2_env": "PICOTETRIS_OPT1B_UF2_SHA256",
+                "target_bundle_env": "PICOTETRIS_OPT1B_BUNDLE_SHA256",
+                "target_bundle_path": "provenance/picotetris-r3.bundle",
+                "backend_dir": "/tmp/picoem-promoted",
+            },
+        ]
+        name_to_job = {
+            metadata.get("name"): job_id
+            for job_id, metadata in jobs.items()
+            if isinstance(metadata, dict) and metadata.get("name") is not None
+        }
+
+        def ci_value(field: str) -> Optional[str]:
+            value = ci_env.get(field)
+            return value if isinstance(value, str) and value else None
+
+        for expected in expected_jobs:
+            display_name = expected["display_name"]
+            job_id = name_to_job.get(display_name)
+            if job_id is None:
+                errors.append("ci missing job named '{}'".format(display_name))
+                continue
+            job = jobs[job_id]
+            body = job.get("body", "")
+            if not isinstance(body, str):
+                errors.append("ci job '{}' body is not captured".format(display_name))
+                continue
+
+            env_var = expected["backend_env"]
+            expected_backend_commit = (
+                roles.get("hardware_correlated", {}).get("commit")
+                if expected["target"] == "picotetris-r5"
+                else roles.get("promoted", {}).get("commit")
+            )
+            expected_backend = ci_value(env_var)
+            if expected_backend is None:
+                errors.append("ci job '{}' missing {}".format(display_name, env_var))
+            elif expected_backend != expected_backend_commit:
+                errors.append(
+                    "{} mismatch: ci {}={}, capability commit={}".format(
+                        display_name, env_var, expected_backend, expected_backend_commit
+                    )
+                )
+
+            target = registered.get(expected["target"])
+            if target is None:
+                errors.append("registry target {} missing".format(expected["target"]))
+                continue
+            expected_backend_source = target.get("source", {}).get("commit")
+            expected_backend_bin = target.get("artifacts", {}).get("bin_sha256")
+            expected_backend_uf2 = target.get("artifacts", {}).get("uf2_sha256")
+
+            source_env_value = ci_value(expected["target_source_env"])
+            if source_env_value is None:
+                errors.append("ci job '{}' missing {}".format(display_name, expected["target_source_env"]))
+            elif source_env_value != expected_backend_source:
+                errors.append(
+                    "{} mismatch: {} != registry {}".format(
+                        expected["target_source_env"], source_env_value, expected_backend_source
+                    )
+                )
+
+            bin_env_value = ci_value(expected["target_bin_env"])
+            if bin_env_value is None:
+                errors.append("ci job '{}' missing {}".format(display_name, expected["target_bin_env"]))
+            elif bin_env_value != expected_backend_bin:
+                errors.append(
+                    "{} mismatch: {} != registry {}".format(
+                        expected["target_bin_env"], bin_env_value, expected_backend_bin
+                    )
+                )
+
+            uf2_env_value = ci_value(expected["target_uf2_env"])
+            if uf2_env_value is None:
+                errors.append("ci job '{}' missing {}".format(display_name, expected["target_uf2_env"]))
+            elif uf2_env_value != expected_backend_uf2:
+                errors.append(
+                    "{} mismatch: {} != registry {}".format(
+                        expected["target_uf2_env"], uf2_env_value, expected_backend_uf2
+                    )
+                )
+
+            bundle_env_value = ci_value(expected["target_bundle_env"])
+            if bundle_env_value is None:
+                errors.append("ci job '{}' missing {}".format(display_name, expected["target_bundle_env"]))
+            else:
+                bundle_path = root / expected["target_bundle_path"]
+                if not bundle_path.is_file():
+                    errors.append(
+                        "ci bundle path {} not found for {}".format(
+                            expected["target_bundle_path"], display_name
+                        )
+                    )
+                else:
+                    if bundle_env_value != sha256(bundle_path):
+                        errors.append(
+                            "{} mismatch for bundle {}".format(
+                                expected["target_bundle_env"], expected["target_bundle_path"]
+                            )
+                        )
+            target_token = expected["target"]
+            if ("--target {}".format(target_token)) not in body:
+                errors.append("{} must run --target {}".format(display_name, target_token))
+            backend_dir = expected["backend_dir"]
+            if 'test -z "$(git -C {} status --porcelain)"'.format(backend_dir) not in body:
+                errors.append(
+                    "{} must assert backend checkout is clean".format(display_name)
+                )
+            if expected["backend_env"] not in body:
+                errors.append(
+                    "{} must checkout backend using {}".format(
+                        display_name, expected["backend_env"]
+                    )
+                )
+
+        add_check(
+            checks,
+            "r4:backend-role-ci",
+            not errors,
+            errors=errors,
+            job_count=len(expected_jobs),
+            workflow=str(ci_path.relative_to(root)),
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        add_check(
+            checks,
+            "r4:backend-role-ci",
             False,
             **error_details(error),
         )
@@ -1334,6 +1720,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     """Verify the registry, schemas, attestations, and pinned R3 evidence."""
     verify_firmware_targets(checks, root)
     verify_firmware_validation(checks, root)
+    verify_r4_backend_role_ci(checks, root)
     verify_r3_contract(checks, root)
     verify_r5_performance(checks, root)
     verify_r5_hardware_correlation(checks, root)

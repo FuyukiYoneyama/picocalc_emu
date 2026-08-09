@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B short immutable-XIP decode cursorはexactness合格・性能退行でrevert済み。次はOPT3-C compact predecoded dispatch keyの調査
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。backendの実機相関済み・promoted・experimental mainの役割と前二者の独立CIを固定済み。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B short immutable-XIP decode cursorはexactness合格・性能退行でrevert済み。次はOPT3-C compact predecoded dispatch keyの調査
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)

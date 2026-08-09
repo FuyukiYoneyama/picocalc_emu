@@ -29,8 +29,10 @@ timelineを含むregistryの全条件に合格しなければjobは失敗する�
 - `host`: BSP host modelをbuildし、FAT32既定/FAT16明示を含むCTestと`emu_smoke`を3回実行する。
   stdout SHA-256も`84afb65d...b4b`へ固定する。
 - `rp2040-compat`: 最低互換対象のPico SDK 2.0.0で標準templateをcompileする。
-- `firmware-regression`: SDK 2.2.0の登録BINを再構築し、実RP2040 BINをfirmware backendで
-  scenario実行する権威ある判定である。
+- `hardware-correlated-firmware-regression`: R5の固定BIN/UF2をbackend `612b485...f66`で
+  再実行し、実機相関済みbaselineを不変に保つ。
+- `promoted-opt1b-firmware-regression`: active target `picotetris-opt1b`の固定BIN/UF2を
+  backend `e985a9d...5f1`で再実行し、現在promotedされた契約を毎pushで守る。
 
 ローカルで構造・host層まで確認する最小コマンドは次である。
 
@@ -46,12 +48,23 @@ python3 tools/picocalc.py test --mode host --repeat 3
 
 ### R5による現行firmware jobの更新
 
-上のrun IDとR4成果物は時点証拠であり変更しない。R5 preflight後、現行
-`firmware-regression`は旧R3 bundle/R4 targetから、独立した
+上のrun IDとR4成果物は時点証拠であり変更しない。R5 preflight後、workflow上のjob key
+`firmware-regression`（display name `hardware-correlated-firmware-regression`）は旧R3
+bundle/R4 targetから、独立した
 `provenance/picotetris-r5.bundle`（SHA-256 `1187bccb...7a3`）、backend `612b485...f66`、
 target `picotetris-r5`へ進めた。clean checkoutからR5 BIN/UF2の両SHAを照合し、自動周辺機器・
 ゲーム診断と67キーscenarioを毎pushで実走する。旧R3/R4 target、bundle、attestationは履歴証拠
 としてそのまま保持する。
+
+### OPT1-Bによるbackend role分離
+
+R5相関jobだけでは、その後promotedされたbackend `e985a9d...5f1`とactive target
+`picotetris-opt1b`を毎pushで実走しない。そこでR5 jobを
+`hardware-correlated-firmware-regression`として維持し、別に
+`promoted-opt1b-firmware-regression`を追加した。後者は既存R3 bundle SHAを確認してsource
+`fed84f3...c48`を復元し、SDK/toolchain/timestamp/BSP/app identityを固定してBIN
+`0784d80d...e62`とUF2 `44ec6227...274`を再構築する。その後、target registryの全scenario・
+report条件をaccepted backendで判定する。2 jobは目的が異なるため、片方の成功で他方を代用しない。
 
 ## Private backendの認証境界
 

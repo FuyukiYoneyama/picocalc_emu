@@ -312,7 +312,7 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 - 音声の実再生・multicore・UF2直接ロード
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
 - directory-backed Fast SDモード（host backend）
-- host合格と実機結果の相関を自動集計する（Milestone 4）
+- host合格と実機結果の継続的な自動集計（Milestone 4の初回同一artifact相関はR5で完了。negative conformanceとKPI集計は継続項目）
 - JUnit成果物、100回連続実行の決定性検査（R4受入条件外。必要時は独立したsoak作業にする）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
@@ -326,9 +326,11 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 
 `picoem-picocalc`は`0x4D44/picoem`の履歴と`MIT OR Apache-2.0`ライセンスを維持した
 独立派生リポジトリです。`picocalc_emu`へソースをコピーせず別リポジトリで保守し、
-正確なcommitを固定して利用します。初期段階では単一ホストスレッドの
-`ExecutionModel::Serial`を正しさの基準とし、最初にSPI1のA、次にPIO1 PSRAMとI2C1
-keyboard、その後PIO0のB、SPI0 SD、PWM/DMA audio、multicoreを段階的に接続します。
+正確なcommitを固定して利用します。backend identityは、R5実機相関済み`612b485...f66`、
+現在promotedされたOPT1-B `e985a9d...5f1`、未promoteのexperimental main `e58e67f...648`の
+3役に分離します。CIは前二者を別jobで実走し、最新mainを自動採用しません。
+`ExecutionModel::Serial`を正しさの基準とし、未対応のPWM/DMA PCM outputとmulticoreは、
+具体的workloadと新しいconformance targetを伴う場合にだけ拡張します。
 
 これはBSPと同じ規律をエミュレーター層へ適用したものです。BSPで
 `bsp/vendor/`（Bの無改変コピー、Aの独自実装、由来を記録した派生コード）と
@@ -502,7 +504,7 @@ python3 tools/picocalc.py verify \
 | LCD B（推奨デフォルト） | `bsp/vendor/lcd_rgb565_pio.cpp` | PIO0 blocking、LCD DMAなし、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信、RAMRD時はSIOへ切替 |
 | Keyboard | [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（STM32F103R8T6 firmware。ローカル: `/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`） | **protocol producerの一次リファレンス**。I2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、key state・modifier・repeat・overflow・backlight・battery・power。`picocalc-life`はRP2040 consumerの実機証拠 |
 | SD/FatFS | `picocalc-life` | SPI0 GP16–19、detect GP22、400 kHz init、12 MHz run |
-| Audio evidence | `Picocalc_ment` | GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer |
+| Audio evidence | `Picocalc_ment` | **BSP/実機証拠**。GP26/27、48 kHz PWM/DMA、wrap 255、固定サインとPCM ring producer。firmware emulatorのPCM sample sink対応を意味しない |
 | PSRAM | `pico_rescue` | 8 MiB、PIO1、CS20/SCK21/MOSI2/MISO3、24-byte以下のread/write、250 MHz通常候補は2/0→3/0→1.5/1、125 MHz通常候補は1/0→1.5/0→2/0→3/0→4/0 |
 
 通常のアプリ開発では`bsp/`を変更しません。BSP変更にはsource fingerprint更新、
@@ -556,6 +558,11 @@ LCD readback 3回、keyboard 138イベント、SD、audio、PSRAMを確認しま
 閉じています。実機では一度に一方だけを
 `build/picocalc_app.uf2`へ生成して検証します。UF2は保存せず、通常ビルドは各ソース
 コミットから生成し、実機記録用は固定タイムスタンプの証拠ビルドとして生成します。
+
+ここでいうaudio合格はBSPとPicoCalc実機の再生経路に対する証拠である。firmware emulatorは
+PWM設定と関連counterを観測できるが、DMA-paced PCM waveformをsample sinkへ出力しない。
+machine-readableな現行境界は`firmware-validation/capability.json`の`audio-output` unsupportedを
+正典とする。
 
 ## RAMRDの解釈
 

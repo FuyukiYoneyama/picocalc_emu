@@ -1,12 +1,40 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "backend": {
     "repo": "picoem-picocalc",
     "url": "https://github.com/FuyukiYoneyama/picoem-picocalc",
     "branch": "main",
-    "commit": "612b48510452d4012e4ac6639960ca3983b48f66",
     "execution_model": "Serial",
-    "note": "Source is never vendored here. This is the current post-R5 and OPT1-B capability snapshot; historical targets retain their own exact backend pins in the target registry. Backend e985a9d adds the promoted serial fast-path predicate optimization to the OPT1-A/R5 execution model. The snapshot keeps `picocalc.py verify` complete on a clone with no backend checked out. R5 physical-device correlation passed; OPT1-A and the exact-equivalent OPT1-B are promoted."
+    "roles": {
+      "hardware_correlated": {
+        "commit": "612b48510452d4012e4ac6639960ca3983b48f66",
+        "target": "picotetris-r5",
+        "status": "immutable_evidence",
+        "evidence": "firmware-validation/records/r5-hardware-20260808-01/record.json",
+        "meaning": "The backend used for the immutable same-artifact R5 emulator preflight whose UF2 passed on physical PicoCalc hardware."
+      },
+      "promoted": {
+        "commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+        "target": "picotetris-opt1b",
+        "status": "active",
+        "validation": "firmware-validation/validations/picotetris-opt1b-r5.json",
+        "meaning": "The current accepted backend for normal regression. It preserves the R5 behavior contract and adds the promoted OPT1-B serial fast path."
+      },
+      "experimental_main": {
+        "commit": "e58e67f1be69357edec0bd47e879039f47a42648",
+        "status": "unpromoted",
+        "promoted": false,
+        "source_equivalent_to": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+        "ci_run_id": 31293556450,
+        "meaning": "Observed main after the rejected OPT3-B candidate was reverted. Main may advance during experiments and is never accepted merely because it is the branch head."
+      }
+    },
+    "note": "Source is never vendored here. Historical targets retain exact backend pins in the target registry. The three roles deliberately separate physical-device correlation, current promotion and an unpromoted moving development head."
+  },
+  "scope": {
+    "authority": "firmware-emulator-rp2040-binary-conformance",
+    "hardware_or_bsp_audio_evidence_implies_emulator_audio_output": false,
+    "note": "R5 audio=pass covers firmware configuration/counters plus physical reference-tone evidence. It does not mean that the emulator produces a PCM waveform; audio-output remains unsupported below."
   },
   "supported": [
     {

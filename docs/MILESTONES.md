@@ -10,6 +10,8 @@ R5専用の単一BIN、回復可能な67キー診断、emulator preflight、同�
 完了しました。R5前の観測契約OPT0と、正確性を維持する最初の高速化OPT1-Aは実機相関を通過して
 promotedとなりました。R5後のOPT1-Bも全event一致、性能gate、代表workload、R5同値性を通過して
 promotedです。R5の現在状態、時点証拠、配布境界を文書と機械検証へ統合し、R6も完了しました。
+R6後の保守としてbackendの`hardware_correlated`、`promoted`、`experimental_main`を分離し、
+前二者を独立したfirmware CI jobで継続検証する契約へ更新しました。
 OPT2は追加promotionなしで終了しました。最初のdispatcher-only候補は正確性契約を通した後、同時A/Bで性能改善がなく
 revertしました。その後のOPT2-B running event-horizon profilerは完了し、PicoTetris running
 cycleの15.0233%にpost-hoc candidateを観測しました。OPT2-Cでは、そのうち事前証明できる限定
@@ -60,7 +62,7 @@ Firmware backendを分割したものであり、本書と競合しません。
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
 
-## 現在の実行順序（2026-08-09 OPT3-B試作完了反映）
+## 現在の実行順序（2026-08-09 backend role/CI整合反映）
 
 以下は新しいMilestone体系ではありません。完了済みMilestone 0〜3を再現可能な
 継続回帰として固め、Milestone 4の継続相関へ進むための作業パッケージです。
@@ -87,6 +89,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R4 | 品質ゲートとCI | 3リポジトリ | clean cloneから同じpinで再現する。`picotetris`はunit＋RP2040 build、backendはtest＋fmt＋Clippy、`picocalc_emu`はportable＋host＋target/schema＋firmware regressionを実行し、失敗した層を特定できる | **完了 2026-08-06**。3リポジトリのclean-runner full gate合格 |
 | R5 | 現行成果物の実機相関 | `picotetris`＋`picocalc_emu`＋実機 | `picotetris-r5`の同一BIN/UF2でLCD・line clear・game-over・restart・PSRAM・SD・audioと公式FW由来67キーを確認する。自動ゲーム診断後、`CAPS`以外の66キーは任意順・個別retry・SD進捗resume可能とし、`CAPS`は途中で押さず`66/67`の後に必ず最後に押す。途中写真を求めない。UF2 SHA、UART全文、最終PASS写真1枚、音確認を新規台帳へ保存する | **完了 2026-08-08**。`r5-hardware-20260808-01`で最終verdict、写真、参照音、SD進捗67/67を固定。67/67は到達性の証拠であり、Caps状態遷移・終了時Caps off・操作UXは合格範囲外。OPT1-A promoted |
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | **完了 2026-08-08**。R5 recordを機械検証へ接続し、README/status/Milestones/dogfood/OPT1-AとPicoTetris文書を現在状態へ同期。既存CI再現契約とlicense/noticesを確認 |
+| R6-M | backend role/CI整合保守 | `picocalc_emu`＋backend | 実機相関済み、現在promoted、実験中mainを機械可読に分離し、相関baselineとpromoted targetを別々のCI jobで固定source/BIN/UF2/backendから再現する。audioの実機証拠と未実装PCM出力を混同しない | **完了 2026-08-09**。capability schema 2、role/target/CI相互検証、R5相関job＋OPT1-B promoted jobを接続 |
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
 | OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-B完了・不採用 2026-08-09**。短いXIP cursorは全event一致、中央値4.4265%退行でrevert。次はeager copyを避けるOPT3-C compact dispatch key |
@@ -512,15 +515,20 @@ JUnit形式の出力が要る見込み。Milestone 3の中核完了条件はscen
 
 ## Milestone 4: Hardware correlation
 
-**一部完了。** Gate 7と同一ソース・同一設定のUF2を実機で3回確認し、BOOT、250 MHz、
-LCD `app_status=pass`、GRAM readback、audioの一致を記録しました。そこで見つかった
-PSRAMとSDのmodel gapも解消済みです。ただし、この記録のBINは現在の生成契約から
-一意に再生成できない時点証拠です。後続R3で現行PicoTetrisを再現可能buildとactive targetへ
-固定しました。R4のCI接続後、R5で同一BIN SHAによる相関を追加します。
+**最初の同一artifact相関はR5で完了。継続相関は進行中。** Gate 7の初期相関でBOOT、
+250 MHz、LCD `app_status=pass`、GRAM readback、audio pathを実機で確認し、PSRAMとSDのmodel gapを
+解消した。後続R3/R4でPicoTetrisを再現可能build・active target・CIへ固定し、R5では同一buildの
+BINをエミュレーター、UF2をPicoCalc実機で動かした。LCD、PSRAM、FAT32、ゲーム診断、67キー、
+audio pathが一致し、`emulator pass -> hardware fail`はR5範囲で0件だった。R6でこの証拠を
+文書とmachine verifierへ接続した。
+
+R5の`audio=pass`はfirmware設定/counterと実機参照音の相関であり、エミュレーターがPCM waveformを
+生成する意味ではない。PCM sample sinkはcapability上unsupportedである。また0件という値は一般的な
+false-acceptance率0%ではない。次のMilestone 4継続作業はnegative conformanceとKPI母数の追加である。
 
 - 実機SPI/I2C/UART trace採取
 - host traceとのgolden比較
-- `host_pass → hardware_fail`記録
+- `host_pass → hardware_fail`を含むnegative conformance記録
 - 変更影響に基づく実機必須判定
 - 実機検証回数と時間のKPI
 

@@ -93,6 +93,10 @@ audio経路、line-clear、game-over、restart、公式FW由来67キーを全自
 `io_errors=0 progress=saved overall=pass`で一致し、最終写真、参照音、CRC-validなSD進捗も固定した。
 67/67が証明するのは全物理キーのpress/release到達性であり、Caps状態遷移、終了時Caps off、
 操作UXはこのR5合格範囲に含めない。
+
+この`audio=pass`は、firmwareのPWM/DMA設定・stream counterとPicoCalc実機の参照音を相関した結果で
+ある。firmware emulator自身はPCM sample streamを生成・再生しておらず、`audio-output`は現在も
+capability上unsupportedである。BSP/実機audio evidenceとemulator audio capabilityを混同しない。
 操作・結果の正典は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)、preflight証拠は
 [`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
 、実機証拠は
@@ -416,6 +420,9 @@ scenario、SD、LCD variantを含む全device設定、停止理由、必須UART 
 - 3回連続実行でreport・UART・PNGがバイト一致
 
 これによりA（公式サンプル）とB（標準template）の両系統がPC上で観測可能になった。
+ここでの音声判定はPWM/DMA設定とcounter/underrunの観測であり、エミュレーターがPCM waveformを
+sample sinkへ出力した証拠ではない。実機相関で聞いた参照音とも役割を区別し、PCM出力は引き続き
+capabilityの`audio-output=unsupported`とする。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

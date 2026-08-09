@@ -854,6 +854,84 @@ raise SystemExit(code)
         self.assertIn("r3:picotetris-contract", contract_names)
         self.assertFalse(any(name.startswith("source-fingerprint:") for name in contract_names))
 
+    def test_capability_check_passes_for_current_capability(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        capability = next(
+            check for check in report["checks"] if check["name"] == "firmware-validation:capability"
+        )
+        self.assertEqual(capability["status"], "pass")
+
+    def test_capability_rejects_tampered_promoted_commit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            capability_path = project / "firmware-validation/capability.json"
+            capability = json.loads(capability_path.read_text(encoding="utf-8"))
+            capability["backend"]["roles"]["promoted"]["commit"] = "b" * 40
+            capability_path.write_text(json.dumps(capability), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        capability_check = next(
+            check for check in report["checks"] if check["name"] == "firmware-validation:capability"
+        )
+        self.assertEqual(capability_check["status"], "fail")
+
+    def test_capability_rejects_missing_role(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            capability_path = project / "firmware-validation/capability.json"
+            capability = json.loads(capability_path.read_text(encoding="utf-8"))
+            del capability["backend"]["roles"]["experimental_main"]
+            capability_path.write_text(json.dumps(capability), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        capability_check = next(
+            check for check in report["checks"] if check["name"] == "firmware-validation:capability"
+        )
+        self.assertEqual(capability_check["status"], "fail")
+
+    def test_capability_rejects_experimental_promoted_true(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            capability_path = project / "firmware-validation/capability.json"
+            capability = json.loads(capability_path.read_text(encoding="utf-8"))
+            capability["backend"]["roles"]["experimental_main"]["promoted"] = True
+            capability_path.write_text(json.dumps(capability), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        capability_check = next(
+            check for check in report["checks"] if check["name"] == "firmware-validation:capability"
+        )
+        self.assertEqual(capability_check["status"], "fail")
+
     def test_versioned_target_validation_fails_closed_on_tampering(self):
         mutations = ("attestation", "target", "evidence")
         for mutation in mutations:
@@ -891,6 +969,39 @@ raise SystemExit(code)
                 self.assertEqual(completed.returncode, 1)
                 self.assertEqual(validation_check["status"], "fail")
                 self.assertTrue(validation_check["errors"])
+
+    def test_target_schema_rejects_tampered_ci_promoted_backend_commit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            ci_path = project / ".github/workflows/ci.yml"
+            ci = ci_path.read_text(encoding="utf-8")
+            replaced = False
+            lines = []
+            for line in ci.splitlines():
+                if not replaced and line.startswith("  PICOEM_PROMOTED_COMMIT:"):
+                    lines.append("  PICOEM_PROMOTED_COMMIT: " + "b" * 40)
+                    replaced = True
+                else:
+                    lines.append(line)
+            if not replaced:
+                self.fail("PICOEM_PROMOTED_COMMIT not found in ci.yml")
+            ci_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        r4_ci = next(
+            check for check in report["checks"] if check["name"] == "r4:backend-role-ci"
+        )
+        self.assertEqual(r4_ci["status"], "fail")
 
     def test_audio_dma_restart_check_detects_missing_channel_reenable(self):
         with tempfile.TemporaryDirectory() as temporary:
