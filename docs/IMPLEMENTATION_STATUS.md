@@ -140,11 +140,22 @@ active targetはOPT1-Bのままである。続くOPT2-Fはstationary PIOと、�
 同一pin sample観測を一つのexact contractへまとめた。candidate `9ec1988`は全eventを一致させ、
 23,199,887 outer callで37,012,745回の重複`update_gpio`を削減した。しかしCPU 0固定clean paired
 中央値は26.18秒から26.00秒、0.6875%改善で5%条件未達だった。`cdb7584`と`2671d04`でrevertし、active
-targetはOPT1-Bのままである。次候補はOPT2-Dで次点だったUART deadline promotionとする。詳細は
+targetはOPT1-Bのままである。その次候補としてOPT2-Dで次点だったUART deadline promotionを選んだ。詳細は
 [`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)と
 [`opt2-e-pio-pull-stall-20260809-01/`](../firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/)
 、[`OPT2_F_STATIONARY_PIN_DEVICE_BULK.md`](OPT2_F_STATIONARY_PIN_DEVICE_BULK.md)と
 [`opt2-f-stationary-pin-bulk-20260809-01/`](../firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01/)
+にある。OPT2-GではUART TXのTXRIS/FIFO pop/DREQ境界を対象にしたfail-closed UART-only scheduler
+laneをfeature `uart-deadline-prototype`で試作した。実際のrunning fast-forwardはCPU MMIO、clock変更、
+DMA orderingを事前証明できないため実装していない。candidate
+`593e6d78541722920e1fa903e682d49912eae825`は927,528,660 cycle、85/85、behavior SHA、全9 domain、
+UART、framebuffer、PSRAM tickに完全一致したが、CPU 0固定clean A/B/A/B/A/B中央値はbaseline
+25.92秒、candidate 28.17秒（`-8.6805555556%`）で5%条件未達だった。exactnessは合格、性能は
+不採用とし、`335ecdd7f01cbc5d4f63e18403033bd629efbe77`でrevertした。最終内容はbaselineと一致し、
+backend CI run `31287315634`も成功した。active targetとvalidation attestationは変更しない。
+OPT2は性能条件未達のまま追加promotionなしで終了した。次工程はOPT3
+CPU/decode/execute block cacheである。詳細は[`OPT2_G_UART_EXACT_LANE.md`](OPT2_G_UART_EXACT_LANE.md)と
+[`opt2-g-uart-deadline-20260809-01/`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/)
 にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う

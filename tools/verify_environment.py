@@ -1346,6 +1346,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2d_lever_comparison(checks, root)
     verify_opt2e_pio_pull_stall(checks, root)
     verify_opt2f_stationary_pin_bulk(checks, root)
+    verify_opt2g_uart_deadline(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -2534,6 +2535,157 @@ def verify_opt2f_stationary_pin_bulk(checks: List[Check], root: Path) -> None:
             paired_runs=screening.get("paired_runs"),
             candidate_median_improvement_percent=screening.get("candidate_median_improvement_percent"),
             candidate_pio_system_cycles=candidate.get("pio_system_cycles"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2g_uart_deadline(checks: List[Check], root: Path) -> None:
+    """Verify the exact UART scheduler lane record and rejected decision."""
+    name = "opt2-g:uart-deadline"
+    expected_artifact_hashes = {
+        "notes": "b9fa0c188096d661a29ac498ee5e522bd6a7f7295eabea2d8cc4b371096683b0",
+        "performance": "11f5d0b571d919b464f58dca8173b238f68063eb84fe734f989c26ce794d84f7",
+        "run_report": "aaaba8340342f24115faa860034397160c24eb9d181d5f5eb7dba9adde942388",
+        "behavior_trace": "75a7c9c4ae07e23da7cc5554d4d8654a6bf8d74a331fa0ca305595620a77f8b1",
+    }
+    expected_domains = {
+        "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+        "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+    }
+    try:
+        record_root = root / "firmware-validation/records/opt2-g-uart-deadline-20260809-01"
+        record = load_json(record_root / "record.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        opt1b_behavior = load_json(
+            root / "firmware-validation/records/opt1-b-20260808-01/behavior-trace.json"
+        )
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+        candidate = record["candidate"]
+        exact = record["exactness"]
+        screening = record["performance_screening"]
+        decision = record["decision"]
+        target_record = record["target"]
+        artifacts = record["artifacts"]
+        profile = behavior["behavior_projection"]["event_trace"]
+        profile_domains = {item.get("name") for item in profile.get("domains", [])}
+        baseline_median = performance["baseline"]["median_wall_seconds"]
+        candidate_median = performance["candidate"]["median_wall_seconds"]
+        improvement = (baseline_median - candidate_median) / baseline_median * 100
+        run_ids = [item.get("id") for item in performance.get("runs", [])]
+        aligned = all((
+            record.get("record_id") == "opt2-g-uart-deadline-20260809-01",
+            record.get("result") == "rejected",
+            record.get("optimization_status") == "reverted",
+            record.get("opt2_overall_status") == "closed_without_additional_promotion",
+            record.get("roadmap_package") == "OPT2-G",
+            target_record.get("id") == target.get("id") == "picotetris-opt1b",
+            target_record.get("revision") == target.get("revision") == 5,
+            target_record.get("firmware_sha256") == target.get("artifacts", {}).get("bin_sha256"),
+            target_record.get("scenario_sha256") == target.get("scenario", {}).get("sha256"),
+            candidate.get("backend_commit") == "593e6d78541722920e1fa903e682d49912eae825",
+            candidate.get("baseline_commit") == "2671d0476c1a4286de7e3666bf91e20e27613854",
+            candidate.get("backend_dirty") is False,
+            candidate.get("feature") == "uart-deadline-prototype",
+            candidate.get("candidate_revert_commit") == "335ecdd7f01cbc5d4f63e18403033bd629efbe77",
+            candidate.get("final_content_matches_commit") == "2671d0476c1a4286de7e3666bf91e20e27613854",
+            candidate.get("actual_running_fast_forward") is False,
+            candidate.get("fail_closed_lane") is True,
+            candidate.get("lane_calls") == 3_137_790,
+            candidate.get("lane_cycles") == 6_268_797,
+            candidate.get("temporal_tx_calls") == 3_127_577,
+            candidate.get("first_tx_deadline_cycles") == 1,
+            candidate.get("static_calls") == 10_213,
+            report.get("schema_version") == 8,
+            report.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("verdict", {}).get("status") == "pass",
+            report.get("stop_reason") == exact.get("stop_reason") == "scenario_done",
+            report.get("cycles") == exact.get("cycles") == 927_528_660,
+            report.get("elapsed_us") == exact.get("elapsed_us") == 3_715_000,
+            report.get("scenario", {}).get("status") == "pass",
+            len(report.get("scenario", {}).get("steps", [])) == exact.get("scenario_steps_passed") == 85,
+            exact.get("scenario_steps_total") == 85,
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            behavior.get("backend_build", {}).get("dirty") is False,
+            behavior.get("mode") == "correctness_trace_on",
+            behavior.get("valid_for_wall_time") is False,
+            behavior.get("behavior_sha256") == exact.get("behavior_sha256"),
+            behavior.get("behavior_projection") == opt1b_behavior.get("behavior_projection"),
+            profile.get("schema_version") == 2,
+            profile.get("sha256") == exact.get("event_stream_sha256"),
+            profile.get("total_events") == exact.get("event_stream_total_events"),
+            set(profile_domains) == expected_domains,
+            exact.get("all_nine_event_domains_match_opt1b") is True,
+            exact.get("uart_sha256") == report.get("uart", {}).get("sha256"),
+            exact.get("framebuffer_rgb565_sha256") == report.get("framebuffer", {}).get("rgb565_sha256"),
+            exact.get("psram_tick_count") == report.get("psram", {}).get("tick_count"),
+            performance.get("schema_version") == 1,
+            performance.get("measurement") == "OPT2-G UART exact scheduler lane screening",
+            performance.get("valid_for_wall_time") is True,
+            performance.get("result") == "rejected_below_threshold",
+            performance.get("host", {}).get("cpu_affinity") == 0,
+            performance.get("host", {}).get("affinity_command") == "taskset -c 0",
+            performance.get("host", {}).get("execution_order")
+            == "A/B/A/B/A/B alternating clean detached worktrees",
+            performance.get("canonical", {}).get("cycles_limit") == 8_000_000_000,
+            performance.get("canonical", {}).get("quantum") == 1,
+            performance.get("canonical", {}).get("firmware_sha256") == target_record.get("firmware_sha256"),
+            performance.get("baseline", {}).get("backend_commit") == candidate.get("baseline_commit"),
+            performance.get("baseline", {}).get("backend_dirty") is False,
+            performance.get("candidate", {}).get("backend_commit") == candidate.get("backend_commit"),
+            performance.get("candidate", {}).get("backend_dirty") is False,
+            performance.get("candidate", {}).get("feature") == candidate.get("feature"),
+            performance.get("promotion_threshold_percent") == 5.0,
+            performance.get("formal_ten_run_measurement_performed") is False,
+            performance.get("exact_outputs_identical_across_all_six_measured_runs") is True,
+            run_ids == ["a1", "b1", "a2", "b2", "a3", "b3"],
+            all(item.get("cpu_affinity") == 0 and item.get("exit_code") == 0 for item in performance["runs"]),
+            baseline_median == statistics.median(performance["baseline"]["wall_seconds"]) == screening["baseline_median_wall_seconds"] == 25.92,
+            candidate_median == statistics.median(performance["candidate"]["wall_seconds"]) == screening["candidate_median_wall_seconds"] == 28.17,
+            math.isclose(screening["candidate_median_improvement_percent"], -8.680555555555555, rel_tol=0.0, abs_tol=1e-12),
+            math.isclose(performance["median_improvement_percent"], improvement, rel_tol=0.0, abs_tol=1e-12),
+            screening.get("cpu_affinity") == 0,
+            screening.get("all_six_measured_runs_exact") is True,
+            decision.get("accepted") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("validation_attestation_added") is False,
+            decision.get("next_investigation") == "OPT3 CPU/decode/execute block cache",
+            record.get("ci", {}).get("run_id") == 31_287_315_634,
+            record.get("ci", {}).get("head_sha") == "335ecdd7f01cbc5d4f63e18403033bd629efbe77",
+            record.get("ci", {}).get("conclusion") == "success",
+            all(
+                artifacts.get(key + "_sha256") == digest
+                and (record_root / artifacts.get(key, "")).is_file()
+                and sha256(record_root / artifacts.get(key)) == digest
+                for key, digest in expected_artifact_hashes.items()
+            ),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target_record.get("id"),
+            backend_commit=candidate.get("backend_commit"),
+            paired_runs=screening.get("paired_runs"),
+            candidate_median_improvement_percent=screening.get("candidate_median_improvement_percent"),
+            lane_calls=candidate.get("lane_calls"),
         )
     except (
         OSError,

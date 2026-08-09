@@ -532,6 +532,51 @@ raise SystemExit(code)
         self.assertEqual(opt2f.get("paired_runs"), 3)
         self.assertEqual(opt2f.get("candidate_pio_system_cycles"), 371_982_564)
 
+    def test_target_schema_verification_includes_opt2g_uart_deadline(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt2g = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt2-g:uart-deadline"
+        )
+        self.assertEqual(opt2g["status"], "pass")
+        self.assertEqual(opt2g["target"], "picotetris-opt1b")
+        self.assertEqual(opt2g["backend_commit"], "593e6d78541722920e1fa903e682d49912eae825")
+        self.assertEqual(opt2g.get("candidate_median_improvement_percent"), -8.680555555555555)
+        self.assertEqual(opt2g.get("paired_runs"), 3)
+        self.assertEqual(opt2g.get("lane_calls"), 3_137_790)
+
+    def test_target_schema_rejects_opt2g_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = (
+                project
+                / "firmware-validation/records/opt2-g-uart-deadline-20260809-01/record.json"
+            )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt2g = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt2-g:uart-deadline"
+        )
+        self.assertEqual(opt2g["status"], "fail")
+
     def test_target_schema_rejects_opt2e_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

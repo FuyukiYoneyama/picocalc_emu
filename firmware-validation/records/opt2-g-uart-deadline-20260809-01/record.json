@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "record_id": "opt2-g-uart-deadline-20260809-01",
+  "title": "OPT2-G exact UART scheduler lane prototype",
+  "roadmap_package": "OPT2-G",
+  "result": "rejected",
+  "optimization_status": "reverted",
+  "opt2_overall_status": "closed_without_additional_promotion",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "candidate": {
+    "backend_commit": "593e6d78541722920e1fa903e682d49912eae825",
+    "backend_dirty": false,
+    "feature": "uart-deadline-prototype",
+    "baseline_commit": "2671d0476c1a4286de7e3666bf91e20e27613854",
+    "candidate_revert_commit": "335ecdd7f01cbc5d4f63e18403033bd629efbe77",
+    "final_content_matches_commit": "2671d0476c1a4286de7e3666bf91e20e27613854",
+    "actual_running_fast_forward": false,
+    "fail_closed_lane": true,
+    "lane_contract": "UART-only exact TX observable boundary lane; CPU MMIO and DMA future ordering are not promoted",
+    "lane_calls": 3137790,
+    "lane_cycles": 6268797,
+    "temporal_tx_calls": 3127577,
+    "first_tx_deadline_cycles": 1,
+    "static_calls": 10213
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113
+  },
+  "performance_screening": {
+    "paired_runs": 3,
+    "cpu_affinity": 0,
+    "baseline_median_wall_seconds": 25.92,
+    "candidate_median_wall_seconds": 28.17,
+    "candidate_median_improvement_percent": -8.680555555555555,
+    "promotion_improvement_threshold_percent": 5.0,
+    "formal_ten_run_measurement_performed": false,
+    "all_six_measured_runs_exact": true
+  },
+  "decision": {
+    "accepted": false,
+    "reason": "exactness passed but CPU-0-pinned A/B/A/B/A/B median regressed from 25.92 s to 28.17 s (-8.6805555556%), below the 5% promotion threshold",
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "hardware_correlation_required": false,
+    "next_investigation": "OPT3 CPU/decode/execute block cache",
+    "cpu_block_work_deferred_to": "OPT3"
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31287315634,
+    "head_sha": "335ecdd7f01cbc5d4f63e18403033bd629efbe77",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "notes": "notes.md",
+    "notes_sha256": "b9fa0c188096d661a29ac498ee5e522bd6a7f7295eabea2d8cc4b371096683b0",
+    "performance": "performance-screening.json",
+    "performance_sha256": "11f5d0b571d919b464f58dca8173b238f68063eb84fe734f989c26ce794d84f7",
+    "run_report": "run-report.json",
+    "run_report_sha256": "aaaba8340342f24115faa860034397160c24eb9d181d5f5eb7dba9adde942388",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "75a7c9c4ae07e23da7cc5554d4d8654a6bf8d74a331fa0ca305595620a77f8b1"
+  }
+}

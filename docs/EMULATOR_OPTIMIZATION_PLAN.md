@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-F stationary pin-device bulk prototypeは正確性合格・性能不採用・revert、次はUART deadline promotion
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-G UART exact scheduler laneは正確性合格・性能不採用（中央値8.681%退行）・revert済み。OPT2は性能条件未達のまま追加promotionなしで終了し、次はOPT3 CPU/decode/execute block cache
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -379,6 +379,22 @@ clean candidate `9ec1988ec4c5c4fa240a1f409ac9524364e017de`はcycle、85/85、beh
 次はOPT2-Dで次点だったUART deadline promotionを試す。CPU/decode block cacheはOPT3に残す。
 詳細は[`OPT2_F_STATIONARY_PIN_DEVICE_BULK.md`](OPT2_F_STATIONARY_PIN_DEVICE_BULK.md)に固定した。
 
+### 9.7 OPT2-G UART exact scheduler lane（完了、不採用）
+
+UART TXのTXRIS、FIFO pop、DREQ境界を扱うfeature-gated・fail-closedのUART-only laneを試作した。
+実際のrunning fast-forwardはCPU MMIO、clock変更、DMA orderingを事前証明できないため実装せず、
+非UART peripheralがidleである場合だけ通常のUART orderingを保つlaneとした。candidate
+`593e6d78541722920e1fa903e682d49912eae825`はcycle、85/85、behavior SHA、全9 domain、UART、
+framebuffer、PSRAM tickをreferenceと完全一致させた。
+
+CPU 0固定clean A/B/A/B/A/Bのbaseline中央値は25.92秒、candidateは28.17秒で、改善率は
+`-8.6805555556%`（8.681%退行）。5%条件未達のためexactnessは合格、性能は不採用とする。
+candidateは`335ecdd7f01cbc5d4f63e18403033bd629efbe77`でrevertし、最終内容がbaselineと一致した。
+backend CI run `31287315634`も成功した。active targetとvalidation attestationは変更しない。証拠は
+[`OPT2_G_UART_EXACT_LANE.md`](OPT2_G_UART_EXACT_LANE.md)と
+[`opt2-g-uart-deadline-20260809-01/`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/)に固定した。
+OPT2は性能条件未達のまま追加promotionなしで終了し、次はOPT3 CPU/decode/execute block cacheである。
+
 ## 10. OPT3: CPU/decode高速化
 
 event schedulingを安定させた後に、CPU側を最適化する。
@@ -454,7 +470,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
-| 7 | OPT2 exact event batching | **継続中**（OPT2-F stationary pin-device bulkは正確性合格、性能0.6875%で不採用・revert。次はUART deadline promotion） | 全boundary eventのcycle/order一致＋有意な性能改善 |
+| 7 | OPT2 exact event batching | **終了（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし | 全boundary eventのcycle/order一致＋有意な性能改善 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。
