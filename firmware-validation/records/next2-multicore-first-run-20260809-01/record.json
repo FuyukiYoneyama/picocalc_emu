@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-first-run-20260809-01",
+  "roadmap_package": "NEXT-2A",
+  "result": "fail",
+  "classification": "frozen_backend_first_firmware_execution",
+  "contract": {
+    "path": "firmware-validation/contracts/next2-multicore-v1.json",
+    "id": "next2-multicore-v1-20260809",
+    "sha256": "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03",
+    "committed_before_application_implementation": true,
+    "commit": "0224204f63051e18ca4bdc11fe3c2f245a70a79a"
+  },
+  "artifact": {
+    "application_commit": "76440f90d0b2834d326b8cca442665fcaa29a531",
+    "generator_and_bsp_commit": "0224204f63051e18ca4bdc11fe3c2f245a70a79a",
+    "build_timestamp": "2026-08-09T10:00:00Z",
+    "bin_sha256": "04988c616147a8f52c628e0c155a9fbc44276a3ec8d6bd73caa3f40e1f262cbf",
+    "uf2_sha256": "3284f63555b5d147720778de5b376de54bde0e949a9bbe6974be5d8898203918"
+  },
+  "observed": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "backend_dirty": false,
+    "report_schema": 8,
+    "verdict": "fail",
+    "verdict_reasons": ["missing_uart_markers"],
+    "stop_reason": "cycle_limit",
+    "cycles": 1000000000,
+    "elapsed_us": 4004808,
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "launch": "pass",
+    "fifo_vectors": "pass",
+    "wfe_sev": "fail_before_stage_2",
+    "irq_proc1": "fail_count_0",
+    "uart_sha256": "d8c99522467bdc19e3984c2b42a9eaf215d902e4d58137bc3144837e7f68c17c",
+    "framebuffer_rgb565_sha256": "24e70227eab655cea597867734c0a512b885305ebb460b1828cff5fd96b777a8",
+    "framebuffer_non_black_pixels": 72320
+  },
+  "evidence": {
+    "run_report": {
+      "path": "firmware-validation/records/next2-multicore-first-run-20260809-01/run-report.json",
+      "sha256": "68253c3b0b5123cb69c212dd984df773e33e7e36282c7d678c6c5ec613a03517"
+    },
+    "uart": {
+      "path": "firmware-validation/records/next2-multicore-first-run-20260809-01/uart.log",
+      "sha256": "d8c99522467bdc19e3984c2b42a9eaf215d902e4d58137bc3144837e7f68c17c"
+    },
+    "final_framebuffer": {
+      "path": "firmware-validation/records/next2-multicore-first-run-20260809-01/final.png",
+      "sha256": "f6593d2885ebd5b48798eca26b5dfbe5221a161d7835aecaf9bd3820f40e641c"
+    }
+  },
+  "blind_result": {
+    "backend_changed_before_first_run": false,
+    "expected_output_changed_after_implementation": false,
+    "contract_changed_after_pre_run_freeze": false,
+    "emulator_accepts_new_workload": false,
+    "hardware_correlation_pending": true
+  }
+}
