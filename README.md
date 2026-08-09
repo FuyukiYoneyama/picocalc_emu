@@ -320,7 +320,9 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 - 音声の実再生・UF2直接ロード、およびNEXT-2Aの範囲外にしたThreaded／両core同時device access／core 1 relaunch
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
 - directory-backed Fast SDモード（host backend）
-- host合格と実機結果の継続的な自動集計（Milestone 4の初回同一artifact相関はR5で完了。negative conformanceとKPI集計は継続項目）
+- host合格と実機結果の継続的な自動集計（Milestone 4の初回同一artifact相関はR5で完了。
+  NEXT3-0でnegative conformance case/KPI schemaを固定したが、hardware-confirmed negativeの
+  分母はまだ0件であり、率は未測定）
 - JUnit成果物、100回連続実行の決定性検査（R4受入条件外。必要時は独立したsoak作業にする）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、
@@ -579,7 +581,9 @@ NEXT-2Bのcanonicalは `next2-audio-v3-20260809` である。producer seed SHA `
 post-quantizer sink SHA `1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f` を混同しない。
 backend d92db1bで49152 writes、384 blocks/383 boundaries、intra gap 5208=32640・5209=16128・unexpected=0、
 boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`を3回決定一致で合格した。
-formal emulator acceptance、negative conformance、same-artifact hardware correlationはすべて完了した。
+NEXT-2B内のreport mutation検査、formal emulator acceptance、same-artifact hardware correlationは
+すべて完了した。このreport mutation検査は、実機故障artifactを扱うNEXT-3 negative conformanceとは
+別である。
 実機証拠は`firmware-validation/records/next2-audio-r1-hardware-20260809-01/`に固定している。
 
 ## RAMRDの解釈

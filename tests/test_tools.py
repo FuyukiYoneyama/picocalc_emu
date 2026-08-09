@@ -632,6 +632,88 @@ raise SystemExit(code)
         self.assertEqual(next1.get("repo"), "picoedit-picocalc")
         self.assertEqual(next1.get("host_min_assertions"), 100)
 
+    def test_target_schema_verification_includes_next3_negative_contract(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "pass")
+        self.assertEqual(
+            next3.get("contract_id"),
+            "next3-negative-conformance-v1-20260810",
+        )
+        self.assertEqual(next3.get("positive_correlations"), 5)
+        self.assertEqual(next3.get("negative_denominator"), 0)
+        self.assertEqual(next3.get("rate_state"), "no_negative_denominator")
+        self.assertEqual(next3.get("candidates_audited"), 1)
+        self.assertEqual(
+            next3.get("first_candidate_classification"),
+            "artifact_not_reproducible",
+        )
+
+    def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            kpi_path = (
+                project
+                / "firmware-validation/records/next3-1-20260810-01/kpi.json"
+            )
+            kpi = json.loads(kpi_path.read_text(encoding="utf-8"))
+            kpi["rates"]["false_accept_rate"] = 0.0
+            kpi_path.write_text(json.dumps(kpi), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "fail")
+
+    def test_target_schema_rejects_next3_wrong_reason_as_detection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            audit_path = (
+                project
+                / "firmware-validation/records/"
+                "next3-lcd-031-audit-20260810-01/record.json"
+            )
+            audit = json.loads(audit_path.read_text(encoding="utf-8"))
+            audit["classification"] = "correct_negative_detection"
+            audit["kpi_effect"]["negative_denominator_delta"] = 1
+            audit["kpi_effect"]["correct_detection_delta"] = 1
+            audit_path.write_text(json.dumps(audit), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "fail")
+
     def test_target_schema_verification_includes_next1_picoedit_hardware(self):
         completed = run(VERIFY, "--scope", "target-schema", "--json")
         report = json.loads(completed.stdout)

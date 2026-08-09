@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/negative-conformance-kpi.schema.json",
+  "title": "PicoCalc negative conformance KPI snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "roadmap_package",
+    "contract_id",
+    "as_of",
+    "positive_correlations",
+    "negative_conformance",
+    "rates"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "snapshot_id": {"type": "string", "minLength": 1},
+    "roadmap_package": {"const": "NEXT-3"},
+    "contract_id": {"const": "next3-negative-conformance-v1-20260810"},
+    "as_of": {"type": "string", "format": "date"},
+    "positive_correlations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed_count", "emulator_pass_hardware_fail_count", "records"],
+      "properties": {
+        "completed_count": {"type": "integer", "minimum": 0},
+        "emulator_pass_hardware_fail_count": {"type": "integer", "minimum": 0},
+        "records": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evidenceRecord"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "negative_conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidates_audited",
+        "hardware_confirmed_cases",
+        "correct_detections",
+        "false_accepts",
+        "wrong_reason_failures",
+        "artifact_audit_failures",
+        "inconclusive_cases",
+        "records"
+      ],
+      "properties": {
+        "candidates_audited": {"type": "integer", "minimum": 0},
+        "hardware_confirmed_cases": {"type": "integer", "minimum": 0},
+        "correct_detections": {"type": "integer", "minimum": 0},
+        "false_accepts": {"type": "integer", "minimum": 0},
+        "wrong_reason_failures": {"type": "integer", "minimum": 0},
+        "artifact_audit_failures": {"type": "integer", "minimum": 0},
+        "inconclusive_cases": {"type": "integer", "minimum": 0},
+        "records": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evidenceRecord"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "rates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "denominator", "detection_rate", "false_accept_rate"],
+      "properties": {
+        "state": {"enum": ["no_negative_denominator", "measured"]},
+        "denominator": {"type": "integer", "minimum": 0},
+        "detection_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "false_accept_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "no_negative_denominator"}}},
+          "then": {
+            "properties": {
+              "denominator": {"const": 0},
+              "detection_rate": {"const": null},
+              "false_accept_rate": {"const": null}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"state": {"const": "measured"}}},
+          "then": {
+            "properties": {
+              "denominator": {"type": "integer", "minimum": 1},
+              "detection_rate": {"type": "number", "minimum": 0, "maximum": 1},
+              "false_accept_rate": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "evidenceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_id", "path", "sha256", "kind"],
+      "properties": {
+        "record_id": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "kind": {"enum": ["direct_hardware", "transitive_exact_equivalence", "negative_case"]}
+      }
+    }
+  }
+}

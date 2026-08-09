@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "status": "frozen_before_first_negative_emulator_run",
+  "roadmap_package": "NEXT-3",
+  "purpose": "measure whether hardware-confirmed failures are rejected by the emulator for the same reason without weakening existing positive conformance",
+  "definitions": {
+    "hardware_confirmed_negative_case": "a reproducible BIN/UF2 pair for which the same build fails the frozen defect oracle on PicoCalc hardware",
+    "correct_negative_detection": "the emulator fails the same artifact and the reason-match review ties both failures to the frozen defect oracle",
+    "false_accept": "the emulator passes an artifact that is a hardware-confirmed negative case",
+    "wrong_reason_failure": "the emulator fails, but only for an excluded or unrelated reason; this is not a correct detection",
+    "inconclusive": "artifact identity, hardware evidence, emulator evidence, or reason matching is insufficient for classification"
+  },
+  "admission": {
+    "same_build_bin_and_uf2_required": true,
+    "source_commit_required": true,
+    "pico_sdk_version_and_commit_required": true,
+    "toolchain_identity_required": true,
+    "clean_reproducible_build_required": true,
+    "defect_oracle_frozen_before_emulator_run": true,
+    "hardware_failure_required_for_negative_denominator": true,
+    "unrelated_emulator_failure_is_not_detection": true,
+    "historical_artifact_fallback": "if the historical artifact cannot be reproduced exactly, create a versioned explicit-fault build from a current passing source and inject only the documented defect"
+  },
+  "required_sequence": [
+    "normal version passes emulator and hardware",
+    "fault version fails hardware for the frozen defect oracle",
+    "the same fault artifact is run once in the frozen emulator and its first result is preserved",
+    "emulator and hardware failure reasons are compared",
+    "fixed version passes emulator and hardware"
+  ],
+  "reason_match": {
+    "required_for_correct_detection": true,
+    "must_identify": [
+      "expected defect mechanism",
+      "hardware-observed symptom",
+      "emulator-observed symptom",
+      "excluded unrelated failure causes"
+    ],
+    "pass_by_final_screen_only": false,
+    "fail_by_unsupported_mmio_only": false
+  },
+  "kpi_policy": {
+    "negative_denominator": "hardware_confirmed_negative_cases",
+    "detection_rate": "correct_detections / hardware_confirmed_negative_cases",
+    "false_accept_rate": "false_accepts / hardware_confirmed_negative_cases",
+    "zero_denominator_representation": {
+      "state": "no_negative_denominator",
+      "detection_rate": null,
+      "false_accept_rate": null
+    },
+    "never_describe_zero_denominator_as_zero_percent": true,
+    "wrong_reason_failure_counts_as_correct_detection": false,
+    "inconclusive_case_enters_denominator": false
+  },
+  "first_candidate": {
+    "candidate_id": "lcd-hwspi-rgb888-0.3.1-cs-hold",
+    "historical_source_commit_claim": "51380fa836e58373d1747904d46b28307ac65fa2",
+    "historical_uf2_sha256_claim": "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
+    "documented_symptom": "solid-fill readback passes, four-colour pattern reads back as red and app_status is fail",
+    "suspected_mechanism": "CASET/RASET/RAMWR and pixel data do not remain in one CS-low transaction",
+    "audit_before_use": [
+      "confirm the source identity embedded in the hardware failure log",
+      "confirm the exact Pico SDK version and commit",
+      "confirm compiler, CMake, generator and build timestamp",
+      "reproduce BIN and UF2 SHA-256 from a clean checkout",
+      "do not classify a failure caused only by unsupported MMIO as a detection"
+    ]
+  }
+}

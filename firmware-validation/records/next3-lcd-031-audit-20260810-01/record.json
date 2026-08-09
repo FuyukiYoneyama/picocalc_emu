@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-lcd-031-audit-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "status": "artifact_audit_failed",
+  "candidate": {
+    "candidate_id": "lcd-hwspi-rgb888-0.3.1-cs-hold",
+    "defect_class": "LCD CASET/RASET/RAMWR chip-select hold violation",
+    "source_kind": "historical_artifact"
+  },
+  "artifact_audit": {
+    "reproducibility": "not_reproducible",
+    "source_commit": "51380fa836e58373d1747904d46b28307ac65fa2",
+    "sdk_version": "2.0.0",
+    "sdk_commit": null,
+    "toolchain": {
+      "recorded_packages": [
+        "cmake",
+        "gcc-arm-none-eabi",
+        "libnewlib-arm-none-eabi"
+      ],
+      "recorded_versions": null,
+      "cmake_generator": null,
+      "build_timestamp": null
+    },
+    "bin_sha256": null,
+    "uf2_sha256": "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
+    "same_build_bin_and_uf2": null,
+    "evidence": [
+      "docs/LCD_INVESTIGATION_20260729.md records source 51380fa and UF2 ae182a69 but explicitly marks hardware verdict unconfirmed",
+      "the historical workflow at 51380fa selected Pico SDK branch 2.0.0 and installed unversioned Ubuntu packages",
+      "the historical build tool generated the build timestamp from the current UTC clock and did not select a CMake generator",
+      "log/old/pico20260730_201447.log records the expected solid-fill-pass/pattern-fail symptom but embeds source 5b12a7c, not 51380fa"
+    ],
+    "blocking_gaps": [
+      "the recorded UF2 is not preserved",
+      "no BIN SHA-256 is recorded",
+      "the build timestamp is not recorded",
+      "the exact Pico SDK commit is not recorded",
+      "compiler, binutils and CMake versions are not recorded",
+      "the CMake generator is not recorded",
+      "the hardware failure log belongs to a different source identity"
+    ]
+  },
+  "defect_oracle": {
+    "frozen_before_emulator_run": true,
+    "expected_failure": "all five solid-fill readbacks pass, the red/green/blue/white pattern reads back as red/red/red/red with three mismatches, and app_status is fail",
+    "excluded_failure_causes": [
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "missing UART capture",
+      "wrong source or artifact identity"
+    ]
+  },
+  "emulator_observation": {
+    "status": "pending",
+    "result": "pending",
+    "reason": null,
+    "evidence": []
+  },
+  "hardware_observation": {
+    "status": "pending",
+    "result": "pending",
+    "reason": "the exact 51380fa artifact was documented as unconfirmed on hardware",
+    "evidence": [
+      "docs/LCD_INVESTIGATION_20260729.md:296-306"
+    ]
+  },
+  "reason_match": {
+    "status": "pending",
+    "expected_reason": "LCD window command and pixel payload are not held in one CS-low transaction",
+    "emulator_reason": null,
+    "hardware_reason": null
+  },
+  "classification": "artifact_not_reproducible",
+  "kpi_effect": {
+    "negative_denominator_delta": 0,
+    "correct_detection_delta": 0,
+    "false_accept_delta": 0
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/negative-conformance-case.schema.json",
+  "title": "PicoCalc negative conformance case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "roadmap_package",
+    "contract_id",
+    "status",
+    "candidate",
+    "artifact_audit",
+    "defect_oracle",
+    "emulator_observation",
+    "hardware_observation",
+    "reason_match",
+    "classification",
+    "kpi_effect"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "record_id": {"type": "string", "minLength": 1},
+    "roadmap_package": {"const": "NEXT-3"},
+    "contract_id": {"const": "next3-negative-conformance-v1-20260810"},
+    "status": {
+      "enum": [
+        "artifact_audit_pending",
+        "artifact_audit_failed",
+        "artifact_reproduced",
+        "emulator_observed",
+        "hardware_observed",
+        "closed"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "defect_class", "source_kind"],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "defect_class": {"type": "string", "minLength": 1},
+        "source_kind": {"enum": ["historical_artifact", "explicit_fault_injection"]}
+      }
+    },
+    "artifact_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reproducibility",
+        "source_commit",
+        "sdk_version",
+        "sdk_commit",
+        "toolchain",
+        "bin_sha256",
+        "uf2_sha256",
+        "same_build_bin_and_uf2",
+        "evidence",
+        "blocking_gaps"
+      ],
+      "properties": {
+        "reproducibility": {"enum": ["pending", "reproduced", "not_reproducible"]},
+        "source_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+        "sdk_version": {"type": ["string", "null"]},
+        "sdk_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+        "toolchain": {"type": ["object", "null"]},
+        "bin_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "uf2_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "same_build_bin_and_uf2": {"type": ["boolean", "null"]},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "blocking_gaps": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "defect_oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frozen_before_emulator_run", "expected_failure", "excluded_failure_causes"],
+      "properties": {
+        "frozen_before_emulator_run": {"const": true},
+        "expected_failure": {"type": "string", "minLength": 1},
+        "excluded_failure_causes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "emulator_observation": {"$ref": "#/$defs/observation"},
+    "hardware_observation": {"$ref": "#/$defs/observation"},
+    "reason_match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "expected_reason", "emulator_reason", "hardware_reason"],
+      "properties": {
+        "status": {"enum": ["pending", "match", "mismatch"]},
+        "expected_reason": {"type": "string"},
+        "emulator_reason": {"type": ["string", "null"]},
+        "hardware_reason": {"type": ["string", "null"]}
+      }
+    },
+    "classification": {
+      "enum": [
+        "pending",
+        "correct_negative_detection",
+        "false_accept",
+        "wrong_reason_failure",
+        "artifact_not_reproducible",
+        "inconclusive"
+      ]
+    },
+    "kpi_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["negative_denominator_delta", "correct_detection_delta", "false_accept_delta"],
+      "properties": {
+        "negative_denominator_delta": {"enum": [0, 1]},
+        "correct_detection_delta": {"enum": [0, 1]},
+        "false_accept_delta": {"enum": [0, 1]}
+      }
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "result", "reason", "evidence"],
+      "properties": {
+        "status": {"enum": ["pending", "complete"]},
+        "result": {"enum": ["pending", "pass", "fail"]},
+        "reason": {"type": ["string", "null"]},
+        "evidence": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

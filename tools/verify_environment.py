@@ -1783,9 +1783,184 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_next2_multicore_acceptance(checks, root)
     verify_next2_multicore_v2_evidence(checks, root)
     verify_next2_audio_contract(checks, root)
+    verify_next3_negative_conformance(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
+
+
+def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
+    """Verify the frozen NEXT-3 definitions, zero-denominator KPI, and first audit."""
+    name = "next3:negative-conformance-contract"
+    base = root / "firmware-validation"
+    paths = {
+        "case_schema": base / "negative-conformance-case.schema.json",
+        "kpi_schema": base / "negative-conformance-kpi.schema.json",
+        "contract": base / "contracts/next3-negative-conformance-v1.json",
+        "initial_kpi": base / "records/next3-0-20260810-01/kpi.json",
+        "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
+        "current_kpi": base / "records/next3-1-20260810-01/kpi.json",
+        "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
+    }
+    expected_hashes = {
+        "case_schema": "3153f4a902f8a99b938a01bafadffd019f9a9180fe3d4c79eaf890f84359c0ef",
+        "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
+        "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
+        "initial_kpi": "afdf414550b7715531e5db3cdd2f355687853969e96eb0090374e86e6018ebdc",
+        "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
+        "current_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
+        "document": "c9abd1578ec868b7c68d8ec227d8fefe3c27aefcd1e2ce0b28f9eed45451eddc",
+    }
+
+    def evidence_records_valid(items: Any) -> bool:
+        if not isinstance(items, list):
+            return False
+        seen = set()
+        for item in items:
+            if not isinstance(item, dict):
+                return False
+            relative = item.get("path")
+            expected = item.get("sha256")
+            record_id = item.get("record_id")
+            if not all(isinstance(value, str) and value for value in (relative, expected, record_id)):
+                return False
+            if not re.fullmatch(r"[0-9a-f]{64}", expected):
+                return False
+            if relative in seen:
+                return False
+            seen.add(relative)
+            evidence_path = root / relative
+            if not evidence_path.is_file() or sha256(evidence_path) != expected:
+                return False
+            try:
+                evidence = load_json(evidence_path)
+            except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+                return False
+            if evidence.get("record_id") != record_id:
+                return False
+        return True
+
+    def snapshot_valid(snapshot: Any, *, candidates: int, audit_failures: int, records: int) -> bool:
+        if not isinstance(snapshot, dict):
+            return False
+        positive = snapshot.get("positive_correlations", {})
+        negative = snapshot.get("negative_conformance", {})
+        rates = snapshot.get("rates", {})
+        positive_records = positive.get("records")
+        negative_records = negative.get("records")
+        return all(
+            (
+                snapshot.get("schema_version") == 1,
+                snapshot.get("roadmap_package") == "NEXT-3",
+                snapshot.get("contract_id") == "next3-negative-conformance-v1-20260810",
+                positive.get("completed_count") == 5,
+                positive.get("completed_count") == len(positive_records),
+                positive.get("emulator_pass_hardware_fail_count") == 0,
+                evidence_records_valid(positive_records),
+                negative.get("candidates_audited") == candidates,
+                negative.get("hardware_confirmed_cases") == 0,
+                negative.get("correct_detections") == 0,
+                negative.get("false_accepts") == 0,
+                negative.get("wrong_reason_failures") == 0,
+                negative.get("artifact_audit_failures") == audit_failures,
+                negative.get("inconclusive_cases") == 0,
+                len(negative_records) == records,
+                evidence_records_valid(negative_records),
+                rates.get("state") == "no_negative_denominator",
+                rates.get("denominator") == negative.get("hardware_confirmed_cases") == 0,
+                rates.get("detection_rate") is None,
+                rates.get("false_accept_rate") is None,
+            )
+        )
+
+    try:
+        case_schema = load_json(paths["case_schema"])
+        kpi_schema = load_json(paths["kpi_schema"])
+        contract = load_json(paths["contract"])
+        initial = load_json(paths["initial_kpi"])
+        audit = load_json(paths["audit"])
+        current = load_json(paths["current_kpi"])
+        candidate = contract["first_candidate"]
+        admission = contract["admission"]
+        kpi_policy = contract["kpi_policy"]
+        artifact = audit["artifact_audit"]
+        aligned = all(
+            (
+                all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
+                case_schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
+                case_schema.get("properties", {}).get("schema_version", {}).get("const") == 1,
+                "wrong_reason_failure"
+                in case_schema.get("properties", {}).get("classification", {}).get("enum", []),
+                kpi_schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
+                kpi_schema.get("properties", {}).get("schema_version", {}).get("const") == 1,
+                contract.get("schema_version") == 1,
+                contract.get("contract_id") == "next3-negative-conformance-v1-20260810",
+                contract.get("status") == "frozen_before_first_negative_emulator_run",
+                admission.get("same_build_bin_and_uf2_required") is True,
+                admission.get("pico_sdk_version_and_commit_required") is True,
+                admission.get("clean_reproducible_build_required") is True,
+                admission.get("defect_oracle_frozen_before_emulator_run") is True,
+                admission.get("unrelated_emulator_failure_is_not_detection") is True,
+                kpi_policy.get("negative_denominator") == "hardware_confirmed_negative_cases",
+                kpi_policy.get("zero_denominator_representation")
+                == {
+                    "state": "no_negative_denominator",
+                    "detection_rate": None,
+                    "false_accept_rate": None,
+                },
+                kpi_policy.get("never_describe_zero_denominator_as_zero_percent") is True,
+                kpi_policy.get("wrong_reason_failure_counts_as_correct_detection") is False,
+                candidate.get("historical_source_commit_claim")
+                == "51380fa836e58373d1747904d46b28307ac65fa2",
+                candidate.get("historical_uf2_sha256_claim")
+                == "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
+                snapshot_valid(initial, candidates=0, audit_failures=0, records=0),
+                snapshot_valid(current, candidates=1, audit_failures=1, records=1),
+                audit.get("schema_version") == 1,
+                audit.get("record_id") == "next3-lcd-031-audit-20260810-01",
+                audit.get("status") == "artifact_audit_failed",
+                audit.get("classification") == "artifact_not_reproducible",
+                audit.get("candidate", {}).get("source_kind") == "historical_artifact",
+                artifact.get("reproducibility") == "not_reproducible",
+                artifact.get("source_commit")
+                == "51380fa836e58373d1747904d46b28307ac65fa2",
+                artifact.get("sdk_version") == "2.0.0",
+                artifact.get("sdk_commit") is None,
+                artifact.get("bin_sha256") is None,
+                artifact.get("uf2_sha256")
+                == "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
+                artifact.get("same_build_bin_and_uf2") is None,
+                len(artifact.get("blocking_gaps", [])) == 7,
+                audit.get("hardware_observation", {}).get("status") == "pending",
+                audit.get("reason_match", {}).get("status") == "pending",
+                audit.get("kpi_effect")
+                == {
+                    "negative_denominator_delta": 0,
+                    "correct_detection_delta": 0,
+                    "false_accept_delta": 0,
+                },
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            contract_id=contract.get("contract_id"),
+            positive_correlations=current.get("positive_correlations", {}).get("completed_count"),
+            negative_denominator=current.get("rates", {}).get("denominator"),
+            rate_state=current.get("rates", {}).get("state"),
+            candidates_audited=current.get("negative_conformance", {}).get("candidates_audited"),
+            first_candidate_classification=audit.get("classification"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:

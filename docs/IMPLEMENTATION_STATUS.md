@@ -504,6 +504,16 @@ boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`�
 2026-08-09、同一UF2の実機ログで完全な5-marker blockを18組、動画で約1.05秒の音響出力と最終5-PASS画面を確認した。
 証拠は`next2-audio-r1-hardware-20260809-01`へ固定し、NEXT-2Bを完了した。
 
+NEXT-3 negative conformanceを開始した。NEXT3-0ではcase schema、KPI schema、実行前契約を固定し、
+negative分母0件の率を`0%`ではなく`null`／`no_negative_denominator`で表すよう機械化した。positive
+実機相関は直接4系列とOPT1-B推移的同値1系列の計5件で、positive側の
+`emulator PASS -> hardware FAIL`は0件である。最初に監査したLCD 0.3.1候補は、記録された
+`51380fa` UF2が実機未確認で、UF2本体・BIN SHA・build timestamp・SDK commit・toolchain版・generatorが
+残っていなかった。既存FAILログのboot identityも`5b12a7c`であり同一artifactではない。このため
+`artifact_not_reproducible`としてnegative母数へ入れず、現行正常版へCS保持欠陥だけを注入する
+明示的fault版へ切り替える。契約、分類、監査結果は
+[`NEXT3_NEGATIVE_CONFORMANCE.md`](NEXT3_NEGATIVE_CONFORMANCE.md)にある。
+
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
 LCDの`app_status=pass`、全5色＋パターンのGRAM readback一致、音声の`underruns=0`が
