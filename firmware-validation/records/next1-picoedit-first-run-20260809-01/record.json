@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "record_id": "next1-picoedit-first-run-20260809-01",
+  "roadmap_package": "NEXT-1",
+  "result": "pass",
+  "classification": "first_blind_firmware_execution",
+  "input_contract": {
+    "path": "firmware-validation/records/next1-picoedit-first-run-20260809-01/input-contract.json",
+    "sha256": "efa249fd3214892db1b7f9dcf29b2c0e44ee7bc22d576f30c29e9dc7b56cf156",
+    "committed_before_execution": true
+  },
+  "observed": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "backend_dirty": false,
+    "report_schema": 8,
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 765299822,
+    "elapsed_us": 3070000,
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "scenario_status": "pass",
+    "scenario_steps": 10,
+    "unsupported_mmio_count": 0,
+    "unsupported_mmio_truncated": false,
+    "exception": null,
+    "keyboard_events_delivered": 29,
+    "keyboard_events_remaining": 1,
+    "keyboard_events_dropped": 0,
+    "keyboard_events_overwritten": 0,
+    "sd_format": "fat32",
+    "sd_blocks_read": 12,
+    "sd_blocks_written": 13,
+    "sd_unknown_commands": 0,
+    "psram_attached": true,
+    "psram_bytes_written": 154,
+    "psram_bytes_read": 2471,
+    "output_bytes": 64,
+    "output_sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e",
+    "output_readback": "match",
+    "framebuffer_rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+    "framebuffer_non_black_pixels": 14389,
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "normalized_report_sha256": "9d27ac7bf5ff68d148106f87d655dc3faad22766927e8f91f4024891c20c13ea",
+    "timeline_sha256": "3ca757813dcb2c5bb6719255f35aa6fce8f8066b6f0d64ba379dcfbde14b0c7d"
+  },
+  "evidence": {
+    "run_report": {
+      "path": "firmware-validation/records/next1-picoedit-first-run-20260809-01/run-report.json",
+      "sha256": "512e6310cecdda35478eddd90fbdeacf0787ee15e3ee223d3ea7e876cd1bc1a6"
+    },
+    "uart": {
+      "path": "firmware-validation/records/next1-picoedit-first-run-20260809-01/uart.log",
+      "sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+    },
+    "scenario_snapshot": {
+      "path": "firmware-validation/records/next1-picoedit-first-run-20260809-01/picoedit-final.png",
+      "sha256": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    },
+    "final_framebuffer": {
+      "path": "firmware-validation/records/next1-picoedit-first-run-20260809-01/final-framebuffer.png",
+      "sha256": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    }
+  },
+  "blind_result": {
+    "backend_changed_before_first_run": false,
+    "expected_output_changed_after_implementation": false,
+    "scenario_changed_after_pre_run_freeze": false,
+    "emulator_accepts_new_workload": true,
+    "hardware_correlation_pending": true
+  }
+}

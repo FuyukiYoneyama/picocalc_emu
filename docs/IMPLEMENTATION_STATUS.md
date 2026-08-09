@@ -193,7 +193,11 @@ NEXT-1は新規blind app `PicoEdit`として開始した。実装結果へ期待
 `17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6`、UF2 SHA-256は
 `730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73`である。固定scenario
 [`picoedit-blind-v1.json`](../scenarios/picoedit-blind-v1.json)は論理段階ごとにUART markerを待ち、
-公式keyboard codeを投入する。最初のfirmware blind runはまだ行っていない。
+公式keyboard codeを投入する。最初のfirmware blind runは凍結backend `e985a9d7...`へ変更なしで
+実行し、一度目で10/10 step、765,299,822 cycles、64-byte readback、固定SHA-256、PSRAM、FAT32、
+final framebufferが合格した。exception、unsupported MMIO、key dropはいずれも0である。証拠は
+[`next1-picoedit-first-run-20260809-01/`](../firmware-validation/records/next1-picoedit-first-run-20260809-01/)
+へ保存した。次は最後のCtrl releaseをdrainしてqueue=0も要求する正式target revisionを登録する。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
