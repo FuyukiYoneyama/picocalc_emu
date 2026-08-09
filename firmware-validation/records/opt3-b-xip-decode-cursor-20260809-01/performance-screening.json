@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "record_id": "opt3-b-xip-decode-cursor-20260809-01",
+  "method": "trace/proof-OFF clean A/B/A/B/A/B screening",
+  "cpu_affinity": "same host and measurement session; alternating baseline/candidate",
+  "formal_ten_run_gate_executed": false,
+  "formal_ten_run_gate_omission_reason": "All three alternating pairs regressed and the three-run median failed the 5% adoption threshold; a ten-run promotion measurement could not change the rejection decision.",
+  "baseline": {
+    "backend_commit": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+    "runner_sha256": "e8483cc1ed40d0a7999c7546f02ffdeeb89848635686edd7bf0b95e93dea43ed",
+    "wall_seconds": [26.44, 25.66, 25.98],
+    "median_wall_seconds": 25.98,
+    "run_report_sha256": "da42d93ef076b061b54d47f43b4bf3073ec3267c72a9550de36af40780f0329d"
+  },
+  "candidate": {
+    "backend_commit": "0e22846186e68d2d726e49817a9f74c246f517ca",
+    "runner_sha256": "4d7a623280d527d0d70cf04808df44be399a1c55665bc41c90ff1de61f1ad43f",
+    "wall_seconds": [26.71, 27.13, 29.09],
+    "median_wall_seconds": 27.13,
+    "run_report_sha256": "2971235a5b5b18ee43e646f487f566b60738410d22cd15e42daff2d0c3f18f70"
+  },
+  "pair_improvement_percent": [-1.0211800303, -5.7287607171, -11.9707467283],
+  "median_improvement_percent": -4.4264819092,
+  "required_improvement_percent": 5.0,
+  "all_six_runs_exact": true,
+  "decision": "reject_and_revert"
+}

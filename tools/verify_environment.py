@@ -1348,6 +1348,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2f_stationary_pin_bulk(checks, root)
     verify_opt2g_uart_deadline(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
+    verify_opt3b_xip_decode_cursor(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -2934,6 +2935,280 @@ def verify_opt3a_xip_cursor_profile(checks: List[Check], root: Path) -> None:
         KeyError,
         IndexError,
         StopIteration,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt3b_xip_decode_cursor(checks: List[Check], root: Path) -> None:
+    """Verify the OPT3-B short immutable XIP decode-cursor prototype and rejection decision."""
+    name = "opt3-b:xip-decode-cursor"
+    record_id = "opt3-b-xip-decode-cursor-20260809-01"
+    target_id = "picotetris-opt1b"
+    target_revision = 5
+    expected_artifact_hashes = {
+        "run_report": "5de324816ad04a6799ea592be6d2c447860b0b693762c5e51f812c0463e65802",
+        "behavior_trace": "5fcfbc6d6ca02fc3793b6cf57e73b6431b992fe09ef9b7587415fe1712bbc0de",
+        "performance_screening": "309b7aee57ef2bf44eac88e90af331b673a824b8b89e4df30875694c62c7d713",
+        "notes": "45ddabdd15a9e17543f30751ad61f4ade84109f5373d98fc1cd44425433f96b0",
+    }
+    try:
+        record_root = root / "firmware-validation/records" / record_id
+        record = load_json(record_root / "record.json")
+        run_report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        opt1b_behavior = load_json(
+            root / "firmware-validation/records/opt1-b-20260808-01/behavior-trace.json"
+        )
+        target_record = record["target"]
+        registry_target = next(
+            item
+            for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == target_id
+        )
+        artifacts = record["artifacts"]
+
+        exactness = record["exactness"]
+        proof = record["proof"]
+        core0_proof = proof["core0"]
+        performance_summary = record["performance"]
+        prototype = record["prototype"]
+        decision = record["decision"]
+        ci = record["ci"]
+        event_trace = behavior.get("behavior_projection", {}).get("event_trace", {})
+        event_domains = {item.get("name") for item in event_trace.get("domains", [])}
+
+        artifact_checks = [
+            (artifact_name, record_root / artifact_path)
+            for artifact_name, artifact_path in (
+                ("run_report", artifacts["run_report"]),
+                ("behavior_trace", artifacts["behavior_trace"]),
+                ("performance_screening", artifacts["performance_screening"]),
+                ("notes", artifacts["notes"]),
+            )
+        ]
+        report_proof = run_report.get("xip_decode_cursor_proof", {})
+        report_core0_proof = report_proof.get("core0", {})
+        report_core1_proof = report_proof.get("core1", {})
+        baseline_samples = performance.get("baseline", {}).get("wall_seconds", [])
+        candidate_samples = performance.get("candidate", {}).get("wall_seconds", [])
+        pair_improvements = performance.get("pair_improvement_percent", [])
+
+        aligned = all((
+            record.get("schema_version") == 1,
+            record.get("record_id") == record_id,
+            record.get("result") == "rejected_performance_reverted",
+            record.get("roadmap_package") == "OPT3-B",
+            record.get("opt3_overall_status") == "incomplete",
+            target_record.get("id") == target_id,
+            target_record.get("revision") == target_revision,
+            target_record.get("firmware_source_commit")
+            == registry_target.get("source", {}).get("commit"),
+            target_record.get("firmware_sha256")
+            == registry_target.get("artifacts", {}).get("bin_sha256"),
+            target_record.get("firmware_uf2_sha256")
+            == registry_target.get("artifacts", {}).get("uf2_sha256"),
+            target_record.get("scenario_sha256")
+            == registry_target.get("scenario", {}).get("sha256"),
+            prototype.get("baseline_backend_commit")
+            == "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+            prototype.get("candidate_backend_commit")
+            == "0e22846186e68d2d726e49817a9f74c246f517ca",
+            prototype.get("revert_backend_commit")
+            == "e58e67f1be69357edec0bd47e879039f47a42648",
+            prototype.get("candidate_backend_dirty") is False,
+            prototype.get("feature") == "xip-decode-cursor-prototype",
+            prototype.get("proof_feature") == "xip-decode-cursor-proof",
+            prototype.get("candidate_runner_sha256")
+            == performance.get("candidate", {}).get("runner_sha256")
+            == "4d7a623280d527d0d70cf04808df44be399a1c55665bc41c90ff1de61f1ad43f",
+            prototype.get("proof_runner_sha256")
+            == "2076a26cb01b6ff635b93eed304ea4c44cd1c6bf4b61c31e178bf8b4867b0d46",
+            prototype.get("serial_core0_only") is True,
+            prototype.get("scheduler_instruction_quantum") == 1,
+            prototype.get("immutable_xip_range") == "0x10000000..0x14000000",
+            prototype.get("production_optimization_added") is False,
+            exactness.get("verdict") == "pass",
+            exactness.get("stop_reason") == "scenario_done",
+            exactness.get("cycles") == 927_528_660,
+            exactness.get("elapsed_us") == 3_715_000,
+            exactness.get("scenario_steps_passed") == 85,
+            exactness.get("scenario_steps_total") == 85,
+            exactness.get("event_stream_total_events") == 173_498_680,
+            exactness.get("all_nine_event_domains_match_opt1b") is True,
+            exactness.get("uart_sha256")
+            == "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+            exactness.get("framebuffer_rgb565_sha256")
+            == "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+            exactness.get("psram_tick_count") == 305_747_113,
+            exactness.get("behavior_sha256")
+            == "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+            exactness.get("event_stream_sha256")
+            == "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+            proof.get("core1_enabled") is False,
+            proof.get("core1_all_counters_zero") is True,
+            core0_proof.get("enabled") is True,
+            core0_proof.get("buffered_entries_at_stop") == 1,
+            core0_proof.get("take_hits") == 134_612_445,
+            core0_proof.get("take_misses") == 38_102_585,
+            core0_proof.get("installs") == 57_047_061,
+            core0_proof.get("staged_entries") == 168_959_816,
+            core0_proof.get("clears") == 32_017_974,
+            core0_proof.get("enables") == 1,
+            core0_proof.get("disables") == 0,
+            report_core0_proof.get("enabled") is True,
+            report_core0_proof.get("buffered_entries")
+            == core0_proof.get("buffered_entries_at_stop"),
+            report_core0_proof.get("take_hits") == core0_proof.get("take_hits"),
+            report_core0_proof.get("take_misses") == core0_proof.get("take_misses"),
+            report_core0_proof.get("installs") == core0_proof.get("installs"),
+            report_core0_proof.get("staged_entries") == core0_proof.get("staged_entries"),
+            report_core0_proof.get("clears") == core0_proof.get("clears"),
+            report_core0_proof.get("enables") == core0_proof.get("enables"),
+            report_core0_proof.get("disables") == core0_proof.get("disables"),
+            report_core1_proof.get("enabled") is False,
+            all(
+                report_core1_proof.get(key) == 0
+                for key in (
+                    "buffered_entries",
+                    "take_hits",
+                    "take_misses",
+                    "installs",
+                    "staged_entries",
+                    "clears",
+                    "enables",
+                    "disables",
+                )
+            ),
+            performance_summary.get("method") == "trace/proof-OFF clean A/B/A/B/A/B screening",
+            performance_summary.get("baseline_median_wall_seconds") == 25.98,
+            performance_summary.get("candidate_median_wall_seconds") == 27.13,
+            math.isclose(
+                performance_summary.get("median_improvement_percent", 0.0),
+                -4.4264819092,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            performance_summary.get("required_improvement_percent") == 5.0,
+            performance_summary.get("all_six_runs_exact") is True,
+            performance_summary.get("formal_ten_run_gate_executed") is False,
+            performance_summary.get("decision") == "reject_and_revert",
+            performance.get("schema_version") == 1,
+            performance.get("record_id") == record_id,
+            performance.get("method") == "trace/proof-OFF clean A/B/A/B/A/B screening",
+            performance.get("cpu_affinity")
+            == "same host and measurement session; alternating baseline/candidate",
+            performance.get("formal_ten_run_gate_executed") is False,
+            performance.get("formal_ten_run_gate_omission_reason")
+            == "All three alternating pairs regressed and the three-run median failed the 5% adoption threshold; a ten-run promotion measurement could not change the rejection decision.",
+            performance.get("all_six_runs_exact") is True,
+            performance.get("decision") == "reject_and_revert",
+            performance.get("baseline", {}).get("backend_commit")
+            == prototype.get("baseline_backend_commit"),
+            performance.get("baseline", {}).get("runner_sha256")
+            == "e8483cc1ed40d0a7999c7546f02ffdeeb89848635686edd7bf0b95e93dea43ed",
+            performance.get("baseline", {}).get("run_report_sha256")
+            == "da42d93ef076b061b54d47f43b4bf3073ec3267c72a9550de36af40780f0329d",
+            baseline_samples == [26.44, 25.66, 25.98],
+            performance.get("baseline", {}).get("median_wall_seconds") == 25.98,
+            performance.get("candidate", {}).get("backend_commit")
+            == prototype.get("candidate_backend_commit"),
+            performance.get("candidate", {}).get("run_report_sha256")
+            == "2971235a5b5b18ee43e646f487f566b60738410d22cd15e42daff2d0c3f18f70",
+            candidate_samples == [26.71, 27.13, 29.09],
+            performance.get("candidate", {}).get("median_wall_seconds") == 27.13,
+            pair_improvements == [-1.0211800303, -5.7287607171, -11.9707467283],
+            math.isclose(
+                performance.get("median_improvement_percent", 0.0),
+                -4.4264819092,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            performance.get("required_improvement_percent") == 5.0,
+            record.get("decision", {}).get("candidate_rejected") is True,
+            record.get("decision", {}).get("candidate_reverted") is True,
+            record.get("decision", {}).get("active_target_changed") is False,
+            record.get("decision", {}).get("validation_attestation_added") is False,
+            record.get("decision", {}).get("selected_next_investigation")
+            == "OPT3-C compact predecoded dispatch key without eager successor copying",
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("mode") == "correctness_trace_on",
+            behavior.get("backend_build", {}).get("commit")
+            == "0e22846186e68d2d726e49817a9f74c246f517ca",
+            behavior.get("backend_build", {}).get("dirty") is False,
+            behavior.get("valid_for_wall_time") is False,
+            behavior.get("behavior_sha256") == exactness.get("behavior_sha256"),
+            behavior.get("behavior_projection") == opt1b_behavior.get("behavior_projection"),
+            event_trace.get("total_events") == exactness.get("event_stream_total_events"),
+            event_trace.get("schema_version") == 2,
+            event_trace.get("sha256") == exactness.get("event_stream_sha256"),
+            set(event_domains) == {
+                "clock",
+                "irq_exception",
+                "pio_gpio",
+                "psram",
+                "lcd",
+                "dma_dreq",
+                "timer_pwm",
+                "serial_bus",
+                "scenario_input",
+            },
+            len(event_domains) == 9,
+            run_report.get("schema_version") == 8,
+            run_report.get("backend_build", {}).get("commit")
+            == "0e22846186e68d2d726e49817a9f74c246f517ca",
+            run_report.get("backend_build", {}).get("dirty") is False,
+            run_report.get("firmware", {}).get("sha256") == target_record.get("firmware_sha256"),
+            run_report.get("execution_model") == "Serial",
+            run_report.get("step_quantum") == 1,
+            run_report.get("stop_reason") == exactness.get("stop_reason"),
+            run_report.get("cycles") == exactness.get("cycles"),
+            run_report.get("elapsed_us") == exactness.get("elapsed_us"),
+            len(run_report.get("scenario", {}).get("steps", [])) == 85,
+            run_report.get("scenario", {}).get("status") == "pass",
+            run_report.get("verdict", {}).get("status") == "pass",
+            run_report.get("uart", {}).get("sha256")
+            == exactness.get("uart_sha256"),
+            run_report.get("framebuffer", {}).get("rgb565_sha256")
+            == exactness.get("framebuffer_rgb565_sha256"),
+            run_report.get("psram", {}).get("tick_count") == exactness.get("psram_tick_count"),
+            ci.get("run_id") == 31_293_556_450,
+            ci.get("head_sha")
+            == "e58e67f1be69357edec0bd47e879039f47a42648",
+            ci.get("conclusion") == "success",
+            all(
+                path.is_file()
+                and artifacts.get(artifact_name + "_sha256")
+                == expected_artifact_hashes[artifact_name]
+                and sha256(path) == expected_artifact_hashes[artifact_name]
+                for artifact_name, path in artifact_checks
+            ),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target_record.get("id"),
+            result=record.get("result"),
+            baseline_backend=prototype.get("baseline_backend_commit"),
+            candidate_backend=prototype.get("candidate_backend_commit"),
+            revert_backend=prototype.get("revert_backend_commit"),
+            candidate_median_wall_seconds=performance_summary.get("candidate_median_wall_seconds"),
+            baseline_median_wall_seconds=performance_summary.get("baseline_median_wall_seconds"),
+            decision=record.get("decision", {}).get("candidate_rejected"),
+            domain_count=len(event_domains),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        IndexError,
         statistics.StatisticsError,
         json.JSONDecodeError,
     ) as error:

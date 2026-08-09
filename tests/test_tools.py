@@ -565,6 +565,82 @@ raise SystemExit(code)
             "short immutable-XIP decode cursor",
         )
 
+    def test_target_schema_verification_includes_opt3b_xip_decode_cursor(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt3b = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt3-b:xip-decode-cursor"
+        )
+        self.assertEqual(opt3b["status"], "pass")
+        self.assertEqual(opt3b["target"], "picotetris-opt1b")
+        self.assertEqual(opt3b["result"], "rejected_performance_reverted")
+        self.assertEqual(
+            opt3b.get("candidate_backend"),
+            "0e22846186e68d2d726e49817a9f74c246f517ca",
+        )
+        self.assertEqual(
+            opt3b.get("revert_backend"),
+            "e58e67f1be69357edec0bd47e879039f47a42648",
+        )
+
+    def test_target_schema_rejects_opt3b_xip_decode_cursor_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = (
+                project
+                / "firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/record.json"
+            )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt3b = next(
+            check for check in report["checks"] if check["name"] == "opt3-b:xip-decode-cursor"
+        )
+        self.assertEqual(opt3b["status"], "fail")
+
+    def test_target_schema_rejects_opt3b_xip_decode_cursor_artifact_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            artifact_path = (
+                project
+                / "firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/run-report.json"
+            )
+            artifact_path.write_text(
+                artifact_path.read_text(encoding="utf-8") + "\n",
+                encoding="utf-8",
+            )
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt3b = next(
+            check for check in report["checks"] if check["name"] == "opt3-b:xip-decode-cursor"
+        )
+        self.assertEqual(opt3b["status"], "fail")
+
     def test_target_schema_rejects_opt3a_xip_cursor_profile_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

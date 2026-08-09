@@ -191,7 +191,7 @@ PicoCalc実機相関を完了しました。全周辺機器と67/67、`io_errors
 promotedです。R3の全SHAと受入結果は
 [`R3_PICOTETRIS_REGRESSION.md`](docs/R3_PICOTETRIS_REGRESSION.md)、keyboard conformanceは
 [`KEYBOARD_CONFORMANCE.md`](docs/KEYBOARD_CONFORMANCE.md)にあります。詳細な依存関係と
-受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-08-opt1-b-promoted反映)が正典です。
+受入条件は[Milestonesの「現在の実行順序」](docs/MILESTONES.md#現在の実行順序2026-08-09-opt3-b試作完了反映)が正典です。
 
 R5実機着手前の性能baselineとして、Ryzen 5 5600X上のWSL2で`picotetris-r4`を10回測定し、
 実時間比中央値5.874%（仮想3.715秒をwall 63.247秒、約17.025倍遅い）を記録しました。
@@ -255,9 +255,12 @@ SMが空TX FIFOへの`PULL`で停止する限定状態を閉形式で進め、�
 [`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](docs/OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)です。
 その後のOPT2-Fは0.6875%改善、OPT2-G UART laneは8.681%退行で、いずれも5%条件未達として
 revertしました。OPT3-Aではimmutable-XIP decode cursorの機会をschema 3で計測し、XIP hit率
-99.8287%、hit-only run平均4.563命令を得ました。長さ32以上のmassは0.5468%だけなので、次は
-長いblock batchingではなくschedulerを1命令のまま保つ短いXIP cursorのOPT3-B試作です。詳細は
-[`OPT3_A_XIP_CURSOR_PROFILE.md`](docs/OPT3_A_XIP_CURSOR_PROFILE.md)です。
+99.8287%、hit-only run平均4.563命令を得ました。OPT3-Bの短いXIP cursorは85/85、cycle、UART、
+framebuffer、PSRAM、behavior/event全9 domainに一致しましたが、trace/proof OFF中央値が25.98秒から
+27.13秒へ4.4265%退行したため不採用・revert済みです。active targetはOPT1-Bのままです。次は
+eager successor copyを避けるOPT3-C compact dispatch keyを調査します。詳細は
+[`OPT3_A_XIP_CURSOR_PROFILE.md`](docs/OPT3_A_XIP_CURSOR_PROFILE.md)と
+[`OPT3_B_XIP_DECODE_CURSOR.md`](docs/OPT3_B_XIP_DECODE_CURSOR.md)です。
 
 ## 読む順番
 
@@ -606,6 +609,7 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 - [OPT2-D候補レバー比較](docs/OPT2_D_LEVER_COMPARISON.md) — peripheral horizon overlapとCPU decode runの実測比較、PIO-first判断
 - [OPT2-E PIO pull-stall試作](docs/OPT2_E_PIO_PULL_STALL_PROTOTYPE.md) — 限定exact bulkの証明、0.2335%で不採用、次の外側pin/device契約
 - [OPT3-A immutable-XIP cursor計測](docs/OPT3_A_XIP_CURSOR_PROFILE.md) — schema 3の領域別hit/run/invalidation実測と短いOPT3-B cursor判断
+- [OPT3-B short immutable-XIP decode cursor](docs/OPT3_B_XIP_DECODE_CURSOR.md) — 全event一致、4.4265%性能退行、不採用revertと次のOPT3-C判断
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
 - [OPT1-B serial fast-path gate](docs/OPT1_B_SERIAL_FAST_PATH.md) — event完全一致、6.420%追加短縮、代表workloadとR5同値性
 - [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約

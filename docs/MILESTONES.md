@@ -22,7 +22,8 @@ pin/device観測をexactにまとめ、37,012,745回の`update_gpio`を削減し
 CPU 0固定clean A/B/A/B/A/B中央値が25.92秒から28.17秒へ`-8.6805555556%`退行したため不採用・revert済みです。
 実際のrunning fast-forwardはCPU MMIO/DMA ordering未証明のため実装せず、fail-closed laneだけを試作しました。
 OPT2は性能条件未達のまま追加promotionなしで終了しました。OPT3-Aでimmutable-XIP decode cursorの
-機会分布を計測し、次は短いcursorのOPT3-B試作へ進みます。
+機会分布を計測し、OPT3-Bで短いcursorを試作しました。全eventは一致しましたが、wall中央値が
+4.4265%退行したため不採用・revert済みです。次はeager copyを避けるOPT3-C dispatch keyを調査します。
 詳細な順序は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -59,7 +60,7 @@ Firmware backendを分割したものであり、本書と競合しません。
 golden の対象が確定して手戻りが少ないためです。`DESIGN.md §7`のPhase番号は
 歴史的記述として残っており、実行順序としては本書が優先します。
 
-## 現在の実行順序（2026-08-09 OPT3-A immutable-XIP計測反映）
+## 現在の実行順序（2026-08-09 OPT3-B試作完了反映）
 
 以下は新しいMilestone体系ではありません。完了済みMilestone 0〜3を再現可能な
 継続回帰として固め、Milestone 4の継続相関へ進むための作業パッケージです。
@@ -88,7 +89,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | R6 | 文書・配布状態の最終確定 | 3リポジトリ | README、status、Milestones、dogfood記録、target、license/noticesが用語と時点を一貫して記述し、現在状態・時点履歴・未実装を明確に区別する。第三者がclean cloneから再現できる | **完了 2026-08-08**。R5 recordを機械検証へ接続し、README/status/Milestones/dogfood/OPT1-AとPicoTetris文書を現在状態へ同期。既存CI再現契約とlicense/noticesを確認 |
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
-| OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-A計測完了 2026-08-09**。hit率99.8287%、run平均4.563命令。次はschedulerを1命令のまま保つ短いXIP cursorのOPT3-B |
+| OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-B完了・不採用 2026-08-09**。短いXIP cursorは全event一致、中央値4.4265%退行でrevert。次はeager copyを避けるOPT3-C compact dispatch key |
 
 依存関係は次のとおりです。R0とR1は並行できますが、R2は両方の完了後に行います。
 

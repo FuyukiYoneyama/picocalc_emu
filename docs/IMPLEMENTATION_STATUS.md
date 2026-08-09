@@ -159,10 +159,14 @@ OPT2は性能条件未達のまま追加promotionなしで終了した。詳細�
 にある。OPT3-Aではbackend `0b99b2eabe23205b3c6ac194dcdf016a53de554d`のprofile schema 3で
 immutable-XIP lookup/run/invalidationを計測した。85/85、cycle、UART、framebuffer、PSRAM、
 behavior/event全9 domainは一致し、XIP hit率99.8287%、hit-only run平均4.563命令、長さ32以上の
-massは0.5468%だった。長いblock batchingは選ばず、次はscheduler quantumを変えない短いXIP
-decode cursorのOPT3-B試作である。詳細は[`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)と
-[`opt3-a-xip-cursor-profile-20260809-01/`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/)
-にある。
+massは0.5468%だった。OPT3-Bではscheduler quantumを変えない短いXIP decode cursorを試作し、
+85/85、cycle、behavior/event全9 domainを維持したが、trace/proof OFF中央値が25.98秒から
+27.13秒へ4.4265%退行した。candidateはrevert済みで、active targetとattestationは変更していない。
+次はeager successor copyを避けるOPT3-C compact dispatch keyを調査する。詳細は
+[`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)、
+[`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)、
+[`opt3-a-xip-cursor-profile-20260809-01/`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/)、
+[`opt3-b-xip-decode-cursor-20260809-01/`](../firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/)にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

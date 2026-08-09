@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "record_id": "opt3-b-xip-decode-cursor-20260809-01",
+  "title": "OPT3-B feature-gated short immutable-XIP decode cursor prototype",
+  "roadmap_package": "OPT3-B",
+  "result": "rejected_performance_reverted",
+  "opt3_overall_status": "incomplete",
+  "target": {
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "firmware_source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "prototype": {
+    "baseline_backend_commit": "0b99b2eabe23205b3c6ac194dcdf016a53de554d",
+    "candidate_backend_commit": "0e22846186e68d2d726e49817a9f74c246f517ca",
+    "revert_backend_commit": "e58e67f1be69357edec0bd47e879039f47a42648",
+    "candidate_backend_dirty": false,
+    "feature": "xip-decode-cursor-prototype",
+    "proof_feature": "xip-decode-cursor-proof",
+    "candidate_runner_sha256": "4d7a623280d527d0d70cf04808df44be399a1c55665bc41c90ff1de61f1ad43f",
+    "proof_runner_sha256": "2076a26cb01b6ff635b93eed304ea4c44cd1c6bf4b61c31e178bf8b4867b0d46",
+    "serial_core0_only": true,
+    "scheduler_instruction_quantum": 1,
+    "immutable_xip_range": "0x10000000..0x14000000",
+    "production_optimization_added": false
+  },
+  "exactness": {
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 927528660,
+    "elapsed_us": 3715000,
+    "scenario_steps_passed": 85,
+    "scenario_steps_total": 85,
+    "behavior_sha256": "79dedc1525bc4f04057b36f3e395845f9dae16d484d9122c61518f3be6e2dfc8",
+    "event_stream_sha256": "2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789",
+    "event_stream_total_events": 173498680,
+    "all_nine_event_domains_match_opt1b": true,
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "psram_tick_count": 305747113
+  },
+  "proof": {
+    "core0": {
+      "enabled": true,
+      "buffered_entries_at_stop": 1,
+      "take_hits": 134612445,
+      "take_misses": 38102585,
+      "installs": 57047061,
+      "staged_entries": 168959816,
+      "clears": 32017974,
+      "enables": 1,
+      "disables": 0
+    },
+    "core1_enabled": false,
+    "core1_all_counters_zero": true
+  },
+  "performance": {
+    "method": "trace/proof-OFF clean A/B/A/B/A/B screening",
+    "baseline_median_wall_seconds": 25.98,
+    "candidate_median_wall_seconds": 27.13,
+    "median_improvement_percent": -4.4264819092,
+    "required_improvement_percent": 5.0,
+    "all_six_runs_exact": true,
+    "formal_ten_run_gate_executed": false,
+    "decision": "reject_and_revert"
+  },
+  "decision": {
+    "candidate_rejected": true,
+    "candidate_reverted": true,
+    "active_source_matches_baseline": true,
+    "active_target_changed": false,
+    "validation_attestation_added": false,
+    "selected_next_investigation": "OPT3-C compact predecoded dispatch key without eager successor copying"
+  },
+  "ci": {
+    "repository": "FuyukiYoneyama/picoem-picocalc",
+    "run_id": 31293556450,
+    "head_sha": "e58e67f1be69357edec0bd47e879039f47a42648",
+    "conclusion": "success"
+  },
+  "artifacts": {
+    "run_report": "run-report.json",
+    "run_report_sha256": "5de324816ad04a6799ea592be6d2c447860b0b693762c5e51f812c0463e65802",
+    "behavior_trace": "behavior-trace.json",
+    "behavior_trace_sha256": "5fcfbc6d6ca02fc3793b6cf57e73b6431b992fe09ef9b7587415fe1712bbc0de",
+    "performance_screening": "performance-screening.json",
+    "performance_screening_sha256": "309b7aee57ef2bf44eac88e90af331b673a824b8b89e4df30875694c62c7d713",
+    "notes": "notes.md",
+    "notes_sha256": "45ddabdd15a9e17543f30751ad61f4ade84109f5373d98fc1cd44425433f96b0"
+  }
+}

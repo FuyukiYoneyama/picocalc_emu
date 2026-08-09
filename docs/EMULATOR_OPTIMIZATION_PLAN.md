@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-A immutable-XIP decode cursor計測は完了し、次は短いcursorのOPT3-B試作
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B short immutable-XIP decode cursorはexactness合格・性能退行でrevert済み。次はOPT3-C compact predecoded dispatch keyの調査
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -415,8 +415,24 @@ PicoTetrisは85/85、cycle、UART、framebuffer、PSRAM、behavior/event全9 dom
 immutable XIP hit率は99.8287%、run平均は4.563命令だった。長さ4以上にhit massの50.3433%、
 8以上に27.2919%がある一方、32以上は0.5468%だけで、終了の99.9457%はPC redirectである。
 したがって長いbasic-block batchingではなく、schedulerを1命令のまま保つ短いXIP decode cursorを
-OPT3-Bとして試す。SRAM、XIP-SRAM、Threaded、dual-core共有codeは初期対象外とする。詳細は
+OPT3-Bとして試すことにした。SRAM、XIP-SRAM、Threaded、dual-core共有codeは初期対象外とした。詳細は
 [`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)にある。
+
+### 10.2 OPT3-B short immutable-XIP decode cursor（完了・不採用）
+
+candidate `0e22846186e68d2d726e49817a9f74c246f517ca`はSerial core 0と実XIP flashだけに限定し、
+schedulerを1命令のまま、既存decode-cacheの後続entryを最大3件cursorへ複製した。redirect、fault、
+prefetch exception、scope exit、XIP invalidationで破棄し、SRAM、XIP-SRAM、ROM、Threaded、core 1を
+fail closedにした。
+
+PicoTetrisは85/85、927,528,660 cycle、UART、framebuffer、PSRAM、behavior SHA、173,498,680 event、
+全9 domain digestに完全一致した。proof runではcursor hit 134,612,445回を確認した。一方、
+168,959,816 entryのstagingと32,017,974回のclearが発生し、trace/proof OFF A/B/A/B/A/Bのwall中央値は
+25.98秒から27.13秒へ悪化した（改善率`-4.4264819092%`）。正確性gateは合格、性能gateは不合格とし、
+`e58e67f1be69357edec0bd47e879039f47a42648`でrevertした。active targetとattestationは変更しない。
+
+次はeager successor copyを行わず、既存cache entryにcompactなtop-level dispatch分類を保持する
+OPT3-Cを調査する。詳細は[`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)にある。
 
 ## 11. 正確性gate
 
@@ -483,7 +499,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
 | 7 | OPT2 exact event batching | **終了（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし | 全boundary eventのcycle/order一致＋有意な性能改善 |
-| 8 | OPT3 CPU/decode | **OPT3-A計測完了、OPT3-B試作が次** | immutable-XIP限定cursor、cache invalidationを含む完全回帰＋有意な性能改善 |
+| 8 | OPT3 CPU/decode | **OPT3-B完了・不採用、OPT3-C調査が次** | eager copyを避けたcompact dispatch keyで完全回帰＋有意な性能改善を確認 |
 
 依存関係は次のとおりである。
 
