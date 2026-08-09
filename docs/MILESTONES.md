@@ -33,7 +33,9 @@ NEXT-1はPicoEdit（FAT32 ASCII editor）に決定し、実装前blind契約を
 一般write API不足を先に記録したうえで、アプリからFatFsへ迂回せず、device/host共有の公開APIを
 BSP 0.9.0として追加しました。clean sourceからPicoEditを生成・実装し、247 host assertions、
 PSRAM正本、FAT32安全保存、RP2040 canonical buildと固定scenarioまで完了しました。凍結backendの
-最初のfirmware blind runは一度目で合格し、結果を保存しました。次は正式target登録と同一artifact実機相関です。
+最初のfirmware blind runは一度目で合格し、結果を保存しました。正式target `picoedit-r1`も登録・
+通常CLI再実行・clean clone BIN/UF2再現まで合格しました。残るのは
+同一artifact実機相関です。
 詳細な順序は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -101,7 +103,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | OPT1-B | Serial fast-path gate | `picoem-picocalc`＋`picocalc_emu` | PIO active時の不要predicateと重複DMA判定だけを省き、全event digest、主性能5%、代表workload退行3%、R5相関contractを守る | **promoted完了 2026-08-08**。全9 domain一致、PicoTetris 6.420%短縮、Template B退行1.357%、公式Hello/R5同値性合格 |
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
 | OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-C完了・不採用 2026-08-09**。全event一致、中央値4.1542%改善だが5%未達でrevert。性能最適化は一旦区切る |
-| NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **進行中**。PicoEdit v1 blind契約、BSP 0.9.0、247 host assertions、PSRAM/FAT32/UI、canonical BIN/UF2を実装。凍結backendでの初回blind runは一度目で合格・証拠固定済み。次は正式target登録と同一artifact実機相関 |
+| NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **進行中**。PicoEdit v1 blind契約、BSP 0.9.0、247 host assertions、PSRAM/FAT32/UI、canonical BIN/UF2を実装。初回blind run一発合格、`picoedit-r1`正式登録、CLI回帰、clean clone再現まで完了。残件は同一artifact実機相関 |
 | NEXT-2 | capability範囲拡張 | backend＋新規app | multicore launch/SIO FIFO/WFE-SEV/IRQと、DMA-paced PCM sample sinkを別々のfail-closed gateで実装・相関する。設定/counter合格と実PCM出力を混同しない | 未着手 |
 | NEXT-3 | negative conformance | backend＋実機証拠 | 実機で壊れる既知版をエミュレーターもFAILにし、正常版→PASS、故障版→FAIL、修正版→PASSの履歴とfalse-acceptance KPI母数を増やす | 未着手 |
 | NEXT-4 | 安定headless machine API | backend＋scenario runner | `run` / `step` / `run_until` / `input` / `observe` / `subscribe` / `snapshot`の小さなAPIを定義し、既存scenario runnerを利用者として載せる | 未着手 |

@@ -197,7 +197,11 @@ NEXT-1は新規blind app `PicoEdit`として開始した。実装結果へ期待
 実行し、一度目で10/10 step、765,299,822 cycles、64-byte readback、固定SHA-256、PSRAM、FAT32、
 final framebufferが合格した。exception、unsupported MMIO、key dropはいずれも0である。証拠は
 [`next1-picoedit-first-run-20260809-01/`](../firmware-validation/records/next1-picoedit-first-run-20260809-01/)
-へ保存した。次は最後のCtrl releaseをdrainしてqueue=0も要求する正式target revisionを登録する。
+へ保存した。250 msのrelease drainを追加した正式target `picoedit-r1`も登録し、通常CLI経路で
+11/11 step、key delivered 30/remaining 0/dropped 0、正規化reportとtimeline SHAを含む全契約に
+合格した。別pathのclean cloneでBIN/UF2も完全一致した（ELF debug sectionは絶対path依存）。証拠は
+[`next1-picoedit-r1-20260809-01/`](../firmware-validation/records/next1-picoedit-r1-20260809-01/)にある。
+次はcanonical buildの同一UF2によるPicoCalc実機相関である。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

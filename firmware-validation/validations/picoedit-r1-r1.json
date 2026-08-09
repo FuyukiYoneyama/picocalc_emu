@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picoedit-r1-r1",
+  "roadmap_package": "R4",
+  "target_id": "picoedit-r1",
+  "target_revision": 1,
+  "target_contract_sha256": "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1",
+  "evidence": {
+    "record": "firmware-validation/records/next1-picoedit-r1-20260809-01/record.json",
+    "sha256": "bb5ac456e593cf45b7b76d281f3cbfc38be968a3d7c7408e5664d60b9c4c2652",
+    "record_id": "next1-picoedit-r1-20260809-01",
+    "section": "firmware_run"
+  },
+  "result": "accepted"
+}

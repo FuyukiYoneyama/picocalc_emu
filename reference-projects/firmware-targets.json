@@ -720,6 +720,107 @@
         "record": "firmware-validation/validations/picotetris-opt1b-r5.json",
         "sha256": "9bef55b21d7005cac556ccf7256b595c5c6f8f1f8cd15b509a6bbf31b8f52996"
       }
+    },
+    {
+      "id": "picoedit-r1",
+      "revision": 1,
+      "status": "active",
+      "source": {
+        "repo": "picoedit-picocalc",
+        "commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+        "bsp": "0.9.0",
+        "bsp_source_commit": "a0041b56516ed56ddff23e80d1900a7c0fc6ab15",
+        "bsp_tree_sha256": "997a68966d6c38c786e7045a2b703f6c02a247b5e0a8956f0153d809080cb73c",
+        "app": "PicoEdit"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local <picoedit-source> <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach 82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-09T08:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-09T08:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "picocalc_app.bin",
+        "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+        "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 4000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/picoedit-blind-v1.json",
+        "sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[PICOEDIT][STORE] type=psram address=0x00010000 capacity=65536 shadow_document=none",
+          "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61 sha256=4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7 store=psram",
+          "[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+        ],
+        "normalized_report_sha256": "f38acb11ba766fd240e24bf36e2e4a3c3761a0e5276c4c13cfb594525fdd0ccb",
+        "timeline_sha256": "05544f3170701d84e470624db378cfbe67b9dd9e8d678e170ab2245bdc258d66",
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
+          {"path": "cycles", "op": "eq", "value": 827799822},
+          {"path": "elapsed_us", "op": "eq", "value": 3320000},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "uart.sha256", "op": "eq", "value": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"},
+          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"},
+          {"path": "scenario.status", "op": "eq", "value": "pass"},
+          {"path": "scenario.steps_total", "op": "eq", "value": 11},
+          {"path": "scenario.steps", "op": "length_eq", "value": 11},
+          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 30},
+          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
+          {"path": "sd.format", "op": "eq", "value": "fat32"},
+          {"path": "sd.blocks_read", "op": "eq", "value": 12},
+          {"path": "sd.blocks_written", "op": "eq", "value": 13},
+          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
+          {"path": "psram.attached", "op": "eq", "value": true},
+          {"path": "psram.bytes_written", "op": "eq", "value": 154},
+          {"path": "psram.bytes_read", "op": "eq", "value": 2471}
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picoedit-r1-r1.json",
+        "sha256": "6dd2a03c31e8c2d1d675e6e92edefdd39636c721786e8e7984ea69b41a527c26"
+      }
     }
   ]
 }

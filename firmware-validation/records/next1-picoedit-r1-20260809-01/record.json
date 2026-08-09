@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "record_id": "next1-picoedit-r1-20260809-01",
+  "roadmap_package": "NEXT-1",
+  "result": "pass",
+  "target": {
+    "id": "picoedit-r1",
+    "revision": 1,
+    "contract_sha256": "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1"
+  },
+  "firmware_run": {
+    "target": {
+      "id": "picoedit-r1",
+      "revision": 1
+    },
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "backend_dirty": false,
+    "firmware_bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+    "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718",
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 827799822,
+    "elapsed_us": 3320000,
+    "scenario_steps": 11,
+    "keyboard_events_delivered": 30,
+    "keyboard_events_remaining": 0,
+    "keyboard_events_dropped": 0,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "output_bytes": 64,
+    "output_sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e",
+    "normalized_report_sha256": "f38acb11ba766fd240e24bf36e2e4a3c3761a0e5276c4c13cfb594525fdd0ccb",
+    "timeline_sha256": "05544f3170701d84e470624db378cfbe67b9dd9e8d678e170ab2245bdc258d66"
+  },
+  "reproducible_build": {
+    "source_commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+    "clean_clone": true,
+    "builds_compared": 2,
+    "bin_reproducible": true,
+    "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+    "uf2_reproducible": true,
+    "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73",
+    "elf_reproducible_across_build_paths": false,
+    "elf_difference_reason": "debug sections contain the absolute build path"
+  },
+  "evidence": {
+    "run_report": {
+      "path": "firmware-validation/records/next1-picoedit-r1-20260809-01/run-report.json",
+      "sha256": "1d8d0c6ddd92e640e62d585aa25b7195ec7f552644f33db5eb6381a6d87f6e15"
+    },
+    "uart": {
+      "path": "firmware-validation/records/next1-picoedit-r1-20260809-01/uart.log",
+      "sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+    },
+    "final_framebuffer": {
+      "path": "firmware-validation/records/next1-picoedit-r1-20260809-01/picoedit-final.png",
+      "sha256": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69",
+      "rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"
+    }
+  },
+  "hardware_correlation": "pending"
+}
