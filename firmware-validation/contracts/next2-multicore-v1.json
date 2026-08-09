@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "contract_id": "next2-multicore-v1-20260809",
+  "status": "frozen_before_application_implementation",
+  "roadmap_package": "NEXT-2A",
+  "application": {
+    "name": "PicoCalc Multicore Conformance",
+    "repository_directory": "picocalc-multicore",
+    "kind": "dual-core Pico SDK firmware conformance",
+    "lcd_variant": "pio-rgb565",
+    "execution_model": "Serial",
+    "scheduler_instruction_quantum": 1,
+    "human_input_required": false
+  },
+  "frozen_baseline": {
+    "picocalc_emu_commit": "76334780b2c5d7854c4707d7ce963f971b0a39c8",
+    "promoted_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1"
+  },
+  "required_sdk_paths": [
+    "multicore_launch_core1",
+    "multicore_fifo_push_blocking",
+    "multicore_fifo_pop_blocking",
+    "__wfe",
+    "__sev",
+    "SIO_IRQ_PROC1"
+  ],
+  "prohibited_application_dependencies": [
+    "emulator internal types",
+    "structured report internals",
+    "scenario runner internals",
+    "PICOEM_* compile definitions",
+    "emulator-only branches",
+    "direct writes to emulator control state"
+  ],
+  "fixed_phases": [
+    {
+      "id": "launch",
+      "requirement": "core 0 launches core 1 through Pico SDK multicore_launch_core1 and receives the fixed ready word",
+      "ready_word": "0xc0110001"
+    },
+    {
+      "id": "fifo",
+      "requirement": "four fixed core0-to-core1 words receive the exact transformed core1-to-core0 replies",
+      "transform": "rotate_left_32(input XOR 0xa5a55a5a, one_based_index)",
+      "vectors": [
+        {"input": "0x00000000", "output": "0x4b4ab4b5"},
+        {"input": "0x12345678", "output": "0xde44308a"},
+        {"input": "0xffffffff", "output": "0xd2d52d2a"},
+        {"input": "0x0badcafe", "output": "0xe0890a4a"}
+      ]
+    },
+    {
+      "id": "wfe_sev",
+      "requirement": "core 1 publishes an armed state, remains at stage 1 before core 0 SEV, then resumes to stage 2",
+      "armed_word": "0xc0111001",
+      "done_word": "0xc0111002"
+    },
+    {
+      "id": "irq_proc1",
+      "requirement": "core 1 enables SIO_IRQ_PROC1, parks with WFE, receives one FIFO word in its IRQ handler and reports one delivery",
+      "armed_word": "0xc0112001",
+      "input_word": "0x13579bdf",
+      "done_word": "0xc0112002",
+      "expected_irq_count": 1
+    }
+  ],
+  "required_uart_markers": [
+    "[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001",
+    "[NEXT2][MC][FIFO] status=pass vectors=4",
+    "[NEXT2][MC][WFE_SEV] status=pass before=1 after=2",
+    "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf",
+    "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"
+  ],
+  "first_firmware_run": {
+    "backend_must_remain_frozen": true,
+    "result_must_be_recorded_even_if_failure": true,
+    "expected_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "required_observations": [
+      "all five fixed UART markers",
+      "exception is absent",
+      "unsupported MMIO count is zero",
+      "core 1 launch does not depend on host-side register injection",
+      "final framebuffer evidence"
+    ]
+  },
+  "formal_acceptance": {
+    "same_artifact_bin_and_uf2": true,
+    "clean_clone_reproducible_builds": 2,
+    "firmware_runs": 3,
+    "uart_byte_identical": true,
+    "report_byte_identical": true,
+    "timeline_byte_identical": true,
+    "core1_fatal_exception_must_fail": true,
+    "threaded_execution_model_in_scope": false
+  },
+  "hardware_correlation": {
+    "human_key_input_required": false,
+    "required_evidence": [
+      "complete UART log",
+      "one final PASS photograph"
+    ],
+    "emulator_pass_hardware_fail_classification": "false_accept_and_NEXT-3_negative_conformance_seed"
+  },
+  "out_of_scope": [
+    "Threaded execution model",
+    "simultaneous LCD or PSRAM access from both cores",
+    "spinlock contention timing",
+    "core 1 reset and relaunch",
+    "DMA-paced PCM sample output"
+  ]
+}

@@ -671,6 +671,50 @@ raise SystemExit(code)
         )
         self.assertEqual(next1["status"], "fail")
 
+    def test_target_schema_verification_includes_next2_multicore_contract(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-contract"
+        )
+        self.assertEqual(next2["status"], "pass")
+        self.assertEqual(next2.get("phase_count"), 4)
+        self.assertEqual(next2.get("marker_count"), 5)
+        self.assertEqual(
+            next2.get("backend"),
+            "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+        )
+
+    def test_target_schema_rejects_next2_multicore_vector_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            contract_path = (
+                project / "firmware-validation/contracts/next2-multicore-v1.json"
+            )
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            contract["fixed_phases"][1]["vectors"][0]["output"] = "0x00000000"
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-contract"
+        )
+        self.assertEqual(next2["status"], "fail")
+
     def test_target_schema_rejects_next1_seed_content_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

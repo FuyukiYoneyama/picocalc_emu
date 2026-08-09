@@ -1755,6 +1755,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2g_uart_deadline(checks, root)
     verify_next1_picoedit_blind_contract(checks, root)
     verify_next1_picoedit_hardware_correlation(checks, root)
+    verify_next2_multicore_contract(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
@@ -4273,6 +4274,110 @@ def verify_next1_picoedit_hardware_correlation(
         TypeError,
         KeyError,
         StopIteration,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_next2_multicore_contract(checks: List[Check], root: Path) -> None:
+    """Verify the frozen NEXT-2A SDK multicore conformance contract."""
+    name = "next2:multicore-contract"
+    contract_path = root / "firmware-validation/contracts/next2-multicore-v1.json"
+    doc_path = root / "docs/NEXT2_MULTICORE_CONFORMANCE.md"
+    expected_markers = [
+        "[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001",
+        "[NEXT2][MC][FIFO] status=pass vectors=4",
+        "[NEXT2][MC][WFE_SEV] status=pass before=1 after=2",
+        "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf",
+        "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass",
+    ]
+    expected_vectors = [
+        {"input": "0x00000000", "output": "0x4b4ab4b5"},
+        {"input": "0x12345678", "output": "0xde44308a"},
+        {"input": "0xffffffff", "output": "0xd2d52d2a"},
+        {"input": "0x0badcafe", "output": "0xe0890a4a"},
+    ]
+    try:
+        contract = load_json(contract_path)
+        phases = {phase.get("id"): phase for phase in contract["fixed_phases"]}
+        baseline = contract["frozen_baseline"]
+        first_run = contract["first_firmware_run"]
+        formal = contract["formal_acceptance"]
+        hardware = contract["hardware_correlation"]
+        aligned = all(
+            (
+                contract.get("schema_version") == 1,
+                contract.get("contract_id") == "next2-multicore-v1-20260809",
+                contract.get("status") == "frozen_before_application_implementation",
+                contract.get("roadmap_package") == "NEXT-2A",
+                contract.get("application", {}).get("repository_directory")
+                == "picocalc-multicore",
+                contract.get("application", {}).get("kind")
+                == "dual-core Pico SDK firmware conformance",
+                contract.get("application", {}).get("execution_model") == "Serial",
+                contract.get("application", {}).get("scheduler_instruction_quantum") == 1,
+                contract.get("application", {}).get("human_input_required") is False,
+                baseline.get("picocalc_emu_commit")
+                == "76334780b2c5d7854c4707d7ce963f971b0a39c8",
+                baseline.get("promoted_backend_commit")
+                == "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+                baseline.get("pico_sdk_version") == "2.2.0",
+                baseline.get("pico_sdk_commit")
+                == "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+                contract.get("required_sdk_paths")
+                == [
+                    "multicore_launch_core1",
+                    "multicore_fifo_push_blocking",
+                    "multicore_fifo_pop_blocking",
+                    "__wfe",
+                    "__sev",
+                    "SIO_IRQ_PROC1",
+                ],
+                set(phases) == {"launch", "fifo", "wfe_sev", "irq_proc1"},
+                phases["launch"].get("ready_word") == "0xc0110001",
+                phases["fifo"].get("vectors") == expected_vectors,
+                phases["wfe_sev"].get("armed_word") == "0xc0111001",
+                phases["wfe_sev"].get("done_word") == "0xc0111002",
+                phases["irq_proc1"].get("armed_word") == "0xc0112001",
+                phases["irq_proc1"].get("input_word") == "0x13579bdf",
+                phases["irq_proc1"].get("done_word") == "0xc0112002",
+                phases["irq_proc1"].get("expected_irq_count") == 1,
+                contract.get("required_uart_markers") == expected_markers,
+                first_run.get("backend_must_remain_frozen") is True,
+                first_run.get("result_must_be_recorded_even_if_failure") is True,
+                first_run.get("expected_backend_commit")
+                == baseline.get("promoted_backend_commit"),
+                formal.get("same_artifact_bin_and_uf2") is True,
+                formal.get("clean_clone_reproducible_builds") == 2,
+                formal.get("firmware_runs") == 3,
+                formal.get("core1_fatal_exception_must_fail") is True,
+                formal.get("threaded_execution_model_in_scope") is False,
+                hardware.get("human_key_input_required") is False,
+                hardware.get("required_evidence")
+                == ["complete UART log", "one final PASS photograph"],
+                "DMA-paced PCM sample output" in contract.get("out_of_scope", []),
+                sha256(contract_path)
+                == "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03",
+                sha256(doc_path)
+                == "ea105a632271ec500e116c6fe0a134a855af7dfe197ba6815c571f7d876b2254",
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            contract_id=contract.get("contract_id"),
+            contract_status=contract.get("status"),
+            backend=baseline.get("promoted_backend_commit"),
+            phase_count=len(phases),
+            marker_count=len(contract.get("required_uart_markers", [])),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))
