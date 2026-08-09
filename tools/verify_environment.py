@@ -1754,6 +1754,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2f_stationary_pin_bulk(checks, root)
     verify_opt2g_uart_deadline(checks, root)
     verify_next1_picoedit_blind_contract(checks, root)
+    verify_next1_picoedit_hardware_correlation(checks, root)
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
@@ -4091,6 +4092,187 @@ def verify_next1_picoedit_blind_contract(checks: List[Check], root: Path) -> Non
         ValueError,
         TypeError,
         KeyError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_next1_picoedit_hardware_correlation(
+    checks: List[Check], root: Path
+) -> None:
+    """Verify the NEXT-1 PicoEdit same-artifact hardware evidence."""
+    name = "next1:picoedit-hardware-correlation"
+    try:
+        record_root = (
+            root
+            / "firmware-validation/records/next1-picoedit-hardware-20260809-01"
+        )
+        record = load_json(record_root / "record.json")
+        registry = picocalc.load_firmware_registry(
+            root / "reference-projects/firmware-targets.json"
+        )
+        target_id = record.get("target", {}).get("id")
+        target_revision = record.get("target", {}).get("revision")
+        target = next(
+            item
+            for item in registry["targets"]
+            if item.get("id") == target_id
+            and item.get("revision") == target_revision
+        )
+        target_contract = picocalc.firmware_target_contract_sha256(target)
+
+        input_contract_path = root / record["input_contract"]["path"]
+        procedure_path = root / record["input_contract"]["procedure"]
+        emulator_record_path = root / record["correlation"]["emulator_record"]
+        emulator_record = load_json(emulator_record_path)
+
+        artifact_paths = {
+            artifact_name: record_root / artifact["path"]
+            for artifact_name, artifact in record["artifacts"].items()
+            if isinstance(artifact, dict) and "path" in artifact
+        }
+        required_artifacts = {
+            "uart_log",
+            "seed_input",
+            "saved_output",
+            "saved_backup",
+            "final_photo",
+        }
+        if not required_artifacts.issubset(artifact_paths):
+            raise ValueError("PicoEdit hardware evidence artifact set is incomplete")
+        if not all(path.is_file() for path in artifact_paths.values()):
+            raise ValueError("PicoEdit hardware evidence file is missing")
+
+        artifact_hashes_ok = all(
+            sha256(path) == record["artifacts"][artifact_name].get("sha256")
+            for artifact_name, path in artifact_paths.items()
+        )
+        uart_bytes = artifact_paths["uart_log"].read_bytes()
+        uart_text = uart_bytes.decode("utf-8", errors="strict")
+        seed_bytes = artifact_paths["seed_input"].read_bytes()
+        output_bytes = artifact_paths["saved_output"].read_bytes()
+        backup_bytes = artifact_paths["saved_backup"].read_bytes()
+        photo_bytes = artifact_paths["final_photo"].read_bytes()
+        identity_line = record["artifact"]["identity_line"]
+        save_marker = (
+            "[PICOEDIT][SAVE] status=pass bytes=64 "
+            "sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e "
+            "expected=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e "
+            "readback=match psram=authoritative"
+        )
+        search_recovery = (
+            "code=0x72 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x61 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x66 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x74 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up"
+        )
+        edit_recovery = (
+            "[PICOEDIT][KEY] mode=1 code=0x20 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=1 code=0x6b ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=1 code=0x08 ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=1 code=0x6f ctrl=up\r\n"
+            "[PICOEDIT][KEY] mode=1 code=0x6b ctrl=up"
+        )
+
+        expected_seed = (
+            b"PicoEdit blind validation\nstatus: draft\nalpha beta gamma\nend\n"
+        )
+        expected_output = (
+            b"PicoEdit blind validation\nstatus: draft ok\nalpha beta gamma\nend\n"
+        )
+        physical_run = record["physical_run"]
+        correlation = record["correlation"]
+        aligned = all(
+            (
+                record.get("schema_version") == 1,
+                record.get("record_id")
+                == "next1-picoedit-hardware-20260809-01",
+                record.get("roadmap_package") == "NEXT-1",
+                record.get("result") == "pass",
+                record.get("classification")
+                == "same_artifact_hardware_correlation",
+                target_id == "picoedit-r1",
+                target_revision == 1,
+                record["target"].get("contract_sha256")
+                == target_contract
+                == "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1",
+                record["source"].get("commit")
+                == "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+                record["source"].get("bsp_source_commit")
+                == "a0041b56516ed56ddff23e80d1900a7c0fc6ab15",
+                record["artifact"].get("bin_sha256")
+                == target["artifacts"]["bin_sha256"],
+                record["artifact"].get("uf2_sha256")
+                == target["artifacts"]["uf2_sha256"],
+                sha256(input_contract_path)
+                == record["input_contract"].get("sha256")
+                == "6d9b98b6dfd6313c1b500843e2184191b06adf260e76ef5162d64c6fd1fd6e37",
+                sha256(procedure_path)
+                == record["input_contract"].get("procedure_sha256")
+                == "5b50a871a7f952dddbe96032730e7fc5465a98c48c6e3121270d13a2a5c4c1ab",
+                sha256(emulator_record_path)
+                == correlation.get("emulator_record_sha256")
+                == "bb5ac456e593cf45b7b76d281f3cbfc38be968a3d7c7408e5664d60b9c4c2652",
+                emulator_record.get("result") == "pass",
+                emulator_record.get("target", {}).get("id") == target_id,
+                emulator_record.get("firmware_run", {}).get("firmware_bin_sha256")
+                == record["artifact"].get("bin_sha256"),
+                artifact_hashes_ok,
+                seed_bytes == expected_seed,
+                output_bytes == expected_output,
+                backup_bytes == expected_output,
+                len(uart_bytes) == record["artifacts"]["uart_log"].get("bytes") == 3620,
+                identity_line in uart_text,
+                "[PICOCALC][PSRAM] status=ok" in uart_text,
+                "[PICOEDIT][SD] component=init status=ok detail=1" in uart_text,
+                "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61" in uart_text,
+                uart_text.count(save_marker) == 3,
+                search_recovery in uart_text,
+                edit_recovery in uart_text,
+                physical_run["editing"].get("human_recovery_exercised") is True,
+                physical_run["save"].get("successful_save_count") == 3,
+                physical_run["sd_post_run"].get("temporary_file_absent") is True,
+                physical_run["final_screen"].get("result") == "pass",
+                physical_run["final_screen"].get("observed_status")
+                == "SAVED - 64 bytes SHA PASS",
+                photo_bytes[:2] == b"\xff\xd8",
+                photo_bytes[-2:] == b"\xff\xd9",
+                b"Exif\x00\x00" not in photo_bytes,
+                b"http://ns.adobe.com/xap/1.0/" not in photo_bytes,
+                correlation.get("same_registered_artifact") is True,
+                correlation.get("hardware_correlation_completed") is True,
+                correlation.get("emulator_result") == "pass",
+                correlation.get("hardware_result") == "pass",
+                correlation.get("emulator_pass_hardware_fail_count") == 0,
+                correlation.get("false_accept") is False,
+                correlation.get("verdict") == "pass",
+            )
+        )
+        add_check(
+            checks,
+            name,
+            aligned,
+            record_id=record.get("record_id"),
+            target=target_id,
+            target_revision=target_revision,
+            save_count=uart_text.count(save_marker),
+            human_recovery_exercised=physical_run["editing"].get(
+                "human_recovery_exercised"
+            ),
+            output_sha256=sha256(artifact_paths["saved_output"]),
+            verdict=correlation.get("verdict"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
         json.JSONDecodeError,
     ) as error:
         add_check(checks, name, False, **error_details(error))

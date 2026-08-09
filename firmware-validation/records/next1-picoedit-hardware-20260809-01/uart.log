@@ -1,0 +1,51 @@
+[PICOCALC][BOOT] bsp=0.9.0 app=1.0.0-next1-blind-v1 variant=pio-rgb565 bsp_git=a0041b56516e app_git=82a6e4c76272 build=2026-08-09T08:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=10 read_us=10
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=stream rate=48000 pwm_wrap=255 carrier=976562 dma_half=128 ring=512 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=stream output=stopped-until-start
+[PICOEDIT][STORE] type=psram address=0x00010000 capacity=65536 shadow_document=none
+[PICOEDIT][SD] component=detect status=present detail=0
+[PICOEDIT][SD] component=init status=begin detail=0
+[PICOEDIT][SD] component=init status=ok detail=1
+[PICOEDIT][SEED] status=created bytes=61
+[PICOEDIT][READY] mode=file_list selected=INPUT.TXT files=1
+[PICOEDIT][KEY] mode=0 code=0x0a ctrl=up
+[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61 sha256=4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7 store=psram address=0x00010000
+[PICOEDIT][KEY] mode=1 code=0x66 ctrl=down
+[PICOEDIT][KEY] mode=2 code=0x72 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x61 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x66 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x74 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x08 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x64 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x72 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x61 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x66 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x74 ctrl=up
+[PICOEDIT][KEY] mode=2 code=0x0a ctrl=up
+[PICOEDIT][FIND] query=draft status=found cursor=34
+[PICOEDIT][KEY] mode=1 code=0xa2 ctrl=up
+[PICOEDIT][KEY] mode=1 code=0xd5 ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x20 ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x6b ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x08 ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x6f ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x6b ctrl=up
+[PICOEDIT][KEY] mode=1 code=0x73 ctrl=down
+[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e expected=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e readback=match psram=authoritative
+[PICOEDIT][KEY] mode=1 code=0x73 ctrl=down
+[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e expected=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e readback=match psram=authoritative
+[PICOEDIT][KEY] mode=1 code=0x73 ctrl=down
+[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e expected=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e readback=match psram=authoritative

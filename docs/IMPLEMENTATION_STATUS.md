@@ -169,8 +169,8 @@ massは0.5468%だった。OPT3-Bではscheduler quantumを変えない短いXIP 
 OPT3-Cでは既存`DecodedOp`の12 bytesを維持したflags bits 1..6のcompact dispatch keyを試作した。
 successor copy、staging、clearなしで、85/85、cycle、UART、framebuffer、PSRAM、behavior/event全9 domainを
 一致させたが、trace/proof OFF中央値は26.72秒から25.61秒、4.1541916168%改善に留まり5%条件未達で
-revertした。10-run promotion測定は行っていない。性能最適化は一旦区切り、次優先はblind app、
-multicore/audio、negative conformance、headless interfaceである。詳細は
+revertした。10-run promotion測定は行っていない。性能最適化は一旦区切り、NEXT-1 blind appを
+完了した。次優先はmulticore/audio、negative conformance、headless interfaceである。詳細は
 [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)と
 [`opt3-c-compact-dispatch-key-20260809-01/`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)にある。
 [`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)、
@@ -201,7 +201,15 @@ final framebufferが合格した。exception、unsupported MMIO、key dropはい
 11/11 step、key delivered 30/remaining 0/dropped 0、正規化reportとtimeline SHAを含む全契約に
 合格した。別pathのclean cloneでBIN/UF2も完全一致した（ELF debug sectionは絶対path依存）。証拠は
 [`next1-picoedit-r1-20260809-01/`](../firmware-validation/records/next1-picoedit-r1-20260809-01/)にある。
-次はcanonical buildの同一UF2によるPicoCalc実機相関である。
+canonical buildの同一UF2によるPicoCalc実機相関も2026-08-09に合格した。実機UARTはBSP 0.9.0、
+app/BSP commit、PSRAM、FAT32 load/saveを照合し、64-byte `OUTPUT.TXT`のSHAとreadbackが3回一致した。
+SD再読取では`OUTPUT.BAK`も同じ内容で、`OUTPUT.TMP`は残っていなかった。最終写真は
+`PicoEdit OUTPUT.TXT 64 bytes`、`status: draft ok`、`SAVED - 64 bytes SHA PASS`を示す。
+検索と編集の誤入力はBackspaceで修正しており、連続無誤入力を要求しない回復手順も実証した。
+証拠と判定範囲は
+[`NEXT1_PICOEDIT_HARDWARE_CORRELATION.md`](NEXT1_PICOEDIT_HARDWARE_CORRELATION.md)および
+[`next1-picoedit-hardware-20260809-01/`](../firmware-validation/records/next1-picoedit-hardware-20260809-01/)にある。
+NEXT-1は完了し、次はNEXT-2のmulticore/audio capability範囲拡張である。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例
@@ -393,8 +401,9 @@ LCDが実機表示に成功した**（2026-07-30）。以下の台帳はその�
 
 ## 最新BSPの実機確認
 
-Canonical BSPのsource currentは`0.9.0`、最新の実機相関済み版は`0.8.8`、標準templateの
-app版は`0.8.4-*`であり、この三つを区別して管理する。`bsp-0.8.8-20260802-01.json`には、
+Canonical BSPのsource currentは`0.9.0`、全標準BSP機能の基準台帳は`0.8.8`、標準templateの
+app版は`0.8.4-*`であり、この三つを区別して管理する。0.9.0で追加したfilesystem write APIは
+PicoEditの同一artifact実機相関に合格した。`bsp-0.8.8-20260802-01.json`には、
 ClockworkPi PicoCalc `CPI2.0`とSanDisk Ultra SDHC 32 GB/FAT32での実機情報を記録した。
 
 - SD: filesystem smoke、`/MUSIC`列挙、MP3/MIDIのEOF到達を確認
@@ -595,7 +604,8 @@ Canonical BSPの推奨表示デフォルトはBのままである。
 `app=0.8.4-a-hwspi-rgb888-rgb666-compat`、音声の`mode=`、PSRAMの`reference=pico_rescue`
 を照合する。推奨デフォルトはBのRGB565/PIO blocking/DMA OFFであり、Aは互換・診断用に残す。
 ソース検査とA/Bビルドを実施し、0.8.8のSD/音声実機検証まで完了している。0.9.0の追加APIは
-FAT32/FAT16 hostで検査済みだが、実機相関はPicoEditの同一artifact試験で行う。標準アプリは
+FAT32/FAT16 host検査に加え、PicoEditのFAT32同一artifact実機試験でload、write、sync、rename、
+readback、安全backupを相関済みである。標準アプリは
 `[PICOCALC][LCD][VERIFY] app_status=`の直後に
 `[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete`を出力し、LCD検証後は無音になる。
 

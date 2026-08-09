@@ -92,9 +92,10 @@ LCDが映らず、SDがmountできず、原因が特定できないまま実機�
 
 第1段のCanonical BSPのsource currentは **0.9.0** です。実機動作済みプロジェクトから抽出したBSP、アプリ
 テンプレート、プロジェクト生成器、証拠台帳、検証ツールが利用できます。標準templateの
-アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。最新の実機相関済みBSPは0.8.8で、その台帳は
+アプリ版名は`0.8.4-*`としてBSPとは独立に管理します。全標準BSP機能の基準台帳は0.8.8で、その台帳は
 `bsp-0.8.8-20260804-02`でLCD・SD・keyboard・audio・PSRAMを含め`pass`です。
-0.9.0はPicoEditに必要な公開filesystem write APIを追加し、FAT32/FAT16 host検査済みです。
+0.9.0はPicoEditに必要な公開filesystem write APIを追加し、FAT32/FAT16 host検査に加え、
+PicoEditのFAT32同一artifact実機相関にも合格しています。
 
 **第2段のエミュレーターは、公式サンプルの縦断まで到達しました（2026-08-04）。**
 ClockworkPi公式の無改変`Code/picocalc_helloworld`が、Firmware backend
@@ -578,8 +579,8 @@ RAMRDはこの実機で正常に動作します（`life`のスクリーンショ
 ## BSPの変更履歴
 
 版ごとの変更内容と理由は[`bsp/CHANGELOG.md`](bsp/CHANGELOG.md)に分離しました。
-本書と`bsp/README.md`にはsource current 0.9.0の契約を置き、0.8.8は最新の実機相関済み
-baselineとして明記します。過去版の記述を
+本書と`bsp/README.md`にはsource current 0.9.0の契約を置き、0.8.8は全標準BSP機能の基準
+baselineとして明記します。0.9.0のfilesystem write経路はNEXT-1で実機相関済みです。過去版の記述を
 現行仕様として実装・検証に使わないでください。
 
 ## 文書
@@ -621,6 +622,7 @@ baselineとして明記します。過去版の記述を
 - [OPT1-A exact idle fast-forward](docs/OPT1_A_EXACT_IDLE_FAST_FORWARD.md) — 全source境界、schema 2 exactness、2.3319倍の候補実測
 - [OPT1-B serial fast-path gate](docs/OPT1_B_SERIAL_FAST_PATH.md) — event完全一致、6.420%追加短縮、代表workloadとR5同値性
 - [R5同一BIN実機相関](docs/R5_HARDWARE_CORRELATION.md) — 単一artifactのemulator/実機PASS、最終証拠、キーretry/resumeと応答品質の制約
+- [NEXT-1 PicoEdit同一artifact実機相関](docs/NEXT1_PICOEDIT_HARDWARE_CORRELATION.md) — blind appのemulator/実機PASS、FAT32安全保存、誤入力回復、証拠hash
 - [capability manifest](firmware-validation/capability.json) — エミュレーターの対応・未対応機能
 - [公開前チェックリスト](docs/RELEASE_CHECKLIST.md) — 本リポジトリを公開する時点で満たす条件
 - [将来のエミュレーター設計](docs/DESIGN.md) — **未実装**の設計。Phase番号は旧体系

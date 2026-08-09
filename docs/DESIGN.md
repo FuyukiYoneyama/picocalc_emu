@@ -13,7 +13,8 @@ BSP・テンプレート・実働プロジェクトの扱いは
 > **実装状況:** Canonical BSP 0.9.0（LCD二系統、公開filesystem write API）、
 > RP2040 アプリテンプレート、プロジェクト生成器、
 > 実働プロジェクト証拠台帳、静的契約検査、LCD/SD/keyboard 起動時スモークを
-> 実機向けBSP sourceの現在版として実装済み。0.9.0追加APIの実機相関はNEXT-1で行う。
+> 実機向けBSP sourceの現在版として実装済み。0.9.0追加filesystem APIはNEXT-1 PicoEditの
+> FAT32同一artifact実機試験で相関済み。
 > 利用方法と未実装のエミュレーター範囲は
 > [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
 

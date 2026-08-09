@@ -1,0 +1,4 @@
+PicoEdit blind validation
+status: draft
+alpha beta gamma
+end

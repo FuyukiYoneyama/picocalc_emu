@@ -629,6 +629,48 @@ raise SystemExit(code)
         self.assertEqual(next1.get("repo"), "picoedit-picocalc")
         self.assertEqual(next1.get("host_min_assertions"), 100)
 
+    def test_target_schema_verification_includes_next1_picoedit_hardware(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next1 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next1:picoedit-hardware-correlation"
+        )
+        self.assertEqual(next1["status"], "pass")
+        self.assertEqual(next1.get("target"), "picoedit-r1")
+        self.assertEqual(next1.get("save_count"), 3)
+        self.assertIs(next1.get("human_recovery_exercised"), True)
+        self.assertEqual(next1.get("verdict"), "pass")
+
+    def test_target_schema_rejects_next1_hardware_output_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            output_path = (
+                project
+                / "firmware-validation/records/next1-picoedit-hardware-20260809-01/OUTPUT.TXT"
+            )
+            output_path.write_bytes(output_path.read_bytes() + b"tampered\n")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        next1 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next1:picoedit-hardware-correlation"
+        )
+        self.assertEqual(next1["status"], "fail")
+
     def test_target_schema_rejects_next1_seed_content_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)

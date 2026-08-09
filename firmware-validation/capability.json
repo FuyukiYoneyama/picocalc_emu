@@ -139,6 +139,7 @@
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
       "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 8 retains the selected format and block counters introduced in schema 6.",
       "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect, raw-image persistence or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay.",
+      "correlated": "2026-08-09: BSP 0.9.0 public filesystem write path passed same-artifact PicoEdit correlation for FAT32 load, create/truncate write, sync, rename/backup and readback (firmware-validation/records/next1-picoedit-hardware-20260809-01/record.json). FAT16 remains host-only compatibility evidence.",
       "since_gate": "post-7; fat32-default completed in R1-SD"
     },
     {

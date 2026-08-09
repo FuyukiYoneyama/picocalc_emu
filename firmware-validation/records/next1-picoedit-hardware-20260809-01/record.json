@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "record_id": "next1-picoedit-hardware-20260809-01",
+  "title": "NEXT-1 PicoEdit same-artifact PicoCalc physical-device correlation",
+  "roadmap_package": "NEXT-1",
+  "result": "pass",
+  "classification": "same_artifact_hardware_correlation",
+  "input_contract": {
+    "path": "firmware-validation/records/next1-picoedit-hardware-20260809-01/input-contract.json",
+    "sha256": "6d9b98b6dfd6313c1b500843e2184191b06adf260e76ef5162d64c6fd1fd6e37",
+    "status_at_freeze": "pending_human_execution",
+    "procedure": "firmware-validation/records/next1-picoedit-hardware-20260809-01/PROCEDURE.md",
+    "procedure_sha256": "5b50a871a7f952dddbe96032730e7fc5465a98c48c6e3121270d13a2a5c4c1ab"
+  },
+  "target": {
+    "id": "picoedit-r1",
+    "revision": 1,
+    "contract_sha256": "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1"
+  },
+  "source": {
+    "repo": "picoedit-picocalc",
+    "commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+    "bsp_version": "0.9.0",
+    "bsp_source_commit": "a0041b56516ed56ddff23e80d1900a7c0fc6ab15"
+  },
+  "artifact": {
+    "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+    "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73",
+    "build_timestamp": "2026-08-09T08:00:00Z",
+    "identity_line": "[PICOCALC][BOOT] bsp=0.9.0 app=1.0.0-next1-blind-v1 variant=pio-rgb565 bsp_git=a0041b56516e app_git=82a6e4c76272 build=2026-08-09T08:00:00Z"
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "sd_filesystem": "FAT32",
+    "validation_date": "2026-08-09",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "boot_identity": "pass",
+    "lcd_init": "pass",
+    "psram": "pass",
+    "sd": "pass",
+    "seed_created_bytes": 61,
+    "load": {
+      "result": "pass",
+      "bytes": 61,
+      "sha256": "4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7",
+      "authoritative_store": "psram",
+      "address": "0x00010000"
+    },
+    "editing": {
+      "result": "pass",
+      "search_query": "draft",
+      "search_result": "found",
+      "search_cursor": 34,
+      "human_recovery_exercised": true,
+      "recovery_observations": [
+        "search text raft was erased with four Backspace events before draft was entered",
+        "an incorrect k after the inserted space was erased with Backspace before ok was completed"
+      ],
+      "continuous_error_free_key_sequence_required": false
+    },
+    "save": {
+      "result": "pass",
+      "successful_save_count": 3,
+      "bytes": 64,
+      "sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e",
+      "readback": "match",
+      "authoritative_store": "psram"
+    },
+    "sd_post_run": {
+      "input_matches_frozen_seed": true,
+      "output_matches_expected": true,
+      "backup_present": true,
+      "backup_matches_expected": true,
+      "temporary_file_absent": true
+    },
+    "final_screen": {
+      "result": "pass",
+      "observed_title": "PicoEdit OUTPUT.TXT 64 bytes",
+      "observed_document_line": "status: draft ok",
+      "observed_status": "SAVED - 64 bytes SHA PASS"
+    }
+  },
+  "correlation": {
+    "emulator_record": "firmware-validation/records/next1-picoedit-r1-20260809-01/record.json",
+    "emulator_record_sha256": "bb5ac456e593cf45b7b76d281f3cbfc38be968a3d7c7408e5664d60b9c4c2652",
+    "same_registered_artifact": true,
+    "hardware_correlation_completed": true,
+    "emulator_result": "pass",
+    "hardware_result": "pass",
+    "emulator_pass_hardware_fail_count": 0,
+    "false_accept": false,
+    "verdict": "pass"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "uart.log",
+      "bytes": 3620,
+      "sha256": "0379971abde1f15d98432c77d30225db604d55d7b077fb9e33c3811115f03dfc"
+    },
+    "seed_input": {
+      "path": "INPUT.TXT",
+      "bytes": 61,
+      "sha256": "4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7"
+    },
+    "saved_output": {
+      "path": "OUTPUT.TXT",
+      "bytes": 64,
+      "sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+    },
+    "saved_backup": {
+      "path": "OUTPUT.BAK",
+      "bytes": 64,
+      "sha256": "5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+    },
+    "final_photo": {
+      "path": "final.jpg",
+      "sha256": "531f00a186ee29d6d111232345a78f6351b5a1664945823fad2bbac92701ddab",
+      "source_original_sha256": "ab687340e1f46fb2d47b19aa826aef414abaecbe85b8d865755077ef8a2ff9b0",
+      "decoded_rgb_sha256": "23d4b70922b8f7ea0bd50da6fd3a1bd480b7acbdc94c42c8ed0e2b4496d751b9",
+      "width": 3024,
+      "height": 3024,
+      "metadata_policy": "repository copy has EXIF/XMP removed; decoded pixels match the supplied original"
+    },
+    "notes": "notes.md"
+  }
+}
