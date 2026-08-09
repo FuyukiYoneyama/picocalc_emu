@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "validation_id": "picocalc-multicore-r1-r1",
+  "roadmap_package": "R4",
+  "target_id": "picocalc-multicore-r1",
+  "target_revision": 1,
+  "target_contract_sha256": "3080caf99a9fcad210edab50ef895b2ce72ee5566a8340fde1b8419a96285ca7",
+  "evidence": {
+    "record": "firmware-validation/records/next2-multicore-r1-20260809-01/record.json",
+    "sha256": "94cd0f9c9b73dd36e5a0eb6aed6cbc925109912df7677005979306bf5e4a5dd4",
+    "record_id": "next2-multicore-r1-20260809-01",
+    "section": "firmware_run"
+  },
+  "result": "accepted"
+}

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next2-multicore-v1",
+  "description": "NEXT-2A dual-core conformance observation. No keyboard input; stop only after the frozen overall PASS marker and preserve the final LCD state.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "all frozen multicore phases passed",
+      "timeout_ms": 10000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "NEXT-2A final PASS screen",
+      "png": "next2-multicore-final.png"
+    }
+  ]
+}

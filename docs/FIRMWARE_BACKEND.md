@@ -11,7 +11,7 @@ The current firmware backend direct-boots a raw Pico SDK BIN. That BIN is genera
 The firmware backend complements the host-device-model backend; it does not replace it.
 
 - **Host backend:** fast native execution for application logic, UI, input, files, sanitizers, and repeated scenario tests.
-- **Firmware backend:** same-binary verification for RP2040-specific behavior currently declared in the capability manifest, including GPIO, PIO, DMA, interrupts, and peripheral register use. Multicore execution remains unsupported until a conformance target proves it.
+- **Firmware backend:** same-binary verification for RP2040-specific behavior currently declared in the capability manifest, including GPIO, PIO, DMA, interrupts, peripheral register use and the bounded Serial multicore contract proven by `picocalc-multicore-r1`.
 
 Most development tests should use the host backend. The firmware backend is used when binary-level or RP2040-specific behavior matters and its capability manifest declares the required subsystems supported.
 
@@ -24,8 +24,9 @@ separates three exact backend identities:
   same-artifact emulator/physical-device evidence.
 - **promoted:** `e985a9d...5f1`, used by active target `picotetris-opt1b`. It is exact-equivalent to
   the R5 observation contract and includes the accepted OPT1-B fast path.
-- **experimental main:** the observed `main` head, currently `e58e67f...648`. It may contain
-  feature-gated profiling work or reverted experiments and is not promoted by being newest.
+- **experimental main:** the observed `main` head, currently `38683d6...e7`. NEXT-2A accepts its
+  bounded multicore behavior through a separate target, but it does not replace the general
+  PicoTetris promoted role merely by being newest.
 
 `picocalc_emu` CI keeps the first two roles as separate firmware jobs. Historical correlation must
 not silently move to a new backend, while the current promoted target must not be protected only by
@@ -83,11 +84,14 @@ R1の固定済みregister、matrix、modifier、repeat、overflow契約と、GPI
 10. Run the Canonical BSP default PIO0/RGB565/LCD-DMA-OFF path (completed by Gate 7).
 11. Add SPI0 SD, PWM/DMA audio playback, multicore, UF2 loading, GDB/debug support, and broader capability reporting as later workload requirements demand.
 
-SPI0 SD is also complete, with FAT32 as the default and FAT16 as an explicit compatibility
-profile. Item 11 otherwise remains a requirement-driven extension queue rather than a statement
-that every listed subsystem is already implemented. The Gate 0–7 acceptance sequence reached
-item 10; detailed completion evidence and any narrower capability limits remain authoritative in
-`MILESTONES.md` and `firmware-validation/capability.json`.
+SPI0 SD is complete, with FAT32 as the default and FAT16 as an explicit compatibility profile.
+The Serial subset of multicore is also accepted by target `picocalc-multicore-r1`: real Pico SDK
+core 1 launch, bidirectional SIO FIFO, WFE/SEV and `SIO_IRQ_PROC1` pass three deterministic runs,
+while a core 1 fatal exception fails closed. Physical same-UF2 correlation is pending, and this does
+not cover Threaded execution, concurrent off-chip devices, relaunch or spinlock timing. PWM/DMA PCM
+sample output, UF2 loading and debugger support remain in the requirement-driven extension queue.
+Detailed evidence and narrower limits remain authoritative in `MILESTONES.md` and
+`firmware-validation/capability.json`.
 
 The first end-to-end firmware target is the unmodified ClockworkPi
 `picocalc_helloworld`. Its LCD path is variant A: hardware SPI1 with RGB666 in a

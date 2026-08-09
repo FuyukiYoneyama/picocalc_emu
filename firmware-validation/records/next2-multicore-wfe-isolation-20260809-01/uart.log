@@ -1,0 +1,21 @@
+[PICOCALC][BOOT] bsp=0.9.0 app=1.0.0-next2-multicore-v1 variant=pio-rgb565 bsp_git=0224204f6305 app_git=75b6870245e9 build=2026-08-09T10:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=4 read_us=4
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=fixed_sine rate=48000 tone=1000 amp_db=-6 pwm_wrap=255 carrier=976562 dma_half=128 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=reference-fixed-sine output=1khz
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[NEXT2][MC][AUDIO] status=stopped reason=out_of_scope
+[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001
+[NEXT2][MC][FIFO] status=pass vectors=4
+[NEXT2][MC][WFE_SEV] status=fail before=2 after=2
+[NEXT2][MC][IRQ_PROC1] status=fail count=0 word=0x00000000
+[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=fail irq_proc1=fail overall=fail

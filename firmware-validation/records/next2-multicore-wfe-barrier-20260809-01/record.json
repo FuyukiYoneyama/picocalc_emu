@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-wfe-barrier-20260809-01",
+  "roadmap_package": "NEXT-2A",
+  "result": "fail",
+  "classification": "diagnostic_application_revision",
+  "application_commit": "be589cc5c039",
+  "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+  "bin_sha256": "2105223717766470f04996f2f7b90ed3d1f52872f9024f9756aeaefef1e295e5",
+  "uf2_sha256": "ac696fc11ad540709e07c6f8c49e7136504fcf91dd99444416b56c727b0b342c",
+  "observed_phases": {
+    "launch": "pass",
+    "fifo": "pass",
+    "wfe_sev": "pass_before_1_after_2",
+    "irq_proc1": "fail_count_0"
+  },
+  "diagnosis": "An internal prepare-word barrier after display and stdio work removed incidental SDK mutex SEV from the measured WFE phase. The remaining failure isolates the absent Serial SIO FIFO to core-local NVIC IRQ projection.",
+  "evidence": {
+    "run_report_sha256": "a01b3de0fff87040e3cc11ed7bc005f4e1926470c419b38f6cb0a9c365f840a9",
+    "uart_sha256": "ebf1319204956ca38da2b9d33a484d94deee0bbf37e61dc77f1081fd757dcfc1",
+    "final_png_sha256": "7e01bcffea90abde060581bb79eecf93c6f10badcb871f879692d644a00fb43e"
+  }
+}

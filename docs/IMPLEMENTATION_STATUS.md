@@ -209,7 +209,29 @@ SD再読取では`OUTPUT.BAK`も同じ内容で、`OUTPUT.TMP`は残っていな
 証拠と判定範囲は
 [`NEXT1_PICOEDIT_HARDWARE_CORRELATION.md`](NEXT1_PICOEDIT_HARDWARE_CORRELATION.md)および
 [`next1-picoedit-hardware-20260809-01/`](../firmware-validation/records/next1-picoedit-hardware-20260809-01/)にある。
-NEXT-1は完了し、次はNEXT-2のmulticore/audio capability範囲拡張である。
+NEXT-1は完了し、NEXT-2のmulticore/audio capability範囲拡張へ進んだ。
+
+NEXT-2AはPico SDK公開APIだけを使う新規app `picocalc-multicore`で、core 1 launch、双方向
+SIO FIFO固定4-vector、WFE/SEV、`SIO_IRQ_PROC1` deliveryを検査する。期待値は実装前に
+[`next2-multicore-v1.json`](../firmware-validation/contracts/next2-multicore-v1.json)へ凍結した。
+promoted backend `e985a9d7...`での最初のfirmware runはlaunch/FIFOがPASS、WFE/IRQがFAILとなり、
+[`next2-multicore-first-run-20260809-01/`](../firmware-validation/records/next2-multicore-first-run-20260809-01/)
+へ改変せず保存した。WFEの失敗はcore 0のdisplay/stdio mutex unlockが発生させるSDK SEVと判明し、
+app内のprepare-word barrierで明示SEV区間を分離した。IRQの失敗はSerial backendがSIO FIFOの
+`VLD/WOF/ROE` levelを受信core専用NVIC IRQへ投影していなかったことが原因であり、backend
+`38683d65800ef36026f674dd47228024d69eb5e7`で修正した。shared peripheral IRQ bitmapは使わず、
+core 0 IRQ15とcore 1 IRQ16を個別に再assertする。harnessはcore 1 NMI/HardFaultもfail-closedにする。
+
+正式app commit `9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837`のBINは
+`4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675`、UF2は
+`d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8`である。別々のclean clone
+2本から両artifactを再現した。active target `picocalc-multicore-r1`を通常CLIで3回実行し、
+152,548,085 cycle、615 ms、全phase PASS、exception/unsupported MMIO 0となった。raw report、UART、
+2-step timeline、snapshotは3回byte-identicalである。正式証拠は
+[`next2-multicore-r1-20260809-01/`](../firmware-validation/records/next2-multicore-r1-20260809-01/)
+に固定した。これによりSerialの限定multicore capabilityはsupportedへ移ったが、Threaded、両coreの
+同時LCD/PSRAM、spinlock contention timing、core 1 relaunch、DMA-paced PCMは未証明である。
+NEXT-2Aの残件は同一UF2による実機UART全文と最終PASS写真の相関であり、その後NEXT-2B audioへ進む。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う
 - `templates/rp2040-basic/`: BSP を利用する最小アプリ、音声モード切替、個別コピペ例

@@ -821,6 +821,110 @@
         "record": "firmware-validation/validations/picoedit-r1-r1.json",
         "sha256": "6dd2a03c31e8c2d1d675e6e92edefdd39636c721786e8e7984ea69b41a527c26"
       }
+    },
+    {
+      "id": "picocalc-multicore-r1",
+      "revision": 1,
+      "status": "active",
+      "source": {
+        "repo": "picocalc-multicore",
+        "commit": "9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+        "remote": null,
+        "bsp": "0.9.0",
+        "bsp_source_commit": "0224204f63051e18ca4bdc11fe3c2f245a70a79a",
+        "bsp_tree_sha256": "997a68966d6c38c786e7045a2b703f6c02a247b5e0a8956f0153d809080cb73c",
+        "app": "PicoCalc Multicore Conformance"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local <picocalc-multicore-source> <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach 9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-09T10:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-09T10:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "picocalc_app.bin",
+        "bin_sha256": "4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675",
+        "uf2_sha256": "d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "38683d65800ef36026f674dd47228024d69eb5e7",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 1000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/next2-multicore-v1.json",
+        "sha256": "079a7297ffa57624beefa5016d4b14e9ff0414eb473ce4164148fb5aeb10f986"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001",
+          "[NEXT2][MC][FIFO] status=pass vectors=4",
+          "[NEXT2][MC][WFE_SEV] status=pass before=1 after=2",
+          "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf",
+          "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"
+        ],
+        "normalized_report_sha256": "07fee5aa4ae03827fb721c2011f2e38a58ac362fc7692b443f7309b568a3fb29",
+        "timeline_sha256": "83e9982c5340b1d85e9101ea8eef8ea60663865c96d6c57c50cd57691717d19f",
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
+          {"path": "cycles", "op": "eq", "value": 152548085},
+          {"path": "elapsed_us", "op": "eq", "value": 615000},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "backend_build.commit", "op": "eq", "value": "38683d65800ef36026f674dd47228024d69eb5e7"},
+          {"path": "backend_build.dirty", "op": "eq", "value": false},
+          {"path": "exception", "op": "eq", "value": null},
+          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "uart.sha256", "op": "eq", "value": "b8fb0614c444ca7ba66164718367bd0f11c608122fc04c417e1bfd0e7844fee5"},
+          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff"},
+          {"path": "scenario.status", "op": "eq", "value": "pass"},
+          {"path": "scenario.steps_total", "op": "eq", "value": 2},
+          {"path": "scenario.steps", "op": "length_eq", "value": 2},
+          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
+          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
+          {"path": "sd.format", "op": "eq", "value": "fat32"},
+          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
+          {"path": "psram.attached", "op": "eq", "value": true}
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picocalc-multicore-r1-r1.json",
+        "sha256": "1c7eaea4bea6140c8d157349af210533509c767e758caeab13d3817d1fd66b5c"
+      }
     }
   ]
 }

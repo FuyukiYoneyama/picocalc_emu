@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-wfe-isolation-20260809-01",
+  "roadmap_package": "NEXT-2A",
+  "result": "fail",
+  "classification": "diagnostic_application_revision",
+  "application_commit": "75b6870245e9",
+  "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+  "bin_sha256": "b5de0330d3e9391e22e53dc0f2df5998a6159ed0450b6929034f69218a95f7ba",
+  "uf2_sha256": "a2722dd4def3284d205c7d6e3b1214cb57719279a57f06777e99431de1714b68",
+  "observed_phases": {
+    "launch": "pass",
+    "fifo": "pass",
+    "wfe_sev": "fail_before_stage_2",
+    "irq_proc1": "fail_count_0"
+  },
+  "diagnosis": "Replacing core0 sleep_ms with busy_wait did not remove the early SEV; an earlier SDK mutex_exit could still race with core1 arming.",
+  "evidence": {
+    "run_report_sha256": "6190168bfe9d08d7fd711bcd0ecd2dc31ce49a583ffc54a861ea41a19c2c8eaa",
+    "uart_sha256": "0feb8d2ea001be40cb27829c886a3ff472188a1f6dffa33fedbf6d2156e85210",
+    "final_png_sha256": "f6593d2885ebd5b48798eca26b5dfbe5221a161d7835aecaf9bd3820f40e641c"
+  }
+}

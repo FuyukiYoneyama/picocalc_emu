@@ -21,12 +21,11 @@
         "meaning": "The current accepted backend for normal regression. It preserves the R5 behavior contract and adds the promoted OPT1-B serial fast path."
       },
       "experimental_main": {
-        "commit": "04b2eb2fb26f126e848b5c041177324954a98290",
+        "commit": "38683d65800ef36026f674dd47228024d69eb5e7",
         "status": "unpromoted",
         "promoted": false,
-        "source_equivalent_to": "e58e67f1be69357edec0bd47e879039f47a42648",
-        "ci_run_id": 31299159125,
-        "meaning": "Observed main after the rejected OPT3-C candidate was reverted. The reverted tree is source-equivalent to the post-OPT3-B main. Main may advance during experiments and is never accepted merely because it is the branch head."
+        "ci_run_id": 31307835028,
+        "meaning": "Observed main after NEXT-2A added core-local Serial SIO FIFO IRQ projection and core 1 fatal-exception detection. The bounded multicore behavior is accepted by its own active target, but this commit does not replace the general promoted PicoTetris backend merely because it is branch head."
       }
     },
     "note": "Source is never vendored here. Historical targets retain exact backend pins in the target registry. The three roles deliberately separate physical-device correlation, current promotion and an unpromoted moving development head."
@@ -214,14 +213,18 @@
       "what": "The host and firmware backends hash the framebuffer identically",
       "detail": "Both define the canonical form as the raw RGB565 byte stream -- width * height * 2 bytes, row-major, little-endian per pixel -- so an application that draws the same picture under both produces the same digest in picocalc-run's framebuffer.rgb565_sha256 and in picocalc::host::framebuffer_sha256(). This is what lets a cheap host run be checked against a slow firmware one. Hashing a PNG instead would break the moment either encoder changed, without the picture changing.",
       "since_gate": "milestone-2"
+    },
+    {
+      "id": "multicore-serial-conformance",
+      "what": "Firmware launch of core 1, bidirectional SIO FIFO, WFE/SEV and core-local SIO IRQ delivery under the Serial execution model",
+      "detail": "Active target picocalc-multicore-r1 pins application 9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837 and backend 38683d65800ef36026f674dd47228024d69eb5e7. Three normal CLI runs are byte-identical in report, UART, scenario timeline and framebuffer snapshot; two clean clones reproduce the same BIN and UF2. The harness also fails closed on a core 1 NMI or HardFault.",
+      "limitation": "This proves the frozen NEXT-2A Serial workload only. Threaded execution, simultaneous LCD/PSRAM access from both cores, spinlock contention timing, core 1 reset/relaunch and DMA-paced PCM are not covered. Same-UF2 physical PicoCalc correlation is pending.",
+      "target": "picocalc-multicore-r1",
+      "evidence": "firmware-validation/records/next2-multicore-r1-20260809-01/record.json",
+      "since_gate": "NEXT-2A"
     }
   ],
   "unsupported": [
-    {
-      "id": "multicore",
-      "what": "Launching core 1 from firmware",
-      "detail": "The core exists and the SIO FIFO is modelled, but no conformance target starts it yet."
-    },
     {
       "id": "audio-output",
       "what": "PWM audio playback through DMA to a sample sink",

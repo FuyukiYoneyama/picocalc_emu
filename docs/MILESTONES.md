@@ -36,9 +36,11 @@ PSRAM正本、FAT32安全保存、RP2040 canonical buildと固定scenarioまで�
 最初のfirmware blind runは一度目で合格し、結果を保存しました。正式target `picoedit-r1`も登録・
 通常CLI再実行・clean clone BIN/UF2再現まで合格しました。同一artifact実機相関も
 2026-08-09に合格し、誤入力からの回復、FAT32安全保存、最終写真を含む証拠を固定しました。
-NEXT-1は完了し、NEXT-2のmulticore/audio capability範囲拡張へ進みました。NEXT-2Aの
-凍結backend初回runではlaunchとFIFOは合格し、WFE/SEVとIRQ_PROC1はfail-closedで不合格に
-なりました。期待値を変更せず、first-run証拠を保存して原因切り分け中です。
+NEXT-1は完了し、NEXT-2のmulticore/audio capability範囲拡張へ進みました。NEXT-2Aは、凍結backend
+初回runのlaunch/FIFO合格、WFE/SEV・IRQ_PROC1不合格を時点証拠として保持したまま原因を分離し、
+SDK由来のSEVとSerial SIO FIFO IRQ投影を修正しました。正式target `picocalc-multicore-r1`は
+3回決定一致、clean clone 2 build、core 1 fatal fail-closedに合格しています。エミュレーター側の
+正式受入は完了し、同一UF2のPicoCalc実機相関がNEXT-2Aの残件です。
 詳細な順序は本書の「現在の実行順序」に従います。完了済みMilestoneの記述は、
 基盤が存在することを示すものであり、個別アプリがその基盤へ接続済みであることまでは
 意味しません。
@@ -107,7 +109,7 @@ Firmware runnerが終了コード0を返すだけでも合格にしません。t
 | OPT2 | exact event batching | backend＋firmware regression | CPU running区間を含め、全boundary eventのcycle/orderを変えず、有意な性能改善を得る | **終了 2026-08-09（性能条件未達）**。OPT2-G UART laneまでexact候補を検証し、追加promotionなし。棄却候補はrevert・証拠固定済み。OPT3 CPU/decodeへ移行 |
 | OPT3 | CPU/decode高速化 | backend＋firmware regression | immutable XIPとmutable codeを分離し、exception/IRQ/invalidation/scheduler順序を変えずdecode/execute overheadを削減する | **OPT3-C完了・不採用 2026-08-09**。全event一致、中央値4.1542%改善だが5%未達でrevert。性能最適化は一旦区切る |
 | NEXT-1 | 新規blind app回帰 | 新規app＋3リポジトリ | PicoTetris固有の実装・scenarioへ最適化せず、受入条件を先に固定した新規単一core appをエミュレーターで完成させ、同一artifact実機相関で未知workloadへの一般化を測る | **完了 2026-08-09**。PicoEdit v1 blind契約、BSP 0.9.0、247 host assertions、PSRAM/FAT32/UI、canonical BIN/UF2を実装。初回blind run、`picoedit-r1`登録、CLI回帰、clean clone再現、同一UF2実機相関に合格。`next1-picoedit-hardware-20260809-01`へUART、SD入出力、backup、最終写真、誤入力回復を固定 |
-| NEXT-2 | capability範囲拡張 | backend＋新規app | multicore launch/SIO FIFO/WFE-SEV/IRQと、DMA-paced PCM sample sinkを別々のfail-closed gateで実装・相関する。設定/counter合格と実PCM出力を混同しない | **NEXT-2A初回fail-closed 2026-08-09**。実Pico SDK launch/FIFO/WFE-SEV/IRQ_PROC1の固定契約を実装前に凍結。凍結backend初回runはlaunch/FIFO合格、WFE-SEV/IRQ不合格として証拠固定。期待値を維持して原因切り分け中。NEXT-2B audioは独立契約として後続 |
+| NEXT-2 | capability範囲拡張 | backend＋新規app | multicore launch/SIO FIFO/WFE-SEV/IRQと、DMA-paced PCM sample sinkを別々のfail-closed gateで実装・相関する。設定/counter合格と実PCM出力を混同しない | **NEXT-2A emulator正式受入完了・実機相関待ち 2026-08-09**。初回fail-closed証拠を保持し、固定期待値のままWFE barrierとcore-local SIO IRQを修正。`picocalc-multicore-r1`は3回report/UART/timeline/snapshot一致、clean clone 2 build、core 1 fatal fail-closedに合格。次は同一UF2のUART全文＋最終PASS写真。NEXT-2B audioは独立契約として後続 |
 | NEXT-3 | negative conformance | backend＋実機証拠 | 実機で壊れる既知版をエミュレーターもFAILにし、正常版→PASS、故障版→FAIL、修正版→PASSの履歴とfalse-acceptance KPI母数を増やす | 未着手 |
 | NEXT-4 | 安定headless machine API | backend＋scenario runner | `run` / `step` / `run_until` / `input` / `observe` / `subscribe` / `snapshot`の小さなAPIを定義し、既存scenario runnerを利用者として載せる | 未着手 |
 

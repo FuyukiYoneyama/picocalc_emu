@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "record_id": "next2-multicore-r1-20260809-01",
+  "roadmap_package": "NEXT-2A",
+  "result": "pass",
+  "contract": {
+    "id": "next2-multicore-v1-20260809",
+    "path": "firmware-validation/contracts/next2-multicore-v1.json",
+    "sha256": "366c73583cdf94a788842a5891d546fbf29fbef016219485507e1d84be79dc03"
+  },
+  "target": {
+    "id": "picocalc-multicore-r1",
+    "revision": 1,
+    "contract_sha256": "3080caf99a9fcad210edab50ef895b2ce72ee5566a8340fde1b8419a96285ca7"
+  },
+  "application": {
+    "repo": "picocalc-multicore",
+    "commit": "9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+    "bin_sha256": "4d99a40413f31d3b83586083a036325bbe651bcba73297b101bd88a78b451675",
+    "uf2_sha256": "d9fe9beda7a1ba63c98cc811c0009cd8982d84e40f6e1e8066bf46fcc0337de8"
+  },
+  "backend": {
+    "repo": "picoem-picocalc",
+    "commit": "38683d65800ef36026f674dd47228024d69eb5e7",
+    "dirty": false,
+    "core1_fatal_exception_test": "a_core1_hardfault_stops_the_run_fail_closed",
+    "core1_fatal_exception_result": "pass"
+  },
+  "scenario": {
+    "path": "scenarios/next2-multicore-v1.json",
+    "sha256": "079a7297ffa57624beefa5016d4b14e9ff0414eb473ce4164148fb5aeb10f986"
+  },
+  "firmware_run": {
+    "target": {
+      "id": "picocalc-multicore-r1",
+      "revision": 1
+    },
+    "backend_commit": "38683d65800ef36026f674dd47228024d69eb5e7",
+    "runs": 3,
+    "all_pass": true,
+    "reports_byte_identical": true,
+    "uart_byte_identical": true,
+    "timelines_byte_identical": true,
+    "snapshots_byte_identical": true,
+    "stop_reason": "scenario_done",
+    "cycles": 152548085,
+    "elapsed_us": 615000,
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "uart_sha256": "b8fb0614c444ca7ba66164718367bd0f11c608122fc04c417e1bfd0e7844fee5",
+    "framebuffer_rgb565_sha256": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff",
+    "normalized_report_sha256": "07fee5aa4ae03827fb721c2011f2e38a58ac362fc7692b443f7309b568a3fb29",
+    "timeline_sha256": "83e9982c5340b1d85e9101ea8eef8ea60663865c96d6c57c50cd57691717d19f"
+  },
+  "reproducible_build": {
+    "clean_clone": true,
+    "builds_compared": 2,
+    "source_commit": "9dfb04e1ed6bb4600b4ce4ade6a3a6b72c321837",
+    "timestamp_used": "2026-08-09T10:00:00Z",
+    "generator": "Ninja",
+    "bin_reproducible": true,
+    "uf2_reproducible": true
+  },
+  "evidence": {
+    "run_report_sha256": "564c79b3435df2411f326c5d0beecc8b443c94ad401592b40d199fa25a6708a4",
+    "uart_sha256": "b8fb0614c444ca7ba66164718367bd0f11c608122fc04c417e1bfd0e7844fee5",
+    "snapshot_png_sha256": "9c452a44c611f47b58641a8570f43b4dd059ed56b461820f5303357774c0558c",
+    "run_directories": [
+      "firmware-validation/records/next2-multicore-r1-20260809-01/runs/run-1",
+      "firmware-validation/records/next2-multicore-r1-20260809-01/runs/run-2",
+      "firmware-validation/records/next2-multicore-r1-20260809-01/runs/run-3"
+    ]
+  },
+  "hardware_correlation": "pending"
+}

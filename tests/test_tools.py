@@ -715,6 +715,49 @@ raise SystemExit(code)
         )
         self.assertEqual(next2["status"], "fail")
 
+    def test_target_schema_verification_includes_next2_multicore_acceptance(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-acceptance"
+        )
+        self.assertEqual(next2["status"], "pass")
+        self.assertEqual(next2.get("target"), "picocalc-multicore-r1")
+        self.assertEqual(next2.get("runs"), 3)
+        self.assertEqual(next2.get("cycles"), 152548085)
+        self.assertIs(next2.get("core1_fatal_fail_closed"), True)
+        self.assertEqual(next2.get("hardware_correlation"), "pending")
+
+    def test_target_schema_rejects_next2_multicore_run_tamper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            uart_path = (
+                project
+                / "firmware-validation/records/next2-multicore-r1-20260809-01"
+                / "runs/run-2/uart.log"
+            )
+            uart_path.write_bytes(uart_path.read_bytes() + b"tampered\n")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next2 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next2:multicore-acceptance"
+        )
+        self.assertEqual(next2["status"], "fail")
+
     def test_target_schema_rejects_next1_seed_content_tamper(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)
