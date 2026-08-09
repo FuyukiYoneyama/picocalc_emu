@@ -1345,6 +1345,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt2c_exact_batching(checks, root)
     verify_opt2d_lever_comparison(checks, root)
     verify_opt2e_pio_pull_stall(checks, root)
+    verify_opt2f_stationary_pin_bulk(checks, root)
 
 
 def verify_opt0_behavior_contract(checks: List[Check], root: Path) -> None:
@@ -2355,6 +2356,184 @@ def verify_opt2e_pio_pull_stall(checks: List[Check], root: Path) -> None:
             backend_commit=candidate.get("backend_commit"),
             candidate_median_improvement_percent=performance.get("median_improvement_percent"),
             candidate_calls_single_cycle=candidate.get("all_accepted_calls_single_cycle"),
+        )
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        KeyError,
+        StopIteration,
+        statistics.StatisticsError,
+        json.JSONDecodeError,
+    ) as error:
+        add_check(checks, name, False, **error_details(error))
+
+
+def verify_opt2f_stationary_pin_bulk(checks: List[Check], root: Path) -> None:
+    """Verify the exact stationary pin-device bulk observation candidate and decision."""
+    name = "opt2-f:stationary-pin-bulk"
+    expected_artifact_hashes = {
+        "performance": "90ae0f5f87ed71ed7ea59db65ed0933856af42862a2048f4f8b357bf0889c08e",
+        "run_report": "02f20a7f15ec28535813fd832503a07907b68eee1ce13668d754f66423743d9c",
+        "behavior_trace": "5175fc0c58951f798bfe34345ad033a8b4647a88f55eeb9edc256d826295dfae",
+    }
+    expected_domains = {
+        "clock", "irq_exception", "pio_gpio", "psram", "lcd",
+        "dma_dreq", "timer_pwm", "serial_bus", "scenario_input",
+    }
+    try:
+        record_root = root / "firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01"
+        record = load_json(record_root / "record.json")
+        report = load_json(record_root / "run-report.json")
+        behavior = load_json(record_root / "behavior-trace.json")
+        performance = load_json(record_root / "performance-screening.json")
+        opt1b_behavior = load_json(
+            root / "firmware-validation/records/opt1-b-20260808-01/behavior-trace.json"
+        )
+        target = next(
+            item for item in load_json(root / "reference-projects/firmware-targets.json")["targets"]
+            if item.get("id") == "picotetris-opt1b"
+        )
+        artifacts = record["artifacts"]
+        exact = record["exactness"]
+        candidate = record["candidate"]
+        decision = record["decision"]
+        screening = record["performance_screening"]
+        target_record = record["target"]
+        baseline_median = performance.get("baseline", {}).get("median_wall_seconds")
+        candidate_median = performance.get("candidate", {}).get("median_wall_seconds")
+        improvement_percent = (
+            (baseline_median - candidate_median) / baseline_median * 100
+            if isinstance(baseline_median, (int, float))
+            and isinstance(candidate_median, (int, float))
+            else None
+        )
+        profile = behavior["behavior_projection"]["event_trace"]
+        profile_domains = {item.get("name") for item in profile.get("domains", [])}
+
+        aligned = all((
+            record.get("record_id") == "opt2-f-stationary-pin-bulk-20260809-01",
+            record.get("result") == "rejected",
+            record.get("optimization_status") == "reverted",
+            record.get("opt2_overall_status") == "incomplete",
+            record.get("roadmap_package") == "OPT2-F",
+            target_record.get("id") == target.get("id") == "picotetris-opt1b",
+            target_record.get("revision") == target.get("revision") == 5,
+            target_record.get("firmware_sha256")
+            == target.get("artifacts", {}).get("bin_sha256"),
+            target_record.get("scenario_sha256") == target.get("scenario", {}).get("sha256"),
+            candidate.get("backend_commit")
+            == report.get("backend_build", {}).get("commit"),
+            report.get("firmware", {}).get("sha256") == target_record.get("firmware_sha256"),
+            candidate.get("backend_dirty") is False,
+            candidate.get("feature") == "stationary-pin-bulk-prototype",
+            candidate.get("prerequisite_commit") == "eea6eaaa188aed68fa6f86b5d6a629177348c528",
+            candidate.get("candidate_revert_commit") == "cdb758408914883b0ac4a2ca7c8338cebd8b2da7",
+            report.get("schema_version") == 8,
+            report.get("backend_build", {}).get("dirty") is False,
+            report.get("verdict", {}).get("status") == "pass",
+            report.get("stop_reason") == exact.get("stop_reason") == "scenario_done",
+            report.get("cycles") == exact.get("cycles") == 927_528_660,
+            report.get("elapsed_us") == exact.get("elapsed_us") == 3_715_000,
+            report.get("scenario", {}).get("status") == "pass",
+            len(report.get("scenario", {}).get("steps", [])) == exact.get("scenario_steps_passed") == 85,
+            exact.get("scenario_steps_total") == 85,
+            behavior.get("schema_version") == 1,
+            behavior.get("normal_report_schema_version") == 8,
+            behavior.get("backend_build", {}).get("commit") == candidate.get("backend_commit"),
+            behavior.get("backend_build", {}).get("dirty") is False,
+            behavior.get("mode") == "correctness_trace_on",
+            behavior.get("valid_for_wall_time") is False,
+            behavior.get("behavior_sha256") == exact.get("behavior_sha256"),
+            behavior.get("behavior_projection") == opt1b_behavior.get("behavior_projection"),
+            profile.get("schema_version") == 2,
+            profile.get("sha256") == exact.get("event_stream_sha256"),
+            profile.get("total_events") == exact.get("event_stream_total_events"),
+            set(profile_domains) == expected_domains,
+            exact.get("all_nine_event_domains_match_opt1b") is True,
+            exact.get("uart_sha256") == report.get("uart", {}).get("sha256"),
+            exact.get("framebuffer_rgb565_sha256")
+            == report.get("framebuffer", {}).get("rgb565_sha256"),
+            exact.get("psram_tick_count") == report.get("psram", {}).get("tick_count"),
+            performance.get("schema_version") == 1,
+            performance.get("measurement") == "OPT2-F stationary pin-device bulk observation screening",
+            performance.get("valid_for_wall_time") is True,
+            performance.get("result") == "rejected_below_threshold",
+            performance.get("host", {}).get("cpu_affinity") == 0,
+            performance.get("host", {}).get("execution_order")
+            == "alternating clean baseline/candidate pairs",
+            performance.get("baseline", {}).get("backend_commit")
+            == "a7939e550aee3f604e0e052159243bf0872fc285",
+            performance.get("baseline", {}).get("backend_dirty") is False,
+            performance.get("candidate", {}).get("backend_commit")
+            == candidate.get("backend_commit"),
+            performance.get("candidate", {}).get("backend_dirty") is False,
+            performance.get("promotion_threshold_percent") == 5.0,
+            performance.get("formal_ten_run_measurement_performed") is False,
+            performance.get("exact_outputs_identical_across_all_six_measured_runs") is True,
+            screening.get("paired_runs") == 3,
+            len(performance.get("baseline", {}).get("wall_seconds", [])) == 3,
+            len(performance.get("candidate", {}).get("wall_seconds", [])) == 3,
+            baseline_median == statistics.median(
+                performance.get("baseline", {}).get("wall_seconds", [])
+            ) == screening.get("baseline_median_wall_seconds") == 26.18,
+            candidate_median == statistics.median(
+                performance.get("candidate", {}).get("wall_seconds", [])
+            ) == screening.get("candidate_median_wall_seconds") == 26.00,
+            math.isclose(
+                screening.get("candidate_median_improvement_percent"),
+                0.6875477463712747,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            math.isclose(
+                performance.get("median_improvement_percent"),
+                improvement_percent,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ),
+            screening.get("promotion_improvement_threshold_percent") == 5.0,
+            screening.get("formal_ten_run_measurement_performed") is False,
+            screening.get("all_six_measured_runs_exact") is True,
+            candidate.get("final_revert_commit")
+            == "2671d0476c1a4286de7e3666bf91e20e27613854",
+            candidate.get("final_content_matches_commit")
+            == "a7939e550aee3f604e0e052159243bf0872fc285",
+            candidate.get("outer_calls") == 23_199_887,
+            candidate.get("pio_system_cycles") == 371_982_564,
+            candidate.get("update_gpio_calls_elided") == 37_012_745,
+            candidate.get("pio_block_calls") == 302_454_671,
+            candidate.get("pio_ticks") == 185_895_678,
+            decision.get("accepted") is False,
+            decision.get("active_target_changed") is False,
+            decision.get("validation_attestation_added") is False,
+            decision.get("hardware_correlation_required") is False,
+            decision.get("next_investigation") == "UART deadline promotion",
+            decision.get("cpu_block_work_deferred_to") == "OPT3",
+            record.get("ci", {}).get("repository") == "FuyukiYoneyama/picoem-picocalc",
+            record.get("ci", {}).get("run_id") == 31_285_484_757,
+            record.get("ci", {}).get("head_sha")
+            == candidate.get("final_revert_commit", candidate.get("revert_commit")),
+            record.get("ci", {}).get("conclusion") == "success",
+            all(
+                artifacts.get(key + "_sha256") == digest
+                and artifacts.get(key) is not None
+                and (record_root / artifacts.get(key)).is_file()
+                and sha256(record_root / artifacts.get(key)) == digest
+                for key, digest in expected_artifact_hashes.items()
+            ),
+            (record_root / artifacts.get("notes", "")).is_file(),
+        ))
+        add_check(
+            checks,
+            name,
+            aligned,
+            target=target_record.get("id"),
+            backend_commit=candidate.get("backend_commit"),
+            paired_runs=screening.get("paired_runs"),
+            candidate_median_improvement_percent=screening.get("candidate_median_improvement_percent"),
+            candidate_pio_system_cycles=candidate.get("pio_system_cycles"),
         )
     except (
         OSError,

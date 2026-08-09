@@ -136,10 +136,15 @@ CPU/decode block workはOPT3とした。証拠は
 進めた。candidate `a7ac902`は85/85、cycle、behavior/event全9 domain、UART、framebuffer、
 PSRAM tickを完全一致させたが、実workloadの371,982,564 callがすべて1 cycleだった。clean paired
 screeningの中央値改善は25.70秒から25.64秒、0.2335%で5%基準に届かず、`a7939e5`でrevertした。
-active targetはOPT1-Bのままである。次のPIO調査には、外側のpin/device観測をまとめる前提となる
-stationary pin-device bulk observation契約が必要である。詳細は
+active targetはOPT1-Bのままである。続くOPT2-Fはstationary PIOと、明示opt-inしたPSRAM/LCD/SDの
+同一pin sample観測を一つのexact contractへまとめた。candidate `9ec1988`は全eventを一致させ、
+23,199,887 outer callで37,012,745回の重複`update_gpio`を削減した。しかしCPU 0固定clean paired
+中央値は26.18秒から26.00秒、0.6875%改善で5%条件未達だった。`cdb7584`と`2671d04`でrevertし、active
+targetはOPT1-Bのままである。次候補はOPT2-Dで次点だったUART deadline promotionとする。詳細は
 [`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)と
 [`opt2-e-pio-pull-stall-20260809-01/`](../firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/)
+、[`OPT2_F_STATIONARY_PIN_DEVICE_BULK.md`](OPT2_F_STATIONARY_PIN_DEVICE_BULK.md)と
+[`opt2-f-stationary-pin-bulk-20260809-01/`](../firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01/)
 にある。
 
 - `bsp/`: 実働プロジェクトを基準にした LCD二系統・キーボード・SD/FatFS・音声・PSRAM BSP。推奨デフォルトのBはPIO blocking/RGB565、互換・診断用Aはloader-style SPI/RGB666 3-byte containerを使う

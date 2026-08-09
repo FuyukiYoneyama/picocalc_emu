@@ -1,6 +1,6 @@
 # Firmware emulator高速化計画
 
-**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-E PIO pull-stall prototypeは正確性合格・性能不採用・revert、OPT2継続中
+**状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。OPT2-F stationary pin-device bulk prototypeは正確性合格・性能不採用・revert、次はUART deadline promotion
 **基準日:** 2026-08-06  
 **対象:** `picoem-picocalc`のRP2040 Serial実行と、`picocalc_emu`のfirmware regression  
 **性能基準:** [`R5_REALTIME_PERFORMANCE.md`](R5_REALTIME_PERFORMANCE.md)
@@ -364,6 +364,21 @@ trace OFFのclean 3 paired screeningはbaseline中央値25.70秒、candidate 25.
 CPU/decode block cacheはOPT3に残す。詳細は
 [`OPT2_E_PIO_PULL_STALL_PROTOTYPE.md`](OPT2_E_PIO_PULL_STALL_PROTOTYPE.md)に固定した。
 
+### 9.6 OPT2-F stationary pin-device bulk prototype（完了、不採用）
+
+OPT2-Eの静止PIO証明に、PSRAM、PIO LCD、SPI side-band deviceの明示opt-in契約を加え、同一pin
+sampleの最初だけを通常処理し、残りを閉形式でまとめた。未知device、active/mixed stall、`WAIT`、
+FIFO refillは従来per-cycle経路へfail-closedでfallbackした。
+
+clean candidate `9ec1988ec4c5c4fa240a1f409ac9524364e017de`はcycle、85/85、behavior SHA、
+173,498,680 event、全9 domain、UART、framebuffer、PSRAM tickをOPT1-Bと完全一致させた。
+23,199,887 outer callで37,012,745回の重複`update_gpio`を削減したが、CPU 0固定clean 3 pairedの
+中央値はbaseline 26.18秒、candidate 26.00秒、短縮0.687547746%で5%条件未達だった。
+
+候補は`cdb7584`、前提PIO reapplyは`2671d04`でrevertし、active targetとpinは変更していない。
+次はOPT2-Dで次点だったUART deadline promotionを試す。CPU/decode block cacheはOPT3に残す。
+詳細は[`OPT2_F_STATIONARY_PIN_DEVICE_BULK.md`](OPT2_F_STATIONARY_PIN_DEVICE_BULK.md)に固定した。
+
 ## 10. OPT3: CPU/decode高速化
 
 event schedulingを安定させた後に、CPU側を最適化する。
@@ -439,7 +454,7 @@ OPT2以降は原則として最初のR5相関後に行う。R5で基準modelの�
 | 4 | OPT1-A第一候補 | **promoted完了** | 正確性・性能gateとR5同一artifact実機相関に合格 |
 | 5 | R5実機相関 | **完了** | `r5-hardware-20260808-01`に67/67、UART、音、最終写真、進捗を固定 |
 | 6 | OPT1-B serial fast-path gate | **promoted完了** | 全digest一致、主workload 6.42%短縮、追加workload合格、R5既存実機相関との同値性 |
-| 7 | OPT2 exact event batching | **継続中**（OPT2-E限定PIO prototypeは正確性合格・性能不採用・revert。次はstationary pin-device bulk observation契約） | 全boundary eventのcycle/order一致＋有意な性能改善 |
+| 7 | OPT2 exact event batching | **継続中**（OPT2-F stationary pin-device bulkは正確性合格、性能0.6875%で不採用・revert。次はUART deadline promotion） | 全boundary eventのcycle/order一致＋有意な性能改善 |
 | 8 | OPT3 CPU/decode | R5後 | cache invalidationを含む完全回帰＋有意な性能改善 |
 
 依存関係は次のとおりである。

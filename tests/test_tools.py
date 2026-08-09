@@ -516,6 +516,22 @@ raise SystemExit(code)
         self.assertEqual(opt2e["backend_commit"], "a7ac9020b9861c1c4803187b7092512b65f60835")
         self.assertTrue(opt2e.get("candidate_calls_single_cycle"))
 
+    def test_target_schema_verification_includes_opt2f_stationary_pin_bulk(self):
+        completed = run(VERIFY, "--scope", "target-schema", "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0, report)
+        opt2f = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt2-f:stationary-pin-bulk"
+        )
+        self.assertEqual(opt2f["status"], "pass")
+        self.assertEqual(opt2f["target"], "picotetris-opt1b")
+        self.assertEqual(opt2f["backend_commit"], "9ec1988ec4c5c4fa240a1f409ac9524364e017de")
+        self.assertEqual(opt2f.get("candidate_median_improvement_percent"), 0.6875477463712747)
+        self.assertEqual(opt2f.get("paired_runs"), 3)
+        self.assertEqual(opt2f.get("candidate_pio_system_cycles"), 371_982_564)
+
     def test_target_schema_rejects_opt2e_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)
@@ -543,6 +559,35 @@ raise SystemExit(code)
             if check["name"] == "opt2-e:pio-pull-stall"
         )
         self.assertEqual(opt2e["status"], "fail")
+
+    def test_target_schema_rejects_opt2f_exactness_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            record_path = (
+                project
+                / "firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01/record.json"
+            )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["exactness"]["cycles"] += 1
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(report["status"], "fail")
+        opt2f = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "opt2-f:stationary-pin-bulk"
+        )
+        self.assertEqual(opt2f["status"], "fail")
 
     def test_target_schema_rejects_opt2c_exactness_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
