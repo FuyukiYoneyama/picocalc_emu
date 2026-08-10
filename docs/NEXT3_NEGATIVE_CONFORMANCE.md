@@ -11,7 +11,9 @@ positive control gate後、fault Bを許可されたwriter CS境界とidentity�
 clean cloneで一致するBIN/UF2/source bundleとoracleを固定した。uf2loader実機先行結果はv1と同じ
 rotated-bit症状となり、solid 3色とpattern mismatch数が凍結oracleに一致しなかった。Fault Bも
 `inconclusive`、negative母数増分0とし、エミュレーター初回runは行わない。observer差は不一致の
-十分条件ではなかったため、旧証拠との差に残る未固定変数を次に調査する。
+十分条件ではなかった。実機後source gap分析では、旧160x160 tiling、runtime初期化順とactive audio IRQ、
+回収不能な旧toolchainを残差として順位付けした。複数の未固定変数を重ねた再試行はせずv2を閉じ、次は
+決定的なSD CMD8 bad-CRC negative候補を事前設計する。
 
 ## 目的
 
@@ -39,6 +41,7 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2 Fault B source bundle: `provenance/picocalc-next3-lcd-fault-v2-b.bundle`
 - v2 Fault B実機結果: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/record.json`
 - v2 Fault B実機後KPI: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/kpi.json`
+- v2実機後source gap分析: `firmware-validation/records/next3-v2-gap-analysis-20260810-01/record.json`
 
 ## 分類
 
@@ -246,6 +249,26 @@ inconclusive 2件、hardware-confirmed negative case 0件であり、率は引�
 Fault Bのエミュレーターrunは未実行で、今後もこの候補では実行しない。UARTに残った
 `window_cs=held_from_caset_through_ramwr`はA1由来の古い説明で、canonical B sourceと矛盾するため
 writer modeの証拠から除外した。source commitとA1→B diffが実際のCS-separated writerの正典である。
+
+## NEXT3-7: v2実機後source gap分析と候補切替
+
+旧`5b12a7c`と現行Fault Bを再比較し、次を確定した。
+
+- v1 hardware-SPI observerとv2 historical-SIO observerは、現行runtimeで同一のrotated-bit値を返した。
+  observer差は旧oracle不一致の十分条件ではない。
+- 最大のsource差は、旧`fill_rect()`が最大160x160 tileごとにwindow/CS境界を作り、現行Bが矩形全体を
+  1 windowにする点である。
+- 旧runtimeにはPSRAM probeとaudio DMA/PWMがなくLCD init直後に検証した。現行runはaudio IRQが動作中である。
+- 旧SDK commit、toolchain、BIN、UF2は回収不能であり、同一artifactとして追加変数を完全には固定できない。
+- GPIO初期化の細部にも差はあるが、SIO setupと観測idle levelは一致し、優先度は低い。
+
+この分析は原因候補を順位付けするが、歴史的artifactの同一性を新たに証明しない。tiling、runtime、toolchainを
+重ねて旧症状へ合わせることはpost-hoc oracle fittingになるため行わない。v2は`inconclusive`で閉じ、Fault B
+emulator runは禁止、oracle不変、negative母数0のままとする。
+
+次はタイミング依存のLCD観測を離れ、SD SPI command CRCを使う決定的なnegative caseを事前設計する。
+第一候補はCMD8のCRCを意図的に壊し、正常版／fault版／修正版、hardware-first fault、理由一致判定を固定する。
+この段階は設計のみで、fault実装や実機操作はまだ行わない。
 
 ## CI運用
 

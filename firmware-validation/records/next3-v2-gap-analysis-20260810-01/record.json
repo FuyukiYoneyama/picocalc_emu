@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-v2-gap-analysis-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "stage": "post_hardware_source_gap_analysis",
+  "inputs": {
+    "historical_source_commit": "5b12a7cbff45a928c440a70a4e3a77750c1daa13",
+    "historical_uart_sha256": "4f0d4de4a58b5e78c80683e28a1406cad1feacef89947d13f906440f8a01d1fb",
+    "v1_hardware_record": "firmware-validation/records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/record.json",
+    "v1_hardware_record_sha256": "60187ecb99c179ae7d234f02d99dbee18ca641f8793911265265b699d8287a14",
+    "v2_fault_source_commit": "3a073fbf206b02993dd80a0a7158c1e3c865efff",
+    "v2_hardware_record": "firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/record.json",
+    "v2_hardware_record_sha256": "917ae54b010cded047c3875178a5884d9dcf8632484bdc4af83db053a88cce75"
+  },
+  "confirmed_findings": [
+    "v1 hardware-SPI RAMRD and v2 historical-SIO RAMRD produced the same red=7c8000, green=007c80, blue=80007c, and pattern=7c8000 values under the current BSP runtime",
+    "therefore changing only the RAMRD observer was not sufficient to recover the historical all-solid-pass and three-pattern-mismatch oracle",
+    "historical fill_rect divided rectangles into at most 160x160 tiles and opened a window for every tile, while current Fault B opens one window for each complete rectangle",
+    "historical runtime initialized keyboard before LCD and did not initialize a PSRAM driver or audio DMA/PWM path; current runtime initializes LCD, probes PSRAM, initializes keyboard, starts audio, waits 250 ms, and then verifies LCD",
+    "the current log had audio irq=104 before LCD verification, so the one-microsecond SIO loop can be interrupted even though A1 proves this does not break a correct writer",
+    "historical SDK commit, compiler, binutils, CMake, generator, BIN hash, and retained UF2 are unavailable; current artifacts use SDK 2.2.0 commit a1438dff and GCC 13.2.1",
+    "historical and current coordinates, expected colours, mismatch calculation, SIO bit order, edge sequence, dummy counts, and SPI deinit/restore are equivalent",
+    "Fault B UART text window_cs=held_from_caset_through_ramwr is stale and conflicts with the canonical CS-separated source; it is not transaction evidence"
+  ],
+  "ranked_remaining_variables": [
+    {
+      "rank": 1,
+      "variable": "160x160 fill tiling and resulting window/CS boundary sequence",
+      "priority": "highest",
+      "reason": "it directly changes the number and ordering of command-state transitions exercised by the CS fault"
+    },
+    {
+      "rank": 2,
+      "variable": "runtime initialization order and active audio DMA/IRQ during RAMRD",
+      "priority": "high",
+      "reason": "historical evidence had no active audio path or PSRAM probe and began LCD verification immediately after LCD init"
+    },
+    {
+      "rank": 3,
+      "variable": "unrecoverable historical SDK/toolchain/build environment",
+      "priority": "high_but_not_fully_testable",
+      "reason": "GPIO/SPI inline code and microsecond-loop timing may differ, but the original binary and exact toolchain were not preserved"
+    },
+    {
+      "rank": 4,
+      "variable": "GPIO direction and pull initialization before SPI function selection",
+      "priority": "medium_low",
+      "reason": "the source differs, but SIO-mode setup and observed idle levels agree"
+    }
+  ],
+  "decision": {
+    "v2_classification": "inconclusive",
+    "v2_emulator_run_allowed": false,
+    "change_historical_oracle": false,
+    "continue_v2_by_combining_uncontrolled_changes": false,
+    "reason": "two reproducible LCD fault artifacts have failed for a broader symptom than the frozen historical oracle, and the original artifact/build environment cannot be recovered",
+    "next_candidate": "predesign a deterministic SD SPI command-CRC negative case, beginning with CMD8 bad CRC, with correct/fault/fixed artifacts and hardware-first fault execution",
+    "next_candidate_status": "design_only_not_implemented"
+  }
+}

@@ -667,7 +667,13 @@ raise SystemExit(code)
         )
         self.assertEqual(next3.get("v2_fault_hardware_status"), "hardware_observed")
         self.assertEqual(next3.get("v2_fault_classification"), "inconclusive")
-        self.assertEqual(next3.get("v2_next_step"), "historical_oracle_gap_analysis")
+        self.assertEqual(
+            next3.get("v2_next_step"), "predesign_sd_cmd8_crc_negative_case"
+        )
+        self.assertEqual(
+            next3.get("v2_top_remaining_variable"),
+            "160x160 fill tiling and resulting window/CS boundary sequence",
+        )
         self.assertIs(next3.get("v2_emulator_run_allowed"), False)
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):

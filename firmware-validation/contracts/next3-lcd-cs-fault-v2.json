@@ -67,9 +67,24 @@
   },
   "cause_analysis": {
     "confirmed_major_confounder": "v1 reproduced the historical write-side CS boundaries but retained a different RAMRD observer, so it was not the complete measurement setup that produced the frozen historical oracle",
-    "causal_status": "the observer difference is confirmed, but it cannot be declared the sole cause of the oracle mismatch until the controlled v2 experiment is measured",
+    "causal_status": "the controlled v2 hardware run reproduced the same rotated-bit symptom as v1, so the observer difference was not sufficient to recover the historical oracle",
     "unconfirmed_inference": "the v1 raw values are exactly the values produced by a one-bit right rotation of the RGB666 18-bit stream; this is consistent with a read sampling or phase difference, but the electrical mechanism has not been measured and must not be treated as confirmed",
     "backend_risk_hypothesis": "because the promoted LCD model preserves command state across CS pulses, it may accept the historical faulty write framing; this is a prediction, not an emulator result"
+  },
+  "post_hardware_analysis": {
+    "record": "firmware-validation/records/next3-v2-gap-analysis-20260810-01/record.json",
+    "record_sha256": "787b3c0226cbd65ea95d1149ee1f788952cb1fa14eea11a3e40cde5df7529e8f",
+    "outcome": "the historical SIO observer was not sufficient to reproduce the frozen historical oracle",
+    "highest_ranked_remaining_variable": "160x160 fill tiling and resulting window/CS boundary sequence",
+    "other_material_variables": [
+      "runtime initialization order and active audio DMA/IRQ during RAMRD",
+      "unrecoverable historical SDK/toolchain/build environment",
+      "GPIO direction and pull initialization before SPI function selection"
+    ],
+    "v2_closed": true,
+    "emulator_run_allowed": false,
+    "historical_oracle_changed": false,
+    "next_action": "predesign_sd_cmd8_crc_negative_case"
   },
   "controlled_experiment": {
     "independent_variable": "write-side CS framing for CASET, RASET, RAMWR, and pixel payload",

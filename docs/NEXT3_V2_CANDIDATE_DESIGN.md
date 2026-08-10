@@ -3,7 +3,9 @@
 **状態（2026-08-10）:** A1はemulator／実機ともPASSした。Fault Bも再現可能artifactとして固定し、
 uf2loaderで実機先行実行したが、凍結oracleには一致しなかった。実測はred/green/blue solidが各4 mismatch、
 patternも`0x7c00`×4・4 mismatchで、v1と同じ広い症状だった。この候補は`inconclusive`として停止し、
-Fault Bのエミュレーター実行は解禁しない。oracleも変更しない。
+Fault Bのエミュレーター実行は解禁しない。oracleも変更しない。実機後のsource gap分析も完了し、
+observer差が十分条件でないこと、最大の残差が旧`fill_rect()`の160x160 tilingであることを確認した。
+複数の未固定変数を重ねた再試行はせず、次は決定的なSD CMD8 CRC negative候補を事前設計する。
 
 機械可読な正典は
 `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`である。本書は判断根拠と人が読む
@@ -126,6 +128,30 @@ v1 oracle不一致を説明する十分条件ではなかった。旧`5b12a7c`�
 UARTの`window_cs=held_from_caset_through_ramwr`はA1から残った古い診断文字列で、Fault B sourceの実際の
 CS-separated writerと矛盾する。writer authorityはcanonical source diffであり、この文字列はtransaction
 証拠に使わない。後続候補ではwriter modeを独立して正しく出力する。
+
+### 実機後のsource gap分析
+
+旧`5b12a7c`、v1、v2 Fault Bを再比較した。v1のhardware-SPI RAMRDとv2のhistorical-SIO RAMRDは、
+現行runtime上で同じrotated-bit値を返した。したがってobserver差は実在したが、旧oracleを回復する
+十分条件ではなかった。
+
+残る差は次の順で評価した。
+
+1. **最高:** 旧`fill_rect()`は矩形を最大160x160へ分割し、tileごとにwindowとCS境界を作る。現行Bは
+   矩形全体を1 windowにするため、CS faultが通るcommand/window列が直接異なる。
+2. **高:** 旧runtimeはkeyboard→LCDの直後に検証し、PSRAM probeとaudio pathを持たない。現行runtimeは
+   PSRAMをprobeし、audio DMA/PWMを開始して250 ms後に検証する。実測では検証前にaudio IRQが104回ある。
+3. **高だが回収不能:** 旧SDKの正確なcommit、compiler/binutils/CMake/generator、BIN、UF2が残っていない。
+4. **中〜低:** SPI function選択前のSCK/MOSI directionとMISO pull初期化が異なる。ただしSIO設定と
+   観測idle levelは一致する。
+
+座標、期待色、mismatch計算、SIO bit order、edge、dummy count、SPI restoreは同等である。差分記録は
+`firmware-validation/records/next3-v2-gap-analysis-20260810-01/record.json`に固定した。
+
+160x160 tilingだけを次に試せば原因の切り分けにはなるが、旧artifactとbuild環境を復元できない以上、
+tiling、runtime、toolchainを順次または同時に変えてもnegative caseの同一性を証明できない。このためv2を
+`inconclusive`で閉じ、追加の人手hardware retryを要求しない。次候補は、結果がタイミングや表示observerに
+依存しないSD SPIのCMD8 bad-CRC caseを、正常版／fault版／修正版とhardware-first順序で事前設計する。
 
 ### A2: fixed
 
