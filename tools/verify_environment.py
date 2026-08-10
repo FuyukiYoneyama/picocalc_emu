@@ -1837,6 +1837,20 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         / "records/next3-sd-cmd8-crc-b-hardware-20260810-01/evidence/uf2loader-uart.log",
         "sd_crc_fault_hardware_photo": base
         / "records/next3-sd-cmd8-crc-b-hardware-20260810-01/evidence/final.jpg",
+        "sd_crc_fault_first": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/record.json",
+        "sd_crc_fault_first_notes": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/notes.md",
+        "sd_crc_fault_first_kpi": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/kpi.json",
+        "sd_crc_fault_first_report": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/run-report.json",
+        "sd_crc_fault_first_uart": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/uart.log",
+        "sd_crc_fault_first_scenario": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/scenario.json",
+        "sd_crc_fault_first_snapshot": base
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/snapshots/next3-sd-b-first.png",
         "v2_baseline": base / "records/next3-v2-a1-20260810-01/record.json",
         "v2_hardware": base
         / "records/next3-v2-a1-hardware-20260810-01/record.json",
@@ -1870,7 +1884,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/record.json",
         "pre_a1_kpi": base / "records/next3-hardware-attempt-20260810-01/kpi.json",
         "current_kpi": base
-        / "records/next3-sd-cmd8-crc-a1-hardware-20260810-01/kpi.json",
+        / "records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/kpi.json",
         "hardware_notes": base
         / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/notes.md",
         "hardware_uart": base
@@ -1891,7 +1905,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
         "v2_contract": "b0df0227b538c9efd507d6653547c5d9f3d543d2b1b673b5198f8554e229c680",
-        "sd_crc_contract": "d55004409c491acfd64c3c992fff9a16325d66567c9bdc54ee3cf6ddfa1ac3c2",
+        "sd_crc_contract": "f67018000b9808af90ac685fe01e5d4b10ce55e9c9041a47928f730941b8eae2",
         "sd_crc_baseline": "eed8e205bcb30d87fa6079f9071a29d352f7aac7e6a83ca130d7d7220be555d6",
         "sd_crc_baseline_notes": "4fd7cad89bedffc96eec8b68a6d483d3b244e0fdf4b85f5e231abb596f6a0792",
         "sd_crc_baseline_procedure": "7f1bd58447124c43c7e04298d6c269e8030b2d433724848a57986e4e3f4f91ed",
@@ -1911,6 +1925,13 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "sd_crc_fault_hardware_notes": "7743db67b16e61e2ea68368657b6ee16174ef4782f2f429de40c352eb64a8ba9",
         "sd_crc_fault_hardware_uart": "fe807c7c440f4ea8e73996d87381a6491b5279db59a244f02424260e6bdaa637",
         "sd_crc_fault_hardware_photo": "ad7d4c28f7ca17d43420dd5d71eaaadbdf9e84b9fbc0b66884da3a08c788c13d",
+        "sd_crc_fault_first": "951d954afdb24fcc3df2826a651f8c385d9f664a67617c98c12aa03efc602297",
+        "sd_crc_fault_first_notes": "a552963292c200b53362260d064eb8cc0a576316842b282dfdebe63cf7a696d4",
+        "sd_crc_fault_first_kpi": "af5ac4aac9e4d273f795e4cad553388449175fa3ef319149eeee0fd02e60e1ed",
+        "sd_crc_fault_first_report": "ad13793fc8124d325d913600404f7c710f132a02f6c4d0a91f0a343fae65d047",
+        "sd_crc_fault_first_uart": "b630efd489bf4cd2119f8979296b71873eb011b711f470258336d247de4a212b",
+        "sd_crc_fault_first_scenario": "360ec5eb4809e0646532dd31a78886cd5366e0d4adb13686f8590288ba83bcda",
+        "sd_crc_fault_first_snapshot": "cbf66f14a737bb86d110c9b8dbc24c94c71c3be8545964d47181b60c45a4e04b",
         "v2_baseline": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a",
         "v2_hardware": "6512202c3add131141dcabfddf25b67d3973bf406c07e4b5bdff05717ab35bd5",
         "v2_hardware_notes": "73c91e56c71cb02f347126c704819f5c1d2e837a6814d2bbbcda876f0f88ccf0",
@@ -1932,7 +1953,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "pre_hardware_kpi": "4f98fff5d79c6cc355a52c8a360a01021209dbca3f5be0d138c06a84ba844bb5",
         "fault_hardware": "60187ecb99c179ae7d234f02d99dbee18ca641f8793911265265b699d8287a14",
         "pre_a1_kpi": "0fbcc19e330032936048fb350a3ccc863b537d49e4d6353c05134676328f69db",
-        "current_kpi": "f6f28dfdb733826b01276679e95195594d8c0bb418588109af87ec92f8915051",
+        "current_kpi": "af5ac4aac9e4d273f795e4cad553388449175fa3ef319149eeee0fd02e60e1ed",
         "hardware_notes": "21611323ed4552e7718d06534efc4ce6e1205c4ac841f6217787632604c6986d",
         "hardware_uart": "e3187f9a2ce38eaae9361a0a2e1723ef561f7716d9d51f67cc03909fff755550",
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
@@ -1940,9 +1961,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "v2_fault_bundle": "876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0",
         "sd_crc_baseline_bundle": "ed985de566638e07e0a20e974b351646729b434a6bb05edd349dc5fb162a05da",
         "sd_crc_fault_bundle": "3e3fded89db4d4feb9a0d1c810d388e18ccc49c698ab466a371e3c2c94f1739a",
-        "document": "f25f738a884ebdb5064fdc0b509b90e2e17dce01d727f3dcbde7482ac7c4fc06",
+        "document": "6c3917f65a290f49a21d9a269bcc02ef99f950c011ab51104ede031c2013989f",
         "v2_document": "5f0cc1a739cbc002c0097be5545ee953edb8dd05c4a71ae3f5991950683ae704",
-        "sd_crc_document": "02041dcecc626bf5e17afb69f89d194d0e518951831f69a47594effc50496fc7",
+        "sd_crc_document": "98a0e3a999acfe367160cfce62cdc0897c5f0dfe03a93091a22c31161640dfc0",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1981,6 +2002,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         inconclusive: int,
         records: int,
         positive_count: int = 5,
+        hardware_cases: int = 0,
+        correct_detections: int = 0,
+        false_accepts: int = 0,
     ) -> bool:
         if not isinstance(snapshot, dict):
             return False
@@ -1989,6 +2013,25 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         rates = snapshot.get("rates", {})
         positive_records = positive.get("records")
         negative_records = negative.get("records")
+        if hardware_cases == 0:
+            rates_valid = all(
+                (
+                    rates.get("state") == "no_negative_denominator",
+                    rates.get("denominator") == 0,
+                    rates.get("detection_rate") is None,
+                    rates.get("false_accept_rate") is None,
+                )
+            )
+        else:
+            rates_valid = all(
+                (
+                    rates.get("state") == "measured",
+                    rates.get("denominator") == hardware_cases,
+                    rates.get("detection_rate")
+                    == correct_detections / hardware_cases,
+                    rates.get("false_accept_rate") == false_accepts / hardware_cases,
+                )
+            )
         return all(
             (
                 snapshot.get("schema_version") == 1,
@@ -1999,18 +2042,17 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 positive.get("emulator_pass_hardware_fail_count") == 0,
                 evidence_records_valid(positive_records),
                 negative.get("candidates_audited") == candidates,
-                negative.get("hardware_confirmed_cases") == 0,
-                negative.get("correct_detections") == 0,
-                negative.get("false_accepts") == 0,
+                negative.get("hardware_confirmed_cases") == hardware_cases,
+                negative.get("correct_detections") == correct_detections,
+                negative.get("false_accepts") == false_accepts,
                 negative.get("wrong_reason_failures") == 0,
                 negative.get("artifact_audit_failures") == audit_failures,
                 negative.get("inconclusive_cases") == inconclusive,
                 len(negative_records) == records,
                 evidence_records_valid(negative_records),
-                rates.get("state") == "no_negative_denominator",
-                rates.get("denominator") == negative.get("hardware_confirmed_cases") == 0,
-                rates.get("detection_rate") is None,
-                rates.get("false_accept_rate") is None,
+                rates.get("denominator") == negative.get("hardware_confirmed_cases"),
+                correct_detections + false_accepts <= hardware_cases,
+                rates_valid,
             )
         )
 
@@ -2029,6 +2071,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         )
         sd_crc_fault = load_json(paths["sd_crc_fault"])
         sd_crc_fault_hardware = load_json(paths["sd_crc_fault_hardware"])
+        sd_crc_fault_first = load_json(paths["sd_crc_fault_first"])
+        sd_crc_fault_first_report = load_json(paths["sd_crc_fault_first_report"])
+        sd_crc_fault_first_scenario = load_json(paths["sd_crc_fault_first_scenario"])
         v2_baseline = load_json(paths["v2_baseline"])
         v2_hardware = load_json(paths["v2_hardware"])
         v2_fault = load_json(paths["v2_fault"])
@@ -2176,7 +2221,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 sd_crc_contract.get("parent_contract_id")
                 == "next3-negative-conformance-v1-20260810",
                 sd_crc_contract.get("status")
-                == "fault_hardware_oracle_match_first_emulator_run_allowed",
+                == "first_emulator_run_false_accept_preserved_backend_fix_pending",
                 sd_crc_contract.get("specification_authority", {}).get("section")
                 == "7.2.2 Bus Transfer Protection",
                 sd_crc_sources.get("generator_commit")
@@ -2258,8 +2303,19 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 sd_crc_fault_progress.get("hardware_record_sha256")
                 == expected_hashes["sd_crc_fault_hardware"],
                 sd_crc_fault_progress.get("emulator_result")
-                == "not_run_by_contract",
-                sd_crc_fault_progress.get("emulator_run_allowed") is True,
+                == "pass_false_accept",
+                sd_crc_fault_progress.get("emulator_backend_dirty") is False,
+                sd_crc_fault_progress.get("first_emulator_record")
+                == "firmware-validation/records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/record.json",
+                sd_crc_fault_progress.get("first_emulator_record_sha256")
+                == expected_hashes["sd_crc_fault_first"],
+                sd_crc_fault_progress.get("first_emulator_report_sha256")
+                == expected_hashes["sd_crc_fault_first_report"],
+                sd_crc_fault_progress.get("first_emulator_uart_sha256")
+                == expected_hashes["sd_crc_fault_first_uart"],
+                sd_crc_fault_progress.get("classification") == "false_accept",
+                sd_crc_fault_progress.get("emulator_run_allowed") is False,
+                sd_crc_fault_progress.get("backend_change_allowed") is True,
                 sd_crc_baseline.get("record_id")
                 == "next3-sd-cmd8-crc-a1-20260810-01",
                 sd_crc_baseline.get("stage")
@@ -2506,6 +2562,52 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "correct_detection_delta": 0,
                     "false_accept_delta": 0,
                 },
+                sd_crc_fault_first.get("record_id")
+                == "next3-sd-cmd8-crc-b-first-emulator-20260810-01",
+                sd_crc_fault_first.get("status") == "closed",
+                sd_crc_fault_first.get("classification") == "false_accept",
+                sd_crc_fault_first.get("artifact_audit", {}).get("bin_sha256")
+                == sd_crc_fault_progress.get("bin_sha256"),
+                sd_crc_fault_first.get("hardware_observation", {}).get("status")
+                == "complete",
+                sd_crc_fault_first.get("hardware_observation", {}).get("result")
+                == "fail",
+                sd_crc_fault_first.get("emulator_observation", {}).get("status")
+                == "complete",
+                sd_crc_fault_first.get("emulator_observation", {}).get("result")
+                == "pass",
+                sd_crc_fault_first.get("reason_match", {}).get("status")
+                == "mismatch",
+                sd_crc_fault_first.get("kpi_effect")
+                == {
+                    "negative_denominator_delta": 1,
+                    "correct_detection_delta": 0,
+                    "false_accept_delta": 1,
+                },
+                sd_crc_fault_first_report.get("backend_build", {}).get("commit")
+                == sd_crc_sources.get("backend_commit_reserved_for_first_fault_run"),
+                sd_crc_fault_first_report.get("backend_build", {}).get("dirty")
+                is False,
+                sd_crc_fault_first_report.get("firmware", {}).get("sha256")
+                == sd_crc_fault_progress.get("bin_sha256"),
+                sd_crc_fault_first_report.get("verdict", {}).get("status") == "pass",
+                sd_crc_fault_first_report.get("stop_reason") == "scenario_done",
+                sd_crc_fault_first_report.get("exception") is None,
+                sd_crc_fault_first_report.get("unsupported_mmio") == [],
+                sd_crc_fault_first_report.get("sd", {}).get("blocks_read") == 0,
+                sd_crc_fault_first_report.get("sd", {}).get("blocks_written") == 0,
+                sd_crc_fault_first_report.get("uart", {}).get("sha256")
+                == expected_hashes["sd_crc_fault_first_uart"],
+                sd_crc_fault_first_report.get("framebuffer", {}).get(
+                    "rgb565_sha256"
+                )
+                == "a40734de3413157f1a121de37a66f286c315226f155896d5af27e6eaf7c74274",
+                sd_crc_fault_first_scenario.get("name")
+                == "next3-sd-cmd8-crc-b-first-emulator",
+                sd_crc_fault_first_scenario.get("steps", [{}])[0]
+                .get("condition", {})
+                .get("text")
+                == "[NEXT3][SD_CMD8_B][EVIDENCE]",
                 sd_crc_oracle.get("deployment_path") == "uf2loader",
                 sd_crc_oracle.get("bootsel_required") is False,
                 sd_crc_oracle.get("cmd0_r1") == "01",
@@ -2773,11 +2875,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 ),
                 snapshot_valid(
                     current,
-                    candidates=3,
+                    candidates=4,
                     audit_failures=1,
                     inconclusive=2,
-                    records=3,
+                    records=4,
                     positive_count=7,
+                    hardware_cases=1,
+                    correct_detections=0,
+                    false_accepts=1,
                 ),
                 audit.get("schema_version") == 1,
                 audit.get("record_id") == "next3-lcd-031-audit-20260810-01",
@@ -2875,12 +2980,21 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             inconclusive_cases=current.get("negative_conformance", {}).get(
                 "inconclusive_cases"
             ),
-            emulator_first_run=fault_hardware.get("emulator_observation", {}).get("status"),
+            correct_detections=current.get("negative_conformance", {}).get(
+                "correct_detections"
+            ),
+            false_accepts=current.get("negative_conformance", {}).get(
+                "false_accepts"
+            ),
+            false_accept_rate=current.get("rates", {}).get("false_accept_rate"),
+            emulator_first_run=sd_crc_fault_first.get("emulator_observation", {}).get(
+                "status"
+            ),
             v2_contract_id=v2_contract.get("contract_id"),
             v2_status=v2_contract.get("status"),
             v2_fault_hardware_status=v2_fault_hardware.get("status"),
             v2_fault_classification=v2_fault_hardware.get("classification"),
-            v2_next_step="run_sd_cmd8_crc_fault_b_once_in_frozen_backend",
+            v2_next_step="implement_exact_sd_cmd8_crc_rejection",
             v2_top_remaining_variable=v2_post_hardware.get(
                 "highest_ranked_remaining_variable"
             ),
@@ -2892,6 +3006,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             ).get("required_hardware_runs"),
             sd_crc_fault_emulator_run_allowed=sd_crc_fault_progress.get(
                 "emulator_run_allowed"
+            ),
+            sd_crc_fault_classification=sd_crc_fault_progress.get("classification"),
+            sd_crc_backend_change_allowed=sd_crc_fault_progress.get(
+                "backend_change_allowed"
             ),
             sd_crc_fault_implementation_allowed=sd_crc_progress.get(
                 "fault_implementation_allowed"

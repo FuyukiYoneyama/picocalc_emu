@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-sd-cmd8-crc-b-first-emulator-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "status": "closed",
+  "candidate": {
+    "candidate_id": "sd-spi-cmd8-bad-crc",
+    "defect_class": "SD SPI CMD8 CRC7 rejection",
+    "source_kind": "explicit_fault_injection"
+  },
+  "artifact_audit": {
+    "reproducibility": "reproduced",
+    "source_commit": "e78cabbe20416eb2347e0db09408bf906d41c698",
+    "sdk_version": "2.2.0",
+    "sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "toolchain": {
+      "arm_none_eabi_gcc": "13.2.1 20231009",
+      "cmake": "3.28.3",
+      "ninja": "1.11.1",
+      "generator": "Ninja",
+      "build_timestamp": "2026-08-10T05:30:00Z",
+      "lcd_variant": "pio-rgb565"
+    },
+    "bin_sha256": "6665ca51944e2c1fb2f7e2ba7adb01ce6878290aac0dfb929202714b83509bd0",
+    "uf2_sha256": "43ea10982d6f9b1d1adf9565b2b88f8b1866ddd60410b4ae53fda8e2f9a3e958",
+    "same_build_bin_and_uf2": true,
+    "evidence": [
+      "canonical source and an independent clean clone produced identical BIN and UF2 SHA-256 values",
+      "source bundle provenance/picocalc-next3-sd-crc-b.bundle SHA-256 3e3fded89db4d4feb9a0d1c810d388e18ccc49c698ab466a371e3c2c94f1739a",
+      "the emulator report firmware SHA-256 is the exact hardware-confirmed Fault B BIN"
+    ],
+    "blocking_gaps": []
+  },
+  "defect_oracle": {
+    "frozen_before_emulator_run": true,
+    "expected_failure": "card is present, CMD0 returns R1 0x01, bad-CRC CMD8 returns R1 0x09 with idle-state plus COM_CRC_ERROR, initialization stops at CMD8, no later initialization command or filesystem access occurs, and app status is fail",
+    "excluded_failure_causes": [
+      "card not detected",
+      "CMD0 failure",
+      "illegal-command, address-error, or parameter-error R1 bits",
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "wrong source or artifact identity"
+    ]
+  },
+  "emulator_observation": {
+    "status": "complete",
+    "result": "pass",
+    "reason": "frozen backend 4a908648 discarded CMD8 CRC 0x85, returned normal R1 0x01 and R7 000001aa, completed initialization, and produced an application PASS",
+    "evidence": [
+      "run-report.json SHA-256 ad13793fc8124d325d913600404f7c710f132a02f6c4d0a91f0a343fae65d047: backend 4a90864816ef58286f2b292df0e7fe44fbcd4809 clean, firmware 6665ca51944e2c1fb2f7e2ba7adb01ce6878290aac0dfb929202714b83509bd0, verdict pass, scenario_done, cycles 158658085, exception null, unsupported MMIO empty",
+      "uart.log SHA-256 b630efd489bf4cd2119f8979296b71873eb011b711f470258336d247de4a212b: CMD0 crc=0x95 r1=0x01; CMD8 crc=0x85 r1=0x01 r7=000001aa; init and RESULT are complete PASS markers",
+      "scenario.json SHA-256 360ec5eb4809e0646532dd31a78886cd5366e0d4adb13686f8590288ba83bcda was outcome-unbiased and stopped on the Fault B EVIDENCE prefix regardless of PASS or FAIL",
+      "snapshots/next3-sd-b-first.png SHA-256 cbf66f14a737bb86d110c9b8dbc24c94c71c3be8545964d47181b60c45a4e04b shows the stable green PASS state; report RGB565 SHA-256 a40734de3413157f1a121de37a66f286c315226f155896d5af27e6eaf7c74274",
+      "the first-run UART capture ends at byte 896 inside the repeating EVIDENCE line because the unbiased prefix condition stopped immediately; the complete CMD8, init, RESULT, structured verdict, and final framebuffer are present, so this limitation does not alter classification and the first run is not replaced"
+    ]
+  },
+  "hardware_observation": {
+    "status": "complete",
+    "result": "fail",
+    "reason": "the physical SD card rejected CMD8 CRC 0x85 with R1 0x09, containing idle-state plus COM_CRC_ERROR, and initialization stopped at the frozen CMD8 CRC failure stage",
+    "evidence": [
+      "firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/record.json SHA-256 d88489688958e3b7a09a7ec3fe70846759e312f82e8bfbe34165cb53b77d6c5f",
+      "the same frozen UF2 was launched through the normal PicoCalc uf2loader path and all hardware oracle fields matched",
+      "hardware UART CMD0 crc=0x95 r1=0x01; CMD8 crc=0x85 r1=0x09 r7=ffffffff; init cmd8_fail detail=9; no later initialization command or filesystem access"
+    ]
+  },
+  "reason_match": {
+    "status": "mismatch",
+    "expected_reason": "SD SPI CMD8 CRC7 rejection with R1 COM_CRC_ERROR at the CMD8 initialization stage",
+    "emulator_reason": "the emulator accepted the bad CRC and completed initialization instead of failing",
+    "hardware_reason": "SD SPI CMD8 CRC7 rejection with R1 COM_CRC_ERROR at the CMD8 initialization stage"
+  },
+  "classification": "false_accept",
+  "kpi_effect": {
+    "negative_denominator_delta": 1,
+    "correct_detection_delta": 0,
+    "false_accept_delta": 1
+  }
+}

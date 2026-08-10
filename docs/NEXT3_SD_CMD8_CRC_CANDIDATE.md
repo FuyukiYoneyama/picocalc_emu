@@ -1,8 +1,9 @@
 # NEXT-3 SD CMD8 CRC candidate
 
 **状態（2026-08-10）:** A1正常対照はemulatorと実機がPASSした。Fault Bは再現可能artifactとして固定し、
-uf2loader実機先行runが凍結oracleへ完全一致した。これにより凍結backend `4a908648`での同一BIN初回runを
-1回だけ解禁した。backend修正は初回結果を保存・分類するまで禁止する。機械可読な正典は
+uf2loader実機先行runが凍結oracleへ完全一致した。凍結backend `4a908648`で同一BINを初回実行した結果、
+backendは不正CRCを受理してapp PASSとなり、`false_accept`を確定した。初回結果の保存・分類が完了したため、
+次は新しいbackend revisionへCMD8 CRC7 rejectionを実装する。機械可読な正典は
 `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`である。
 
 ## なぜLCD候補から切り替えるか
@@ -105,14 +106,23 @@ keys、backendは変えていない。source本体と独立clean cloneは固定�
 - UF2 SHA-256: `43ea10982d6f9b1d1adf9565b2b88f8b1866ddd60410b4ae53fda8e2f9a3e958`
 - source bundle SHA-256: `3e3fded89db4d4feb9a0d1c810d388e18ccc49c698ab466a371e3c2c94f1739a`
 
-記録は`firmware-validation/records/next3-sd-cmd8-crc-b-20260810-01/`にある。Bはまだemulatorで一度も
-実行していない。
+記録は`firmware-validation/records/next3-sd-cmd8-crc-b-20260810-01/`にある。
 
 同一UF2のuf2loader実機runはCMD0 R1=`0x01`、CMD8 CRC=`0x85`／R1=`0x09`、init
 `cmd8_fail detail=9`、filesystemなし、app FAILとなり、凍結oracleへ完全一致した。EVIDENCE markerは46回
 同一で、写真も白い上部と赤い中央・下部を示した。記録は
 `firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/`にある。これで初回Fault emulator
-runを解禁する。結果はPASS/FAILのどちらでも変更せず保存し、その後にreason agreementを分類する。
+runを解禁した。
+
+同一BINを凍結backend `4a908648`で1回だけ実行したところ、CMD8 CRC=`0x85`に対して正常R1=`0x01`と
+R7=`000001aa`を返し、initとappがPASSした。実機のCMD8 CRC rejectionと一致しないため、分類は
+`false_accept`である。初回runは
+`firmware-validation/records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/`へ固定した。outcomeに依存しない
+EVIDENCE prefix停止のためUART末尾は反復markerの途中だが、完全なCMD8、init、RESULT、structured verdict、
+緑のsnapshotが揃っており分類に不足はない。初回runを再実行・置換しない。
+
+この限定datasetのnegative母数は1、正検出0/1、false accept 1/1となった。一般的なエミュレーター品質率を
+意味しない。positive相関は7系列のままである。
 
 ## 凍結した実機oracle
 
@@ -134,9 +144,9 @@ Bは次の全条件を満たす場合だけhardware-confirmed negative caseへ�
 実機Bがoracleへ完全一致した後だけ、同一BINをbackend commit `4a908648`で1回実行する。現行modelはCRCを
 捨てるためPASSが予測されるが、PASSでもFAILでも初回recordを保存してから分類する。
 
-false acceptなら、その時点で初めてbackendへCMD8 CRC7検査とR1 COM_CRC_ERRORを実装する。修正前に
-初回runを消したり、backendを先回りして直したりしない。修正後は同じfault BINが同じ理由でFAILし、A1と
-既存positive targetがexact contractを保つことをローカルで検証する。
+初回runは`false_accept`として保存・分類済みであり、backend変更禁止境界は完了した。次はbackendへCMD8
+CRC7検査とR1 COM_CRC_ERRORを実装する。修正後は同じfault BINが同じ理由でFAILし、A1と既存positive
+targetがexact contractを保つことをローカルで検証する。GitHub Actionsは使わない。
 
 ## 人間操作とリカバリ
 

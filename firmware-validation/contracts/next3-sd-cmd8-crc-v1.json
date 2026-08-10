@@ -4,7 +4,7 @@
   "parent_contract_id": "next3-negative-conformance-v1-20260810",
   "roadmap_package": "NEXT-3",
   "candidate_id": "sd-spi-cmd8-bad-crc",
-  "status": "fault_hardware_oracle_match_first_emulator_run_allowed",
+  "status": "first_emulator_run_false_accept_preserved_backend_fix_pending",
   "purpose": "measure whether the emulator rejects a hardware-confirmed CMD8 CRC error for the same reason",
   "specification_authority": {
     "publisher": "SD Association",
@@ -107,10 +107,17 @@
     "hardware_result": "fail_oracle_match",
     "hardware_record": "firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/record.json",
     "hardware_record_sha256": "d88489688958e3b7a09a7ec3fe70846759e312f82e8bfbe34165cb53b77d6c5f",
-    "emulator_result": "not_run_by_contract",
+    "emulator_result": "pass_false_accept",
     "emulator_backend_commit_reserved_for_first_run": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
-    "emulator_run_allowed": true,
-    "next_action": "run_fault_b_bin_once_in_frozen_backend_and_preserve_the_unmodified_result"
+    "emulator_backend_dirty": false,
+    "first_emulator_record": "firmware-validation/records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/record.json",
+    "first_emulator_record_sha256": "951d954afdb24fcc3df2826a651f8c385d9f664a67617c98c12aa03efc602297",
+    "first_emulator_report_sha256": "ad13793fc8124d325d913600404f7c710f132a02f6c4d0a91f0a343fae65d047",
+    "first_emulator_uart_sha256": "b630efd489bf4cd2119f8979296b71873eb011b711f470258336d247de4a212b",
+    "classification": "false_accept",
+    "emulator_run_allowed": false,
+    "backend_change_allowed": true,
+    "next_action": "implement exact CMD8 CRC7 rejection in a new backend revision, then run the same Fault B BIN as an explicitly post-fix observation and revalidate A1 and existing positive targets locally"
   },
   "frozen_hardware_oracle": {
     "deployment_path": "uf2loader",

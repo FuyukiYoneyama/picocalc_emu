@@ -581,7 +581,10 @@ self-rejectionを避け、backend acceptanceを測れる。2 clean buildでBIN `
 NEXT3-11の実機先行runはCMD8 CRC=`0x85`へR1=`0x09`（idle＋COM_CRC_ERROR）を返し、CMD8段階で
 init/app FAIL、後続初期化commandとfilesystem accessなしとなった。46回の完全markerと赤い最終写真も
 凍結oracleへ一致したため、初のhardware-confirmed negative caseとして同一BINの凍結backend初回runを
-1回だけ解禁した。backend修正は初回結果の保存・分類まで禁止する。
+1回だけ解禁した。NEXT3-12の初回runでbackend `4a908648`は不正CRCを捨て、R1=`0x01`／R7=`000001aa`、
+init/app PASSを返したため`false_accept`を確定した。初回report、UART、scenario、緑snapshotは改変せず固定
+した。限定datasetのnegative母数1、正検出0、false accept 1、positive相関7系列である。初回保存・分類が
+完了したためbackend変更を解禁し、次はCMD8 CRC7 rejectionの実装とローカル回帰へ進む。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

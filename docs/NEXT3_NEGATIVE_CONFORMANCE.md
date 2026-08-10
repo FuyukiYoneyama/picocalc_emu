@@ -321,7 +321,23 @@ COM_CRC_ERRORだけを含み、凍結oracleへ完全一致した。EVIDENCE mark
 一致した。これはapplication PASSではなく、初のhardware-confirmed negative caseである。
 
 実機記録は`firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/`に固定した。
-同一BINの凍結backend `4a908648`初回runを1回だけ解禁する。まだ実行しておらず、backend修正も禁止のまま。
+同一BINの凍結backend `4a908648`初回runを1回だけ解禁した。
+
+## NEXT3-12: SD CMD8 CRC Fault B first emulator classification
+
+同一Fault B BINの初回runを、結果に依存せずEVIDENCE prefixで停止するscenarioにより凍結backend
+`4a908648`で1回だけ実行した。backendはCMD8 CRC=`0x85`を受理してR1=`0x01`／R7=`000001aa`を返し、
+initとappをPASSさせた。実機は同じartifactをR1=`0x09`で拒否しているため、reason mismatchかつ
+`false_accept`である。
+
+初回記録は`firmware-validation/records/next3-sd-cmd8-crc-b-first-emulator-20260810-01/`へ改変せず固定した。
+UARTはprefix停止により最後の反復EVIDENCE lineの途中で終わるが、それより前に完全なCMD8、init、RESULTが
+あり、structured reportはclean backend、exact BIN、verdict PASS、exceptionなし、unsupported MMIOなしを
+記録し、snapshotも緑PASSである。補完runで初回記録を置換しない。
+
+これにより初のnegative母数が成立し、この限定datasetでは正検出0/1、false accept 1/1となった。これは
+一般的なfalse-acceptance率ではない。positive相関は7系列のまま。backend変更禁止境界は完了し、次は新しい
+revisionへCMD8 CRC7 rejectionを実装して、同一BINの正理由FAILと既存positive回帰をローカルで証明する。
 
 ## CI運用
 

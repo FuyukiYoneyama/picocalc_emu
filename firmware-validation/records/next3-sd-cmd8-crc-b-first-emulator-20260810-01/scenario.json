@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next3-sd-cmd8-crc-b-first-emulator",
+  "description": "Unbiased first run: stop on the complete Fault B evidence prefix regardless of PASS or FAIL.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "Fault B first complete evidence marker",
+      "timeout_ms": 3000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NEXT3][SD_CMD8_B][EVIDENCE]"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "Fault B first emulator final screen",
+      "png": "next3-sd-b-first.png"
+    }
+  ]
+}
