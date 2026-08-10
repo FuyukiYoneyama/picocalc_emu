@@ -70,9 +70,10 @@ negativeの分母は`hardware_confirmed_negative_cases`だけである。候補�
 `detection_rate`と`false_accept_rate`はともに`null`、状態は`no_negative_denominator`とする。
 これを「検出率0%」「false-acceptance率0%」とは表現しない。
 
-positive側では`hardware_correlation_completed=true`の系列を5件固定した。R5、NEXT-1、
-NEXT-2 audio、NEXT-2 multicoreの4件は直接実機相関、OPT1-Bは不変R5 recordへの全event同値性による
-推移的相関である。この5件で`emulator PASS -> hardware FAIL`は0件だが、negative検出率とは別の指標である。
+positive側では`hardware_correlation_completed=true`の系列を7件固定した。R5、NEXT-1、
+NEXT-2 audio、NEXT-2 multicore、NEXT3 LCD v2 A1、NEXT3 SD CRC A1の6件は直接実機相関、OPT1-Bは
+不変R5 recordへの全event同値性による推移的相関である。この7件で
+`emulator PASS -> hardware FAIL`は0件だが、negative検出率とは別の指標である。
 
 ## caseの必須順序
 
@@ -289,8 +290,16 @@ source本体と別clean cloneのBIN `0ae9eea0...fce1b`、UF2 `be9c0e8d...a9ffd`�
 R1=`0x01`／R7=`000001aa`、init PASSとなった。SD block read/writeは0、exception、unsupported MMIOも0、
 最終画面までPASSした。記録は`firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/`にある。
 
-次は同一UF2をuf2loaderから実機で1回起動し、UART全文と安定写真1枚を保存する。A1実機PASSまでは
-CRC `0x85`のfault実装とfault emulator runを行わない。
+同一UF2のuf2loader実機runもPASSした。boot identityはcanonical sourceと一致し、CMD0
+arg=`00000000`／CRC=`0x95`／R1=`0x01`、CMD8 arg=`000001aa`／CRC=`0x87`／R1=`0x01`／
+R7=`000001aa`、init、appがすべてPASSした。完全なEVIDENCE markerは39回同一で、最終写真もPASS表示に
+一致した。実機記録は
+`firmware-validation/records/next3-sd-cmd8-crc-a1-hardware-20260810-01/`にある。
+
+positive相関は7系列、`emulator PASS -> hardware FAIL`は0のままである。A1はpositive controlなので
+negative母数は0のまま、率は`null`である。Fault B source実装は解禁したが、そのBINのemulator runは
+凍結hardware oracle一致まで禁止する。次はA1からidentity、EVIDENCE marker、CMD8 CRC `0x87 -> 0x85`
+だけを変えたFault B artifactの固定である。
 
 ## CI運用
 

@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-sd-cmd8-crc-a1-hardware-20260810-01",
+  "title": "NEXT-3 SD CMD8 CRC A1 same-artifact PicoCalc positive-control correlation",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-sd-cmd8-crc-v1-predesign-20260810",
+  "result": "pass",
+  "classification": "same_artifact_hardware_correlation",
+  "baseline_record": {
+    "path": "firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/record.json",
+    "sha256": "eed8e205bcb30d87fa6079f9071a29d352f7aac7e6a83ca130d7d7220be555d6"
+  },
+  "source": {
+    "repo": "picocalc-next3-sd-crc-fault",
+    "commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+    "app_identity": "next3-sd-cmd8-crc-a1",
+    "embedded_app_commit": "f942b8eb0008",
+    "embedded_bsp_commit": "5a27dc7a0085-dirty",
+    "lcd_variant": "pio-rgb565"
+  },
+  "artifact": {
+    "bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+    "uf2_sha256": "be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd",
+    "build_timestamp": "2026-08-10T05:00:00Z",
+    "clean_clone_reproducible": true
+  },
+  "deployment": {
+    "path": "uf2loader",
+    "bootsel_used": false,
+    "basis": "operator supplied the run evidence after following the frozen uf2loader procedure",
+    "uart_encodes_deployment_path": false,
+    "artifact_link": "the UART boot line embeds the canonical app and BSP identities; the selected UF2 SHA was verified before deployment but is not printed by firmware"
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "validation_date": "2026-08-10",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "boot_identity": "pass",
+    "clock_khz": 250000,
+    "card_detect": "present",
+    "protocol": {
+      "cmd0_seen": true,
+      "cmd0_argument": "00000000",
+      "cmd0_crc": "95",
+      "cmd0_r1": "01",
+      "cmd8_seen": true,
+      "cmd8_argument": "000001aa",
+      "cmd8_crc": "87",
+      "cmd8_r1": "01",
+      "cmd8_r7": "000001aa",
+      "initialization": "pass"
+    },
+    "filesystem_access": "none",
+    "keys": "none",
+    "application_status": "pass",
+    "evidence_marker_count": 39,
+    "evidence_marker_stable": true,
+    "exception_observed": false,
+    "unsupported_mmio_observed": false,
+    "final_marker": "[NEXT3][SD_CMD8_A1][EVIDENCE] app=next3-sd-cmd8-crc-a1 app_git=f942b8eb0008 bsp_git=5a27dc7a0085-dirty card=present cmd0=seen cmd0_r1=0x01 cmd0_arg=00000000 cmd0_crc=0x95 cmd8=seen arg=000001aa crc=0x87 cmd8_r1=0x01 r7=000001aa filesystem=none keys=none app=pass",
+    "photo_observation": "the white top strip and green center and bottom status regions are visibly present, with no red failure region"
+  },
+  "correlation": {
+    "emulator_backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "emulator_result": "pass",
+    "hardware_result": "pass",
+    "hardware_correlation_completed": true,
+    "same_registered_artifact": true,
+    "emulator_pass_hardware_fail_count": 0,
+    "false_accept": false,
+    "verdict": "pass"
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "A1 is the positive control; the bad-CRC Fault B has not yet been built or run"
+  },
+  "gate": {
+    "fault_source_implementation_allowed": true,
+    "fault_emulator_run_allowed": false,
+    "next_action": "derive Fault B by changing only identity, evidence marker, and the CMD8 CRC literal from 0x87 to 0x85; freeze it reproducibly and run its UF2 on hardware before any emulator execution"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "evidence/uf2loader-uart.log",
+      "bytes": 11159,
+      "sha256": "24e0591562cedb4720593a4df3606c99c1f0f28addc4ac162570851eb847db45"
+    },
+    "final_photo": {
+      "path": "evidence/final.jpg",
+      "sha256": "75e4931ff20d88dc0d1db1d051b24e8d30f912c0336dcdff7f4aafe188f1c5a9",
+      "source_original_sha256": "e5c872f34d20f9f588f8df401909657b21b96d9759a8e5b807d847be45f237c1",
+      "decoded_rgb_sha256": "ada231bba52d0a4fccf0c1938bbbb2504258bb9c95307cdbd1cfdcb3849dafd2",
+      "width": 3024,
+      "height": 3024,
+      "metadata_policy": "repository copy has EXIF, XMP, ICC, and GPS removed; decoded RGB pixels match the supplied original"
+    },
+    "notes": "notes.md"
+  }
+}

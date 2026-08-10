@@ -568,8 +568,12 @@ NEXT3-9ではA1正常対照を独立repository `picocalc-next3-sd-crc-fault` com
 2 clean buildでBIN `0ae9eea0...fce1b`、UF2 `be9c0e8d...a9ffd`が一致し、source bundle
 `ed985de5...a05da`も固定した。凍結backend `4a908648`の同一BIN runはCMD0 R1=`0x01`、CMD8
 arg=`000001aa`／CRC=`0x87`／R1=`0x01`／R7=`000001aa`、init PASSとなった。filesystem access、
-block read/write、キー入力は0、exceptionとunsupported MMIOも0、最終画面までPASSした。次は同一UF2を
-uf2loaderから実機で1回確認する。A1実機PASSまではfault、fault emulator run、backend修正を行わない。
+block read/write、キー入力は0、exceptionとunsupported MMIOも0、最終画面までPASSした。同一UF2の
+uf2loader実機runもboot identity、card detect、CMD0、CMD8、init、app、最終画面までPASSし、完全な
+EVIDENCE marker 39回が同一だった。実機記録は
+`next3-sd-cmd8-crc-a1-hardware-20260810-01`である。positive相関は7系列、negative母数は0のまま。
+Fault B source実装は解禁したが、fault emulator runとbackend修正はhardware oracle一致まで禁止する。
+次はidentity、marker、CMD8 CRC `0x87 -> 0x85`だけを変えたBの再現可能artifact固定である。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
