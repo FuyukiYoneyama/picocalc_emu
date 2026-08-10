@@ -97,5 +97,43 @@ project qualityは`cannot_judge`（終了コード2）です。oracleが一致�
 report schemaが契約と違う場合は、内部フィールドを信用せず常に`cannot_judge`です。schemaが一致し、
 runner自体または明示report checkに既知の失敗がある場合は、音声が未評価でも既知の`fail`を優先します。
 
-これはdigital DMA-to-PWM境界の判定です。実機のspeaker、アナログ波形、音量、歪み、聴感は
-同一UF2の実機相関で別に確認します。
+schema 1契約はexact count/hashの互換経路です。音声を出すrelease projectではschema 2を使い、
+独立した`--audio-analysis` artifactに対して最低区間RMSと、極端なPWM rail使用の上限を宣言します。
+短い、低頻度のrail到達は許容し、単なるclip発生だけでは不合格にしません。
+
+```json
+{
+  "schema_version": 2,
+  "contract_id": "my-audio-v2",
+  "report_schema": 8,
+  "required_capabilities": {
+    "audio_sink": {
+      "expected_count": 49152,
+      "expected_sha256": "<64 lowercase hex>",
+      "quality": {
+        "minimum_max_window_rms": 8192,
+        "maximum_rail_sample_ratio_ppm": 250000,
+        "maximum_consecutive_rail_frames": 4800
+      }
+    }
+  },
+  "report_checks": [
+    {"path": "unsupported_mmio", "op": "length_eq", "value": 0}
+  ]
+}
+```
+
+backend実行時に`--audio-analysis /tmp/audio-analysis.json`を追加し、判定時にも同じartifactを渡します。
+
+```sh
+python3 tools/picocalc.py judge-report \
+  --contract /path/to/project-quality.json \
+  --report /tmp/run-report.json \
+  --audio-analysis /tmp/audio-analysis.json \
+  --json /tmp/project-quality-result.json
+```
+
+値の意味、非正規化WAV出力、PicoCalcの物理ボリュームを前提にした判定方針は
+[`AUDIO_LEVEL_QUALITY.md`](AUDIO_LEVEL_QUALITY.md)を参照してください。これはdigital
+DMA-to-PWM境界の判定です。実機のspeaker、アナログ波形、実際の音圧と聴感は、同一UF2の実機相関で
+別に確認します。

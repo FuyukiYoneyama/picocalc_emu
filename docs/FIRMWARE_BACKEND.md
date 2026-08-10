@@ -63,6 +63,7 @@ python3 tools/picocalc.py test --mode firmware \
 - exact idle fast-forward、OPT1-B predicate fast path
 - NEXT-2Aの凍結Serial multicore契約
 - NEXT-2Bの凍結DMA-paced audio sink契約
+- PWM5_CCの音量解析と非正規化raw WAV（schema 8 reportとは独立）
 - NEXT-3のmandatory SD CRC rejection
 - NEXT-4のJSONL machine API
 
@@ -103,6 +104,7 @@ APIは状態操作面であり、target registryの最終合否を置き換え�
 - Threaded modelの正確性同等性
 - NEXT-2A外の一般multicore、同時device access、relaunch、spinlock timing
 - NEXT-2B外の任意audio構成
+- audio解析から実機speaker音圧・周波数応答・物理volume位置を推定すること
 - GDB/debugger integration
 
 未対応機能は、具体的workloadと事前に固定した受入条件がある場合だけ拡張します。

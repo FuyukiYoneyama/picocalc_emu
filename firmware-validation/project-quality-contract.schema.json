@@ -12,7 +12,7 @@
     "report_checks"
   ],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"enum": [1, 2]},
     "contract_id": {"type": "string", "minLength": 1},
     "report_schema": {"const": 8},
     "required_capabilities": {
@@ -29,6 +29,31 @@
             "expected_sha256": {
               "type": "string",
               "pattern": "^[0-9a-f]{64}$"
+            },
+            "quality": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "minimum_max_window_rms",
+                "maximum_rail_sample_ratio_ppm",
+                "maximum_consecutive_rail_frames"
+              ],
+              "properties": {
+                "minimum_max_window_rms": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 32768
+                },
+                "maximum_rail_sample_ratio_ppm": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "maximum_consecutive_rail_frames": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
             }
           }
         }
@@ -42,10 +67,36 @@
         "required": ["path", "op", "value"],
         "properties": {
           "path": {"type": "string", "minLength": 1},
-          "op": {"enum": ["eq", "length_eq"]},
+          "op": {"enum": ["eq", "length_eq", "ge", "le"]},
           "value": {}
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"schema_version": {"const": 2}},
+        "required": ["schema_version"]
+      },
+      "then": {
+        "properties": {
+          "required_capabilities": {
+            "properties": {
+              "audio_sink": {"required": ["quality"]}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "required_capabilities": {
+            "properties": {
+              "audio_sink": {"not": {"required": ["quality"]}}
+            }
+          }
+        }
+      }
+    }
+  ]
 }

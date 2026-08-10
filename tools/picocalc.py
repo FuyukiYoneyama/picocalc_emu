@@ -821,6 +821,17 @@ def check_report(report: dict, checks: List[dict]) -> List[str]:
                 failures.append("{} length expected {} but got {}".format(
                     path, expected, len(actual)
                 ))
+        elif check["op"] in ("ge", "le"):
+            if type(actual) not in (int, float) or type(expected) not in (int, float):
+                failures.append("{} is not numeric".format(path))
+            elif check["op"] == "ge" and actual < expected:
+                failures.append("{} expected >= {} but got {}".format(
+                    path, expected, actual
+                ))
+            elif check["op"] == "le" and actual > expected:
+                failures.append("{} expected <= {} but got {}".format(
+                    path, expected, actual
+                ))
         elif type(actual) is not type(expected) or actual != expected:
             failures.append("{} expected {!r} but got {!r}".format(
                 path, expected, actual
@@ -842,20 +853,48 @@ def load_project_quality_contract(path: Path) -> dict:
     }
     if not isinstance(contract, dict) or set(contract) != required_keys:
         raise ValueError("quality contract fields do not match schema 1")
-    if contract["schema_version"] != 1 or contract["report_schema"] != 8:
-        raise ValueError("quality contract requires schema 1 and runner report schema 8")
+    if contract["schema_version"] not in (1, 2) or contract["report_schema"] != 8:
+        raise ValueError("quality contract requires schema 1/2 and runner report schema 8")
     if not isinstance(contract["contract_id"], str) or not contract["contract_id"]:
         raise ValueError("quality contract_id must be a non-empty string")
     capabilities = contract["required_capabilities"]
     if not isinstance(capabilities, dict) or set(capabilities) != {"audio_sink"}:
         raise ValueError("required_capabilities must contain exactly audio_sink")
     audio = capabilities["audio_sink"]
-    if not isinstance(audio, dict) or set(audio) != {"expected_count", "expected_sha256"}:
-        raise ValueError("audio_sink must contain expected_count and expected_sha256")
+    expected_audio_fields = {"expected_count", "expected_sha256"}
+    if contract["schema_version"] == 2:
+        expected_audio_fields.add("quality")
+    if not isinstance(audio, dict) or set(audio) != expected_audio_fields:
+        raise ValueError(
+            "audio_sink fields do not match quality contract schema {}".format(
+                contract["schema_version"]
+            )
+        )
     if type(audio["expected_count"]) is not int or audio["expected_count"] <= 0:
         raise ValueError("audio_sink.expected_count must be a positive integer")
     if not is_sha256(audio["expected_sha256"]):
         raise ValueError("audio_sink.expected_sha256 must be a SHA-256")
+    if contract["schema_version"] == 2:
+        quality = audio["quality"]
+        quality_fields = {
+            "minimum_max_window_rms",
+            "maximum_rail_sample_ratio_ppm",
+            "maximum_consecutive_rail_frames",
+        }
+        if not isinstance(quality, dict) or set(quality) != quality_fields:
+            raise ValueError("audio_sink.quality fields are invalid")
+        minimum_rms = quality["minimum_max_window_rms"]
+        maximum_rail_ratio = quality["maximum_rail_sample_ratio_ppm"]
+        maximum_rail_run = quality["maximum_consecutive_rail_frames"]
+        if type(minimum_rms) is not int or not 1 <= minimum_rms <= 32768:
+            raise ValueError("minimum_max_window_rms must be in 1..32768")
+        if (
+            type(maximum_rail_ratio) is not int
+            or not 0 <= maximum_rail_ratio <= 1_000_000
+        ):
+            raise ValueError("maximum_rail_sample_ratio_ppm must be in 0..1000000")
+        if type(maximum_rail_run) is not int or maximum_rail_run < 0:
+            raise ValueError("maximum_consecutive_rail_frames must be non-negative")
     checks = contract["report_checks"]
     if not isinstance(checks, list):
         raise ValueError("report_checks must be an array")
@@ -864,7 +903,7 @@ def load_project_quality_contract(path: Path) -> dict:
             raise ValueError("report_checks[{}] has invalid fields".format(index))
         if not isinstance(check["path"], str) or not check["path"]:
             raise ValueError("report_checks[{}].path must be non-empty".format(index))
-        if check["op"] not in ("eq", "length_eq"):
+        if check["op"] not in ("eq", "length_eq", "ge", "le"):
             raise ValueError("report_checks[{}].op is invalid".format(index))
         if check["op"] == "length_eq" and (
             type(check["value"]) is not int or check["value"] < 0
@@ -872,18 +911,158 @@ def load_project_quality_contract(path: Path) -> dict:
             raise ValueError(
                 "report_checks[{}].value must be a non-negative integer".format(index)
             )
+        if check["op"] in ("ge", "le") and type(check["value"]) not in (int, float):
+            raise ValueError("report_checks[{}].value must be numeric".format(index))
     return contract
+
+
+def audio_analysis_errors(analysis: object) -> List[str]:
+    """Validate the standalone schema-1 PWM level artifact without extra packages."""
+    if not isinstance(analysis, dict):
+        return ["root must be an object"]
+    required = {
+        "schema_version",
+        "boundary",
+        "interpretation",
+        "backend_build",
+        "firmware",
+        "observation_status",
+        "pcm_sha256",
+        "pcm_format",
+        "sample_rate_hz",
+        "channel_count",
+        "frame_count",
+        "window_frames",
+        "active_abs_threshold",
+        "peak_abs_left",
+        "peak_abs_right",
+        "stream_rms",
+        "max_window_rms",
+        "dc_offset_left",
+        "dc_offset_right",
+        "active_frame_count",
+        "active_frame_ratio_ppm",
+        "rail_sample_count",
+        "rail_sample_ratio_ppm",
+        "max_consecutive_rail_frames",
+        "out_of_range_duty_sample_count",
+        "rail_interpretation",
+    }
+    errors: List[str] = []
+    if set(analysis) != required:
+        errors.append("fields do not match schema 1")
+    constants = {
+        "schema_version": 1,
+        "boundary": "dma_to_pwm5_cc",
+        "interpretation": "digital_level_only_not_speaker_loudness",
+        "pcm_format": "stereo_s16le_from_pwm8_duty",
+        "sample_rate_hz": 48_000,
+        "channel_count": 2,
+        "window_frames": 1024,
+        "active_abs_threshold": 512,
+        "rail_interpretation": "post_quantizer_pwm_rail_usage_not_source_clip_count",
+    }
+    for name, expected in constants.items():
+        if analysis.get(name) != expected or type(analysis.get(name)) is not type(expected):
+            errors.append("{} must be {!r}".format(name, expected))
+    backend = analysis.get("backend_build")
+    if (
+        not isinstance(backend, dict)
+        or set(backend) != {"commit", "dirty"}
+        or not is_git_commit(backend.get("commit"))
+        or type(backend.get("dirty")) is not bool
+    ):
+        errors.append("backend_build is invalid")
+    firmware = analysis.get("firmware")
+    if (
+        not isinstance(firmware, dict)
+        or set(firmware) != {"file", "sha256"}
+        or not isinstance(firmware.get("file"), str)
+        or not firmware.get("file")
+        or not is_sha256(firmware.get("sha256"))
+    ):
+        errors.append("firmware is invalid")
+    if analysis.get("observation_status") not in ("inactive", "pass", "fail"):
+        errors.append("observation_status is invalid")
+    if not is_sha256(analysis.get("pcm_sha256")):
+        errors.append("pcm_sha256 is invalid")
+
+    ranges = {
+        "frame_count": (0, None),
+        "peak_abs_left": (0, 32768),
+        "peak_abs_right": (0, 32768),
+        "stream_rms": (0, 32768),
+        "max_window_rms": (0, 32768),
+        "dc_offset_left": (-32768, 32767),
+        "dc_offset_right": (-32768, 32767),
+        "active_frame_count": (0, None),
+        "active_frame_ratio_ppm": (0, 1_000_000),
+        "rail_sample_count": (0, None),
+        "rail_sample_ratio_ppm": (0, 1_000_000),
+        "max_consecutive_rail_frames": (0, None),
+        "out_of_range_duty_sample_count": (0, None),
+    }
+    for name, (minimum, maximum) in ranges.items():
+        value = analysis.get(name)
+        if (
+            type(value) is not int
+            or value < minimum
+            or (maximum is not None and value > maximum)
+        ):
+            errors.append("{} is out of range".format(name))
+
+    frame_count = analysis.get("frame_count")
+    if type(frame_count) is int and frame_count >= 0:
+        if (
+            type(analysis.get("active_frame_count")) is int
+            and analysis["active_frame_count"] > frame_count
+        ):
+            errors.append("active_frame_count exceeds frame_count")
+        if (
+            type(analysis.get("rail_sample_count")) is int
+            and analysis["rail_sample_count"] > frame_count * 2
+        ):
+            errors.append("rail_sample_count exceeds stereo sample count")
+        if (
+            type(analysis.get("max_consecutive_rail_frames")) is int
+            and analysis["max_consecutive_rail_frames"] > frame_count
+        ):
+            errors.append("max_consecutive_rail_frames exceeds frame_count")
+        active_count = analysis.get("active_frame_count")
+        active_ratio = analysis.get("active_frame_ratio_ppm")
+        if type(active_count) is int and type(active_ratio) is int:
+            expected_active_ratio = (
+                active_count * 1_000_000 // frame_count if frame_count else 0
+            )
+            if active_ratio != expected_active_ratio:
+                errors.append("active_frame_ratio_ppm is inconsistent")
+        rail_count = analysis.get("rail_sample_count")
+        rail_ratio = analysis.get("rail_sample_ratio_ppm")
+        if type(rail_count) is int and type(rail_ratio) is int:
+            sample_count = frame_count * 2
+            expected_rail_ratio = (
+                rail_count * 1_000_000 // sample_count if sample_count else 0
+            )
+            if rail_ratio != expected_rail_ratio:
+                errors.append("rail_sample_ratio_ppm is inconsistent")
+    return errors
 
 
 def judge_project_report(
     contract_path: Path,
     report_path: Path,
+    audio_analysis_path: Optional[Path],
     json_out: Optional[Path],
 ) -> int:
     """Apply an explicit project audio oracle to a raw backend report."""
     try:
         contract = load_project_quality_contract(contract_path)
         report = json.loads(report_path.read_text(encoding="utf-8"))
+        audio_analysis = (
+            json.loads(audio_analysis_path.read_text(encoding="utf-8"))
+            if audio_analysis_path is not None
+            else None
+        )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         print("cannot judge project report: {}".format(error), file=sys.stderr)
         return 2
@@ -929,6 +1108,69 @@ def judge_project_report(
     else:
         evaluation_status = "pass"
 
+    quality_evaluation = "not_required"
+    quality_provenance_matches: Optional[bool] = None
+    if contract["schema_version"] == 2:
+        quality_evaluation = "not_evaluated"
+        quality_failures: List[str] = []
+        if not isinstance(audio_analysis, dict):
+            cannot_judge.append("audio_quality_missing")
+        elif audio_analysis.get("schema_version") != 1:
+            cannot_judge.append("audio_quality_schema_mismatch")
+        elif audio_analysis_errors(audio_analysis):
+            cannot_judge.append("audio_quality_artifact_invalid")
+        else:
+            report_backend = report.get("backend_build")
+            report_firmware = report.get("firmware")
+            report_audio = report.get("audio_sink")
+            analysis_backend = audio_analysis.get("backend_build")
+            analysis_firmware = audio_analysis.get("firmware")
+            provenance_matches = (
+                isinstance(report_backend, dict)
+                and isinstance(report_firmware, dict)
+                and isinstance(report_audio, dict)
+                and isinstance(analysis_backend, dict)
+                and isinstance(analysis_firmware, dict)
+                and analysis_backend.get("commit") == report_backend.get("commit")
+                and analysis_backend.get("dirty") == report_backend.get("dirty")
+                and analysis_firmware.get("sha256") == report_firmware.get("sha256")
+                and audio_analysis.get("pcm_sha256") == report_audio.get("pcm_sha256")
+                and audio_analysis.get("frame_count") == report_audio.get("dma_write_count")
+            )
+            quality_provenance_matches = provenance_matches
+            if not provenance_matches:
+                cannot_judge.append("audio_quality_provenance_mismatch")
+            elif audio_analysis.get("observation_status") != "pass":
+                quality_failures.append("audio_quality_observation_fail")
+                quality_evaluation = "fail"
+            else:
+                quality = required_audio["quality"]
+                metrics = (
+                    "max_window_rms",
+                    "rail_sample_ratio_ppm",
+                    "max_consecutive_rail_frames",
+                )
+                if any(type(audio_analysis.get(name)) is not int for name in metrics):
+                    cannot_judge.append("audio_quality_metrics_missing")
+                else:
+                    if (
+                        audio_analysis["max_window_rms"]
+                        < quality["minimum_max_window_rms"]
+                    ):
+                        quality_failures.append("audio_level_too_low")
+                    if (
+                        audio_analysis["rail_sample_ratio_ppm"]
+                        > quality["maximum_rail_sample_ratio_ppm"]
+                    ):
+                        quality_failures.append("audio_rail_ratio_excessive")
+                    if (
+                        audio_analysis["max_consecutive_rail_frames"]
+                        > quality["maximum_consecutive_rail_frames"]
+                    ):
+                        quality_failures.append("audio_sustained_rail_excessive")
+                    quality_evaluation = "fail" if quality_failures else "pass"
+        failures.extend(quality_failures)
+
     failures.extend(check_report(report, contract["report_checks"]))
     if report_schema != contract["report_schema"]:
         # An incompatible schema makes every parsed field non-authoritative.
@@ -944,7 +1186,7 @@ def judge_project_report(
         status = "pass"
         exit_code = 0
     result = {
-        "schema_version": 1,
+        "schema_version": 2,
         "contract_id": contract["contract_id"],
         "status": status,
         "reasons": failures + cannot_judge,
@@ -960,7 +1202,31 @@ def judge_project_report(
                 "oracle_matches_contract": oracle_matches,
                 "observation_status": observation_status,
                 "evaluation_status": evaluation_status,
-            }
+            },
+            "audio_quality": {
+                "required": contract["schema_version"] == 2,
+                "analysis_present": isinstance(audio_analysis, dict),
+                "analysis_schema_version": (
+                    audio_analysis.get("schema_version")
+                    if isinstance(audio_analysis, dict)
+                    else None
+                ),
+                "provenance_matches_report": quality_provenance_matches,
+                "evaluation_status": quality_evaluation,
+                "required_bounds": required_audio.get("quality"),
+                "observed": (
+                    {
+                        name: audio_analysis.get(name)
+                        for name in (
+                            "max_window_rms",
+                            "rail_sample_ratio_ppm",
+                            "max_consecutive_rail_frames",
+                        )
+                    }
+                    if isinstance(audio_analysis, dict)
+                    else None
+                ),
+            },
         },
     }
     encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -1507,6 +1773,11 @@ def main() -> int:
     )
     judge_report_parser.add_argument("--contract", type=Path, required=True)
     judge_report_parser.add_argument("--report", type=Path, required=True)
+    judge_report_parser.add_argument(
+        "--audio-analysis",
+        type=Path,
+        help="schema 1 audio-level artifact required by quality contract schema 2",
+    )
     judge_report_parser.add_argument("--json", dest="json_out", type=Path)
 
     test_parser = subparsers.add_parser(
@@ -1650,7 +1921,12 @@ def main() -> int:
     if args.command == "verify-project":
         return verify_project_provenance(args.project)
     if args.command == "judge-report":
-        return judge_project_report(args.contract, args.report, args.json_out)
+        return judge_project_report(
+            args.contract,
+            args.report,
+            args.audio_analysis,
+            args.json_out,
+        )
     if args.command == "test":
         if args.sd_format is not None and not args.sd:
             parser.error("--sd-format requires --sd")

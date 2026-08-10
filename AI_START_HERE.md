@@ -27,6 +27,10 @@ NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz D
 対応済みとはみなしません。正確な境界は
 [`firmware-validation/capability.json`](firmware-validation/capability.json)を確認します。
 
+音声を出すアプリは、転送count/hashだけで完成扱いにしません。PicoCalcの物理ボリュームを前提に
+デジタルレンジを十分使い、短い飽和は許容しつつ、小さすぎる区間音量と極端なrail張り付きを
+[`音量品質手順`](docs/AUDIO_LEVEL_QUALITY.md)で検査します。
+
 ## 監督と分担
 
 Solが要件、設計、受入、統合、commit／push、CI・実機結果の最終判断を担当します。

@@ -699,8 +699,10 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
         return
 
     quality_schema_path = directory / "project-quality-contract.schema.json"
+    audio_analysis_schema_path = directory / "audio-analysis.schema.json"
     try:
         quality_schema = load_json(quality_schema_path)
+        audio_analysis_schema = load_json(audio_analysis_schema_path)
         required = quality_schema.get("required", [])
         properties = quality_schema.get("properties", {})
         audio = (
@@ -722,11 +724,32 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             quality_errors.append("schema required fields are incomplete")
         if set(audio.get("required", [])) != {"expected_count", "expected_sha256"}:
             quality_errors.append("audio_sink oracle must require count and SHA-256")
+        quality = audio.get("properties", {}).get("quality", {})
+        if set(quality.get("required", [])) != {
+            "minimum_max_window_rms",
+            "maximum_rail_sample_ratio_ppm",
+            "maximum_consecutive_rail_frames",
+        }:
+            quality_errors.append("audio_sink quality bounds are incomplete")
+        if audio_analysis_schema.get("additionalProperties") is not False:
+            quality_errors.append("audio analysis schema must reject unknown fields")
+        analysis_required = set(audio_analysis_schema.get("required", []))
+        for field in (
+            "pcm_sha256",
+            "max_window_rms",
+            "rail_sample_ratio_ppm",
+            "max_consecutive_rail_frames",
+        ):
+            if field not in analysis_required:
+                quality_errors.append("audio analysis schema is missing {}".format(field))
         for token in (
             '"evaluation_status": evaluation_status',
             '"observation_status": observation_status',
             '"oracle_present": oracle_present',
             '"audio_sink_oracle_missing_or_mismatched"',
+            '"audio_level_too_low"',
+            '"audio_rail_ratio_excessive"',
+            '"audio_sustained_rail_excessive"',
         ):
             if token not in tool_source:
                 quality_errors.append("judge-report is missing {}".format(token))
@@ -736,6 +759,7 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             not quality_errors,
             errors=quality_errors,
             schema=str(quality_schema_path.relative_to(root)),
+            analysis_schema=str(audio_analysis_schema_path.relative_to(root)),
         )
     except (OSError, UnicodeError, ValueError, TypeError) as error:
         add_check(

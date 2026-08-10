@@ -473,6 +473,164 @@ raise SystemExit(code)
                         self.assertEqual(result["status"], "cannot_judge")
                         self.assertIn("report_schema_mismatch", result["reasons"])
 
+    def test_project_quality_schema2_rejects_quiet_and_only_extreme_rail_use(self):
+        digest = "cd" * 32
+        backend = "1" * 40
+        firmware = "2" * 64
+        contract = {
+            "schema_version": 2,
+            "contract_id": "audible-project-v2",
+            "report_schema": 8,
+            "required_capabilities": {
+                "audio_sink": {
+                    "expected_count": 10000,
+                    "expected_sha256": digest,
+                    "quality": {
+                        "minimum_max_window_rms": 8192,
+                        "maximum_rail_sample_ratio_ppm": 250000,
+                        "maximum_consecutive_rail_frames": 4800,
+                    },
+                }
+            },
+            "report_checks": [
+                {"path": "audio_sink.dma_write_count", "op": "ge", "value": 1}
+            ],
+        }
+        report = {
+            "schema_version": 8,
+            "backend_build": {"commit": backend, "dirty": False},
+            "firmware": {"basename": "app.bin", "sha256": firmware},
+            "verdict": {"status": "pass"},
+            "audio_sink": {
+                "status": "pass",
+                "dma_write_count": 10000,
+                "pcm_sha256": digest,
+                "expected_count": 10000,
+                "expected_sha256": digest,
+            },
+        }
+        analysis = {
+            "schema_version": 1,
+            "boundary": "dma_to_pwm5_cc",
+            "interpretation": "digital_level_only_not_speaker_loudness",
+            "backend_build": {"commit": backend, "dirty": False},
+            "firmware": {"file": "app.bin", "sha256": firmware},
+            "observation_status": "pass",
+            "pcm_sha256": digest,
+            "pcm_format": "stereo_s16le_from_pwm8_duty",
+            "sample_rate_hz": 48000,
+            "channel_count": 2,
+            "frame_count": 10000,
+            "window_frames": 1024,
+            "active_abs_threshold": 512,
+            "peak_abs_left": 32768,
+            "peak_abs_right": 32768,
+            "stream_rms": 10000,
+            "max_window_rms": 12000,
+            "dc_offset_left": 0,
+            "dc_offset_right": 0,
+            "active_frame_count": 10000,
+            "active_frame_ratio_ppm": 1000000,
+            "rail_sample_count": 4000,
+            "rail_sample_ratio_ppm": 200000,
+            "max_consecutive_rail_frames": 2400,
+            "out_of_range_duty_sample_count": 0,
+            "rail_interpretation": (
+                "post_quantizer_pwm_rail_usage_not_source_clip_count"
+            ),
+        }
+        cases = (
+            ("pass", analysis, 0, "pass", None),
+            (
+                "quiet",
+                {**analysis, "max_window_rms": 4096},
+                1,
+                "fail",
+                "audio_level_too_low",
+            ),
+            (
+                "rail-ratio",
+                {
+                    **analysis,
+                    "rail_sample_count": 6000,
+                    "rail_sample_ratio_ppm": 300000,
+                },
+                1,
+                "fail",
+                "audio_rail_ratio_excessive",
+            ),
+            (
+                "rail-run",
+                {**analysis, "max_consecutive_rail_frames": 4801},
+                1,
+                "fail",
+                "audio_sustained_rail_excessive",
+            ),
+            (
+                "wrong-firmware",
+                {**analysis, "firmware": {"file": "app.bin", "sha256": "3" * 64}},
+                2,
+                "not_evaluated",
+                "audio_quality_provenance_mismatch",
+            ),
+            (
+                "wrong-stream",
+                {**analysis, "pcm_sha256": "4" * 64},
+                2,
+                "not_evaluated",
+                "audio_quality_provenance_mismatch",
+            ),
+            (
+                "internally-inconsistent",
+                {**analysis, "active_frame_ratio_ppm": 999999},
+                2,
+                "not_evaluated",
+                "audio_quality_artifact_invalid",
+            ),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            report_path = root / "report.json"
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            for name, candidate, expected_code, evaluation, reason in cases:
+                with self.subTest(name=name):
+                    analysis_path = root / (name + "-analysis.json")
+                    result_path = root / (name + "-result.json")
+                    analysis_path.write_text(json.dumps(candidate), encoding="utf-8")
+                    completed = run(
+                        PICOCALC,
+                        "judge-report",
+                        "--contract",
+                        contract_path,
+                        "--report",
+                        report_path,
+                        "--audio-analysis",
+                        analysis_path,
+                        "--json",
+                        result_path,
+                    )
+                    self.assertEqual(completed.returncode, expected_code, completed.stdout)
+                    result = json.loads(result_path.read_text(encoding="utf-8"))
+                    self.assertEqual(
+                        result["capabilities"]["audio_quality"]["evaluation_status"],
+                        evaluation,
+                    )
+                    if reason is not None:
+                        self.assertIn(reason, result["reasons"])
+
+            missing = run(
+                PICOCALC,
+                "judge-report",
+                "--contract",
+                contract_path,
+                "--report",
+                report_path,
+            )
+            self.assertEqual(missing.returncode, 2)
+            self.assertIn("audio_quality_missing", missing.stdout)
+
     def test_project_commit_does_not_inherit_parent_repository(self):
         module = self.load_picocalc_module()
         with tempfile.TemporaryDirectory() as temporary:

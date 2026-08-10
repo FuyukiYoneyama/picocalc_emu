@@ -47,6 +47,8 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - exact idle fast-forwardとOPT1-B fast path
 - target registryとversioned validation
 - 外部project用quality gateで、audio観測とoracle評価を`not_evaluated/pass/fail`へ分離
+- schema 8を維持した独立audio解析artifact、非正規化raw WAV、schema 2 project契約により、
+  小さすぎる区間音量と極端なPWM rail張り付きを判定
 
 ### 範囲を固定して対応済み
 
@@ -82,7 +84,8 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 
 - Threaded executionを正確性基準にすること
 - NEXT-2A外の同時device access、spinlock timing、core 1 relaunch
-- NEXT-2B外のcodec、sample rate、DMA layout、mixing、speaker response
+- NEXT-2B外のcodec、sample rate、DMA layout、mixing、speaker response。48 kHz PWM5_CCの
+  level解析はdigital境界だけで、実際の音圧やspeaker responseは含まない
 - bootrom execution、USB MSC boot
 - SD multi-block、removal、write protect、raw image persistence、directory-backed storage
 - host backendのPIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式
