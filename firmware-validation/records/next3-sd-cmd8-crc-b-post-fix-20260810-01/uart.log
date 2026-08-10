@@ -1,0 +1,11 @@
+[NEXT3][SD_CMD8_A1][BOOT] app=next3-sd-cmd8-crc-b bsp=0.9.0 variant=pio-rgb565 app_git=e78cabbe2041 bsp_git=5a27dc7a0085-dirty build=2026-08-10T05:30:00Z clock=250000
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[NEXT3][SD][STATE] component=detect status=present detail=0
+[NEXT3][SD][STATE] component=detect status=present detail=0
+[NEXT3][SD][STATE] component=init status=begin detail=0
+[NEXT3][SD][CMD] command=CMD0 arg=00000000 crc=0x95 r1=0x01 r7=none
+[NEXT3][SD][CMD] command=CMD8 arg=000001aa crc=0x85 r1=0x09 r7=ffffffff
+[NEXT3][SD][STATE] component=init status=cmd8_fail detail=9
+[NEXT3][SD_CMD8_A1][RESULT] init=fail filesystem=none keys=none status=fail
+[NEXT3][SD_CMD8_B][EVIDENCE] app=next3-sd-cmd8-crc-b app_git=e78cabbe2041 bsp_git=5a27dc7a0085-dirty card=present cmd0=seen cmd0_r1=0x01 cmd0_arg=00000000 cmd0_crc=0x95 cmd8=seen arg=000001aa crc=0x85 cmd8_r1=0x09 r7=ffffffff filesystem=none keys=none app=fail

@@ -4,7 +4,7 @@
   "parent_contract_id": "next3-negative-conformance-v1-20260810",
   "roadmap_package": "NEXT-3",
   "candidate_id": "sd-spi-cmd8-bad-crc",
-  "status": "first_emulator_run_false_accept_preserved_backend_fix_pending",
+  "status": "closed_correct_detection_after_false_accept_fix",
   "purpose": "measure whether the emulator rejects a hardware-confirmed CMD8 CRC error for the same reason",
   "specification_authority": {
     "publisher": "SD Association",
@@ -117,7 +117,32 @@
     "classification": "false_accept",
     "emulator_run_allowed": false,
     "backend_change_allowed": true,
-    "next_action": "implement exact CMD8 CRC7 rejection in a new backend revision, then run the same Fault B BIN as an explicitly post-fix observation and revalidate A1 and existing positive targets locally"
+    "next_action": "completed"
+  },
+  "post_fix_progress": {
+    "backend_commit": "5edca80ae3cd9f73d381399628a7cc1ab801bdf3",
+    "backend_dirty": false,
+    "backend_sd_model_sha256": "48f2a6d7f3198d9ad7d27d9dfe6b40b8088ac5ae2e8edd762091e9402fe29622",
+    "backend_sd_wire_sha256": "9825f21595c0b7ce04470deb4dff2d9c2a8767e696a3a3b6a8f1b93c51a14092",
+    "implementation": "mandatory CRC7 validation for CMD0 and CMD8; CRC error returns R1 COM_CRC_ERROR without an R7 payload or command side effects",
+    "fault_bin_sha256": "6665ca51944e2c1fb2f7e2ba7adb01ce6878290aac0dfb929202714b83509bd0",
+    "fault_result": "fail_oracle_match",
+    "classification": "correct_negative_detection",
+    "record": "firmware-validation/records/next3-sd-cmd8-crc-b-post-fix-20260810-01/record.json",
+    "record_sha256": "6df91f1471f192ba0f26964b018f23496b2b73aaad3deafbf5f36f8ee949a6ac",
+    "kpi_snapshot": "firmware-validation/records/next3-sd-cmd8-crc-b-post-fix-20260810-01/kpi.json",
+    "kpi_snapshot_sha256": "d3605c2be06008a80c868027fa74e0e8f04fa79ca6e37949e547e8d99e8803af",
+    "a2_fixed_source_commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+    "a2_is_exact_a1_artifact": true,
+    "a2_bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+    "a2_uf2_sha256": "be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd",
+    "a2_emulator_result": "pass",
+    "a2_emulator_report_sha256": "68f18e728bb6c3e47175ceee25b775307edd988699c7813574ca98cc3384395e",
+    "a2_uart_matches_a1": true,
+    "a2_snapshot_matches_a1": true,
+    "third_hardware_run_required": false,
+    "local_backend_workspace_tests": "pass",
+    "ci_run": false
   },
   "frozen_hardware_oracle": {
     "deployment_path": "uf2loader",

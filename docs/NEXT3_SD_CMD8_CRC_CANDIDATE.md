@@ -3,7 +3,8 @@
 **状態（2026-08-10）:** A1正常対照はemulatorと実機がPASSした。Fault Bは再現可能artifactとして固定し、
 uf2loader実機先行runが凍結oracleへ完全一致した。凍結backend `4a908648`で同一BINを初回実行した結果、
 backendは不正CRCを受理してapp PASSとなり、`false_accept`を確定した。初回結果の保存・分類が完了したため、
-次は新しいbackend revisionへCMD8 CRC7 rejectionを実装する。機械可読な正典は
+backend `5edca80`へCMD8 CRC7 rejectionを実装し、同一Fault BINが実機と同じ理由でFAIL、A1が完全PASS
+することを確認して候補を閉じた。機械可読な正典は
 `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`である。
 
 ## なぜLCD候補から切り替えるか
@@ -144,9 +145,18 @@ Bは次の全条件を満たす場合だけhardware-confirmed negative caseへ�
 実機Bがoracleへ完全一致した後だけ、同一BINをbackend commit `4a908648`で1回実行する。現行modelはCRCを
 捨てるためPASSが予測されるが、PASSでもFAILでも初回recordを保存してから分類する。
 
-初回runは`false_accept`として保存・分類済みであり、backend変更禁止境界は完了した。次はbackendへCMD8
-CRC7検査とR1 COM_CRC_ERRORを実装する。修正後は同じfault BINが同じ理由でFAILし、A1と既存positive
-targetがexact contractを保つことをローカルで検証する。GitHub Actionsは使わない。
+初回runは`false_accept`として保存・分類済みであり、backend変更禁止境界は完了した。backend `5edca80`は
+CMD0/CMD8のmandatory CRC7を検査し、不一致時はR1 COM_CRC_ERRORだけを返してcommand semanticsとR7を
+実行しない。同一fault BINのpost-fix runはCMD8 R1=`0x09`、R7=`ffffffff`、init/app FAILとなり、実機理由と
+完全一致した。記録は`next3-sd-cmd8-crc-b-post-fix-20260810-01`にある。
+
+A1 BINのpost-fix runはCMD8 R1=`0x01`／R7=`000001aa`、init/app PASSを維持し、UARTとsnapshotはpre-fix
+A1とbyte一致した。A2 fixed artifactはCRCとidentityをA1へ戻した凍結A1 commit `f942b8e`そのものであり、
+BIN/UF2も実機PASS済みA1と同一なので3回目のhardware runは不要である。backend workspace tests、board
+Clippy、formatはローカル合格し、GitHub Actionsは使っていない。
+
+KPIはversioned snapshotで扱う。初回snapshotは検出0/1・false accept 1/1を保存し、post-fix snapshotは
+backend `5edca80`に対する検出1/1・false accept 0/1を示す。どちらも母数1の限定結果であり一般率ではない。
 
 ## 人間操作とリカバリ
 

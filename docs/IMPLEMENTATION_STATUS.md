@@ -585,6 +585,12 @@ init/app FAIL、後続初期化commandとfilesystem accessなしとなった。4
 init/app PASSを返したため`false_accept`を確定した。初回report、UART、scenario、緑snapshotは改変せず固定
 した。限定datasetのnegative母数1、正検出0、false accept 1、positive相関7系列である。初回保存・分類が
 完了したためbackend変更を解禁し、次はCMD8 CRC7 rejectionの実装とローカル回帰へ進む。
+NEXT3-13でbackend `5edca80`へCMD0/CMD8 mandatory CRC7検査を実装した。同一Fault B BINはR1=`0x09`、
+R7なし、CMD8段階のinit/app FAILとなって実機理由と一致し、`correct_negative_detection`へ到達した。A1は
+正CRCのR1/R7、UART、緑snapshotを完全維持した。初回false-accept snapshotは0/1・1/1として保存し、
+post-fix snapshotは現backendの検出1/1・false accept 0/1を示す。A2は実機PASS済みA1と同一artifactなので
+追加実機run不要。backend workspace全test、board Clippy/format、portable 101 tests、target-schema 34 checksを
+ローカルで検証し、CIは使用していない。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

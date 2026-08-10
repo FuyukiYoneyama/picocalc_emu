@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next3-sd-cmd8-crc-b-post-fix",
+  "description": "Post-fix proof: the same hardware-confirmed Fault B BIN must fail at CMD8 for COM_CRC_ERROR.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "Fault B complete failure evidence",
+      "timeout_ms": 3000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "filesystem=none keys=none app=fail"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "Fault B post-fix final screen",
+      "png": "next3-sd-b-post-fix.png"
+    }
+  ]
+}

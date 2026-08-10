@@ -339,6 +339,21 @@ UARTはprefix停止により最後の反復EVIDENCE lineの途中で終わるが
 一般的なfalse-acceptance率ではない。positive相関は7系列のまま。backend変更禁止境界は完了し、次は新しい
 revisionへCMD8 CRC7 rejectionを実装して、同一BINの正理由FAILと既存positive回帰をローカルで証明する。
 
+## NEXT3-13: SD CMD8 CRC backend fix and A2 closure
+
+backend `5edca80`へCMD0/CMD8のmandatory CRC7検査を実装した。CRC不一致はR1 COM_CRC_ERRORを返し、
+R7やcommand side effectを生成しない。known vector CMD0=`0x95`、CMD8=`0x87`、bad CMD0 retry、bad CMD8
+R7なしをunit testへ固定し、既存partial-command testのCS遷移欠落も実際のLow→Highへ修正した。
+
+同一Fault B BINのpost-fix runはCMD0 R1=`0x01`、CMD8 CRC=`0x85`／R1=`0x09`／R7=`ffffffff`、
+`cmd8_fail detail=9`、init/app FAILとなり、実機と同じ理由で`correct_negative_detection`へ到達した。A1は
+CMD8 CRC=`0x87`／R1=`0x01`／R7=`000001aa`、init/app PASSを維持し、UARTと緑snapshotがpre-fixと
+byte一致した。A2は凍結A1 commit/artifactそのものへ戻すため、実機PASS済みUF2と同一hashで3回目の人間操作は
+不要である。
+
+最初のfalse accept recordとKPIは変更しない。新しいpost-fix KPIは現backendの検出1/1、false accept 0/1を
+示す。これは母数1のversioned結果であり一般率ではない。全検証はローカルで行い、pushとCIは行っていない。
+
 ## CI運用
 
 NEXT-3のbuild、schema検証、emulator runはローカルで行う。通常の試行錯誤にGitHub Actionsを
