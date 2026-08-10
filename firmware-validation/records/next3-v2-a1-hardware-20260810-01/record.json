@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-v2-a1-hardware-20260810-01",
+  "title": "NEXT-3 v2 A1 same-artifact PicoCalc positive-control correlation",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-lcd-cs-fault-v2-predesign-20260810",
+  "result": "pass",
+  "classification": "same_artifact_hardware_correlation",
+  "baseline_record": {
+    "path": "firmware-validation/records/next3-v2-a1-20260810-01/record.json",
+    "sha256": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a"
+  },
+  "source": {
+    "repo": "picocalc-next3-lcd-fault",
+    "commit": "168a65d9f8206d2767641c589f21f359c1ce7b1b",
+    "app_identity": "next3-lcd-cs-fault-v2-a1-bitbang-rgb888",
+    "embedded_app_commit": "168a65d9f820",
+    "embedded_bsp_commit": "6bd826e7dcaf-dirty",
+    "lcd_variant": "hwspi-rgb888"
+  },
+  "artifact": {
+    "bin_sha256": "28c42956d63b162fa6a0487ba82cfcdb1e63fc62b13ce0672c0344cdaf7f5f6c",
+    "uf2_sha256": "ce15219188b35ef54edebfcb6b6df09ec8632145d8e1ce28ea750f2444742c99",
+    "build_timestamp": "2026-08-10T06:00:00Z",
+    "clean_clone_reproducible": true
+  },
+  "deployment": {
+    "path": "uf2loader",
+    "bootsel_used": false,
+    "basis": "operator supplied the run evidence after following the frozen uf2loader procedure",
+    "uart_encodes_deployment_path": false,
+    "artifact_link": "the UART boot line embeds the canonical app and BSP identities; the selected UF2 SHA was verified before deployment but is not printed by firmware"
+  },
+  "hardware": {
+    "product": "ClockworkPi PicoCalc",
+    "mcu": "RP2040",
+    "validation_date": "2026-08-10",
+    "operator": "Fuyuki Yoneyama"
+  },
+  "physical_run": {
+    "boot_identity": "pass",
+    "clock_125mhz": "pass",
+    "lcd_init": "pass",
+    "psram": {
+      "result": "pass",
+      "capacity_bytes": 8388608,
+      "selected_clkdiv": 1.5,
+      "self_test": "pass"
+    },
+    "audio_reference": {
+      "result": "pass",
+      "underruns": 0,
+      "stopped_after_lcd_verification": true
+    },
+    "lcd": {
+      "observer": "historical_5b12a7c_sio_bitbang",
+      "solid_black": "pass",
+      "solid_white": "pass",
+      "solid_red": "pass",
+      "solid_green": "pass",
+      "solid_blue": "pass",
+      "pattern_raw_rgb888": ["fc0000", "00fc00", "0000fc", "fcfcfc"],
+      "pattern_rgb565": ["f800", "07e0", "001f", "ffff"],
+      "pattern_mismatches": 0,
+      "app_status": "pass"
+    },
+    "sd": "pass",
+    "ready": "pass",
+    "evidence_marker_count": 14,
+    "evidence_marker_stable": true,
+    "exception_observed": false,
+    "unsupported_mmio_observed": false,
+    "final_marker": "[NEXT3][LCD_CS_V2_A1][EVIDENCE] app_git=168a65d9f820 bsp_git=6bd826e7dcaf-dirty solid=pass pattern=pass mismatches=0 app=pass sd=pass",
+    "photo_observation": "red, green, and blue blocks, white frame, green top/status regions, and blue bottom region are visibly present"
+  },
+  "correlation": {
+    "emulator_backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "emulator_result": "pass",
+    "hardware_result": "pass",
+    "hardware_correlation_completed": true,
+    "same_registered_artifact": true,
+    "emulator_pass_hardware_fail_count": 0,
+    "false_accept": false,
+    "verdict": "pass"
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "A1 is the positive control; Fault B has not yet been run"
+  },
+  "gate": {
+    "fault_b_implementation_allowed": true,
+    "next_action": "derive Fault B by changing only write-side CS framing and firmware identity, freeze its artifacts and oracle, then run hardware before any emulator execution"
+  },
+  "artifacts": {
+    "uart_log": {
+      "path": "evidence/uf2loader-uart.log",
+      "bytes": 8665,
+      "sha256": "c81af57000c634507944be2db0a38f652c778eb715b0da584d273c36f3db8500"
+    },
+    "final_photo": {
+      "path": "evidence/final.jpg",
+      "sha256": "33764382ac3b5273a348298501e6a322d6907fc5ff3c98da1e6cbe501091f67f",
+      "source_original_sha256": "5c422c839443decc44981a9a7624aeacf229d51e0524f31e241edd025f8a9488",
+      "decoded_rgb_sha256": "6d015ee50b880a604556c5abfdbfba17e9b69ba45b10208dc02a1a48a266e3a1",
+      "width": 3024,
+      "height": 3024,
+      "metadata_policy": "repository copy has EXIF, XMP, ICC, and GPS removed; decoded RGB pixels match the supplied original"
+    },
+    "notes": "notes.md"
+  }
+}

@@ -646,7 +646,7 @@ raise SystemExit(code)
             next3.get("contract_id"),
             "next3-negative-conformance-v1-20260810",
         )
-        self.assertEqual(next3.get("positive_correlations"), 5)
+        self.assertEqual(next3.get("positive_correlations"), 6)
         self.assertEqual(next3.get("negative_denominator"), 0)
         self.assertEqual(next3.get("rate_state"), "no_negative_denominator")
         self.assertEqual(next3.get("candidates_audited"), 2)
@@ -663,9 +663,9 @@ raise SystemExit(code)
             "next3-lcd-cs-fault-v2-predesign-20260810",
         )
         self.assertEqual(
-            next3.get("v2_status"), "baseline_emulator_pass_hardware_pending"
+            next3.get("v2_status"), "baseline_hardware_correlated_fault_ready"
         )
-        self.assertEqual(next3.get("v2_next_step"), "baseline_hardware_correlation")
+        self.assertEqual(next3.get("v2_next_step"), "fault_implementation")
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:

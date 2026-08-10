@@ -1,7 +1,8 @@
 # NEXT-3 LCD fault v2 candidate design
 
-**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASSまで完了した。A1実機相関待ちである。
-fault Bは未実装であり、A1の同一UF2がuf2loader経由で完全PASSするまで着手しない。
+**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASS・同一UF2のuf2loader実機PASSまで
+完了した。positive control gateは閉じ、次はwriter CS境界とidentityだけを変更するfault Bを固定する。
+fault Bは実機oracle確認前にエミュレーターで実行しない。
 
 機械可読な正典は
 `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`である。本書は判断根拠と人が読む

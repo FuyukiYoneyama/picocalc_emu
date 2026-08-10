@@ -4,7 +4,7 @@
   "parent_contract_id": "next3-negative-conformance-v1-20260810",
   "roadmap_package": "NEXT-3",
   "candidate_id": "lcd-cs-hold-v2-controlled-bitbang-observer",
-  "status": "baseline_emulator_pass_hardware_pending",
+  "status": "baseline_hardware_correlated_fault_ready",
   "purpose": "reproduce the historical LCD CS-hold failure while changing only write-side CS framing and holding the readback observer constant",
   "baseline_progress": {
     "implementation_commit": "168a65d9f8206d2767641c589f21f359c1ce7b1b",
@@ -13,9 +13,10 @@
     "clean_clone_reproducible": true,
     "emulator_backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
     "emulator_result": "pass",
-    "hardware_result": "pending",
+    "hardware_result": "pass",
     "record": "firmware-validation/records/next3-v2-a1-20260810-01/record.json",
-    "fault_implementation_allowed": false
+    "hardware_record": "firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json",
+    "fault_implementation_allowed": true
   },
   "confirmed_evidence": {
     "historical_failure": {

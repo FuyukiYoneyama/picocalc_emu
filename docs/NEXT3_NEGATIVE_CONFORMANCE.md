@@ -6,8 +6,9 @@ NEXT3-2の明示的fault版buildとuf2loader経由の実機試験まで完了し
 エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。原因分析では、
 v1が旧write-side CS defectを再現する一方、旧症状を測ったSIO bitbang RAMRD observerではなく6 MHz
 hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計と
-A1 baseline実装、clean clone再現、エミュレーターPASSまで完了した。A1実機PASSは未確認であり、
-fault Bはまだ実装しない。v2 fault実測前にobserver差を唯一の原因とは断定しない。
+A1 baseline実装、clean clone再現、エミュレーターPASS、同一UF2のuf2loader実機PASSまで完了した。
+positive control gateを満たし、次はfault Bの実装・artifact固定である。v2 fault実測前にobserver差を
+唯一の原因とは断定しない。
 
 ## 目的
 
@@ -30,6 +31,7 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2事前契約: `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`
 - v2原因分析・設計: `docs/NEXT3_V2_CANDIDATE_DESIGN.md`
 - v2 A1 baseline: `firmware-validation/records/next3-v2-a1-20260810-01/record.json`
+- v2 A1実機相関: `firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json`
 
 ## 分類
 
@@ -190,8 +192,14 @@ clean backend `4a90864816ef58286f2b292df0e7fe44fbcd4809`のA1 runは700,000,000 
 RAMRD 6回、solid 5色PASS、pattern PASS/mismatch 0、SD PASS、exceptionなし、unsupported MMIO 0で
 verdict PASSとなった。recordは`firmware-validation/records/next3-v2-a1-20260810-01/record.json`にある。
 
-次は同一UF2を一般利用経路のuf2loaderから実機起動する。実機でも完全PASSした場合だけB実装へ進む。
-BOOTSELを必要とする理由はなく、A1実機結果が不一致なら停止して原因分析へ戻る。
+同一UF2を一般利用経路のuf2loaderから実機起動した。boot identityはcanonical A1 commitと一致し、
+solid 5色、pattern、PSRAM、SDはすべてPASS、最終markerは14回同値だった。写真でもRGB三色、白枠、
+上下/status領域を確認した。原写真はGPS付きEXIFを含むため、repository copyだけmetadataを除去し、
+decoded RGB SHA一致を確認した。
+
+UART自体はuf2loader経路やUF2 SHAを出力しない。したがって経路はoperator procedure、artifact連続性は
+事前UF2 hash、clean clone再現、embedded source/build identity、実行証拠の組合せによる。この限界を
+in-band暗号証明とは表現しない。A1 positive control gateは完了し、次はB実装・artifact固定へ進む。
 
 ## CI運用
 

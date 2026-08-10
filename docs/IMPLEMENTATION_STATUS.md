@@ -535,7 +535,9 @@ SIO GPIO readbackをpanelへ接続しておらずRAMRD count 0となったため
 pin-level経路、bit-level中だけのdummy timing、実機証拠に一致するRGB666 R,G,B orderを実装した。
 clean backend `4a90864`でA1はsolid 5色、4色pattern、SDをすべてPASSし、exceptionなし、
 unsupported MMIO 0だった。既存PIO/RGB565 variant Bも同じbackendでPASSした。backendのpromoted roleは
-まだ変更していない。次はA1の同一UF2をuf2loaderから実機確認し、完全PASSした場合だけfault Bへ進む。
+まだ変更していない。同一UF2のuf2loader実機試験もboot identity、solid 5色、pattern mismatch 0、
+PSRAM、SD、14回の最終marker、写真がすべて一致した。A1 positive control gateを完了し、positive相関は
+6系列となった。次はobserverを変えずwrite-side CS framingとidentityだけを変更するfault Bを固定する。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
