@@ -12,8 +12,8 @@ clean cloneで一致するBIN/UF2/source bundleとoracleを固定した。uf2loa
 rotated-bit症状となり、solid 3色とpattern mismatch数が凍結oracleに一致しなかった。Fault Bも
 `inconclusive`、negative母数増分0とし、エミュレーター初回runは行わない。observer差は不一致の
 十分条件ではなかった。実機後source gap分析では、旧160x160 tiling、runtime初期化順とactive audio IRQ、
-回収不能な旧toolchainを残差として順位付けした。複数の未固定変数を重ねた再試行はせずv2を閉じ、次は
-決定的なSD CMD8 bad-CRC negative候補を事前設計する。
+回収不能な旧toolchainを残差として順位付けした。複数の未固定変数を重ねた再試行はせずv2を閉じた。
+決定的なSD CMD8 bad-CRC negative候補の実装前契約を固定し、次はA1 baseline実装である。
 
 ## 目的
 
@@ -42,6 +42,8 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2 Fault B実機結果: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/record.json`
 - v2 Fault B実機後KPI: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/kpi.json`
 - v2実機後source gap分析: `firmware-validation/records/next3-v2-gap-analysis-20260810-01/record.json`
+- SD CMD8 CRC事前契約: `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`
+- SD CMD8 CRC設計: `docs/NEXT3_SD_CMD8_CRC_CANDIDATE.md`
 
 ## 分類
 
@@ -266,9 +268,12 @@ writer modeの証拠から除外した。source commitとA1→B diffが実際の
 重ねて旧症状へ合わせることはpost-hoc oracle fittingになるため行わない。v2は`inconclusive`で閉じ、Fault B
 emulator runは禁止、oracle不変、negative母数0のままとする。
 
-次はタイミング依存のLCD観測を離れ、SD SPI command CRCを使う決定的なnegative caseを事前設計する。
-第一候補はCMD8のCRCを意図的に壊し、正常版／fault版／修正版、hardware-first fault、理由一致判定を固定する。
-この段階は設計のみで、fault実装や実機操作はまだ行わない。
+タイミング依存のLCD観測を離れ、SD SPI CMD8 CRCを使う決定的なnegative caseの実装前契約を固定した。
+CMD8はCRC検査が常時有効である一方、backend `4a908648`はCRC byteを捨てる。A1は正しい`0x87`、Bは
+CRCだけを`0x85`へ変え、実機R1=`0x09`のCRC errorをhardware-firstで確認する。filesystemへはアクセスせず、
+通常の実機操作はuf2loaderからA1とBを各1回起動する2回だけである。詳細は
+[`NEXT3_SD_CMD8_CRC_CANDIDATE.md`](NEXT3_SD_CMD8_CRC_CANDIDATE.md)に固定した。次はA1 baseline実装で、
+fault実装・fault emulator run・実機操作はまだ行わない。
 
 ## CI運用
 

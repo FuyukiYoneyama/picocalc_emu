@@ -668,13 +668,20 @@ raise SystemExit(code)
         self.assertEqual(next3.get("v2_fault_hardware_status"), "hardware_observed")
         self.assertEqual(next3.get("v2_fault_classification"), "inconclusive")
         self.assertEqual(
-            next3.get("v2_next_step"), "predesign_sd_cmd8_crc_negative_case"
+            next3.get("v2_next_step"), "implement_sd_cmd8_crc_a1_baseline"
         )
         self.assertEqual(
             next3.get("v2_top_remaining_variable"),
             "160x160 fill tiling and resulting window/CS boundary sequence",
         )
         self.assertIs(next3.get("v2_emulator_run_allowed"), False)
+        self.assertEqual(
+            next3.get("sd_crc_contract_id"),
+            "next3-sd-cmd8-crc-v1-predesign-20260810",
+        )
+        self.assertEqual(next3.get("sd_crc_status"), "frozen_before_implementation")
+        self.assertEqual(next3.get("sd_crc_required_hardware_runs"), 2)
+        self.assertIs(next3.get("sd_crc_fault_emulator_run_allowed"), False)
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -686,6 +693,34 @@ raise SystemExit(code)
             kpi = json.loads(kpi_path.read_text(encoding="utf-8"))
             kpi["rates"]["false_accept_rate"] = 0.0
             kpi_path.write_text(json.dumps(kpi), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "fail")
+
+    def test_target_schema_rejects_next3_sd_crc_oracle_weakening(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            contract_path = (
+                project
+                / "firmware-validation/contracts/next3-sd-cmd8-crc-v1.json"
+            )
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            contract["frozen_hardware_oracle"]["cmd8_r1"] = "01"
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
             completed = run(
                 VERIFY,
                 "--project-root",

@@ -556,7 +556,13 @@ NEXT3-7では実機後source gap分析を固定した。observer差は不一致�
 旧`fill_rect()`の160x160 tiling/window境界、旧runtimeに存在しなかったPSRAM probeとactive audio IRQ、
 回収不能な旧SDK/toolchain、GPIO初期化の細部である。旧BIN/UF2と完全build環境を復元できないため、複数の
 差を重ねてoracleへ合わせる再試行は行わずv2を閉じた。次はSD SPI CMD8 bad-CRCを第一候補とする決定的な
-negative caseの事前設計であり、まだfault実装・emulator run・実機操作は行っていない。
+negative caseの事前設計である。
+
+NEXT3-8でSD CMD8 CRC候補の実装前契約を固定した。仕様上CMD8 CRCは常時検査されるが、backend
+`4a908648`はcommand CRCを無条件に捨てる。A1は`0x87`でemulator／実機PASS、BはCRC byteだけを`0x85`へ
+変えて実機R1=`0x09`・CMD8段階FAILを凍結oracleとする。Bはhardware-firstで、oracle一致前にemulatorへ
+投入しない。appはfilesystemへアクセスせず、通常の人間操作はuf2loaderからA1/Bを各1回起動する2回だけで
+ある。次は独立repositoryでA1 baselineを実装する。fault、実機run、backend修正は未着手である。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

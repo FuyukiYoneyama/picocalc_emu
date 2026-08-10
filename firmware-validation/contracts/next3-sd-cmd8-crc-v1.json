@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "contract_id": "next3-sd-cmd8-crc-v1-predesign-20260810",
+  "parent_contract_id": "next3-negative-conformance-v1-20260810",
+  "roadmap_package": "NEXT-3",
+  "candidate_id": "sd-spi-cmd8-bad-crc",
+  "status": "frozen_before_implementation",
+  "purpose": "measure whether the emulator rejects a hardware-confirmed CMD8 CRC error for the same reason",
+  "specification_authority": {
+    "publisher": "SD Association",
+    "document": "Physical Layer Simplified Specification",
+    "version_used": "5.00 text distributed in the Version 5.10 PDF",
+    "section": "7.2.2 Bus Transfer Protection",
+    "url": "https://www.sdcard.org/cms/wp-content/themes/sdcard-org/dl.php?f=Part1_Physical_Layer_Simplified_Specification_Ver5.10.pdf",
+    "normative_rule": "CMD8 CRC verification is always enabled; a CRC error returns the R1 CRC-error indication regardless of command index"
+  },
+  "frozen_sources": {
+    "generator_commit": "5a27dc7a00852004f797d4331bde942a4d821a0f",
+    "sd_driver_path": "bsp/src/sdcard.cpp",
+    "sd_driver_sha256": "215b99d02fb39c179caa5eb55bf5a8efbab3be518ded621afaf5c733b26ec47a",
+    "backend_commit_reserved_for_first_fault_run": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "backend_sd_model_path": "crates/picocalc-board/src/sdcard.rs",
+    "backend_sd_model_sha256": "e4aaad6d73acc13669c16549ccafb843964dcc53d095edfbac27c0aa28890e91",
+    "backend_wire_path": "crates/picocalc-board/src/sd_wire.rs",
+    "backend_wire_sha256": "1bc051557b1c39e416a32c0e0c62f14dfffc644e22d80ac89d735025eb7d0f55"
+  },
+  "predicted_model_gap": {
+    "firmware_correct_cmd8_crc_byte": "87",
+    "fault_cmd8_crc_byte": "85",
+    "fault_crc_end_bit_remains_one": true,
+    "backend_current_behavior": "the sixth command byte is discarded and CMD8 returns the normal R7 response for any CRC",
+    "prediction_if_hardware_oracle_matches": "the frozen backend will pass the bad-CRC firmware and the first classification will be false_accept",
+    "prediction_is_not_a_result": true,
+    "backend_change_before_first_fault_run_allowed": false
+  },
+  "firmware_design": {
+    "planned_repository": "picocalc-next3-sd-crc-fault",
+    "application_kind": "minimal direct SD-initialization diagnostic",
+    "filesystem_mount_or_write_allowed": false,
+    "manual_key_input_required": false,
+    "baseline": {
+      "cmd8_argument": "000001aa",
+      "cmd8_crc_byte": "87",
+      "required_hardware_result": "CMD0 enters idle, CMD8 returns R1=01 and R7=000001aa, and SD initialization passes",
+      "required_emulator_result": "the same-build BIN passes in the frozen backend"
+    },
+    "fault": {
+      "cmd8_argument": "000001aa",
+      "cmd8_crc_byte": "85",
+      "allowed_changes_from_baseline": [
+        "application identity and evidence marker",
+        "the CMD8 CRC literal from 0x87 to 0x85"
+      ],
+      "forbidden_changes": [
+        "CMD0 or any CMD8 byte other than the CRC byte",
+        "SPI clock, mode, CS framing, response polling, R7 parsing, or timeout",
+        "backend source before the first hardware-confirmed fault run",
+        "hardware oracle after observing the result"
+      ]
+    },
+    "fixed": {
+      "required_source_change": "restore only the CMD8 CRC literal to 0x87 and remove the fault identity",
+      "artifact_identity_rule": "if the restored source reproduces the baseline BIN and UF2 hashes exactly, baseline hardware evidence also proves the fixed artifact and no third hardware run is required"
+    }
+  },
+  "frozen_hardware_oracle": {
+    "deployment_path": "uf2loader",
+    "bootsel_required": false,
+    "card_detect": "present",
+    "cmd0_r1": "01",
+    "cmd8_crc_byte": "85",
+    "cmd8_r1": "09",
+    "cmd8_required_r1_bits": [
+      "idle_state",
+      "com_crc_error"
+    ],
+    "cmd8_forbidden_r1_bits": [
+      "illegal_command",
+      "address_error",
+      "parameter_error"
+    ],
+    "sd_init_result": "fail",
+    "failure_stage": "cmd8_crc",
+    "later_initialization_commands_allowed": false,
+    "filesystem_access_allowed": false,
+    "application_status": "fail",
+    "unrelated_failure_causes": [
+      "card not detected",
+      "CMD0 failure",
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "missing or incomplete UART capture",
+      "artifact identity mismatch"
+    ],
+    "post_hoc_change_allowed": false
+  },
+  "execution_order": [
+    "implement baseline observability and the correct 0x87 CMD8 path without filesystem access",
+    "freeze source, SDK commit, toolchain, timestamp, BIN, UF2, and source bundle from two clean builds",
+    "run the baseline BIN in the frozen backend and the same-build UF2 once on hardware through uf2loader; both must pass",
+    "derive the fault by changing only identity, evidence marker, and CMD8 CRC 0x87 to 0x85, then freeze its reproducible artifacts",
+    "run the fault UF2 on hardware before any fault BIN emulator run",
+    "only if hardware matches the frozen CMD8 CRC oracle exactly, run the same fault BIN once in backend commit 4a908648 and preserve PASS or FAIL unchanged",
+    "classify reason agreement before changing the backend",
+    "if the first result is false_accept, add exact CMD8 CRC handling to a new backend revision and prove the same fault BIN fails for COM_CRC_ERROR while all positive targets remain exact",
+    "restore the firmware CRC and prove the result is artifact-identical to the baseline or perform an explicit fixed hardware run"
+  ],
+  "stop_conditions": [
+    "baseline emulator or hardware result is not an exact pass",
+    "clean-build artifact reproducibility fails",
+    "fault diff exceeds the allowed change budget",
+    "hardware result does not match CMD8 R1=09 and the frozen reason fields",
+    "artifact or boot identity is incomplete"
+  ],
+  "human_operations": {
+    "required_hardware_runs": 2,
+    "runs": [
+      "baseline UF2 once through uf2loader",
+      "fault UF2 once through uf2loader"
+    ],
+    "timed_input_or_photo_required": false,
+    "keys_required": 0,
+    "stable_final_screen_photo_per_run": 1,
+    "retry_policy": "retry only an invalid capture with missing identity or incomplete UART, at most once per artifact; an oracle mismatch is evidence and is not retried",
+    "third_fixed_run": "not required when the fixed artifact hashes exactly match the already hardware-passed baseline"
+  },
+  "media_and_loader_controls": {
+    "use_the_same_physical_card_for_baseline_and_fault": true,
+    "filesystem_geometry_is_out_of_scope": true,
+    "application_must_not_mount_format_write_or_remove_files": true,
+    "uf2loader_route_is_primary": true,
+    "reason": "the application tests the normal PicoCalc launch path, CMD0 resets the card protocol before CMD8, and no flash-layout or loader-reservation property is under test"
+  },
+  "ci_policy": {
+    "local_validation_only_during_development": true,
+    "push_or_ci_required_for_predesign": false,
+    "workflow_change_allowed_without_user_permission": false
+  }
+}

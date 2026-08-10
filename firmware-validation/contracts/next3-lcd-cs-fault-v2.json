@@ -84,7 +84,9 @@
     "v2_closed": true,
     "emulator_run_allowed": false,
     "historical_oracle_changed": false,
-    "next_action": "predesign_sd_cmd8_crc_negative_case"
+    "next_candidate_contract": "firmware-validation/contracts/next3-sd-cmd8-crc-v1.json",
+    "next_candidate_contract_sha256": "bdb9c981d4a76b82972ae76e94febf724831f4e74f00b0e13ee849f9b7b4e903",
+    "next_action": "implement_sd_cmd8_crc_a1_baseline"
   },
   "controlled_experiment": {
     "independent_variable": "write-side CS framing for CASET, RASET, RAMWR, and pixel payload",

@@ -1798,6 +1798,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "kpi_schema": base / "negative-conformance-kpi.schema.json",
         "contract": base / "contracts/next3-negative-conformance-v1.json",
         "v2_contract": base / "contracts/next3-lcd-cs-fault-v2.json",
+        "sd_crc_contract": base / "contracts/next3-sd-cmd8-crc-v1.json",
         "v2_baseline": base / "records/next3-v2-a1-20260810-01/record.json",
         "v2_hardware": base
         / "records/next3-v2-a1-hardware-20260810-01/record.json",
@@ -1841,12 +1842,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "v2_fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v2-b.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
         "v2_document": root / "docs/NEXT3_V2_CANDIDATE_DESIGN.md",
+        "sd_crc_document": root / "docs/NEXT3_SD_CMD8_CRC_CANDIDATE.md",
     }
     expected_hashes = {
         "case_schema": "3153f4a902f8a99b938a01bafadffd019f9a9180fe3d4c79eaf890f84359c0ef",
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
-        "v2_contract": "34f1c959bc25bd71d457dd9714cc99e68eac98e6ea5b31c3146ad4da9953ea42",
+        "v2_contract": "b0df0227b538c9efd507d6653547c5d9f3d543d2b1b673b5198f8554e229c680",
+        "sd_crc_contract": "bdb9c981d4a76b82972ae76e94febf724831f4e74f00b0e13ee849f9b7b4e903",
         "v2_baseline": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a",
         "v2_hardware": "6512202c3add131141dcabfddf25b67d3973bf406c07e4b5bdff05717ab35bd5",
         "v2_hardware_notes": "73c91e56c71cb02f347126c704819f5c1d2e837a6814d2bbbcda876f0f88ccf0",
@@ -1874,8 +1877,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
         "v2_fault_bundle": "876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0",
-        "document": "095944ab5d42394944375e932241eebb5950d366c3bfa5b1c25ff847ca3f8a9e",
+        "document": "252eb55178f8ffb8f4340234eab999a9435595127a8f9f84b2605f916111b2e3",
         "v2_document": "5f0cc1a739cbc002c0097be5545ee953edb8dd05c4a71ae3f5991950683ae704",
+        "sd_crc_document": "ab9ac50e778d20691adb68d459985ce0908866b1227cdfbc1869c15f5ddabf6e",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1952,6 +1956,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         kpi_schema = load_json(paths["kpi_schema"])
         contract = load_json(paths["contract"])
         v2_contract = load_json(paths["v2_contract"])
+        sd_crc_contract = load_json(paths["sd_crc_contract"])
         v2_baseline = load_json(paths["v2_baseline"])
         v2_hardware = load_json(paths["v2_hardware"])
         v2_fault = load_json(paths["v2_fault"])
@@ -1978,6 +1983,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         v2_oracle = v2_contract["fault_oracle"]
         v2_progress = v2_contract["baseline_progress"]
         v2_fault_progress = v2_contract["fault_progress"]
+        sd_crc_sources = sd_crc_contract["frozen_sources"]
+        sd_crc_gap = sd_crc_contract["predicted_model_gap"]
+        sd_crc_design = sd_crc_contract["firmware_design"]
+        sd_crc_oracle = sd_crc_contract["frozen_hardware_oracle"]
         aligned = all(
             (
                 all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
@@ -2081,8 +2090,63 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 v2_post_hardware.get("v2_closed") is True,
                 v2_post_hardware.get("emulator_run_allowed") is False,
                 v2_post_hardware.get("historical_oracle_changed") is False,
+                v2_post_hardware.get("next_candidate_contract")
+                == "firmware-validation/contracts/next3-sd-cmd8-crc-v1.json",
+                v2_post_hardware.get("next_candidate_contract_sha256")
+                == expected_hashes["sd_crc_contract"],
                 v2_post_hardware.get("next_action")
-                == "predesign_sd_cmd8_crc_negative_case",
+                == "implement_sd_cmd8_crc_a1_baseline",
+                sd_crc_contract.get("schema_version") == 1,
+                sd_crc_contract.get("contract_id")
+                == "next3-sd-cmd8-crc-v1-predesign-20260810",
+                sd_crc_contract.get("parent_contract_id")
+                == "next3-negative-conformance-v1-20260810",
+                sd_crc_contract.get("status") == "frozen_before_implementation",
+                sd_crc_contract.get("specification_authority", {}).get("section")
+                == "7.2.2 Bus Transfer Protection",
+                sd_crc_sources.get("generator_commit")
+                == "5a27dc7a00852004f797d4331bde942a4d821a0f",
+                sd_crc_sources.get("sd_driver_sha256")
+                == "215b99d02fb39c179caa5eb55bf5a8efbab3be518ded621afaf5c733b26ec47a",
+                sd_crc_sources.get("backend_commit_reserved_for_first_fault_run")
+                == "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+                sd_crc_sources.get("backend_sd_model_sha256")
+                == "e4aaad6d73acc13669c16549ccafb843964dcc53d095edfbac27c0aa28890e91",
+                sd_crc_gap.get("firmware_correct_cmd8_crc_byte") == "87",
+                sd_crc_gap.get("fault_cmd8_crc_byte") == "85",
+                sd_crc_gap.get("fault_crc_end_bit_remains_one") is True,
+                sd_crc_gap.get("prediction_is_not_a_result") is True,
+                sd_crc_gap.get("backend_change_before_first_fault_run_allowed")
+                is False,
+                sd_crc_design.get("filesystem_mount_or_write_allowed") is False,
+                sd_crc_design.get("manual_key_input_required") is False,
+                sd_crc_design.get("fault", {}).get("allowed_changes_from_baseline")
+                == [
+                    "application identity and evidence marker",
+                    "the CMD8 CRC literal from 0x87 to 0x85",
+                ],
+                sd_crc_oracle.get("deployment_path") == "uf2loader",
+                sd_crc_oracle.get("bootsel_required") is False,
+                sd_crc_oracle.get("cmd0_r1") == "01",
+                sd_crc_oracle.get("cmd8_crc_byte") == "85",
+                sd_crc_oracle.get("cmd8_r1") == "09",
+                sd_crc_oracle.get("failure_stage") == "cmd8_crc",
+                sd_crc_oracle.get("later_initialization_commands_allowed") is False,
+                sd_crc_oracle.get("filesystem_access_allowed") is False,
+                sd_crc_oracle.get("post_hoc_change_allowed") is False,
+                sd_crc_contract.get("human_operations", {}).get(
+                    "required_hardware_runs"
+                )
+                == 2,
+                sd_crc_contract.get("human_operations", {}).get("keys_required") == 0,
+                sd_crc_contract.get("media_and_loader_controls", {}).get(
+                    "application_must_not_mount_format_write_or_remove_files"
+                )
+                is True,
+                sd_crc_contract.get("ci_policy", {}).get(
+                    "local_validation_only_during_development"
+                )
+                is True,
                 v2_experiment.get("independent_variable")
                 == "write-side CS framing for CASET, RASET, RAMWR, and pixel payload",
                 v2_experiment.get("baseline", {}).get("readback_observer")
@@ -2427,11 +2491,17 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             v2_status=v2_contract.get("status"),
             v2_fault_hardware_status=v2_fault_hardware.get("status"),
             v2_fault_classification=v2_fault_hardware.get("classification"),
-            v2_next_step="predesign_sd_cmd8_crc_negative_case",
+            v2_next_step="implement_sd_cmd8_crc_a1_baseline",
             v2_top_remaining_variable=v2_post_hardware.get(
                 "highest_ranked_remaining_variable"
             ),
             v2_emulator_run_allowed=False,
+            sd_crc_contract_id=sd_crc_contract.get("contract_id"),
+            sd_crc_status=sd_crc_contract.get("status"),
+            sd_crc_required_hardware_runs=sd_crc_contract.get(
+                "human_operations", {}
+            ).get("required_hardware_runs"),
+            sd_crc_fault_emulator_run_allowed=False,
         )
     except (
         OSError,
