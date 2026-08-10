@@ -47,8 +47,8 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - exact idle fast-forwardとOPT1-B fast path
 - target registryとversioned validation
 - 外部project用quality gateで、audio観測とoracle評価を`not_evaluated/pass/fail`へ分離
-- schema 8を維持した独立audio解析artifact、非正規化raw WAV、schema 2 project契約により、
-  小さすぎる区間音量と極端なPWM rail張り付きを判定
+- schema 8を維持した独立audio解析artifact、非正規化raw WAV、schema 3 project契約により、
+  控えめな区間音量をadvisory、極端なPWM rail張り付きをFAILとして分離
 
 ### 範囲を固定して対応済み
 
@@ -90,7 +90,8 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 - SD multi-block、removal、write protect、raw image persistence、directory-backed storage
 - host backendのPIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式
 - scenarioのloop／branch、任意report fieldの直接assert
-- 実機の色、向き、可読性、聴感、キーの物理反応品質
+- 実機の色、向き、可読性、キーの物理反応品質。聴感は自動モデルではなく、固定された2問式の
+  実機speaker受入記録で判定
 
 完全な機械可読一覧は
 [`firmware-validation/capability.json`](../firmware-validation/capability.json)を優先します。

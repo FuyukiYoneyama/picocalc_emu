@@ -22,6 +22,7 @@ BENCHMARK_REALTIME = ROOT / "tools/benchmark_firmware_realtime.py"
 NEXT2_AUDIO_ORACLE = ROOT / "tools/next2_audio_oracle.py"
 NEXT2_AUDIO_ORACLE_V3 = ROOT / "tools/next2_audio_oracle_v3.py"
 NEXT2_AUDIO_NEGATIVE = ROOT / "tools/verify_next2_audio_negative.py"
+JUDGE_SPEAKER_LISTENING = ROOT / "tools/judge_speaker_listening.py"
 
 
 def run(*arguments, env=None):
@@ -630,6 +631,167 @@ raise SystemExit(code)
             )
             self.assertEqual(missing.returncode, 2)
             self.assertIn("audio_quality_missing", missing.stdout)
+
+    def test_project_quality_schema3_reports_quiet_as_advisory(self):
+        digest = "cd" * 32
+        backend = "1" * 40
+        firmware = "2" * 64
+        contract = {
+            "schema_version": 3,
+            "contract_id": "accepted-quiet-project-v3",
+            "report_schema": 8,
+            "required_capabilities": {
+                "audio_sink": {
+                    "expected_count": 10000,
+                    "expected_sha256": digest,
+                    "quality": {
+                        "advisory_minimum_max_window_rms": 8192,
+                        "maximum_rail_sample_ratio_ppm": 250000,
+                        "maximum_consecutive_rail_frames": 4800,
+                    },
+                }
+            },
+            "report_checks": [],
+        }
+        report = {
+            "schema_version": 8,
+            "backend_build": {"commit": backend, "dirty": False},
+            "firmware": {"basename": "app.bin", "sha256": firmware},
+            "verdict": {"status": "pass"},
+            "audio_sink": {
+                "status": "pass",
+                "dma_write_count": 10000,
+                "pcm_sha256": digest,
+                "expected_count": 10000,
+                "expected_sha256": digest,
+            },
+        }
+        analysis = {
+            "schema_version": 1,
+            "boundary": "dma_to_pwm5_cc",
+            "interpretation": "digital_level_only_not_speaker_loudness",
+            "backend_build": {"commit": backend, "dirty": False},
+            "firmware": {"file": "app.bin", "sha256": firmware},
+            "observation_status": "pass",
+            "pcm_sha256": digest,
+            "pcm_format": "stereo_s16le_from_pwm8_duty",
+            "sample_rate_hz": 48000,
+            "channel_count": 2,
+            "frame_count": 10000,
+            "window_frames": 1024,
+            "active_abs_threshold": 512,
+            "peak_abs_left": 10922,
+            "peak_abs_right": 10922,
+            "stream_rms": 2802,
+            "max_window_rms": 7595,
+            "dc_offset_left": 0,
+            "dc_offset_right": 0,
+            "active_frame_count": 9000,
+            "active_frame_ratio_ppm": 900000,
+            "rail_sample_count": 0,
+            "rail_sample_ratio_ppm": 0,
+            "max_consecutive_rail_frames": 0,
+            "out_of_range_duty_sample_count": 0,
+            "rail_interpretation": (
+                "post_quantizer_pwm_rail_usage_not_source_clip_count"
+            ),
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            report_path = root / "report.json"
+            analysis_path = root / "analysis.json"
+            result_path = root / "result.json"
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            analysis_path.write_text(json.dumps(analysis), encoding="utf-8")
+            completed = run(
+                PICOCALC,
+                "judge-report",
+                "--contract",
+                contract_path,
+                "--report",
+                report_path,
+                "--audio-analysis",
+                analysis_path,
+                "--json",
+                result_path,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout)
+            self.assertIn(
+                "advisory: audio_level_below_preferred_range", completed.stdout
+            )
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        self.assertEqual(result["schema_version"], 3)
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["reasons"], [])
+        self.assertEqual(
+            result["advisories"], ["audio_level_below_preferred_range"]
+        )
+
+    def test_speaker_listening_accepts_quiet_reference_and_rejects_broken_transients(
+        self,
+    ):
+        base = {
+            "schema_version": 1,
+            "assessment_id": "doom-reference",
+            "application": {"name": "PicoCalc DOOM", "version": "0.1.1"},
+            "artifact": {"bin_sha256": "1" * 64, "uf2_sha256": "2" * 64},
+            "evidence": {"video_file": "IMG_8966.MOV", "video_sha256": "3" * 64},
+            "conditions": {
+                "audio_path": "built_in_speaker",
+                "physical_volume": "maximum",
+                "launch_method": "uf2loader",
+            },
+            "porting_context": {"source_mix_comparison": "not_checked"},
+            "human_assessment": {
+                "overall_loudness": "acceptable_quiet",
+                "percussion_and_transients": "appropriate",
+                "adjustment_requested": False,
+                "notes": "BGMとして成立している",
+            },
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assessment_path = root / "assessment.json"
+            result_path = root / "result.json"
+            assessment_path.write_text(json.dumps(base), encoding="utf-8")
+            accepted = run(
+                JUDGE_SPEAKER_LISTENING,
+                assessment_path,
+                "--json",
+                result_path,
+            )
+            self.assertEqual(accepted.returncode, 0, accepted.stderr)
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "pass")
+            self.assertEqual(result["required_action"], "none")
+            self.assertEqual(result["advisories"], [])
+
+            broken = {
+                **base,
+                "assessment_id": "doom-known-bad",
+                "application": {"name": "PicoCalc DOOM", "version": "0.1.2"},
+                "human_assessment": {
+                    **base["human_assessment"],
+                    "overall_loudness": "appropriate",
+                    "percussion_and_transients": "distorted",
+                },
+            }
+            assessment_path.write_text(json.dumps(broken), encoding="utf-8")
+            rejected = run(
+                JUDGE_SPEAKER_LISTENING,
+                assessment_path,
+                "--json",
+                result_path,
+            )
+            self.assertEqual(rejected.returncode, 1, rejected.stderr)
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "fail")
+            self.assertEqual(
+                result["required_action"],
+                "preserve_overall_reduce_percussion_or_transients",
+            )
 
     def test_project_commit_does_not_inherit_parent_repository(self):
         module = self.load_picocalc_module()

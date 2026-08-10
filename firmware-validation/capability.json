@@ -234,6 +234,13 @@
       "emulator_evidence": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
       "evidence": "firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json",
       "since_gate": "NEXT-2B"
+    },
+    {
+      "id": "speaker-listening-acceptance",
+      "what": "A versioned two-question human acceptance record for the PicoCalc built-in speaker",
+      "detail": "speaker-listening-assessment schema 1 binds BIN, UF2 and video SHA-256 to maximum physical volume, launch path, source-mix comparison and two human answers. overall_loudness accepts acceptable_quiet or appropriate; percussion_and_transients must be appropriate. An accepted quiet result passes without mandatory adjustment. Optional adjustment remains advisory. A result with appropriate overall loudness but too-loud or distorted transients fails with the explicit action preserve_overall_reduce_percussion_or_transients. New project quality contract schema 3 likewise treats its preferred digital level floor as advisory while retaining fail-closed exact audio and extreme rail bounds.",
+      "limitation": "The tool records and consistently applies human judgement; it does not infer perceived quality from PCM or phone AGC. PicoCalc DOOM v0.1.1 and v0.1.2 are the first content-specific accepted-safe/known-bad pair, not a universal transfer function or threshold for every application.",
+      "since_gate": "audio-quality-policy-20260811"
     }
   ],
   "unsupported": [

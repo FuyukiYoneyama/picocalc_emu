@@ -186,8 +186,10 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - exact idle fast-forwardとpromoted OPT1-B fast path
 - NEXT-2Aの凍結Serial multicore契約
 - NEXT-2Bの凍結48 kHz DMA-paced digital audio sink契約
-- PWM5_CCからの決定的な音量統計、非正規化raw WAV、および「低音量／極端なrail使用」を分ける
-  project-level品質契約
+- PWM5_CCからの決定的な音量統計、非正規化raw WAV、および「好みとしての音量／極端なrail使用」を
+  分けるproject-level品質契約
+- キー入力なしの既知刺激とphone動画解析による内蔵speaker校正（初回hardware profileは未相関）
+- 全体音量とpercussion／破裂音を人間が判定する2問式の実機speaker通過基準
 - NEXT-3のSD CMD8 CRC negative conformance
 - NEXT-4 JSONL headless machine API
 
@@ -199,7 +201,7 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - bootromの実行、USB MSC boot
 - SDのmulti-block、removal、write-protect、raw image persistence、directory-backed storage
 - scenarioのloop／branch、任意report fieldの直接assert
-- 実機の見え方・聞こえ方・物理操作品質
+- 実機の見え方・聞こえ方・物理操作品質を機械だけで判定すること
 
 対応範囲を推測で広げず、[`capability.json`](firmware-validation/capability.json)の
 具体的なtargetとlimitationを確認してください。

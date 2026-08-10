@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/speaker-listening-assessment.schema.json",
+  "title": "PicoCalc built-in speaker human listening assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "assessment_id",
+    "application",
+    "artifact",
+    "evidence",
+    "conditions",
+    "porting_context",
+    "human_assessment"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "assessment_id": {"type": "string", "minLength": 1},
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bin_sha256", "uf2_sha256"],
+      "properties": {
+        "bin_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "uf2_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["video_file", "video_sha256"],
+      "properties": {
+        "video_file": {"type": "string", "minLength": 1},
+        "video_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audio_path", "physical_volume", "launch_method"],
+      "properties": {
+        "audio_path": {"const": "built_in_speaker"},
+        "physical_volume": {"const": "maximum"},
+        "launch_method": {
+          "enum": ["uf2loader", "bootsel", "not_recorded", "other"]
+        }
+      }
+    },
+    "porting_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_mix_comparison"],
+      "properties": {
+        "source_mix_comparison": {
+          "enum": [
+            "not_checked",
+            "consistent_with_source",
+            "port_changes_balance",
+            "not_applicable"
+          ]
+        }
+      }
+    },
+    "human_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall_loudness",
+        "percussion_and_transients",
+        "adjustment_requested",
+        "notes"
+      ],
+      "properties": {
+        "overall_loudness": {
+          "enum": [
+            "unacceptably_quiet",
+            "acceptable_quiet",
+            "appropriate",
+            "too_loud"
+          ]
+        },
+        "percussion_and_transients": {
+          "enum": ["too_quiet", "appropriate", "too_loud", "distorted"]
+        },
+        "adjustment_requested": {"type": "boolean"},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

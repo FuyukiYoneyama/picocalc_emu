@@ -853,8 +853,8 @@ def load_project_quality_contract(path: Path) -> dict:
     }
     if not isinstance(contract, dict) or set(contract) != required_keys:
         raise ValueError("quality contract fields do not match schema 1")
-    if contract["schema_version"] not in (1, 2) or contract["report_schema"] != 8:
-        raise ValueError("quality contract requires schema 1/2 and runner report schema 8")
+    if contract["schema_version"] not in (1, 2, 3) or contract["report_schema"] != 8:
+        raise ValueError("quality contract requires schema 1/2/3 and runner report schema 8")
     if not isinstance(contract["contract_id"], str) or not contract["contract_id"]:
         raise ValueError("quality contract_id must be a non-empty string")
     capabilities = contract["required_capabilities"]
@@ -862,7 +862,7 @@ def load_project_quality_contract(path: Path) -> dict:
         raise ValueError("required_capabilities must contain exactly audio_sink")
     audio = capabilities["audio_sink"]
     expected_audio_fields = {"expected_count", "expected_sha256"}
-    if contract["schema_version"] == 2:
+    if contract["schema_version"] in (2, 3):
         expected_audio_fields.add("quality")
     if not isinstance(audio, dict) or set(audio) != expected_audio_fields:
         raise ValueError(
@@ -874,20 +874,25 @@ def load_project_quality_contract(path: Path) -> dict:
         raise ValueError("audio_sink.expected_count must be a positive integer")
     if not is_sha256(audio["expected_sha256"]):
         raise ValueError("audio_sink.expected_sha256 must be a SHA-256")
-    if contract["schema_version"] == 2:
+    if contract["schema_version"] in (2, 3):
         quality = audio["quality"]
+        minimum_field = (
+            "minimum_max_window_rms"
+            if contract["schema_version"] == 2
+            else "advisory_minimum_max_window_rms"
+        )
         quality_fields = {
-            "minimum_max_window_rms",
+            minimum_field,
             "maximum_rail_sample_ratio_ppm",
             "maximum_consecutive_rail_frames",
         }
         if not isinstance(quality, dict) or set(quality) != quality_fields:
             raise ValueError("audio_sink.quality fields are invalid")
-        minimum_rms = quality["minimum_max_window_rms"]
+        minimum_rms = quality[minimum_field]
         maximum_rail_ratio = quality["maximum_rail_sample_ratio_ppm"]
         maximum_rail_run = quality["maximum_consecutive_rail_frames"]
         if type(minimum_rms) is not int or not 1 <= minimum_rms <= 32768:
-            raise ValueError("minimum_max_window_rms must be in 1..32768")
+            raise ValueError("{} must be in 1..32768".format(minimum_field))
         if (
             type(maximum_rail_ratio) is not int
             or not 0 <= maximum_rail_ratio <= 1_000_000
@@ -1110,7 +1115,8 @@ def judge_project_report(
 
     quality_evaluation = "not_required"
     quality_provenance_matches: Optional[bool] = None
-    if contract["schema_version"] == 2:
+    advisories: List[str] = []
+    if contract["schema_version"] in (2, 3):
         quality_evaluation = "not_evaluated"
         quality_failures: List[str] = []
         if not isinstance(audio_analysis, dict):
@@ -1153,11 +1159,16 @@ def judge_project_report(
                 if any(type(audio_analysis.get(name)) is not int for name in metrics):
                     cannot_judge.append("audio_quality_metrics_missing")
                 else:
-                    if (
-                        audio_analysis["max_window_rms"]
-                        < quality["minimum_max_window_rms"]
-                    ):
-                        quality_failures.append("audio_level_too_low")
+                    minimum_field = (
+                        "minimum_max_window_rms"
+                        if contract["schema_version"] == 2
+                        else "advisory_minimum_max_window_rms"
+                    )
+                    if audio_analysis["max_window_rms"] < quality[minimum_field]:
+                        if contract["schema_version"] == 2:
+                            quality_failures.append("audio_level_too_low")
+                        else:
+                            advisories.append("audio_level_below_preferred_range")
                     if (
                         audio_analysis["rail_sample_ratio_ppm"]
                         > quality["maximum_rail_sample_ratio_ppm"]
@@ -1186,7 +1197,7 @@ def judge_project_report(
         status = "pass"
         exit_code = 0
     result = {
-        "schema_version": 2,
+        "schema_version": 3 if contract["schema_version"] == 3 else 2,
         "contract_id": contract["contract_id"],
         "status": status,
         "reasons": failures + cannot_judge,
@@ -1204,7 +1215,7 @@ def judge_project_report(
                 "evaluation_status": evaluation_status,
             },
             "audio_quality": {
-                "required": contract["schema_version"] == 2,
+                "required": contract["schema_version"] in (2, 3),
                 "analysis_present": isinstance(audio_analysis, dict),
                 "analysis_schema_version": (
                     audio_analysis.get("schema_version")
@@ -1229,6 +1240,8 @@ def judge_project_report(
             },
         },
     }
+    if contract["schema_version"] == 3:
+        result["advisories"] = advisories
     encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     if json_out is not None:
         json_out.parent.mkdir(parents=True, exist_ok=True)
@@ -1236,6 +1249,8 @@ def judge_project_report(
     print("project quality: {}".format(status))
     for reason in result["reasons"]:
         print("  {}".format(reason))
+    for advisory in advisories:
+        print("  advisory: {}".format(advisory))
     return exit_code
 
 
@@ -1776,7 +1791,7 @@ def main() -> int:
     judge_report_parser.add_argument(
         "--audio-analysis",
         type=Path,
-        help="schema 1 audio-level artifact required by quality contract schema 2",
+        help="schema 1 audio-level artifact required by quality contract schema 2/3",
     )
     judge_report_parser.add_argument("--json", dest="json_out", type=Path)
 

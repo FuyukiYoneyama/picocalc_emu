@@ -21,7 +21,9 @@
 | 画面／UART条件に応じてキーを投入 | [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md) |
 | JSONLで長寿命sessionを操作 | [`HEADLESS_MACHINE_API.md`](HEADLESS_MACHINE_API.md) |
 | 外部projectのBSP由来と音声合否を固定 | [`EXTERNAL_PROJECT_QUALITY.md`](EXTERNAL_PROJECT_QUALITY.md) |
-| 小さすぎる音量と極端なrail張り付きを検査 | [`AUDIO_LEVEL_QUALITY.md`](AUDIO_LEVEL_QUALITY.md) |
+| 音量advisoryと極端なrail張り付きを分離 | [`AUDIO_LEVEL_QUALITY.md`](AUDIO_LEVEL_QUALITY.md) |
+| 内蔵speakerの破綻境界を動画から校正 | [`SPEAKER_CALIBRATION.md`](SPEAKER_CALIBRATION.md) |
+| 内蔵speakerを人間が判定する2問と通過基準 | [`SPEAKER_LISTENING_ACCEPTANCE.md`](SPEAKER_LISTENING_ACCEPTANCE.md) |
 | 実機証拠を記録 | [`../hardware-validation/README.md`](../hardware-validation/README.md) |
 
 ## 契約・保守

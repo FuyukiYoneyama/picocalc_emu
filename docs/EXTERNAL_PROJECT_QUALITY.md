@@ -90,6 +90,7 @@ project quality resultは次を区別します。
 - `oracle_present`: reportにcountとSHA-256の両方があるか
 - `oracle_matches_contract`: project契約と同じoracleで走ったか
 - `evaluation_status`: `not_evaluated`、`pass`、`fail`
+- schema 3の`advisories`: 合否を変えない音量改善候補
 
 契約が音声を必須としているのにoracleなしで走った場合、raw reportの総合verdictが`pass`でも
 project qualityは`cannot_judge`（終了コード2）です。oracleが一致したうえでsinkが不一致なら
@@ -97,21 +98,22 @@ project qualityは`cannot_judge`（終了コード2）です。oracleが一致�
 report schemaが契約と違う場合は、内部フィールドを信用せず常に`cannot_judge`です。schemaが一致し、
 runner自体または明示report checkに既知の失敗がある場合は、音声が未評価でも既知の`fail`を優先します。
 
-schema 1契約はexact count/hashの互換経路です。音声を出すrelease projectではschema 2を使い、
-独立した`--audio-analysis` artifactに対して最低区間RMSと、極端なPWM rail使用の上限を宣言します。
-短い、低頻度のrail到達は許容し、単なるclip発生だけでは不合格にしません。
+schema 1契約はexact count/hashの互換経路です。新しい音声release projectではschema 3を使い、
+独立した`--audio-analysis` artifactに対して推奨区間RMSと、極端なPWM rail使用の上限を宣言します。
+推奨RMS未満はadvisoryでありFAILではありません。短い、低頻度のrail到達も許容し、単なるclip発生
+だけでは不合格にしません。schema 2は最低区間RMSを必須にした旧契約として意味を変えずに残します。
 
 ```json
 {
-  "schema_version": 2,
-  "contract_id": "my-audio-v2",
+  "schema_version": 3,
+  "contract_id": "my-audio-v3",
   "report_schema": 8,
   "required_capabilities": {
     "audio_sink": {
       "expected_count": 49152,
       "expected_sha256": "<64 lowercase hex>",
       "quality": {
-        "minimum_max_window_rms": 8192,
+        "advisory_minimum_max_window_rms": 8192,
         "maximum_rail_sample_ratio_ppm": 250000,
         "maximum_consecutive_rail_frames": 4800
       }
@@ -135,5 +137,6 @@ python3 tools/picocalc.py judge-report \
 
 値の意味、非正規化WAV出力、PicoCalcの物理ボリュームを前提にした判定方針は
 [`AUDIO_LEVEL_QUALITY.md`](AUDIO_LEVEL_QUALITY.md)を参照してください。これはdigital
-DMA-to-PWM境界の判定です。実機のspeaker、アナログ波形、実際の音圧と聴感は、同一UF2の実機相関で
-別に確認します。
+DMA-to-PWM境界の判定です。実機のspeaker、アナログ波形、実際の音圧と聴感は、同一UF2を
+[`SPEAKER_LISTENING_ACCEPTANCE.md`](SPEAKER_LISTENING_ACCEPTANCE.md)の2問で別に確認します。
+`acceptable_quiet`を人間が許容した場合はPASSであり、音量向上を強制しません。

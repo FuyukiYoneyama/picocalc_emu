@@ -724,13 +724,21 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             quality_errors.append("schema required fields are incomplete")
         if set(audio.get("required", [])) != {"expected_count", "expected_sha256"}:
             quality_errors.append("audio_sink oracle must require count and SHA-256")
-        quality = audio.get("properties", {}).get("quality", {})
-        if set(quality.get("required", [])) != {
+        definitions = quality_schema.get("$defs", {})
+        quality_v2 = definitions.get("qualityV2", {})
+        quality_v3 = definitions.get("qualityV3", {})
+        if set(quality_v2.get("required", [])) != {
             "minimum_max_window_rms",
             "maximum_rail_sample_ratio_ppm",
             "maximum_consecutive_rail_frames",
         }:
-            quality_errors.append("audio_sink quality bounds are incomplete")
+            quality_errors.append("schema 2 audio quality bounds are incomplete")
+        if set(quality_v3.get("required", [])) != {
+            "advisory_minimum_max_window_rms",
+            "maximum_rail_sample_ratio_ppm",
+            "maximum_consecutive_rail_frames",
+        }:
+            quality_errors.append("schema 3 audio quality bounds are incomplete")
         if audio_analysis_schema.get("additionalProperties") is not False:
             quality_errors.append("audio analysis schema must reject unknown fields")
         analysis_required = set(audio_analysis_schema.get("required", []))
@@ -748,6 +756,7 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             '"oracle_present": oracle_present',
             '"audio_sink_oracle_missing_or_mismatched"',
             '"audio_level_too_low"',
+            '"audio_level_below_preferred_range"',
             '"audio_rail_ratio_excessive"',
             '"audio_sustained_rail_excessive"',
         ):
@@ -1613,6 +1622,31 @@ def verify_portable(
     require_text(
         checks,
         root,
+        "tools/judge_speaker_listening.py",
+        "speaker-listening-human-verdict",
+        [
+            '"acceptable_quiet"',
+            '"percussion_and_transients"',
+            '"preserve_overall_reduce_percussion_or_transients"',
+            '"adjust_from_accepted_safe_reference"',
+            '"physical_volume") != "maximum"',
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "firmware-validation/speaker-listening-assessment.schema.json",
+        "speaker-listening-assessment-schema",
+        [
+            '"physical_volume": {"const": "maximum"}',
+            '"acceptable_quiet"',
+            '"percussion_and_transients"',
+            '"source_mix_comparison"',
+        ],
+    )
+    require_text(
+        checks,
+        root,
         "bsp/src/display.cpp",
         "lcd-hwspi-rgb888-adapter",
         [
@@ -1666,6 +1700,48 @@ def verify_portable(
             "picoment::audio_pwm::start_stream();",
             "picoment::audio_pwm::stop_stream();",
             "picoment::audio_pwm::write_sample(",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "tools/analyze_speaker_calibration.py",
+        "speaker-calibration-video-analyzer",
+        [
+            "def verify_plan(",
+            "def sync_scores(",
+            "def linear_fit(",
+            "speaker_output_below_recording_noise",
+            'speaker calibration: cannot_judge:',
+            "def status_exit_code(",
+            '"sha256": sha256_file(video)',
+            'write_mono_wav(review_dir / f"{item[\'id\']}.wav",',
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "docs/SPEAKER_CALIBRATION.md",
+        "speaker-calibration-responsibility-boundary",
+        [
+            "amp/speaker/筐体",
+            "versioned hardware evidence",
+            "cannot_judge",
+            "analyze_speaker_calibration.py",
+        ],
+    )
+    require_text(
+        checks,
+        root,
+        "docs/SPEAKER_LISTENING_ACCEPTANCE.md",
+        "speaker-listening-acceptance-policy",
+        [
+            "acceptable_quiet",
+            "percussion_and_transients",
+            "音量の最大化は合格条件ではありません",
+            "v0.1.1",
+            "v0.1.2",
+            "judge_speaker_listening.py",
         ],
     )
     verify_bsp_provenance_contract(checks, root)

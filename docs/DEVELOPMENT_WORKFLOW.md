@@ -66,6 +66,9 @@ Solはworkerの成果を盲目的に採用しない。workerが「pass」と報�
 
 Solは実機依頼を一度に一セッションだけ提示し、対象UF2、固定ファイル名、必要な操作、ログ保存方法、終了条件を明確にする。workerはSolの指示なしに人間へ実機試験を依頼しない。
 
+内蔵speakerのrelease判定は[`SPEAKER_LISTENING_ACCEPTANCE.md`](SPEAKER_LISTENING_ACCEPTANCE.md)の
+2問を使う。控えめでも成立する音を音量だけでFAILにせず、人間が許容すれば追加調整を終了する。
+
 ## 5. 分担の境界
 
 緊急で密結合な判断、設計変更、受入判断、または次工程を即時にblockする作業はSolが直接行う。小規模で明確なコード修正はSpark workerへ、明確な定型処理や大量処理はLuna workerへ渡す。Solとworkerは同じ範囲を重複して編集せず、作業開始時に変更対象を明示する。
