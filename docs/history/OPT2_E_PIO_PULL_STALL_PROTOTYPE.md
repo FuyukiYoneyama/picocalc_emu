@@ -1,5 +1,9 @@
 # OPT2-E PIO exact pull-stall bulk prototype
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 限定したPIO bulk advanceは正確性を満たしたが、性能採用基準を満たさなかったため
@@ -41,5 +45,5 @@ PIO状態そのものの静止証明は成立した。次にPIOで大きな利�
 block/decode cacheが残る。
 
 証拠は
-[`opt2-e-pio-pull-stall-20260809-01`](../firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/notes.md)
+[`opt2-e-pio-pull-stall-20260809-01`](../../firmware-validation/records/opt2-e-pio-pull-stall-20260809-01/notes.md)
 に固定する。

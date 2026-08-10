@@ -1,5 +1,9 @@
 # OPT1-B serial fast-path gate
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 正確性・性能gate合格。R5既存実機相関との同値性確認後にpromoted
 
 **backend candidate:** `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`

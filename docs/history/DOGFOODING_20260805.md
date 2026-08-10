@@ -1,5 +1,9 @@
 # ドッグフーディング記録: PicoTetris（2026-08-05）
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 目的
 
 このプロジェクトの第一目的は「AIがPicoCalc向けプログラムを自ら観測・検証・修正
@@ -28,7 +32,7 @@
 ## 見つかった穴
 
 > **その後（2026-08-05）:** 穴1・2・4はscenario runnerで解消した。詳細は
-> [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)、証拠は
+> [`SCENARIO_RUNNER.md`](../SCENARIO_RUNNER.md)、証拠は
 > `firmware-validation/records/milestone3-20260805-01/`。穴3については**host device modelと
 > 専用`emu_smoke`の基盤が完成**した。その後R3（2026-08-06）でPicoTetris自身の
 > hardware-free game logicと666 host checks、再現可能build、正式firmware targetまで
@@ -87,7 +91,7 @@
 
 > **基盤を解消（2026-08-05）。** host backendがBSPの公開APIをホストのモデルに対して
 > ビルドする。`python3 tools/picocalc.py test --mode host`で1秒未満で走る。
-> 詳細は[`HOST_BACKEND.md`](HOST_BACKEND.md)。
+> 詳細は[`HOST_BACKEND.md`](../HOST_BACKEND.md)。
 >
 > このコマンドが走らせるのは汎用`emu_smoke`であり、任意アプリの試験を自動登録しない。
 > PicoTetrisは後続R3で別のnative targetを持ち、`clear_lines()`相当、全形状・回転・衝突、
@@ -123,9 +127,9 @@
 優先順位は上の穴の重さに従う。
 
 1. ~~**scenario runner**（Milestone 3）~~ — **完了（2026-08-05）**。
-   [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md)
+   [`SCENARIO_RUNNER.md`](../SCENARIO_RUNNER.md)
 2. ~~**host backend**（Milestone 2）~~ — **完了（2026-08-05）**。
-   [`HOST_BACKEND.md`](HOST_BACKEND.md)
+   [`HOST_BACKEND.md`](../HOST_BACKEND.md)
 3. ~~定期スナップショット~~ — **完了**。scenarioの`snapshot`操作に含まれる
 
 **この時点で定義した基盤作業は完了した。** 実際にアプリを1本書いたことで、

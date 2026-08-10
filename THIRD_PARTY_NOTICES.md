@@ -99,7 +99,7 @@ boundary:
   built artifacts. It is built and run locally by each verifier; this
   repository records only the result and the identity needed to reproduce it.
   If a distributable fixture is ever needed, write an equivalent sample
-  in-house (see [`docs/EMULATOR_ROADMAP.md`](docs/EMULATOR_ROADMAP.md) §2.1).
+  in-house (see [`docs/history/EMULATOR_ROADMAP.md`](docs/history/EMULATOR_ROADMAP.md) §2.1).
 
 If future work needs to incorporate ClockworkPi source rather than observe its
 hardware protocol, its license must be resolved before that source or a derived

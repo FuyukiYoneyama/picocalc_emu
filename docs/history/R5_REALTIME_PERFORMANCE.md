@@ -1,5 +1,9 @@
 # R5実機相関前のエミュレーター実時間性能
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 この文書は、R5の実機相関へ入る前に、登録済みPicoTetris workloadが実時間に対して
 どの速度で進むかを固定した性能baselineである。実機合否の証拠ではなく、R5 hardware
 correlation自体はまだ完了していない。

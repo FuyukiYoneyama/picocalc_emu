@@ -1,11 +1,15 @@
 # OPT1-A exact idle fast-forward
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** promoted。正確性・性能gateとR5同一artifact実機相関を完了
 
 **backend:** `picoem-picocalc` `c68c58f6c37fb31eb9313566c8b16883db9063b6`
 
 **target:** `picotetris-opt1a` revision 3
-**証拠:** [`firmware-validation/records/opt1-a-20260808-01/`](../firmware-validation/records/opt1-a-20260808-01/)
+**証拠:** [`firmware-validation/records/opt1-a-20260808-01/`](../../firmware-validation/records/opt1-a-20260808-01/)
 
 ## 目的と採用境界
 
@@ -56,7 +60,7 @@ timelineが一致した。trace OFFの10 runはreport/UART/PNGがすべて決定
 これはR5前にcandidate gateを合格した結果である。その後、同一R5 UF2がPicoCalc実機でLCD、
 PSRAM、FAT32、audio、PicoTetris、keyboard 67/67をすべて合格し、最終
 `io_errors=0 progress=saved overall=pass`となった。証拠は
-[`firmware-validation/records/r5-hardware-20260808-01/`](../firmware-validation/records/r5-hardware-20260808-01/)
+[`firmware-validation/records/r5-hardware-20260808-01/`](../../firmware-validation/records/r5-hardware-20260808-01/)
 へ固定したため、現在の状態はpromotedである。一部キーの物理的な反応品質は、この到達性試験と
 分離した未測定課題として残る。
 

@@ -1,4 +1,4 @@
-# NEXT-4 安定 headless machine API
+# Headless machine API（NEXT-4完了仕様）
 
 ## 1. 目的
 

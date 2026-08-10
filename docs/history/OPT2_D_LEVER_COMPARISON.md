@@ -1,5 +1,9 @@
 # OPT2-D 候補レバー比較
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 OPT2-Dの計測は完了した。次のproduction prototypeには
@@ -124,5 +128,5 @@ hit率は十分高いが、長い直線列は少ない。CPU block cacheはdecod
 このexactness gateを通った後だけtrace-OFF A/Bを行い、5%改善基準で採否を決める。
 
 完全なartifactは
-[`opt2-d-lever-comparison-20260809-01`](../firmware-validation/records/opt2-d-lever-comparison-20260809-01/notes.md)
+[`opt2-d-lever-comparison-20260809-01`](../../firmware-validation/records/opt2-d-lever-comparison-20260809-01/notes.md)
 に固定する。

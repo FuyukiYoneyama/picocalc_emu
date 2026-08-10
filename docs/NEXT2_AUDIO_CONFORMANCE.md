@@ -1,5 +1,7 @@
 # NEXT-2B Audio conformance
 
+> **文書の役割:** 検証器が読むbounded conformance契約です。NEXT-2Bは完了しています。
+
 **状態:** v3 canonicalのformal emulator acceptanceとsame-artifact hardware correlationが完了した。
 
 ## 契約履歴

@@ -57,7 +57,7 @@ SDK/toolchain/timestamp/identityをGitHub Actionsで再構築し、登録済みB
 backendをcommit固定でclean clone/buildしてから`picotetris-r4`を実行しました。target/schema
 jobとfirmware regression jobの双方が合格しているため、attestationの静的整合だけでなく、
 固定contractの実走までclean runnerで継続検査されます。R4 full gateの全体は
-[`R4_CI.md`](R4_CI.md)に記録しています。
+[`history/R4_CI.md`](history/R4_CI.md)に記録しています。
 
 ## OPT1-A PicoTetris revision 3
 

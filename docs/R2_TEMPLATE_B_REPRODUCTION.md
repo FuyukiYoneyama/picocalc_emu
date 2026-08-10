@@ -1,5 +1,7 @@
 # R2 Template B再現手順
 
+> **文書の役割:** target registryが参照する現行の再現契約です。R2自体は完了しています。
+
 この文書は、`reference-projects/firmware-targets.json`の
 `picocalc-template-b`に固定したR2時点のBIN/UF2を、別の作業者が同じSHA-256で
 再生成するための正規手順です。現行generatorで新しい成果物を作る手順ではなく、

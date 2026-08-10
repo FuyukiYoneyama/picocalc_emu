@@ -1,5 +1,9 @@
 # Firmware emulator高速化計画
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** OPT1-A・OPT1-B promoted、R5 PicoCalc実機相関完了。backendの実機相関済み・promoted・experimental mainの役割と前二者の独立CIを固定済み。OPT2は性能条件未達のまま追加promotionなしで終了。OPT3-B・OPT3-Cもexactnessを維持したが性能gate不合格でrevert済み。追加promotionなしで性能最適化を一旦完了し、対象範囲の拡張へ移る
 
 **基準日:** 2026-08-09
@@ -294,7 +298,7 @@ OPT1-Bと完全一致した。
 `9a7387c9aca50aba6434323d2d5e24566a6e9436`でrevertした。これはOPT2完了を意味しない。
 次候補は、外側callの集約ではなく、CPUが観測可能な境界とdevice event horizonの間で実際の
 per-cycle orchestrationを削減できる範囲を測定してから設計する。詳細は
-[`opt2-dispatcher-20260808-01`](../firmware-validation/records/opt2-dispatcher-20260808-01/notes.md)に残す。
+[`opt2-dispatcher-20260808-01`](../../firmware-validation/records/opt2-dispatcher-20260808-01/notes.md)に残す。
 
 ### 9.2 OPT2-B running event-horizon profiler（完了）
 
@@ -315,7 +319,7 @@ wall-time上限へ読み替えない。blockedとrunningでは1 cycle当たりco
 decode/executeが残るためである。次のOPT2-Cでは、現在の保守的horizon内かつCPU MMIOなしの
 区間だけを対象に小規模prototypeを作り、per-dispatch costとtrace OFF A/Bを測る。PIO/UART/DMA
 deadlineの拡張は限定prototypeの結果後に別変更単位で判断する。証拠は
-[`opt2-b-running-horizon-20260808-01`](../firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
+[`opt2-b-running-horizon-20260808-01`](../../firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
 に固定した。
 
 ### 9.3 OPT2-C 限定exact prototype（完了、不採用）
@@ -395,7 +399,7 @@ CPU 0固定clean A/B/A/B/A/Bのbaseline中央値は25.92秒、candidateは28.17�
 candidateは`335ecdd7f01cbc5d4f63e18403033bd629efbe77`でrevertし、最終内容がbaselineと一致した。
 backend CI run `31287315634`も成功した。active targetとvalidation attestationは変更しない。証拠は
 [`OPT2_G_UART_EXACT_LANE.md`](OPT2_G_UART_EXACT_LANE.md)と
-[`opt2-g-uart-deadline-20260809-01/`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/)に固定した。
+[`opt2-g-uart-deadline-20260809-01/`](../../firmware-validation/records/opt2-g-uart-deadline-20260809-01/)に固定した。
 OPT2は性能条件未達のまま追加promotionなしで終了し、OPT3 CPU/decode高速化へ移行した。
 
 ## 10. OPT3: CPU/decode高速化
@@ -544,28 +548,28 @@ cost model -> OPT1-A -> R5 hardware correlation
 - 不採用候補も、理由と検出した不一致を記録し、同じ誤りを再試行しない。
 
 OPT0-Aの初回PicoTetris profileは
-[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../firmware-validation/records/opt0-a-20260806-01/notes.md)
+[`firmware-validation/records/opt0-a-20260806-01/notes.md`](../../firmware-validation/records/opt0-a-20260806-01/notes.md)
 に保存した。両core停止は全cycleの66.692909%だったが、active sourceを考慮した現在の
 保守的なproven-safe下限は0 cycleだった。このschema 1結果はproduction用`is_idle()`が静的な
 FIFO/IRQ stateまでblockerとした診断であり、不変証拠として保持する。
 
 計測専用predicateをtemporal/wake blocker、stationary state、existing exact-bulk workへ分離した
 schema 2再計測は
-[`firmware-validation/records/opt0-a-20260807-03/notes.md`](../firmware-validation/records/opt0-a-20260807-03/notes.md)
+[`firmware-validation/records/opt0-a-20260807-03/notes.md`](../../firmware-validation/records/opt0-a-20260807-03/notes.md)
 に保存した。同一PicoTetrisの全618,595,844 blocked cycleが観測境界上proven-safeで、85/85、
 cycle、UART、framebufferも一致した。全blocked cycleを除去した場合の3.002364倍はvirtual-cycle
 dispatchの上限比であり、wall-time speedup予測ではない。この時点ではfull horizon、
 boundary/event、IRQ/wake costが未測定だった。
 
 同じhost・CPU固定で取得した部分costは
-[`firmware-validation/records/opt0-a-20260806-02/notes.md`](../firmware-validation/records/opt0-a-20260806-02/notes.md)
+[`firmware-validation/records/opt0-a-20260806-02/notes.md`](../../firmware-validation/records/opt0-a-20260806-02/notes.md)
 に保存した。現行blocked stepは52.647255 ns、現在の保守的probeは10.771746 ns、quiescentな
 `tick_peripherals(L)`はL=1〜1,048,576で37.108583〜37.825914 nsだった。ただしfull horizon、
 clock更新、boundary event、IRQ route、wake checkを含まないため、この履歴値だけでは優先順位を
 決めなかった。
 
 OPT0-Aの完了記録は
-[`firmware-validation/records/opt0-a-20260808-04/notes.md`](../firmware-validation/records/opt0-a-20260808-04/notes.md)
+[`firmware-validation/records/opt0-a-20260808-04/notes.md`](../../firmware-validation/records/opt0-a-20260808-04/notes.md)
 に保存した。現行modelの全sourceを覆う保守的horizonは、TIMER alarm、PWM wrap、caller所有の
 外部境界にexact deadlineを使い、長いdeadlineをまだ証明していないsourceには1 cycle fallbackを
 使う。PicoTetrisの618,595,844 safe cycleは2,064,042 event-bounded segmentへ分かれ、
@@ -583,7 +587,7 @@ behavior traceはhost UART drain cadence依存を除いたschema 2へversion up�
 全9 domainで一致した。CPU固定10 runのwall中央値は63.247秒から27.123秒へ57.116%短縮し、
 実時間比中央値は5.874%から13.697%へ向上した。詳細は
 [`OPT1_A_EXACT_IDLE_FAST_FORWARD.md`](OPT1_A_EXACT_IDLE_FAST_FORWARD.md)と
-[`firmware-validation/records/opt1-a-20260808-01/notes.md`](../firmware-validation/records/opt1-a-20260808-01/notes.md)
+[`firmware-validation/records/opt1-a-20260808-01/notes.md`](../../firmware-validation/records/opt1-a-20260808-01/notes.md)
 に固定した。R5 emulator preflightでは単一の`PicoTetris_R5` artifactを再現し、自動周辺機器・
 ゲーム診断と67/67キーscenarioを合格させた。同一UF2のPicoCalc実機runも全項目pass、67/67、
 `io_errors=0`で一致し、`r5-hardware-20260808-01`へ固定したため、OPT1-Aはpromotedとなった。
@@ -597,7 +601,7 @@ trace/proof OFF clean A/B/A/B/A/Bの中央値は26.72秒から25.61秒、4.15419
 行っていない。性能最適化はここで一旦区切り、次の優先順位はblind app、multicore/audio、negative
 conformance、headless interfaceとする。証拠は
 [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)と
-[`opt3-c-compact-dispatch-key-20260809-01/`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)
+[`opt3-c-compact-dispatch-key-20260809-01/`](../../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)
 に固定する。
 
 ## 16. 最終判断規則

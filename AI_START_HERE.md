@@ -1,134 +1,42 @@
 # AI向け開始手順
 
-このファイルを最初に読みます。ここに書かれている内容が、PicoCalc上で動く
-アプリを作るときの短い正規手順です。過去の調査経緯や将来のエミュレーター設計は
-この手順を上書きしません。
+PicoCalcアプリを変更するAIは、この文書を最初に読みます。過去の調査記録や完了済みの
+R/OPT/NEXT文書は、この現在手順を上書きしません。
 
-## 最初に理解すること
+## 最上位原則
 
-**あなたが書いたコードを実機で確かめるのは、人間です。**
+> 推測でハードウェア層を再実装しない。動作実績のあるBSP APIを、実績のある条件で使う。
 
-PicoCalcは[ClockworkPi](https://www.clockworkpi.com/picocalc)の電池駆動の
-スタンドアロン携帯マイコンです（4インチ320×320 IPS、I²C接続の67キーQWERTY、
-SDカード、8 MB PSRAM、PWMスピーカー2基。メインボードはRaspberry Pi Picoを
-差し替え。本リポジトリの対象はRP2040搭載構成）。PCに常時接続された開発ボード
-ではありません。
+実機操作は人間が行います。AIの推測が外れるたびに、UF2転送、起動、キー操作、写真、
+UART回収の往復が発生します。まずhost／firmware backendで観測し、人間に依頼する操作を
+最後の必要最小限へ絞ってください。
 
-そのため、あなたが1回ビルドするたびに、人間が次を手作業で行います。
+## 現在地
 
-```text
-UF2をSDカードへコピー → PicoCalcへ挿す → 電源を入れる → 画面を見る
-→ 写真を撮る → UARTログを回収する → あなたへ渡す
-```
+- Canonical BSP source current: **0.9.0**
+- 標準機能の実機相関baseline: **0.8.8**
+- 推奨LCD: `pio-rgb565`
+- SD: FAT32既定、FAT16明示
+- R0〜R6、NEXT-1〜NEXT-4: 完了
+- OPT1-B: promoted
+- OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
+- 現行計画の番号付き作業: すべて完了または正式終了
 
-**あなたには画面もSPI波形もSDカードの中身も見えません。** 見えるのは人間が
-渡してくれたログと写真だけです。つまり、あなたの推測が1回外れるたびに、
-人間がこの往復を1回払います。
+NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
+対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は
+対応済みとはみなしません。正確な境界は
+[`firmware-validation/capability.json`](firmware-validation/capability.json)を確認します。
 
-このリポジトリの第一目的は、**PicoCalc向け開発をAIに依頼したとき、AIが
-エミュレーター上で結果を観測・検証し、失敗原因を特定して修正できるようにすること**
-です。人間の実機検証回数の削減は、その効果を測る成果指標です。あなたはその枠組みの
-利用者であり、同時に検証対象でもあります。
+## 監督と分担
 
-したがって、この手順書のすべての規則は次の一点に還元されます。
+Solが要件、設計、受入、統合、commit／push、CI・実機結果の最終判断を担当します。
+LunaはSolが限定した明確・反復的・大量の作業を行い、差分と検証結果を提出します。
+workerの報告はSolの検収を置き換えません。詳細は
+[開発運用](docs/DEVELOPMENT_WORKFLOW.md)を参照してください。
 
-> **推測でハードウェアを触らない。動作実績のある実装を、実績のある呼び方で使う。**
+指定されたworker構成が使えない場合、別構成で強行せず、原因を特定してから再開します。
 
-過去に、この規則を破って動作実績のある転送コードを手作業で再実装した結果、
-LCDに1枚表示させるだけでUF2ビルド17回・実機書き込み15回以上を人間に払わせた
-記録があります（[LCD不動作調査記録](docs/LCD_INVESTIGATION_20260729.md)）。
-確定した原因は、再実装時に転送処理と呼び出し粒度を変質させたことでした。
-以降の規則は、この事故の再発防止として読んでください。
-
-## 監督体制
-
-Solが要件、計画、設計、受入、レビュー、統合、commit/push、CI・実機結果の判定と
-最終報告を担当します。LunaはSolが限定した実装・調査・定型処理を行い、差分と検証結果を
-提出します。詳細な委任、報告、検収、権限の境界は
-[`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md)を参照してください。
-
-## このリポジトリの現在の段階
-
-目的は3段階で達成します。Canonical BSPとエミュレーター基盤（Milestone 0〜3）は
-完成し、現在はそれらを再現可能な継続回帰へ固めて実機相関を増やす段階です。
-
-| 段 | 内容 | 状態 | あなたへの影響 |
-|---|---|---|---|
-| 1 | Canonical BSP — 実績済みの転送契約と由来を固定し、あなたの変更範囲を`app/`へ限定する | **完了**（BSP 0.8.8）。0.8.8実機台帳はLCD・keyboardを含め`pass` | ハードウェア初期化を書かない。既存APIを呼ぶ |
-| 2 | エミュレーター — PC上で実行し、画面・SPI/I²C・SDをあなた自身が観測する | A/BともLCD・PSRAM・SD・キー入力を観測可能（Milestone 1〜3完了）。scenarioとhost基盤は完成。個別アプリのhost test・継続target化は原則別途必要で、PicoTetrisはR3で接続済み | 画面・キー・SDはPC上で確認し、実機固有の見た目・聞こえ方だけ人間に依頼する |
-| 3 | 実機相関 — 実機結果を台帳へ記録し、予測精度を校正する | 最初の相関は完了。現行成果物の継続相関は進行前 | 実機結果は必ず台帳へ記録する |
-
-第2段はMilestone 1〜3が完了しました（2026-08-05）。ClockworkPi公式サンプル
-`picocalc_helloworld`（A系統）に加え、**あなたが`picocalc.py new`で生成する標準
-template（B系統: PIO0/RGB565）も、エミュレーター上でLCD描画・SDカードの
-mount/write/sync/read/compare/removeまで到達し`app_status=pass`を出せます。**
-次のコマンドでBINを実行できます。
-
-```sh
-python3 tools/picocalc.py test --mode firmware \
-  --target picocalc-template-b --firmware <path-to.bin>
-```
-
-R2完了後の上位CLIは、targetに宣言したscenario・SD・LCD variant等をすべて自動転送し、
-毎回新規生成したschema 8 structured report、停止理由、必須UART marker、backend build
-identityまで照合します。BIN、scenario、backend、CLI overrideが契約と違えば実行前に失敗し、
-runnerの0=pass、1=failure、2=cannot-judgeをそのまま返します。修正順序は
-[`docs/MILESTONES.md`](docs/MILESTONES.md)の「現在の実行順序」にあります。
-
-**画面の状態を見てキーを条件付きに投入したいときはscenario runnerを使います。**
-`--keys`は起動前に固定文字列を積むだけで、「この画面になったらこのキー」という
-記述ができません。JSONでscenarioを書けば、実行ループの内側で画面とUART出力を
-見てから次のキーを決められます。詳細は
-[`docs/SCENARIO_RUNNER.md`](docs/SCENARIO_RUNNER.md)。
-
-**アプリのロジックだけを高速に検査したいときはhost backendを使います。**
-
-```sh
-python3 tools/picocalc.py test --mode host
-```
-
-このコマンドが現在実行するのはBSP基盤の専用`emu_smoke`です。任意アプリのロジックが
-自動的に試験されるわけではなく、アプリ側にhardware-freeなtest targetを用意する必要が
-あります。PicoTetrisはその具体例で、R3により666 checksのhost testと`picotetris-r3`
-firmware targetへ接続済みです。RP2040バイナリを作らずに1秒未満で検査できますが、
-**firmware backendが権威であることは変わりません。** PIO・DMA・I2C・割り込み・LCDのwire形式はhostに
-存在しないため、それらに依存する挙動はfirmware backendでしか確認できません。
-詳細は[`docs/HOST_BACKEND.md`](docs/HOST_BACKEND.md)。
-
-**それでも、まだ人間の確認が要る範囲があります。** multicoreと音声の実再生は
-未対応です。そして実機の色・向き・可読性・音の聞こえ方は、エミュレーターでは
-原理的に判定できません。したがって**最終的な見た目・聞こえ方の確認は、引き続き
-人間へ依頼してください。** 推測でハードウェア層を触らないことと、人間へ渡す
-1回のUF2の情報量を最大にすること（版の識別、機械可読ログ、合否の判定基準を
-先に決めておくこと）は、引き続きあなたの責務です。
-
-エミュレーターが今できること・できないことの一覧は
-[`firmware-validation/capability.json`](firmware-validation/capability.json)にあります。
-
-到達状況と今後の順序は[`docs/MILESTONES.md`](docs/MILESTONES.md)、実施済みGateの詳細は
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §4、
-エミュレーターが今できること・できないことは
-[`firmware-validation/capability.json`](firmware-validation/capability.json)にあります。
-
-現在のCanonical版はBSP `0.8.8`です。標準templateのアプリ版名は`0.8.4-*`のまま
-独立して管理されています。実機で使用する対象は、ログ先頭の`[PICOCALC][BOOT]`に出る
-`bsp`、`app`、`variant`、`bsp_git`、`app_git`で識別します。
-
-## 作業別の入口
-
-- 通常のアプリ作業: 本書の「AIが行う正規手順」以降を読む。
-- エミュレーター作業: `docs/MILESTONES.md` → `docs/EMULATOR_ROADMAP.md` →
-  `docs/IMPLEMENTATION_PLAN.md` → `docs/FIRMWARE_BACKEND.md`の順に読む。
-- BSP・driver作業: `bsp/README.md` → `bsp/vendor/README.md` →
-  `THIRD_PARTY_NOTICES.md`の順に読み、通常アプリの変更範囲と混同しない。
-
-エミュレーターのFirmware backendはRust製`picoem-picocalc`を主系とし、
-`ExecutionModel::Serial`と継承済み回帰テストから始めます。`rp2040js`は周辺機器の
-振る舞いと実装方法の比較参考であり、主バックエンドではありません。
-
-## AIが行う正規手順
-
-リポジトリのルートで実行します。
+## 通常のアプリ開発
 
 ```sh
 python3 tools/picocalc.py verify
@@ -137,151 +45,89 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 python3 tools/picocalc.py build --project ../MyApp
 ```
 
-通常buildは、プロジェクトが`PICOCALC_DIAGNOSTIC_MODE`を宣言している場合、その値を必ず
-`OFF`へ明示設定する。古いbuild cacheから診断modeを継承しない。診断UF2を意図する場合だけ
-`--diagnostic-mode`を付ける。
-
-生成物は常に次です。
+通常変更する場所:
 
 ```text
+../MyApp/app/main.cpp
+../MyApp/assets/       # 必要な場合だけ
+```
+
+通常変更しない場所:
+
+```text
+../MyApp/bsp/
+../MyApp/generated/
+```
+
+LCD GPIO、初期化列、transfer粒度、SD SPI、keyboard I2C、PSRAM clockを`app/`へコピーして
+書き直してはいけません。BSPの公開APIを使用します。
+
+生成物:
+
+```text
+../MyApp/build/picocalc_app.bin
 ../MyApp/build/picocalc_app.uf2
 ```
 
-PicoCalcのSDカード上でファイル名を管理するため、UF2名と場所を変更しません。
-実機へコピーする前に、ビルドが出力するSHA-256と実機ログ1行目を記録します。
+## 検証順序
 
-## AIが変更してよい場所
+1. アプリ固有のhardware-free unit test
+2. `python3 tools/picocalc.py test --mode host`
+3. 固定targetによるfirmware scenario
+4. report、UART、snapshot、SHAの照合
+5. エミュレーターで判定できない項目だけ実機へ依頼
 
-通常のアプリ開発で変更するのは、生成されたプロジェクトの次だけです。
-
-```text
-MyApp/app/main.cpp
-MyApp/assets/       （必要な場合だけ）
-```
-
-LCDのGPIO、LCD初期化、転送形式、SD初期化、キーボードI2C、PSRAMクロックを
-`app/`へコピーして書き直してはいけません。公開ヘッダーのAPIを呼びます。
-生成された`MyApp/bsp/`は、そのプロジェクトが使用するBSPの固定コピーです。
-`board_generated.h`はJSON profileから生成されるため直接編集しません。
-
-BSPやprofileを変更する作業は通常のアプリ作業ではありません。変更する場合は、
-変更理由、source fingerprint、host test、実機検証を同じコミットに記録します。
-
-## LCDはA/Bから一つだけ選ぶ
-
-AとBは同じドライバに統合しません。個体や目的に応じてビルド時に一つを選びます。
-
-| variant | 用途 | 実際の転送 |
-|---|---|---|
-| `pio-rgb565`（B、推奨） | 通常のアプリ | PIO0 blocking、RGB565、2 bytes/pixel、LCD DMA OFF、clkdiv 2.0 |
-| `hwspi-rgb888`（A） | 互換・bring-up・診断 | SPI1 blocking、RGB666 wire、3 bytes/pixel、25 MHz |
-
-アプリの公開画素形式は常にRGB565です。Aの3-byte転送をBへ持ち込んだり、Bの
-PIO転送をAへ持ち込んだりしません。選択例は次です。
+Host backendは高速ですがハードウェアモデルではありません。PIO、DMA、I2C、割り込み、
+multicore、LCD wire形式を判断するときはfirmware backendを使います。
 
 ```sh
-python3 tools/picocalc.py build --project ../MyApp --lcd-variant pio-rgb565
-python3 tools/picocalc.py build --project ../MyApp --lcd-variant hwspi-rgb888
+python3 tools/picocalc.py test --mode firmware \
+  --target <target-id> \
+  --firmware /absolute/path/to/app.bin \
+  --snapshot-dir /tmp/picocalc-snapshots
 ```
 
-実機検証は同時に二つ行わず、一つずつ同じ
-`../MyApp/build/picocalc_app.uf2`を生成します。A/Bの判定はUF2名ではなく、
-ログ先頭の`variant`と`app_status`で行います。
+登録targetと異なるBIN、scenario、backend、device optionをoverrideして通してはいけません。
 
-## PSRAMの制約
+## 状態を見て入力する
 
-PSRAMは8 MiB、PIO1、CS/SCK/MOSI/MISOはGP20/21/2/3です。250 MHz通常起動の
-推奨候補は、最初に`clkdiv=2.0/fudge=false`（62.5 MHz）を使い、失敗時だけ
-`3.0/false`、`1.5/true`へ進みます。高速候補を通常設定へ勝手に追加しません。
+画面やUARTを待ってから入力する場合は[Scenario runner](docs/SCENARIO_RUNNER.md)を使います。
+対話的な長寿命sessionが必要なら[Headless machine API](docs/HEADLESS_MACHINE_API.md)を使います。
+machine APIは操作面であり、target registryの合否判定を置き換えません。
 
-公開APIのread/writeはBSP内部で最大24 byteへ分割されます。PSRAMは任意機能で、
-起動ログが`status=unavailable`ならSRAMとして扱わず、アプリ側で代替動作を選びます。
-LCD更新との共存速度を測るときだけ、B専用の次のモードを使います。
+## 実機依頼
 
-```sh
-python3 tools/picocalc.py build --project ../MyApp \
-  --lcd-variant pio-rgb565 --psram-lcd-coexist-test
-```
+通常の転送経路はPicoCalcの**uf2loader**です。BOOTSELを使うのは、それでしか検証できない
+明示的理由がある場合だけです。
 
-## 音声の扱い
+人間へ依頼する前に次を提示します。
 
-既定の`PICOCALC_AUDIO_REFERENCE_TONE=ON`は、実機動作確認済みの固定1 kHz音を
-`picocalc::init()`中に開始します。標準テンプレートはLCDのGRAM検証が終わった直後に
-`picocalc::audio::stop()`を呼び、次のログを出します。
+- UF2の絶対pathとSHA-256
+- 起動時に照合するBSP/app/variant/build
+- 操作を一度に一つずつ
+- 誤入力、反応しないキー、中断、再起動からの回復方法
+- 必要なUARTログ、写真、SDファイル
+- 終了条件
 
-```text
-[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete
-```
+タイミング依存の長いキー列や途中写真を当然の前提にしません。機械化できる操作はscenarioへ
+移し、人間には最終的な見え方、聞こえ方、物理操作だけを依頼します。
 
-PCMを使うアプリは、`PICOCALC_AUDIO_REFERENCE_TONE=OFF`でビルドし、
-`audio::init()` → `audio::write_sample()` → `audio::start()`の順に使います。
-不要になったら必ず`audio::stop()`を呼びます。最小例は
-`templates/rp2040-basic/examples/audio_stream.cpp`です。
+## 版と証拠
 
-## 実機ログの合格判定
+UF2を実機へ渡す前にsource commit、BSP/app版、build timestamp、BIN/UF2 SHA-256を固定します。
+UF2のファイル名だけで版を識別しません。起動ログの`[PICOCALC][BOOT]`行を先に確認します。
 
-画面だけで合否を判断しません。最低限、次を順番に確認します。
+履歴recordは時点証拠です。後から現在値に書き換えず、新しいrevision／validation／recordを
+追加します。詳細は[Versioned validation](docs/VERSIONED_VALIDATION.md)を参照してください。
 
-1. 最初の行が`[PICOCALC][BOOT]`で、意図した`bsp/app/variant/bsp_git/app_git`である
-2. LCD各色の`[PICOCALC][LCD][VERIFY] ... status=pass`が出る
-3. `[PICOCALC][LCD][VERIFY] app_status=pass`が出る
-4. BではRAMRDの`format=rgb565`と期待値が一致する
-5. LCD検証直後に音声停止ログが出る
-6. SDの`[PICOCALC][SD][SMOKE] stage=end status=ok`が出る
-7. キーボードを操作し、Pressed/Releasedイベントが記録される
+## 文書の入口
 
-LCDの`app_status=pass`は、塗りつぶしと既知パターンをGRAMから読み戻し、公開APIの
-RGB565値と一致したという意味です。`stage=end status=drawn`だけではreadback合格を
-意味しません。
-
-## 版管理
-
-実機に渡す版は、版番号またはサブコメントをソースへ反映してからコミットし、その
-コミットからUF2を生成します。UF2自体は保存・コミットせず、同じ名前で再生成します。
-ブランチを統合するときも、資産を捨てず、必要なソース・文書・検証をすべて統合します。
-
-## 参照先の読み方
-
-分類は読む順序です。①を読まずに②以降へ進まないでください。
-
-### ① 必ず読む
-
-- 本書
-- `README.md`: 目的、PicoCalcとは何か、全体像
-
-### ② アプリを作るとき読む
-
-- `templates/rp2040-basic/README.md`: 生成後のビルドと起動時スモーク
-- `bsp/README.md`: 固定ハードウェア契約（**現行0.8.8のみ**。過去版は`bsp/CHANGELOG.md`）
-- `docs/IMPLEMENTATION_STATUS.md`: 実装済み範囲と実機確認状況
-- `docs/DEVELOPMENT_WORKFLOW.md`: Sol / Lunaの責任境界
-
-### ③ 該当作業のときだけ参照する
-
-- `docs/MILESTONES.md`: **実装順序の正典**。他文書の段階番号はここへ対応付ける
-- `REQUIREMENTS.md`: 将来のエミュレーターを含む要求仕様
-- `docs/FIRMWARE_BACKEND.md`: `picoem-picocalc`を主系、`rp2040js`を比較参考とする方針
-- `docs/EMULATOR_ROADMAP.md`: 無改変`picocalc_helloworld`から始める実装順と段階別受入条件
-- `docs/IMPLEMENTATION_PLAN.md`: 実施済みMilestone 1をGate別に分解した計画と判断記録
-- `docs/SCENARIO_RUNNER.md`: JSON scenarioの形式、条件付きキー投入、画面の機械判定
-- `docs/HOST_BACKEND.md`: アプリロジックをホストのモデルに対してビルドし単体試験する
-- keyboard controller/model作業: 一次リファレンスはClockworkPi公式
-  [`Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)。
-  このworkspaceのローカル配置は
-  `/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`である。RP2040アプリを
-  protocol producer仕様の代用にしない
-- `docs/DESIGN.md`: **未実装**エミュレーターの将来設計。Phase番号は旧体系であり、
-  実行順序は`docs/MILESTONES.md`が優先する
-- `bsp/vendor/README.md`: driverごとの由来、変更規約、呼び出し粒度
-- `THIRD_PARTY_NOTICES.md`: third-party由来コードの扱い
-
-### ④ 歴史記録（現在の手順ではない）
-
-以下を現行仕様として使わないでください。**古いUF2やコミットを現在版として
-再利用しないでください。**
-
-- `docs/LCD_INVESTIGATION_20260729.md`: LCD問題の調査記録。本書の規則の根拠
-- `docs/PROJECT_HISTORY_20260729.md`: 開発・実機検証の総合履歴
-- `docs/DOGFOODING_20260805.md`: 実アプリ（PicoTetris）を書いて見つけたワークフローの
-  穴と、その解消記録
-- `bsp/CHANGELOG.md`: BSP版ごとの変更理由
+- 現在の状態: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+- 計画の完了表: [docs/MILESTONES.md](docs/MILESTONES.md)
+- 文書分類: [docs/README.md](docs/README.md)
+- BSP API: [bsp/README.md](bsp/README.md)
+- Firmware backend: [docs/FIRMWARE_BACKEND.md](docs/FIRMWARE_BACKEND.md)
+- Host backend: [docs/HOST_BACKEND.md](docs/HOST_BACKEND.md)
+- Scenario: [docs/SCENARIO_RUNNER.md](docs/SCENARIO_RUNNER.md)
+- Machine API: [docs/HEADLESS_MACHINE_API.md](docs/HEADLESS_MACHINE_API.md)
+- 過去の経緯・却下実験: [docs/history/README.md](docs/history/README.md)

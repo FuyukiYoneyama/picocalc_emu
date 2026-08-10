@@ -116,6 +116,6 @@ A `hwspi-rgb888` と B `pio-rgb565` の二つの独立BSPへ分離し、CMakeの
 ## それ以前
 
 0.1.x〜0.2.xのLCD不動作調査の全経緯は
-[`docs/LCD_INVESTIGATION_20260729.md`](../docs/LCD_INVESTIGATION_20260729.md)と
-[`docs/PROJECT_HISTORY_20260729.md`](../docs/PROJECT_HISTORY_20260729.md)にある。
+[`docs/history/LCD_INVESTIGATION_20260729.md`](../docs/history/LCD_INVESTIGATION_20260729.md)と
+[`docs/history/PROJECT_HISTORY_20260729.md`](../docs/history/PROJECT_HISTORY_20260729.md)にある。
 これらの版のUF2・コミットを現在版として再利用しない。

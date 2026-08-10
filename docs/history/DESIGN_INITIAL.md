@@ -1,13 +1,17 @@
-# picocalc_emu 将来設計
+# picocalc_emu 初期設計（歴史資料）
+
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
 
 > **将来設計:** 本書は未実装のPCエミュレーターとシナリオ実行基盤の設計です。
 > 現在利用できる実装とAI向けの使い方は、先に
-> [`AI_START_HERE.md`](../AI_START_HERE.md)と
-> [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)を参照してください。
+> [`AI_START_HERE.md`](../../AI_START_HERE.md)と
+> [`IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md)を参照してください。
 
 AI に PicoCalc 向けアプリを開発させるための利用者要求、標準開発フロー、
 BSP・テンプレート・実働プロジェクトの扱いは
-[REQUIREMENTS.md](../REQUIREMENTS.md) に定義する。本書は、その要求を実現する
+[REQUIREMENTS.md](../../REQUIREMENTS.md) に定義する。本書は、その要求を実現する
 将来のエミュレーターと検証基盤の技術構成を定義する。
 
 > **実装状況:** Canonical BSP 0.9.0（LCD二系統、公開filesystem write API）、
@@ -16,7 +20,7 @@ BSP・テンプレート・実働プロジェクトの扱いは
 > 実機向けBSP sourceの現在版として実装済み。0.9.0追加filesystem APIはNEXT-1 PicoEditの
 > FAT32同一artifact実機試験で相関済み。
 > 利用方法と未実装のエミュレーター範囲は
-> [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) を参照。
+> [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md) を参照。
 
 ## 1. 目的
 
@@ -238,7 +242,7 @@ prediction_agreement =
 
 ## 7. 段階的な実装計画
 
-> **実行順序の正典は[`MILESTONES.md`](MILESTONES.md)です。** 本節のPhase番号は
+> **実行順序の正典は[`MILESTONES.md`](../MILESTONES.md)です。** 本節のPhase番号は
 > 初期設計時の区分であり、現在の実行順序とは一致しません。特にPhase 0の
 > golden採取は、現行計画ではMilestone 4へ移動しています。対応表は
 > `MILESTONES.md`の「他文書との対応」にあります。本節は各段階で「何を作るか」の
@@ -286,7 +290,7 @@ GDB 接続、core1/SIO FIFO、PIO/DMA、PSRAM、PicoMite/uLisp/FUZIX の専用�
 > `hardware-validation/`、`diagnostics/`、`docs/` です。以下のうち
 > `schemas/`、`include/picocalc_emu/`、`src/`、`adapters/`、`scenarios/`、
 > `golden/`、`fixtures/` はいずれも未作成で、Milestone 1以降に作られます。
-> 現状の構成は[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)を参照してください。
+> 現状の構成は[`IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md)を参照してください。
 
 ```text
 picocalc_emu/

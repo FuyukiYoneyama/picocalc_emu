@@ -1,8 +1,12 @@
 # OPT0-B behavior / streaming event契約
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 完了  
 **実装backend:** `picoem-picocalc` `763595fedefa08886b41298be79bff69324ac51f`  
-**証拠:** [`firmware-validation/records/opt0-b-20260808-01/`](../firmware-validation/records/opt0-b-20260808-01/)
+**証拠:** [`firmware-validation/records/opt0-b-20260808-01/`](../../firmware-validation/records/opt0-b-20260808-01/)
 
 ## 目的
 

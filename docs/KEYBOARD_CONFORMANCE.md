@@ -60,5 +60,5 @@ R5相関firmwareの67キー診断は、このR1 producer conformance全体を実
 ありません。R5のscenarioはraw FIFO eventを投入し、実機recordは全物理キーのpress/release
 到達性を確認しますが、診断appはstatus registerのCaps bitを利用しません。そのためCaps toggle、
 後続英字の大小文字変換、開始・終了時のCaps状態はR5の合格主張に含めません。R5 artifact固有の
-必須操作条件と既知の表示上の制約は[`R5_HARDWARE_CORRELATION.md`](R5_HARDWARE_CORRELATION.md)
+必須操作条件と既知の表示上の制約は[`history/R5_HARDWARE_CORRELATION.md`](history/R5_HARDWARE_CORRELATION.md)
 を参照してください。

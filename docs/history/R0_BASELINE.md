@@ -1,5 +1,9 @@
 # R0 基準点・生成契約・provenance
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 R0は2026-08-05に完了した。目的は、以後のbackend hardeningやPicoTetris回帰を、
 「どのソースと契約に対する変更か」が再現できる状態から始めることである。
 機械可読な正典は`provenance/r0-baseline.json`とする。

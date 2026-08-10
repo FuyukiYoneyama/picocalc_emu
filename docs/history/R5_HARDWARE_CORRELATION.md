@@ -1,5 +1,9 @@
 # R5 PicoTetris同一BIN実機相関
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 実装・再現build・emulator preflight・PicoCalc実機相関完了。OPT1-Aはpromoted。
 
 **audio境界:** 本書の`audio=pass`はfirmwareの設定・stream counterと実機で聞こえた参照音を
@@ -119,7 +123,7 @@ assertしない。またemulator preflightは登録scenarioからraw FIFO event�
 ```
 
 preflight証拠は
-[`firmware-validation/records/r5-preflight-20260808-01/`](../firmware-validation/records/r5-preflight-20260808-01/)
+[`firmware-validation/records/r5-preflight-20260808-01/`](../../firmware-validation/records/r5-preflight-20260808-01/)
 に保存する。`result=pass`は再現buildとemulator preflightだけを意味し、同recordの
 `hardware_correlation_completed=false`はpreflight時点の不変証拠として保持する。現在の実機相関状態は
 後続の`r5-hardware-20260808-01`を正典とする。
@@ -141,7 +145,7 @@ UARTは途中再起動と`resumed=1`を含み、回復契約を実地に通し�
 | 参照音抜粋 `reference-tone.flac` | `5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19`、FFT peak 984.375 Hz |
 
 証拠と解析は
-[`firmware-validation/records/r5-hardware-20260808-01/`](../firmware-validation/records/r5-hardware-20260808-01/)
+[`firmware-validation/records/r5-hardware-20260808-01/`](../../firmware-validation/records/r5-hardware-20260808-01/)
 に保存する。エミュレーターがpassで実機がfailになった項目は0件で、同一artifact相関は合格した。
 
 キーボードは67キーの到達性とI2C error 0を満たす一方、operatorは一部キーの反応が悪くretryを

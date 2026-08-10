@@ -1,5 +1,9 @@
 # OPT3-A immutable-XIP decode cursor profile
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 OPT3-Aの計測は完了した。次は**短いimmutable-XIP decode cursor**のfeature-gated試作
@@ -79,5 +83,5 @@ eraseを実装しても無効化不要という意味ではない。
 6. behavior/event全digestが一致した候補だけtrace-OFF A/Bへ進め、5%基準未達ならrevertする。
 
 完全なartifactは
-[`opt3-a-xip-cursor-profile-20260809-01`](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/notes.md)
+[`opt3-a-xip-cursor-profile-20260809-01`](../../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/notes.md)
 に固定する。

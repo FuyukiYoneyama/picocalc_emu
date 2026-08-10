@@ -1,5 +1,9 @@
 # picocalc_emu AI 開発環境 要求仕様
 
+> **文書の役割:** 本書は要求の背景と不変原則を定義します。§7の優先順位は初期計画です。
+> 現在の実装状態は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、完了した
+> 作業パッケージは[`docs/MILESTONES.md`](docs/MILESTONES.md)を優先してください。
+
 > **文書の位置付け:** これは将来のエミュレーターを含む要求仕様です。現在実装済み
 > なのは、Canonical BSP、RP2040アプリテンプレート、実機ログ付きスモークテスト、
 > portable検証器です。PC上でUF2/ELFを動かす機能はまだ実装されていません。

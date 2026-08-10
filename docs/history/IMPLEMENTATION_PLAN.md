@@ -1,5 +1,9 @@
 # 詳細実装計画（Milestone 1: Firmware backend、実施済み）
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 > **文書の位置付け:** 全体計画の正典は`MILESTONES.md`、Gateの受入条件の正典は
 > `EMULATOR_ROADMAP.md`である。本書はそれらを変更せず、Milestone 1を実行可能な
 > 作業単位へ分解した実行計画を定義する。受入条件の記述が本書と
@@ -10,7 +14,7 @@
 >
 > **現在の計画:** 本書は当時の判断、制限、受入過程を保存する実施済み計画である。
 > 2026-08-05レビュー後のcross-repository作業（生成契約、backend verdict、CLI/registry、
-> PicoTetris回帰、CI、実機相関）の順序と受入条件は[`MILESTONES.md`](MILESTONES.md)の
+> PicoTetris回帰、CI、実機相関）の順序と受入条件は[`MILESTONES.md`](../MILESTONES.md)の
 > 「現在の実行順序」を正典とする。本書の「未対応」「残る制限」は、明示的な後続注記が
 > ない限り、そのGate受入時点の状態として読む。
 
@@ -134,7 +138,7 @@ Track A/B/Cの呼称は本書限定の作業分割名であり、正典の段階
 > `picocalc-template-b`の履歴再現はUnix Makefilesを使い、generatorのclean Git cloneと
 > Git管理外の生成先を兄弟directoryに置く。`bsp_git=82e943ab1942`と
 > `app_git=untracked`の両方が必要である。完全な手順は
-> [`R2_TEMPLATE_B_REPRODUCTION.md`](R2_TEMPLATE_B_REPRODUCTION.md)を正典とする。
+> [`R2_TEMPLATE_B_REPRODUCTION.md`](../R2_TEMPLATE_B_REPRODUCTION.md)を正典とする。
 
 ## 3.3 成果物の保存規約
 

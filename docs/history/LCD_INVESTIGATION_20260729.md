@@ -1,5 +1,9 @@
 # LCD不動作調査記録（2026-07-29）
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 対象
 
 対象ログ：`/home/fuyuki/pico_dvl/log/tt260729173036.log`

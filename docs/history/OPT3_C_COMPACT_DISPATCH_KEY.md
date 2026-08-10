@@ -1,5 +1,9 @@
 # OPT3-C compact predecoded dispatch key
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 OPT3-Cは正確性gateに合格したが、性能gateの5%閾値に届かず不採用・revertとなった。
@@ -26,6 +30,6 @@ trace/proof OFFのclean A/B/A/B/A/Bで、baselineは`27.18/26.26/26.72 s`、cand
 `25.31/25.61/25.77 s`。pair改善率は`6.8800588668% / 2.4752475248% / 3.5553892216%`、
 中央値改善率は`4.1541916168%`で、要求値5%未達のため棄却した。
 
-完全な証拠は[`opt3-c-compact-dispatch-key-20260809-01`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)
+完全な証拠は[`opt3-c-compact-dispatch-key-20260809-01`](../../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)
 に固定する。revert HEAD `04b2eb2fb26f126e848b5c041177324954a98290`に対するbackend CI run
 `31299159125`はfmt、test、Clippyの全jobに成功した。

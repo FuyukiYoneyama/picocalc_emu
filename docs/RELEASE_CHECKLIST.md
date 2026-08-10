@@ -5,8 +5,8 @@
 **現状（2026-08-04）:** `picocalc_emu`と`picoem-picocalc`はどちらもprivateである。
 方針としては公開予定であり、ライセンス面の確認は済んでいる（`MIT OR Apache-2.0`、
 NOTICE維持）。ただし十分な完成度に達するまで公開しない。**実施時期は未定**であり、
-判断は人間が行う。この項目はGate進行の前提条件ではない（`IMPLEMENTATION_PLAN.md`
-Gate 6参照）。
+判断は人間が行う。この項目はGate進行の前提条件ではない
+（[`history/IMPLEMENTATION_PLAN.md`](history/IMPLEMENTATION_PLAN.md) Gate 6参照）。
 
 両方がprivateである限り`FIRMWARE_BACKEND.md`の公開条件と矛盾しない。矛盾が生じる
 のは「`picocalc_emu`だけを公開し、backendがprivateのまま」という状態である。
@@ -31,8 +31,8 @@ Gate 6参照）。
 - [ ] `THIRD_PARTY_NOTICES.md`が実際の同梱物と一致する
 - [ ] `bsp/vendor/`の由来記載が`bsp/vendor/README.md`と一致する
 
-conformance targetは目印であってリポジトリの資産ではない（`EMULATOR_ROADMAP.md`
-§2.1）。記録するのは結果と再現に必要な識別情報だけである。CIで配布可能な
+conformance targetは目印であってリポジトリの資産ではない
+（[`history/EMULATOR_ROADMAP.md`](history/EMULATOR_ROADMAP.md) §2.1）。記録するのは結果と再現に必要な識別情報だけである。CIで配布可能な
 fixtureが必要になった場合も公式サンプルを同梱せず、契約を満たす等価サンプルを
 自作する。
 

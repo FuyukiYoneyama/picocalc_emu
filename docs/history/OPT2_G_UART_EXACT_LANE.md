@@ -1,5 +1,9 @@
 # OPT2-G UART exact scheduler lane
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 OPT2-GのUART-only scheduler laneは、canonical PicoTetris実行でexactnessに合格した。しかし
@@ -68,8 +72,8 @@ baseline中央値は25.92 s、candidate中央値は28.17 s。pairごとの改善
 `-8.6805555556%`だった。exactnessは全6本で一致したが、5% promotion thresholdを満たさない。
 
 machine-readableな入力hash・run一覧・CPU affinity・proof counters・exactnessは
-[`opt2-g-uart-deadline-20260809-01`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/record.json)
-と同recordの[`performance-screening.json`](../firmware-validation/records/opt2-g-uart-deadline-20260809-01/performance-screening.json)
+[`opt2-g-uart-deadline-20260809-01`](../../firmware-validation/records/opt2-g-uart-deadline-20260809-01/record.json)
+と同recordの[`performance-screening.json`](../../firmware-validation/records/opt2-g-uart-deadline-20260809-01/performance-screening.json)
 に固定した。
 
 ## 採否と次工程

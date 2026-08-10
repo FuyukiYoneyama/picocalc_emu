@@ -1,8 +1,12 @@
 # OPT2-B running event-horizon profiler
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 完了（2026-08-08）  
 **backend:** `ac0c3052e6c28fcf235a33f98f3a96470d2966f1`  
-**evidence:** [`opt2-b-running-horizon-20260808-01`](../firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
+**evidence:** [`opt2-b-running-horizon-20260808-01`](../../firmware-validation/records/opt2-b-running-horizon-20260808-01/notes.md)
 
 ## 目的
 
@@ -89,4 +93,3 @@ batchする。次の順序を守る。
 3. cycle/order、behavior全domain、timeline、UART、framebufferをone-cycle referenceと比較する。
 4. exactness合格後だけtrace OFF A/Bを10 run行う。
 5. 5%改善目安に届かない場合はrevertし、PIO/UART/DMA deadline promotionかOPT3へ進む。
-

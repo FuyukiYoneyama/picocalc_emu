@@ -1,5 +1,9 @@
 # OPT3-B short immutable-XIP decode cursor
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 結論
 
 OPT3-Bのfeature-gated試作は完了した。**正確性gateは合格したが、性能gateは不合格**だった。
@@ -88,5 +92,5 @@ scheduler、exception/IRQ、invalidation、mutable codeの境界はOPT3-Bと同�
 [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)を参照する。
 
 完全な機械可読証拠は
-[`opt3-b-xip-decode-cursor-20260809-01`](../firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/notes.md)
+[`opt3-b-xip-decode-cursor-20260809-01`](../../firmware-validation/records/opt3-b-xip-decode-cursor-20260809-01/notes.md)
 に固定する。

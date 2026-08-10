@@ -1,5 +1,9 @@
 # OPT2-F stationary pin-device bulk observation
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 ## 目的
 
 OPT2-Eは、空TX FIFOへの`PULL`で停止したPIO内部を閉形式で進めても、runnerが毎cycle
@@ -73,7 +77,7 @@ CPU 0固定のclean trace-OFF 3 paired A/Bの中央値はbaseline 26.18秒、can
 0.687547746%だった。5%採用条件に届かないため、exactnessは合格、性能は不採用とした。
 candidateは`cdb7584`、前提PIO reapplyは`2671d04`で履歴を残してrevertし、active targetとpinは
 変更していない。完全な証拠は
-[`opt2-f-stationary-pin-bulk-20260809-01`](../firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01/notes.md)
+[`opt2-f-stationary-pin-bulk-20260809-01`](../../firmware-validation/records/opt2-f-stationary-pin-bulk-20260809-01/notes.md)
 に固定する。
 
 次の独立候補はOPT2-Dで次点だったUART deadline promotionとする。CPU/decode block cacheは

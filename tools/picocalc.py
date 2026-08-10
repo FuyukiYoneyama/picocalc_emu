@@ -907,7 +907,11 @@ def firmware_test(
         print("firmware does not match the pinned target")
         print("  expected {}".format(expected))
         print("  actual   {}".format(digest))
-        print("rebuild it with the procedure in docs/IMPLEMENTATION_PLAN.md 3.2")
+        procedure = target.get("build", {}).get("reproduction_document")
+        if procedure:
+            print("rebuild it with the procedure in {}".format(procedure))
+        else:
+            print("rebuild it with the source/toolchain contract in the target registry")
         return 1
 
     runner_contract = target["runner"]

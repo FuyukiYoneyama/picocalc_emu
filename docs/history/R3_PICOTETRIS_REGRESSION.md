@@ -1,5 +1,9 @@
 # R3 PicoTetris正式回帰
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 R3は2026-08-06に完了した。対象はR3完了時点でremoteを意図的に持たない`picotetris`と、
 `picocalc_emu`のhost/firmware検査基盤である。機械可読なtargetは
 `reference-projects/firmware-targets.json`の`picotetris-r3`、実測記録は

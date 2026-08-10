@@ -9,7 +9,7 @@ RP2040バイナリを作らずに、ネイティブで直接検査できる。
 python3 tools/picocalc.py test --mode host
 ```
 
-これは[`DOGFOODING_20260805.md`](DOGFOODING_20260805.md)の穴3に必要な基盤である。
+これは[`history/DOGFOODING_20260805.md`](history/DOGFOODING_20260805.md)の穴3に必要な基盤である。
 ライン消去や衝突判定は純粋な規則なのに、試すにはRP2040イメージを作って
 エミュレーターで走らせるしかなかった。Host backendはその試験面を提供する。後続R3で
 PicoTetris自身もhardware-freeな規則へ分離し、666 checksのunit testへ接続した。ただし、

@@ -1,5 +1,9 @@
 # picocalc_emu 開発・実機検証総合履歴
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 作成日: 2026-07-29  
 対象リポジトリ: `picocalc_emu`  
 対象機器: PicoCalc / RP2040 / uf2loader

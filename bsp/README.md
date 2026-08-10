@@ -75,7 +75,7 @@ PSRAM通常起動の250 MHz第一候補は`clkdiv=2.0/fudge=false`（62.5 MHz）
 
 過去の版でどこを、なぜ変えたかは[`CHANGELOG.md`](CHANGELOG.md)へ分離した。
 本書には現行0.9.0の契約だけを置く。0.1.x〜0.2.xのLCD不動作調査の全経緯は
-[`../docs/LCD_INVESTIGATION_20260729.md`](../docs/LCD_INVESTIGATION_20260729.md)にある。
+[`../docs/history/LCD_INVESTIGATION_20260729.md`](../docs/history/LCD_INVESTIGATION_20260729.md)にある。
 
 過去の台帳記録は、Aが`hardware-validation/records/bsp-0.4.0-20260730-02.json`（LCD/SD/keyboard
 pass）、Bが`hardware-validation/records/bsp-0.4.0-20260730-01.json`（LCD/SD pass、keyboard

@@ -1,5 +1,9 @@
 # NEXT-1 PicoEdit同一artifact実機相関
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 完了（2026-08-09）。`picoedit-r1`のエミュレーターPASSと、同じbuildから生成したUF2の
 ClockworkPi PicoCalc実機PASSを相関した。
 
@@ -54,7 +58,7 @@ Backspace 4回で消して`draft`へ修正した。また行末編集でもspace
 ## 証拠と機械検証
 
 正式recordは
-[`next1-picoedit-hardware-20260809-01/`](../firmware-validation/records/next1-picoedit-hardware-20260809-01/)
+[`next1-picoedit-hardware-20260809-01/`](../../firmware-validation/records/next1-picoedit-hardware-20260809-01/)
 にある。UART全文、入力、出力、backup、最終写真、事前手順、事前input契約を含む。
 `tools/verify_environment.py --scope target-schema`は次をfail-closedで検査する。
 

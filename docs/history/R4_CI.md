@@ -1,5 +1,9 @@
 # R4 品質ゲートとCI
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 R4は2026-08-06に完了した。目的は、3リポジトリの検証をclean GitHub runnerから実行し、
 失敗した層をjob名で特定できる状態にすることである。target、attestation、過去evidenceを
 都合よく書き換える作業ではない。

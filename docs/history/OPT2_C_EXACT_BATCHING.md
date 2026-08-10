@@ -1,5 +1,9 @@
 # OPT2-C 限定exact running batching
 
+> **資料区分: 歴史記録。** この文書の「次は」「未着手」「予定」は作成時点の判断です。
+> 現在状態は `../IMPLEMENTATION_STATUS.md`、現在計画は `../MILESTONES.md` を優先します。
+
+
 **状態:** 完了、不採用・revert  
 **candidate:** `picoem-picocalc` `815ef5daa5117c29a8a7505d5e5f1929d92d5b99`  
 **revert:** `c44c87f1ed4235343c5fd18860fde47b64b54325`
@@ -25,5 +29,5 @@ validation、R5/OPT1-B evidenceは変更していない。
 とCPU/decode block workを別レバーとして測り、より大きい側から次候補を選ぶ。
 
 完全な条件、trace artifact、性能値は
-[`opt2-c-exact-batching-20260808-01`](../firmware-validation/records/opt2-c-exact-batching-20260808-01/notes.md)
+[`opt2-c-exact-batching-20260808-01`](../../firmware-validation/records/opt2-c-exact-batching-20260808-01/notes.md)
 に固定した。
