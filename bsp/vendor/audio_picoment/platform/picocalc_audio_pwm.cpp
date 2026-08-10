@@ -381,10 +381,7 @@ void start_output() {
     start_half(0);
 }
 
-void init_common(bool stream_mode, bool start_immediately) {
-    gpio_set_function(board::kAudioPwmLeft, GPIO_FUNC_PWM);
-    gpio_set_function(board::kAudioPwmRight, GPIO_FUNC_PWM);
-
+bool init_common(bool stream_mode, bool start_immediately) {
     g_pwm_slice = static_cast<int>(pwm_gpio_to_slice_num(board::kAudioPwmLeft));
     g_left_channel = pwm_gpio_to_channel(board::kAudioPwmLeft);
     g_right_channel = pwm_gpio_to_channel(board::kAudioPwmRight);
@@ -392,8 +389,29 @@ void init_common(bool stream_mode, bool start_immediately) {
         PM_LOG_BOOT("audio=pwm error=pin_pair_mismatch left=%u right=%u",
                     board::kAudioPwmLeft,
                     board::kAudioPwmRight);
-        return;
+        return false;
     }
+
+    // The public BSP API reports initialization failure with `false`. A
+    // required claim would panic before that contract could be honoured.
+    // Claim both resources before changing GPIO/PWM state, and roll the first
+    // claim back if the second resource is unavailable.
+    g_dma_channel = dma_claim_unused_channel(false);
+    if (g_dma_channel < 0) {
+        PM_LOG_BOOT("audio=init error=dma_channel_unavailable");
+        return false;
+    }
+    g_dma_timer = dma_claim_unused_timer(false);
+    if (g_dma_timer < 0) {
+        PM_LOG_BOOT("audio=init error=dma_timer_unavailable channel=%d",
+                    g_dma_channel);
+        dma_channel_unclaim(static_cast<uint>(g_dma_channel));
+        g_dma_channel = -1;
+        return false;
+    }
+
+    gpio_set_function(board::kAudioPwmLeft, GPIO_FUNC_PWM);
+    gpio_set_function(board::kAudioPwmRight, GPIO_FUNC_PWM);
 
     pwm_config config = pwm_get_default_config();
     pwm_config_set_clkdiv(&config, 1.0f);
@@ -425,8 +443,6 @@ void init_common(bool stream_mode, bool start_immediately) {
     static_cast<void>(stream_mode);
 #endif
 
-    g_dma_channel = dma_claim_unused_channel(true);
-    g_dma_timer = dma_claim_unused_timer(true);
     compute_dma_fraction(board::kTargetSampleRate,
                          clock_get_hz(clk_sys),
                          &g_dma_fraction_num,
@@ -459,11 +475,14 @@ void init_common(bool stream_mode, bool start_immediately) {
     if (start_immediately) {
         start_output();
     }
+    return true;
 }
 
 #if PICOMENT_FIXED_SINE_TEST
-void init_fixed_sine() {
-    init_common(false, true);
+bool init_fixed_sine() {
+    if (!init_common(false, true)) {
+        return false;
+    }
     PM_LOG_BOOT("audio=fixed_sine rate=%lu tone=%lu amp_db=-6 pwm_wrap=%u carrier=%lu dma_half=%lu dma_timer=%d dma_frac=%u/%u quant=error_diffusion_%upct_%ubit",
                 static_cast<unsigned long>(board::kTargetSampleRate),
                 static_cast<unsigned long>(picoment::diagnostics::fixed_sine::kToneHz),
@@ -475,11 +494,14 @@ void init_fixed_sine() {
                 g_dma_fraction_den,
                 kErrorDiffusionPercent,
                 kPwmResolutionBits);
+    return true;
 }
 #endif
 
-void init_stream() {
-    init_common(true, false);
+bool init_stream() {
+    if (!init_common(true, false)) {
+        return false;
+    }
     PM_LOG_BOOT("audio=stream rate=%lu pwm_wrap=%u carrier=%lu dma_half=%lu ring=%lu dma_timer=%d dma_frac=%u/%u quant=error_diffusion_%upct_%ubit",
                 static_cast<unsigned long>(board::kTargetSampleRate),
                 board::kAudioPwmWrap,
@@ -491,6 +513,7 @@ void init_stream() {
                 g_dma_fraction_den,
                 kErrorDiffusionPercent,
                 kPwmResolutionBits);
+    return true;
 }
 
 void start_stream() {

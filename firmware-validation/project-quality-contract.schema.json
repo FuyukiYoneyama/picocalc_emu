@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/project-quality-contract.schema.json",
+  "title": "PicoCalc external project quality contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "report_schema",
+    "required_capabilities",
+    "report_checks"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "contract_id": {"type": "string", "minLength": 1},
+    "report_schema": {"const": 8},
+    "required_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audio_sink"],
+      "properties": {
+        "audio_sink": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected_count", "expected_sha256"],
+          "properties": {
+            "expected_count": {"type": "integer", "minimum": 1},
+            "expected_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "report_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "op", "value"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "op": {"enum": ["eq", "length_eq"]},
+          "value": {}
+        }
+      }
+    }
+  }
+}

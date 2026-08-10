@@ -71,26 +71,45 @@ endif()
 if(NOT PICOCALC_BUILD_TIMESTAMP)
     string(TIMESTAMP PICOCALC_BUILD_TIMESTAMP UTC "%Y-%m-%dT%H:%M:%SZ")
 endif()
-if(NOT PICOCALC_BSP_GIT)
-    execute_process(
-        COMMAND git rev-parse --short=12 HEAD
-        WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
-        OUTPUT_VARIABLE PICOCALC_BSP_GIT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(NOT PICOCALC_BSP_GIT)
-        set(PICOCALC_BSP_GIT "untracked")
-    else()
-        execute_process(
-            COMMAND git diff --quiet
-            WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
-            RESULT_VARIABLE PICOCALC_GIT_DIFF_RESULT
-        )
-        if(NOT PICOCALC_GIT_DIFF_RESULT EQUAL 0)
-            set(PICOCALC_BSP_GIT "${PICOCALC_BSP_GIT}-dirty")
-        endif()
+option(PICOCALC_REQUIRE_CLEAN_BSP_PROVENANCE
+    "Reject a copied BSP whose tree differs from .picocalc-project.json" OFF)
+set(PICOCALC_PROJECT_METADATA
+    "${CMAKE_CURRENT_LIST_DIR}/../.picocalc-project.json")
+if(EXISTS "${PICOCALC_PROJECT_METADATA}")
+    set(PICOCALC_CALLER_BSP_GIT "${PICOCALC_BSP_GIT}")
+    if(NOT Python3_EXECUTABLE)
+        find_package(Python3 3.9 COMPONENTS Interpreter REQUIRED)
     endif()
+    set(PICOCALC_PROVENANCE_COMMAND
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_LIST_DIR}/cmake/bsp_provenance.py"
+        --metadata "${PICOCALC_PROJECT_METADATA}"
+        --bsp "${CMAKE_CURRENT_LIST_DIR}")
+    if(PICOCALC_REQUIRE_CLEAN_BSP_PROVENANCE)
+        list(APPEND PICOCALC_PROVENANCE_COMMAND --require-clean)
+    endif()
+    execute_process(
+        COMMAND ${PICOCALC_PROVENANCE_COMMAND}
+        RESULT_VARIABLE PICOCALC_PROVENANCE_RESULT
+        OUTPUT_VARIABLE PICOCALC_BSP_GIT
+        ERROR_VARIABLE PICOCALC_PROVENANCE_ERROR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
+    )
+    if(NOT PICOCALC_PROVENANCE_RESULT EQUAL 0)
+        message(FATAL_ERROR
+            "PicoCalc BSP provenance check failed: ${PICOCALC_PROVENANCE_ERROR}")
+    endif()
+    if(PICOCALC_CALLER_BSP_GIT AND
+       NOT "${PICOCALC_CALLER_BSP_GIT}" STREQUAL "${PICOCALC_BSP_GIT}")
+        message(FATAL_ERROR
+            "PICOCALC_BSP_GIT disagrees with generated project provenance: "
+            "caller=${PICOCALC_CALLER_BSP_GIT} actual=${PICOCALC_BSP_GIT}")
+    endif()
+elseif(NOT DEFINED PICOCALC_BSP_GIT OR PICOCALC_BSP_GIT STREQUAL "")
+    # A standalone BSP without generated metadata has no authoritative source
+    # identity. Never inherit the containing application's Git HEAD.
+    set(PICOCALC_BSP_GIT "untracked")
 endif()
 if(NOT DEFINED PICOCALC_APP_GIT)
     set(PICOCALC_APP_GIT "untracked")

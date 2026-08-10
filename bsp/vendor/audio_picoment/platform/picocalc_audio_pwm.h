@@ -32,10 +32,10 @@ struct Stats {
 // a fixed -6 dBFS 1 kHz sine through the PicoCalc PWM path for regression
 // checks and PWM output comparisons. This function is compiled only when
 // PICOMENT_FIXED_SINE_TEST is enabled.
-void init_fixed_sine();
+bool init_fixed_sine();
 #endif
 
-void init_stream();
+bool init_stream();
 void start_stream();
 void stop_stream();
 void request_drain();

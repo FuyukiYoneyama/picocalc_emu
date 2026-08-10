@@ -315,6 +315,7 @@ raise SystemExit(code)
             (bsp / "VERSION").write_text("0.8.8\n", encoding="utf-8")
             commit = "a" * 40
             metadata = {
+                "schema_version": 2,
                 "provenance": {
                     "bsp": {
                         "source_commit": commit,
@@ -328,6 +329,149 @@ raise SystemExit(code)
             self.assertEqual(module.bsp_build_identity(project), "a" * 12)
             (bsp / "VERSION").write_text("changed\n", encoding="utf-8")
             self.assertEqual(module.bsp_build_identity(project), "a" * 12 + "-dirty")
+
+    def test_copied_bsp_without_metadata_never_inherits_tool_source_commit(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary) / "foreign-project"
+            (project / "bsp").mkdir(parents=True)
+            (project / "bsp/VERSION").write_text("foreign\n", encoding="utf-8")
+            self.assertEqual(module.bsp_build_identity(project), "untracked")
+
+    def test_generated_project_provenance_check_fails_on_bsp_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "Generated"
+            created = run(
+                PICOCALC,
+                "new",
+                "Generated",
+                "--output",
+                destination,
+            )
+            self.assertEqual(created.returncode, 0, created.stderr)
+            clean = run(PICOCALC, "verify-project", "--project", destination)
+            self.assertEqual(clean.returncode, 0, clean.stderr)
+            self.assertIn("project provenance: pass", clean.stdout)
+
+            version = destination / "bsp/VERSION"
+            version.write_text(
+                version.read_text(encoding="utf-8") + "changed\n",
+                encoding="utf-8",
+            )
+            dirty = run(PICOCALC, "verify-project", "--project", destination)
+            self.assertEqual(dirty.returncode, 1)
+            self.assertIn("-dirty", dirty.stdout)
+            self.assertIn("project provenance: fail", dirty.stderr)
+
+    def test_bsp_cmake_never_inherits_containing_app_git(self):
+        cmake = (ROOT / "bsp/CMakeLists.txt").read_text(encoding="utf-8")
+        self.assertNotIn("git rev-parse", cmake)
+        self.assertNotIn("git diff --quiet", cmake)
+        self.assertIn("cmake/bsp_provenance.py", cmake)
+        self.assertIn(".picocalc-project.json", cmake)
+        self.assertIn(
+            "PICOCALC_BSP_GIT disagrees with generated project provenance",
+            cmake,
+        )
+
+    def test_project_quality_gate_distinguishes_unjudged_audio_from_failure(self):
+        digest = "ab" * 32
+        contract = {
+            "schema_version": 1,
+            "contract_id": "audio-project-v1",
+            "report_schema": 8,
+            "required_capabilities": {
+                "audio_sink": {
+                    "expected_count": 3,
+                    "expected_sha256": digest,
+                }
+            },
+            "report_checks": [
+                {"path": "unsupported_mmio", "op": "length_eq", "value": 0}
+            ],
+        }
+        base_report = {
+            "schema_version": 8,
+            "verdict": {"status": "pass"},
+            "unsupported_mmio": [],
+            "audio_sink": {
+                "status": "pass",
+                "expected_count": 3,
+                "expected_sha256": digest,
+            },
+        }
+        cases = (
+            ("pass", base_report, 0, "pass"),
+            (
+                "unjudged",
+                {
+                    **base_report,
+                    "audio_sink": {
+                        "status": "fail",
+                        "expected_count": None,
+                        "expected_sha256": None,
+                    },
+                },
+                2,
+                "not_evaluated",
+            ),
+            (
+                "evaluated-failure",
+                {
+                    **base_report,
+                    "audio_sink": {
+                        **base_report["audio_sink"],
+                        "status": "fail",
+                    },
+                },
+                1,
+                "fail",
+            ),
+            (
+                "unknown-report-schema",
+                {
+                    **base_report,
+                    "schema_version": 999,
+                    "verdict": {"status": "fail"},
+                },
+                2,
+                "pass",
+            ),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            contract_path = root / "contract.json"
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
+            for name, report, expected_code, evaluation in cases:
+                with self.subTest(name=name):
+                    report_path = root / (name + ".json")
+                    result_path = root / (name + "-result.json")
+                    report_path.write_text(json.dumps(report), encoding="utf-8")
+                    completed = run(
+                        PICOCALC,
+                        "judge-report",
+                        "--contract",
+                        contract_path,
+                        "--report",
+                        report_path,
+                        "--json",
+                        result_path,
+                    )
+                    self.assertEqual(completed.returncode, expected_code)
+                    result = json.loads(result_path.read_text(encoding="utf-8"))
+                    self.assertEqual(
+                        result["capabilities"]["audio_sink"]["evaluation_status"],
+                        evaluation,
+                    )
+                    if name == "unjudged":
+                        self.assertEqual(result["status"], "cannot_judge")
+                        self.assertIn(
+                            "audio_sink_oracle_missing_or_mismatched",
+                            result["reasons"],
+                        )
+                    if name == "unknown-report-schema":
+                        self.assertEqual(result["status"], "cannot_judge")
+                        self.assertIn("report_schema_mismatch", result["reasons"])
 
     def test_project_commit_does_not_inherit_parent_repository(self):
         module = self.load_picocalc_module()
@@ -1915,7 +2059,7 @@ raise SystemExit(code)
             source = project / "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
             original = source.read_text(encoding="utf-8")
             start = original.index("void start_output()")
-            end = original.index("void init_common(", start)
+            end = original.index("bool init_common(", start)
             body = original[start:end]
             body = body.replace(
                 "    // EOF drain disables the DMA channel's IRQ source as well as the NVIC\n"
@@ -1931,6 +2075,50 @@ raise SystemExit(code)
         check = next(
             check for check in report["checks"]
             if check["name"] == "source-fingerprint:audio-dma-restart"
+        )
+        self.assertEqual(check["status"], "fail")
+
+    def test_audio_resource_claim_check_rejects_panicking_claim(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            source = project / "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+            original = source.read_text(encoding="utf-8")
+            source.write_text(
+                original.replace(
+                    "dma_claim_unused_channel(false)",
+                    "dma_claim_unused_channel(true)",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            completed = run(VERIFY, "--project-root", project, "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        check = next(
+            check for check in report["checks"]
+            if check["name"] == "source-fingerprint:audio-resource-claim-fail-safe"
+        )
+        self.assertEqual(check["status"], "fail")
+
+    def test_audio_resource_claim_check_requires_timer_failure_rollback(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            source = project / "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+            original = source.read_text(encoding="utf-8")
+            source.write_text(
+                original.replace(
+                    "dma_channel_unclaim(static_cast<uint>(g_dma_channel));",
+                    "",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+            completed = run(VERIFY, "--project-root", project, "--json")
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        check = next(
+            check for check in report["checks"]
+            if check["name"] == "source-fingerprint:audio-resource-claim-fail-safe"
         )
         self.assertEqual(check["status"], "fail")
 

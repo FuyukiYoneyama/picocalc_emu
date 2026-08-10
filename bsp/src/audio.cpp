@@ -13,8 +13,7 @@ bool init() {
     if (g_initialized) {
         return true;
     }
-    picoment::audio_pwm::init_stream();
-    g_initialized = picoment::audio_pwm::stats().ring_capacity != 0u;
+    g_initialized = picoment::audio_pwm::init_stream();
     return g_initialized;
 }
 
@@ -24,8 +23,7 @@ bool init_reference_tone() {
     }
     // This is the exact fixed-sine path copied from Picocalc_ment. It starts
     // output immediately and is kept separate from the generic stream API.
-    picoment::audio_pwm::init_fixed_sine();
-    g_initialized = picoment::audio_pwm::stats().ring_capacity != 0u;
+    g_initialized = picoment::audio_pwm::init_fixed_sine();
     return g_initialized;
 }
 

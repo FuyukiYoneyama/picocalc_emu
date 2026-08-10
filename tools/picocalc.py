@@ -140,17 +140,78 @@ def bsp_build_identity(project: Path) -> str:
     """Use the copied BSP's pinned source identity, not this tool's current HEAD."""
     metadata_path = project / ".picocalc-project.json"
     bsp_dir = project / "bsp"
+    if not bsp_dir.is_dir():
+        # The checked-in source template resolves the canonical ROOT/bsp and
+        # legitimately uses this source repository's identity.
+        return source_commit()
+    if not metadata_path.is_file():
+        # A copied/foreign BSP without generated provenance must never inherit
+        # the picocalc_emu checkout used to invoke this tool.
+        return "untracked"
     try:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if not isinstance(metadata, dict) or metadata.get("schema_version") != 2:
+            raise ValueError("project metadata schema_version must be 2")
         bsp = metadata["provenance"]["bsp"]
         commit = bsp["source_commit"]
         expected_tree = bsp["tree_sha256"]
-        if not is_git_commit(commit) or not is_sha256(expected_tree):
-            raise ValueError("invalid BSP provenance")
-        dirty = directory_sha256(bsp_dir) != expected_tree
-        return commit[:12] + ("-dirty" if dirty else "")
-    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError):
-        return source_commit()
+    except (OSError, UnicodeError, TypeError, KeyError, json.JSONDecodeError) as error:
+        raise ValueError("BSP provenance is unreadable") from error
+    if not is_git_commit(commit) or not is_sha256(expected_tree):
+        raise ValueError("BSP provenance has an invalid commit or tree SHA-256")
+    dirty = directory_sha256(bsp_dir) != expected_tree
+    return commit[:12] + ("-dirty" if dirty else "")
+
+
+def verify_project_provenance(project: Path) -> int:
+    """Fail unless a generated project's copied BSP matches its pinned tree."""
+    project = project.resolve()
+    metadata = project / ".picocalc-project.json"
+    bsp_dir = project / "bsp"
+    helper = bsp_dir / "cmake/bsp_provenance.py"
+    missing = [path for path in (metadata, bsp_dir, helper) if not path.exists()]
+    if missing:
+        print(
+            "error: generated project provenance input is missing: {}".format(
+                ", ".join(str(path) for path in missing)
+            ),
+            file=sys.stderr,
+        )
+        return 2
+    command = [
+        sys.executable,
+        str(helper),
+        "--metadata",
+        str(metadata),
+        "--bsp",
+        str(bsp_dir),
+        "--require-clean",
+    ]
+    completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    if completed.stdout:
+        print("BSP     {}".format(completed.stdout.strip()))
+    if completed.stderr:
+        print(completed.stderr, end="", file=sys.stderr)
+    if completed.returncode == 0:
+        print("project provenance: pass")
+    elif completed.returncode == 1:
+        print("project provenance: fail", file=sys.stderr)
+        transients = sorted(
+            path.relative_to(bsp_dir).as_posix()
+            for path in bsp_dir.rglob("*")
+            if path.is_file()
+            and ("__pycache__" in path.parts or path.suffix in (".pyc", ".pyo"))
+        )
+        if transients:
+            print(
+                "remove generated BSP files before retrying: {}".format(
+                    ", ".join(transients)
+                ),
+                file=sys.stderr,
+            )
+    else:
+        print("project provenance: cannot judge", file=sys.stderr)
+    return completed.returncode
 
 
 def load_build_history(path: Path) -> dict:
@@ -327,6 +388,11 @@ def build_project(
             file=sys.stderr,
         )
         return 2
+    try:
+        bsp_identity = bsp_build_identity(project)
+    except ValueError as error:
+        print("error: {}".format(error), file=sys.stderr)
+        return 2
 
     build_dir = project / "build"
     build_timestamp = build_timestamp_value or datetime.now(timezone.utc).strftime(
@@ -394,7 +460,7 @@ def build_project(
         "-DPICO_BOARD=pico",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DPICOCALC_BUILD_TIMESTAMP={}".format(build_timestamp),
-        "-DPICOCALC_BSP_GIT={}".format(bsp_build_identity(project)),
+        "-DPICOCALC_BSP_GIT={}".format(bsp_identity),
         "-DPICOCALC_APP_GIT={}".format(project_commit(project)),
         "-DPICOCALC_LCD_VARIANT={}".format(lcd_variant),
     ])
@@ -468,7 +534,7 @@ def build_project(
                 hashlib.sha256(elf.read_bytes()).hexdigest() if elf.is_file() else None
             ),
             "app_git": project_commit(project),
-            "bsp_git": bsp_build_identity(project),
+            "bsp_git": bsp_identity,
             "generator": generator or os.environ.get("CMAKE_GENERATOR", "default"),
         },
     )
@@ -760,6 +826,151 @@ def check_report(report: dict, checks: List[dict]) -> List[str]:
                 path, expected, actual
             ))
     return failures
+
+
+def load_project_quality_contract(path: Path) -> dict:
+    try:
+        contract = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("quality contract is unreadable: {}".format(error)) from error
+    required_keys = {
+        "schema_version",
+        "contract_id",
+        "report_schema",
+        "required_capabilities",
+        "report_checks",
+    }
+    if not isinstance(contract, dict) or set(contract) != required_keys:
+        raise ValueError("quality contract fields do not match schema 1")
+    if contract["schema_version"] != 1 or contract["report_schema"] != 8:
+        raise ValueError("quality contract requires schema 1 and runner report schema 8")
+    if not isinstance(contract["contract_id"], str) or not contract["contract_id"]:
+        raise ValueError("quality contract_id must be a non-empty string")
+    capabilities = contract["required_capabilities"]
+    if not isinstance(capabilities, dict) or set(capabilities) != {"audio_sink"}:
+        raise ValueError("required_capabilities must contain exactly audio_sink")
+    audio = capabilities["audio_sink"]
+    if not isinstance(audio, dict) or set(audio) != {"expected_count", "expected_sha256"}:
+        raise ValueError("audio_sink must contain expected_count and expected_sha256")
+    if type(audio["expected_count"]) is not int or audio["expected_count"] <= 0:
+        raise ValueError("audio_sink.expected_count must be a positive integer")
+    if not is_sha256(audio["expected_sha256"]):
+        raise ValueError("audio_sink.expected_sha256 must be a SHA-256")
+    checks = contract["report_checks"]
+    if not isinstance(checks, list):
+        raise ValueError("report_checks must be an array")
+    for index, check in enumerate(checks):
+        if not isinstance(check, dict) or set(check) != {"path", "op", "value"}:
+            raise ValueError("report_checks[{}] has invalid fields".format(index))
+        if not isinstance(check["path"], str) or not check["path"]:
+            raise ValueError("report_checks[{}].path must be non-empty".format(index))
+        if check["op"] not in ("eq", "length_eq"):
+            raise ValueError("report_checks[{}].op is invalid".format(index))
+        if check["op"] == "length_eq" and (
+            type(check["value"]) is not int or check["value"] < 0
+        ):
+            raise ValueError(
+                "report_checks[{}].value must be a non-negative integer".format(index)
+            )
+    return contract
+
+
+def judge_project_report(
+    contract_path: Path,
+    report_path: Path,
+    json_out: Optional[Path],
+) -> int:
+    """Apply an explicit project audio oracle to a raw backend report."""
+    try:
+        contract = load_project_quality_contract(contract_path)
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
+        print("cannot judge project report: {}".format(error), file=sys.stderr)
+        return 2
+    if not isinstance(report, dict):
+        print("cannot judge project report: runner report must be an object", file=sys.stderr)
+        return 2
+
+    cannot_judge: List[str] = []
+    failures: List[str] = []
+    report_schema = report.get("schema_version")
+    if report_schema != contract["report_schema"]:
+        cannot_judge.append("report_schema_mismatch")
+
+    verdict = report.get("verdict")
+    verdict_status = verdict.get("status") if isinstance(verdict, dict) else None
+    if verdict_status == "fail":
+        failures.append("runner_verdict_fail")
+    elif verdict_status == "cannot_judge":
+        cannot_judge.append("runner_cannot_judge")
+    elif verdict_status != "pass":
+        cannot_judge.append("runner_verdict_missing")
+
+    required_audio = contract["required_capabilities"]["audio_sink"]
+    audio = report.get("audio_sink")
+    observation_status = audio.get("status") if isinstance(audio, dict) else None
+    oracle_present = isinstance(audio, dict) and (
+        audio.get("expected_count") is not None
+        and audio.get("expected_sha256") is not None
+    )
+    oracle_matches = isinstance(audio, dict) and (
+        audio.get("expected_count") == required_audio["expected_count"]
+        and audio.get("expected_sha256") == required_audio["expected_sha256"]
+    )
+    if not isinstance(audio, dict):
+        cannot_judge.append("audio_sink_missing")
+        evaluation_status = "not_evaluated"
+    elif not oracle_matches:
+        cannot_judge.append("audio_sink_oracle_missing_or_mismatched")
+        evaluation_status = "not_evaluated"
+    elif observation_status != "pass":
+        failures.append("audio_sink_mismatch")
+        evaluation_status = "fail"
+    else:
+        evaluation_status = "pass"
+
+    failures.extend(check_report(report, contract["report_checks"]))
+    if report_schema != contract["report_schema"]:
+        # An incompatible schema makes every parsed field non-authoritative.
+        status = "cannot_judge"
+        exit_code = 2
+    elif failures:
+        status = "fail"
+        exit_code = 1
+    elif cannot_judge:
+        status = "cannot_judge"
+        exit_code = 2
+    else:
+        status = "pass"
+        exit_code = 0
+    result = {
+        "schema_version": 1,
+        "contract_id": contract["contract_id"],
+        "status": status,
+        "reasons": failures + cannot_judge,
+        "source_report": {
+            "schema_version": report_schema,
+            "verdict_status": verdict_status,
+        },
+        "capabilities": {
+            "audio_sink": {
+                "required": True,
+                "oracle_declared": True,
+                "oracle_present": oracle_present,
+                "oracle_matches_contract": oracle_matches,
+                "observation_status": observation_status,
+                "evaluation_status": evaluation_status,
+            }
+        },
+    }
+    encoded = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    if json_out is not None:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        json_out.write_text(encoded, encoding="utf-8")
+    print("project quality: {}".format(status))
+    for reason in result["reasons"]:
+        print("  {}".format(reason))
+    return exit_code
 
 
 def host_test(
@@ -1284,6 +1495,20 @@ def main() -> int:
         help="auto-test only machine-owned validation media (default: OFF)",
     )
 
+    verify_project_parser = subparsers.add_parser(
+        "verify-project",
+        help="require a generated project's copied BSP to match its pinned provenance",
+    )
+    verify_project_parser.add_argument("--project", type=Path, default=Path.cwd())
+
+    judge_report_parser = subparsers.add_parser(
+        "judge-report",
+        help="judge a raw runner report with an explicit project capability contract",
+    )
+    judge_report_parser.add_argument("--contract", type=Path, required=True)
+    judge_report_parser.add_argument("--report", type=Path, required=True)
+    judge_report_parser.add_argument("--json", dest="json_out", type=Path)
+
     test_parser = subparsers.add_parser(
         "test", help="run a conformance target on the firmware or host backend"
     )
@@ -1422,6 +1647,10 @@ def main() -> int:
             args.hardware_validation_mode,
             args.generator,
         )
+    if args.command == "verify-project":
+        return verify_project_provenance(args.project)
+    if args.command == "judge-report":
+        return judge_project_report(args.contract, args.report, args.json_out)
     if args.command == "test":
         if args.sd_format is not None and not args.sd:
             parser.error("--sd-format requires --sd")

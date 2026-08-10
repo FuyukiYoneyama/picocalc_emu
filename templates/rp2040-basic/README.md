@@ -14,6 +14,16 @@ cmake -S . -B build -DPICO_BOARD=pico -DPICOCALC_LCD_VARIANT=pio-rgb565
 cmake --build build -j
 ```
 
+直接CMakeでも、`.picocalc-project.json`に固定されたBSP生成元commitと`bsp/`全体SHA-256を
+読みます。外側のアプリGit commitを`bsp_git`として継承しません。release buildで変更済みBSPを
+拒否する場合はconfigureへ`-DPICOCALC_REQUIRE_CLEAN_BSP_PROVENANCE=ON`を追加します。
+
+生成元リポジトリのtoolが利用できる場合は、build前に明示的にも検査できます。
+
+```sh
+python3 /path/to/picocalc_emu/tools/picocalc.py verify-project --project .
+```
+
 リポジトリのrootから生成・ビルドするときは、次のラッパーが版情報とUF2 SHA-256を
 記録します。
 

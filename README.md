@@ -51,6 +51,7 @@ RP2040向けにビルドするときだけPico SDKを指定します。
 ```sh
 export PICO_SDK_PATH=/path/to/pico-sdk
 python3 tools/picocalc.py build --project ../MyApp
+python3 tools/picocalc.py verify-project --project ../MyApp
 ```
 
 生成物は次です。
@@ -62,6 +63,11 @@ python3 tools/picocalc.py build --project ../MyApp
 
 通常表示は`pio-rgb565`です。互換・診断用のSPI1/RGB666経路を使う場合だけ
 `--lcd-variant hwspi-rgb888`を指定します。
+
+`verify-project`は生成時に固定したBSP tree SHA-256を検査します。通常のGit statusとは別に、
+アプリrepositoryのcommitをBSP由来として誤継承していないことも保証します。直接CMakeを使う場合と
+音声を必須能力として判定する外部project契約は
+[外部project品質ゲート](docs/EXTERNAL_PROJECT_QUALITY.md)を参照してください。
 
 ## 検証する
 

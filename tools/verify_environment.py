@@ -191,6 +191,48 @@ def require_text(
         )
 
 
+def verify_bsp_provenance_contract(checks: List[Check], root: Path) -> None:
+    cmake_path = root / "bsp/CMakeLists.txt"
+    helper_path = root / "bsp/cmake/bsp_provenance.py"
+    try:
+        cmake = cmake_path.read_text(encoding="utf-8")
+        helper = helper_path.read_text(encoding="utf-8")
+        cmake_required = (
+            ".picocalc-project.json",
+            "cmake/bsp_provenance.py",
+            "PICOCALC_REQUIRE_CLEAN_BSP_PROVENANCE",
+            "PICOCALC_BSP_GIT disagrees with generated project provenance",
+            "set(PICOCALC_BSP_GIT \"untracked\")",
+        )
+        helper_required = (
+            'metadata.get("schema_version") != 2',
+            'provenance["tree_sha256"]',
+            "directory_sha256(bsp_dir)",
+            'parser.add_argument("--require-clean"',
+        )
+        missing = [token for token in cmake_required if token not in cmake]
+        missing.extend(token for token in helper_required if token not in helper)
+        inherited_git = "git rev-parse" in cmake or "git diff --quiet" in cmake
+        add_check(
+            checks,
+            "source-fingerprint:bsp-provenance-contract",
+            not missing and not inherited_git,
+            path="bsp/CMakeLists.txt",
+            helper="bsp/cmake/bsp_provenance.py",
+            missing=missing,
+            inherits_parent_git=inherited_git,
+        )
+    except (OSError, UnicodeError) as error:
+        add_check(
+            checks,
+            "source-fingerprint:bsp-provenance-contract",
+            False,
+            path="bsp/CMakeLists.txt",
+            helper="bsp/cmake/bsp_provenance.py",
+            **error_details(error),
+        )
+
+
 def verify_audio_dma_restart(checks: List[Check], root: Path) -> None:
     """The EOF drain must leave the DMA channel reusable for the next track."""
     relative_path = "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
@@ -198,7 +240,7 @@ def verify_audio_dma_restart(checks: List[Check], root: Path) -> None:
     try:
         text = path.read_text(encoding="utf-8")
         start = text.index("void start_output()")
-        end = text.index("void init_common(", start)
+        end = text.index("bool init_common(", start)
         start_output = text[start:end]
         required = (
             "dma_channel_set_irq0_enabled(static_cast<uint>(g_dma_channel), true);",
@@ -226,6 +268,52 @@ def verify_audio_dma_restart(checks: List[Check], root: Path) -> None:
         add_check(
             checks,
             "source-fingerprint:audio-dma-restart",
+            False,
+            path=relative_path,
+            **error_details(error),
+        )
+
+
+def verify_audio_resource_claim_fail_safe(checks: List[Check], root: Path) -> None:
+    """Audio init must fail cleanly before mutating pins when DMA is exhausted."""
+    relative_path = "bsp/vendor/audio_picoment/platform/picocalc_audio_pwm.cpp"
+    path = root / relative_path
+    try:
+        text = path.read_text(encoding="utf-8")
+        start = text.index("bool init_common(")
+        end = text.index("\n#if PICOMENT_FIXED_SINE_TEST", start)
+        init_common = text[start:end]
+        ordered_tokens = (
+            "dma_claim_unused_channel(false)",
+            "dma_claim_unused_timer(false)",
+            "dma_channel_unclaim(static_cast<uint>(g_dma_channel))",
+            "gpio_set_function(board::kAudioPwmLeft, GPIO_FUNC_PWM)",
+        )
+        positions = [init_common.index(token) for token in ordered_tokens]
+        nonfatal_claims = (
+            "dma_claim_unused_channel(true)" not in init_common
+            and "dma_claim_unused_timer(true)" not in init_common
+        )
+        required = (
+            "audio=init error=dma_channel_unavailable",
+            "audio=init error=dma_timer_unavailable",
+            "g_dma_channel = -1;",
+            "return false;",
+        )
+        missing = [token for token in required if token not in init_common]
+        add_check(
+            checks,
+            "source-fingerprint:audio-resource-claim-fail-safe",
+            positions == sorted(positions) and nonfatal_claims and not missing,
+            path=relative_path,
+            claim_before_gpio=positions == sorted(positions),
+            nonfatal_claims=nonfatal_claims,
+            missing=missing,
+        )
+    except (OSError, UnicodeError, ValueError) as error:
+        add_check(
+            checks,
+            "source-fingerprint:audio-resource-claim-fail-safe",
             False,
             path=relative_path,
             **error_details(error),
@@ -609,6 +697,53 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
     if not directory.is_dir():
         # Nothing to check on a clone that predates the firmware track.
         return
+
+    quality_schema_path = directory / "project-quality-contract.schema.json"
+    try:
+        quality_schema = load_json(quality_schema_path)
+        required = quality_schema.get("required", [])
+        properties = quality_schema.get("properties", {})
+        audio = (
+            properties.get("required_capabilities", {})
+            .get("properties", {})
+            .get("audio_sink", {})
+        )
+        tool_source = (root / "tools/picocalc.py").read_text(encoding="utf-8")
+        quality_errors = []
+        if quality_schema.get("additionalProperties") is not False:
+            quality_errors.append("schema must reject unknown top-level fields")
+        if set(required) != {
+            "schema_version",
+            "contract_id",
+            "report_schema",
+            "required_capabilities",
+            "report_checks",
+        }:
+            quality_errors.append("schema required fields are incomplete")
+        if set(audio.get("required", [])) != {"expected_count", "expected_sha256"}:
+            quality_errors.append("audio_sink oracle must require count and SHA-256")
+        for token in (
+            '"evaluation_status": evaluation_status',
+            '"observation_status": observation_status',
+            '"oracle_present": oracle_present',
+            '"audio_sink_oracle_missing_or_mismatched"',
+        ):
+            if token not in tool_source:
+                quality_errors.append("judge-report is missing {}".format(token))
+        add_check(
+            checks,
+            "firmware-validation:project-quality-contract",
+            not quality_errors,
+            errors=quality_errors,
+            schema=str(quality_schema_path.relative_to(root)),
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as error:
+        add_check(
+            checks,
+            "firmware-validation:project-quality-contract",
+            False,
+            **error_details(error),
+        )
 
     capability_path = directory / "capability.json"
     try:
@@ -1502,13 +1637,15 @@ def verify_portable(
         "audio-public-adapter",
         [
             '#include "picocalc/audio.h"',
-            "picoment::audio_pwm::init_stream();",
-            "picoment::audio_pwm::init_fixed_sine();",
+            "g_initialized = picoment::audio_pwm::init_stream();",
+            "g_initialized = picoment::audio_pwm::init_fixed_sine();",
             "picoment::audio_pwm::start_stream();",
             "picoment::audio_pwm::stop_stream();",
             "picoment::audio_pwm::write_sample(",
         ],
     )
+    verify_bsp_provenance_contract(checks, root)
+    verify_audio_resource_claim_fail_safe(checks, root)
     verify_audio_dma_restart(checks, root)
     require_text(
         checks,

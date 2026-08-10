@@ -17,7 +17,7 @@
 | 正確性基準 | Firmware backend `ExecutionModel::Serial` |
 | 通常promoted backend | `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`（OPT1-B） |
 | 実機相関済みR5 backend | `612b48510452d4012e4ac6639960ca3983b48f66`（不変証拠） |
-| ローカルbackend main | `f05d47b`（NEXT-3修正とNEXT-4 APIを含む。general promotedとは別） |
+| backend開発main | transientなbranch headであり、正確性の権威ではない。各targetの固定commitを使用 |
 
 targetはそれぞれ正確なbackend commitを固定します。branch headやローカルmainを自動採用しません。
 
@@ -29,6 +29,8 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 通常アプリの変更範囲を`app/`へ限定
 - source fingerprint、board profile、reference evidenceの検査
 - FAT32/FAT16共有filesystem API。PicoEditでFAT32同一artifact相関済み
+- 音声DMA channel/timer枯渇をpanicにせず`init()==false`で返し、部分claimをrollback
+- 生成projectのBSP tree provenanceをCLI buildと直接CMakeの両方で照合
 
 ### Host backend
 
@@ -44,6 +46,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - scenario、途中snapshot、fail-closed schema 8 verdict
 - exact idle fast-forwardとOPT1-B fast path
 - target registryとversioned validation
+- 外部project用quality gateで、audio観測とoracle評価を`not_evaluated/pass/fail`へ分離
 
 ### 範囲を固定して対応済み
 
@@ -91,9 +94,9 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 
 ## リポジトリ状態
 
-この状態表作成時点で、`picocalc_emu`と`picoem-picocalc`には未pushのローカルcommitがあります。
-GitHub Actions節約方針により、通常開発ではCIを起動せずローカル検証を主体とします。
-push／CI実行は別途判断します。
+working treeやpush済みかどうかは一時状態なので本書には固定せず、作業開始・終了時に各repositoryで
+`git status --short --branch`を確認します。GitHub Actions節約方針により、通常開発ではCIを起動せず
+ローカル検証を主体とし、push／CI実行は別途判断します。
 
 ## 詳細履歴
 
