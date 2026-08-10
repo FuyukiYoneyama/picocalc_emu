@@ -668,7 +668,8 @@ raise SystemExit(code)
         self.assertEqual(next3.get("v2_fault_hardware_status"), "hardware_observed")
         self.assertEqual(next3.get("v2_fault_classification"), "inconclusive")
         self.assertEqual(
-            next3.get("v2_next_step"), "run_sd_cmd8_crc_fault_b_hardware"
+            next3.get("v2_next_step"),
+            "run_sd_cmd8_crc_fault_b_once_in_frozen_backend",
         )
         self.assertEqual(
             next3.get("v2_top_remaining_variable"),
@@ -681,16 +682,21 @@ raise SystemExit(code)
         )
         self.assertEqual(
             next3.get("sd_crc_status"),
-            "fault_artifact_frozen_hardware_pending",
+            "fault_hardware_oracle_match_first_emulator_run_allowed",
         )
         self.assertEqual(next3.get("sd_crc_required_hardware_runs"), 2)
         self.assertIs(next3.get("sd_crc_fault_implementation_allowed"), True)
-        self.assertIs(next3.get("sd_crc_fault_emulator_run_allowed"), False)
+        self.assertIs(next3.get("sd_crc_fault_emulator_run_allowed"), True)
         self.assertEqual(
             next3.get("sd_crc_fault_artifact_result"),
             "fault_artifact_frozen_hardware_pending",
         )
-        self.assertEqual(next3.get("sd_crc_fault_hardware_result"), "pending")
+        self.assertEqual(
+            next3.get("sd_crc_fault_hardware_result"), "fail_oracle_match"
+        )
+        self.assertEqual(
+            next3.get("sd_crc_hardware_negative_denominator_delta"), 1
+        )
         self.assertEqual(next3.get("sd_crc_baseline_result"), "pass")
         self.assertEqual(next3.get("sd_crc_baseline_hardware_result"), "pass")
         self.assertEqual(
@@ -873,7 +879,7 @@ raise SystemExit(code)
         )
         self.assertEqual(next3["status"], "fail")
 
-    def test_target_schema_rejects_next3_fault_artifact_emulator_unlock(self):
+    def test_target_schema_rejects_next3_fault_artifact_relock_after_hardware_match(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)
             contract_path = (
@@ -881,7 +887,7 @@ raise SystemExit(code)
                 / "firmware-validation/contracts/next3-sd-cmd8-crc-v1.json"
             )
             contract = json.loads(contract_path.read_text(encoding="utf-8"))
-            contract["fault_progress"]["emulator_run_allowed"] = True
+            contract["fault_progress"]["emulator_run_allowed"] = False
             contract_path.write_text(json.dumps(contract), encoding="utf-8")
             completed = run(
                 VERIFY,

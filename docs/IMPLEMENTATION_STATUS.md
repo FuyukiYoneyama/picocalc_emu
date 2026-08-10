@@ -578,6 +578,10 @@ trace CRCだけが実行差分であることを監査した。expected trace CR
 self-rejectionを避け、backend acceptanceを測れる。2 clean buildでBIN `6665ca51...9bd0`、UF2
 `43ea1098...e958`が一致し、source bundle `3e3fded8...739a`を固定した。Fault BINは未実行である。次は
 同一UF2のuf2loader実機先行runであり、oracle一致まではemulator runとbackend修正を禁止する。
+NEXT3-11の実機先行runはCMD8 CRC=`0x85`へR1=`0x09`（idle＋COM_CRC_ERROR）を返し、CMD8段階で
+init/app FAIL、後続初期化commandとfilesystem accessなしとなった。46回の完全markerと赤い最終写真も
+凍結oracleへ一致したため、初のhardware-confirmed negative caseとして同一BINの凍結backend初回runを
+1回だけ解禁した。backend修正は初回結果の保存・分類まで禁止する。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

@@ -4,7 +4,7 @@
   "parent_contract_id": "next3-negative-conformance-v1-20260810",
   "roadmap_package": "NEXT-3",
   "candidate_id": "sd-spi-cmd8-bad-crc",
-  "status": "fault_artifact_frozen_hardware_pending",
+  "status": "fault_hardware_oracle_match_first_emulator_run_allowed",
   "purpose": "measure whether the emulator rejects a hardware-confirmed CMD8 CRC error for the same reason",
   "specification_authority": {
     "publisher": "SD Association",
@@ -104,11 +104,13 @@
     "change_budget_audit": "pass",
     "record": "firmware-validation/records/next3-sd-cmd8-crc-b-20260810-01/record.json",
     "record_sha256": "7b56b578512993d844a725d4e2e3e8a06aab36ed403693abfb951ccda958d7e8",
-    "hardware_result": "pending",
+    "hardware_result": "fail_oracle_match",
+    "hardware_record": "firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/record.json",
+    "hardware_record_sha256": "d88489688958e3b7a09a7ec3fe70846759e312f82e8bfbe34165cb53b77d6c5f",
     "emulator_result": "not_run_by_contract",
     "emulator_backend_commit_reserved_for_first_run": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
-    "emulator_run_allowed": false,
-    "next_action": "run_fault_b_uf2_on_hardware_through_uf2loader"
+    "emulator_run_allowed": true,
+    "next_action": "run_fault_b_bin_once_in_frozen_backend_and_preserve_the_unmodified_result"
   },
   "frozen_hardware_oracle": {
     "deployment_path": "uf2loader",
@@ -162,8 +164,8 @@
   ],
   "human_operations": {
     "required_hardware_runs": 2,
-    "completed_hardware_runs": 1,
-    "remaining_hardware_runs": 1,
+    "completed_hardware_runs": 2,
+    "remaining_hardware_runs": 0,
     "runs": [
       "baseline UF2 once through uf2loader",
       "fault UF2 once through uf2loader"

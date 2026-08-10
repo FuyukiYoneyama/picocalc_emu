@@ -313,6 +313,16 @@ source本体と独立clean cloneのBIN `6665ca51...9bd0`、UF2 `43ea1098...e958`
 ままである。次は同一UF2をuf2loader実機で先行実行し、凍結oracleへ全field一致した場合だけ初回backend
 runを解禁する。
 
+## NEXT3-11: SD CMD8 CRC Fault B hardware oracle match
+
+同一UF2のuf2loader実機先行runは、card present、CMD0 R1=`0x01`、CMD8 CRC=`0x85`／R1=`0x09`、
+`cmd8_fail detail=9`、後続CMD55/ACMD41/CMD58なし、filesystemなし、app FAILとなった。R1はidleと
+COM_CRC_ERRORだけを含み、凍結oracleへ完全一致した。EVIDENCE marker 46回は同一、写真も赤いFAIL表示に
+一致した。これはapplication PASSではなく、初のhardware-confirmed negative caseである。
+
+実機記録は`firmware-validation/records/next3-sd-cmd8-crc-b-hardware-20260810-01/`に固定した。
+同一BINの凍結backend `4a908648`初回runを1回だけ解禁する。まだ実行しておらず、backend修正も禁止のまま。
+
 ## CI運用
 
 NEXT-3のbuild、schema検証、emulator runはローカルで行う。通常の試行錯誤にGitHub Actionsを
