@@ -506,7 +506,7 @@ boundary SHA `bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06`�
 
 NEXT-3 negative conformanceを開始した。NEXT3-0ではcase schema、KPI schema、実行前契約を固定し、
 negative分母0件の率を`0%`ではなく`null`／`no_negative_denominator`で表すよう機械化した。positive
-実機相関は直接4系列とOPT1-B推移的同値1系列の計5件で、positive側の
+実機相関は直接5系列とOPT1-B推移的同値1系列の計6件で、positive側の
 `emulator PASS -> hardware FAIL`は0件である。最初に監査したLCD 0.3.1候補は、記録された
 `51380fa` UF2が実機未確認で、UF2本体・BIN SHA・build timestamp・SDK commit・toolchain版・generatorが
 残っていなかった。既存FAILログのboot identityも`5b12a7c`であり同一artifactではない。このため
@@ -562,7 +562,14 @@ NEXT3-8でSD CMD8 CRC候補の実装前契約を固定した。仕様上CMD8 CRC
 `4a908648`はcommand CRCを無条件に捨てる。A1は`0x87`でemulator／実機PASS、BはCRC byteだけを`0x85`へ
 変えて実機R1=`0x09`・CMD8段階FAILを凍結oracleとする。Bはhardware-firstで、oracle一致前にemulatorへ
 投入しない。appはfilesystemへアクセスせず、通常の人間操作はuf2loaderからA1/Bを各1回起動する2回だけで
-ある。次は独立repositoryでA1 baselineを実装する。fault、実機run、backend修正は未着手である。
+ある。
+
+NEXT3-9ではA1正常対照を独立repository `picocalc-next3-sd-crc-fault` commit `f942b8eb0008`へ実装した。
+2 clean buildでBIN `0ae9eea0...fce1b`、UF2 `be9c0e8d...a9ffd`が一致し、source bundle
+`ed985de5...a05da`も固定した。凍結backend `4a908648`の同一BIN runはCMD0 R1=`0x01`、CMD8
+arg=`000001aa`／CRC=`0x87`／R1=`0x01`／R7=`000001aa`、init PASSとなった。filesystem access、
+block read/write、キー入力は0、exceptionとunsupported MMIOも0、最終画面までPASSした。次は同一UF2を
+uf2loaderから実機で1回確認する。A1実機PASSまではfault、fault emulator run、backend修正を行わない。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-sd-cmd8-crc-a1-20260810-01",
+  "contract_id": "next3-sd-cmd8-crc-v1-predesign-20260810",
+  "stage": "baseline_emulator_pass_hardware_pending",
+  "classification": "positive_control_pending_hardware",
+  "firmware": {
+    "repository": "picocalc-next3-sd-crc-fault",
+    "repository_has_remote": false,
+    "commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+    "app_identity": "next3-sd-cmd8-crc-a1",
+    "app_source_commit_embedded": "f942b8eb0008",
+    "bsp_source_commit_embedded": "5a27dc7a0085-dirty",
+    "generator_commit": "5a27dc7a00852004f797d4331bde942a4d821a0f",
+    "lcd_variant": "pio-rgb565",
+    "build_timestamp": "2026-08-10T05:00:00Z",
+    "bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+    "uf2_sha256": "be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd",
+    "clean_clone_reproducible": true,
+    "clean_build_count": 2,
+    "source_sha256": {
+      "app/main.cpp": "9571c237dd783a62bf16e35dba7c634d8db07c55a50d64b10be995ba0ad9f3ae",
+      "bsp/src/sdcard.cpp": "dc4f617cc4d5a5002bbd18d6fd0080716806ae78a0bd6c792185183125312ad8",
+      "bsp/include/picocalc/sdcard.h": "da50da3248ebe7002baea12d652a14e3c072e2b3d90348cbd1c95868324bf466",
+      "CMakeLists.txt": "b39101c803e1cdb937fd8daa8706c3db76ec8b8ed1a3ceee54b6a07c00d8899d",
+      ".picocalc-project.json": "8c86a5ad1ba3bb73addbb3ef96c6d7e3589e14b030c887c3346ce9aee01c4de1",
+      "README.md": "cd10ca15f6934736167ea6b08ac3b7d6729558ff7640906855e241e1dcf08b57"
+    }
+  },
+  "source_bundle": {
+    "path": "provenance/picocalc-next3-sd-crc-a1.bundle",
+    "sha256": "ed985de566638e07e0a20e974b351646729b434a6bb05edd349dc5fb162a05da"
+  },
+  "build_environment": {
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1 20231009",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "generator": "Ninja"
+  },
+  "protocol": {
+    "filesystem_access": "none",
+    "manual_keys": "none",
+    "cmd0_argument": "00000000",
+    "cmd0_crc": "95",
+    "cmd0_r1": "01",
+    "cmd8_argument": "000001aa",
+    "cmd8_crc": "87",
+    "cmd8_r1": "01",
+    "cmd8_r7": "000001aa",
+    "sd_init": "pass"
+  },
+  "emulator": {
+    "backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "backend_dirty": false,
+    "firmware_bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 163658110,
+    "elapsed_us": 658000,
+    "quantum": 1,
+    "sd_format": "fat32",
+    "sd_commands_seen": 9,
+    "sd_blocks_read": 0,
+    "sd_blocks_written": 0,
+    "sd_unknown_commands": [],
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "uart_sha256": "d20a01901bd9c996b47dcd54001951c1a6f279ad5a0b6e4c24fe33952759fbd0",
+    "report_sha256": "0c6a812a9ae60dda1c9b7ffae890a5150f996b77988cbf7339f0a6dea46026c2",
+    "framebuffer_rgb565_sha256": "a40734de3413157f1a121de37a66f286c315226f155896d5af27e6eaf7c74274",
+    "framebuffer_non_black_pixels": 80384,
+    "snapshot_png_sha256": "cbf66f14a737bb86d110c9b8dbc24c94c71c3be8545964d47181b60c45a4e04b",
+    "required_evidence_marker": "[NEXT3][SD_CMD8_A1][EVIDENCE] app=next3-sd-cmd8-crc-a1 app_git=f942b8eb0008 bsp_git=5a27dc7a0085-dirty card=present cmd0=seen cmd0_r1=0x01 cmd0_arg=00000000 cmd0_crc=0x95 cmd8=seen arg=000001aa crc=0x87 cmd8_r1=0x01 r7=000001aa filesystem=none keys=none app=pass"
+  },
+  "hardware": {
+    "deployment_path": "uf2loader",
+    "bootsel_required": false,
+    "result": "pending",
+    "required_uart_log": true,
+    "required_stable_photo": true
+  },
+  "fault_gate": {
+    "fault_source_implementation_allowed": false,
+    "fault_emulator_run_allowed": false,
+    "unlock_condition": "the exact A1 UF2 passes once on PicoCalc through uf2loader with the frozen A1 protocol and identity"
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "A1 is a positive control and its hardware correlation is pending"
+  },
+  "next_action": "run the exact A1 UF2 once through uf2loader on PicoCalc, capture complete UART plus one stable final photo, and require the frozen A1 protocol before implementing the 0x85 fault"
+}

@@ -1,6 +1,7 @@
 # NEXT-3 SD CMD8 CRC candidate
 
-**状態（2026-08-10）:** 実装前契約を固定した。fault実装、実機run、fault BINのemulator run、backend修正は
+**状態（2026-08-10）:** A1正常対照を独立repositoryへ実装し、2 clean buildのBIN/UF2一致と、凍結backend
+`4a908648`でのemulator PASSを固定した。A1実機run、fault実装、fault BINのemulator run、backend修正は
 まだ行っていない。機械可読な正典は
 `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`である。
 
@@ -61,6 +62,25 @@ A2はfault CRCを正しい値へ戻すだけである。A1とBIN/UF2がbyte一�
 fixed証拠でもあるため、同じUF2を3回目に人が起動する必要はない。hashが一致しなければA2を別artifactとして
 実機確認する。
 
+## A1固定結果
+
+A1は独立repository `picocalc-next3-sd-crc-fault`のcommit
+`f942b8eb000858e6f00bb8fde255f27243dfbac8`へ固定した。source repositoryと別clean cloneから、固定時刻
+`2026-08-10T05:00:00Z`、Pico SDK 2.2.0 commit `a1438dff...`、GCC 13.2.1、CMake 3.28.3、
+Ninja 1.11.1で次のartifactを再現した。
+
+- BIN SHA-256: `0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b`
+- UF2 SHA-256: `be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd`
+- source bundle SHA-256: `ed985de566638e07e0a20e974b351646729b434a6bb05edd349dc5fb162a05da`
+
+同一BINを凍結backend `4a908648`で実行し、CMD0 R1=`0x01`、CMD8 argument=`000001aa`、
+CRC=`0x87`、R1=`0x01`、R7=`000001aa`、init PASSを確認した。FAT32 card modelは接続したが、block read/writeは
+ともに0でfilesystemへアクセスしていない。exceptionとunsupported MMIOも0、scenarioと最終緑画面もPASSした。
+証拠は`firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/`にある。
+
+次のgateはこのUF2をuf2loaderから実機で1回起動することである。実機PASSが固定されるまでCRC `0x85`の
+fault実装は許可しない。
+
 ## 凍結した実機oracle
 
 Bは次の全条件を満たす場合だけhardware-confirmed negative caseへ入る。
@@ -95,6 +115,10 @@ false acceptなら、その時点で初めてbackendへCMD8 CRC7検査とR1 COM_
 押すべきapplication key、連続入力、時間指定写真はない。captureにidentityがない、UARTが途中で切れた、という
 **測定失敗だけ**は同じartifactを最大1回再実行する。oracleと違う有効な結果は再試行せず証拠として採用する。
 BOOTSEL限定の理由はなく、一般利用経路のuf2loaderをprimaryとする。
+
+現在必要な操作は1のA1だけである。対象UF2は
+`/home/fuyuki/pico_dvl/codex/picocalc-next3-sd-crc-fault/build/picocalc_app.uf2`、SHA-256は
+`be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd`である。
 
 ## CI方針
 

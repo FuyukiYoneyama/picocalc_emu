@@ -1799,6 +1799,20 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "contract": base / "contracts/next3-negative-conformance-v1.json",
         "v2_contract": base / "contracts/next3-lcd-cs-fault-v2.json",
         "sd_crc_contract": base / "contracts/next3-sd-cmd8-crc-v1.json",
+        "sd_crc_baseline": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/record.json",
+        "sd_crc_baseline_notes": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/notes.md",
+        "sd_crc_baseline_procedure": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/PROCEDURE.md",
+        "sd_crc_baseline_scenario": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/scenario.json",
+        "sd_crc_baseline_report": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/run-report.json",
+        "sd_crc_baseline_uart": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/uart.log",
+        "sd_crc_baseline_snapshot": base
+        / "records/next3-sd-cmd8-crc-a1-20260810-01/final.png",
         "v2_baseline": base / "records/next3-v2-a1-20260810-01/record.json",
         "v2_hardware": base
         / "records/next3-v2-a1-hardware-20260810-01/record.json",
@@ -1840,6 +1854,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/evidence/uf2loader-final.jpg",
         "fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v1.bundle",
         "v2_fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v2-b.bundle",
+        "sd_crc_baseline_bundle": root
+        / "provenance/picocalc-next3-sd-crc-a1.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
         "v2_document": root / "docs/NEXT3_V2_CANDIDATE_DESIGN.md",
         "sd_crc_document": root / "docs/NEXT3_SD_CMD8_CRC_CANDIDATE.md",
@@ -1849,7 +1865,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
         "v2_contract": "b0df0227b538c9efd507d6653547c5d9f3d543d2b1b673b5198f8554e229c680",
-        "sd_crc_contract": "bdb9c981d4a76b82972ae76e94febf724831f4e74f00b0e13ee849f9b7b4e903",
+        "sd_crc_contract": "64c0b60097f724c4f72733e07098a2dcdc67ba4f4dbcaafe2581607f7cced884",
+        "sd_crc_baseline": "eed8e205bcb30d87fa6079f9071a29d352f7aac7e6a83ca130d7d7220be555d6",
+        "sd_crc_baseline_notes": "4fd7cad89bedffc96eec8b68a6d483d3b244e0fdf4b85f5e231abb596f6a0792",
+        "sd_crc_baseline_procedure": "7f1bd58447124c43c7e04298d6c269e8030b2d433724848a57986e4e3f4f91ed",
+        "sd_crc_baseline_scenario": "3f11d13dac356fa2c2183b7ba36e826acbad852ea357f7d6e3c577d883e72c6c",
+        "sd_crc_baseline_report": "0c6a812a9ae60dda1c9b7ffae890a5150f996b77988cbf7339f0a6dea46026c2",
+        "sd_crc_baseline_uart": "d20a01901bd9c996b47dcd54001951c1a6f279ad5a0b6e4c24fe33952759fbd0",
+        "sd_crc_baseline_snapshot": "cbf66f14a737bb86d110c9b8dbc24c94c71c3be8545964d47181b60c45a4e04b",
         "v2_baseline": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a",
         "v2_hardware": "6512202c3add131141dcabfddf25b67d3973bf406c07e4b5bdff05717ab35bd5",
         "v2_hardware_notes": "73c91e56c71cb02f347126c704819f5c1d2e837a6814d2bbbcda876f0f88ccf0",
@@ -1877,9 +1900,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
         "v2_fault_bundle": "876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0",
-        "document": "252eb55178f8ffb8f4340234eab999a9435595127a8f9f84b2605f916111b2e3",
+        "sd_crc_baseline_bundle": "ed985de566638e07e0a20e974b351646729b434a6bb05edd349dc5fb162a05da",
+        "document": "6bd27c807d42d6a39087e8e4ccc6c7f49beaed05b2c8299221ffdf909b9c508d",
         "v2_document": "5f0cc1a739cbc002c0097be5545ee953edb8dd05c4a71ae3f5991950683ae704",
-        "sd_crc_document": "ab9ac50e778d20691adb68d459985ce0908866b1227cdfbc1869c15f5ddabf6e",
+        "sd_crc_document": "78edb4f56dbd1524a908ee553b9be52fa38654506f4af725aef8cf58c33b5705",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1957,6 +1981,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         contract = load_json(paths["contract"])
         v2_contract = load_json(paths["v2_contract"])
         sd_crc_contract = load_json(paths["sd_crc_contract"])
+        sd_crc_baseline = load_json(paths["sd_crc_baseline"])
+        sd_crc_baseline_scenario = load_json(paths["sd_crc_baseline_scenario"])
+        sd_crc_baseline_report = load_json(paths["sd_crc_baseline_report"])
         v2_baseline = load_json(paths["v2_baseline"])
         v2_hardware = load_json(paths["v2_hardware"])
         v2_fault = load_json(paths["v2_fault"])
@@ -1986,6 +2013,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         sd_crc_sources = sd_crc_contract["frozen_sources"]
         sd_crc_gap = sd_crc_contract["predicted_model_gap"]
         sd_crc_design = sd_crc_contract["firmware_design"]
+        sd_crc_progress = sd_crc_contract["baseline_progress"]
         sd_crc_oracle = sd_crc_contract["frozen_hardware_oracle"]
         aligned = all(
             (
@@ -2093,7 +2121,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 v2_post_hardware.get("next_candidate_contract")
                 == "firmware-validation/contracts/next3-sd-cmd8-crc-v1.json",
                 v2_post_hardware.get("next_candidate_contract_sha256")
-                == expected_hashes["sd_crc_contract"],
+                == "bdb9c981d4a76b82972ae76e94febf724831f4e74f00b0e13ee849f9b7b4e903",
                 v2_post_hardware.get("next_action")
                 == "implement_sd_cmd8_crc_a1_baseline",
                 sd_crc_contract.get("schema_version") == 1,
@@ -2101,7 +2129,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 == "next3-sd-cmd8-crc-v1-predesign-20260810",
                 sd_crc_contract.get("parent_contract_id")
                 == "next3-negative-conformance-v1-20260810",
-                sd_crc_contract.get("status") == "frozen_before_implementation",
+                sd_crc_contract.get("status")
+                == "baseline_emulator_pass_hardware_pending",
                 sd_crc_contract.get("specification_authority", {}).get("section")
                 == "7.2.2 Bus Transfer Protection",
                 sd_crc_sources.get("generator_commit")
@@ -2125,6 +2154,90 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "application identity and evidence marker",
                     "the CMD8 CRC literal from 0x87 to 0x85",
                 ],
+                sd_crc_progress.get("source_commit")
+                == "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+                sd_crc_progress.get("embedded_app_git") == "f942b8eb0008",
+                sd_crc_progress.get("embedded_bsp_git")
+                == "5a27dc7a0085-dirty",
+                sd_crc_progress.get("bin_sha256")
+                == "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+                sd_crc_progress.get("uf2_sha256")
+                == "be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd",
+                sd_crc_progress.get("source_bundle")
+                == "provenance/picocalc-next3-sd-crc-a1.bundle",
+                sd_crc_progress.get("source_bundle_sha256")
+                == expected_hashes["sd_crc_baseline_bundle"],
+                sd_crc_progress.get("clean_clone_reproducible") is True,
+                sd_crc_progress.get("emulator_backend_commit")
+                == "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+                sd_crc_progress.get("emulator_result") == "pass",
+                sd_crc_progress.get("record")
+                == "firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/record.json",
+                sd_crc_progress.get("hardware_result") == "pending",
+                sd_crc_progress.get("fault_implementation_allowed") is False,
+                sd_crc_progress.get("fault_emulator_run_allowed") is False,
+                sd_crc_baseline.get("record_id")
+                == "next3-sd-cmd8-crc-a1-20260810-01",
+                sd_crc_baseline.get("stage")
+                == "baseline_emulator_pass_hardware_pending",
+                sd_crc_baseline.get("classification")
+                == "positive_control_pending_hardware",
+                sd_crc_baseline.get("firmware", {}).get("commit")
+                == sd_crc_progress.get("source_commit"),
+                sd_crc_baseline.get("firmware", {}).get("bin_sha256")
+                == sd_crc_progress.get("bin_sha256"),
+                sd_crc_baseline.get("firmware", {}).get("uf2_sha256")
+                == sd_crc_progress.get("uf2_sha256"),
+                sd_crc_baseline.get("firmware", {}).get("clean_clone_reproducible")
+                is True,
+                sd_crc_baseline.get("source_bundle", {}).get("sha256")
+                == expected_hashes["sd_crc_baseline_bundle"],
+                sd_crc_baseline.get("protocol", {}).get("cmd0_r1") == "01",
+                sd_crc_baseline.get("protocol", {}).get("cmd8_argument")
+                == "000001aa",
+                sd_crc_baseline.get("protocol", {}).get("cmd8_crc") == "87",
+                sd_crc_baseline.get("protocol", {}).get("cmd8_r1") == "01",
+                sd_crc_baseline.get("protocol", {}).get("cmd8_r7")
+                == "000001aa",
+                sd_crc_baseline.get("protocol", {}).get("filesystem_access")
+                == "none",
+                sd_crc_baseline.get("emulator", {}).get("verdict") == "pass",
+                sd_crc_baseline.get("emulator", {}).get("backend_commit")
+                == sd_crc_progress.get("emulator_backend_commit"),
+                sd_crc_baseline.get("emulator", {}).get("report_sha256")
+                == expected_hashes["sd_crc_baseline_report"],
+                sd_crc_baseline.get("emulator", {}).get("uart_sha256")
+                == expected_hashes["sd_crc_baseline_uart"],
+                sd_crc_baseline.get("emulator", {}).get("snapshot_png_sha256")
+                == expected_hashes["sd_crc_baseline_snapshot"],
+                sd_crc_baseline.get("emulator", {}).get("sd_blocks_read") == 0,
+                sd_crc_baseline.get("emulator", {}).get("sd_blocks_written") == 0,
+                sd_crc_baseline.get("emulator", {}).get("exception") is None,
+                sd_crc_baseline.get("emulator", {}).get("unsupported_mmio_count")
+                == 0,
+                sd_crc_baseline.get("hardware", {}).get("result") == "pending",
+                sd_crc_baseline.get("fault_gate", {}).get(
+                    "fault_source_implementation_allowed"
+                )
+                is False,
+                sd_crc_baseline.get("fault_gate", {}).get("fault_emulator_run_allowed")
+                is False,
+                sd_crc_baseline_scenario.get("name") == "next3-sd-cmd8-crc-a1",
+                sd_crc_baseline_scenario.get("steps", [{}])[0]
+                .get("condition", {})
+                .get("text")
+                == "filesystem=none keys=none app=pass",
+                sd_crc_baseline_report.get("backend_commit")
+                == sd_crc_progress.get("emulator_backend_commit"),
+                sd_crc_baseline_report.get("firmware", {}).get("sha256")
+                == sd_crc_progress.get("bin_sha256"),
+                sd_crc_baseline_report.get("verdict", {}).get("status") == "pass",
+                sd_crc_baseline_report.get("stop_reason") == "scenario_done",
+                sd_crc_baseline_report.get("exception") is None,
+                sd_crc_baseline_report.get("unsupported_mmio") == [],
+                sd_crc_baseline_report.get("sd", {}).get("blocks_read") == 0,
+                sd_crc_baseline_report.get("sd", {}).get("blocks_written") == 0,
+                sd_crc_baseline_report.get("scenario", {}).get("status") == "pass",
                 sd_crc_oracle.get("deployment_path") == "uf2loader",
                 sd_crc_oracle.get("bootsel_required") is False,
                 sd_crc_oracle.get("cmd0_r1") == "01",
@@ -2491,7 +2604,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             v2_status=v2_contract.get("status"),
             v2_fault_hardware_status=v2_fault_hardware.get("status"),
             v2_fault_classification=v2_fault_hardware.get("classification"),
-            v2_next_step="implement_sd_cmd8_crc_a1_baseline",
+            v2_next_step="run_sd_cmd8_crc_a1_hardware",
             v2_top_remaining_variable=v2_post_hardware.get(
                 "highest_ranked_remaining_variable"
             ),
@@ -2502,6 +2615,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 "human_operations", {}
             ).get("required_hardware_runs"),
             sd_crc_fault_emulator_run_allowed=False,
+            sd_crc_baseline_result=sd_crc_progress.get("emulator_result"),
+            sd_crc_baseline_hardware_result=sd_crc_progress.get("hardware_result"),
+            sd_crc_baseline_record=sd_crc_progress.get("record"),
         )
     except (
         OSError,

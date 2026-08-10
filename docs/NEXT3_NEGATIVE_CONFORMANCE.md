@@ -13,7 +13,8 @@ rotated-bit症状となり、solid 3色とpattern mismatch数が凍結oracleに�
 `inconclusive`、negative母数増分0とし、エミュレーター初回runは行わない。observer差は不一致の
 十分条件ではなかった。実機後source gap分析では、旧160x160 tiling、runtime初期化順とactive audio IRQ、
 回収不能な旧toolchainを残差として順位付けした。複数の未固定変数を重ねた再試行はせずv2を閉じた。
-決定的なSD CMD8 bad-CRC negative候補の実装前契約を固定し、次はA1 baseline実装である。
+決定的なSD CMD8 bad-CRC negative候補の実装前契約とA1正常対照を固定した。A1は2 clean buildと
+凍結backendのemulator runに合格し、次は同一UF2のuf2loader実機確認である。
 
 ## 目的
 
@@ -44,6 +45,7 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2実機後source gap分析: `firmware-validation/records/next3-v2-gap-analysis-20260810-01/record.json`
 - SD CMD8 CRC事前契約: `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`
 - SD CMD8 CRC設計: `docs/NEXT3_SD_CMD8_CRC_CANDIDATE.md`
+- SD CMD8 CRC A1: `firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/record.json`
 
 ## 分類
 
@@ -268,12 +270,27 @@ writer modeの証拠から除外した。source commitとA1→B diffが実際の
 重ねて旧症状へ合わせることはpost-hoc oracle fittingになるため行わない。v2は`inconclusive`で閉じ、Fault B
 emulator runは禁止、oracle不変、negative母数0のままとする。
 
+## NEXT3-8: SD CMD8 CRC候補の事前設計
+
 タイミング依存のLCD観測を離れ、SD SPI CMD8 CRCを使う決定的なnegative caseの実装前契約を固定した。
 CMD8はCRC検査が常時有効である一方、backend `4a908648`はCRC byteを捨てる。A1は正しい`0x87`、Bは
 CRCだけを`0x85`へ変え、実機R1=`0x09`のCRC errorをhardware-firstで確認する。filesystemへはアクセスせず、
 通常の実機操作はuf2loaderからA1とBを各1回起動する2回だけである。詳細は
-[`NEXT3_SD_CMD8_CRC_CANDIDATE.md`](NEXT3_SD_CMD8_CRC_CANDIDATE.md)に固定した。次はA1 baseline実装で、
-fault実装・fault emulator run・実機操作はまだ行わない。
+[`NEXT3_SD_CMD8_CRC_CANDIDATE.md`](NEXT3_SD_CMD8_CRC_CANDIDATE.md)に固定した。
+
+## NEXT3-9: SD CMD8 CRC A1正常対照
+
+A1を独立repository `picocalc-next3-sd-crc-fault` commit `f942b8eb0008`へ実装した。applicationは
+canonical CRC `0x87`で`sdcard::init()`だけを行い、filesystem、キー、audio、PSRAMを試験範囲へ入れない。
+source本体と別clean cloneのBIN `0ae9eea0...fce1b`、UF2 `be9c0e8d...a9ffd`は完全一致し、source bundleも
+`ed985de5...a05da`へ固定した。
+
+凍結backend `4a908648`の同一BIN runはCMD0 R1=`0x01`、CMD8 arg=`000001aa`／CRC=`0x87`／
+R1=`0x01`／R7=`000001aa`、init PASSとなった。SD block read/writeは0、exception、unsupported MMIOも0、
+最終画面までPASSした。記録は`firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/`にある。
+
+次は同一UF2をuf2loaderから実機で1回起動し、UART全文と安定写真1枚を保存する。A1実機PASSまでは
+CRC `0x85`のfault実装とfault emulator runを行わない。
 
 ## CI運用
 

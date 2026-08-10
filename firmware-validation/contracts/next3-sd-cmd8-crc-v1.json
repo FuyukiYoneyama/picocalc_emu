@@ -4,7 +4,7 @@
   "parent_contract_id": "next3-negative-conformance-v1-20260810",
   "roadmap_package": "NEXT-3",
   "candidate_id": "sd-spi-cmd8-bad-crc",
-  "status": "frozen_before_implementation",
+  "status": "baseline_emulator_pass_hardware_pending",
   "purpose": "measure whether the emulator rejects a hardware-confirmed CMD8 CRC error for the same reason",
   "specification_authority": {
     "publisher": "SD Association",
@@ -62,6 +62,26 @@
       "required_source_change": "restore only the CMD8 CRC literal to 0x87 and remove the fault identity",
       "artifact_identity_rule": "if the restored source reproduces the baseline BIN and UF2 hashes exactly, baseline hardware evidence also proves the fixed artifact and no third hardware run is required"
     }
+  },
+  "baseline_progress": {
+    "repository": "picocalc-next3-sd-crc-fault",
+    "repository_has_remote": false,
+    "source_commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+    "app_identity": "next3-sd-cmd8-crc-a1",
+    "embedded_app_git": "f942b8eb0008",
+    "embedded_bsp_git": "5a27dc7a0085-dirty",
+    "build_timestamp": "2026-08-10T05:00:00Z",
+    "bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",
+    "uf2_sha256": "be9c0e8deda02307e34a96c11cec21255f1e197902920d1fe8e05f9d472a9ffd",
+    "source_bundle": "provenance/picocalc-next3-sd-crc-a1.bundle",
+    "source_bundle_sha256": "ed985de566638e07e0a20e974b351646729b434a6bb05edd349dc5fb162a05da",
+    "clean_clone_reproducible": true,
+    "emulator_backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "emulator_result": "pass",
+    "record": "firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/record.json",
+    "hardware_result": "pending",
+    "fault_implementation_allowed": false,
+    "fault_emulator_run_allowed": false
   },
   "frozen_hardware_oracle": {
     "deployment_path": "uf2loader",

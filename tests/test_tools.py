@@ -668,7 +668,7 @@ raise SystemExit(code)
         self.assertEqual(next3.get("v2_fault_hardware_status"), "hardware_observed")
         self.assertEqual(next3.get("v2_fault_classification"), "inconclusive")
         self.assertEqual(
-            next3.get("v2_next_step"), "implement_sd_cmd8_crc_a1_baseline"
+            next3.get("v2_next_step"), "run_sd_cmd8_crc_a1_hardware"
         )
         self.assertEqual(
             next3.get("v2_top_remaining_variable"),
@@ -679,9 +679,18 @@ raise SystemExit(code)
             next3.get("sd_crc_contract_id"),
             "next3-sd-cmd8-crc-v1-predesign-20260810",
         )
-        self.assertEqual(next3.get("sd_crc_status"), "frozen_before_implementation")
+        self.assertEqual(
+            next3.get("sd_crc_status"),
+            "baseline_emulator_pass_hardware_pending",
+        )
         self.assertEqual(next3.get("sd_crc_required_hardware_runs"), 2)
         self.assertIs(next3.get("sd_crc_fault_emulator_run_allowed"), False)
+        self.assertEqual(next3.get("sd_crc_baseline_result"), "pass")
+        self.assertEqual(next3.get("sd_crc_baseline_hardware_result"), "pending")
+        self.assertEqual(
+            next3.get("sd_crc_baseline_record"),
+            "firmware-validation/records/next3-sd-cmd8-crc-a1-20260810-01/record.json",
+        )
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -721,6 +730,35 @@ raise SystemExit(code)
             contract = json.loads(contract_path.read_text(encoding="utf-8"))
             contract["frozen_hardware_oracle"]["cmd8_r1"] = "01"
             contract_path.write_text(json.dumps(contract), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "fail")
+
+    def test_target_schema_rejects_next3_sd_crc_baseline_filesystem_io(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            report_path = (
+                project
+                / "firmware-validation/records/"
+                "next3-sd-cmd8-crc-a1-20260810-01/run-report.json"
+            )
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            report["sd"]["blocks_read"] = 1
+            report_path.write_text(json.dumps(report), encoding="utf-8")
             completed = run(
                 VERIFY,
                 "--project-root",

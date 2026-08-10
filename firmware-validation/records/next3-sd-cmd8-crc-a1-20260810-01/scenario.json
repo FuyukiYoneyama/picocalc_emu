@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "next3-sd-cmd8-crc-a1",
+  "description": "A1 positive control: correct CMD8 CRC, direct initialization only.",
+  "poll_ms": 1,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "A1 exact evidence marker",
+      "timeout_ms": 3000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "filesystem=none keys=none app=pass"
+      }
+    },
+    {
+      "op": "snapshot",
+      "label": "A1 final PASS screen",
+      "png": "next3-sd-a1-final.png"
+    }
+  ]
+}
