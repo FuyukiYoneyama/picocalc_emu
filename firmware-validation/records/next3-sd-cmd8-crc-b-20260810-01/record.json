@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-sd-cmd8-crc-b-20260810-01",
+  "contract_id": "next3-sd-cmd8-crc-v1-predesign-20260810",
+  "stage": "fault_artifact_frozen_hardware_pending",
+  "classification": "pending_hardware_oracle",
+  "baseline": {
+    "source_commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
+    "hardware_record": "firmware-validation/records/next3-sd-cmd8-crc-a1-hardware-20260810-01/record.json",
+    "hardware_record_sha256": "55777e8453ce9cd4cca48fec477181729eb446f50b9ed24f764e802191dd960e",
+    "result": "emulator_pass_hardware_pass"
+  },
+  "fault_source": {
+    "repository": "picocalc-next3-sd-crc-fault",
+    "commit": "e78cabbe20416eb2347e0db09408bf906d41c698",
+    "app_identity": "next3-sd-cmd8-crc-b",
+    "embedded_app_commit": "e78cabbe2041",
+    "embedded_bsp_commit": "5a27dc7a0085-dirty",
+    "changed_paths_from_a1": [
+      "CMakeLists.txt",
+      "NEXT3_CONTRACT.md",
+      "README.md",
+      "app/main.cpp",
+      "bsp/src/sdcard.cpp"
+    ],
+    "executable_changed_paths_from_a1": [
+      "CMakeLists.txt",
+      "app/main.cpp",
+      "bsp/src/sdcard.cpp"
+    ],
+    "documentation_changed_paths_from_a1": [
+      "NEXT3_CONTRACT.md",
+      "README.md"
+    ],
+    "change_budget_audit": {
+      "result": "pass",
+      "application_identity_only": "CMakeLists.txt",
+      "evidence_namespace_and_expected_trace_crc_only": "app/main.cpp",
+      "transmitted_cmd8_crc_only": "bsp/src/sdcard.cpp",
+      "documentation_describes_only_the_frozen_delta": [
+        "NEXT3_CONTRACT.md",
+        "README.md"
+      ],
+      "cmd0_changed": false,
+      "cmd8_argument_changed": false,
+      "spi_clock_mode_or_bit_order_changed": false,
+      "chip_select_or_polling_changed": false,
+      "r7_parsing_or_timeout_changed": false,
+      "filesystem_or_key_behavior_changed": false,
+      "backend_changed": false
+    },
+    "source_sha256": {
+      "CMakeLists.txt": "01bce6798516a63a562c10a37c8b4c4fa9923e594b050d25664a11a68070ea2b",
+      "app/main.cpp": "f9f42c5a9416fa8af31ee1c7a13215dcba9d70e89fa00415cd8f89b6ed8b66ca",
+      "bsp/src/sdcard.cpp": "e1b4db92e30e31cb9454a74e8dd30a6f233fb8cb1ce10d9334dce9021512dc53",
+      "NEXT3_CONTRACT.md": "f5c9fce4c9746e97de56be16a30618486e65a5b5702fed96e89fcea204d3ed05",
+      "README.md": "ca4bf78fb9a817e608d2b7b81999d25194d101023072e1a833982572c16ceca2"
+    },
+    "baseline_source_sha256": {
+      "CMakeLists.txt": "b39101c803e1cdb937fd8daa8706c3db76ec8b8ed1a3ceee54b6a07c00d8899d",
+      "app/main.cpp": "9571c237dd783a62bf16e35dba7c634d8db07c55a50d64b10be995ba0ad9f3ae",
+      "bsp/src/sdcard.cpp": "dc4f617cc4d5a5002bbd18d6fd0080716806ae78a0bd6c792185183125312ad8",
+      "NEXT3_CONTRACT.md": "c8c4ee99ec44705659c0af72f77f964aff7cddd55ffd2d8851e3ced38021848c",
+      "README.md": "cd10ca15f6934736167ea6b08ac3b7d6729558ff7640906855e241e1dcf08b57"
+    }
+  },
+  "fault_injection": {
+    "independent_variable": "CMD8 CRC7 byte",
+    "baseline_crc_byte": "87",
+    "fault_crc_byte": "85",
+    "end_bit_remains_one": true,
+    "command_index": 8,
+    "argument": "000001aa",
+    "expected_trace_identity_changed_to_fault_crc": true,
+    "reason": "the application must distinguish backend acceptance from self-rejection; it treats the intentionally transmitted 0x85 as the expected test identity while pass still requires normal CMD8 response and successful initialization"
+  },
+  "build_environment": {
+    "generator_source_commit": "5a27dc7a00852004f797d4331bde942a4d821a0f",
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1 20231009",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "generator": "Ninja",
+    "build_timestamp": "2026-08-10T05:30:00Z",
+    "lcd_variant": "pio-rgb565"
+  },
+  "artifact": {
+    "bin_sha256": "6665ca51944e2c1fb2f7e2ba7adb01ce6878290aac0dfb929202714b83509bd0",
+    "uf2_sha256": "43ea10982d6f9b1d1adf9565b2b88f8b1866ddd60410b4ae53fda8e2f9a3e958",
+    "clean_clone_reproducible": true,
+    "source_bundle": "provenance/picocalc-next3-sd-crc-b.bundle",
+    "source_bundle_sha256": "3e3fded89db4d4feb9a0d1c810d388e18ccc49c698ab466a371e3c2c94f1739a"
+  },
+  "frozen_hardware_oracle": {
+    "deployment_path": "uf2loader",
+    "card_detect": "present",
+    "cmd0_argument": "00000000",
+    "cmd0_crc": "95",
+    "cmd0_r1": "01",
+    "cmd8_argument": "000001aa",
+    "cmd8_crc": "85",
+    "cmd8_r1": "09",
+    "cmd8_required_r1_bits": ["idle_state", "com_crc_error"],
+    "cmd8_forbidden_r1_bits": [
+      "illegal_command",
+      "address_error",
+      "parameter_error"
+    ],
+    "initialization": "fail",
+    "failure_stage": "cmd8_crc",
+    "later_initialization_commands_allowed": false,
+    "filesystem_access": "none",
+    "application_status": "fail",
+    "required_marker_prefix": "[NEXT3][SD_CMD8_B][EVIDENCE]",
+    "post_hoc_change_allowed": false
+  },
+  "hardware": {
+    "path": "uf2loader",
+    "bootsel_required": false,
+    "result": "pending"
+  },
+  "emulator": {
+    "result": "not_run_by_contract",
+    "backend_commit_reserved_for_first_run": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "run_allowed": false,
+    "unlock_condition": "hardware result matches every frozen oracle field exactly"
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "Fault B artifact is frozen but its hardware result is pending"
+  },
+  "procedure": "PROCEDURE.md",
+  "next_action": "run the exact UF2 through uf2loader once, preserve complete UART and one stable final photograph, and do not execute the BIN in the emulator unless every frozen oracle field matches"
+}

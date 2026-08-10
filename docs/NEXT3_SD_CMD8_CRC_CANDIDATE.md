@@ -1,8 +1,8 @@
 # NEXT-3 SD CMD8 CRC candidate
 
 **状態（2026-08-10）:** A1正常対照は2 clean build、凍結backend emulator、同一UF2のuf2loader実機runが
-すべてPASSした。positive相関は7系列となり、Fault Bのsource実装を解禁した。fault BINのemulator runと
-backend修正は、Fault Bが凍結hardware oracleへ一致するまで禁止する。機械可読な正典は
+すべてPASSした。Fault Bも最小差分で実装し、2 clean buildとsource bundleを固定した。fault BINの
+emulator runとbackend修正は、Fault Bが凍結hardware oracleへ一致するまで禁止する。機械可読な正典は
 `firmware-validation/contracts/next3-sd-cmd8-crc-v1.json`である。
 
 ## なぜLCD候補から切り替えるか
@@ -58,6 +58,12 @@ FAT geometry、空き容量、既存fileは判定へ影響しない。キー入�
 A1からBで変更してよいのはapplication identity、evidence marker、CMD8 CRC literalの3点だけである。
 CMD0、argument、SPI clock/mode、CS、polling、timeout、R7判定、backendは変更しない。
 
+実装監査では、送信CRCだけでなく`app/main.cpp`のexpected command-trace CRCも`0x85`へ変える。これを
+`0x87`のままにすると、backend応答を見る前にapplicationが自分で注入したCRCを拒否し、false acceptを
+測れないためである。PASSにはtraceが`0x85`であることに加え、正常R1/R7とinit成功も必要なので、実機の
+CRC rejectionは引き続きFAILとなる。実行に影響しないREADMEと局所契約文書はこの差分とhardware-first境界だけを
+記述する。
+
 A2はfault CRCを正しい値へ戻すだけである。A1とBIN/UF2がbyte一致するなら、A1の実機PASSが同一artifactの
 fixed証拠でもあるため、同じUF2を3回目に人が起動する必要はない。hashが一致しなければA2を別artifactとして
 実機確認する。
@@ -87,6 +93,20 @@ R7=`000001aa`、initとappのPASSを確認した。完全なEVIDENCE markerは39
 
 これでA1 gateは完了し、CRC `0x85`のFault B source実装を許可する。ただしFault BINをemulatorへ入れては
 ならず、まず再現可能artifactを固定し、同一UF2をuf2loader実機で先行実行する。
+
+## Fault B固定結果
+
+Fault Bはcommit `e78cabbe20416eb2347e0db09408bf906d41c698`へ固定した。実行差分は
+`CMakeLists.txt`のidentity、`app/main.cpp`のEVIDENCE namespaceとexpected trace CRC、
+`bsp/src/sdcard.cpp`の送信CRCだけである。CMD0、CMD8 argument、SPI、CS、polling、R7、timeout、filesystem、
+keys、backendは変えていない。source本体と独立clean cloneは固定時刻`2026-08-10T05:30:00Z`で一致した。
+
+- BIN SHA-256: `6665ca51944e2c1fb2f7e2ba7adb01ce6878290aac0dfb929202714b83509bd0`
+- UF2 SHA-256: `43ea10982d6f9b1d1adf9565b2b88f8b1866ddd60410b4ae53fda8e2f9a3e958`
+- source bundle SHA-256: `3e3fded89db4d4feb9a0d1c810d388e18ccc49c698ab466a371e3c2c94f1739a`
+
+記録は`firmware-validation/records/next3-sd-cmd8-crc-b-20260810-01/`にある。Bはまだemulatorで一度も
+実行していない。次は上記UF2をuf2loaderから実機で1回起動する。
 
 ## 凍結した実機oracle
 
@@ -123,8 +143,10 @@ false acceptなら、その時点で初めてbackendへCMD8 CRC7検査とR1 COM_
 **測定失敗だけ**は同じartifactを最大1回再実行する。oracleと違う有効な結果は再試行せず証拠として採用する。
 BOOTSEL限定の理由はなく、一般利用経路のuf2loaderをprimaryとする。
 
-A1操作は完了した。次に必要な人間操作は、これから固定するB UF2の1回だけである。BのpathとSHA-256は
-Fault source、2 clean build、change-budget auditを完了してから提示する。
+A1操作は完了した。残る人間操作はB UF2の1回だけである。対象は
+`/home/fuyuki/pico_dvl/codex/picocalc-next3-sd-crc-fault/build/picocalc_app.uf2`、SHA-256は
+`43ea10982d6f9b1d1adf9565b2b88f8b1866ddd60410b4ae53fda8e2f9a3e958`である。詳細手順は
+`firmware-validation/records/next3-sd-cmd8-crc-b-20260810-01/PROCEDURE.md`にある。
 
 ## CI方針
 

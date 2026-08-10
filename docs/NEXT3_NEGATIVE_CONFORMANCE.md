@@ -301,6 +301,18 @@ negative母数は0のまま、率は`null`である。Fault B source実装は解
 凍結hardware oracle一致まで禁止する。次はA1からidentity、EVIDENCE marker、CMD8 CRC `0x87 -> 0x85`
 だけを変えたFault B artifactの固定である。
 
+## NEXT3-10: SD CMD8 CRC Fault B artifact freeze
+
+Fault Bをcommit `e78cabbe2041`へ実装した。A1からの実行差分はidentity、EVIDENCE namespace、送信CMD8
+CRC `0x87 -> 0x85`、expected trace CRC identityだけである。expected trace側も変えるのは、applicationの
+self-rejectionではなくbackendがbad CRCを受理するかを測るためである。その他のprotocol、filesystem、key、
+backendは不変で、change-budget auditはPASSした。
+
+source本体と独立clean cloneのBIN `6665ca51...9bd0`、UF2 `43ea1098...e958`は一致し、完全source bundle
+`3e3fded8...739a`を固定した。Bはまだemulatorで実行していない。negative母数は0、positive相関7系列の
+ままである。次は同一UF2をuf2loader実機で先行実行し、凍結oracleへ全field一致した場合だけ初回backend
+runを解禁する。
+
 ## CI運用
 
 NEXT-3のbuild、schema検証、emulator runはローカルで行う。通常の試行錯誤にGitHub Actionsを

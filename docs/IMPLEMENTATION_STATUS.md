@@ -573,7 +573,11 @@ uf2loader実機runもboot identity、card detect、CMD0、CMD8、init、app、�
 EVIDENCE marker 39回が同一だった。実機記録は
 `next3-sd-cmd8-crc-a1-hardware-20260810-01`である。positive相関は7系列、negative母数は0のまま。
 Fault B source実装は解禁したが、fault emulator runとbackend修正はhardware oracle一致まで禁止する。
-次はidentity、marker、CMD8 CRC `0x87 -> 0x85`だけを変えたBの再現可能artifact固定である。
+NEXT3-10ではFault Bをcommit `e78cabbe2041`へ実装し、identity、EVIDENCE namespace、送信CRCとexpected
+trace CRCだけが実行差分であることを監査した。expected trace CRCも`0x85`にすることでapplication自身の
+self-rejectionを避け、backend acceptanceを測れる。2 clean buildでBIN `6665ca51...9bd0`、UF2
+`43ea1098...e958`が一致し、source bundle `3e3fded8...739a`を固定した。Fault BINは未実行である。次は
+同一UF2のuf2loader実機先行runであり、oracle一致まではemulator runとbackend修正を禁止する。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
