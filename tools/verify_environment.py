@@ -1798,6 +1798,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "kpi_schema": base / "negative-conformance-kpi.schema.json",
         "contract": base / "contracts/next3-negative-conformance-v1.json",
         "v2_contract": base / "contracts/next3-lcd-cs-fault-v2.json",
+        "v2_baseline": base / "records/next3-v2-a1-20260810-01/record.json",
         "initial_kpi": base / "records/next3-0-20260810-01/kpi.json",
         "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
         "post_audit_kpi": base / "records/next3-1-20260810-01/kpi.json",
@@ -1820,7 +1821,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "case_schema": "3153f4a902f8a99b938a01bafadffd019f9a9180fe3d4c79eaf890f84359c0ef",
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
-        "v2_contract": "882731b6c1a775d588b123108e3edd408972395af0ff9e8bef8954b9a38bf922",
+        "v2_contract": "9a5fc28240a311fb60e1e49b6b84051228b512c9046cc66ae033b0fbc30588d0",
+        "v2_baseline": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a",
         "initial_kpi": "afdf414550b7715531e5db3cdd2f355687853969e96eb0090374e86e6018ebdc",
         "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
         "post_audit_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
@@ -1832,8 +1834,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_uart": "e3187f9a2ce38eaae9361a0a2e1723ef561f7716d9d51f67cc03909fff755550",
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
-        "document": "7be8a19688047218d2cd175415c8a1ebfd047c0a764f1f7797276a4fe42727a0",
-        "v2_document": "25bed547a610b173ec7b4236160b8d20ba366ff225492b02ea96ded55ed3c08d",
+        "document": "c458f2cad5a48c1cb1fb5eca7c00c283331291272162280a6d2812627203ca23",
+        "v2_document": "2bd778a0b83779a2ee47c57c10e663090c0d9f41f979424ce3dc98af9b683e3f",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1909,6 +1911,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         kpi_schema = load_json(paths["kpi_schema"])
         contract = load_json(paths["contract"])
         v2_contract = load_json(paths["v2_contract"])
+        v2_baseline = load_json(paths["v2_baseline"])
         initial = load_json(paths["initial_kpi"])
         audit = load_json(paths["audit"])
         post_audit = load_json(paths["post_audit_kpi"])
@@ -1925,6 +1928,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         v2_cause = v2_contract["cause_analysis"]
         v2_experiment = v2_contract["controlled_experiment"]
         v2_oracle = v2_contract["fault_oracle"]
+        v2_progress = v2_contract["baseline_progress"]
         aligned = all(
             (
                 all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
@@ -1960,7 +1964,21 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 == "next3-lcd-cs-fault-v2-predesign-20260810",
                 v2_contract.get("parent_contract_id")
                 == "next3-negative-conformance-v1-20260810",
-                v2_contract.get("status") == "frozen_before_v2_implementation",
+                v2_contract.get("status") == "baseline_emulator_pass_hardware_pending",
+                v2_progress.get("implementation_commit")
+                == "168a65d9f8206d2767641c589f21f359c1ce7b1b",
+                v2_progress.get("bin_sha256")
+                == "28c42956d63b162fa6a0487ba82cfcdb1e63fc62b13ce0672c0344cdaf7f5f6c",
+                v2_progress.get("uf2_sha256")
+                == "ce15219188b35ef54edebfcb6b6df09ec8632145d8e1ce28ea750f2444742c99",
+                v2_progress.get("clean_clone_reproducible") is True,
+                v2_progress.get("emulator_backend_commit")
+                == "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+                v2_progress.get("emulator_result") == "pass",
+                v2_progress.get("hardware_result") == "pending",
+                v2_progress.get("record")
+                == "firmware-validation/records/next3-v2-a1-20260810-01/record.json",
+                v2_progress.get("fault_implementation_allowed") is False,
                 v2_evidence.get("historical_failure", {}).get("source_commit")
                 == "5b12a7cbff45a928c440a70a4e3a77750c1daa13",
                 v2_evidence.get("historical_failure", {}).get("display_source_sha256")
@@ -1998,6 +2016,36 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "local_validation_only_during_development"
                 )
                 is True,
+                v2_baseline.get("schema_version") == 1,
+                v2_baseline.get("record_id") == "next3-v2-a1-20260810-01",
+                v2_baseline.get("contract_id")
+                == "next3-lcd-cs-fault-v2-predesign-20260810",
+                v2_baseline.get("stage")
+                == "baseline_emulator_pass_hardware_pending",
+                v2_baseline.get("firmware", {}).get("commit")
+                == v2_progress.get("implementation_commit"),
+                v2_baseline.get("firmware", {}).get("bin_sha256")
+                == v2_progress.get("bin_sha256"),
+                v2_baseline.get("firmware", {}).get("uf2_sha256")
+                == v2_progress.get("uf2_sha256"),
+                v2_baseline.get("firmware", {}).get("clean_clone_reproducible") is True,
+                v2_baseline.get("emulator", {}).get("backend_commit")
+                == v2_progress.get("emulator_backend_commit"),
+                v2_baseline.get("emulator", {}).get("backend_dirty") is False,
+                v2_baseline.get("emulator", {}).get("verdict") == "pass",
+                v2_baseline.get("emulator", {}).get("solid_fills") == "pass",
+                v2_baseline.get("emulator", {}).get("pattern") == "pass",
+                v2_baseline.get("emulator", {}).get("pattern_mismatches") == 0,
+                v2_baseline.get("emulator", {}).get("exception") is None,
+                v2_baseline.get("emulator", {}).get("unsupported_mmio_count") == 0,
+                v2_baseline.get("variant_b_non_regression", {}).get("result") == "pass",
+                v2_baseline.get("hardware", {}).get("path") == "uf2loader",
+                v2_baseline.get("hardware", {}).get("result") == "pending",
+                v2_baseline.get("hardware", {}).get("bootsel_required") is False,
+                v2_baseline.get("negative_kpi_effect", {}).get(
+                    "hardware_confirmed_negative_cases_delta"
+                )
+                == 0,
                 snapshot_valid(
                     initial, candidates=0, audit_failures=0, inconclusive=0, records=0
                 ),
@@ -2107,7 +2155,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             emulator_first_run=fault_hardware.get("emulator_observation", {}).get("status"),
             v2_contract_id=v2_contract.get("contract_id"),
             v2_status=v2_contract.get("status"),
-            v2_next_step="baseline_implementation",
+            v2_next_step="baseline_hardware_correlation",
         )
     except (
         OSError,

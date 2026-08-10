@@ -526,8 +526,16 @@ NEXT3-3では旧`5b12a7c` source、v1 fault source、旧UART証拠を再比較�
 断定しない。v2は正しいwriter／faulty writer／fixed writerのA-B-Aを、同一の
 旧bitbang observerで測る。原因分析、変更budget、凍結oracle、停止条件を
 [`NEXT3_V2_CANDIDATE_DESIGN.md`](NEXT3_V2_CANDIDATE_DESIGN.md)と
-`firmware-validation/contracts/next3-lcd-cs-fault-v2.json`へ実装前固定した。v2 sourceは未変更で、次は
-A1 baselineの実装である。
+`firmware-validation/contracts/next3-lcd-cs-fault-v2.json`へ実装前固定した。
+
+NEXT3-4ではv2 A1 baselineを`picocalc-next3-lcd-fault` commit `168a65d`として実装した。
+正しいsingle-CS writerと旧SIO bitbang observerを組み合わせ、別clean cloneからBIN
+`28c42956...f5f6c`、UF2 `ce152191...2c99`を再現した。promoted backend `e985a9d`はvariant Aの
+SIO GPIO readbackをpanelへ接続しておらずRAMRD count 0となったため、backend `fc4a622`／`4a90864`で
+pin-level経路、bit-level中だけのdummy timing、実機証拠に一致するRGB666 R,G,B orderを実装した。
+clean backend `4a90864`でA1はsolid 5色、4色pattern、SDをすべてPASSし、exceptionなし、
+unsupported MMIO 0だった。既存PIO/RGB565 variant Bも同じbackendでPASSした。backendのpromoted roleは
+まだ変更していない。次はA1の同一UF2をuf2loaderから実機確認し、完全PASSした場合だけfault Bへ進む。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、

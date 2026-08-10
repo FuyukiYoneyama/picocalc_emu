@@ -1,7 +1,7 @@
 # NEXT-3 LCD fault v2 candidate design
 
-**状態:** 原因分析と実装前契約を完了した。v2 sourceはまだ変更していない。次は正常なwriterと
-旧SIO bitbang RAMRD observerを組み合わせたv2 baselineの実装である。
+**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASSまで完了した。A1実機相関待ちである。
+fault Bは未実装であり、A1の同一UF2がuf2loader経由で完全PASSするまで着手しない。
 
 機械可読な正典は
 `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`である。本書は判断根拠と人が読む

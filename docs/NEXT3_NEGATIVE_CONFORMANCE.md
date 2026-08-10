@@ -5,8 +5,9 @@ NEXT3-2の明示的fault版buildとuf2loader経由の実機試験まで完了し
 明示的fault v1は実機FAILしたものの凍結oracleと症状不一致のため、いずれもnegative母数へ採用しない。
 エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。原因分析では、
 v1が旧write-side CS defectを再現する一方、旧症状を測ったSIO bitbang RAMRD observerではなく6 MHz
-hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計
-まで完了している。v2実測前にobserver差を唯一の原因とは断定しない。
+hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計と
+A1 baseline実装、clean clone再現、エミュレーターPASSまで完了した。A1実機PASSは未確認であり、
+fault Bはまだ実装しない。v2 fault実測前にobserver差を唯一の原因とは断定しない。
 
 ## 目的
 
@@ -28,6 +29,7 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - fault source bundle: `provenance/picocalc-next3-lcd-fault-v1.bundle`
 - v2事前契約: `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`
 - v2原因分析・設計: `docs/NEXT3_V2_CANDIDATE_DESIGN.md`
+- v2 A1 baseline: `firmware-validation/records/next3-v2-a1-20260810-01/record.json`
 
 ## 分類
 
@@ -166,8 +168,30 @@ hardware SPI RAMRDで測定された。v1はwrite defectだけでなくobserver�
 v2では正しいwriter＋旧observerをA1、旧faulty writer＋同じ旧observerをB、writerだけを戻したものを
 A2とする。変更する独立変数はwrite-side CS framingだけである。旧ログのsolid 5色PASS、pattern
 red/red/red/red、3 mismatchを実装前oracleとして固定した。詳細と停止条件は
-[`NEXT3_V2_CANDIDATE_DESIGN.md`](NEXT3_V2_CANDIDATE_DESIGN.md)にある。次作業はA1 baselineの実装であり、
-fault実装やemulator初回実行はまだ行わない。
+[`NEXT3_V2_CANDIDATE_DESIGN.md`](NEXT3_V2_CANDIDATE_DESIGN.md)にある。
+
+## NEXT3-4: v2 A1 baseline
+
+独立repository `picocalc-next3-lcd-fault` commit `168a65d9f8206d2767641c589f21f359c1ce7b1b`で、
+正しいsingle-CS writerと旧`5b12a7c` SIO bitbang observerを組み合わせた。build timestampは
+`2026-08-10T06:00:00Z`、SDKは2.2.0 commit `a1438dff...`、GCC 13.2.1、CMake 3.28.3、
+Ninja 1.11.1である。別clean cloneとのBIN/UF2一致を確認した。
+
+- BIN SHA-256: `28c42956d63b162fa6a0487ba82cfcdb1e63fc62b13ce0672c0344cdaf7f5f6c`
+- UF2 SHA-256: `ce15219188b35ef54edebfcb6b6df09ec8632145d8e1ce28ea750f2444742c99`
+
+promoted backend `e985a9d`の初回実行はRAMRD count 0でFAILした。これはLCD modelの判定ではなく、
+variant AがSPI1 FIFO transferだけをpanelへ届け、SPI deinit後のSIO SCK/MOSI/MISOを接続していなかった
+capability gapである。backend `fc4a622`でvariant Aへpin observerを接続し、`4a90864`でbit-level選択中だけ
+dummy timingを切り替えてdeselect時にSPI timingを復元し、旧実機証拠どおりRGB666 RAMRDをR,G,B順へ
+修正した。既存variant BはRGB565であり、その独立firmware回帰もPASSした。promoted roleは変更していない。
+
+clean backend `4a90864816ef58286f2b292df0e7fe44fbcd4809`のA1 runは700,000,000 cycle、
+RAMRD 6回、solid 5色PASS、pattern PASS/mismatch 0、SD PASS、exceptionなし、unsupported MMIO 0で
+verdict PASSとなった。recordは`firmware-validation/records/next3-v2-a1-20260810-01/record.json`にある。
+
+次は同一UF2を一般利用経路のuf2loaderから実機起動する。実機でも完全PASSした場合だけB実装へ進む。
+BOOTSELを必要とする理由はなく、A1実機結果が不一致なら停止して原因分析へ戻る。
 
 ## CI運用
 

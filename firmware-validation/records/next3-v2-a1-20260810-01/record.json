@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-v2-a1-20260810-01",
+  "contract_id": "next3-lcd-cs-fault-v2-predesign-20260810",
+  "stage": "baseline_emulator_pass_hardware_pending",
+  "classification": "positive_control_pending_hardware",
+  "firmware": {
+    "repository": "picocalc-next3-lcd-fault",
+    "commit": "168a65d9f8206d2767641c589f21f359c1ce7b1b",
+    "app_identity": "next3-lcd-cs-fault-v2-a1-bitbang-rgb888",
+    "app_source_commit_embedded": "168a65d9f820",
+    "bsp_source_commit_embedded": "6bd826e7dcaf-dirty",
+    "lcd_variant": "hwspi-rgb888",
+    "build_timestamp": "2026-08-10T06:00:00Z",
+    "bin_sha256": "28c42956d63b162fa6a0487ba82cfcdb1e63fc62b13ce0672c0344cdaf7f5f6c",
+    "uf2_sha256": "ce15219188b35ef54edebfcb6b6df09ec8632145d8e1ce28ea750f2444742c99",
+    "clean_clone_reproducible": true,
+    "source_sha256": {
+      "bsp/vendor/lcd_hwspi_rgb888.cpp": "d9f7ad2155956dd35c3defed223f6cda7a8da4324bb7c4796400a909af4d8b4a",
+      "bsp/src/display.cpp": "7a7ae67d3ea02dcef64f5b7ab32845e6422fcde5a0cac0f34bb858ab5b1f5345",
+      "app/main.cpp": "4de25f506334a9c794d1dc0369380ae233a1340a81805bd4b2f711cb761c3c51",
+      "CMakeLists.txt": "dfd5ca87545dfbe3f3bfdb08a1fd594053d3dde86f1ec1e9bbf061a5caa15077"
+    }
+  },
+  "build_environment": {
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1 20231009",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "generator": "Ninja"
+  },
+  "backend_discovery": {
+    "promoted_backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "promoted_backend_result": "cannot_observe_sio_bitbang_ramrd",
+    "promoted_backend_report_sha256": "1c3c92a8fd0f11ea31ff823618a11b33a8dacffc2427ae5cebf54d8e77ce5c2e",
+    "promoted_backend_uart_sha256": "6d17ee91d90364d0f677ed34d684ebbed56bd0aaf2d6806fc08a3ddb03589fcc",
+    "promoted_backend_lcd_ramrd_count": 0,
+    "cause": "variant A routed only SPI1 FIFO frames to the LCD model; SIO GPIO clock and MISO were not connected",
+    "fix_commits": [
+      "fc4a62272fff2a7ebbc5bd77a4677c2c4ed7bf87",
+      "4a90864816ef58286f2b292df0e7fe44fbcd4809"
+    ],
+    "fix_scope": "attach a pin-level observer for variant A, select reply timing only on actual pad edges, restore SPI dummy timing on deselect, and use hardware-observed RGB order for RGB666 RAMRD",
+    "promoted_role_changed": false
+  },
+  "emulator": {
+    "backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "backend_dirty": false,
+    "cycles": 700000000,
+    "quantum": 1,
+    "devices": ["lcd-hwspi-rgb888", "psram", "keyboard", "sd-fat32"],
+    "injected_keys": "a",
+    "verdict": "pass",
+    "stop_reason": "cycle_limit_expected",
+    "uart_sha256": "a5653844da7966c5831477bb268b8a9fa1916d0a52c1cb280ae26b030cf84dca",
+    "report_sha256": "0b02dd33c6116cd7e2809bdade53fecd4e358dcc30649924e94bb61b9d0c6eb8",
+    "framebuffer_rgb565_sha256": "fad83ca09aa4d5956b84776d7a778916df24b22d6a6eba43641431b319a71dc8",
+    "lcd_ramrd_count": 6,
+    "solid_fills": "pass",
+    "pattern": "pass",
+    "pattern_mismatches": 0,
+    "sd": "pass",
+    "exception": null,
+    "unsupported_mmio_count": 0,
+    "required_marker": "[NEXT3][LCD_CS_V2_A1][EVIDENCE] app_git=168a65d9f820 bsp_git=6bd826e7dcaf-dirty solid=pass pattern=pass mismatches=0 app=pass sd=pass"
+  },
+  "variant_b_non_regression": {
+    "result": "pass",
+    "lcd_variant": "pio-rgb565",
+    "backend_commit": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "report_sha256": "258c89babdafc8d89f684b371d943af2a92ba271f91a36a056e9937f9c9f4a95",
+    "uart_sha256": "97856924d61d3bd5c51c8315ba0fa6391434ed4a6ae3a422ca83ef2a97771f2b",
+    "lcd_ramrd_count": 6,
+    "exception": null,
+    "unsupported_mmio_count": 0
+  },
+  "hardware": {
+    "path": "uf2loader",
+    "result": "pending",
+    "bootsel_required": false
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "A1 is a positive control and hardware correlation is pending"
+  },
+  "next_action": "run the exact A1 UF2 through uf2loader on PicoCalc and require all five solid fills plus the four-colour pattern to pass before implementing fault B"
+}
