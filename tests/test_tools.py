@@ -654,8 +654,10 @@ raise SystemExit(code)
             next3.get("first_candidate_classification"),
             "artifact_not_reproducible",
         )
-        self.assertEqual(next3.get("explicit_fault_status"), "artifact_reproduced")
-        self.assertEqual(next3.get("explicit_fault_classification"), "pending")
+        self.assertEqual(next3.get("explicit_fault_status"), "hardware_observed")
+        self.assertEqual(next3.get("explicit_fault_classification"), "inconclusive")
+        self.assertEqual(next3.get("inconclusive_cases"), 1)
+        self.assertEqual(next3.get("emulator_first_run"), "pending")
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:

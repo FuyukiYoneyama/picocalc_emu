@@ -1,9 +1,9 @@
 # NEXT-3 negative conformance
 
 **状態:** NEXT3-0の契約・KPI schema、NEXT3-1の旧LCD 0.3.1 artifact監査、および
-NEXT3-2の明示的fault版の再現可能buildまで完了した。旧候補は再現性と同一artifact実機証拠を
-満たさずnegative母数へ採用しない。fault版も、同一UF2の実機FAILを確認するまではnegative母数へ
-入れず、契約どおりエミュレーター初回実行を保留する。
+NEXT3-2の明示的fault版buildとuf2loader経由の実機試験まで完了した。旧候補はartifact再現不能、
+明示的fault v1は実機FAILしたものの凍結oracleと症状不一致のため、いずれもnegative母数へ採用しない。
+エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。
 
 ## 目的
 
@@ -20,6 +20,8 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - 0.3.1監査後: `firmware-validation/records/next3-1-20260810-01/kpi.json`
 - 明示的fault build: `firmware-validation/records/next3-lcd-cs-fault-v1-20260810-01/record.json`
 - fault build後KPI: `firmware-validation/records/next3-fault-build-20260810-01/kpi.json`
+- uf2loader実機試験: `firmware-validation/records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/record.json`
+- 実機試験後KPI: `firmware-validation/records/next3-hardware-attempt-20260810-01/kpi.json`
 - fault source bundle: `provenance/picocalc-next3-lcd-fault-v1.bundle`
 
 ## 分類
@@ -40,7 +42,8 @@ UART採取漏れなど、凍結oracleと無関係な理由だけでFAILした場
 negativeの分母は`hardware_confirmed_negative_cases`だけである。候補を見つけただけ、古い文書にFAILと
 書かれているだけ、emulatorだけでFAILしただけでは分母へ入れない。
 
-開始時点と0.3.1監査後のいずれも、hardware-confirmed negative caseは0件である。したがって
+開始時点、0.3.1監査後、明示的fault v1実機試験後のいずれも、hardware-confirmed negative caseは
+0件である。したがって
 `detection_rate`と`false_accept_rate`はともに`null`、状態は`no_negative_denominator`とする。
 これを「検出率0%」「false-acceptance率0%」とは表現しない。
 
@@ -126,18 +129,27 @@ python3 ../picocalc_emu/tools/picocalc.py build \
 - UF2 SHA-256: `74aa594d86666103f947b1905dafb25fd57cd6c49bf3397a9fb340d577c1d6c0`
 - source bundle SHA-256: `8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6`
 
-### 実機確認の境界
+### uf2loader経由の実機結果
 
-次に行うのは同一UF2の実機確認だけである。キー操作は不要で、USB CDCは起動後に接続してもよい。
-最終証拠markerを1秒ごとに再掲するため、接続が遅れてboot logを失っても同じ起動を再実行する必要はない。
-次のmarkerを含むUART logと最終画面写真を保存する。
+一般ユーザーと同じ経路を主試験にするため、同一UF2をSDカードの`pico1-apps`へ置き、uf2loaderの
+application menuから起動した。BOOTSELは使用していない。fault版は標準Pico SDK UF2でRP2040 flashを
+書き換える処理を持たず、uf2loaderの予約領域にも達しないため、BOOTSEL限定の技術的理由はない。
+
+実機はFAILしたが、保存された結果は凍結oracleと一致しなかった。
+
+- black、whiteのsolid fillはPASS。
+- red、green、blueのsolid fillはそれぞれ4 mismatchでFAIL。
+- 4 pixel patternは全sampleが`0x7c00`となり、3ではなく4 mismatch。
+- `app_status=fail`、SD smokeはPASS。
+- 最終markerは20回反復して同一だった。
 
 ```text
-[NEXT3][LCD_CS_FAULT][EVIDENCE] ... solid=pass pattern=fail mismatches=3 app=fail sd=pass
+[NEXT3][LCD_CS_FAULT][EVIDENCE] app_git=d7f0668db17e bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
 ```
 
-別の結果が出た場合は結果を保存し、oracleを結果へ合わせて変更しない。実機でoracleどおりFAILした後に
-限って、同一buildのBINを凍結backendで初回実行する。
+oracleを実測結果へ合わせて変更せず、このattemptを`inconclusive`、negative分母増分0とした。
+必須順序のstep 4を満たさないため、同一BINのエミュレーター初回実行は保留する。写真のrepository copyは
+GPSを含むEXIF/XMPを削除し、decoded RGB SHAが元画像と一致することを確認した。
 
 ## CI運用
 

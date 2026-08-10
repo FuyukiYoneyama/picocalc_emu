@@ -321,9 +321,9 @@ host backendでは、アプリのロジックをRP2040バイナリを作らず�
 - SDカードの取り外し・書き込み禁止・マルチブロック転送
 - directory-backed Fast SDモード（host backend）
 - host合格と実機結果の継続的な自動集計（Milestone 4の初回同一artifact相関はR5で完了。
-  NEXT3-0でnegative conformance case/KPI schemaを固定し、NEXT3-2で明示的LCD CS fault版を
-  clean clone再現まで固定したが、同一UF2の実機確認前なのでhardware-confirmed negativeの
-  分母はまだ0件であり、率は未測定）
+  NEXT3-0でnegative conformance case/KPI schemaを固定し、NEXT3-2の明示的LCD CS fault版を
+  clean clone再現してuf2loader経由で実機試験したが、凍結oracleと症状不一致で`inconclusive`のため
+  hardware-confirmed negativeの分母はまだ0件であり、率は未測定）
 - JUnit成果物、100回連続実行の決定性検査（R4受入条件外。必要時は独立したsoak作業にする）
 
 **そして、エミュレーターが原理的に判定できないものがあります。** 実機の色の見え方、

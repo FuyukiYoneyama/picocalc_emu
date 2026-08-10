@@ -513,8 +513,11 @@ negative分母0件の率を`0%`ではなく`null`／`no_negative_denominator`で
 `artifact_not_reproducible`としてnegative母数へ入れず、現行正常版へCS保持欠陥だけを注入する
 明示的fault版へ切り替えた。fault source commit `d7f0668`を独立repositoryとbundleへ固定し、
 SDK 2.2.0 commit、toolchain、timestamp、BIN `7ffc6335...`、UF2 `74aa594d...`を記録した。
-別clean cloneとのartifact一致も確認済みである。次は同一UF2の実機FAIL確認であり、それまでは
-negative母数0、率は`null`のまま、エミュレーター初回実行も保留する。契約、分類、監査結果は
+別clean cloneとのartifact一致も確認済みである。同一UF2を一般利用経路であるuf2loaderから実機起動し、
+LCD FAILを確認した。しかし凍結oracleのsolid全PASS／pattern 3 mismatchに対し、実測はblack・whiteだけ
+PASS、red・green・blueが各4 mismatch、patternも4 mismatchだった。oracleを後付け変更せず
+`inconclusive`、negative母数増分0とし、エミュレーター初回実行も保留した。写真の保存copyからはGPSを
+含むmetadataを除去し、decoded pixels一致を確認した。契約、分類、監査結果は
 [`NEXT3_NEGATIVE_CONFORMANCE.md`](NEXT3_NEGATIVE_CONFORMANCE.md)にある。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが

@@ -1790,7 +1790,7 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
 
 
 def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
-    """Verify NEXT-3 definitions, audits, and the pre-hardware fault artifact."""
+    """Verify NEXT-3 definitions, audits, fault artifact, and hardware attempt."""
     name = "next3:negative-conformance-contract"
     base = root / "firmware-validation"
     paths = {
@@ -1801,7 +1801,16 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
         "post_audit_kpi": base / "records/next3-1-20260810-01/kpi.json",
         "fault": base / "records/next3-lcd-cs-fault-v1-20260810-01/record.json",
-        "current_kpi": base / "records/next3-fault-build-20260810-01/kpi.json",
+        "pre_hardware_kpi": base / "records/next3-fault-build-20260810-01/kpi.json",
+        "fault_hardware": base
+        / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/record.json",
+        "current_kpi": base / "records/next3-hardware-attempt-20260810-01/kpi.json",
+        "hardware_notes": base
+        / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/notes.md",
+        "hardware_uart": base
+        / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/evidence/uf2loader-uart.log",
+        "hardware_photo": base
+        / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/evidence/uf2loader-final.jpg",
         "fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v1.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
     }
@@ -1813,9 +1822,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
         "post_audit_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
         "fault": "056642382c11d553b137054b4e2385557fa67b179bfd47965012ae9217c3c4ab",
-        "current_kpi": "4f98fff5d79c6cc355a52c8a360a01021209dbca3f5be0d138c06a84ba844bb5",
+        "pre_hardware_kpi": "4f98fff5d79c6cc355a52c8a360a01021209dbca3f5be0d138c06a84ba844bb5",
+        "fault_hardware": "60187ecb99c179ae7d234f02d99dbee18ca641f8793911265265b699d8287a14",
+        "current_kpi": "0fbcc19e330032936048fb350a3ccc863b537d49e4d6353c05134676328f69db",
+        "hardware_notes": "21611323ed4552e7718d06534efc4ce6e1205c4ac841f6217787632604c6986d",
+        "hardware_uart": "e3187f9a2ce38eaae9361a0a2e1723ef561f7716d9d51f67cc03909fff755550",
+        "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
-        "document": "30f2eb8b6713b9993879f16aa769296b413b6923563ddca8e65c3a030bc766f4",
+        "document": "35ca9e5e1bdc824b2820270c600df2c5dd0c2d815e5158dcfdf07dd252edbff0",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1846,7 +1860,14 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 return False
         return True
 
-    def snapshot_valid(snapshot: Any, *, candidates: int, audit_failures: int, records: int) -> bool:
+    def snapshot_valid(
+        snapshot: Any,
+        *,
+        candidates: int,
+        audit_failures: int,
+        inconclusive: int,
+        records: int,
+    ) -> bool:
         if not isinstance(snapshot, dict):
             return False
         positive = snapshot.get("positive_correlations", {})
@@ -1869,7 +1890,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 negative.get("false_accepts") == 0,
                 negative.get("wrong_reason_failures") == 0,
                 negative.get("artifact_audit_failures") == audit_failures,
-                negative.get("inconclusive_cases") == 0,
+                negative.get("inconclusive_cases") == inconclusive,
                 len(negative_records) == records,
                 evidence_records_valid(negative_records),
                 rates.get("state") == "no_negative_denominator",
@@ -1887,6 +1908,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         audit = load_json(paths["audit"])
         post_audit = load_json(paths["post_audit_kpi"])
         fault = load_json(paths["fault"])
+        pre_hardware = load_json(paths["pre_hardware_kpi"])
+        fault_hardware = load_json(paths["fault_hardware"])
         current = load_json(paths["current_kpi"])
         candidate = contract["first_candidate"]
         admission = contract["admission"]
@@ -1923,9 +1946,22 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 == "51380fa836e58373d1747904d46b28307ac65fa2",
                 candidate.get("historical_uf2_sha256_claim")
                 == "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
-                snapshot_valid(initial, candidates=0, audit_failures=0, records=0),
-                snapshot_valid(post_audit, candidates=1, audit_failures=1, records=1),
-                snapshot_valid(current, candidates=2, audit_failures=1, records=2),
+                snapshot_valid(
+                    initial, candidates=0, audit_failures=0, inconclusive=0, records=0
+                ),
+                snapshot_valid(
+                    post_audit, candidates=1, audit_failures=1, inconclusive=0, records=1
+                ),
+                snapshot_valid(
+                    pre_hardware,
+                    candidates=2,
+                    audit_failures=1,
+                    inconclusive=0,
+                    records=2,
+                ),
+                snapshot_valid(
+                    current, candidates=2, audit_failures=1, inconclusive=1, records=2
+                ),
                 audit.get("schema_version") == 1,
                 audit.get("record_id") == "next3-lcd-031-audit-20260810-01",
                 audit.get("status") == "artifact_audit_failed",
@@ -1977,6 +2013,30 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "correct_detection_delta": 0,
                     "false_accept_delta": 0,
                 },
+                fault_hardware.get("schema_version") == 1,
+                fault_hardware.get("record_id")
+                == "next3-lcd-cs-fault-v1-hardware-attempt-20260810-01",
+                fault_hardware.get("status") == "hardware_observed",
+                fault_hardware.get("classification") == "inconclusive",
+                fault_hardware.get("artifact_audit", {}).get("source_commit")
+                == "d7f0668db17e74dfa94d10458487e627a880c4bc",
+                fault_hardware.get("artifact_audit", {}).get("bin_sha256")
+                == "7ffc6335b3d65276f173954244c8eb481201c9805c6904f192b7b62ea87a5f0f",
+                fault_hardware.get("artifact_audit", {}).get("uf2_sha256")
+                == "74aa594d86666103f947b1905dafb25fd57cd6c49bf3397a9fb340d577c1d6c0",
+                fault_hardware.get("hardware_observation", {}).get("status") == "complete",
+                fault_hardware.get("hardware_observation", {}).get("result") == "fail",
+                len(fault_hardware.get("hardware_observation", {}).get("evidence", [])) == 6,
+                fault_hardware.get("emulator_observation", {}).get("status") == "pending",
+                fault_hardware.get("emulator_observation", {}).get("result") == "pending",
+                fault_hardware.get("reason_match", {}).get("status") == "mismatch",
+                fault_hardware.get("reason_match", {}).get("emulator_reason") is None,
+                fault_hardware.get("kpi_effect")
+                == {
+                    "negative_denominator_delta": 0,
+                    "correct_detection_delta": 0,
+                    "false_accept_delta": 0,
+                },
             )
         )
         add_check(
@@ -1989,8 +2049,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             rate_state=current.get("rates", {}).get("state"),
             candidates_audited=current.get("negative_conformance", {}).get("candidates_audited"),
             first_candidate_classification=audit.get("classification"),
-            explicit_fault_status=fault.get("status"),
-            explicit_fault_classification=fault.get("classification"),
+            explicit_fault_status=fault_hardware.get("status"),
+            explicit_fault_classification=fault_hardware.get("classification"),
+            inconclusive_cases=current.get("negative_conformance", {}).get("inconclusive_cases"),
+            emulator_first_run=fault_hardware.get("emulator_observation", {}).get("status"),
         )
     except (
         OSError,
