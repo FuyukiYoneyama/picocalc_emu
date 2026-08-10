@@ -663,9 +663,10 @@ raise SystemExit(code)
             "next3-lcd-cs-fault-v2-predesign-20260810",
         )
         self.assertEqual(
-            next3.get("v2_status"), "baseline_hardware_correlated_fault_ready"
+            next3.get("v2_status"), "fault_artifact_frozen_hardware_pending"
         )
-        self.assertEqual(next3.get("v2_next_step"), "fault_implementation")
+        self.assertEqual(next3.get("v2_next_step"), "fault_hardware_first_run")
+        self.assertIs(next3.get("v2_emulator_run_allowed"), False)
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -1807,6 +1807,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         / "records/next3-v2-a1-hardware-20260810-01/evidence/uf2loader-uart.log",
         "v2_hardware_photo": base
         / "records/next3-v2-a1-hardware-20260810-01/evidence/final.jpg",
+        "v2_fault": base / "records/next3-v2-b-20260810-01/record.json",
+        "v2_fault_notes": base / "records/next3-v2-b-20260810-01/notes.md",
+        "v2_fault_procedure": base / "records/next3-v2-b-20260810-01/PROCEDURE.md",
         "initial_kpi": base / "records/next3-0-20260810-01/kpi.json",
         "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
         "post_audit_kpi": base / "records/next3-1-20260810-01/kpi.json",
@@ -1823,6 +1826,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_photo": base
         / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/evidence/uf2loader-final.jpg",
         "fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v1.bundle",
+        "v2_fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v2-b.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
         "v2_document": root / "docs/NEXT3_V2_CANDIDATE_DESIGN.md",
     }
@@ -1830,12 +1834,15 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "case_schema": "3153f4a902f8a99b938a01bafadffd019f9a9180fe3d4c79eaf890f84359c0ef",
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
-        "v2_contract": "60752e4ac5d56d6598419cca04fdc0a2119084f86875459e4ee1624be5c905a5",
+        "v2_contract": "2dcae06cee52c5c866e6def3fb69371a7fcc06317cd481fcccc3deb1dd0c4bb3",
         "v2_baseline": "09593899724148dfa8bdf4b85f85c960f357c9c69c14f7d8aa1de1c62c13546a",
         "v2_hardware": "6512202c3add131141dcabfddf25b67d3973bf406c07e4b5bdff05717ab35bd5",
         "v2_hardware_notes": "73c91e56c71cb02f347126c704819f5c1d2e837a6814d2bbbcda876f0f88ccf0",
         "v2_hardware_uart": "c81af57000c634507944be2db0a38f652c778eb715b0da584d273c36f3db8500",
         "v2_hardware_photo": "33764382ac3b5273a348298501e6a322d6907fc5ff3c98da1e6cbe501091f67f",
+        "v2_fault": "8e68cfe5d93dc1c7beac93c662134373f136f6ecc860c251393a23ca756e9547",
+        "v2_fault_notes": "d609c10592d463c4db31fe873e1c7e530a64d5307a7bc46cf4821a65f72d1bc0",
+        "v2_fault_procedure": "64553f5d8866091c0a8a4d50b93c5b6fe44eec05c8496a46575390ca556c587a",
         "initial_kpi": "afdf414550b7715531e5db3cdd2f355687853969e96eb0090374e86e6018ebdc",
         "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
         "post_audit_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
@@ -1848,8 +1855,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_uart": "e3187f9a2ce38eaae9361a0a2e1723ef561f7716d9d51f67cc03909fff755550",
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
-        "document": "eccba49067532bb8e6cd7341c9cc2dc193bbd74ee711a1df64b4cdbfd3ebd2a2",
-        "v2_document": "78931b912653223fe7e3e12bbd4f2d0fde34f4fbab164f8fb2c2d6653b4c711d",
+        "v2_fault_bundle": "876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0",
+        "document": "f2fbde42f7e9cd0bda56736fc5b32c0232c4ceffaa0fe6d1bdd85189a2d0a0bc",
+        "v2_document": "c92a2961b6ca1ab34b48e8cffc4f1b66441425a71a3395bd6fb24ab0b089e83d",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1928,6 +1936,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         v2_contract = load_json(paths["v2_contract"])
         v2_baseline = load_json(paths["v2_baseline"])
         v2_hardware = load_json(paths["v2_hardware"])
+        v2_fault = load_json(paths["v2_fault"])
         initial = load_json(paths["initial_kpi"])
         audit = load_json(paths["audit"])
         post_audit = load_json(paths["post_audit_kpi"])
@@ -1946,6 +1955,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         v2_experiment = v2_contract["controlled_experiment"]
         v2_oracle = v2_contract["fault_oracle"]
         v2_progress = v2_contract["baseline_progress"]
+        v2_fault_progress = v2_contract["fault_progress"]
         aligned = all(
             (
                 all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
@@ -1981,7 +1991,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 == "next3-lcd-cs-fault-v2-predesign-20260810",
                 v2_contract.get("parent_contract_id")
                 == "next3-negative-conformance-v1-20260810",
-                v2_contract.get("status") == "baseline_hardware_correlated_fault_ready",
+                v2_contract.get("status") == "fault_artifact_frozen_hardware_pending",
                 v2_progress.get("implementation_commit")
                 == "168a65d9f8206d2767641c589f21f359c1ce7b1b",
                 v2_progress.get("bin_sha256")
@@ -1998,6 +2008,26 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 v2_progress.get("hardware_record")
                 == "firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json",
                 v2_progress.get("fault_implementation_allowed") is True,
+                v2_fault_progress.get("implementation_commit")
+                == "3a073fbf206b02993dd80a0a7158c1e3c865efff",
+                v2_fault_progress.get("bin_sha256")
+                == "f9f5a347c36b38fbcb93967cd6a6bcd7caafb8d19805d235e0bfc7a27c5a18a4",
+                v2_fault_progress.get("uf2_sha256")
+                == "8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f",
+                v2_fault_progress.get("source_bundle")
+                == "provenance/picocalc-next3-lcd-fault-v2-b.bundle",
+                v2_fault_progress.get("source_bundle_sha256")
+                == expected_hashes["v2_fault_bundle"],
+                v2_fault_progress.get("clean_clone_reproducible") is True,
+                v2_fault_progress.get("change_budget_audit") == "pass",
+                v2_fault_progress.get("hardware_result") == "pending",
+                v2_fault_progress.get("emulator_result") == "not_run_by_contract",
+                v2_fault_progress.get("emulator_backend_commit_reserved_for_first_run")
+                == "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+                v2_fault_progress.get("emulator_run_allowed") is False,
+                v2_fault_progress.get("record")
+                == "firmware-validation/records/next3-v2-b-20260810-01/record.json",
+                v2_fault_progress.get("next_action") == "fault_hardware_first_run",
                 v2_evidence.get("historical_failure", {}).get("source_commit")
                 == "5b12a7cbff45a928c440a70a4e3a77750c1daa13",
                 v2_evidence.get("historical_failure", {}).get("display_source_sha256")
@@ -2098,6 +2128,64 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                     "decoded_rgb_sha256"
                 )
                 == "6d015ee50b880a604556c5abfdbfba17e9b69ba45b10208dc02a1a48a266e3a1",
+                v2_fault.get("schema_version") == 1,
+                v2_fault.get("record_id") == "next3-v2-b-20260810-01",
+                v2_fault.get("contract_id")
+                == "next3-lcd-cs-fault-v2-predesign-20260810",
+                v2_fault.get("stage") == "fault_artifact_frozen_hardware_pending",
+                v2_fault.get("classification") == "pending_hardware_oracle",
+                v2_fault.get("baseline", {}).get("hardware_record_sha256")
+                == expected_hashes["v2_hardware"],
+                v2_fault.get("fault_source", {}).get("commit")
+                == v2_fault_progress.get("implementation_commit"),
+                v2_fault.get("fault_source", {}).get("changed_paths_from_a1")
+                == [
+                    "CMakeLists.txt",
+                    "app/main.cpp",
+                    "bsp/vendor/lcd_hwspi_rgb888.cpp",
+                ],
+                v2_fault.get("fault_source", {}).get("change_budget_audit", {}).get(
+                    "result"
+                )
+                == "pass",
+                v2_fault.get("fault_source", {}).get("change_budget_audit", {}).get(
+                    "readback_observer_changed"
+                )
+                is False,
+                v2_fault.get("fault_injection", {}).get("observer_frozen_from_a1")
+                is True,
+                v2_fault.get("artifact", {}).get("bin_sha256")
+                == v2_fault_progress.get("bin_sha256"),
+                v2_fault.get("artifact", {}).get("uf2_sha256")
+                == v2_fault_progress.get("uf2_sha256"),
+                v2_fault.get("artifact", {}).get("clean_clone_reproducible") is True,
+                v2_fault.get("artifact", {}).get("source_bundle_sha256")
+                == expected_hashes["v2_fault_bundle"],
+                v2_fault.get("frozen_hardware_oracle", {}).get(
+                    "pattern_observed_rgb565"
+                )
+                == ["f800", "f800", "f800", "f800"],
+                v2_fault.get("frozen_hardware_oracle", {}).get("pattern_mismatches")
+                == 3,
+                v2_fault.get("frozen_hardware_oracle", {}).get("app_status") == "fail",
+                v2_fault.get("frozen_hardware_oracle", {}).get("sd_status") == "pass",
+                v2_fault.get("frozen_hardware_oracle", {}).get(
+                    "post_hoc_change_allowed"
+                )
+                is False,
+                v2_fault.get("hardware", {}).get("path") == "uf2loader",
+                v2_fault.get("hardware", {}).get("bootsel_required") is False,
+                v2_fault.get("hardware", {}).get("result") == "pending",
+                v2_fault.get("emulator", {}).get("result") == "not_run_by_contract",
+                v2_fault.get("emulator", {}).get("backend_commit_reserved_for_first_run")
+                == "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+                v2_fault.get("emulator", {}).get("run_allowed") is False,
+                v2_fault.get("negative_kpi_effect", {}).get(
+                    "hardware_confirmed_negative_cases_delta"
+                )
+                == 0,
+                v2_fault.get("procedure") == "PROCEDURE.md",
+                v2_fault.get("next_action").startswith("run the exact UF2 through uf2loader"),
                 snapshot_valid(
                     initial, candidates=0, audit_failures=0, inconclusive=0, records=0
                 ),
@@ -2215,7 +2303,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             emulator_first_run=fault_hardware.get("emulator_observation", {}).get("status"),
             v2_contract_id=v2_contract.get("contract_id"),
             v2_status=v2_contract.get("status"),
-            v2_next_step="fault_implementation",
+            v2_next_step="fault_hardware_first_run",
+            v2_emulator_run_allowed=v2_fault.get("emulator", {}).get("run_allowed"),
         )
     except (
         OSError,

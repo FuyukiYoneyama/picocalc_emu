@@ -1,8 +1,9 @@
 # NEXT-3 LCD fault v2 candidate design
 
-**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASS・同一UF2のuf2loader実機PASSまで
-完了した。positive control gateは閉じ、次はwriter CS境界とidentityだけを変更するfault Bを固定する。
-fault Bは実機oracle確認前にエミュレーターで実行しない。
+**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASS・同一UF2のuf2loader実機PASSを
+完了した。Fault BはA1から許可された3 pathだけを変更して実装し、clean cloneで一致するBIN、UF2、
+source bundleと実機oracleを固定済みである。次は同一UF2をuf2loaderで実機先行実行する。
+実機が凍結oracleへ完全一致するまではFault Bをエミュレーターで実行しない。
 
 機械可読な正典は
 `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`である。本書は判断根拠と人が読む
@@ -87,6 +88,24 @@ sample数、期待色、backendを変更してはならない。
 
 最終状態は`app_status=fail`、`sd=pass`である。結果を見た後にoracleを合わせてはいけない。
 
+Fault Bのcanonical sourceはcommit
+`3a073fbf206b02993dd80a0a7158c1e3c865efff`である。A1とのnet tree diffは次の3 pathだけで、
+observer、座標、期待色、sample数、色変換は不変である。
+
+- `CMakeLists.txt`: application identityのみ
+- `app/main.cpp`: evidence markerのみ
+- `bsp/vendor/lcd_hwspi_rgb888.cpp`: `begin_window()`のwrite-side CS framingのみ
+
+同じA1 timestampでcanonical treeと別clean cloneをbuildし、両方で次のartifactが一致した。
+
+- BIN SHA-256: `f9f5a347c36b38fbcb93967cd6a6bcd7caafb8d19805d235e0bfc7a27c5a18a4`
+- UF2 SHA-256: `8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f`
+- source bundle SHA-256: `876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0`
+
+機械可読recordは`firmware-validation/records/next3-v2-b-20260810-01/record.json`、人間の実機手順は
+同directoryの`PROCEDURE.md`である。recordはhardwareを`pending`、emulatorを
+`not_run_by_contract`かつ`run_allowed=false`として固定している。
+
 ### A2: fixed
 
 BからwriterだけをA1へ戻す。observerは同じままとし、emulatorと実機の完全PASSを再確認する。
@@ -105,8 +124,8 @@ promoted backend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`のST7365P modelは�
 
 1. A1を実装し、source/toolchain/timestampを固定してclean cloneからBIN/UF2を再現する。
 2. A1 BINをemulator、同一build UF2を実機で実行し、両方の完全PASSを固定する。
-3. A1から許可された差分だけでBを作り、BIN/UF2/source bundleとoracleを凍結する。
-4. 一般利用経路のuf2loaderでBを実機実行する。
+3. A1から許可された差分だけでBを作り、BIN/UF2/source bundleとoracleを凍結する。**完了**
+4. 一般利用経路のuf2loaderでBを実機実行する。**次の作業**
 5. 実機結果がoracleへ完全一致した場合だけ、同一BINを凍結backendで初回実行する。
 6. hardwareとemulatorの理由を比較し、`correct_negative_detection`、`false_accept`、
    `wrong_reason_failure`のいずれかへ分類する。

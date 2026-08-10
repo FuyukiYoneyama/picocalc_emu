@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-v2-b-20260810-01",
+  "contract_id": "next3-lcd-cs-fault-v2-predesign-20260810",
+  "stage": "fault_artifact_frozen_hardware_pending",
+  "classification": "pending_hardware_oracle",
+  "baseline": {
+    "source_commit": "168a65d9f8206d2767641c589f21f359c1ce7b1b",
+    "hardware_record": "firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json",
+    "hardware_record_sha256": "6512202c3add131141dcabfddf25b67d3973bf406c07e4b5bdff05717ab35bd5",
+    "result": "emulator_pass_hardware_pass"
+  },
+  "fault_source": {
+    "repository": "picocalc-next3-lcd-fault",
+    "commit": "3a073fbf206b02993dd80a0a7158c1e3c865efff",
+    "app_identity": "next3-lcd-cs-fault-v2-b-bitbang-rgb888",
+    "embedded_app_commit": "3a073fbf206b",
+    "embedded_bsp_commit": "6bd826e7dcaf-dirty",
+    "changed_paths_from_a1": [
+      "CMakeLists.txt",
+      "app/main.cpp",
+      "bsp/vendor/lcd_hwspi_rgb888.cpp"
+    ],
+    "change_budget_audit": {
+      "result": "pass",
+      "identity_and_marker_only": ["CMakeLists.txt", "app/main.cpp"],
+      "writer_only": "bsp/vendor/lcd_hwspi_rgb888.cpp::begin_window",
+      "readback_observer_changed": false,
+      "test_oracle_changed": false,
+      "coordinates_or_expected_colours_changed": false
+    },
+    "source_sha256": {
+      "CMakeLists.txt": "35de03c50167fc4e4354a7b778ccea9505c180aa9e86eb24596ae0dc540eaccb",
+      "app/main.cpp": "ce75a52ad2b4f9d37cf082f7ad1247857070ae7fb0eb3cfc26aded94e23077b3",
+      "bsp/vendor/lcd_hwspi_rgb888.cpp": "b33ef42a552677e18cada6e8f8bd062155b1d9ba2a4c3481e912ce1ab84b2a2f",
+      "bsp/src/display.cpp": "7a7ae67d3ea02dcef64f5b7ab32845e6422fcde5a0cac0f34bb858ab5b1f5345"
+    }
+  },
+  "fault_injection": {
+    "independent_variable": "write-side CS framing",
+    "writer": "CASET command/data, RASET command/data, RAMWR command, and pixel payload use separate CS-low intervals",
+    "observer": "historical 5b12a7c SIO bitbang RAMRD at approximately 500 kHz, falling-edge sample, one-microsecond delay, one dummy byte",
+    "observer_frozen_from_a1": true
+  },
+  "build_environment": {
+    "pico_sdk_version": "2.2.0",
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "arm_none_eabi_gcc": "13.2.1 20231009",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "generator": "Ninja",
+    "build_timestamp": "2026-08-10T06:00:00Z",
+    "lcd_variant": "hwspi-rgb888"
+  },
+  "artifact": {
+    "bin_sha256": "f9f5a347c36b38fbcb93967cd6a6bcd7caafb8d19805d235e0bfc7a27c5a18a4",
+    "uf2_sha256": "8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f",
+    "clean_clone_reproducible": true,
+    "same_build_timestamp_as_a1": true,
+    "source_bundle": "provenance/picocalc-next3-lcd-fault-v2-b.bundle",
+    "source_bundle_sha256": "876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0"
+  },
+  "frozen_hardware_oracle": {
+    "solid_fills": {
+      "black": {"raw_rgb888": "000000", "rgb565": "0000", "mismatches": 0},
+      "white": {"raw_rgb888": "fcfcfc", "rgb565": "ffff", "mismatches": 0},
+      "red": {"raw_rgb888": "fc0000", "rgb565": "f800", "mismatches": 0},
+      "green": {"raw_rgb888": "00fc00", "rgb565": "07e0", "mismatches": 0},
+      "blue": {"raw_rgb888": "0000fc", "rgb565": "001f", "mismatches": 0}
+    },
+    "pattern_expected_rgb565": ["f800", "07e0", "001f", "ffff"],
+    "pattern_observed_raw_rgb888": ["fc0000", "fc0000", "fc0000", "fc0000"],
+    "pattern_observed_rgb565": ["f800", "f800", "f800", "f800"],
+    "pattern_mismatches": 3,
+    "app_status": "fail",
+    "sd_status": "pass",
+    "required_marker_prefix": "[NEXT3][LCD_CS_V2_B][EVIDENCE]",
+    "post_hoc_change_allowed": false
+  },
+  "hardware": {
+    "path": "uf2loader",
+    "bootsel_required": false,
+    "result": "pending"
+  },
+  "emulator": {
+    "result": "not_run_by_contract",
+    "backend_commit_reserved_for_first_run": "4a90864816ef58286f2b292df0e7fe44fbcd4809",
+    "run_allowed": false,
+    "unlock_condition": "hardware result matches every frozen oracle field exactly"
+  },
+  "negative_kpi_effect": {
+    "hardware_confirmed_negative_cases_delta": 0,
+    "reason": "Fault B artifact is frozen but hardware result is pending"
+  },
+  "procedure": "PROCEDURE.md",
+  "next_action": "run the exact UF2 through uf2loader once, preserve complete UART and one final photograph, and stop without emulator execution if any oracle field differs"
+}

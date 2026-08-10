@@ -6,8 +6,10 @@ NEXT3-2の明示的fault版buildとuf2loader経由の実機試験まで完了し
 エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。原因分析では、
 v1が旧write-side CS defectを再現する一方、旧症状を測ったSIO bitbang RAMRD observerではなく6 MHz
 hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計と
-A1 baseline実装、clean clone再現、エミュレーターPASS、同一UF2のuf2loader実機PASSまで完了した。
-positive control gateを満たし、次はfault Bの実装・artifact固定である。v2 fault実測前にobserver差を
+A1 baseline実装、clean clone再現、エミュレーターPASS、同一UF2のuf2loader実機PASSを完了した。
+positive control gate後、fault Bを許可されたwriter CS境界とidentityだけの差分として実装し、
+clean cloneで一致するBIN/UF2/source bundleとoracleを固定した。次はfault Bをuf2loaderで実機先行実行する。
+実機が凍結oracleへ完全一致するまでエミュレーター実行は禁止する。v2 fault実測前にobserver差を
 唯一の原因とは断定しない。
 
 ## 目的
@@ -32,6 +34,8 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2原因分析・設計: `docs/NEXT3_V2_CANDIDATE_DESIGN.md`
 - v2 A1 baseline: `firmware-validation/records/next3-v2-a1-20260810-01/record.json`
 - v2 A1実機相関: `firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json`
+- v2 Fault B artifact: `firmware-validation/records/next3-v2-b-20260810-01/record.json`
+- v2 Fault B source bundle: `provenance/picocalc-next3-lcd-fault-v2-b.bundle`
 
 ## 分類
 
@@ -199,7 +203,26 @@ decoded RGB SHA一致を確認した。
 
 UART自体はuf2loader経路やUF2 SHAを出力しない。したがって経路はoperator procedure、artifact連続性は
 事前UF2 hash、clean clone再現、embedded source/build identity、実行証拠の組合せによる。この限界を
-in-band暗号証明とは表現しない。A1 positive control gateは完了し、次はB実装・artifact固定へ進む。
+in-band暗号証明とは表現しない。A1 positive control gateは完了した。
+
+## NEXT3-5: v2 Fault B artifact freeze
+
+A1 canonical treeからidentity、evidence marker、`begin_window()`のwrite-side CS framingだけを変更した。
+canonical Fault B commitは`3a073fbf206b02993dd80a0a7158c1e3c865efff`であり、A1からのnet tree diffは
+`CMakeLists.txt`、`app/main.cpp`、`bsp/vendor/lcd_hwspi_rgb888.cpp`の3 pathだけである。
+SIO bitbang observer、test coordinates、expected colours、sample count、colour conversion、backendは
+変更していない。
+
+同じbuild timestamp `2026-08-10T06:00:00Z`でcanonical treeと別clean cloneをbuildし、次を固定した。
+
+- BIN SHA-256: `f9f5a347c36b38fbcb93967cd6a6bcd7caafb8d19805d235e0bfc7a27c5a18a4`
+- UF2 SHA-256: `8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f`
+- source bundle SHA-256: `876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0`
+
+Fault Bはまだエミュレーターで実行していない。一般利用経路のuf2loaderで実機を先行し、solid 5色PASS、
+pattern `red/red/red/red`・3 mismatch、`app=fail`、`sd=pass`の全fieldが一致した場合だけ、backend
+`4a90864816ef58286f2b292df0e7fe44fbcd4809`で同一BINの初回runを解禁する。1 fieldでも違えば
+`inconclusive`として保存し、oracleは変更せず、エミュレーターを実行しない。
 
 ## CI運用
 

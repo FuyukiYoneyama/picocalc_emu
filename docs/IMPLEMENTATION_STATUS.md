@@ -537,7 +537,14 @@ clean backend `4a90864`でA1はsolid 5色、4色pattern、SDをすべてPASSし�
 unsupported MMIO 0だった。既存PIO/RGB565 variant Bも同じbackendでPASSした。backendのpromoted roleは
 まだ変更していない。同一UF2のuf2loader実機試験もboot identity、solid 5色、pattern mismatch 0、
 PSRAM、SD、14回の最終marker、写真がすべて一致した。A1 positive control gateを完了し、positive相関は
-6系列となった。次はobserverを変えずwrite-side CS framingとidentityだけを変更するfault Bを固定する。
+6系列となった。
+
+NEXT3-5ではFault Bをcanonical commit `3a073fb`として実装した。A1からのnet tree diffはidentity、
+evidence marker、`begin_window()`のwrite-side CS framingに対応する3 pathだけで、historical SIO bitbang
+observerとoracle入力は不変である。canonical treeと別clean cloneでBIN
+`f9f5a347...a18a4`、UF2 `8f45245d...291f`が一致し、完全source bundle `876a1889...de0`を固定した。
+Fault Bは実機先行契約によりエミュレーター未実行である。次はuf2loaderから同一UF2を1回実行し、凍結した
+solid 5色PASS／pattern red×4・3 mismatch／app FAIL／SD PASSと完全一致した場合だけbackend初回runへ進む。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
