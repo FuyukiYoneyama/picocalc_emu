@@ -169,8 +169,9 @@ massは0.5468%だった。OPT3-Bではscheduler quantumを変えない短いXIP 
 OPT3-Cでは既存`DecodedOp`の12 bytesを維持したflags bits 1..6のcompact dispatch keyを試作した。
 successor copy、staging、clearなしで、85/85、cycle、UART、framebuffer、PSRAM、behavior/event全9 domainを
 一致させたが、trace/proof OFF中央値は26.72秒から25.61秒、4.1541916168%改善に留まり5%条件未達で
-revertした。10-run promotion測定は行っていない。性能最適化は一旦区切り、NEXT-1 blind appを
-完了した。次優先はmulticore/audio、negative conformance、headless interfaceである。詳細は
+revertした。10-run promotion測定は行っていない。性能最適化は一旦区切り、NEXT-1 blind app、
+NEXT-2 multicore/audio、NEXT-3 negative conformanceを順に完了し、NEXT-4 headless interfaceも
+2026-08-10に実装した。詳細は
 [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)と
 [`opt3-c-compact-dispatch-key-20260809-01/`](../firmware-validation/records/opt3-c-compact-dispatch-key-20260809-01/)にある。
 [`OPT3_A_XIP_CURSOR_PROFILE.md`](OPT3_A_XIP_CURSOR_PROFILE.md)、
@@ -591,6 +592,29 @@ R7なし、CMD8段階のinit/app FAILとなって実機理由と一致し、`cor
 post-fix snapshotは現backendの検出1/1・false accept 0/1を示す。A2は実機PASS済みA1と同一artifactなので
 追加実機run不要。backend workspace全test、board Clippy/format、portable 101 tests、target-schema 34 checksを
 ローカルで検証し、CIは使用していない。
+
+### NEXT-4 安定headless machine API（2026-08-10）
+
+backendの単発`picocalc-run`内部に閉じていたemulator、仮想clock、UART累積、board handle、停止判定を
+共有`MachineSession`へ集約した。既存scenario runnerはこのsessionのpoll／advanceを使い、同じsessionへ
+`--machine-api`のJSON Lines adapterを接続した。schema 1の操作は`run`、`step`、`run_until`、`input`、
+`observe`、`subscribe`、`snapshot`の7つである。artifactとdevice構成はprocess起動時に固定し、
+unbounded run、未知field、未接続device、FIFO drop、snapshot path escapeを黙って成功にしない。
+subscriptionはwall-clock threadを使わず、state-changing response末尾へsequence付き差分を返すpull型である。
+
+契約は[`NEXT4_HEADLESS_MACHINE_API.md`](NEXT4_HEADLESS_MACHINE_API.md)へ固定した。protocol parser／dispatcher／
+既存scenarioを含むall-feature testは62件、Clippy `-D warnings`、format、diff checkがローカルで合格した。
+`uart_hello.bin`を使った`step`／`input`／`run_until`／`observe`／`subscribe`／`snapshot` transcriptは3回とも
+SHA-256 `e4755d92720df7d1067bffc9e3140fa65b74a286c6d8d37739af4d942a89e1fb`でbyte一致した。stdoutは6 JSON response
+だけで、boot診断はstderrへ分離され、PNGも320×320として生成された。
+
+既存batch互換は登録済みPicoTetris source `fed84f3...c48`をclean local cloneから再構築し、BIN
+`0784d80d...e62`／UF2 `44ec6227...274`を確認したうえで、変更前HEADと候補を同一85-step scenarioで比較した。
+両方ともscenario 85/85、UART `bff1f245...66c`、framebuffer `f63b598f...4a2`、現行mainの
+927,528,659 cycle／3,715,000 usで一致し、backend provenanceだけを正規化したreport JSONはbyte一致した。
+session抽出直後の長時間A/B単発は変更前146.22秒、初回候補150.65秒で約3.0%差だった。これは一組だけで
+性能退行とは確定せず、その後hot loopの重複停止判定を除去した。NEXT-4は性能promotionとして扱わず、
+正式性能値も更新しない。GitHub Actions、workflow変更、pushは行っていない。
 
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
