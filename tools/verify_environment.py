@@ -1797,6 +1797,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "case_schema": base / "negative-conformance-case.schema.json",
         "kpi_schema": base / "negative-conformance-kpi.schema.json",
         "contract": base / "contracts/next3-negative-conformance-v1.json",
+        "v2_contract": base / "contracts/next3-lcd-cs-fault-v2.json",
         "initial_kpi": base / "records/next3-0-20260810-01/kpi.json",
         "audit": base / "records/next3-lcd-031-audit-20260810-01/record.json",
         "post_audit_kpi": base / "records/next3-1-20260810-01/kpi.json",
@@ -1813,11 +1814,13 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         / "records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/evidence/uf2loader-final.jpg",
         "fault_bundle": root / "provenance/picocalc-next3-lcd-fault-v1.bundle",
         "document": root / "docs/NEXT3_NEGATIVE_CONFORMANCE.md",
+        "v2_document": root / "docs/NEXT3_V2_CANDIDATE_DESIGN.md",
     }
     expected_hashes = {
         "case_schema": "3153f4a902f8a99b938a01bafadffd019f9a9180fe3d4c79eaf890f84359c0ef",
         "kpi_schema": "bef7639eba4a60af8d2ceed9176655b31b6f26763f3d8777a344e00f873a82a5",
         "contract": "c2cc54339efcc5a3eb888a216d76ac0c067f53bd98397e0fad098afb6e77eb80",
+        "v2_contract": "882731b6c1a775d588b123108e3edd408972395af0ff9e8bef8954b9a38bf922",
         "initial_kpi": "afdf414550b7715531e5db3cdd2f355687853969e96eb0090374e86e6018ebdc",
         "audit": "a02130b8c0b6326b45218a26712d6f02ac0af9977ec462c076643caed90ead4c",
         "post_audit_kpi": "2c421fb178650955207b59975f39facba0aea0a58f5ba4d4f1d2bb1b7e752843",
@@ -1829,7 +1832,8 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         "hardware_uart": "e3187f9a2ce38eaae9361a0a2e1723ef561f7716d9d51f67cc03909fff755550",
         "hardware_photo": "84ba4e05ff16b8a5fa20a35a18f43bc5dfa6bd62cdd2e0533638a9cf58324f20",
         "fault_bundle": "8824baed4577441da7d58b3a52502c8a7392e029e2bfb53cbfddd4912b7b4ad6",
-        "document": "35ca9e5e1bdc824b2820270c600df2c5dd0c2d815e5158dcfdf07dd252edbff0",
+        "document": "7be8a19688047218d2cd175415c8a1ebfd047c0a764f1f7797276a4fe42727a0",
+        "v2_document": "25bed547a610b173ec7b4236160b8d20ba366ff225492b02ea96ded55ed3c08d",
     }
 
     def evidence_records_valid(items: Any) -> bool:
@@ -1904,6 +1908,7 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         case_schema = load_json(paths["case_schema"])
         kpi_schema = load_json(paths["kpi_schema"])
         contract = load_json(paths["contract"])
+        v2_contract = load_json(paths["v2_contract"])
         initial = load_json(paths["initial_kpi"])
         audit = load_json(paths["audit"])
         post_audit = load_json(paths["post_audit_kpi"])
@@ -1916,6 +1921,10 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
         kpi_policy = contract["kpi_policy"]
         artifact = audit["artifact_audit"]
         fault_artifact = fault["artifact_audit"]
+        v2_evidence = v2_contract["confirmed_evidence"]
+        v2_cause = v2_contract["cause_analysis"]
+        v2_experiment = v2_contract["controlled_experiment"]
+        v2_oracle = v2_contract["fault_oracle"]
         aligned = all(
             (
                 all(path.is_file() and sha256(path) == expected_hashes[key] for key, path in paths.items()),
@@ -1946,6 +1955,49 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
                 == "51380fa836e58373d1747904d46b28307ac65fa2",
                 candidate.get("historical_uf2_sha256_claim")
                 == "ae182a6947e46ee9f927e5dfc1b539a448b45f846cd5935eb69c9782dd802c4f",
+                v2_contract.get("schema_version") == 1,
+                v2_contract.get("contract_id")
+                == "next3-lcd-cs-fault-v2-predesign-20260810",
+                v2_contract.get("parent_contract_id")
+                == "next3-negative-conformance-v1-20260810",
+                v2_contract.get("status") == "frozen_before_v2_implementation",
+                v2_evidence.get("historical_failure", {}).get("source_commit")
+                == "5b12a7cbff45a928c440a70a4e3a77750c1daa13",
+                v2_evidence.get("historical_failure", {}).get("display_source_sha256")
+                == "8f297c88c9ccfda7fc5f1b7344fdd6b3049e8cc1dd69c48b2c35c5b39bc80f38",
+                v2_evidence.get("v1_inconclusive_attempt", {}).get(
+                    "write_framing_matches_historical_defect"
+                )
+                is True,
+                v2_evidence.get("v1_inconclusive_attempt", {}).get(
+                    "observer_matches_historical_failure"
+                )
+                is False,
+                v2_cause.get("confirmed_major_confounder")
+                == "v1 reproduced the historical write-side CS boundaries but retained a different RAMRD observer, so it was not the complete measurement setup that produced the frozen historical oracle",
+                "cannot be declared the sole cause" in v2_cause.get("causal_status", ""),
+                v2_experiment.get("independent_variable")
+                == "write-side CS framing for CASET, RASET, RAMWR, and pixel payload",
+                v2_experiment.get("baseline", {}).get("readback_observer")
+                == v2_experiment.get("fault", {}).get("readback_observer")
+                == v2_experiment.get("fixed", {}).get("readback_observer")
+                == "historical SIO bitbang RAMRD",
+                v2_oracle.get("frozen_before_v2_implementation") is True,
+                len(v2_oracle.get("solid_fills", [])) == 5,
+                all(
+                    solid.get("mismatches") == 0
+                    for solid in v2_oracle.get("solid_fills", [])
+                ),
+                v2_oracle.get("pattern", {}).get("observed_rgb565")
+                == ["f800", "f800", "f800", "f800"],
+                v2_oracle.get("pattern", {}).get("mismatches") == 3,
+                v2_oracle.get("post_hoc_oracle_change_allowed") is False,
+                v2_contract.get("hardware_path", {}).get("primary") == "uf2loader",
+                v2_contract.get("hardware_path", {}).get("bootsel_required") is False,
+                v2_contract.get("ci_policy", {}).get(
+                    "local_validation_only_during_development"
+                )
+                is True,
                 snapshot_valid(
                     initial, candidates=0, audit_failures=0, inconclusive=0, records=0
                 ),
@@ -2053,6 +2105,9 @@ def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
             explicit_fault_classification=fault_hardware.get("classification"),
             inconclusive_cases=current.get("negative_conformance", {}).get("inconclusive_cases"),
             emulator_first_run=fault_hardware.get("emulator_observation", {}).get("status"),
+            v2_contract_id=v2_contract.get("contract_id"),
+            v2_status=v2_contract.get("status"),
+            v2_next_step="baseline_implementation",
         )
     except (
         OSError,

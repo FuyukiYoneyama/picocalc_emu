@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "contract_id": "next3-lcd-cs-fault-v2-predesign-20260810",
+  "parent_contract_id": "next3-negative-conformance-v1-20260810",
+  "roadmap_package": "NEXT-3",
+  "candidate_id": "lcd-cs-hold-v2-controlled-bitbang-observer",
+  "status": "frozen_before_v2_implementation",
+  "purpose": "reproduce the historical LCD CS-hold failure while changing only write-side CS framing and holding the readback observer constant",
+  "confirmed_evidence": {
+    "historical_failure": {
+      "source_commit": "5b12a7cbff45a928c440a70a4e3a77750c1daa13",
+      "display_source_sha256": "8f297c88c9ccfda7fc5f1b7344fdd6b3049e8cc1dd69c48b2c35c5b39bc80f38",
+      "uart_log_sha256": "4f0d4de4a58b5e78c80683e28a1406cad1feacef89947d13f906440f8a01d1fb",
+      "write_framing": "CASET command, CASET data, RASET command, RASET data, RAMWR command, and pixel payload use separate CS-low intervals",
+      "readback_observer": "SIO bitbang at approximately 500 kHz with one-microsecond delays and MISO sampling after each falling edge",
+      "observed_result": "five solid fills pass; the four-colour pattern reads red/red/red/red with three mismatches"
+    },
+    "v1_inconclusive_attempt": {
+      "source_commit": "d7f0668db17e74dfa94d10458487e627a880c4bc",
+      "display_source_sha256": "772a81f2ba098eca00ede3caf759044f348dacd2776fc20a39e052917c67f5a7",
+      "write_framing_matches_historical_defect": true,
+      "readback_observer": "hardware SPI at 6 MHz",
+      "observer_matches_historical_failure": false,
+      "observed_result": "black and white solid fills pass; red, green, and blue solid fills fail; the pattern returns 0x7c00 for all samples with four mismatches",
+      "classification": "inconclusive"
+    },
+    "current_correct_driver": {
+      "display_source_sha256": "db629942728d672569015fdaa984bb92cd77197beee6d48c80219242482501b6",
+      "write_framing": "CASET, RASET, RAMWR, and all pixel payload remain in one CS-low interval",
+      "readback_observer": "hardware SPI at 6 MHz"
+    },
+    "promoted_backend": {
+      "commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+      "st7365p_source_sha256": "ccedd07509f28cd0dbedba206aecf75b601257757a67e82e3b7f7081d7c2578a",
+      "known_model_property": "LCD command state survives CS rising and is covered by command_state_survives_cs_pulsing_between_bytes"
+    }
+  },
+  "cause_analysis": {
+    "confirmed_major_confounder": "v1 reproduced the historical write-side CS boundaries but retained a different RAMRD observer, so it was not the complete measurement setup that produced the frozen historical oracle",
+    "causal_status": "the observer difference is confirmed, but it cannot be declared the sole cause of the oracle mismatch until the controlled v2 experiment is measured",
+    "unconfirmed_inference": "the v1 raw values are exactly the values produced by a one-bit right rotation of the RGB666 18-bit stream; this is consistent with a read sampling or phase difference, but the electrical mechanism has not been measured and must not be treated as confirmed",
+    "backend_risk_hypothesis": "because the promoted LCD model preserves command state across CS pulses, it may accept the historical faulty write framing; this is a prediction, not an emulator result"
+  },
+  "controlled_experiment": {
+    "independent_variable": "write-side CS framing for CASET, RASET, RAMWR, and pixel payload",
+    "controlled_observer": "the exact historical SIO bitbang RAMRD procedure in both baseline and fault builds",
+    "baseline": {
+      "write_framing": "current correct single CS-low interval",
+      "readback_observer": "historical SIO bitbang RAMRD",
+      "required_result": "all five solid fills and the four-colour pattern pass on emulator and hardware"
+    },
+    "fault": {
+      "write_framing": "historical CS-separated intervals",
+      "readback_observer": "historical SIO bitbang RAMRD",
+      "change_budget": [
+        "firmware identity and evidence marker",
+        "write-side CS framing only"
+      ],
+      "forbidden_changes": [
+        "readback transport, clock, edge, delay, dummy-byte count, or colour conversion",
+        "test coordinates, expected colours, sample count, or mismatch calculation",
+        "backend source or LCD model before the first fault run"
+      ]
+    },
+    "fixed": {
+      "write_framing": "restore the v2 baseline writer",
+      "readback_observer": "historical SIO bitbang RAMRD",
+      "required_result": "all five solid fills and the four-colour pattern pass on emulator and hardware"
+    }
+  },
+  "rejected_alternative": {
+    "proposal": "repeat the first source pixel in write_pixels_rgb565 so the four-colour pattern becomes red/red/red/red while solid fills remain unchanged",
+    "reason": "this would create the old visible oracle by changing pixel progression, not reproduce the historical CS-hold defect or test the backend CS model; it is a different negative-conformance candidate"
+  },
+  "fault_oracle": {
+    "frozen_before_v2_implementation": true,
+    "solid_fills": [
+      {"name": "black", "raw_rgb888": "000000", "rgb565": "0000", "mismatches": 0},
+      {"name": "white", "raw_rgb888": "fcfcfc", "rgb565": "ffff", "mismatches": 0},
+      {"name": "red", "raw_rgb888": "fc0000", "rgb565": "f800", "mismatches": 0},
+      {"name": "green", "raw_rgb888": "00fc00", "rgb565": "07e0", "mismatches": 0},
+      {"name": "blue", "raw_rgb888": "0000fc", "rgb565": "001f", "mismatches": 0}
+    ],
+    "pattern": {
+      "expected_rgb565": ["f800", "07e0", "001f", "ffff"],
+      "observed_raw_rgb888": ["fc0000", "fc0000", "fc0000", "fc0000"],
+      "observed_rgb565": ["f800", "f800", "f800", "f800"],
+      "mismatches": 3
+    },
+    "application_status": "fail",
+    "sd_status": "pass",
+    "excluded_failure_causes": [
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "missing or incomplete UART capture",
+      "artifact identity mismatch",
+      "baseline observer failure"
+    ],
+    "post_hoc_oracle_change_allowed": false
+  },
+  "execution_order": [
+    "implement and freeze the v2 baseline with the correct writer and historical observer",
+    "prove clean-clone reproducibility of the baseline BIN and UF2",
+    "run the baseline BIN in the emulator and the same-build UF2 through uf2loader on hardware; both must pass",
+    "derive the v2 fault commit by changing only write-side CS framing and freeze source, toolchain, BIN, UF2, bundle, and oracle evidence",
+    "run the fault UF2 through uf2loader on hardware",
+    "only if hardware matches the frozen fault oracle exactly, run the same-build fault BIN once in the frozen promoted backend and preserve the first result",
+    "compare reasons and classify the case",
+    "restore only the writer and prove the fixed BIN and UF2 pass on emulator and hardware"
+  ],
+  "hardware_path": {
+    "primary": "uf2loader",
+    "bootsel_required": false,
+    "reason": "the candidate exercises the normal PicoCalc application path and has no flash-layout or loader-reservation requirement"
+  },
+  "stop_conditions": [
+    "baseline emulator or hardware result is not an exact PASS",
+    "clean-clone BIN or UF2 reproducibility fails",
+    "the fault diff changes the controlled observer or anything outside the change budget",
+    "hardware fault result differs from the frozen oracle",
+    "artifact or boot identity is incomplete"
+  ],
+  "ci_policy": {
+    "local_validation_only_during_development": true,
+    "push_or_ci_required_for_predesign": false,
+    "workflow_change_allowed_without_user_permission": false
+  }
+}

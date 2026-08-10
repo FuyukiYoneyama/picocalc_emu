@@ -520,6 +520,15 @@ PASS、red・green・blueが各4 mismatch、patternも4 mismatchだった。orac
 含むmetadataを除去し、decoded pixels一致を確認した。契約、分類、監査結果は
 [`NEXT3_NEGATIVE_CONFORMANCE.md`](NEXT3_NEGATIVE_CONFORMANCE.md)にある。
 
+NEXT3-3では旧`5b12a7c` source、v1 fault source、旧UART証拠を再比較した。v1のwrite-side CS framingは
+旧欠陥と一致するが、旧症状のobserverは約500 kHz SIO bitbang RAMRD、v1は6 MHz hardware SPI RAMRDで
+あり、測定系が一致していなかった。これは確認済みの主要な未制御変数だが、v2実測前に単独原因とは
+断定しない。v2は正しいwriter／faulty writer／fixed writerのA-B-Aを、同一の
+旧bitbang observerで測る。原因分析、変更budget、凍結oracle、停止条件を
+[`NEXT3_V2_CANDIDATE_DESIGN.md`](NEXT3_V2_CANDIDATE_DESIGN.md)と
+`firmware-validation/contracts/next3-lcd-cs-fault-v2.json`へ実装前固定した。v2 sourceは未変更で、次は
+A1 baselineの実装である。
+
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
 LCDの`app_status=pass`、全5色＋パターンのGRAM readback一致、音声の`underruns=0`が

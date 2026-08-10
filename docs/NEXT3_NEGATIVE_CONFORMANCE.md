@@ -3,7 +3,10 @@
 **状態:** NEXT3-0の契約・KPI schema、NEXT3-1の旧LCD 0.3.1 artifact監査、および
 NEXT3-2の明示的fault版buildとuf2loader経由の実機試験まで完了した。旧候補はartifact再現不能、
 明示的fault v1は実機FAILしたものの凍結oracleと症状不一致のため、いずれもnegative母数へ採用しない。
-エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。
+エミュレーター初回実行は行わず、hardware-confirmed negative caseは引き続き0件である。原因分析では、
+v1が旧write-side CS defectを再現する一方、旧症状を測ったSIO bitbang RAMRD observerではなく6 MHz
+hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計
+まで完了している。v2実測前にobserver差を唯一の原因とは断定しない。
 
 ## 目的
 
@@ -23,6 +26,8 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - uf2loader実機試験: `firmware-validation/records/next3-lcd-cs-fault-v1-hardware-attempt-20260810-01/record.json`
 - 実機試験後KPI: `firmware-validation/records/next3-hardware-attempt-20260810-01/kpi.json`
 - fault source bundle: `provenance/picocalc-next3-lcd-fault-v1.bundle`
+- v2事前契約: `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`
+- v2原因分析・設計: `docs/NEXT3_V2_CANDIDATE_DESIGN.md`
 
 ## 分類
 
@@ -150,6 +155,19 @@ application menuから起動した。BOOTSELは使用していない。fault版�
 oracleを実測結果へ合わせて変更せず、このattemptを`inconclusive`、negative分母増分0とした。
 必須順序のstep 4を満たさないため、同一BINのエミュレーター初回実行は保留する。写真のrepository copyは
 GPSを含むEXIF/XMPを削除し、decoded RGB SHAが元画像と一致することを確認した。
+
+## NEXT3-3: v2候補の原因分析と事前設計
+
+旧`5b12a7c`とv1をsource比較した結果、両者のfaulty writerはいずれもCASET、RASET、RAMWR、pixel payloadを
+別々のCS Lowで送っていた。一方、旧症状は約500 kHzのSIO bitbang RAMRDで測定され、v1は6 MHzの
+hardware SPI RAMRDで測定された。v1はwrite defectだけでなくobserverまで含めた旧測定系の再現には
+なっていなかった。この差は確認済みだが、v2実測まではoracle不一致の単独原因とはしない。
+
+v2では正しいwriter＋旧observerをA1、旧faulty writer＋同じ旧observerをB、writerだけを戻したものを
+A2とする。変更する独立変数はwrite-side CS framingだけである。旧ログのsolid 5色PASS、pattern
+red/red/red/red、3 mismatchを実装前oracleとして固定した。詳細と停止条件は
+[`NEXT3_V2_CANDIDATE_DESIGN.md`](NEXT3_V2_CANDIDATE_DESIGN.md)にある。次作業はA1 baselineの実装であり、
+fault実装やemulator初回実行はまだ行わない。
 
 ## CI運用
 

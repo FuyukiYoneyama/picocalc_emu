@@ -658,6 +658,12 @@ raise SystemExit(code)
         self.assertEqual(next3.get("explicit_fault_classification"), "inconclusive")
         self.assertEqual(next3.get("inconclusive_cases"), 1)
         self.assertEqual(next3.get("emulator_first_run"), "pending")
+        self.assertEqual(
+            next3.get("v2_contract_id"),
+            "next3-lcd-cs-fault-v2-predesign-20260810",
+        )
+        self.assertEqual(next3.get("v2_status"), "frozen_before_v2_implementation")
+        self.assertEqual(next3.get("v2_next_step"), "baseline_implementation")
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -700,6 +706,36 @@ raise SystemExit(code)
             audit["kpi_effect"]["negative_denominator_delta"] = 1
             audit["kpi_effect"]["correct_detection_delta"] = 1
             audit_path.write_text(json.dumps(audit), encoding="utf-8")
+            completed = run(
+                VERIFY,
+                "--project-root",
+                project,
+                "--scope",
+                "target-schema",
+                "--json",
+            )
+
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        next3 = next(
+            check
+            for check in report["checks"]
+            if check["name"] == "next3:negative-conformance-contract"
+        )
+        self.assertEqual(next3["status"], "fail")
+
+    def test_target_schema_rejects_next3_v2_observer_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.copy_project(temporary)
+            contract_path = (
+                project
+                / "firmware-validation/contracts/next3-lcd-cs-fault-v2.json"
+            )
+            contract = json.loads(contract_path.read_text(encoding="utf-8"))
+            contract["controlled_experiment"]["fault"]["readback_observer"] = (
+                "hardware SPI at 6 MHz"
+            )
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
             completed = run(
                 VERIFY,
                 "--project-root",
