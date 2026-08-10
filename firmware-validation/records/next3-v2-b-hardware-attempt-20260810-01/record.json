@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "record_id": "next3-v2-b-hardware-attempt-20260810-01",
+  "roadmap_package": "NEXT-3",
+  "contract_id": "next3-negative-conformance-v1-20260810",
+  "status": "hardware_observed",
+  "candidate": {
+    "candidate_id": "lcd-cs-hold-v2-controlled-bitbang-observer-fault-b",
+    "defect_class": "LCD CASET/RASET/RAMWR chip-select hold violation with the historical SIO RAMRD observer",
+    "source_kind": "explicit_fault_injection"
+  },
+  "artifact_audit": {
+    "reproducibility": "reproduced",
+    "source_commit": "3a073fbf206b02993dd80a0a7158c1e3c865efff",
+    "sdk_version": "2.2.0",
+    "sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "toolchain": {
+      "arm_none_eabi_gcc": "13.2.1 20231009",
+      "cmake": "3.28.3",
+      "ninja": "1.11.1",
+      "generator": "Ninja",
+      "build_timestamp": "2026-08-10T06:00:00Z",
+      "lcd_variant": "hwspi-rgb888"
+    },
+    "bin_sha256": "f9f5a347c36b38fbcb93967cd6a6bcd7caafb8d19805d235e0bfc7a27c5a18a4",
+    "uf2_sha256": "8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f",
+    "same_build_bin_and_uf2": true,
+    "evidence": [
+      "A1-to-B net tree diff is limited to application identity, evidence marker, and lcd_hwspi_rgb888 begin_window write-side CS framing",
+      "the historical SIO bitbang RAMRD observer, coordinates, expected colours, sample count, colour conversion, and backend were unchanged",
+      "canonical tree and a separate clean clone produced identical BIN and UF2 SHA-256 values",
+      "source bundle provenance/picocalc-next3-lcd-fault-v2-b.bundle SHA-256 876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0"
+    ],
+    "blocking_gaps": []
+  },
+  "defect_oracle": {
+    "frozen_before_emulator_run": true,
+    "expected_failure": "all five solid-fill readbacks pass, the red/green/blue/white pattern reads back as red/red/red/red with three mismatches, app_status is fail, and SD passes",
+    "excluded_failure_causes": [
+      "unsupported MMIO",
+      "firmware exception",
+      "cycle limit",
+      "missing or incomplete UART capture",
+      "wrong source or artifact identity",
+      "baseline observer failure"
+    ]
+  },
+  "emulator_observation": {
+    "status": "pending",
+    "result": "pending",
+    "reason": "the hardware-first contract stops before the first emulator run because the physical result did not match the frozen oracle",
+    "evidence": []
+  },
+  "hardware_observation": {
+    "status": "complete",
+    "result": "fail",
+    "reason": "the physical LCD failed, but only black and white solid fills passed; red, green, and blue each had four mismatches and the pattern returned 0x7c00 four times with four mismatches instead of the frozen all-solid-pass and three-pattern-mismatch symptom",
+    "evidence": [
+      "the exact frozen UF2 was launched through the normal PicoCalc uf2loader path according to the operator procedure; BOOTSEL was not required",
+      "boot identity: bsp=0.9.0 app=next3-lcd-cs-fault-v2-b-bitbang-rgb888 variant=hwspi-rgb888 bsp_git=6bd826e7dcaf-dirty app_git=3a073fbf206b build=2026-08-10T06:00:00Z",
+      "evidence/uf2loader-uart.log LF-normalized SHA-256 5ce18ee718aca94522298525b0906e4854a26281747b79a310b36da9d686a726; supplied CRLF original SHA-256 5a5711f98d109772fc224e93dd88a412bd83892df58e0f8e91697a933a229de2",
+      "UART contains 15 identical evidence markers: solid=fail pattern=fail mismatches=4 app=fail sd=pass",
+      "red raw/value=7c8000/7c00, green=007c80/03f0, blue=80007c/800f, each with four solid mismatches; pattern raw/value=7c8000/7c00 four times with four mismatches",
+      "evidence/uf2loader-final.jpg SHA-256 2b4ca43e6c240c4e25fe7f4c3d4bfaa97dfef8664c841863eb91f8e0e31a7a1f; supplied original SHA-256 d8b2828f86fa22da607c222759ec5876dbbb6aa4f924fddf4fc480f22938bd66; decoded RGB SHA-256 1b51df84a076cd5ddaa8dcdbc22ffbfa22834fd41fb8efcb0c962695493d63f7; repository copy has location metadata removed without changing decoded pixels",
+      "the final photograph shows shifted top colours and the red failure status region, consistent with the UART result",
+      "the UART diagnostic window_cs=held_from_caset_through_ramwr is stale for Fault B; source commit and the frozen A1-to-B diff prove the actual writer is CS-separated, so this string is not used as transaction evidence"
+    ]
+  },
+  "reason_match": {
+    "status": "mismatch",
+    "expected_reason": "the CS-separated writer reproduces the historical five-solid-pass and red/red/red/red three-mismatch hardware symptom under the historical observer",
+    "emulator_reason": null,
+    "hardware_reason": "the CS-separated writer caused a physical LCD readback failure, but the symptom exactly matched the broader v1 rotated-bit result rather than the frozen historical oracle"
+  },
+  "classification": "inconclusive",
+  "kpi_effect": {
+    "negative_denominator_delta": 0,
+    "correct_detection_delta": 0,
+    "false_accept_delta": 0
+  }
+}

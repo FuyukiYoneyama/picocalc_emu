@@ -8,9 +8,10 @@ v1が旧write-side CS defectを再現する一方、旧症状を測ったSIO bit
 hardware SPI observerを使っていたことを主要な未制御変数として確認した。observerを固定するv2事前設計と
 A1 baseline実装、clean clone再現、エミュレーターPASS、同一UF2のuf2loader実機PASSを完了した。
 positive control gate後、fault Bを許可されたwriter CS境界とidentityだけの差分として実装し、
-clean cloneで一致するBIN/UF2/source bundleとoracleを固定した。次はfault Bをuf2loaderで実機先行実行する。
-実機が凍結oracleへ完全一致するまでエミュレーター実行は禁止する。v2 fault実測前にobserver差を
-唯一の原因とは断定しない。
+clean cloneで一致するBIN/UF2/source bundleとoracleを固定した。uf2loader実機先行結果はv1と同じ
+rotated-bit症状となり、solid 3色とpattern mismatch数が凍結oracleに一致しなかった。Fault Bも
+`inconclusive`、negative母数増分0とし、エミュレーター初回runは行わない。observer差は不一致の
+十分条件ではなかったため、旧証拠との差に残る未固定変数を次に調査する。
 
 ## 目的
 
@@ -36,6 +37,8 @@ FAILにする」を検査する。単にエミュレーターが何らかの理�
 - v2 A1実機相関: `firmware-validation/records/next3-v2-a1-hardware-20260810-01/record.json`
 - v2 Fault B artifact: `firmware-validation/records/next3-v2-b-20260810-01/record.json`
 - v2 Fault B source bundle: `provenance/picocalc-next3-lcd-fault-v2-b.bundle`
+- v2 Fault B実機結果: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/record.json`
+- v2 Fault B実機後KPI: `firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/kpi.json`
 
 ## 分類
 
@@ -223,6 +226,26 @@ Fault Bはまだエミュレーターで実行していない。一般利用経�
 pattern `red/red/red/red`・3 mismatch、`app=fail`、`sd=pass`の全fieldが一致した場合だけ、backend
 `4a90864816ef58286f2b292df0e7fe44fbcd4809`で同一BINの初回runを解禁する。1 fieldでも違えば
 `inconclusive`として保存し、oracleは変更せず、エミュレーターを実行しない。
+
+## NEXT3-6: v2 Fault B hardware result
+
+canonical Fault B UF2をuf2loaderから実機起動した。boot identityはcommit `3a073fb`、BSP
+`6bd826e7dcaf-dirty`、build timestamp `2026-08-10T06:00:00Z`と一致し、最終markerも15回同値だった。
+しかしLCD実測は凍結oracleへ一致しなかった。
+
+- black、white solidはPASS。
+- redはraw/value `7c8000`/`7c00`、greenは`007c80`/`03f0`、blueは`80007c`/`800f`で、各4 mismatch。
+- patternは`7c8000`/`7c00`×4、4 mismatch。
+- `app=fail`、`sd=pass`。
+
+この値はv1実機結果と同じである。historical SIO observerへ固定してもv1症状が変わらなかったため、
+observer差だけでは旧`5b12a7c` oracleとの差を説明できない。結果を後付けoracleにせず、v2 Bも
+`inconclusive`、negative denominator増分0とした。negative候補監査は3件、artifact audit failure 1件、
+inconclusive 2件、hardware-confirmed negative case 0件であり、率は引き続き`null`である。
+
+Fault Bのエミュレーターrunは未実行で、今後もこの候補では実行しない。UARTに残った
+`window_cs=held_from_caset_through_ramwr`はA1由来の古い説明で、canonical B sourceと矛盾するため
+writer modeの証拠から除外した。source commitとA1→B diffが実際のCS-separated writerの正典である。
 
 ## CI運用
 

@@ -546,6 +546,12 @@ observerとoracle入力は不変である。canonical treeと別clean cloneでBI
 Fault Bは実機先行契約によりエミュレーター未実行である。次はuf2loaderから同一UF2を1回実行し、凍結した
 solid 5色PASS／pattern red×4・3 mismatch／app FAIL／SD PASSと完全一致した場合だけbackend初回runへ進む。
 
+NEXT3-6のuf2loader実機先行runではidentityとSDは一致したが、LCDはred/green/blue solidが各4 mismatch、
+patternが`0x7c00`×4・4 mismatchとなり凍結oracleに一致しなかった。この結果はv1と同じで、SIO observerへ
+固定しても症状は変わらなかった。oracleは変更せずv2 Bも`inconclusive`、negative母数増分0とした。
+Fault Bのemulator runは未実行かつ禁止のままである。候補監査3件、artifact audit failure 1件、
+inconclusive 2件、hardware-confirmed negative 0件で、negative rateは引き続き`null`である。
+
 **実機との相関を確認した（2026-08-05、`bsp-0.8.8-20260804-02`）。** エミュレーターが
 検証したBINと同一ソース・同一設定のUF2を実機で3回起動し、BOOT行、250 MHzクロック、
 LCDの`app_status=pass`、全5色＋パターンのGRAM readback一致、音声の`underruns=0`が

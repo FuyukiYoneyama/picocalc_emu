@@ -649,23 +649,25 @@ raise SystemExit(code)
         self.assertEqual(next3.get("positive_correlations"), 6)
         self.assertEqual(next3.get("negative_denominator"), 0)
         self.assertEqual(next3.get("rate_state"), "no_negative_denominator")
-        self.assertEqual(next3.get("candidates_audited"), 2)
+        self.assertEqual(next3.get("candidates_audited"), 3)
         self.assertEqual(
             next3.get("first_candidate_classification"),
             "artifact_not_reproducible",
         )
         self.assertEqual(next3.get("explicit_fault_status"), "hardware_observed")
         self.assertEqual(next3.get("explicit_fault_classification"), "inconclusive")
-        self.assertEqual(next3.get("inconclusive_cases"), 1)
+        self.assertEqual(next3.get("inconclusive_cases"), 2)
         self.assertEqual(next3.get("emulator_first_run"), "pending")
         self.assertEqual(
             next3.get("v2_contract_id"),
             "next3-lcd-cs-fault-v2-predesign-20260810",
         )
         self.assertEqual(
-            next3.get("v2_status"), "fault_artifact_frozen_hardware_pending"
+            next3.get("v2_status"), "fault_hardware_oracle_mismatch_inconclusive"
         )
-        self.assertEqual(next3.get("v2_next_step"), "fault_hardware_first_run")
+        self.assertEqual(next3.get("v2_fault_hardware_status"), "hardware_observed")
+        self.assertEqual(next3.get("v2_fault_classification"), "inconclusive")
+        self.assertEqual(next3.get("v2_next_step"), "historical_oracle_gap_analysis")
         self.assertIs(next3.get("v2_emulator_run_allowed"), False)
 
     def test_target_schema_rejects_next3_zero_denominator_as_zero_percent(self):

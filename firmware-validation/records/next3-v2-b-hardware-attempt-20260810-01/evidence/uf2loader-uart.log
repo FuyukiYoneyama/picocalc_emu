@@ -1,0 +1,108 @@
+[PICOCALC][BOOT] bsp=0.9.0 app=next3-lcd-cs-fault-v2-b-bitbang-rgb888 variant=hwspi-rgb888 bsp_git=6bd826e7dcaf-dirty app_git=3a073fbf206b build=2026-08-10T06:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=125000 actual_khz=125000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=hwspi-rgb888
+LCD loader-style init sequence sent 0x3A=0x66 RGB888
+[PICOCALC][LCD][SPI] write_transport=hardware_spi1 read_transport=bitbang_sio driver=vendor/lcd_hwspi_rgb888.cpp reference=general-lcd-hwspi-rgb888-probe+picocalc-helloworld hz=25000000 read_hz=~500k colmod=0x66 wire=rgb888 window_cs=held_from_caset_through_ramwr
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=125000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=1.00/0,1.50/0,2.00/0,3.00/0,4.00/0
+[PICOCALC][PSRAM][VERIFY] status=fail address=0x019040 bytes=24 mismatches=1 write_us=17 read_us=17
+[PICOCALC][PSRAM][PROBE] status=fail pio=1 sm=0 sysclk_khz=125000 clkdiv=1.00 spi_hz=62500000 fudge=0 id=0d5d5332c7817946
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=8 read_us=9
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=125000 clkdiv=1.50 spi_hz=41666668 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=1.50 spi_hz=41666668 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=fixed_sine rate=48000 tone=1000 amp_db=-6 pwm_wrap=255 carrier=488281 dma_half=128 dma_timer=0 dma_frac=6/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=reference-fixed-sine output=1khz
+[PICOCALC][APP] version=next3-lcd-cs-fault-v2-b-bitbang-rgb888 build=2026-08-10T06:00:00Z
+[PICOCALC][VERIFY] psram=ok sysclk_khz=125000 clkdiv=1.50 spi_hz=41666668
+[PICOCALC][AUDIO][VERIFY] mode=reference-fixed-sine status=ok rate=48000 carrier_hz=488281 irq=104 refill=106 sample_index=13568 underruns=0 pwm_wrap=255 dma_half=128 ring=512
+[PICOCALC][VERIFY] stage=begin components=lcd,sd,keyboard
+[PICOCALC][LCD][VERIFY] stage=solid_fill_begin samples=8,8:2x2 colors=0x0000,0xffff,0xf800,0x07e0,0x001f
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=0,0,0 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0x20 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=1 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=2 raw=0x000000 value=0x0000
+[PICOCALC][LCD][READ] pixel=3 raw=0x000000 value=0x0000
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x0000 status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=0,0,0 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0x00 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=1 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=2 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][READ] pixel=3 raw=0xfcfcfc value=0xffff
+[PICOCALC][LCD][VERIFY] status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xffff status=pass pixels=4 mismatches=0
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=1,1,1 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0xff format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=1 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=2 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=3 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0xf800 actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0xf800 actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0xf800 actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0xf800 actual=0x7c00
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0xf800 status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=1,1,1 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0x00 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x007c80 value=0x03f0
+[PICOCALC][LCD][READ] pixel=1 raw=0x007c80 value=0x03f0
+[PICOCALC][LCD][READ] pixel=2 raw=0x007c80 value=0x03f0
+[PICOCALC][LCD][READ] pixel=3 raw=0x007c80 value=0x03f0
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0x07e0 actual=0x03f0
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x07e0 actual=0x03f0
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x07e0 actual=0x03f0
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0x07e0 actual=0x03f0
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x07e0 status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=0,0,0 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0xe0 format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x80007c value=0x800f
+[PICOCALC][LCD][READ] pixel=1 raw=0x80007c value=0x800f
+[PICOCALC][LCD][READ] pixel=2 raw=0x80007c value=0x800f
+[PICOCALC][LCD][READ] pixel=3 raw=0x80007c value=0x800f
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0x001f actual=0x800f
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x001f actual=0x800f
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x001f actual=0x800f
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0x001f actual=0x800f
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] stage=solid_fill color=0x001f status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] stage=pattern_begin pattern=known_regions width=320 height=320
+[PICOCALC][LCD][VERIFY] stage=end status=drawn regions=top(0,0,320,24),bottom(0,296,320,24),white(16,48,288,224),inset(20,52,280,216),red(32,72,80,80),green(120,72,80,80),blue(208,72,80,80) colors=top:0x07e0,bottom:0x001f,white:0xffff,inset:0x0000,red:0xf800,green:0x07e0,blue:0x001f
+[PICOCALC][LCD][READ] transport=bitbang_sio reference=historical_5b12a7c read_hz=~500k sample=falling_edge delay_us=1 miso_idle=0,0,0 rddid=0xffffff rddst=0x31920000 ramrd_dummy=0x1f format=rgb888 pixels=4
+[PICOCALC][LCD][READ] pixel=0 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=1 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=2 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][READ] pixel=3 raw=0x7c8000 value=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=0 expected=0xf800 actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=1 expected=0x07e0 actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=2 expected=0x001f actual=0x7c00
+[PICOCALC][LCD][VERIFY] mismatch index=3 expected=0xffff actual=0x7c00
+[PICOCALC][LCD][VERIFY] status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] stage=pattern_readback status=fail pixels=4 mismatches=4
+[PICOCALC][LCD][VERIFY] app_status=fail
+[PICOCALC][AUDIO][BOOT] audio=stream stop
+[PICOCALC][AUDIO] status=stopped reason=lcd_verify_complete
+[PICOCALC][SD][SMOKE] stage=begin path=0:/PICOTEST.TXT sequence=mount,write,sync,close_write,read,compare,close_read,remove
+[PICOCALC][SD] component=detect status=present detail=0
+[PICOCALC][SD] component=init status=begin detail=0
+[PICOCALC][SD] component=init status=ok detail=1
+[PICOCALC][SD][SMOKE] stage=end status=ok result_stage=ok detail=0
+[PICOCALC][SMOKE] lcd=fail sd=ok stage=ok detail=0 status_region=red
+[PICOCALC][KEY][VERIFY] stage=waiting requirement=multiple_press_release_events
+[PICOCALC][VERIFY] stage=ready lcd=fail sd=ok keyboard=waiting
+[PICOCALC][READY] keyboard=waiting
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass
+[NEXT3][LCD_CS_V2_B][EVIDENCE] app_git=3a073fbf206b bsp_git=6bd826e7dcaf-dirty solid=fail pattern=fail mismatches=4 app=fail sd=pass

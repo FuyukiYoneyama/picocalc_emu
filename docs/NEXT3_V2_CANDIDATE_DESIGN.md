@@ -1,9 +1,9 @@
 # NEXT-3 LCD fault v2 candidate design
 
-**状態（2026-08-10）:** A1実装・clean clone再現・emulator PASS・同一UF2のuf2loader実機PASSを
-完了した。Fault BはA1から許可された3 pathだけを変更して実装し、clean cloneで一致するBIN、UF2、
-source bundleと実機oracleを固定済みである。次は同一UF2をuf2loaderで実機先行実行する。
-実機が凍結oracleへ完全一致するまではFault Bをエミュレーターで実行しない。
+**状態（2026-08-10）:** A1はemulator／実機ともPASSした。Fault Bも再現可能artifactとして固定し、
+uf2loaderで実機先行実行したが、凍結oracleには一致しなかった。実測はred/green/blue solidが各4 mismatch、
+patternも`0x7c00`×4・4 mismatchで、v1と同じ広い症状だった。この候補は`inconclusive`として停止し、
+Fault Bのエミュレーター実行は解禁しない。oracleも変更しない。
 
 機械可読な正典は
 `firmware-validation/contracts/next3-lcd-cs-fault-v2.json`である。本書は判断根拠と人が読む
@@ -102,9 +102,30 @@ observer、座標、期待色、sample数、色変換は不変である。
 - UF2 SHA-256: `8f45245d8b0c8f1d543d1f909368ca4c48438e898352b48c3afcdaa172cb291f`
 - source bundle SHA-256: `876a1889897517d01a18ee813922a725f602c52df988627b8eccaf1b71534de0`
 
-機械可読recordは`firmware-validation/records/next3-v2-b-20260810-01/record.json`、人間の実機手順は
-同directoryの`PROCEDURE.md`である。recordはhardwareを`pending`、emulatorを
-`not_run_by_contract`かつ`run_allowed=false`として固定している。
+artifact凍結時recordは`firmware-validation/records/next3-v2-b-20260810-01/record.json`、実機結果は
+`firmware-validation/records/next3-v2-b-hardware-attempt-20260810-01/record.json`である。前者は当時の
+hardware pending状態を時点証拠として書き換えず、後者がoracle不一致とemulator禁止継続を記録する。
+
+### B実機結果
+
+一般利用経路のuf2loaderでcanonical Fault B UF2を実行した。boot identity、source commit、timestamp、
+SD、最終markerは期待と一致したが、LCD oracleは一致しなかった。
+
+| 検査 | 凍結oracle | 実機 |
+|---|---|---|
+| solid black / white | PASS | PASS |
+| solid red | `fc0000` / `f800`、PASS | `7c8000` / `7c00`、4 mismatch |
+| solid green | `00fc00` / `07e0`、PASS | `007c80` / `03f0`、4 mismatch |
+| solid blue | `0000fc` / `001f`、PASS | `80007c` / `800f`、4 mismatch |
+| pattern | red×4、3 mismatch | `7c8000` / `7c00`×4、4 mismatch |
+
+`app=fail`、`sd=pass`、15 markerは一致したが、部分一致でoracleを変更してはならない。v1で使った
+hardware SPI observerをhistorical SIO observerへ戻しても同じrotated-bit症状となったため、observer差は
+v1 oracle不一致を説明する十分条件ではなかった。旧`5b12a7c`証拠との差には、まだ別の未固定変数がある。
+
+UARTの`window_cs=held_from_caset_through_ramwr`はA1から残った古い診断文字列で、Fault B sourceの実際の
+CS-separated writerと矛盾する。writer authorityはcanonical source diffであり、この文字列はtransaction
+証拠に使わない。後続候補ではwriter modeを独立して正しく出力する。
 
 ### A2: fixed
 
@@ -125,11 +146,11 @@ promoted backend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`のST7365P modelは�
 1. A1を実装し、source/toolchain/timestampを固定してclean cloneからBIN/UF2を再現する。
 2. A1 BINをemulator、同一build UF2を実機で実行し、両方の完全PASSを固定する。
 3. A1から許可された差分だけでBを作り、BIN/UF2/source bundleとoracleを凍結する。**完了**
-4. 一般利用経路のuf2loaderでBを実機実行する。**次の作業**
-5. 実機結果がoracleへ完全一致した場合だけ、同一BINを凍結backendで初回実行する。
+4. 一般利用経路のuf2loaderでBを実機実行する。**完了、oracle不一致**
+5. 実機結果がoracleへ完全一致した場合だけ、同一BINを凍結backendで初回実行する。**禁止のまま**
 6. hardwareとemulatorの理由を比較し、`correct_negative_detection`、`false_accept`、
    `wrong_reason_failure`のいずれかへ分類する。
-7. A2を作り、emulatorと実機の完全PASSを固定する。
+7. A2を作り、emulatorと実機の完全PASSを固定する。**停止条件により未実施**
 
 A1がPASSしない、clean clone再現に失敗する、Bのdiffがobserverへ触れる、実機結果がoracleと違う、
 identityが不完全、のいずれかで停止する。oracle不一致はv1と同様`inconclusive`であり、negative母数へ
