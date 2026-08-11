@@ -85,7 +85,7 @@
     "hardware_record": "firmware-validation/records/next3-sd-cmd8-crc-a1-hardware-20260810-01/record.json",
     "hardware_record_sha256": "55777e8453ce9cd4cca48fec477181729eb446f50b9ed24f764e802191dd960e",
     "kpi_snapshot": "firmware-validation/records/next3-sd-cmd8-crc-a1-hardware-20260810-01/kpi.json",
-    "kpi_snapshot_sha256": "f6f28dfdb733826b01276679e95195594d8c0bb418588109af87ec92f8915051",
+    "kpi_snapshot_sha256": "ae999828b9967104fc677e620ebb23b186f86b99e3274c491d54ba472c67be11",
     "fault_implementation_allowed": true,
     "fault_emulator_run_allowed": false
   },
@@ -131,7 +131,7 @@
     "record": "firmware-validation/records/next3-sd-cmd8-crc-b-post-fix-20260810-01/record.json",
     "record_sha256": "6df91f1471f192ba0f26964b018f23496b2b73aaad3deafbf5f36f8ee949a6ac",
     "kpi_snapshot": "firmware-validation/records/next3-sd-cmd8-crc-b-post-fix-20260810-01/kpi.json",
-    "kpi_snapshot_sha256": "d3605c2be06008a80c868027fa74e0e8f04fa79ca6e37949e547e8d99e8803af",
+    "kpi_snapshot_sha256": "12deec2b49718859d3b04aa0481d6b035455d53503b0d654cdf63b036f08a9e0",
     "a2_fixed_source_commit": "f942b8eb000858e6f00bb8fde255f27243dfbac8",
     "a2_is_exact_a1_artifact": true,
     "a2_bin_sha256": "0ae9eea01f87c542cd7c41f1880c42d428c0f143c909dfe116c16e1cf5afce1b",

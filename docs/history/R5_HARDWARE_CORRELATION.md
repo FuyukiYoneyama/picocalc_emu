@@ -140,7 +140,7 @@ UARTは途中再起動と`resumed=1`を含み、回復契約を実地に通し�
 | 証拠 | SHA-256 / 結果 |
 |---|---|
 | UART全文 `uart.log` | `d9b2b8417bb88af4f6a5432235fd12a0bbe83e86500668998b6c349093b0181a` |
-| 最終写真 `final.jpg` | `7cb0e8789476b82168e8d0250385267290bfaa0fef42ea0bbfab48a38690ab1a`、`R5 ALL PASS` |
+| 最終写真 `final.jpg` | `0a65485ce1ce4a3173e8bdd2fcab0962d7136dcee4aa1074725b6c6d87d9e675`、`R5 ALL PASS` |
 | SD進捗 `PCR5KEY.DAT` | `0e6e09a6f787c2ee95ccc4671ef2bd67caab8d6434456071cf125ded1ca0c16e`、CRC32一致、67/67 |
 | 参照音抜粋 `reference-tone.flac` | `5266ee1337d58191ebde23d08dc1aeabbc65183b4068d9b2c60e113425687f19`、FFT peak 984.375 Hz |
 

@@ -68,6 +68,11 @@ paths are evidence fields. New public-facing instructions must use relative
 paths or placeholders such as `<workspace>` and must not contain personal
 credentials, private keys, access tokens, or device secrets.
 
+Public hardware JPEG evidence is metadata-sanitised before publication: GPS,
+capture time, camera make/model, and other EXIF fields are removed while the
+ICC colour profile and decoded pixels are retained. The private camera
+originals are not part of the public repository or its rewritten history.
+
 This preparation sanitises the current public-facing tree; it does not rewrite
 the existing Git history. The backend intentionally retains upstream history,
 and old commits may contain historical author metadata or development paths.
