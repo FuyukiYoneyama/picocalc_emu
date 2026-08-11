@@ -59,9 +59,10 @@ source or source bundle; this is a missing-input condition, not a runtime error.
 The root notices are authoritative. The PicoCalc LCD RGB888 adapter is an
 independent implementation; ClockworkPi and GPL-3.0 repositories are not
 vendored. The backend preserves its upstream history and third-party notices,
-including the GPL-2.0 DOSBox patch and PicoGUS distribution. Do not add a
-third-party source or binary without adding its license and provenance to the
-appropriate notice first.
+including the GPL-2.0 DOSBox patch, PicoGUS distribution, MIT OneROM firmware
+fixtures and MIT `epio`/`apio` submodules, and the LGPL-3.0 SeaBIOS payload.
+Do not add a third-party source or binary without adding its license and
+provenance to the appropriate notice first.
 
 Frozen validation records may retain historical build paths because those
 paths are evidence fields. New public-facing instructions must use relative
@@ -73,12 +74,17 @@ capture time, camera make/model, and other EXIF fields are removed while the
 ICC colour profile and decoded pixels are retained. The private camera
 originals are not part of the public repository or its rewritten history.
 
-This preparation sanitises the current public-facing tree; it does not rewrite
-the existing Git history. The backend intentionally retains upstream history,
-and old commits may contain historical author metadata or development paths.
-Before changing visibility, the repository owner must explicitly choose between
-preserving that history and performing a separately reviewed history rewrite.
-No history rewrite or force-push is part of this preparation.
+The current `picocalc_emu` public-preparation history includes a separately
+reviewed rewrite that removes the three superseded hardware JPEG blobs
+containing GPS metadata. The replacement images preserve decoded pixels and
+all dependent record and contract SHA values were updated before the rewrite.
+The old blobs are absent from the rewritten reachable history.
+
+The backend intentionally retains its upstream history, and old commits may
+contain historical author metadata or development paths. That history is a
+separate visibility decision; no backend history rewrite is implied by the
+JPEG sanitisation. Any future sensitive-data rewrite must be separately
+reviewed and completed before creating a release tag.
 
 ## Publication order
 
@@ -87,14 +93,21 @@ No history rewrite or force-push is part of this preparation.
 2. Run the local gates and confirm both working trees are clean.
 3. Commit the release-preparation changes in each repository.
 4. Choose the release number and create matching annotated tags on the exact
-   paired commits.
-5. Push both repositories and their tags in one planned batch, then create the
-   GitHub Release with the compatibility table and limitations.
-6. Confirm each repository has the intended public README, license, notices,
-   tag, and Release notes.
-7. Change visibility to public only after the two repositories are mutually
-   reachable. Do not use a push or a workflow run as a substitute for the
-   local gate above.
+   paired commits. Do not move or force-push these tags.
+5. Push the paired commits and tags while the repositories are still private;
+   do not publish the GitHub Release yet. This fixes the public starting point
+   without exposing an untagged release candidate.
+6. Change `picoem-picocalc` to public first, then change `picocalc_emu` to
+   public. Confirm that the two tagged repositories are anonymously reachable.
+7. From a fresh unauthenticated clone of each tag, run the portable local
+   checks and confirm the README, licenses, notices, and dependency URLs.
+8. Create and publish the primary GitHub Release for the `picocalc_emu` tag,
+   including the compatibility table, exact SHAs, known limitations, and
+   acquisition instructions. A private draft may be prepared earlier, but
+   the user-facing Release is published only after repository visibility is
+   public.
+9. Do not use a push or a workflow run as a substitute for the local gate
+   above. Do not re-run Actions merely because visibility changed.
 
 The existing `picocalc_emu` firmware workflows use a read-only deploy key for
 the pinned backend. Keeping that secret is compatible with public visibility;

@@ -50,6 +50,9 @@ fixtureが必要になった場合も公式サンプルを同梱せず、契約�
 
 - [x] `LICENSE`が存在し、`picoem-picocalc`側の`MIT OR Apache-2.0`とNOTICEが維持
       されている
+- [x] `picoem-picocalc`のNOTICEが、RP bootrom、PicoGUS、DOSBox-X patch、
+      probe-rs、OneROM firmware、SeaBIOS、`epio`/`apio` submodule の帰属と
+      ライセンス本文の所在を実際の同梱資産と一致させている
 - [x] upstream（`0x4D44/picoem`）の履歴・著作権表示・帰属が保持されている
 - [x] 実機記録に含まれる写真・ログに公開したくない情報が含まれていない
       （公開JPEGはGPS・撮影日時・機種情報を除去し、色プロファイルだけを保持）
@@ -79,6 +82,8 @@ python3 tools/picocalc.py verify
 
 公開前の最終手順は [`PUBLIC_RELEASE.md`](PUBLIC_RELEASE.md) を正とする。
 
-なお、この準備では既存Git履歴を書き換えない。backendはupstream履歴を保持しているため、
-visibility変更前に、履歴中の旧author metadataや開発pathを保持するか、別途レビューした履歴
-rewriteを行うかを所有者が判断する。force-pushはこのチェックリストの自動手順ではない。
+今回の公開準備では、`picocalc_emu`についてGPSメタデータを含んでいた3枚の旧JPEGを、
+画素を変えずに置換し、依存するrecord・contractのSHAを更新したうえで、旧blobをreachable
+historyから除去する履歴rewriteを実施済みである。今後の公開タグ作成後はタグを移動・force-push
+しない。`picoem-picocalc`はupstream履歴を保持しており、過去のauthor metadataや開発pathの
+扱いは別途所有者が確認する。
