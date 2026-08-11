@@ -11,6 +11,7 @@
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
 | BSPの公開APIとhardware契約 | [`../bsp/README.md`](../bsp/README.md) |
+| エミュレーター関連の外部project workspace | [`../../picocalc_emu_ext/README.md`](../../picocalc_emu_ext/README.md) |
 
 ## 通常利用
 
@@ -54,6 +55,13 @@ R0〜R6、OPT0〜OPT3、NEXT-1〜NEXT-3、初期設計、性能実験、実機�
 
 歴史資料に残る「次は〜」「未着手」は、その文書が作成された時点の判断です。現在の状態は
 `IMPLEMENTATION_STATUS.md`、現在計画は`MILESTONES.md`を優先します。
+歴史資料に現れる`~/pico_dvl/codex/build/...`は当時の一時生成先で、現在は退役しています。
+現行の再生成先は外部workspaceのREADMEに従います。
 
 `firmware-validation/records/`、`hardware-validation/records/`、provenance、registryは
 不変証拠または機械検証対象なので、文書整理を理由に移動しません。
+
+これらのrecordに含まれる`notes.md`や`PROCEDURE.md`も、recordのSHA-256契約に含まれる場合は
+作成時の内容を保持します。そのため古いproject-relativeな`build/`表記が残ることがあります。
+現在のcheckout場所と再生成先は、外部workspaceの
+[`picocalc_emu_ext/README.md`](../../picocalc_emu_ext/README.md)を正とします。

@@ -29,6 +29,11 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - BSPの公開APIと固定ハードウェア契約: [bsp/README.md](bsp/README.md)
+- 検証対象アプリ・校正ツールのworkspace: [`../picocalc_emu_ext/README.md`](../picocalc_emu_ext/README.md)
+
+検証対象の独立アプリとspeaker校正ツールは、Git境界を保つため本リポジトリの外側にある
+`../picocalc_emu_ext/`へまとめています。target IDや`repository_directory`は論理識別子として
+変更せず、物理配置と再現手順だけをこのworkspace READMEで管理します。
 
 過去の経緯、却下実験、詳細記録は[`docs/history/`](docs/history/README.md)へ分離しています。
 検証器が読む凍結R/NEXT契約は`docs/`直下に残します。歴史資料や凍結契約の「次は〜」は

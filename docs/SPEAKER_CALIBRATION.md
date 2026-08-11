@@ -6,7 +6,7 @@ firmware backendのaudio sinkと`AUDIO_LEVEL_QUALITY.md`は、PWMへ到達した
 level、rail使用を検査します。しかしPicoCalcのamp、内蔵speaker、筐体が特定の低音やtransientで
 非線形破綻するかはdigital sampleだけから決められません。
 
-この層を埋めるため、workspaceの`../picocalc-speaker-calibration`に、キー入力不要の自動再生firmwareと
+この層を埋めるため、workspaceの`../picocalc_emu_ext/picocalc-speaker-calibration`に、キー入力不要の自動再生firmwareと
 動画解析器を用意します。DOOMなど個別アプリを校正信号として使いません。既知波形をPicoCalc実機で
 鳴らし、phone動画の音声を同期signatureで自動分割して、speaker側の破綻境界を測ります。
 
@@ -46,12 +46,12 @@ noise floor未満ならspeakerの再生限界として`unobservable`に分け、
 ## 実行
 
 詳細な撮影手順とUF2の場所は
-[`../../picocalc-speaker-calibration/README.md`](../../picocalc-speaker-calibration/README.md)を参照します。
+[`../../picocalc_emu_ext/picocalc-speaker-calibration/README.md`](../../picocalc_emu_ext/picocalc-speaker-calibration/README.md)を参照します。
 解析器は次です。
 
 ```sh
 python3 tools/analyze_speaker_calibration.py recording.MOV \
-  --plan ../picocalc-speaker-calibration/calibration-plan.json \
+  --plan ../picocalc_emu_ext/picocalc-speaker-calibration/calibration-plan.json \
   --output /tmp/picocalc-speaker-analysis
 ```
 
