@@ -56,7 +56,7 @@ scenarioを書かずに落とす。
 python3 scenarios/tools/plan_tetris.py <ドロップ数> <ドロップ間の待ち ms> > out.json
 ```
 
-対象は`~/pico_dvl/codex/picocalc_emu_ext/picotetris`のPicoTetrisである。ゲーム側の
+対象は任意の外部workspaceに置いた`picotetris`のPicoTetrisである。ゲーム側の
 形状表・乱数種・重力周期のいずれかが変われば、プランナーもそれに合わせないと
 予測スコアの`assert`が落ちる。**落ちるのは正しい**。それが、この2つが同じ規則を
 見ているという主張の担保である。

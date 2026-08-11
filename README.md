@@ -29,11 +29,15 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - BSPの公開APIと固定ハードウェア契約: [bsp/README.md](bsp/README.md)
-- 検証対象アプリ・校正ツールのworkspace: [`../picocalc_emu_ext/README.md`](../picocalc_emu_ext/README.md)
+- 検証対象アプリ・校正ツールの外部workspace: [外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)
 
 検証対象の独立アプリとspeaker校正ツールは、Git境界を保つため本リポジトリの外側にある
-`../picocalc_emu_ext/`へまとめています。target IDや`repository_directory`は論理識別子として
-変更せず、物理配置と再現手順だけをこのworkspace READMEで管理します。
+任意の`picocalc_emu_ext/`へまとめられます。この外部workspaceは通常のアプリ生成・ビルド・
+host検証・firmware backendの直接実行には必要ありません。target IDや`repository_directory`は
+論理識別子として変更せず、物理配置と再現手順だけを外部workspace側で管理します。
+一方、既存のPicoTetris／PicoEdit／NEXT-2 targetを再ビルドし、回帰・実機相関系列を
+フォークへ継承する場合は、該当アプリsourceまたは同等source bundleが必要です。詳細は
+[外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)の開発プロファイルを参照してください。
 
 過去の経緯、却下実験、詳細記録は[`docs/history/`](docs/history/README.md)へ分離しています。
 検証器が読む凍結R/NEXT契約は`docs/`直下に残します。歴史資料や凍結契約の「次は〜」は
@@ -42,6 +46,9 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 ## 5分で始める
 
 必要条件はPython 3.9以降です。portable検証とプロジェクト生成にはPico SDKは不要です。
+provenance付きの`verify-project`まで行う公開利用者は、GitHubのDownload ZIPではなく
+`git clone`で取得してください。ZIPはGit metadataを含まないため、検証を安全側に倒して
+`cannot judge`になります。
 
 ```sh
 python3 tools/picocalc.py verify
@@ -215,7 +222,7 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 
 - `picocalc_emu`: Canonical BSP、CLI、target registry、scenario、証拠、文書
 - `picoem-picocalc`: RP2040/PicoCalc firmware backendとmachine API
-- `picotetris`: 正式回帰・実機相関に使うアプリ
+- `picotetris`、`picoedit-picocalc`: 正式回帰・実機相関に使う任意の外部アプリworkspace
 
 backend sourceを本リポジトリへコピーせず、targetごとに正確なcommitを固定します。
 

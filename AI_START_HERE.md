@@ -42,6 +42,10 @@ workerの報告はSolの検収を置き換えません。詳細は
 
 ## 通常のアプリ開発
 
+このリポジトリは、生成物のBSP由来を固定するためGit metadataを使います。完全なprovenance検証を
+行う場合はGitHubのDownload ZIPではなく`git clone`したcheckoutから開始してください。ZIPでも
+portableなコード参照はできますが、`verify-project`は`cannot judge`になります。
+
 ```sh
 python3 tools/picocalc.py verify
 python3 tools/picocalc.py new MyApp --output ../MyApp
