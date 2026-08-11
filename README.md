@@ -23,6 +23,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 [`capability.json`](firmware-validation/capability.json)を参照してください。
 公開前の依存境界・ライセンス・ローカルゲートは
 [`docs/PUBLIC_RELEASE.md`](docs/PUBLIC_RELEASE.md)を参照してください。
+利用者向けの安定版、タグ、2リポジトリの対応付けは
+[`docs/VERSIONING.md`](docs/VERSIONING.md)を正典とします。
 
 ## 最初に読むもの
 
@@ -30,6 +32,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - AIがアプリを作る: [AI_START_HERE.md](AI_START_HERE.md)
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+- 公開版の選び方とバージョン運用: [docs/VERSIONING.md](docs/VERSIONING.md)
 - BSPの公開APIと固定ハードウェア契約: [bsp/README.md](bsp/README.md)
 - 検証対象アプリ・校正ツールの外部workspace: [外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)
 
@@ -51,6 +54,9 @@ host検証・firmware backendの直接実行には必要ありません。target
 provenance付きの`verify-project`まで行う公開利用者は、GitHubのDownload ZIPではなく
 `git clone`で取得してください。ZIPはGit metadataを含まないため、検証を安全側に倒して
 `cannot judge`になります。
+
+利用者はGitHub Releasesの具体的なタグ（例: `v0.1.0`）を使ってください。`main`は
+開発中の先端であり、安定版の目印ではありません。
 
 ```sh
 python3 tools/picocalc.py verify

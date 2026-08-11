@@ -12,6 +12,15 @@ LCD adapterについては、GPL-3.0のソースを同梱せず独立実装をMI
 両方がprivateである限り`FIRMWARE_BACKEND.md`の公開条件と矛盾しない。矛盾が生じる
 のは「`picocalc_emu`だけを公開し、backendがprivateのまま」という状態である。
 
+## 0. 利用者向けバージョン目印
+
+- [ ] 初回公開版または更新版の SemVer（例: `v0.1.0`）を決めた
+- [ ] `picocalc_emu` と `picoem-picocalc` の対応する commit SHA を記録した
+- [ ] BSP、report schema、machine API schema、toolchain 条件を記録した
+- [ ] 両リポジトリの同じリリース番号に annotated tag を付けた
+- [ ] GitHub Release notes に対応表、既知の制限、取得方法を記載した
+- [ ] 公開済みタグを移動・force-pushしない運用を確認した
+
 ## 1. 依存の公開性
 
 - [ ] `picoem-picocalc`が公開されている、または等価な再現可能配布として入手できる

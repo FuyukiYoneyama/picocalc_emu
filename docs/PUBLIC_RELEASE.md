@@ -12,6 +12,18 @@ host-backend, portable-verification, or direct-runner workflow does not require
 `picocalc_emu_ext`; that workspace is only an optional source input for
 rebuilding historical external applications and hardware records.
 
+The public versioning policy is defined in
+[`VERSIONING.md`](VERSIONING.md). In short, `main` is the development head,
+while users select a GitHub Release backed by an immutable SemVer tag. The
+first public technical-preview pair is intended to be `v0.1.0`; creating that
+tag is a separate release action and is not implied by ordinary commits or
+pushes.
+
+Each paired release records both repository tags and full commit SHAs, the BSP
+version, report and machine-API schemas, the registry-pinned backend commit,
+toolchain requirements, and known limitations. The tag is the user-facing
+entry point; the full SHA is the reproducibility anchor.
+
 ## Local gate
 
 Run these commands before pushing a release batch. They do not invoke GitHub
@@ -65,12 +77,17 @@ No history rewrite or force-push is part of this preparation.
 
 ## Publication order
 
-1. Complete and review this document and `RELEASE_CHECKLIST.md` locally.
-2. Commit the release-preparation changes in each repository.
-3. Push both repositories in one planned batch.
-4. Confirm each repository has the intended public README, license, notices,
-   and current commit.
-5. Change visibility to public only after the two repositories are mutually
+1. Complete and review this document, `RELEASE_CHECKLIST.md`, and
+   `VERSIONING.md` locally.
+2. Run the local gates and confirm both working trees are clean.
+3. Commit the release-preparation changes in each repository.
+4. Choose the release number and create matching annotated tags on the exact
+   paired commits.
+5. Push both repositories and their tags in one planned batch, then create the
+   GitHub Release with the compatibility table and limitations.
+6. Confirm each repository has the intended public README, license, notices,
+   tag, and Release notes.
+7. Change visibility to public only after the two repositories are mutually
    reachable. Do not use a push or a workflow run as a substitute for the
    local gate above.
 
