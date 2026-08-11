@@ -75,7 +75,7 @@ python3 tools/picocalc.py test --mode firmware \
 protocol producerの一次リファレンスはClockworkPi公式
 [`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
 です。ローカル配置は
-`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`です。
+`<PicoCalc checkout>/Code/picocalc_keyboard`です。
 
 RP2040アプリはconsumer側の実機証拠であり、producer仕様の代用ではありません。model変更は公式の
 register、FIFO、key state、modifier、repeat、overflowに一致させてから既知consumerと実機recordへ

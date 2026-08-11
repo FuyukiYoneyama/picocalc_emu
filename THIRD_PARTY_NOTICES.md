@@ -79,7 +79,7 @@ The comparison produced these engineering observations:
 No ClockworkPi file is vendored in this repository. The line comparison above is
 recorded as provenance evidence, not as a legal conclusion.
 
-**Open item — GPL-3.0 in the `lcdspi.c` lineage.** `lcdspi.c` itself has no
+**License boundary — GPL-3.0 code is not included.** `lcdspi.c` itself has no
 copyright header and no stated origin, but the same file is distributed by
 third parties under GPL-3.0: `madcock/uf2loader` ships
 `common/lcdspi/lcdspi.c` (772 lines, differing from the ClockworkPi copy by 135
@@ -89,9 +89,12 @@ additionally retains MMBasic/PicoMite-style identifiers (`gui_fcolour`,
 `gui_bcolour`, `MainFont`), suggesting a further upstream that has not been
 identified.
 
-The current project policy is to keep `lcd_hwspi_rgb888.cpp` independently
-implemented and not incorporate `lcdspi.c`. Two standing rules enforce that
-boundary:
+The release decision is to keep `lcd_hwspi_rgb888.cpp` as an independently
+implemented MIT-licensed adapter and not incorporate `lcdspi.c`. The adapter
+was written from the public ILI9488/Pico SDK protocol and the engineering
+comparison above found no copied ClockworkPi source. The GPL-3.0 repositories
+are cited only as provenance investigated during review; no GPL source or
+derived file is redistributed here. Two standing rules enforce that boundary:
 
 - **Do not vendor `lcdspi.c`**, or any file derived from it, into this
   MIT-licensed repository.
@@ -103,8 +106,8 @@ boundary:
 
 If future work needs to incorporate ClockworkPi source rather than observe its
 hardware protocol, its license must be resolved before that source or a derived
-artifact is distributed. This notice records repository policy and observed
-provenance; it is not a legal determination.
+artifact is distributed. This notice records the engineering provenance and
+distribution boundary; it is not legal advice or a legal determination.
 
 Note that `bsp/vendor/rp2040-psram/` reached this project through the same
 official sample, but it is separately licensed MIT by Ian Scott — the upstream

@@ -21,6 +21,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
 [`capability.json`](firmware-validation/capability.json)を参照してください。
+公開前の依存境界・ライセンス・ローカルゲートは
+[`docs/PUBLIC_RELEASE.md`](docs/PUBLIC_RELEASE.md)を参照してください。
 
 ## 最初に読むもの
 

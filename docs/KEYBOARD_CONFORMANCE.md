@@ -4,7 +4,7 @@
 
 protocol producerの一次リファレンスはClockworkPi公式
 [`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
-です。ローカルでは`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`にあります。
+です。利用者は公式repositoryを任意の場所へcheckoutして参照します。
 RP2040側のBSPやアプリはconsumer実装の証拠であり、producerの仕様を上書きしません。
 
 conformance実装時の公式checkoutは`a61c1f2f18185b32a667dde5c9393ced9ddd19ca`、

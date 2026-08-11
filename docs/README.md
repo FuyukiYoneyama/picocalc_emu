@@ -35,6 +35,7 @@
 | keyboard protocol | [`KEYBOARD_CONFORMANCE.md`](KEYBOARD_CONFORMANCE.md) |
 | Sol／Lunaの責任境界 | [`DEVELOPMENT_WORKFLOW.md`](DEVELOPMENT_WORKFLOW.md) |
 | release前の確認 | [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) |
+| 公開リリース手順と依存境界 | [`PUBLIC_RELEASE.md`](PUBLIC_RELEASE.md) |
 | 要求仕様 | [`../REQUIREMENTS.md`](../REQUIREMENTS.md) |
 | 対応・未対応範囲 | [`../firmware-validation/capability.json`](../firmware-validation/capability.json) |
 | firmware target registry | [`../reference-projects/firmware-targets.json`](../reference-projects/firmware-targets.json) |
@@ -46,7 +47,7 @@ NEXT-3の最終状態は`IMPLEMENTATION_STATUS.md`と`MILESTONES.md`、詳細な
 
 keyboard controllerのprotocol producer一次リファレンスはClockworkPi公式
 [`Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)です。
-このworkspaceでは`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`にあります。
+利用者の環境では、公式repositoryを任意の場所へcheckoutして参照します。
 
 ## 歴史資料
 

@@ -68,7 +68,7 @@ writes、post-quantizer SHA、due cycle、block境界、gap、service latencyの
 ## 同一UF2実機相関の人間手順（完了済み・再採取用）
 
 再採取時に生成するファイルは
-`/home/fuyuki/pico_dvl/codex/picocalc_emu_ext/picocalc-audio/build/picocalc_app.uf2`で、SHA-256は
+`<picocalc_emu_ext>/picocalc-audio/build/picocalc_app.uf2`で、SHA-256は
 `d6986103e74e153fd23ea7ce25111bba0a5752331959367b0aa63f6eb1c28677`である。
 `build/`は再生成可能なため共有workspaceには保持していない。target registryの固定source、
 SDK、toolchain、timestampで再buildし、SHA-256を確認してから使用する。

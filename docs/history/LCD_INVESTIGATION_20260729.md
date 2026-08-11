@@ -6,7 +6,7 @@
 
 ## 対象
 
-対象ログ：`/home/fuyuki/pico_dvl/log/tt260729173036.log`
+対象ログ：`<evidence-log-dir>/tt260729173036.log`
 
 対象UF2はBSP `0.1.2`、App `0.1.1-readback`。ログ上、GPIO、PIO、LCD初期化コマンド、
 LCDへのピクセル転送処理は最後まで実行された。しかし、`RAMRD (0x2e)`による読み出しは
@@ -92,7 +92,7 @@ BSP `0.1.4`ではRAMRDのCS Low区間中に`printf()`を実行していたため
 
 ## 追加調査（BSP 0.1.11）
 
-`/home/fuyuki/pico_dvl/uf2loader/common/lcdspi/lcdspi.c` とヘッダーを直接比較した。
+`<uf2loader checkout>/common/lcdspi/lcdspi.c` とヘッダーを直接比較した。
 Canonical BSPは初期化コマンド列、`COLMOD`、および1ピクセルあたりの転送長がuf2loaderと一致していなかった。
 uf2loaderの実働列へ合わせ、`COLMOD=0x66`、ILI9488のRGB888（3バイト/ピクセル）転送、
 RGB888からRGB565へ戻す読み出し変換を実装する。
@@ -144,7 +144,7 @@ host transaction testとRP2040向けUF2ビルドは合格した。
 
 実機試験には次のUF2を使用した。
 
-* ログ: `/home/fuyuki/pico_dvl/codex/log/pico20260729_215722.log`
+* ログ: `<evidence-log-dir>/pico20260729_215722.log`
 * BSP/App: `0.2.0`
 * UF2 SHA-256: `fac9fc39e4733cf1bd36b7dcd6ae314f57ff22819be85d9c493f75b25102919d`
 
@@ -180,7 +180,7 @@ OFF/ONするとノイズ画面になった。これは今回の試験で確認�
 完了したが、画面はuf2loaderメニューのままだった。したがって、UF2取り違えやCPU停止
 ではなく、LCD書込み経路がパネルへ有効に届いていない。
 
-`/home/fuyuki/pico_dvl/codex/general/01_DISPLAY_LCD.md`、
+`<workspace>/general/01_DISPLAY_LCD.md`、
 `general/lcd/src/main_hwspi_rgb888_probe.cpp`、`mcp`の索引結果、uf2loaderの実装を
 突き合わせた結果、これまでのBSPには実機表示が記録された`general/lcd`の最小プローブに
 対して次の相違があった。

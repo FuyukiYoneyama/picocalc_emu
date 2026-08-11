@@ -22,7 +22,7 @@ PicoCalc実機相関の両方が合格した。後続の独立契約NEXT-2B audi
 再buildした別条件のUF2へ置き換えない。
 
 ```text
-/home/fuyuki/pico_dvl/codex/picocalc_emu_ext/picocalc-multicore/build/picocalc_app.uf2
+<picocalc_emu_ext>/picocalc-multicore/build/picocalc_app.uf2
 ```
 
 ## エミュレーター結果
@@ -94,7 +94,7 @@ FIFO固定vectorは次のとおりで、初回結果やbackend実装に合わせ
 1. 固定条件でbuildを完了した後、次を実行し、表示値が上表のUF2 SHA-256と一致することを確認する。
 
    ```sh
-   sha256sum /home/fuyuki/pico_dvl/codex/picocalc_emu_ext/picocalc-multicore/build/picocalc_app.uf2
+   sha256sum <picocalc_emu_ext>/picocalc-multicore/build/picocalc_app.uf2
    ```
 
 2. 既知のPicoCalc UF2書込み手順でBOOTSEL mass-storage modeへ入り、上記UF2をコピーする。

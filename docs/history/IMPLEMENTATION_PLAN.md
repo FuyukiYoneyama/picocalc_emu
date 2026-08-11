@@ -374,7 +374,7 @@ Gate固有の禁止は固定ACK・固定`0xff`応答などの即席実装。
 
 > **後続レビュー（2026-08-05）:** Gate 4で実装したmodelの一次リファレンスは、
 > [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
-> （ローカル`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）の
+> （利用者のcheckoutにある`<PicoCalc checkout>/Code/picocalc_keyboard`）の
 > STM32F103R8T6 firmwareである。
 > `picocalc-life`やCanonical BSPはRP2040 consumerの実機証拠として使う。Gate 4の
 > workload合格は維持するが、公式firmwareのregister/FIFO/state/modifier/repeat/overflowとの

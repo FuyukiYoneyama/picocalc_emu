@@ -6,7 +6,7 @@
 
 キーボードのprotocol producerについては、ClockworkPi公式
 [`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
-（このworkspaceでは`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）の
+（利用者のcheckoutでは`<PicoCalc checkout>/Code/picocalc_keyboard`）の
 STM32F103R8T6 firmwareを一次リファレンスとする。
 `picocalc-life`はRP2040側consumerの実機確認済みLCD/keyboard/SD実装、
 `pico_skyace`はLCD bring-up記録、`Picocalc_ment`は音声の実機基準として使う。

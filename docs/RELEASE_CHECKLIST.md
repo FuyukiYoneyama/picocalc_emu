@@ -2,10 +2,11 @@
 
 `picocalc_emu`を公開リポジトリにする時点で満たすべき条件をまとめる。
 
-**現状（2026-08-04）:** `picocalc_emu`と`picoem-picocalc`はどちらもprivateである。
-方針としては公開予定であり、ライセンス面の確認は済んでいる（`MIT OR Apache-2.0`、
-NOTICE維持）。ただし十分な完成度に達するまで公開しない。**実施時期は未定**であり、
-判断は人間が行う。この項目はGate進行の前提条件ではない
+**現状（2026-08-11）:** `picocalc_emu`と`picoem-picocalc`はどちらもprivateである。
+公開準備では、通常利用の依存性、同梱第三者物、実機証拠の扱い、ライセンス境界を確認する。
+LCD adapterについては、GPL-3.0のソースを同梱せず独立実装をMITで配布する方針を
+[`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)に固定した。これは法的助言ではなく、
+公開物のエンジニアリング上のprovenance判断である。公開操作の時期は人間が決める。
 （[`history/IMPLEMENTATION_PLAN.md`](history/IMPLEMENTATION_PLAN.md) Gate 6参照）。
 
 両方がprivateである限り`FIRMWARE_BACKEND.md`の公開条件と矛盾しない。矛盾が生じる
@@ -38,9 +39,9 @@ fixtureが必要になった場合も公式サンプルを同梱せず、契約�
 
 ## 3. ライセンスと帰属
 
-- [ ] `LICENSE`が存在し、`picoem-picocalc`側の`MIT OR Apache-2.0`とNOTICEが維持
+- [x] `LICENSE`が存在し、`picoem-picocalc`側の`MIT OR Apache-2.0`とNOTICEが維持
       されている
-- [ ] upstream（`0x4D44/picoem`）の履歴・著作権表示・帰属が保持されている
+- [x] upstream（`0x4D44/picoem`）の履歴・著作権表示・帰属が保持されている
 - [ ] 実機記録に含まれる写真・ログに公開したくない情報が含まれていない
 
 ## 4. 機械検査
@@ -57,3 +58,17 @@ python3 tools/picocalc.py verify
 
 機械検査は§1〜§3のすべてを代替しない。公開判断の前に本書のチェックリストを
 人間が確認する。
+
+## 公開物における証拠と開発環境情報
+
+`firmware-validation/records/`と`hardware-validation/records/`は、判定を再現するための
+凍結証拠である。record内のbuild log、source video、toolchain pathは、その時点の測定環境を
+示すprovenanceフィールドであり、通常のビルド・実行時に参照される依存ではない。公開版では
+新しいREADMEや実行手順に個人環境の絶対pathを使用せず、過去recordの値は契約を壊さない範囲で
+保持する。秘密鍵、token、認証情報をrecordへ追加してはならない。
+
+公開前の最終手順は [`PUBLIC_RELEASE.md`](PUBLIC_RELEASE.md) を正とする。
+
+なお、この準備では既存Git履歴を書き換えない。backendはupstream履歴を保持しているため、
+visibility変更前に、履歴中の旧author metadataや開発pathを保持するか、別途レビューした履歴
+rewriteを行うかを所有者が判断する。force-pushはこのチェックリストの自動手順ではない。

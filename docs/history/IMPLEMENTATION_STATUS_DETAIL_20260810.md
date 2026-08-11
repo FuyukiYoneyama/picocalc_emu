@@ -268,7 +268,7 @@ blockだけを1秒周期で再送する。3回の通常CLI、500,000,000-cycle r
 |---|---|---|
 | LCD A（互換・診断） | `general/lcd/src/main_hwspi_rgb888_probe.cpp` + `PicoCalc/Code/picocalc_helloworld/lcdspi` | `bsp/vendor/lcd_hwspi_rgb888.cpp`、SPI1 GP10〜15、25 MHz、COLMOD `0x66`、RGB666を3-byte RGB888 containerで送信、CASET/RASET/RAMWRから画素列までCS保持、RAMRDは6 MHz |
 | LCD B（推奨デフォルト） | `general/lcd` / `pico_skyace` / `life` | 転送は`bsp/vendor/lcd_rgb565_pio.cpp`（無改変コピー、PIO0 blocking、LCD DMA OFF、clkdiv `2.0`、COLMOD `0x65`、RGB565を2 bytes/pixelで送信）。アダプタ側の契約はウィンドウ160×160以下・画素160ピクセル単位、RAMRDは`life`のキャプチャ手順 |
-| Keyboard | **一次:** [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（ローカル`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`）。**consumer実機証拠:** `picocalc-life` | STM32F103R8T6側はI2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、7×8 matrix＋12 buttons。RP2040側はI2C1 GP6/7、400 kHz、repeated-start |
+| Keyboard | **一次:** [ClockworkPi公式`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)（利用者が任意の場所へcheckout）。**consumer実機証拠:** `picocalc-life` | STM32F103R8T6側はI2C target `0x1f`、register `0x04`/FIFO `0x09`、31-event FIFO、7×8 matrix＋12 buttons。RP2040側はI2C1 GP6/7、400 kHz、repeated-start |
 | SD/FatFS | `picocalc-life` | SPI0 GP16〜19、CS GP17、detect GP22、400 kHz初期化、12 MHz運用、CMD0/8/55/ACMD41/58 |
 | Audio | `Picocalc_ment` | GP26/27 PWM、48 kHz、wrap 255、DMA timer、128 sample二重buffer、512 sample ring。固定サイン参照とPCM streamを切替可能 |
 | PSRAM | `pico_rescue` | 8 MiB、実機検証済み通常候補（250 MHz: 2/false→3/false→1.5/true、125 MHz: 1/false→1.5/false→2/false→3/false→4/false）、24 byte chunk、read/write自己検証、Buffer API |

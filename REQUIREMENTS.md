@@ -212,7 +212,7 @@ picoem-picocalc (ExecutionModel::Serialを正しさの基準とする)
 
 Keyboard modelの一次リファレンスはClockworkPi公式
 [`PicoCalc/Code/picocalc_keyboard`](https://github.com/clockworkpi/PicoCalc/tree/master/Code/picocalc_keyboard)
-（ローカル配置`/home/fuyuki/pico_dvl/codex/PicoCalc/Code/picocalc_keyboard`、
+（ローカル配置`<PicoCalc checkout>/Code/picocalc_keyboard`、
 STM32F103R8T6 firmware）とする。RP2040側の
 `picocalc-life`およびCanonical BSPは、公式controller protocolを利用するconsumer実装と
 実機証拠であり、protocol producerの定義を置き換えない。
