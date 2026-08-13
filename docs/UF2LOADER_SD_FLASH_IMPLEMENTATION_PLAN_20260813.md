@@ -258,6 +258,11 @@ directory側への書戻しは行わない。これにより、hostの予期し�
 U3-Aでhost packerは確定したため、U3-Bはこのpack結果をrunner起動時に接続するCLI／contract／
 artifact境界に限定する。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
 
+U3-Bまたは次のbackend変更を行う際には、既知の非ブロッカーである`export_raw`のsame-path判定を
+同時に修正する。出力がまだ存在しない相対pathでも親directoryをcanonicalizeして入力実体と比較し、
+絶対／相対表記、`./`、symlink経由の別表記を拒否するテストを追加する。U3-Aのhost tool、既存の
+atomic export、M-NESCO-S1の受入を遡って変更する作業ではない。
+
 **Gate U3-B:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、
 同じtreeから毎回同じimage SHAを得て、`--sd-image-out`と同一のmanifest境界を保つ。
 

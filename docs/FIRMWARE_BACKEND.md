@@ -98,6 +98,18 @@ writeをCOW overlayへ保持します。input/outputを同じpathへ指定して
 [`firmware-validation/evidence/m-nesco-20260813-01/`](../firmware-validation/evidence/m-nesco-20260813-01/)
 にあります。これは`uf2loader`のmenu、boot2、watchdog、USB BOOTSELを実装したことを意味しません。
 
+### 既知の非ブロッカー：RAW exportのsame-path表記差
+
+現在のbackend `export_raw` は、出力pathがまだ存在しない場合にcanonicalizeできないため、
+入力と出力が相対／絶対表記の違いだけで同じ実体を指すケースを、文字列比較だけでは拒否できない
+可能性があります。export自体は一時ファイルへ全量を書いてからrenameするため、途中の入力を
+上書きしてデータを壊す問題ではありません。しかし「同一実体を拒否する」という契約を完全には
+満たさないため、既知の非ブロッカーとして次回backend変更時に修正します。
+
+修正時の受入条件は、canonicalizeできない未作成出力でも親directoryを解決して入力実体と比較し、
+絶対／相対表記、`./`、symlink経由を含むsame-pathを拒否することです。既存の完全一致テストに加え、
+これらの別表記を再現するテストを追加します。
+
 ## Keyboard一次リファレンス
 
 protocol producerの一次リファレンスはClockworkPi公式

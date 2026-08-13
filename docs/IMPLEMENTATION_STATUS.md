@@ -106,6 +106,8 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 - bootrom execution、USB MSC boot
 - SD removal、write protect、runner-integrated directory-backed storage、実`uf2loader` end-to-end
 - raw imageのCOW読み出し・atomic exportは実装済みだが、複数runの完全なNESco再attach比較は未完了
+- backendのRAW exportはatomicでデータ破損を防ぐが、未作成出力の相対／絶対表記違いによるsame-path
+  拒否に既知の検査抜けがある。次回backend変更時にcanonical path比較と別表記テストを追加する
 - host backendのPIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式
 - scenarioのloop／branch、任意report fieldの直接assert
 - machine APIとのheartbeat併用。初版は長時間CLI／wrapperの監視に限定
