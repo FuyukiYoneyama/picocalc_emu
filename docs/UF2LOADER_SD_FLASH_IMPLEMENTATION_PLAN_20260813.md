@@ -7,11 +7,14 @@
 
 ## 1. 結論
 
-次の3項目を、別々の到達点ではなく**1つの縦方向の機能追加**として実施する。
+次の機能を、依存関係のある**1つの縦方向の機能追加**として実施する。
 
 1. SDカードのRAW image入力
-2. ホストdirectoryからSD内容を読み込むsnapshot import
-3. RP2040 flashのerase / program
+2. RP2040 flashのerase / program
+3. `Picocalc_NESco`をdirect bootでdebugできる中間マイルストーン
+4. ホストdirectoryからSD内容を読み込むsnapshot import
+5. 実loaderで観測したSD protocol gap
+6. boot2 entry、watchdog warm reset、実`uf2loader` end-to-end
 
 `uf2loader`は今後の標準起動方式ではない。通常のアプリ開発・debugは、現在と同じBINの`direct_boot_from_flash(0x100)`を既定のまま使う。`uf2loader`はSD、flash erase/program、変更後XIP read、resetを一度に通す**高精度conformance workload**として使う。
 
@@ -28,9 +31,9 @@
   -> UART / framebuffer / flash内容を検証
 ```
 
-RAW、directory import、flash read/writeまで完了した中間状態は、`Picocalc_NESco`の通常direct-boot debugに利用してよい。この中間gateは正式に検証・文書化する。ただし、その時点ではまだ**`uf2loader supported`とは表示しない。** 上記のend-to-end受入が通って初めて、SD/flash/resetを統合した最終conformanceが完了したとする。
+SD RAWとflash read/writeまで完了した時点に、`M-NESCO`という正式な中間マイルストーンを置く。この時点から`Picocalc_NESco`を既存のdirect bootでdebugに利用してよい。directory import、boot2、watchdog、実`uf2loader`はこの後に続く。M-NESCOではまだ**`uf2loader supported`とは表示しない。** 上記のend-to-end受入が通って初めて、SD/flash/resetを統合した最終conformanceが完了したとする。
 
-本書は[`NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`](NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md)の要件を残したまま、今回指定された実行順序を優先する統合計画である。旧文書の「directoryを先にする」という優先順位は本書で置き換える。
+本書は[`NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`](history/NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md)の要件を残したまま、今回指定された実行順序を優先する統合計画である。旧文書の「directoryを先にする」という優先順位は本書で置き換える。
 
 ## 2. 一次リファレンスとprovenance
 
@@ -150,37 +153,7 @@ SDのsector storageをinterface化し、既存memory backingと新しいRAW back
 
 **Gate U1:** FAT32/FAT16の既存RAW imageをmount/readでき、1 sectorの変更をexportして次runで読める。異常size、範囲外、同一input/outputはfail-closed。
 
-### U2: directory snapshot import
-
-`--sd-dir`はhost filesystemをfirmwareへ直結しない。起動時に次の順でFAT32 imageを決定的に作り、既存SD SPI/FatFs経路へ渡す。
-
-1. directory treeを安全に走査
-2. entryをbyte順にsort
-3. fixed timestampと固定volume parameterでFAT32へ格納
-4. run中は通常のblock deviceとして扱う
-5. 必要なら`--sd-image-out`でRAWを保存
-
-拒否するもの:
-
-- symlink、device、socket等のregular file/directory以外
-- root外へのescape
-- case-insensitiveな名前衝突
-- FATで表現できない名前または容量超過
-- 読取り不能file
-
-directory側への書戻しは行わない。これにより、hostの予期しない削除・rename・上書きを避ける。
-
-実装開始時に、外部commandへ依存しない方法を決める。第一候補はlicenseとmaintenance状態を確認したpinned permissive-licenseのRust FAT libraryである。適切なlibraryがなければ、小さなFAT32 packerを自作するが、その場合はU2の工数を再見積りする。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
-
-**Gate U2:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、同じtreeから毎回同じimage SHAを得る。
-
-### U3: uf2loader実行で判明したSD protocol gap
-
-実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。source上はCMD18を選択できるが、対象のFAT readが実際に複数sector要求になるかはU0 traceで確定する。CMD18/CMD12が観測されなければ、実装したことにせず、U3は「追加変更不要」として閉じる。未観測のcommandを推測で広く追加しない。
-
-**Gate U3:** single-blockの既存回帰を保ち、`BOOT2040.UF2`と選択したapp UF2を途中で欠落・重複せず読み切る。未知commandは従来どおりvisible failureとする。
-
-### U4: flash erase / program
+### U2: flash erase / program
 
 `SsiFlash`がvalidated mutation eventを生成し、`Bus`がXIP backingへtransaction境界で適用する構造を基本とする。
 
@@ -201,15 +174,15 @@ SDK bootrom helperが実際に使うexit-XIP/read/status/erase commandはU0 trac
 
 real flashにはtop 16 KiBの物理write protectionはないため、エミュレーター独自の保護を作らない。代わりにend-to-end契約でloader領域が不変であることを検査し、変更が起きればアプリ/loaderの失敗として落とす。
 
-**Gate U4:** erase、program、readback、WEL/WIP、cache invalidationがunit/integration testを通る。不正alignment、page crossing、範囲外、WELなし、0->1は黙って成功しない。
+**Gate U2:** erase、program、readback、WEL/WIP、cache invalidationがunit/integration testを通る。不正alignment、page crossing、範囲外、WELなし、0->1は黙って成功しない。
 
-### U4-N: Picocalc_NESco利用可能gate
+### M-NESCO: `Picocalc_NESco`デバッグ開始マイルストーン
 
-U1〜U4が完了した時点で、boot2/watchdogを待たずに`Picocalc_NESco`を既存のdirect bootで検証する。これは仮のデモではなく、次の実用上の中間到達点である。
+U1〜U2が完了した時点で、boot2/watchdogを待たずに`Picocalc_NESco`を既存のdirect bootで検証する。これは仮のデモではなく、SDとflashの実装がNEScoのdebugに使えることを宣言する正式な中間マイルストーンである。
 
 ```text
 Picocalc_NESco BINを従来どおりdirect boot
-  -> RAWまたはdirectory importしたSDからROMを選択
+  -> RAW SD imageからROMを選択
   -> 大きなROMをflash XIP領域へerase/program
   -> firmware自身がflash内容を元SD fileと照合
   -> 同じrunでXIP上のROMを実行
@@ -230,7 +203,37 @@ flash readについては、単に書いた直後の1回の`memcmp`だけでは�
 
 `Picocalc_NESco`は`multicore_lockout_start_blocking()`、割込み禁止、`flash_range_erase/program()`、`flash_flush_cache()`を実際に使うため、その経路も迂回しない。
 
-**Gate U4-N:** SDから選んだ複数size/mapperのROMについて、stage、全量verify、同一run実行、final flash再attach後の復元が決定的に合格する。このgate以降は`Picocalc_NESco`のdebugへ使用可能と明記できるが、uf2loader conformanceはまだ未完了と表示する。
+**Gate M-NESCO:** RAW SD imageから選んだ複数size/mapperのROMについて、stage、全量verify、同一run実行、final flash再attach後の復元が決定的に合格する。このgate以降は`Picocalc_NESco`のdebugへ使用可能と明記できるが、directory import、boot2、watchdog、uf2loader conformanceはまだ未完了と表示する。
+
+### U3: directory snapshot import
+
+`--sd-dir`はhost filesystemをfirmwareへ直結しない。起動時に次の順でFAT32 imageを決定的に作り、既存SD SPI/FatFs経路へ渡す。
+
+1. directory treeを安全に走査
+2. entryをbyte順にsort
+3. fixed timestampと固定volume parameterでFAT32へ格納
+4. run中は通常のblock deviceとして扱う
+5. 必要なら`--sd-image-out`でRAWを保存
+
+拒否するもの:
+
+- symlink、device、socket等のregular file/directory以外
+- root外へのescape
+- case-insensitiveな名前衝突
+- FATで表現できない名前または容量超過
+- 読取り不能file
+
+directory側への書戻しは行わない。これにより、hostの予期しない削除・rename・上書きを避ける。
+
+実装開始時に、外部commandへ依存しない方法を決める。第一候補はlicenseとmaintenance状態を確認したpinned permissive-licenseのRust FAT libraryである。適切なlibraryがなければ、小さなFAT32 packerを自作するが、その場合はU3の工数を再見積りする。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
+
+**Gate U3:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、同じtreeから毎回同じimage SHAを得る。
+
+### U4: uf2loader実行で判明したSD protocol gap
+
+実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。source上はCMD18を選択できる構造を持つが、対象のFAT readが実際に複数sector要求になるかはU0 traceで確定する。CMD18/CMD12が観測されなければ、実装したことにせず、U4は「追加変更不要」として閉じる。未観測のcommandを推測で広く追加しない。
+
+**Gate U4:** single-blockの既存回帰を保ち、`BOOT2040.UF2`と選択したapp UF2を途中で欠落・重複せず読み切る。未知commandは従来どおりvisible failureとする。
 
 ### U5: boot2 entryとwatchdog warm reset
 
@@ -331,10 +334,10 @@ clean buildした外部uf2loaderと、自作test appを使って次を1つのsce
 |---|---:|
 | U0 契約・clean fixture・protocol trace | 6〜10時間 |
 | U1 file-backed RAW + COW + export + report/tests | 12〜18時間 |
-| U2 deterministic directory import | 16〜26時間 |
-| U3 実traceで判明したSD gap（変更不要なら監査だけ） | 2〜12時間 |
-| U4 flash erase/program + cache coherence | 20〜32時間 |
-| U4-N Picocalc_NESco direct-boot実用検証 | 8〜14時間 |
+| U2 flash erase/program + cache coherence | 20〜32時間 |
+| M-NESCO Picocalc_NESco direct-boot実用検証 | 8〜14時間 |
+| U3 deterministic directory import | 16〜26時間 |
+| U4 実traceで判明したSD gap（変更不要なら監査だけ） | 2〜12時間 |
 | U5 boot2 entry + watchdog warm reset | 16〜28時間 |
 | U6 実uf2loader scenario/negative/artifact | 16〜24時間 |
 | 文書・全local回帰・公開境界監査 | 8〜12時間 |
@@ -353,10 +356,10 @@ Solが契約、hardware semantics、gate判定、最終検収を担当する。L
 ```text
 U0 契約固定
  -> U1 RAW
- -> U2 directory import
- -> U3 SD実loader gap（必要な場合だけ実装）
- -> U4 flash erase/program
- -> U4-N Picocalc_NEScoで実用開始判定
+ -> U2 flash erase/program
+ -> M-NESCO Picocalc_NEScoで実用開始判定
+ -> U3 directory import
+ -> U4 SD実loader gap（必要な場合だけ実装）
  -> U5 boot/reset
  -> U6 uf2loader end-to-end
  -> 文書/capability公開判定

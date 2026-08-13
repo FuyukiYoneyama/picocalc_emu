@@ -21,6 +21,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
 - 現在定義済みの作業パッケージ: **すべて完了または正式終了**
 - 新しい番号付き作業: **未定義**
+- 次の未着手計画: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)（U0〜U6、M-NESCOマイルストーン）
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
@@ -199,6 +200,8 @@ target registryのfail-closed合否判定を置き換えず、単独ではtarget
 
 通常のPicoCalcユーザーと同じく、**uf2loader経由を標準経路**とします。BOOTSEL書込みは、
 flash書込み経路そのものを検証する場合や、uf2loaderを利用できない明示的理由がある場合だけです。
+これは実機への通常転送経路の説明です。エミュレーター内で実際のuf2loaderを実行する機能は、
+上記の未着手計画が完了するまで対応済みとは扱いません。
 
 実機へ渡す前に、少なくとも次を固定します。
 

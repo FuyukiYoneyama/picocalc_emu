@@ -62,6 +62,15 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
+## 次の現行計画（未着手）
+
+SD RAW image、flash erase/program、`M-NESCO`（`Picocalc_NESco`のdirect-boot debug開始）、
+directory snapshot import、boot2／watchdog warm resetをこの順序で段階的に追加し、最後に外部
+`uf2loader`をend-to-endで検証する計画を固定しています。
+計画書は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)です。
+現在はU0前で、これらの機能はまだ`capability.json`のsupportedへ移していません。
+通常のdirect bootアプリdebugと既存target回帰は変更しません。
+
 ## 性能
 
 正式promoted値はPicoTetrisでwall中央値**25.381594秒**、実時間比**14.636593%**です。

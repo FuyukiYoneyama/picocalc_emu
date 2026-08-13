@@ -14,6 +14,7 @@
 | host／firmwareで検証する | [`TESTING.md`](TESTING.md) |
 | 画面やUARTを待ってキーを入れる | [`SCENARIOS.md`](SCENARIOS.md) |
 | 複数の実行を同時に監視する | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
+| 次期SD／flash／UF2Loader計画を確認する | [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md) |
 
 ## AIの実行ルール
 
@@ -79,3 +80,9 @@ AIは次の順序を変えません。
 
 現在の状態だけを確認したい場合は[`IMPLEMENTATION_STATUS.md`](../docs/IMPLEMENTATION_STATUS.md)、
 公開版の選択は[`VERSIONING.md`](../docs/VERSIONING.md)を参照します。
+
+UF2Loader計画は**未着手の設計計画**です。実施順序はU0 → U1（SD RAW） → U2（flash） →
+M-NESCO（`Picocalc_NESco`のdirect-boot debug開始） → U3（directory snapshot） → U4 → U5 → U6です。
+計画書が`docs/`直下にあることは、現在のCLIで
+`--sd-image`、`--sd-dir`、flash erase/program、boot2起動が使えることを意味しません。
+実装状況は常に[`capability.json`](../firmware-validation/capability.json)を優先します。

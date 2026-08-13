@@ -47,6 +47,15 @@
 | 対応・未対応範囲 | [`../firmware-validation/capability.json`](../firmware-validation/capability.json) |
 | firmware target registry | [`../reference-projects/firmware-targets.json`](../reference-projects/firmware-targets.json) |
 
+## 現行の次期実装計画
+
+SDのRAW image、flash erase/program、`M-NESCO`（`Picocalc_NESco`のdirect-boot debug開始）、
+host directory snapshot、boot2／warm resetをこの順序で段階的に実装し、最後に外部`uf2loader`の
+end-to-end conformanceへ進む計画は
+[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)が正典です。
+現在は**U0（clean provenance・fixture・first-failure traceの固定）前**で、production codeは
+まだ変更していません。通常のdirect bootによるアプリdebugは、この計画中も変わりません。
+
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。
 NEXT-3の最終状態は`IMPLEMENTATION_STATUS.md`と`MILESTONES.md`、詳細な最終結果は
@@ -61,8 +70,8 @@ keyboard controllerのprotocol producer一次リファレンスはClockworkPi公
 R0〜R6、OPT0〜OPT3、NEXT-1〜NEXT-3、初期設計、性能実験、実機調査の長文は
 [`history/README.md`](history/README.md)から参照します。
 
-完了済みの実装計画、機能追加要求、統合計画など、現在の運用手順ではない時点文書も
-同じ`history/`へ集約しています。代表例はheartbeat計画、SD／flash要求、UF2Loader統合計画です。
+完了済みの実装計画、機能追加要求など、現在の運用手順ではない時点文書は
+`history/`へ集約しています。代表例はheartbeat計画と、UF2Loader計画に統合された旧SD／flash要求です。
 これらは当時の判断と要件を残すための資料であり、現行機能の有効化手順ではありません。
 
 歴史資料に残る「次は〜」「未着手」は、その文書が作成された時点の判断です。現在の状態は

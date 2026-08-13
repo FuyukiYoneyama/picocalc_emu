@@ -5,6 +5,11 @@
 対象: `picocalc_emu` host / firmware backend
 状態: **依頼のみ。** 実装・変更は未実施。
 
+本書の要件は、現行の統合計画
+[`../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+へ引き継がれています。現行計画では、directoryはまず一方向のsnapshot importとして扱い、
+host directoryへのliveな書戻しは対象外です。実装状況は現行計画と`capability.json`を優先してください。
+
 ## 1. 要旨
 
 2 つの機能を依頼する。
