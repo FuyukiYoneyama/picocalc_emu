@@ -49,7 +49,7 @@
 
 ## 現行の次期実装計画
 
-SDのRAW image、flash erase/program、`M-NESCO`（`Picocalc_NESco`のdirect-boot debug開始）、
+SDのRAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot SD/flash debug開始）、
 host directory snapshot、boot2／warm resetをこの順序で段階的に実装し、最後に外部`uf2loader`の
 end-to-end conformanceへ進む計画は
 [`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)が正典です。

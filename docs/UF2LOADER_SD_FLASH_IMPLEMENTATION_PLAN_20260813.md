@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2完了。M-NESCO（direct-boot debug開始）完了。U3以降は未着手。**
+状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3以降は未着手。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論

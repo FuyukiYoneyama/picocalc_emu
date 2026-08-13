@@ -25,7 +25,8 @@
         "status": "unpromoted",
         "promoted": false,
         "ci_run_id": 31315420348,
-        "meaning": "Observed main after NEXT-2B added the exact DMA-paced digital audio sink, corrected active level IRQ repending, and classified software-retrigger block boundaries. The bounded audio behavior is accepted by picocalc-audio-r1, but this commit does not replace the general promoted PicoTetris backend merely because it is branch head."
+        "local_development_commit": "ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe",
+        "meaning": "Last CI-observed unpromoted backend main. The current local development commit is recorded separately in local_development_commit and has only local validation because GitHub Actions is intentionally not run for ordinary development. Neither replaces the general promoted PicoTetris backend or the bounded audio acceptance backend."
       }
     },
     "note": "Source is never vendored here. Historical targets retain exact backend pins in the target registry. The three roles deliberately separate physical-device correlation, current promotion and an unpromoted moving development head."
