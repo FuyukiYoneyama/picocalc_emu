@@ -62,13 +62,14 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の現行計画（未着手）
+## 次の現行計画（U0〜U2／M-NESCO-S1完了、U3以降未着手）
 
-SD RAW image、flash erase/program、`M-NESCO`（`Picocalc_NESco`のdirect-boot debug開始）、
-directory snapshot import、boot2／watchdog warm resetをこの順序で段階的に追加し、最後に外部
+SD RAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot debug開始）を完了した。
+次はdirectory snapshot import、boot2／watchdog warm resetをこの順序で段階的に追加し、最後に外部
 `uf2loader`をend-to-endで検証する計画を固定しています。
 計画書は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)です。
-現在はU0前で、これらの機能はまだ`capability.json`のsupportedへ移していません。
+`firmware-validation/evidence/m-nesco-20260813-01/`にM-NESCO-S1のreport、scenario、UART、画面証拠を置いた。
+U3以降は未完了であり、これらの機能はまだ`capability.json`の`uf2loader supported`へ移していません。
 通常のdirect bootアプリdebugと既存target回帰は変更しません。
 
 ## 性能
@@ -98,7 +99,8 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 - NEXT-2B外のcodec、sample rate、DMA layout、mixing、speaker response。48 kHz PWM5_CCの
   level解析はdigital境界だけで、実際の音圧やspeaker responseは含まない
 - bootrom execution、USB MSC boot
-- SD multi-block、removal、write protect、raw image persistence、directory-backed storage
+- SD removal、write protect、directory-backed storage、実`uf2loader` end-to-end
+- raw imageのCOW読み出し・atomic exportは実装済みだが、複数runの完全なNESco再attach比較は未完了
 - host backendのPIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式
 - scenarioのloop／branch、任意report fieldの直接assert
 - machine APIとのheartbeat併用。初版は長時間CLI／wrapperの監視に限定

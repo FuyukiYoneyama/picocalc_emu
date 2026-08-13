@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "name": "m-nesco-sd-flash-stage",
+  "description": "Select the second ROM-menu entry (SD TEST.NES) and exercise direct-boot SD plus XIP flash staging.",
+  "poll_ms": 10,
+  "steps": [
+    {"op":"wait", "label":"opening and menu settled", "ms":4500},
+    {"op":"key_events", "label":"select SD ROM", "events":[{"state":"pressed","code":182},{"state":"released","code":182},{"state":"pressed","code":10},{"state":"released","code":10}], "gap_ms":100},
+    {"op":"wait", "label":"flash erase/program and NES session", "ms":500},
+    {"op":"snapshot", "label":"M-NESCO final screen", "png":"m-nesco-final.png"}
+  ]
+}

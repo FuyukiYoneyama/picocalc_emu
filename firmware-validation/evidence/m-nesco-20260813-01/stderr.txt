@@ -1,0 +1,14 @@
+[PICOCALC][RUN] event=start run=m-nesco-final pid=14 budget=1400000000
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=1 cycles=230925971 budget=1400000000 pct=16.495 elapsed_s=30.000 rate_mcycles_s=7.698
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=2 cycles=381962006 budget=1400000000 pct=27.283 elapsed_s=60.000 rate_mcycles_s=6.366
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=3 cycles=531559131 budget=1400000000 pct=37.969 elapsed_s=90.000 rate_mcycles_s=5.906
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=4 cycles=683952992 budget=1400000000 pct=48.854 elapsed_s=120.000 rate_mcycles_s=5.700
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=5 cycles=837759045 budget=1400000000 pct=59.840 elapsed_s=150.000 rate_mcycles_s=5.585
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=6 cycles=995420758 budget=1400000000 pct=71.101 elapsed_s=180.000 rate_mcycles_s=5.530
+[PICOCALC][RUN] event=heartbeat run=m-nesco-final pid=14 seq=7 cycles=1148793683 budget=1400000000 pct=82.057 elapsed_s=210.000 rate_mcycles_s=5.470
+scenario 'm-nesco-sd-flash-stage': pass
+  [pass]     4500 ms  opening and menu settled — waited 4500 ms
+  [pass]     4800 ms  select SD ROM — sent 4 raw key event(s)
+  [pass]     5300 ms  flash erase/program and NES session — waited 500 ms
+  [pass]     5300 ms  M-NESCO final screen — 222 non-black pixels
+[PICOCALC][RUN] event=finish run=m-nesco-final pid=14 cycles=1316021684 elapsed_s=233.570 stop=scenario_done exit=0

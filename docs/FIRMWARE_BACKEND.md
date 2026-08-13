@@ -25,7 +25,7 @@ branch名や最新commitは受入レベルではありません。targetごと�
 | hardware-correlated | `612b485...f66` | R5同一artifact実機相関に使った不変証拠 |
 | promoted | `e985a9d...5f1` | 通常PicoTetris回帰に使うOPT1-B accepted backend |
 | bounded audio acceptance | `d92db1b...1a3` | NEXT-2Bの凍結audio targetで受入済み |
-| local development main | `f05d47b` | NEXT-3 CRC修正とNEXT-4 machine APIを含む。general promotedとは別 |
+| local development main | `ae49c6c` | U1 RAW SD、U2 flash erase/program、M-NESCO-S1 direct-boot debug経路を含む。general promotedとは別 |
 
 新しいmainが既存targetを自動的に置き換えることはありません。backend更新時は新しいtarget revision、
 validation、recordを作り、旧実機証拠を書き換えません。
@@ -67,8 +67,35 @@ python3 tools/picocalc.py test --mode firmware \
 - digital音量advisoryと、人間による内蔵speakerの2問式通過記録
 - NEXT-3のmandatory SD CRC rejection
 - NEXT-4のJSONL machine API
+- file-backed RAW SD (`--sd-image`) とcopy-on-write/atomic export (`--sd-image-out`)
+- SPI-NOR erase/program、XIP mutation、flash report/export (`--flash-image-out`)
+- M-NESCO-S1: `Picocalc_NESco` direct bootでのSD ROM選択・flash staging診断
 
 完全な対応・制限は`capability.json`を優先します。
+
+## RAW SD／flash診断（M-NESCO-S1）
+
+通常の登録target回帰は従来どおり`picocalc.py test --mode firmware`を使います。RAW SDと
+flash mutationを診断する場合だけ、cleanな`picoem-picocalc` checkoutのrunnerへ明示的に
+入力を渡します。
+
+```sh
+picocalc-run \
+  --bin /absolute/path/Picocalc_NESco.bin \
+  --sd-image /absolute/path/sd.img \
+  --sd-image-out /absolute/path/sd-out.img \
+  --flash-image-out /absolute/path/flash-after.bin \
+  --scenario /absolute/path/m-nesco-scenario.json \
+  --cycles 1400000000 \
+  --json /absolute/path/report.json
+```
+
+`--bin`は初期XIP flash image（現在はraw BIN）であり、`--flash-image-out`はrun後の2 MiB
+imageをatomicに出力します。`--sd-image`は入力RAWをrun中に変更せず、firmwareのsector
+writeをCOW overlayへ保持します。input/outputを同じpathへ指定してはいけません。M-NESCO-S1の
+再現可能なscenarioと実測値は
+[`firmware-validation/evidence/m-nesco-20260813-01/`](../firmware-validation/evidence/m-nesco-20260813-01/)
+にあります。これは`uf2loader`のmenu、boot2、watchdog、USB BOOTSELを実装したことを意味しません。
 
 ## Keyboard一次リファレンス
 

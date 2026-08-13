@@ -116,9 +116,9 @@
     },
     {
       "id": "flash-chip-commands",
-      "what": "SPI flash behind XIP_SSI answers the boot-time commands firmware asks the chip",
-      "detail": "Read Unique ID (0x4B), JEDEC ID (0x9F) and the two status registers. The FIFO level registers (TXFLR/RXFLR) track the reply queue, because the bootrom transfer loop reads those rather than the status flags. Required by pico_unique_id, which the standard template links and the official sample does not.",
-      "limitation": "Erase and program are deliberately absent: nothing in the conformance track writes flash, and a half-modelled program path would corrupt the XIP image rather than fail visibly.",
+      "what": "SPI-NOR flash behind XIP_SSI answers query, erase and program commands",
+      "detail": "Read Unique ID (0x4B), JEDEC ID (0x9F), status registers, WREN/WRDI, sector/block erase and page program are modelled at transaction boundaries. QSPI SS framing used by the RP2040 SDK flash helpers is observed, mutation events update the XIP backing, and both cores' immutable-XIP decode state is invalidated. FIFO level registers track reply queues because firmware reads those rather than status flags.",
+      "limitation": "The real bootrom/QSPI-pad path is not executed, programming delay and power-loss corruption are not modelled, and support is bounded to the direct-boot/M-NESCO-S1 workload until the U5/U6 gates complete.",
       "since_gate": 7
     },
     {
@@ -137,9 +137,23 @@
       "id": "sd-card",
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
       "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 8 retains the selected format and block counters introduced in schema 6.",
-      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect, raw-image persistence or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay.",
+      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay. Raw persistence is available through the separate raw-sd-image capability and is not a live host-directory sync.",
       "correlated": "2026-08-09: BSP 0.9.0 public filesystem write path passed same-artifact PicoEdit correlation for FAT32 load, create/truncate write, sync, rename/backup and readback (firmware-validation/records/next1-picoedit-hardware-20260809-01/record.json). FAT16 remains host-only compatibility evidence.",
       "since_gate": "post-7; fat32-default completed in R1-SD"
+    },
+    {
+      "id": "raw-sd-image",
+      "what": "File-backed RAW SD image with copy-on-write overlay and atomic export",
+      "detail": "`--sd-image` attaches a non-empty 512-byte-aligned RAW image without loading the whole file into RAM. Reads are lazy by sector; firmware writes remain in a copy-on-write overlay. `--sd-image-out` publishes the merged image through a temporary file and rename, and reports input bytes/blocks, source SHA-256 and dirty block count. FAT32 is the default verification format; FAT16 RAW images are accepted when their filesystem is valid.",
+      "limitation": "The host file is read-only during a run, output is a complete RAW image rather than a directory diff, and concurrent writers or live card removal are not supported. Directory snapshot import is U3 work.",
+      "since_gate": "U1"
+    },
+    {
+      "id": "flash-erase-program",
+      "what": "Direct-boot firmware flash erase/program with XIP readback",
+      "detail": "Validated WREN/status/erase/page-program transactions update the 2 MiB XIP image with NOR 1-to-0 semantics, reject WEL/alignment/range/page-crossing errors, invalidate immutable-XIP decode state and export a structured mutation report. M-NESCO-S1 exercised this path from a FAT32 RAW SD image with 12 erases and 179 page programs.",
+      "limitation": "This is not USB BOOTSEL, boot2, watchdog warm reset or the real uf2loader menu. Full mapper- and run-to-run NESco coverage remains future M-NESCO extension/U3+ work.",
+      "since_gate": "U2 / M-NESCO-S1"
     },
     {
       "id": "scenario-runner",

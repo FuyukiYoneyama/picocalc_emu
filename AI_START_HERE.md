@@ -25,13 +25,13 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 - 現行計画の番号付き作業: すべて完了または正式終了
 
 次の現行計画は、番号付きR/NEXTとは別のUF2Loader SD／flash統合です。
-次に着手するのはU0であり、詳細は
+U0（clean provenance）、U1（RAW SD）、U2（flash erase/program）、M-NESCO-S1（`Picocalc_NESco`の
+direct-boot SD/flash debug開始）は完了しています。詳細は
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を読みます。
-順序はU0 → U1（SD RAW） → U2（flash erase/program） →
-**M-NESCO（`Picocalc_NESco`のdirect-boot debug開始）** → U3（directory snapshot） →
+次の順序はU3（directory snapshot） →
 U4（実loaderで必要と判明したSD protocol gap） → U5 → U6です。
-M-NESCOはU1とU2のGateが閉じた時点で成立する中間マイルストーンであり、
-U3以降や`uf2loader supported`の表示を先取りしません。U0が閉じるまでproduction codeを変更しません。
+M-NESCO-S1はU1とU2のGateが閉じた時点で成立する中間マイルストーンであり、
+複数mapper/再attachの完全相関、U3以降、`uf2loader supported`の表示を先取りしません。
 
 NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
 対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は

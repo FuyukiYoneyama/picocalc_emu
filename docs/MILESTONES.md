@@ -40,28 +40,31 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 ## 次の作業
 
 番号付きのR/NEXT作業は完了しています。次の現行計画は、番号付き作業とは別に固定した
-**UF2Loader SD／flash統合（U0〜U6、M-NESCO、未着手）**です。
+**UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2とM-NESCO-S1は完了し、U3以降が未着手です。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
-`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。
-次の実装を開始する前に、目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を
-計画書で固定します。UF2Loader計画では、まずU0を閉じるまでproduction codeを変更しません。
+`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U3以降を開始する前に、
+目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の
+provenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
 ### UF2Loader計画の実施順序と中間マイルストーン
 
 | 順序 | 計画段階 | 状態 |
 |---:|---|---|
-| 1 | U0 provenance／fixture／first-run trace | 未着手 |
-| 2 | U1 SD RAW image | 未着手 |
-| 3 | U2 flash erase/program | 未着手 |
-| 4 | **M-NESCO** — `Picocalc_NESco`を既存direct bootでdebug開始 | 未着手（U1・U2完了後） |
+| 1 | U0 provenance／fixture／first-run trace | **完了 2026-08-13** |
+| 2 | U1 SD RAW image | **完了 2026-08-13** |
+| 3 | U2 flash erase/program | **完了 2026-08-13** |
+| 4 | **M-NESCO-S1** — `Picocalc_NESco`を既存direct bootでSD/flash debug開始 | **完了 2026-08-13** |
 | 5 | U3 directory snapshot import | 未着手 |
 | 6 | U4 実loaderで判明したSD protocol gap | 未着手 |
 | 7 | U5 boot2 entry／watchdog warm reset | 未着手 |
 | 8 | U6 実`uf2loader` end-to-end | 未着手 |
 
-M-NESCOは番号付きR/NEXTの追加ではなく、U1とU2のGateが閉じた時点で
-`Picocalc_NESco`のdebugを解禁する中間マイルストーンです。この時点では
-directory import、boot2、watchdog、`uf2loader supported`をまだ宣言しません。
+M-NESCO-S1は番号付きR/NEXTの追加ではなく、U1とU2のGateが閉じた時点で
+`Picocalc_NESco`のdirect-boot SD/flash debugを解禁する中間マイルストーンです。
+FAT32 RAWからROMを選択し、erase/programとXIP反映を同一runで確認した証拠を
+`firmware-validation/evidence/m-nesco-20260813-01/`へ保存しています。この時点では
+複数size/mapperの網羅、run-to-run再attach比較、directory import、boot2、watchdog、
+`uf2loader supported`をまだ宣言しません。
 
 候補にはnegative conformance母数の拡充、追加blind app、SD fault／persistence、machine APIの
 client利便性がありますが、いずれも正式計画ではありません。

@@ -68,6 +68,7 @@ AIは次の順序を変えません。
 - 通常の正確性基準: firmware backendのSerial execution
 - firmware runnerの入力: raw BIN（UF2／ELFの直接実行ではありません）
 - 実機へ渡すときの通常経路: PicoCalcの`uf2loader`
+- エミュレーターでRAW SD／flash mutationを検査する場合: firmware backendの明示的な診断CLI
 
 対応範囲と未対応範囲を確認する必要がある場合だけ、機械可読の
 [`capability.json`](../firmware-validation/capability.json)を参照してください。
@@ -81,8 +82,10 @@ AIは次の順序を変えません。
 現在の状態だけを確認したい場合は[`IMPLEMENTATION_STATUS.md`](../docs/IMPLEMENTATION_STATUS.md)、
 公開版の選択は[`VERSIONING.md`](../docs/VERSIONING.md)を参照します。
 
-UF2Loader計画は**未着手の設計計画**です。実施順序はU0 → U1（SD RAW） → U2（flash） →
-M-NESCO（`Picocalc_NESco`のdirect-boot debug開始） → U3（directory snapshot） → U4 → U5 → U6です。
-計画書が`docs/`直下にあることは、現在のCLIで
-`--sd-image`、`--sd-dir`、flash erase/program、boot2起動が使えることを意味しません。
+UF2Loader計画ではU0（provenance）、U1（RAW SD）、U2（flash erase/program）、
+M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）まで完了しています。
+次はU3（directory snapshot）です。M-NESCO-S1は、`--sd-image`と
+`--flash-image-out`を使うbackend診断経路を提供しますが、`--sd-dir`、boot2、watchdog、
+実`uf2loader` end-to-endを意味しません。実施順序と証拠は
+[`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 実装状況は常に[`capability.json`](../firmware-validation/capability.json)を優先します。

@@ -19,13 +19,15 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 通常のfirmware回帰backend: OPT1-B promoted commitをtargetごとに固定
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
-- 現在定義済みの作業パッケージ: **すべて完了または正式終了**
-- 新しい番号付き作業: **未定義**
-- 次の未着手計画: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)（U0〜U6、M-NESCOマイルストーン）
+- 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
+- UF2Loader統合: **U0・U1・U2・M-NESCO-S1完了、U3以降未着手**
+- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU3（directory snapshot）
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
 [`capability.json`](firmware-validation/capability.json)を参照してください。
+M-NESCO-S1の実行証拠は
+[`firmware-validation/evidence/m-nesco-20260813-01/`](firmware-validation/evidence/m-nesco-20260813-01/)にあります。
 公開前の依存境界・ライセンス・ローカルゲートは
 [`docs/PUBLIC_RELEASE.md`](docs/PUBLIC_RELEASE.md)を参照してください。
 利用者向けの安定版、タグ、2リポジトリの対応付けは

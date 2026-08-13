@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **計画固定。実装未着手。**
+状態: **U0・U1・U2完了。M-NESCO（direct-boot debug開始）完了。U3以降は未着手。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -32,6 +32,8 @@
 ```
 
 SD RAWとflash read/writeまで完了した時点に、`M-NESCO`という正式な中間マイルストーンを置く。この時点から`Picocalc_NESco`を既存のdirect bootでdebugに利用してよい。directory import、boot2、watchdog、実`uf2loader`はこの後に続く。M-NESCOではまだ**`uf2loader supported`とは表示しない。** 上記のend-to-end受入が通って初めて、SD/flash/resetを統合した最終conformanceが完了したとする。
+
+2026-08-13に、U0で固定したclean provenanceとU1/U2の実装を使ったM-NESCO-S1を完了した。M-NESCO-S1の範囲は、既存direct bootで`Picocalc_NESco`を起動し、FAT32 RAW image上のSD ROMを選択し、flash erase/programとXIP反映を同一runで確認し、structured reportとflash exportを得るところまでである。複数mapper・複数サイズの網羅、export後の再attach run、directory import、boot2、watchdog、実`uf2loader` end-to-endは、M-NESCOの拡張受入またはU3以降に残す。これにより、証拠のない「uf2loader対応済み」や「全NESco ROM対応済み」を宣言しない。
 
 本書は[`NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`](history/NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md)の要件を残したまま、今回指定された実行順序を優先する統合計画である。旧文書の「directoryを先にする」という優先順位は本書で置き換える。
 
@@ -124,7 +126,7 @@ PicoCalc付属SDは32 GBである。32 GB imageをrun開始時にRAMへ展開す
 
 ## 6. 実装段階
 
-### U0: 契約、fixture、protocol traceを固定
+### U0: 契約、fixture、protocol traceを固定 — **完了 2026-08-13**
 
 実装前に次を固定する。
 
@@ -137,9 +139,10 @@ PicoCalc付属SDは32 GBである。32 GB imageをrun開始時にRAMへ展開す
 
 初期flashは、2 MiBを`0xFF`で埋め、`bootloader_pico.uf2`のpayloadを適用して作る。objcopyのsparse gapが`0x00`になったBINを、そのままblank flashと誤認して使わない。
 
-**Gate U0:** source/toolchain/artifact SHAが固定され、GPL artifactをrepositoryへ入れず再現できる。
+**Gate U0:** source/toolchain/artifact SHAが固定され、GPL artifactをrepositoryへ入れず再現できる。clean checkout・clean build・SHA確認を
+`firmware-validation/evidence/uf2loader-u0-20260813-01/`に記録した。
 
-### U1: SD RAW image
+### U1: SD RAW image — **完了 2026-08-13**
 
 SDのsector storageをinterface化し、既存memory backingと新しいRAW backingを分離する。
 
@@ -151,9 +154,9 @@ SDのsector storageをinterface化し、既存memory backingと新しいRAW back
 - 変更runは次回の`--sd-image`で再利用可能
 - input/output SHA、block数、read/write数、dirty block数をreportへ記録
 
-**Gate U1:** FAT32/FAT16の既存RAW imageをmount/readでき、1 sectorの変更をexportして次runで読める。異常size、範囲外、同一input/outputはfail-closed。
+**Gate U1:** FAT32/FAT16の既存RAW imageをmount/readでき、1 sectorの変更をexportして次runで読める。異常size、範囲外、同一input/outputはfail-closed。file-backed RAW、512-byte lazy read、COW overlay、atomic export、source/dirty metadataとunit testを実装した。M-NESCO-S1では64 MiB FAT32 RAWを読み、341 command、332 block read、unknown command 0件を記録した。
 
-### U2: flash erase / program
+### U2: flash erase / program — **完了 2026-08-13**
 
 `SsiFlash`がvalidated mutation eventを生成し、`Bus`がXIP backingへtransaction境界で適用する構造を基本とする。
 
@@ -174,9 +177,9 @@ SDK bootrom helperが実際に使うexit-XIP/read/status/erase commandはU0 trac
 
 real flashにはtop 16 KiBの物理write protectionはないため、エミュレーター独自の保護を作らない。代わりにend-to-end契約でloader領域が不変であることを検査し、変更が起きればアプリ/loaderの失敗として落とす。
 
-**Gate U2:** erase、program、readback、WEL/WIP、cache invalidationがunit/integration testを通る。不正alignment、page crossing、範囲外、WELなし、0->1は黙って成功しない。
+**Gate U2:** erase、program、readback、WEL/WIP、cache invalidationがunit/integration testを通る。不正alignment、page crossing、範囲外、WELなし、0->1は黙って成功しない。SPI-NORのWREN/status/sector・block erase/page program、QSPI CS境界、XIP backing更新、decode cache invalidation、flash mutation reportを実装した。実行証拠では12 erase、179 page program、45,824 program bytes、unknown command 0件、errors 0件だった。
 
-### M-NESCO: `Picocalc_NESco`デバッグ開始マイルストーン
+### M-NESCO: `Picocalc_NESco`デバッグ開始マイルストーン — **M-NESCO-S1完了 2026-08-13**
 
 U1〜U2が完了した時点で、boot2/watchdogを待たずに`Picocalc_NESco`を既存のdirect bootで検証する。これは仮のデモではなく、SDとflashの実装がNEScoのdebugに使えることを宣言する正式な中間マイルストーンである。
 
@@ -203,7 +206,19 @@ flash readについては、単に書いた直後の1回の`memcmp`だけでは�
 
 `Picocalc_NESco`は`multicore_lockout_start_blocking()`、割込み禁止、`flash_range_erase/program()`、`flash_flush_cache()`を実際に使うため、その経路も迂回しない。
 
-**Gate M-NESCO:** RAW SD imageから選んだ複数size/mapperのROMについて、stage、全量verify、同一run実行、final flash再attach後の復元が決定的に合格する。このgate以降は`Picocalc_NESco`のdebugへ使用可能と明記できるが、directory import、boot2、watchdog、uf2loader conformanceはまだ未完了と表示する。
+**Gate M-NESCO-S1（今回完了）:** 既存direct bootの`Picocalc_NESco` BINをclean backendで実行し、FAT32 RAW imageからSD ROMを選択、flash erase/program、XIP反映、scenario PASS、flash exportを1 runで決定的に確認する。実行証拠は
+`firmware-validation/evidence/m-nesco-20260813-01/`に保存した。
+
+実測値は、firmware source commit `ce67aa76e86dec700f086cd70214c247d6317da8`、BIN SHA-256
+`ce865f2a26fecc55cfd033abfc71590c9918499c477fee81897f7ca5ababeb1c`、backend commit
+`ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe`（`dirty=false`）、1,316,021,684 cycles、scenario
+exit 0である。SDは64 MiB FAT32、source SHA-256
+`95fedb2fa5b83a08c8480bb1da654bd25a03f0005fc5471c6606d4180b2f65e0`。flashは2 MiB、12 erase、179
+program、45,824 bytes、unknown command 0件、errors 0件だった。
+
+M-NESCO-S1は「`Picocalc_NESco`をdirect bootでSD/flash debugへ使い始められる」ことを宣言する
+中間gateであり、複数size/mapperの網羅、全量のrun-to-run再attach比較、directory import、boot2、
+watchdog、実`uf2loader` end-to-endを完了したことを意味しない。これらはM-NESCO拡張受入またはU3以降で行う。
 
 ### U3: directory snapshot import
 
@@ -365,4 +380,4 @@ U0 契約固定
  -> 文書/capability公開判定
 ```
 
-次に着手する作業は**U0「clean provenance・fixture・first-run traceの固定」**である。U0が閉じるまでproduction codeは変更しない。
+次に着手する作業は**U3「directory snapshot import」**である。M-NESCO-S1で確認したRAW SD／flash経路を維持したまま、host directoryから決定的なFAT32 snapshotを作る。U4以降では、実loaderのprotocol gap、boot2、watchdog、最終`uf2loader` end-to-endを順に進める。

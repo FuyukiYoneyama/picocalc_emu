@@ -1,0 +1,127 @@
+{
+  "schema_version": 8,
+  "backend_commit": "ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe",
+  "backend_build": {"commit": "ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe", "dirty": false},
+  "firmware": {"basename": "Picocalc_NESco.bin", "sha256": "ce865f2a26fecc55cfd033abfc71590c9918499c477fee81897f7ca5ababeb1c"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1400000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 1316021684,
+  "elapsed_us": 5300000,
+  "pc": "0x20002f2e",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 617, "raset": 617, "ramwr": 617, "ramrd": 0,
+    "pixels_written": 1866018, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "36aabb6dfb6ca3b8b0b5218d9871745ceeefe7bee32dbbadf00faa171e28daa2", "non_black_pixels": 222, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 216000549, "cs_falling_count": 1,
+    "bytes_written": 0, "bytes_read": 0,
+    "cmd_counts": {"write": 0, "fast_read": 0, "reset_enable": 0, "reset": 0, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 12, "program_count": 179, "program_bytes": 45824, "command_counts": [{"command": 0, "count": 180}, {"command": 255, "count": 180}, {"command": 6, "count": 191}, {"command": 32, "count": 12}, {"command": 5, "count": 191}, {"command": 53, "count": 180}, {"command": 235, "count": 180}, {"command": 2, "count": 179}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 341, "blocks_read": 332, "blocks_written": 0,
+    "raw_image": {"bytes": 67108864, "blocks": 131072, "dirty_blocks": 0, "source_sha256": "95fedb2fa5b83a08c8480bb1da654bd25a03f0005fc5471c6606d4180b2f65e0" },
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 721, "key_events_delivered": 4, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 1, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "audio_sink": {
+    "status": "fail",
+    "dma_write_count": 106887,
+    "target_write_attempt_count": 106887,
+    "other_pwm_cc_write_count": 0,
+    "wrong_width_count": 0,
+    "wrong_treq_count": 0,
+    "missing_due_cycle_count": 0,
+    "pcm_sha256": "d31bc178fa1b0bf9ab82529333ccd7f99b1159fd29261868dd898833bf8ac16a",
+    "expected_count": null,
+    "expected_sha256": null,
+    "first_words": ["0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080"],
+    "last_words": ["0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080", "0x00800080"],
+    "timer_index": 0,
+    "treq": 59,
+    "timer_fraction": "5/56689",
+    "timer_event_count": 107524,
+    "timer_miss_count": 637,
+    "timer_due_cycle_sha256": "024553244d064e165b21408ab6808e03993e5cd0c89b8ad6eb3f025b01a3cf7d",
+    "block_start_count": 836,
+    "malformed_block_count": 0,
+    "block_boundary_gap_count": 835,
+    "block_boundary_gap_min_cycles": 11337,
+    "block_boundary_gap_max_cycles": 34013,
+    "block_boundary_gap_sha256": "d71d5af0b58c65c765b08b515c8ff73cefc9d3ffc42ad0a6815514274091bfd3",
+    "gap_5208_count": 0,
+    "gap_5209_count": 0,
+    "unexpected_gap_count": 106051,
+    "service_latency_min_cycles": 0,
+    "service_latency_max_cycles": 15,
+    "service_latency_sha256": "3740b0b0eca86de9273c3eb290aea3351d9af44036485d3cf98f0176a1b55557"
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0e010f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "scenario.json",
+    "name": "m-nesco-sd-flash-stage",
+    "description": "Select the second ROM-menu entry (SD TEST.NES) and exercise direct-boot SD plus XIP flash staging.",
+    "status": "pass",
+    "poll_ms": 10,
+    "steps_total": 4,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait", "label": "opening and menu settled", "status": "pass", "at_ms": 4500, "at_cycles": 1116021683, "detail": "waited 4500 ms"},
+      {"index": 1, "op": "key_events", "label": "select SD ROM", "status": "pass", "at_ms": 4800, "at_cycles": 1191021683, "detail": "sent 4 raw key event(s)"},
+      {"index": 2, "op": "wait", "label": "flash erase/program and NES session", "status": "pass", "at_ms": 5300, "at_cycles": 1316021684, "detail": "waited 500 ms"},
+      {"index": 3, "op": "snapshot", "label": "M-NESCO final screen", "status": "pass", "at_ms": 5300, "at_cycles": 1316021684, "detail": "222 non-black pixels", "rgb565_sha256": "36aabb6dfb6ca3b8b0b5218d9871745ceeefe7bee32dbbadf00faa171e28daa2", "png_basename": "m-nesco-final.png"}
+    ]
+  },
+  "uart": {"bytes": 54, "sha256": "151d74c5f2a7c6f040cdc7ff435cc0a07ed36bbe9eb02288cf3e5d12a75ab206"}
+}

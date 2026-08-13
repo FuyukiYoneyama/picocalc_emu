@@ -53,8 +53,11 @@ SDのRAW image、flash erase/program、`M-NESCO`（`Picocalc_NESco`のdirect-boo
 host directory snapshot、boot2／warm resetをこの順序で段階的に実装し、最後に外部`uf2loader`の
 end-to-end conformanceへ進む計画は
 [`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)が正典です。
-現在は**U0（clean provenance・fixture・first-failure traceの固定）前**で、production codeは
-まだ変更していません。通常のdirect bootによるアプリdebugは、この計画中も変わりません。
+U0（clean provenance・fixture・first-failure trace）、U1（RAW SD）、U2（flash erase/program）と
+**M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）**は完了しました。現在は
+U3（directory snapshot）前です。M-NESCO-S1の証拠は
+`../firmware-validation/evidence/m-nesco-20260813-01/`にあります。通常のdirect bootによる
+アプリdebugは、この計画の前後で変わりません。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。
