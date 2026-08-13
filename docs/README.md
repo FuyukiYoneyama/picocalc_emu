@@ -2,12 +2,17 @@
 
 このページが`docs/`の入口です。現行仕様と歴史資料を混同しないよう、読む目的で分けています。
 
+通常の利用者・AIは、リポジトリ直下の
+[`USER_GUIDE/`](../USER_GUIDE/README.md)から開始してください。このページは全資料の索引であり、
+通常利用の手順を最初から読むための入口ではありません。
+
 ## まず読む
 
 | 目的 | 文書 |
 |---|---|
 | プロジェクトの入口と最短手順 | [`../README.md`](../README.md) |
-| AIがアプリを作るときの規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
+| 通常利用とAIの実行手順 | [`../USER_GUIDE/`](../USER_GUIDE/README.md) |
+| 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
 | 公開版の目印とバージョン運用 | [`VERSIONING.md`](VERSIONING.md) |
@@ -55,6 +60,10 @@ keyboard controllerのprotocol producer一次リファレンスはClockworkPi公
 
 R0〜R6、OPT0〜OPT3、NEXT-1〜NEXT-3、初期設計、性能実験、実機調査の長文は
 [`history/README.md`](history/README.md)から参照します。
+
+完了済みの実装計画、機能追加要求、統合計画など、現在の運用手順ではない時点文書も
+同じ`history/`へ集約しています。代表例はheartbeat計画、SD／flash要求、UF2Loader統合計画です。
+これらは当時の判断と要件を残すための資料であり、現行機能の有効化手順ではありません。
 
 歴史資料に残る「次は〜」「未着手」は、その文書が作成された時点の判断です。現在の状態は
 `IMPLEMENTATION_STATUS.md`、現在計画は`MILESTONES.md`を優先します。

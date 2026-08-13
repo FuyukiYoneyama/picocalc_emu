@@ -6,6 +6,10 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 
 本リポジトリの対象は、RP2040（Pico 1）を搭載したClockworkPi PicoCalcです。
 
+> **使い始める人とAIは、まず [`USER_GUIDE/`](USER_GUIDE/README.md) だけを読んでください。**
+> 生成、ビルド、host／firmware検証、scenario、複数runの手順を一つの入口に集めています。
+> `docs/`直下の凍結契約や`docs/history/`は、通常利用では読む必要がありません。
+
 ## 現在の状態
 
 - 現行BSP source: **0.9.0**
@@ -28,8 +32,10 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 
 ## 最初に読むもの
 
+- 通常利用の入口: [`USER_GUIDE/README.md`](USER_GUIDE/README.md)
 - 人間向け入口: このREADME
-- AIがアプリを作る: [AI_START_HERE.md](AI_START_HERE.md)
+- 通常利用とAIの実行手順: [USER_GUIDE/](USER_GUIDE/README.md)
+- 高度なAI監督・実機依頼の規則: [AI_START_HERE.md](AI_START_HERE.md)
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - 複数firmware runの監視: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
@@ -50,6 +56,10 @@ host検証・firmware backendの直接実行には必要ありません。target
 当時の判断であり、現在の作業指示ではありません。
 
 ## 5分で始める
+
+この節は概要です。実際にコマンドを選ぶときは、リポジトリ直下の
+[`USER_GUIDE/`](USER_GUIDE/README.md)を正本として使ってください。既存の`docs/`リンクは
+詳細仕様・凍結契約への参照であり、通常利用の代替入口ではありません。
 
 必要条件はPython 3.9以降です。portable検証とプロジェクト生成にはPico SDKは不要です。
 provenance付きの`verify-project`まで行う公開利用者は、GitHubのDownload ZIPではなく

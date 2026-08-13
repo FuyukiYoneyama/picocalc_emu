@@ -282,7 +282,7 @@ report生成、verdict、device modelには変更を入れない。
 - `picocalc_emu/tools/picocalc.py test --mode firmware`へ`--run-id`、`--progress-interval`、
   `--no-progress`を追加し、既定10秒・生成ID・host拒否・runner argv forwardingを固定した。
 - `README.md`、`AI_START_HERE.md`、`docs/CONCURRENT_RUNS.md`、backend READMEへ運用境界を記載した。
-- HB-2証拠は[`firmware-validation/evidence/heartbeat-concurrent-20260813-01/`](../firmware-validation/evidence/heartbeat-concurrent-20260813-01/)
+- HB-2証拠は[`firmware-validation/evidence/heartbeat-concurrent-20260813-01/`](../../firmware-validation/evidence/heartbeat-concurrent-20260813-01/)
   に保存した。schema 8 runner JSONを`records/*/report.json`へ置いていない。
 - ローカル検証: backend unit test 62件、all-features 66件、scoped rustfmt、Python tools 113件、
   release runnerのheartbeat OFF／ON artifact一致、2 process同時実行をすべて合格。
