@@ -138,7 +138,7 @@
       "id": "sd-card",
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
       "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 8 retains the selected format and block counters introduced in schema 6.",
-      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect or directory-backed storage, and writes complete immediately rather than holding the host through a programming delay. Raw persistence is available through the separate raw-sd-image capability and is not a live host-directory sync.",
+      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect or runner-integrated directory-backed storage, and writes complete immediately rather than holding the host through a programming delay. Raw persistence is available through the separate raw-sd-image capability and is not a live host-directory sync.",
       "correlated": "2026-08-09: BSP 0.9.0 public filesystem write path passed same-artifact PicoEdit correlation for FAT32 load, create/truncate write, sync, rename/backup and readback (firmware-validation/records/next1-picoedit-hardware-20260809-01/record.json). FAT16 remains host-only compatibility evidence.",
       "since_gate": "post-7; fat32-default completed in R1-SD"
     },
@@ -146,7 +146,7 @@
       "id": "raw-sd-image",
       "what": "File-backed RAW SD image with copy-on-write overlay and atomic export",
       "detail": "`--sd-image` attaches a non-empty 512-byte-aligned RAW image without loading the whole file into RAM. Reads are lazy by sector; firmware writes remain in a copy-on-write overlay. `--sd-image-out` publishes the merged image through a temporary file and rename, and reports input bytes/blocks, source SHA-256 and dirty block count. FAT32 is the default verification format; FAT16 RAW images are accepted when their filesystem is valid.",
-      "limitation": "The host file is read-only during a run, output is a complete RAW image rather than a directory diff, and concurrent writers or live card removal are not supported. Directory snapshot import is U3 work.",
+      "limitation": "The host file is read-only during a run, output is a complete RAW image rather than a directory diff, and concurrent writers or live card removal are not supported. The standard host-side `tools/picocalc.py sd pack/extract` utility is available for deterministic directory-to-RAW preprocessing and RAW-to-directory postprocessing; runner-integrated `--sd-dir` snapshot import remains U3-B work.",
       "since_gate": "U1"
     },
     {

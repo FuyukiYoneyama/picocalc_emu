@@ -16,12 +16,13 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 標準BSP機能の実機相関baseline: **0.8.8**
 - 推奨LCD: `pio-rgb565`（PIO0、RGB565、LCD DMAなし）
 - SD: **FAT32が既定**、FAT16は明示的な互換profile
+- SD RAWの標準pack／extract: [`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)
 - 通常のfirmware回帰backend: OPT1-B promoted commitをtargetごとに固定
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
-- UF2Loader統合: **U0・U1・U2・M-NESCO-S1完了、U3以降未着手**
-- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU3（directory snapshot）
+- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A完了、U3-B以降未着手**
+- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU3-B（runner-integrated directory snapshot）
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
@@ -44,6 +45,7 @@ M-NESCO-S1の実行証拠は
 - 複数firmware runの監視: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
 - 公開版の選び方とバージョン運用: [docs/VERSIONING.md](docs/VERSIONING.md)
 - BSPの公開APIと固定ハードウェア契約: [bsp/README.md](bsp/README.md)
+- SD directory ↔ RAW image のデバッグ往復: [`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)
 - 検証対象アプリ・校正ツールの外部workspace: [外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)
 
 検証対象の独立アプリとspeaker校正ツールは、Git境界を保つため本リポジトリの外側にある
@@ -240,7 +242,7 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - 両coreからの同時device access、core 1 relaunchなど、NEXT-2A外の一般multicore
 - 任意codec／sample rate／DMA layoutの音声一般化
 - bootromの実行、USB MSC boot
-- SDのmulti-block、removal、write-protect、raw image persistence、directory-backed storage
+- SDのmulti-block、removal、write-protect、runner-integrated directory-backed storage
 - scenarioのloop／branch、任意report fieldの直接assert
 - 実機の見え方・聞こえ方・物理操作品質を機械だけで判定すること
 

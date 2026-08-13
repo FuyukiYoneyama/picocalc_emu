@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from provenance import directory_sha256, git_dirty, git_head
+from sd_image import add_cli as add_sd_cli, run_cli as run_sd_cli
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1994,6 +1995,7 @@ def main() -> int:
         action="store_true",
         help="show repositories and commits without cloning",
     )
+    add_sd_cli(subparsers)
     args, unknown = parser.parse_known_args()
     if unknown:
         # Unrecognized flags surface on the top-level parser regardless of
@@ -2087,6 +2089,8 @@ def main() -> int:
         )
     if args.command == "fetch-references":
         return fetch_references(args.output, args.dry_run)
+    if args.command == "sd":
+        return run_sd_cli(args)
     return 2
 
 

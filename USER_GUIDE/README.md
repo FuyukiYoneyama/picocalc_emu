@@ -14,6 +14,7 @@
 | host／firmwareで検証する | [`TESTING.md`](TESTING.md) |
 | 画面やUARTを待ってキーを入れる | [`SCENARIOS.md`](SCENARIOS.md) |
 | 複数の実行を同時に監視する | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
+| SDのdirectoryとRAW imageを往復する | [`SD_IMAGES.md`](SD_IMAGES.md) |
 | 次期SD／flash／UF2Loader計画を確認する | [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md) |
 
 ## AIの実行ルール
@@ -59,6 +60,7 @@ AIは次の順序を変えません。
 - Python 3.9以降が必要です。生成・portable検証だけならPico SDKは不要です。
 - RP2040へビルドするときだけPico SDKを指定します。
 - firmware backendを使うときだけ、別repositoryの`picoem-picocalc`が必要です。
+- SDの事前／事後処理には、このrepositoryの`tools/picocalc.py sd pack/extract`を使います。
 - `picocalc_emu_ext/`やPicoTetris等の外部アプリは、通常の新規アプリ開発には不要です。
 
 ## 現在の標準
@@ -69,6 +71,8 @@ AIは次の順序を変えません。
 - firmware runnerの入力: raw BIN（UF2／ELFの直接実行ではありません）
 - 実機へ渡すときの通常経路: PicoCalcの`uf2loader`
 - エミュレーターでRAW SD／flash mutationを検査する場合: firmware backendの明示的な診断CLI
+
+SD RAW imageの標準的な作成・取り出し手順は[`SD_IMAGES.md`](SD_IMAGES.md)にあります。
 
 対応範囲と未対応範囲を確認する必要がある場合だけ、機械可読の
 [`capability.json`](../firmware-validation/capability.json)を参照してください。
@@ -84,7 +88,8 @@ AIは次の順序を変えません。
 
 UF2Loader計画ではU0（provenance）、U1（RAW SD）、U2（flash erase/program）、
 M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）まで完了しています。
-次はU3（directory snapshot）です。M-NESCO-S1は、`--sd-image`と
+host側のU3-A（directory ↔ RAW pack/extract）も完了しています。次はU3-B（runner-integrated
+directory snapshot）です。M-NESCO-S1は、`--sd-image`と
 `--flash-image-out`を使うbackend診断経路を提供しますが、`--sd-dir`、boot2、watchdog、
 実`uf2loader` end-to-endを意味しません。実施順序と証拠は
 [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。

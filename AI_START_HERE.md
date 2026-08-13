@@ -28,10 +28,11 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 U0（clean provenance）、U1（RAW SD）、U2（flash erase/program）、M-NESCO-S1（`Picocalc_NESco`の
 direct-boot SD/flash debug開始）は完了しています。詳細は
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を読みます。
-次の順序はU3（directory snapshot） →
+host側のU3-A（directory ↔ RAW pack/extract）も完了しており、次の順序はU3-B（runner-integrated
+directory snapshot） →
 U4（実loaderで必要と判明したSD protocol gap） → U5 → U6です。
 M-NESCO-S1はU1とU2のGateが閉じた時点で成立する中間マイルストーンであり、
-複数mapper/再attachの完全相関、U3以降、`uf2loader supported`の表示を先取りしません。
+複数mapper/再attachの完全相関、U3-B以降、`uf2loader supported`の表示を先取りしません。
 
 NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
 対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は
@@ -95,6 +96,11 @@ LCD GPIO、初期化列、transfer粒度、SD SPI、keyboard I2C、PSRAM clock�
 3. 固定targetによるfirmware scenario
 4. report、UART、snapshot、SHAの照合
 5. エミュレーターで判定できない項目だけ実機へ依頼
+
+SDのファイルをfixtureとして渡す場合は、毎回独自スクリプトを作らず、
+[`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)の`sd pack` → runner `--sd-image`／
+`--sd-image-out` → `sd extract`の往復を使います。これはrunnerへの`--sd-dir`統合ではなく、
+host側の標準前処理・後処理です。
 
 Host backendは高速ですがハードウェアモデルではありません。PIO、DMA、I2C、割り込み、
 multicore、LCD wire形式を判断するときはfirmware backendを使います。

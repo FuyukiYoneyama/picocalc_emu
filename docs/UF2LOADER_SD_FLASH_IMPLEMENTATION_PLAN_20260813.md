@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3以降は未着手。**
+状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）完了。U3-B以降は未着手。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -220,7 +220,22 @@ M-NESCO-S1は「`Picocalc_NESco`をdirect bootでSD/flash debugへ使い始め�
 中間gateであり、複数size/mapperの網羅、全量のrun-to-run再attach比較、directory import、boot2、
 watchdog、実`uf2loader` end-to-endを完了したことを意味しない。これらはM-NESCO拡張受入またはU3以降で行う。
 
-### U3: directory snapshot import
+### U3-A: host directory ↔ RAW image 標準ツール — **完了 2026-08-13**
+
+runnerの前処理・後処理をAIごとの自作scriptにしないため、`picocalc_emu/tools/sd_image.py`を
+stdlib-onlyの標準host toolとして追加し、`tools/picocalc.py sd pack/extract`へ統合した。
+FAT32を既定、FAT16を明示profileとし、固定geometry／timestamp／volume parameter、名前順、VFAT
+LFN、8.3 alias、atomic output、JSON manifestを提供する。symlink／special file／case collision、
+破損BPB・FAT・LFN・chain、出力pathのsymlink、同時変更中の入力はfail-closedで拒否する。
+
+このツールはrunnerの`--sd-image`／`--sd-image-out`と組み合わせて使う。手順と制約は
+[`../USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)に固定した。これは`--sd-dir`の実装でも、
+host directoryのlive mountでもない。packしたimageのsuper-floppy sector 0がFAT BPBとなる。
+
+**Gate U3-A:** FAT32／FAT16のround-trip、同一treeのimage SHA一致、LFN／Unicode、symlink・collision・
+malformed image・入力同時変更の拒否をlocal testで確認する（CIは実行しない）。
+
+### U3-B: runner-integrated directory snapshot import
 
 `--sd-dir`はhost filesystemをfirmwareへ直結しない。起動時に次の順でFAT32 imageを決定的に作り、既存SD SPI/FatFs経路へ渡す。
 
@@ -240,9 +255,11 @@ watchdog、実`uf2loader` end-to-endを完了したことを意味しない。�
 
 directory側への書戻しは行わない。これにより、hostの予期しない削除・rename・上書きを避ける。
 
-実装開始時に、外部commandへ依存しない方法を決める。第一候補はlicenseとmaintenance状態を確認したpinned permissive-licenseのRust FAT libraryである。適切なlibraryがなければ、小さなFAT32 packerを自作するが、その場合はU3の工数を再見積りする。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
+U3-Aでhost packerは確定したため、U3-Bはこのpack結果をrunner起動時に接続するCLI／contract／
+artifact境界に限定する。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
 
-**Gate U3:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、同じtreeから毎回同じimage SHAを得る。
+**Gate U3-B:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、
+同じtreeから毎回同じimage SHAを得て、`--sd-image-out`と同一のmanifest境界を保つ。
 
 ### U4: uf2loader実行で判明したSD protocol gap
 
@@ -351,14 +368,15 @@ clean buildした外部uf2loaderと、自作test appを使って次を1つのsce
 | U1 file-backed RAW + COW + export + report/tests | 12〜18時間 |
 | U2 flash erase/program + cache coherence | 20〜32時間 |
 | M-NESCO Picocalc_NESco direct-boot実用検証 | 8〜14時間 |
-| U3 deterministic directory import | 16〜26時間 |
+| U3-A host pack/extract標準ツール | **完了** |
+| U3-B runner-integrated directory import | 8〜16時間 |
 | U4 実traceで判明したSD gap（変更不要なら監査だけ） | 2〜12時間 |
 | U5 boot2 entry + watchdog warm reset | 16〜28時間 |
 | U6 実uf2loader scenario/negative/artifact | 16〜24時間 |
 | 文書・全local回帰・公開境界監査 | 8〜12時間 |
-| **合計** | **104〜176時間** |
+| **残り合計（U3-A完了後）** | **96〜166時間** |
 
-目安は**実働13〜22日**である。directory importに適切なlibraryを使えない、実loaderが未観測のSD/SSI commandを要求する、warm resetが既存cycle契約へ広く影響する場合は上限を超える。その場合は問題を隠して範囲を縮めず、該当gateで停止して再見積りする。
+目安は**実働12〜21日**である（U3-Aのhost tool実装は完了済み）。実loaderが未観測のSD/SSI commandを要求する、warm resetが既存cycle契約へ広く影響する場合は上限を超える。その場合は問題を隠して範囲を縮めず、該当gateで停止して再見積りする。
 
 42〜60時間程度で作れるsyntheticな「SDからUF2を読んで直接chain-loadするデモ」は、本計画の最終目標ではない。今回は**実際のuf2loader、実際のflash helper、実際のwatchdog reboot**を通すため、その差分を工数へ含めている。
 
@@ -373,11 +391,13 @@ U0 契約固定
  -> U1 RAW
  -> U2 flash erase/program
  -> M-NESCO Picocalc_NEScoで実用開始判定
- -> U3 directory import
+ -> U3-B directory import（U3-A host toolは完了）
  -> U4 SD実loader gap（必要な場合だけ実装）
  -> U5 boot/reset
  -> U6 uf2loader end-to-end
  -> 文書/capability公開判定
 ```
 
-次に着手する作業は**U3「directory snapshot import」**である。M-NESCO-S1で確認したRAW SD／flash経路を維持したまま、host directoryから決定的なFAT32 snapshotを作る。U4以降では、実loaderのprotocol gap、boot2、watchdog、最終`uf2loader` end-to-endを順に進める。
+次に着手する作業は**U3-B「runner-integrated directory snapshot import」**である。U3-Aで用意した
+標準host pack/extractを再利用し、M-NESCO-S1で確認したRAW SD／flash経路へ安全に接続する。U4以降では、
+実loaderのprotocol gap、boot2、watchdog、最終`uf2loader` end-to-endを順に進める。
