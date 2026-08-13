@@ -229,7 +229,8 @@ raise SystemExit(code)
             target_id="fixture", firmware=firmware, backend_dir=backend,
             cycles=None, keys=None, sd=None, sd_format=None,
             lcd_variant=None, scenario_override=scenario, snapshot_dir=None,
-            uart_out=None, json_out=None,
+            uart_out=None, json_out=None, run_id=None,
+            progress_interval=10, no_progress=False,
         )
         arguments.update(overrides)
         with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
@@ -2518,6 +2519,30 @@ raise SystemExit(code)
         self.assertEqual(completed.returncode, 2)
         self.assertIn("host mode tests FAT32 and FAT16 automatically", completed.stderr)
 
+    def test_host_mode_rejects_firmware_progress_options(self):
+        for option in (("--run-id", "host-run"), ("--progress-interval", "5"), ("--no-progress",)):
+            completed = run(PICOCALC, "test", "--mode", "host", *option)
+            self.assertEqual(completed.returncode, 2, option)
+            self.assertIn("host mode tests FAT32 and FAT16 automatically", completed.stderr)
+
+    def test_progress_interval_rejects_u64_overflow(self):
+        completed = run(PICOCALC, "test", "--mode", "firmware", "--progress-interval", str(2**64))
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("unsigned 64-bit", completed.stderr)
+
+    def test_no_progress_rejects_other_progress_options(self):
+        for option in (("--run-id", "firmware-run"), ("--progress-interval", "5")):
+            completed = run(
+                PICOCALC,
+                "test",
+                "--mode",
+                "firmware",
+                "--no-progress",
+                *option,
+            )
+            self.assertEqual(completed.returncode, 2, option)
+            self.assertIn("cannot be combined", completed.stderr)
+
     def test_lcd_transaction_test_detects_changed_sequence(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = self.copy_project(temporary)
@@ -3014,6 +3039,44 @@ raise SystemExit(code)
             self.assertEqual(self.run_firmware_fixture(
                 module, backend, firmware, scenario, registry
             ), 1)
+
+    def test_firmware_forwards_progress_options_without_generic_passthrough(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            with mock.patch.object(module.os, "getpid", return_value=4242):
+                self.assertEqual(self.run_firmware_fixture(
+                    module, backend, firmware, scenario, registry
+                ), 0)
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            self.assertEqual(argv[argv.index("--run-id") + 1], "fixture-4242")
+            self.assertEqual(argv[argv.index("--progress-interval") + 1], "10")
+            self.assertNotIn("--no-progress", argv)
+            self.assertEqual(self.run_firmware_fixture(
+                module,
+                backend,
+                firmware,
+                scenario,
+                registry,
+                run_id="explicit.run-1",
+                progress_interval=7,
+            ), 0)
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            self.assertEqual(argv[argv.index("--run-id") + 1], "explicit.run-1")
+            self.assertEqual(argv[argv.index("--progress-interval") + 1], "7")
+            self.assertNotIn("--no-progress", argv)
+            self.assertEqual(self.run_firmware_fixture(
+                module,
+                backend,
+                firmware,
+                scenario,
+                registry,
+                no_progress=True,
+            ), 0)
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            self.assertNotIn("--run-id", argv)
+            self.assertNotIn("--progress-interval", argv)
+            self.assertNotIn("--no-progress", argv)
 
     def test_r2_report_must_be_new_well_formed_and_match_the_device(self):
         module = self.load_picocalc_module()

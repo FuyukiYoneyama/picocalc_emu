@@ -247,6 +247,34 @@ def valid_name(value: str) -> str:
     return value
 
 
+def valid_run_id(value: str) -> str:
+    """Validate the diagnostic ID passed to the firmware runner."""
+    if not value:
+        raise argparse.ArgumentTypeError("run id must not be empty")
+    if len(value) > 64:
+        raise argparse.ArgumentTypeError("run id must be at most 64 ASCII characters")
+    if not value.isascii() or not all(
+        character.isalnum() or character in "._:-" for character in value
+    ):
+        raise argparse.ArgumentTypeError(
+            "run id may contain only ASCII letters, digits, '.', '_', ':' and '-'"
+        )
+    return value
+
+
+def positive_int(value: str) -> int:
+    """Parse a strictly positive integer CLI value."""
+    try:
+        number = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be an integer") from error
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    if number > (2**64 - 1):
+        raise argparse.ArgumentTypeError("must fit in an unsigned 64-bit integer")
+    return number
+
+
 def create_project(name: str, output: Path) -> int:
     destination = output.resolve()
     if destination.exists():
@@ -1367,6 +1395,9 @@ def firmware_test(
     snapshot_dir: Optional[Path],
     uart_out: Optional[Path],
     json_out: Optional[Path],
+    run_id: Optional[str] = None,
+    progress_interval: int = 10,
+    no_progress: bool = False,
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
 
@@ -1374,6 +1405,28 @@ def firmware_test(
     Code 2 is the "cannot judge" case — the caller should treat it as
     hardware_required rather than as a failing run.
     """
+    if run_id is not None:
+        try:
+            valid_run_id(run_id)
+        except argparse.ArgumentTypeError as error:
+            print("invalid --run-id: {}".format(error))
+            return 2
+    if progress_interval < 1:
+        print("invalid --progress-interval: must be at least 1")
+        return 2
+    if no_progress and (run_id is not None or progress_interval != 10):
+        print("--no-progress cannot be combined with --run-id or --progress-interval")
+        return 2
+
+    # The wrapper owns the default ID so every normal firmware invocation has
+    # an observable, process-local identity.  --no-progress intentionally
+    # leaves both heartbeat options off the runner command entirely.
+    effective_run_id = run_id or "{}-{}".format(target_id, os.getpid())
+    try:
+        valid_run_id(effective_run_id)
+    except argparse.ArgumentTypeError as error:
+        print("invalid generated --run-id: {}".format(error))
+        return 2
     try:
         target = load_firmware_target(target_id)
     except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
@@ -1546,6 +1599,15 @@ def firmware_test(
             command.extend(["--snapshot-dir", str(snapshots)])
         if uart_out is not None:
             command.extend(["--uart", str(uart_path)])
+        if not no_progress:
+            command.extend(
+                [
+                    "--run-id",
+                    effective_run_id,
+                    "--progress-interval",
+                    str(progress_interval),
+                ]
+            )
 
         print("running {} on backend {}".format(target_id, actual_commit[:12]))
         try:
@@ -1872,6 +1934,21 @@ def main() -> int:
         choices=["fat32", "fat16"],
         help="firmware mode: initial SD filesystem profile (requires --sd)",
     )
+    test_parser.add_argument(
+        "--run-id",
+        type=valid_run_id,
+        help="firmware mode: heartbeat run ID (default: <target>-<wrapper-pid>)",
+    )
+    test_parser.add_argument(
+        "--progress-interval",
+        type=positive_int,
+        help="firmware mode: heartbeat interval in seconds (default: 10)",
+    )
+    test_parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="firmware mode: disable runner heartbeat output",
+    )
     test_parser.add_argument("--json", dest="json_out", type=Path)
 
     verify_parser = subparsers.add_parser(
@@ -1917,7 +1994,16 @@ def main() -> int:
         action="store_true",
         help="show repositories and commits without cloning",
     )
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        # Unrecognized flags surface on the top-level parser regardless of
+        # which subcommand was invoked, so its bare usage line never shows
+        # the subcommand's actual options. Print the subcommand's own usage
+        # first so an invented flag is diagnosable without a second --help.
+        subparser = subparsers.choices.get(args.command)
+        if subparser is not None:
+            subparser.print_usage(sys.stderr)
+        parser.error("unrecognized arguments: {}".format(" ".join(unknown)))
     if args.command == "new":
         return create_project(args.name, args.output or (Path.cwd() / args.name))
     if args.command == "build":
@@ -1945,6 +2031,10 @@ def main() -> int:
     if args.command == "test":
         if args.sd_format is not None and not args.sd:
             parser.error("--sd-format requires --sd")
+        if args.no_progress and (
+            args.run_id is not None or args.progress_interval is not None
+        ):
+            parser.error("--no-progress cannot be combined with --run-id or --progress-interval")
         if args.mode == "host":
             if (
                 args.sd
@@ -1955,9 +2045,12 @@ def main() -> int:
                 or args.scenario is not None
                 or args.snapshot_dir is not None
                 or args.uart_out is not None
+                or args.run_id is not None
+                or args.progress_interval is not None
+                or args.no_progress
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-format are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-format/--run-id/--progress-interval/--no-progress are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -1976,6 +2069,9 @@ def main() -> int:
             args.snapshot_dir,
             args.uart_out,
             args.json_out,
+            args.run_id,
+            args.progress_interval if args.progress_interval is not None else 10,
+            args.no_progress,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

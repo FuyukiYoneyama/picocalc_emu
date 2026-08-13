@@ -1,3 +1,4 @@
-# Preserve raw hardware UART captures byte-for-byte, including CRLF framing.
-firmware-validation/records/**/uart.log binary
-firmware-validation/records/**/usb-cdc.log binary
+# UART captures preserve the exact CR-delimited bytes emitted by the firmware.
+# Treat them as binary evidence so whitespace checks do not rewrite or reject
+# the captured stream.
+firmware-validation/evidence/**/uart.log binary

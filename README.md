@@ -32,6 +32,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - AIがアプリを作る: [AI_START_HERE.md](AI_START_HERE.md)
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+- 複数firmware runの監視: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
 - 公開版の選び方とバージョン運用: [docs/VERSIONING.md](docs/VERSIONING.md)
 - BSPの公開APIと固定ハードウェア契約: [bsp/README.md](bsp/README.md)
 - 検証対象アプリ・校正ツールの外部workspace: [外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)
@@ -136,6 +137,11 @@ BINやscenarioのSHA、backend commit、LCD variantが契約と違えば実行�
 終了コードは`0=pass`、`1=judged failure`、`2=cannot judge`です。詳細は
 [Firmware backend](docs/FIRMWARE_BACKEND.md)と
 [Versioned validation](docs/VERSIONED_VALIDATION.md)を参照してください。
+
+`picocalc.py test --mode firmware` は、長い実行を監視できるよう stderr heartbeat を既定で有効にします。
+各 run に別の出力ディレクトリを割り当て、必要なら`--run-id`で再試行をまたぐIDを指定してください。
+無効化は`--no-progress`です。heartbeatのfield、`finish`優先の判定、並列実行時のartifact分離は
+[複数runの運用](docs/CONCURRENT_RUNS.md)にまとめています。
 
 ## 画面を見ながら入力する
 

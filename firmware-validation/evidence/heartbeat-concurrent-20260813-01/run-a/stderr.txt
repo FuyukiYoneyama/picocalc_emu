@@ -1,0 +1,3 @@
+[PICOCALC][RUN] event=start run=run-a pid=10 budget=100000000
+[PICOCALC][RUN] event=heartbeat run=run-a pid=10 seq=1 cycles=69516106 budget=100000000 pct=69.516 elapsed_s=1.000 rate_mcycles_s=69.515
+[PICOCALC][RUN] event=finish run=run-a pid=10 cycles=100000000 elapsed_s=1.783 stop=cycle_limit exit=0

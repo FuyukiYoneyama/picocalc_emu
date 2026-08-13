@@ -1,0 +1,5 @@
+[PICOCALC][BOOT] bsp=0.8.2 app=0.8.2-b-pio-rgb565-default variant=pio-rgb565 git=258a5b040765 build=2026-08-01T01:41:58Z compile=Aug  1 2026 10:41:59
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565

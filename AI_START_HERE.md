@@ -95,7 +95,25 @@ python3 tools/picocalc.py test --mode firmware \
   --snapshot-dir /tmp/picocalc-snapshots
 ```
 
+firmware modeでは長時間実行を監視する stderr heartbeat が既定で有効です。複数runを同時に動かす場合は、
+runごとに別の出力directoryを用意し、必要なら`--run-id <id>`を指定します。既定のheartbeatを止める
+場合だけ`--no-progress`を使います。`finish`の有無を最初に確認し、WSLで外側の終了コードが0に見えても
+`finish.exit`とreportを優先してください。詳細は[複数runの運用](docs/CONCURRENT_RUNS.md)を参照します。
+
 登録targetと異なるBIN、scenario、backend、device optionをoverrideして通してはいけません。
+
+## AI実行時の注意
+
+`wsl.exe`経由でシェルを起動する実行環境では、`$?`やパイプ後の終了コードが失われ、常に0として
+読めることがある。判定は`$?`ではなく、ツールが出力する`RESULT mode=... status=...`行、または
+実行ツール自体が返す`Exit code N`のような表示で行う。
+
+scenario JSONやcommit messageのような複数行contentは、シェルのheredocで組み立てるとクォートが
+崩れやすい。ファイルを書き込むツールで生成してからコマンドへ渡す。
+
+低レベルrunnerをheartbeatなしで直接呼ぶ場合、サイクル数の大きいfirmware実行（soak、full検証など）は
+完了まで中間出力がない。正規の`picocalc.py test --mode firmware`はheartbeatを既定で出すが、数分以上
+かかる実行ではなおバックグラウンドで開始し、`finish`とreportをポーリングで確認する。
 
 ## 状態を見て入力する
 
@@ -137,5 +155,6 @@ UF2のファイル名だけで版を識別しません。起動ログの`[PICOCA
 - Firmware backend: [docs/FIRMWARE_BACKEND.md](docs/FIRMWARE_BACKEND.md)
 - Host backend: [docs/HOST_BACKEND.md](docs/HOST_BACKEND.md)
 - Scenario: [docs/SCENARIO_RUNNER.md](docs/SCENARIO_RUNNER.md)
+- 複数run heartbeat: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
 - Machine API: [docs/HEADLESS_MACHINE_API.md](docs/HEADLESS_MACHINE_API.md)
 - 過去の経緯・却下実験: [docs/history/README.md](docs/history/README.md)

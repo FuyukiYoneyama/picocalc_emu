@@ -1,8 +1,8 @@
 # `picocalc-run` 複数起動・進捗heartbeat実装計画
 
 作成日: 2026-08-13
-対象: `picoem-picocalc` の `picocalc-run`、`picocalc_emu` の利用文書
-状態: **計画固定。実装未着手。**
+対象: `picoem-picocalc` の `picocalc-run`、`picocalc_emu` の`tools/picocalc.py`と利用文書
+状態: **実装完了（ローカル検証済み、未commit／未push）。**
 
 ## 1. 目的
 
@@ -15,9 +15,10 @@ AIが複数の`picocalc-run` processを同時に実行するとき、各runを�
 ## 2. 現状と安全境界
 
 `picocalc-run`を別processとして起動した場合、CPU、LCD、PSRAM、keyboard、現在のmemory-backed
-SDはprocessごとに独立している。2026-08-13には、PicoCalc board、PSRAM、keyboard、FAT32 SDを
-接続した2 processを異なる出力先で同時実行し、両方がexit 0となり、JSON reportとframebufferが
-byte単位で一致することをローカルで確認した。
+SDはprocessごとに独立している。2026-08-13の計画作成時に、PicoCalc board、PSRAM、keyboard、
+FAT32 SDを接続した2 processの予備試験は行ったが、再現commandとartifactを凍結していないため、
+これは受入証拠として扱わない。HB-2でcleanな再実行を行い、入力SHA、command、環境、各processの
+report/UART/framebuffer SHAと終了結果をrecordへ保存する。
 
 一方、次のpathは呼び出し側が指定する通常のファイルであり、同じpathを複数processへ渡すと
 上書き・競合し得る。
@@ -41,7 +42,7 @@ byte単位で一致することをローカルで確認した。
 
 ## 3. 初版に実装する最小契約
 
-### 3.1 CLI
+### 3.1 低レベルrunner CLI
 
 次の2 optionだけを追加する。
 
@@ -55,9 +56,11 @@ byte単位で一致することをローカルで確認した。
 - heartbeatは明示指定時だけ有効にし、既定動作は変えない。
 - intervalは整数秒の`u64`として解析し、1以上だけを受け付ける。
 - IDは1〜64文字のASCII `A-Z a-z 0-9 . _ : -`に限定する。
-- 空白、改行、制御文字を拒否し、log injectionを防ぐ。
+- 空白、改行、制御文字を拒否し、heartbeatの`run=` fieldへのlog injectionを防ぐ。この契約は
+  既存のscenario名など、別系統のtrusted-input診断行を新たにsanitizeするものではない。
 - `--run-id`は観測用metadataであり、firmware reportやbehavior hashへ入れない。
 - 同時実行中のIDは呼び出し側が一意に割り当てる。runnerはOS全体の一意性を検査しない。
+- `--machine-api`との併用は初版では拒否する。machine APIへの接続は実利用が確認された後続phaseとする。
 
 例:
 
@@ -71,7 +74,35 @@ picocalc-run \
   --snapshot-dir runs/mapper19-case-a/snapshots
 ```
 
-### 3.2 stderr出力
+### 3.2 正規AI入口`picocalc.py test`
+
+AI向け正規入口である次の経路からheartbeatを利用できなければ、本作業の目的を満たさない。
+
+```text
+python3 tools/picocalc.py test --mode firmware ...
+```
+
+`tools/picocalc.py`はtarget contractからrunner argvを固定構築し、任意optionのpassthroughを許さない。
+したがって汎用passthroughは作らず、観測専用の次だけを明示的に追加する。
+
+```text
+--run-id <ID>                  任意。省略時は <target>-<wrapper-pid>
+--progress-interval <SECONDS>  任意。firmware modeの既定は10
+--no-progress                  heartbeatを無効化
+```
+
+- firmware modeの正規入口は既定でheartbeatを有効にする。
+- 生成IDは同時processの分類に使う。再試行をまたぐstable IDが必要なら呼び出し側が`--run-id`を指定する。
+- `--no-progress`と`--run-id`／`--progress-interval`の併用は拒否する。
+- host modeでは3 optionを拒否する。
+- wrapperはrunnerへ、validation済みの`--run-id`と`--progress-interval`を明示的に渡す。
+- これらは観測用metadataであり、target registryのrunner contract、report、verdict、hashを変更しない。
+- directに`picocalc-run`を呼ぶ既存利用者の既定stderrは変えない。
+
+`subprocess.run(command, cwd=...)`はcapture/PIPEを指定していないため、runnerのstderrを継承する。
+外側のAI実行環境がbufferしない限り、wrapperによる中継loopは不要である。
+
+### 3.3 stderr出力
 
 stdoutはreportとmachine APIのtransportに使われるため、観測行はstderrだけへ出す。
 初版は既存のlogと親和性がある1種類のkey-value形式に固定し、JSONL選択機能は作らない。
@@ -98,12 +129,24 @@ stdoutはreportとmachine APIのtransportに使われるため、観測行はstd
 | `stop` | 正常に結果を得た場合の停止理由 |
 | `exit` | `picocalc-run`が決定した終了code |
 
-`finish`はCLI処理が正常にverdictまで到達した場合、またはmachine APIが正常にEOFへ到達した場合の
-process lifecycle完了を表す。argument／artifact読込み／report書込み等のfatal error、`SIGKILL`、
-host crash、電源断では`finish`を保証しない。監督側はprocess終了codeと`finish`不在を組み合わせて
-abnormal terminationと判定する。signal handlerや永続run registryは初版に入れない。
+`finish`はCLI処理が正常にverdictまで到達したprocess lifecycle完了を表す。argument／artifact
+読込み／report書込み等のfatal error、`SIGKILL`、host crash、電源断では`finish`を保証しない。
 
-### 3.3 heartbeatの実装条件
+`wsl.exe`を経由する実行環境ではshell終了codeが0に見える場合があるため、AI監督側は次の順で判定する。
+
+1. 対象run IDの`finish`があるかを最初に確認する。
+2. `finish`があれば、その`exit`とrunnerのverdict/reportを判定根拠にする。
+3. processが終了したのに`finish`がなければ、外側の終了codeが0でも正常完了とみなさない。
+4. direct POSIX実行で得られるprocess終了codeは補助信号として併用する。
+
+runner内部では、実際に返すprocess終了codeを権威とし、`finish.exit`を必ず同じ値にする。外側の
+`wsl.exe`がそのcodeを失う可能性があるため、AI監督時だけ`finish.exit`とreportを優先して読む。
+両者が比較可能な環境で不一致なら、監視／実装の異常として扱う。FAILは`exit=1`、cannot-judgeは
+`exit=2`を出し、heartbeat出力の失敗自体はこのcodeを変更しない。
+
+signal handlerや永続run registryは初版に入れない。
+
+### 3.4 heartbeatの実装条件
 
 - `std::time::Instant`の単調時計を使う。
 - heartbeat無効時は時計取得とformatを実行loopへ持ち込まない。
@@ -114,11 +157,9 @@ abnormal terminationと判定する。signal handlerや永続run registryは初�
 - heartbeatの出力失敗をfirmwareのFAILへ変換しない。ただしpanicさせず、その後のheartbeatを停止する。
 - UART、framebuffer、audio、scenario timeline、event traceへ一切混ぜない。
 
-通常run、scenario、長いmachine API `run`／`run_until`は同じ小さな`ProgressReporter`型を使うが、
-既存loopは共通化せず、それぞれから個別に呼び出す。machine APIではrun IDをprocess単位とし、startは
-起動後1回、finishはstdin EOF後1回とする。各requestのIDはheartbeatへ複製しない。request単位の
-識別が実測上必要になった場合だけ後続拡張とする。machine APIのstdout JSON Linesには観測行を
-混ぜない。
+通常runとscenarioは同じ小さな`ProgressReporter`型を使うが、既存loopは共通化せず、それぞれから
+個別に呼び出す。machine APIは初版へ接続しない。長い`run`／`run_until` requestで無音が実問題に
+なった場合、request IDとprocess lifecycleの意味を別途設計して追加する。
 
 ## 4. 初版に入れないもの
 
@@ -134,6 +175,7 @@ abnormal terminationと判定する。signal handlerや永続run registryは初�
 - OS全体でrun IDの一意性を検査するlock service
 - SIGKILL時の終了記録保証
 - GitHub Actions workflowの追加・変更・実行
+- machine API `run`／`run_until`へのheartbeat接続
 
 これらが実測上必要になった場合だけ、別計画として追加する。
 
@@ -141,9 +183,11 @@ abnormal terminationと判定する。signal handlerや永続run registryは初�
 
 ### HB-0 契約とparser test
 
-1. CLI optionとrun ID validationを追加する。
+1. runner CLI optionとrun ID validationを追加する。
 2. intervalの正常値、0、負数、非整数、overflowをtestする。
 3. IDの正常値、空、長過ぎ、空白、改行、非ASCIIをtestする。
+4. `tools/picocalc.py test`へ専用3 optionとfirmware mode既定ONを追加する。
+5. 生成ID、明示ID、interval、`--no-progress`、host mode拒否、runner argv forwardingをtestする。
 
 この段階では実行loopを変更しない。
 
@@ -152,7 +196,7 @@ abnormal terminationと判定する。signal handlerや永続run registryは初�
 1. `ProgressReporter`を小さな独立型として実装する。
 2. start、期限到達時heartbeat、finishをstderrへ出す。
 3. disabled時は早期returnする。
-4. normal／scenarioの`run_loop`、machine APIの`run`／`run_until`へ個別に接続する。
+4. normal／scenarioの`run_loop`へ個別に接続する。
 
 既存advance経路を共通化・再構成しない。heartbeat判定は各advance loopに置くが、`finish`はreport
 生成とverdict決定が終わった最上位から出す。run loop内で終了codeを推測したり、verdict処理を
@@ -168,17 +212,22 @@ report生成、verdict、device modelには変更を入れない。
 4. 異なるrun ID・異なる出力directoryで2〜4 processを同時起動する。
 5. `[PICOCALC][RUN]` prefixを持つ全行が正しいrun IDを持ち、artifactが混在しないことを確認する。
 6. 同じ出力pathを使ってはいけないことを文書例で明示する。
+7. `firmware-validation/evidence/heartbeat-concurrent-20260813-01/`へ再現command、
+   source/backend/BIN SHA、host情報、runごとのheartbeat logとartifact SHA、終了結果を保存する。
+   runnerのschema 8 JSONは`run-a.json`等の固有名にし、schema 1のroadmap recordを意味する
+   `records/*/report.json`へ置かない。HB-2は新しいroadmap identityではなく機能受入の補助証拠である。
 
 試行錯誤、build、test、lint、firmware regressionはすべてローカルで行う。CIをデバッグ用途に
 使わず、workflowへ触れない。
 
 ### HB-3 利用文書
 
-長い新規体系を作らず、次の3か所だけを整備する。
+長い新規体系を作らず、次の4か所だけを整備する。
 
 1. `picoem-picocalc/README.md`: option一覧と短い複数起動例
 2. `picocalc_emu/docs/CONCURRENT_RUNS.md`: AI向けの起動・監視・停止・artifact分離手順
 3. `picocalc_emu/AI_START_HERE.md`: 上記文書へのリンク1件
+4. `tools/picocalc.py --help`: firmware modeの既定heartbeat、明示ID、無効化方法
 
 `CONCURRENT_RUNS.md`には次だけを記載する。
 
@@ -186,7 +235,8 @@ report生成、verdict、device modelには変更を入れない。
 - runごとの出力directory
 - run IDだけではartifact衝突を防げず、同じpathの共有は未対応であること
 - heartbeatの読み方
-- process終了とfinish不在の扱い
+- まず`finish`を確認し、その`exit`とreportを使うこと。process終了codeは補助であること
+- process終了後に`finish`がなければ、`wsl.exe`側の終了codeが0でも正常完了としないこと
 - 並列実行中は性能測定しないこと
 - 並列数をhostのCPU・memory容量に合わせること
 - memory-backed SDは独立していること
@@ -198,11 +248,14 @@ report生成、verdict、device modelには変更を入れない。
 
 - heartbeat無効時のCLI動作と既存artifactが変更前と一致する。
 - heartbeat有効時も既存の正確性artifactが一致する。
+- `picocalc.py test --mode firmware`が追加指定なしでheartbeatを有効化する。
+- `picocalc.py test --mode firmware --no-progress`ではrunner heartbeat optionを渡さない。
 - start、複数heartbeat、finishが同じrun IDを持つ。
 - 複数processのlogを結合してもrun IDで一意に分類できる。
 - 監視側は`[PICOCALC][RUN]` prefixだけを解析対象にし、既存のdiagnostic stderr行をheartbeatと
   誤認しない。
 - stdoutにheartbeatが混入しない。
+- `finish.exit`がrunnerの実process終了codeと一致し、pass/fail/cannot-judgeの0/1/2を保つ。
 - 不正なrun IDとintervalを実行開始前にfail-closedで拒否する。
 - 2〜4 processの同時ローカル試験が合格する。
 - unit test、format、Clippy、代表firmware regressionがローカルで合格する。
@@ -210,21 +263,46 @@ report生成、verdict、device modelには変更を入れない。
 - GitHub Actionsを新規に発生させていない。
 
 性能改善は本作業の受入条件ではない。ただしheartbeat無効時に測定可能な退行があれば不採用とする。
+性能比較は並列runではなく逐次で行い、`docs/history/R5_REALTIME_PERFORMANCE.md`の手順を使う。
+
+- 同じpromoted workload、release runner、trace OFF、同一logical CPU、同じhost条件を使う。
+- baselineとcandidateを各warm-up 1回＋集計10回で測定する。
+- wall中央値、平均、平均の95% CIを記録する。
+- candidateのwall中央値がbaselineより3%を超えて遅ければ不採用にする。3%以内でもcandidate平均の
+  95% CI全体がbaseline平均の95% CIより遅い側に分離した場合は自動合格にせず、原因調査または再測定
+  まで停止する。
+- 性能run自体のreport/UART/framebufferが一致することも確認する。
+
+## 6.1 実装結果（2026-08-13）
+
+- `picoem-picocalc/crates/picocalc-harness/src/main.rs`へ`ProgressReporter`、ID／interval検証、
+  stderrのstart／heartbeat／finish、0/1/2のexit対応を追加した。
+- `picoem-picocalc/crates/picocalc-harness/build.rs`がcrate source変更時にも再実行されるようにし、
+  `backend_build.dirty`のcompile-time値が古いまま残らないようにした。
+- `picocalc_emu/tools/picocalc.py test --mode firmware`へ`--run-id`、`--progress-interval`、
+  `--no-progress`を追加し、既定10秒・生成ID・host拒否・runner argv forwardingを固定した。
+- `README.md`、`AI_START_HERE.md`、`docs/CONCURRENT_RUNS.md`、backend READMEへ運用境界を記載した。
+- HB-2証拠は[`firmware-validation/evidence/heartbeat-concurrent-20260813-01/`](../firmware-validation/evidence/heartbeat-concurrent-20260813-01/)
+  に保存した。schema 8 runner JSONを`records/*/report.json`へ置いていない。
+- ローカル検証: backend unit test 62件、all-features 66件、scoped rustfmt、Python tools 113件、
+  release runnerのheartbeat OFF／ON artifact一致、2 process同時実行をすべて合格。
+- GitHub Actions、workflow、commit、pushはこの作業では実施していない。
 
 ## 7. 工数
 
-この最小構成は次を目安とする。
+この最小構成は次を目安とする。実績工数は、runner／wrapper実装、文書、複数起動証拠、
+ローカル回帰を含めてこの範囲内に収まった。
 
 | 作業 | 見積り |
 |---|---:|
-| HB-0 契約・CLI・parser test | 2〜3時間 |
+| HB-0 runner/wrapper契約・CLI・parser test | 3〜4時間 |
 | HB-1 reporter本体 | 3〜4時間 |
 | HB-1 normal／scenarioへの接続 | 2〜3時間 |
-| HB-1 machine APIへの接続 | 2〜4時間 |
+| HB-1 `picocalc.py`既定ON・forwarding | 1〜2時間 |
 | HB-2 正確性・複数起動試験 | 3〜4時間 |
 | HB-3 文書整備 | 2〜3時間 |
 | Solによる最終差分検収 | 1時間 |
-| **合計** | **15〜22時間（中心見積り18時間）** |
+| **合計** | **15〜21時間（中心見積り18時間）** |
 
 実装中に既存advance経路の大きな再構成が必要と判明した場合は強行せず、一度停止して原因と
 追加工数を報告する。report schema変更、target再pin、CI workflow変更が必要になった場合も同様に

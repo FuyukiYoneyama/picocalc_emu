@@ -20,6 +20,7 @@
 |---|---|
 | Host backendで高速にロジックを検査 | [`HOST_BACKEND.md`](HOST_BACKEND.md) |
 | RP2040 BINをfirmware backendで検査 | [`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md) |
+| 複数firmware runのheartbeat監視 | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
 | 画面／UART条件に応じてキーを投入 | [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md) |
 | JSONLで長寿命sessionを操作 | [`HEADLESS_MACHINE_API.md`](HEADLESS_MACHINE_API.md) |
 | 外部projectのBSP由来と音声合否を固定 | [`EXTERNAL_PROJECT_QUALITY.md`](EXTERNAL_PROJECT_QUALITY.md) |
