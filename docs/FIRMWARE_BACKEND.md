@@ -144,7 +144,7 @@ APIは状態操作面であり、target registryの最終合否を置き換え�
 - bootromの実行とUSB MSC boot
 - Threaded modelの正確性同等性
 - NEXT-2A外の一般multicore、同時device access、relaunch、spinlock timing
-- NEXT-2B外の任意audio構成
+- promoted NEXT-2B外の一般audio相関（ただし診断sinkは同じPWM5_CC経路の可変timer分数・DMA block長を観測できる。これは実機相関や任意のPWM/DMA構成の保証ではない）
 - audio解析から実機speaker音圧・周波数応答・物理volume位置を推定すること
 - 人間の聴感をphone動画またはdigital metricだけで自動決定すること
 - GDB/debugger integration

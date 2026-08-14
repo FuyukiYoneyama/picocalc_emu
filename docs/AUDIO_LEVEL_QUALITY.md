@@ -30,9 +30,10 @@ pcm = duty * 257 - 32768
 
 ## 解析artifactとraw WAV
 
-通常のschema 8 reportを変えず、独立したschema 1 artifactを出します。
-正典schemaは
-[`audio-analysis.schema.json`](../firmware-validation/audio-analysis.schema.json)です。
+通常のschema 8 reportを変えず、独立した音声解析artifactを出します。
+48 kHzの凍結NEXT-2契約はschema 1（[`audio-analysis.schema.json`](../firmware-validation/audio-analysis.schema.json)）
+のままです。48 kHz以外の実行では、観測した実効レートを記録するschema 2
+（[`audio-analysis-v2.schema.json`](../firmware-validation/audio-analysis-v2.schema.json)）を使います。
 
 ```sh
 picocalc-run \
@@ -41,9 +42,14 @@ picocalc-run \
   --audio-wav /tmp/audio-raw.wav
 ```
 
+アプリがDMA補充長やサンプルレートを変更しても、追加のエミュレーター設定は不要です。
+runnerは実行中のPWM5_CCへのDMA転送からtimer分数、実効サンプルレート、観測block長を取得します。
+古いNEXT-2の`--expect-audio-sink-*` oracleは48 kHz固定target専用なので、別設定のアプリへ流用せず、
+新しいreportの`audio_sink`値を個別contractへ固定してください。
+
 `--audio-analysis`はstreaming統計だけを取り、sample列を保持しません。`--audio-wav`を指定した場合
-だけinterleaved PCMを保持します。WAVは48 kHz、stereo、signed 16-bitで、**正規化もgain変更も
-しません**。聞きやすく正規化した派生物を作る場合も、このraw WAVを元証拠として残します。
+だけinterleaved PCMを保持します。WAVは観測したサンプルレート、stereo、signed 16-bitで、**正規化も
+gain変更もしません**。聞きやすく正規化した派生物を作る場合も、このraw WAVを元証拠として残します。
 
 主な値は次のとおりです。
 
@@ -108,8 +114,9 @@ python3 tools/picocalc.py judge-report \
 schema 3契約で解析artifactがない、schemaが違う、backend commit/dirty状態、firmware SHA-256、
 PCM SHA-256またはframe数がraw reportと一致しない場合は`cannot_judge`です。推奨音量未満は
 advisory、rail上限超過は`fail`、範囲内の短い飽和は`pass`です。
-schema 1はexact count/hashだけ、schema 2は`minimum_max_window_rms`未満をFAILにする旧互換契約として
-意味を変えずに残します。人間が許容できる控えめな音を新しくschema 2へ固定しないでください。
+解析artifactのschema 2はサンプルレートを固定しない観測形式です。これは音声の正確性や
+スピーカー聴感を自動合格にするものではなく、DMA→PWMのデジタル値と実効レートを保存するための
+形式です。project quality contractのschema 1/2/3によるexactness・音量評価は従来どおり別に行います。
 
 ## 内蔵speakerとの責任境界
 

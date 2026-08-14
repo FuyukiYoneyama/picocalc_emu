@@ -100,8 +100,12 @@ runner自体または明示report checkに既知の失敗がある場合は、�
 
 schema 1契約はexact count/hashの互換経路です。新しい音声release projectではschema 3を使い、
 独立した`--audio-analysis` artifactに対して推奨区間RMSと、極端なPWM rail使用の上限を宣言します。
+解析artifact自体は、48 kHzの凍結形式がschema 1、その他の実効サンプルレートがschema 2です。
+固定48 kHzを要求する既存targetのoracleを、別レートへ緩めてはいけません。別レートのアプリは
+新しいtarget／contractとして、観測したcount・SHA・タイマー分数を別途固定します。
 推奨RMS未満はadvisoryでありFAILではありません。短い、低頻度のrail到達も許容し、単なるclip発生
-だけでは不合格にしません。schema 2は最低区間RMSを必須にした旧契約として意味を変えずに残します。
+だけでは不合格にしません。ここでいうproject quality contract schema 2は最低区間RMSを必須にした
+旧契約であり、解析artifact schema 2（可変サンプルレート）とは別物です。
 
 ```json
 {

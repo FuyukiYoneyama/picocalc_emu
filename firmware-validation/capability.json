@@ -25,7 +25,7 @@
         "status": "unpromoted",
         "promoted": false,
         "ci_run_id": 31315420348,
-        "local_development_commit": "ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe",
+        "local_development_commit": "7dd0c34481f3b08fc886f2963647a70b3fc2ac83",
         "meaning": "Last CI-observed unpromoted backend main. The current local development commit is recorded separately in local_development_commit and has only local validation because GitHub Actions is intentionally not run for ordinary development. Neither replaces the general promoted PicoTetris backend or the bounded audio acceptance backend."
       }
     },
@@ -244,7 +244,7 @@
       "what": "48 kHz stereo PWM audio playback through the frozen DMA path to an exact digital sample sink",
       "status": "same_artifact_hardware_correlated",
       "detail": "Target picocalc-audio-r1 and canonical contract next2-audio-v3-20260809 passed two clean reproducible BIN/UF2 builds and three byte-identical firmware runs on backend d92db1b. The sink observed 49152 post-quantizer writes with SHA 1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f, 384 blocks/383 boundaries, exact cadence and service-latency streams. Wrong-count/wrong-hash full runs and ten saved-report mutations failed closed. On 2026-08-09 the same registered UF2 passed physical correlation with 18 complete USB marker blocks, a final five-PASS screen and an approximately 1.05-second acoustic capture for the programmed 1.024-second stream.",
-      "limitation": "Support is bounded to the frozen Serial, quantum-1 target: 48 kHz stereo producer, canonical error-diffusion quantizer, DMA timer 0 at 3/15625, TREQ 59 and PWM slice 5 CC. It does not claim arbitrary codecs, sample rates, PWM slices, DMA layouts, mixing, speaker frequency response or byte equality between the digital sink and a microphone recording. Producer seed SHA c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a is not the sink oracle.",
+      "limitation": "The promoted hardware correlation remains bounded to the frozen Serial, quantum-1 target: 48 kHz stereo producer, canonical error-diffusion quantizer, DMA timer 0 at 3/15625, TREQ 59 and PWM slice 5 CC. The emulator diagnostic sink additionally accepts variable timer fractions and DMA block lengths on that same DMA-to-PWM5_CC path and emits an observed-rate WAV/analysis artifact, but this is not a hardware correlation or a claim for arbitrary codecs, PWM slices, DMA layouts, mixing, speaker frequency response or byte equality between the digital sink and a microphone recording. Producer seed SHA c66c76b2003a9e24fc16b3d9a6aa3bbc1cd0d6faf2d469244d9db3823d46367a is not the sink oracle.",
       "target": "picocalc-audio-r1",
       "emulator_evidence": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
       "evidence": "firmware-validation/records/next2-audio-r1-hardware-20260809-01/record.json",

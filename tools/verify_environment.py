@@ -700,9 +700,11 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
 
     quality_schema_path = directory / "project-quality-contract.schema.json"
     audio_analysis_schema_path = directory / "audio-analysis.schema.json"
+    generic_audio_analysis_schema_path = directory / "audio-analysis-v2.schema.json"
     try:
         quality_schema = load_json(quality_schema_path)
         audio_analysis_schema = load_json(audio_analysis_schema_path)
+        generic_audio_analysis_schema = load_json(generic_audio_analysis_schema_path)
         required = quality_schema.get("required", [])
         properties = quality_schema.get("properties", {})
         audio = (
@@ -741,6 +743,17 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             quality_errors.append("schema 3 audio quality bounds are incomplete")
         if audio_analysis_schema.get("additionalProperties") is not False:
             quality_errors.append("audio analysis schema must reject unknown fields")
+        if generic_audio_analysis_schema.get("additionalProperties") is not False:
+            quality_errors.append("generic audio analysis schema must reject unknown fields")
+        if generic_audio_analysis_schema.get("properties", {}).get("schema_version") != {
+            "const": 2
+        }:
+            quality_errors.append("generic audio analysis schema must be version 2")
+        if generic_audio_analysis_schema.get("properties", {}).get("sample_rate_hz") != {
+            "type": "integer",
+            "minimum": 0,
+        }:
+            quality_errors.append("generic audio analysis schema must allow observed rates")
         analysis_required = set(audio_analysis_schema.get("required", []))
         for field in (
             "pcm_sha256",
@@ -769,6 +782,7 @@ def verify_firmware_validation(checks: List[Check], root: Path) -> None:
             errors=quality_errors,
             schema=str(quality_schema_path.relative_to(root)),
             analysis_schema=str(audio_analysis_schema_path.relative_to(root)),
+            generic_analysis_schema=str(generic_audio_analysis_schema_path.relative_to(root)),
         )
     except (OSError, UnicodeError, ValueError, TypeError) as error:
         add_check(

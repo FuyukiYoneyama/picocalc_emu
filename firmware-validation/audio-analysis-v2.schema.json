@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/audio-analysis-v2.schema.json",
+  "title": "PicoCalc parameterized PWM digital-level analysis artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "boundary", "interpretation", "backend_build", "firmware",
+    "observation_status", "pcm_sha256", "pcm_format", "sample_rate_hz",
+    "channel_count", "frame_count", "window_frames", "active_abs_threshold",
+    "peak_abs_left", "peak_abs_right", "stream_rms", "max_window_rms",
+    "dc_offset_left", "dc_offset_right", "active_frame_count",
+    "active_frame_ratio_ppm", "rail_sample_count", "rail_sample_ratio_ppm",
+    "max_consecutive_rail_frames", "out_of_range_duty_sample_count",
+    "rail_interpretation"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "boundary": {"const": "dma_to_pwm5_cc"},
+    "interpretation": {"const": "digital_level_only_not_speaker_loudness"},
+    "backend_build": {
+      "type": "object", "additionalProperties": false,
+      "required": ["commit", "dirty"],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "dirty": {"type": "boolean"}
+      }
+    },
+    "firmware": {
+      "type": "object", "additionalProperties": false,
+      "required": ["file", "sha256"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "observation_status": {"enum": ["inactive", "pass", "fail"]},
+    "pcm_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "pcm_format": {"const": "stereo_s16le_from_pwm8_duty"},
+    "sample_rate_hz": {"type": "integer", "minimum": 0},
+    "channel_count": {"const": 2},
+    "frame_count": {"type": "integer", "minimum": 0},
+    "window_frames": {"const": 1024},
+    "active_abs_threshold": {"const": 512},
+    "peak_abs_left": {"type": "integer", "minimum": 0, "maximum": 32768},
+    "peak_abs_right": {"type": "integer", "minimum": 0, "maximum": 32768},
+    "stream_rms": {"type": "integer", "minimum": 0, "maximum": 32768},
+    "max_window_rms": {"type": "integer", "minimum": 0, "maximum": 32768},
+    "dc_offset_left": {"type": "integer", "minimum": -32768, "maximum": 32767},
+    "dc_offset_right": {"type": "integer", "minimum": -32768, "maximum": 32767},
+    "active_frame_count": {"type": "integer", "minimum": 0},
+    "active_frame_ratio_ppm": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "rail_sample_count": {"type": "integer", "minimum": 0},
+    "rail_sample_ratio_ppm": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "max_consecutive_rail_frames": {"type": "integer", "minimum": 0},
+    "out_of_range_duty_sample_count": {"type": "integer", "minimum": 0},
+    "rail_interpretation": {"const": "post_quantizer_pwm_rail_usage_not_source_clip_count"}
+  }
+}

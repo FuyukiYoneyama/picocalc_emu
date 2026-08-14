@@ -541,8 +541,14 @@ raise SystemExit(code)
                 "post_quantizer_pwm_rail_usage_not_source_clip_count"
             ),
         }
+        variable_rate_analysis = {
+            **analysis,
+            "schema_version": 2,
+            "sample_rate_hz": 22_050,
+        }
         cases = (
             ("pass", analysis, 0, "pass", None),
+            ("variable-rate", variable_rate_analysis, 0, "pass", None),
             (
                 "quiet",
                 {**analysis, "max_window_rms": 4096},

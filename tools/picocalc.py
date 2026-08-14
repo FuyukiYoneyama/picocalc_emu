@@ -951,7 +951,7 @@ def load_project_quality_contract(path: Path) -> dict:
 
 
 def audio_analysis_errors(analysis: object) -> List[str]:
-    """Validate the standalone schema-1 PWM level artifact without extra packages."""
+    """Validate the standalone schema-1/2 PWM level artifact without extra packages."""
     if not isinstance(analysis, dict):
         return ["root must be an object"]
     required = {
@@ -984,13 +984,11 @@ def audio_analysis_errors(analysis: object) -> List[str]:
     }
     errors: List[str] = []
     if set(analysis) != required:
-        errors.append("fields do not match schema 1")
+        errors.append("fields do not match audio analysis schema 1/2")
     constants = {
-        "schema_version": 1,
         "boundary": "dma_to_pwm5_cc",
         "interpretation": "digital_level_only_not_speaker_loudness",
         "pcm_format": "stereo_s16le_from_pwm8_duty",
-        "sample_rate_hz": 48_000,
         "channel_count": 2,
         "window_frames": 1024,
         "active_abs_threshold": 512,
@@ -999,6 +997,14 @@ def audio_analysis_errors(analysis: object) -> List[str]:
     for name, expected in constants.items():
         if analysis.get(name) != expected or type(analysis.get(name)) is not type(expected):
             errors.append("{} must be {!r}".format(name, expected))
+    schema_version = analysis.get("schema_version")
+    if type(schema_version) is not int or schema_version not in (1, 2):
+        errors.append("schema_version must be 1 or 2")
+    sample_rate_hz = analysis.get("sample_rate_hz")
+    if type(sample_rate_hz) is not int or sample_rate_hz < 0:
+        errors.append("sample_rate_hz must be a non-negative integer")
+    elif schema_version == 1 and sample_rate_hz != 48_000:
+        errors.append("schema 1 sample_rate_hz must be 48000")
     backend = analysis.get("backend_build")
     if (
         not isinstance(backend, dict)
@@ -1150,7 +1156,7 @@ def judge_project_report(
         quality_failures: List[str] = []
         if not isinstance(audio_analysis, dict):
             cannot_judge.append("audio_quality_missing")
-        elif audio_analysis.get("schema_version") != 1:
+        elif audio_analysis.get("schema_version") not in (1, 2):
             cannot_judge.append("audio_quality_schema_mismatch")
         elif audio_analysis_errors(audio_analysis):
             cannot_judge.append("audio_quality_artifact_invalid")
@@ -1854,7 +1860,7 @@ def main() -> int:
     judge_report_parser.add_argument(
         "--audio-analysis",
         type=Path,
-        help="schema 1 audio-level artifact required by quality contract schema 2/3",
+        help="schema 1/2 audio-level artifact required by quality contract schema 2/3",
     )
     judge_report_parser.add_argument("--json", dest="json_out", type=Path)
 

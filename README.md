@@ -228,7 +228,8 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - scenario runnerとfail-closed structured verdict
 - exact idle fast-forwardとpromoted OPT1-B fast path
 - NEXT-2Aの凍結Serial multicore契約
-- NEXT-2Bの凍結48 kHz DMA-paced digital audio sink契約
+- NEXT-2Bの凍結48 kHz DMA-paced digital audio sink契約と、同じPWM5_CC経路の可変timer分数／DMA block長を
+  観測する診断audio sink（観測rateの解析artifact／WAV）
 - PWM5_CCからの決定的な音量統計、非正規化raw WAV、および「好みとしての音量／極端なrail使用」を
   分けるproject-level品質契約
 - キー入力なしの既知刺激とphone動画解析による内蔵speaker校正（初回hardware profileは未相関）
@@ -240,7 +241,8 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 
 - Threaded executionを正確性基準として使うこと
 - 両coreからの同時device access、core 1 relaunchなど、NEXT-2A外の一般multicore
-- 任意codec／sample rate／DMA layoutの音声一般化
+- 任意codec、別PWM slice／DMA destination／TREQ、mixingの音声一般化。診断sinkが受け入れるのは
+  同じPWM5_CC経路に限ったtimer分数とDMA block長の変化であり、任意の音声経路や実機相関を意味しない
 - bootromの実行、USB MSC boot
 - SDのmulti-block、removal、write-protect、runner-integrated directory-backed storage
 - scenarioのloop／branch、任意report fieldの直接assert

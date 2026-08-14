@@ -55,7 +55,8 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 ### 範囲を固定して対応済み
 
 - NEXT-2A: core 1 launch、双方向SIO FIFO、WFE/SEV、core-local SIO IRQ
-- NEXT-2B: 48 kHz stereo、固定DMA timer／PWM sliceのdigital sample sink
+- NEXT-2B: 48 kHz stereo、固定DMA timer／PWM sliceの凍結digital sample sink。加えて同じPWM5_CC経路では、
+  可変timer分数とDMA block長を診断目的で観測し、実効rateの解析artifact／WAVを出力できる
 - NEXT-3: CMD8 mandatory CRC7 errorの実機・emulator negative conformance
 - NEXT-4: JSONL schema 1の`run`／`step`／`run_until`／`input`／`observe`／
   `subscribe`／`snapshot`
@@ -101,7 +102,8 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
 
 - Threaded executionを正確性基準にすること
 - NEXT-2A外の同時device access、spinlock timing、core 1 relaunch
-- NEXT-2B外のcodec、sample rate、DMA layout、mixing、speaker response。48 kHz PWM5_CCの
+- 任意codec、別PWM slice／DMA destination／TREQ、mixing、speaker response。PWM5_CC診断sinkは
+  timer分数とDMA block長の可変化を受け入れるが、任意の音声経路の一般化や実機相関を保証しない。
   level解析はdigital境界だけで、実際の音圧やspeaker responseは含まない
 - bootrom execution、USB MSC boot
 - SD removal、write protect、runner-integrated directory-backed storage、実`uf2loader` end-to-end
