@@ -23,18 +23,20 @@
 
 ## exactness
 
-trace/proof OFFの正式PicoTetris workloadで、baselineとcandidateのreportは一致しました。
+trace/proof OFFの正式PicoTetris workloadを、`--psram --keyboard --sd --sd-format fat32`
+付きで実行し、baselineとcandidateのreportは一致しました。使用BINはR5の正式artifact
+（SHA-256 prefix `0784d80d`）です。
 
 | 項目 | 値 |
 |---|---|
-| candidate report SHA-256 | `6720d3a6e696a1009fe37e97f741e2de7d9d5693cf4e3bf38e02f959e728ba4c` |
+| formal candidate report SHA-256 | `eeb68c32c479b8c18ce1211297dbed8dbd1ed0c47e29f743297be96b9bdcd976` |
 | UART SHA-256 | `bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c` |
 | framebuffer SHA-256 | `e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958` |
 
 trace ONの独立確認でも、baselineとcandidateのbehavior artifactはbyte単位で一致しました。
 
-- behavior artifact SHA-256: `6984f19d1810cbb111a8e0b8699842ca906f48dc51a5292f71f2190dfa31bfa0`
-- `behavior_sha256`: `ab47124978270d4c8c506a773e0c383352dd7f8ecfa7e3a27b6c6613c655b5ee`
+- behavior artifact SHA-256: `26ad7d06fd3de19c163070b6251669799d453d2e062a5f8fa64cda6013f36b4b`
+- `behavior_sha256`: `20fb8f8683345c7e2deef1c2a6b981fad48637fcfcd7b196e5e21945703d1e10`
 - event total: `173498680`
 - event trace SHA-256: `2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789`
 - event domains: 9
@@ -43,22 +45,30 @@ trace ONの独立確認でも、baselineとcandidateのbehavior artifactはbyte�
 ## 性能A/B
 
 trace/proof OFF、CPU 0固定、warmup除外、10回のpaired sequential tasksetで測定しました。
+各runは正式PicoTetris targetと同じ `--psram --keyboard --sd --sd-format fat32` 条件です。
+測定値の分散が大きく、候補の正の改善を識別できる状態ではありませんでした。
 
 | 系列 | 平均 (s) | 中央値 (s) | SD (s) | 95% CI (s) |
 |---|---:|---:|---:|---:|
-| baseline | 25.849 | 25.980 | 0.523609 | [25.474433, 26.223567] |
-| OPT4-D candidate | 26.035 | 26.055 | 0.948780 | [25.356284, 26.713716] |
+| baseline | 43.045 | 50.585 | 12.360959 | [34.202502, 51.887498] |
+| OPT4-D candidate | 41.893 | 50.510 | 13.619496 | [32.150200, 51.635800] |
 
 paired diff（baseline − candidate）:
 
-- 平均: `-0.186 s`
-- 中央値: `0.230 s`
-- SD: `0.963849 s`
-- 95% CI: `[-0.875496, 0.503496] s`
-- 中央値改善率: `-0.288684%`
-- 平均改善率: `-0.719564%`
+- 平均: `1.152 s`
+- 中央値: `0.2 s`
+- SD: `3.328913 s`
+- 95% CI: `[-1.229361, 3.533361] s`
+- 中央値改善率: `+0.148265%`
+- 平均改善率: `+2.676269%`
 
-95% CIは0を含み、正の改善は確認できませんでした。したがって採用条件を満たしません。
+95% CIは0を含み、分散も大きいため、正の改善は確認できませんでした。中央値の差も
+`+0.148265%`に留まり、採用条件を満たしません。10-run A/Bの全reportは次のSHAで
+byte-identicalでした。
+
+- A/B report SHA-256（10/10共通）: `290603e7633012cd5e588a46f5680e032d0844bf92df0de49d5a833666522e62`
+
+trace ONのbehavior証拠は、上記のtrace OFF exactnessとは別採取です。
 
 ## 最終処置
 

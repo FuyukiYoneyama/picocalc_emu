@@ -86,7 +86,7 @@ R5前baseline 63.247秒から約2.492倍高速化しています。
 OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselineに対して4.1542%改善でしたが
 5%採用基準未達でrevertしました。現在はOPT4 micro-opt bankをfeature-gated候補として再開し、
 OPT4-Aはscreening passのbank候補、OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
-10-run A/Bで中央値1.9094%退行、OPT4-Dはexactness passだが正の改善未確認のため、いずれもpromotionしていません。
+10-run A/Bで中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく正の改善未確認のため、いずれもpromotionしていません。
 OPT4-C/Dの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)に記録しています。正式promoted targetは変更していません。
 候補ごとの採否条件は[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)を参照してください。
