@@ -37,7 +37,7 @@ target registry、promoted backendの固定値は変更しない。
 |---|---|---|
 | OPT4-A unconditional cache lookup | **screening pass / bank候補** | cache lookupから重複したcacheable-region判定を除去する。full tag比較と番兵除外を維持する。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
-| OPT4-C 8-byte `DecodedOp` | 未着手 | tag圧縮、valid bit、region invalidation、fault entryを含むレイアウト変更。静的サイズ検査を必須とする |
+| OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | 保留 | `active_pc`はMMIO trace／unsupported-MMIO診断に必要。診断feature境界を設計してから評価する |
 
 ## OPT4-Aの境界
@@ -56,7 +56,7 @@ revertし、active targetを変更しない。
 1. OPT4-Aをcurrent promoted baselineへ適用し、exactnessをローカルで確認する。
 2. trace/proof OFFの10-run以上A/Bと95% CIを記録する。
 3. OPT4-Bは独立候補として測定済みであり、速度改善未確認のためpromotionしない。
-4. 必要性が確認できた場合だけOPT4-Cを実装し、レイアウト／invalidationを先にunit testする。
-5. 採用候補をbank化した場合、元のpromoted baselineとの総合A/Bを行い、文書とvalidationを更新する。
+4. OPT4-Cは実装・exactness・10-run A/Bまで完了した。性能改善未確認かつ中央値退行のため、promotion／bank追加を行わない。
+5. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。
