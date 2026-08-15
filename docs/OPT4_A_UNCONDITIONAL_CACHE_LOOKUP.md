@@ -73,6 +73,14 @@ required UART marker、UART SHA、PSRAM tickが一致した。
 formal Template B pinおよび公式Helloの追加測定は、bank全体のpromotion前に行う。したがって
 本記録だけでactive targetやcapabilityを昇格させない。
 
+加えて、実装commit `213057aa...` とその直前の現行main `7dd0c344...` を直接比較する短い
+XIP workload（同一PicoTetris BIN、board/PSRAMなし、100M cycles、quantum 64）を10組測定した。
+projectionとcycleは全組一致したが、中央値は `0.238905 s` → `0.239648 s` で **0.311026%
+の退行**だった（95% CI: baseline `[0.235289, 0.242927]`、candidate
+`[0.236259, 0.250710]`）。これはnoiseと区別できる改善ではなく、OPT4-A単独のpromotion根拠
+には数えない。周辺機器変更を含む現行mainとの直接比較でも、候補を無条件に昇格しないという
+運用が確認できた。
+
 ## 検証コマンドの要点
 
 ```text
