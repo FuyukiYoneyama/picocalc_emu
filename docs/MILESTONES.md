@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **A〜Eの候補評価完了。AはPicoTetris正式10-runでscreening passだが、正式Template B source/BINのprovenanceが復元できないためbank採用は保留。B〜Eは採用なし。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
+| OPT4 | micro-opt bank | **A〜Eの候補評価完了。AはPicoTetrisで中央値3.821338%改善、正式Template Bは0.471921%退行（CIは0を含む）、公式Hello 9.5B-cycle exactnessは合格。Aはbank候補として保持し未promotion、B〜Eは採用なし。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |

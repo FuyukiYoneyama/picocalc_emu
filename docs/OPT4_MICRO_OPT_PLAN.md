@@ -35,13 +35,13 @@ target registry、promoted backendの固定値は変更しない。
 
 | 候補 | 状態 | 方針 |
 |---|---|---|
-| OPT4-A unconditional cache lookup | **screening pass / bank候補** | cache lookupから重複したcacheable-region判定を除去する。full tag比較と番兵除外を維持する。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-A unconditional cache lookup | **exactness合格／bank候補** | PicoTetris、正式Template B、公式Hello 9.5B-cycleの全代表workloadで一致。PicoTetrisは中央値3.821338%改善、Template Bは中央値0.471921%退行（CIは0を含む）。bank全体評価までpromotionしない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
 | OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
-| OPT4 bank判定 | **保留** | Aはbank候補だが、正式Template Bの固定source commitが現cloneに存在せず代表workloadのprovenanceを再現できない。A〜Eの採否と残件は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
+| OPT4 bank判定 | **Aをbank候補として保留** | 全代表workloadのexactnessは閉じたが、Template Bで正の改善を識別できない。A〜Eの採否とbank総合比較手順は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
 
 ## OPT4-Aの境界
 
@@ -63,6 +63,6 @@ revertし、active targetを変更しない。
 5. OPT4-Dは実装・exactness・正式SD/FAT32条件での10-run A/Bまで完了した。測定分散が大きく、平均・中央値とも正の改善を識別できなかった。診断PC attributionの制約もあるため、promotion／bank追加を行わない。
 6. OPT4-Eは実装・exactnessまで完了した。正式シナリオ10-run A/Bはhost slowdownで未完了、短縮screeningでも正の改善信号がなく、promotion／bank追加を行わない。
 7. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
-8. OPT4-Aをbankへ進める前に、固定Template B source／BINを復元し、代表workloadのprovenanceゲートを閉じる。ゲートが閉じるまでactive targetと既定経路は変更しない。
+8. OPT4-Aは公式Helloを含む全代表workloadのexactnessを閉じた。bank全体の総合A/Bと複雑度評価が終わるまでactive targetと既定経路を変更しない。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。

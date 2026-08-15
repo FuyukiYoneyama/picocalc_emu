@@ -1,13 +1,15 @@
 # OPT4-A unconditional decode-cache lookup
 
-> **現行の実験記録。** この候補はmicro-opt bankのscreeningを通過したが、
+> **現行の実験記録。** この候補はexactnessを満たすmicro-opt bank候補だが、
 > promoted targetやactive registryのpinは変更していない。
 
 ## 判定
 
-**screening pass / bank candidate** とする。exactnessは通過し、PicoTetrisの10回A/Bで
-中央値が3.821338%改善した。ただし、これは単独promotionの記録ではない。別候補との組合せ、
-複雑度、代表workloadの追加確認を終えてからmicro-opt bank全体として採否を判断する。
+**micro-opt bank候補として保持するが、promotionはしない。** PicoTetrisの10回A/Bでは
+中央値が3.821338%改善した。一方、正式Template Bの同一release／trace OFF条件では中央値が
+0.471921%退行し、paired 95% CIも0を含む。公式Helloはtarget契約どおりの9.5B-cycle
+exactnessを通過した。exactnessゲートは閉じたが、bank全体の複雑度・総合性能を比較するまで
+production／promoted targetには混入させない。
 
 ## 変更
 
@@ -66,14 +68,35 @@ PSRAM、scenarioのprojectionが一致した。candidateがbaselineより遅い�
 
 ## 代表workloadの補助確認
 
-現行generatorから生成したTemplate B相当BIN（formal `picocalc-template-b`の固定source
-commitを再現したものではない）を補助確認した。baseline/candidateともcycle-limitでpassし、
-UART、framebuffer、PSRAM、FAT32条件が一致した。公式Helloも短縮100M-cycle区間で両候補の
-report、UART、framebuffer、PSRAM tickが一致した。ただし、formal Template B pinのsource／BINは
-現在のcloneとorigin refsだけでは復元できず、公式Helloの9.5B-cycle候補runも未実施である。
+registryが固定するTemplate B source commit `82e943ab1942ef869e9bff38ae6fcf8074930361`を
+remoteから明示取得してclean cloneを復元し、BIN／UF2がregistry pin
+(`1e6abac2…`／`1ab0d16…`)と一致することを確認した。その正式BINを使い、baseline
+`e985a9d7…`とA候補`3651f4c1…`を同一条件（PSRAM、keyboard、SD FAT32、1.2B cycles）で
+warmup後10回ずつ実行した。
 
-これらの扱いとbank判定は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定した。
-したがって本記録だけでactive targetやcapabilityを昇格させない。
+正式Template Bの前回測定に見えた19.257495%改善は、baseline runnerだけが
+`behavior-trace` feature有効でcandidateとコンパイル条件が異なっていたため、証拠から除外した。
+trace OFF同士を同じrelease profileで再ビルドして10-run A/Bをやり直した結果は次のとおりである。
+
+- baseline mean / median: `21.292 s` / `21.190 s`
+- candidate mean / median: `21.306 s` / `21.290 s`
+- paired difference (baseline−candidate) 95% CI: `[-0.208954, 0.180954] s`
+- median change: **0.471921% regression**
+- 10組すべてでsemantic report、cycle、virtual time、UART、RGB565、PSRAM、SD、keyboard、verdictが一致
+
+公式Helloはtarget registryの正式条件（`hwspi-rgb888`、PSRAM 8MiB verify、keyboard `HI`、
+SD未接続、9.5B cycles）でcandidateを実行した。baselineの正式recordと、backend identityとPNG
+出力名を除くreportがbyte相当で一致した。
+
+- cycles / elapsed_us: `9500000000` / `71447048`
+- UART SHA-256: `5559f2f1…`
+- framebuffer RGB565 SHA-256: `a7351e95…`
+- PSRAM verify: `8388608 matched / 0 mismatched`
+- keyboard: `4 delivered / 0 remaining / 0 dropped / backlight 0`
+- verdict: `pass`、required UART markers: 全て存在
+
+従って、公式Helloのexactnessは不合格ではない。前回のSD接続・LCD variant不一致のrunは
+比較条件不一致として破棄し、Aの採否判断には使わない。
 
 加えて、実装commit `213057aa...` とその直前の現行main `7dd0c344...` を直接比較する短い
 XIP workload（同一PicoTetris BIN、board/PSRAMなし、100M cycles、quantum 64）を10組測定した。
@@ -95,7 +118,8 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-OPT4-Aはfeature-gated bank候補として保持する。OPT4-B〜Eの候補評価は完了したが、Aをbankへ
-進めるには固定Template B source／BINの復元と代表workloadのprovenanceゲートが必要である。
-bankを正式採用する場合のみ、元のpromoted baselineとの総合A/B、versioned validation、必要な
-文書更新を行う。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照する。
+OPT4-Aはfeature-gated bank候補として保持する。全代表workloadのexactnessは閉じているが、
+正式Template Bでは正の速度改善を確認できなかったため、現時点でA単独のpromotion、versioned
+validation、active target更新は行わない。次はAを含むbank全体を元のpromoted baselineと比較し、
+複雑度・保守負担・総合改善を記録して採否を決める。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)
+を参照する。
