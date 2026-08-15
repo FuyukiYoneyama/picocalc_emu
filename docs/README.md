@@ -15,6 +15,8 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
+| 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
+| OPT4-A試作・A/B記録 | [`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | 公開版の目印とバージョン運用 | [`VERSIONING.md`](VERSIONING.md) |
 | BSPの公開APIとhardware契約 | [`../bsp/README.md`](../bsp/README.md) |
 | エミュレーター関連の外部project workspace（任意） | [`EXTERNAL_WORKSPACE.md`](EXTERNAL_WORKSPACE.md) |

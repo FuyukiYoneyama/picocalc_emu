@@ -83,8 +83,10 @@ U3-Aの実行入口は[`USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)で
 正式promoted値はPicoTetrisでwall中央値**25.381594秒**、実時間比**14.636593%**です。
 R5前baseline 63.247秒から約2.492倍高速化しています。
 
-OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは4.1542%改善でしたが5%採用基準未達で
-revertしました。性能最適化は現在停止しています。
+OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselineに対して4.1542%改善でしたが
+5%採用基準未達でrevertしました。現在はOPT4 micro-opt bankをfeature-gated候補として再開し、
+OPT4-A unconditional cache lookupはscreening passのbank候補です。正式promoted targetは変更していません。
+候補ごとの採否条件は[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)を参照してください。
 
 ## 実機相関とnegative conformance
 

@@ -1,7 +1,7 @@
 # 現行計画の完了状態
 
-**この文書が番号付き作業計画の正典です。** 2026-08-13時点で、定義済みの作業パッケージは
-すべて完了または正式終了しています。新しい番号付き作業はまだ定義していません。
+**この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
+性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
 
 ## 状態
 
@@ -18,13 +18,15 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
+| OPT4 | micro-opt bank | **OPT4-A screening pass / bank候補。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 
-15項目すべてに最終処置があります。13項目は完了またはpromoted、OPT2とOPT3は正確性を
-優先する性能gateにより正式終了しました。不採用candidateはactive targetへ混入していません。
+R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
+正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
+現行の実験計画であり、OPT4-Aの採否はまだ確定していません。
 
 ## 現在の品質境界
 
@@ -39,7 +41,8 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 
 ## 次の作業
 
-番号付きのR/NEXT作業は完了しています。次の現行計画は、番号付き作業とは別に固定した
+R/NEXTの機能作業は完了しています。現行作業は、性能面では
+[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
 **UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-Aは完了し、
 U3-B以降が未着手です。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
