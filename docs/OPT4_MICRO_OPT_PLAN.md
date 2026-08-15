@@ -41,6 +41,8 @@ target registry、promoted backendの固定値は変更しない。
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
 | OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
+| OPT4 bank判定 | **保留** | Aはbank候補だが、正式Template Bの固定source commitが現cloneに存在せず代表workloadのprovenanceを再現できない。A〜Eの採否と残件は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
+
 ## OPT4-Aの境界
 
 `populate_decode_cache`は現在もcacheableなROM/XIP/SRAM PCだけを書き込む。invalidateは既存entryを
@@ -61,5 +63,6 @@ revertし、active targetを変更しない。
 5. OPT4-Dは実装・exactness・正式SD/FAT32条件での10-run A/Bまで完了した。測定分散が大きく、平均・中央値とも正の改善を識別できなかった。診断PC attributionの制約もあるため、promotion／bank追加を行わない。
 6. OPT4-Eは実装・exactnessまで完了した。正式シナリオ10-run A/Bはhost slowdownで未完了、短縮screeningでも正の改善信号がなく、promotion／bank追加を行わない。
 7. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
+8. OPT4-Aをbankへ進める前に、固定Template B source／BINを復元し、代表workloadのprovenanceゲートを閉じる。ゲートが閉じるまでactive targetと既定経路は変更しない。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。

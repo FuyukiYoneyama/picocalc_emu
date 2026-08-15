@@ -67,11 +67,13 @@ PSRAM、scenarioのprojectionが一致した。candidateがbaselineより遅い�
 ## 代表workloadの補助確認
 
 現行generatorから生成したTemplate B相当BIN（formal `picocalc-template-b`の固定source
-commitを再現したものではない）を1組実行した。baseline/candidateともcycle-limitでpass、
-required UART marker、UART SHA、PSRAM tickが一致した。
+commitを再現したものではない）を補助確認した。baseline/candidateともcycle-limitでpassし、
+UART、framebuffer、PSRAM、FAT32条件が一致した。公式Helloも短縮100M-cycle区間で両候補の
+report、UART、framebuffer、PSRAM tickが一致した。ただし、formal Template B pinのsource／BINは
+現在のcloneとorigin refsだけでは復元できず、公式Helloの9.5B-cycle候補runも未実施である。
 
-formal Template B pinおよび公式Helloの追加測定は、bank全体のpromotion前に行う。したがって
-本記録だけでactive targetやcapabilityを昇格させない。
+これらの扱いとbank判定は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定した。
+したがって本記録だけでactive targetやcapabilityを昇格させない。
 
 加えて、実装commit `213057aa...` とその直前の現行main `7dd0c344...` を直接比較する短い
 XIP workload（同一PicoTetris BIN、board/PSRAMなし、100M cycles、quantum 64）を10組測定した。
@@ -93,6 +95,7 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-OPT4-Aはfeature-gated bank候補として保持する。次はOPT4-Bを独立commitで試し、同じ
-exactness／10-run A/B／代表workload手順を適用する。bankを正式採用する場合のみ、元の
-promoted baselineとの総合A/B、versioned validation、必要な文書更新を行う。
+OPT4-Aはfeature-gated bank候補として保持する。OPT4-B〜Eの候補評価は完了したが、Aをbankへ
+進めるには固定Template B source／BINの復元と代表workloadのprovenanceゲートが必要である。
+bankを正式採用する場合のみ、元のpromoted baselineとの総合A/B、versioned validation、必要な
+文書更新を行う。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照する。

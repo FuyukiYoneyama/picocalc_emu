@@ -21,6 +21,7 @@
 | OPT4-C試作・A/B記録 | [`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D試作・A/B記録 | [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
 | OPT4-E試作・A/B記録 | [`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
+| OPT4 bank判定・残件 | [`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md) |
 | 公開版の目印とバージョン運用 | [`VERSIONING.md`](VERSIONING.md) |
 | BSPの公開APIとhardware契約 | [`../bsp/README.md`](../bsp/README.md) |
 | エミュレーター関連の外部project workspace（任意） | [`EXTERNAL_WORKSPACE.md`](EXTERNAL_WORKSPACE.md) |

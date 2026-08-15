@@ -87,6 +87,8 @@ OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselin
 5%採用基準未達でrevertしました。現在はOPT4 micro-opt bankをfeature-gated候補として再開し、
 OPT4-Aはscreening passのbank候補、OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
 10-run A/Bで中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく、OPT4-Eは正式シナリオ10-run A/B未完了かつ短縮screeningで正の信号なしのため、いずれもpromotionしていません。
+正式Template Bの固定source commitが現在のcloneに存在しないため、OPT4-Aの代表workload provenanceゲートが
+未完了であり、micro-opt bank全体の採否を保留しています。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照してください。
 OPT4-C/D/Eの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
 [`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。正式promoted targetは変更していません。
