@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **OPT4-A screening pass / bank候補。OPT4-Bはexactness passだが速度改善未確認。OPT4-Cはexactness passだが中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく正の改善未確認で不採用。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
+| OPT4 | micro-opt bank | **OPT4-A screening pass / bank候補。OPT4-Bはexactness passだが速度改善未確認。OPT4-Cはexactness passだが中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく、OPT4-Eは正式シナリオ10-run A/B未完了かつ短縮screeningで正の信号なしのため不採用。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -27,9 +27,10 @@
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
 現行の実験計画であり、OPT4-Aの採否はまだ確定していません。OPT4-Bは速度改善未確認、OPT4-Cは
-中央値退行、OPT4-Dは正式SD/FAT32条件でも正の改善未確認のため、いずれもpromoted targetへは採用していません。OPT4-C/Dの
+中央値退行、OPT4-Dは正式SD/FAT32条件でも正の改善未確認、OPT4-Eは正式性能測定未完了かつ短縮screeningで正の信号なしのため、いずれもpromoted targetへは採用していません。OPT4-C/D/Eの
 実装・exactness・A/B結果は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
-[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)に記録しています。
+[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
+[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。
 
 ## 現在の品質境界
 

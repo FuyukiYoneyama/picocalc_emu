@@ -39,6 +39,7 @@ target registry、promoted backendの固定値は変更しない。
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
+| OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
 ## OPT4-Aの境界
 
@@ -58,6 +59,7 @@ revertし、active targetを変更しない。
 3. OPT4-Bは独立候補として測定済みであり、速度改善未確認のためpromotionしない。
 4. OPT4-Cは実装・exactness・10-run A/Bまで完了した。性能改善未確認かつ中央値退行のため、promotion／bank追加を行わない。
 5. OPT4-Dは実装・exactness・正式SD/FAT32条件での10-run A/Bまで完了した。測定分散が大きく、平均・中央値とも正の改善を識別できなかった。診断PC attributionの制約もあるため、promotion／bank追加を行わない。
-6. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
+6. OPT4-Eは実装・exactnessまで完了した。正式シナリオ10-run A/Bはhost slowdownで未完了、短縮screeningでも正の改善信号がなく、promotion／bank追加を行わない。
+7. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。
