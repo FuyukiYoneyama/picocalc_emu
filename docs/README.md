@@ -17,6 +17,7 @@
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
 | 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | OPT4-A試作・A/B記録 | [`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-B試作・A/B記録 | [`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | 公開版の目印とバージョン運用 | [`VERSIONING.md`](VERSIONING.md) |
 | BSPの公開APIとhardware契約 | [`../bsp/README.md`](../bsp/README.md) |
 | エミュレーター関連の外部project workspace（任意） | [`EXTERNAL_WORKSPACE.md`](EXTERNAL_WORKSPACE.md) |

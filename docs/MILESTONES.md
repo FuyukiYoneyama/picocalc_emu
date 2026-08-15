@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **OPT4-A screening pass / bank候補。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
+| OPT4 | micro-opt bank | **OPT4-A screening pass / bank候補。OPT4-Bはexactness passだが速度改善未確認。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -26,7 +26,8 @@
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
-現行の実験計画であり、OPT4-Aの採否はまだ確定していません。
+現行の実験計画であり、OPT4-Aの採否はまだ確定していません。OPT4-Bは速度改善未確認のため、
+promoted targetへは採用していません。
 
 ## 現在の品質境界
 
