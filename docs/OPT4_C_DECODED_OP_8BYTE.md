@@ -33,6 +33,14 @@
 
 cycle、virtual time、timeline、UART、framebuffer、PSRAM、scenario、report、behaviorおよび全event domainを照合し、**reportはbyte単位で一致**しました。
 
+trace ONの独立確認でも、baselineとcandidateのbehavior artifactはbyte単位で一致しました。
+
+- behavior artifact SHA-256: `93b9d9d205f99b3a2e54bb79dd89edbb883934e1ebe8553eaea1d6c75178dfcc`
+- `behavior_sha256`: `29457d2b880764ec06a2f9b97ae1b27dcd99ae51ff06a58983e522868e3c2162`
+- event trace count: `173498680`
+- event trace SHA-256: `2ead20411384942ea71eb1c00cd92951ff52361c9e81ba095d7f88304364a789`
+- event domains: 9
+
 ## 性能A/B
 
 trace/proofを無効化し、同一環境で10回交互実行しました。
