@@ -87,7 +87,7 @@ OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselin
 5%採用基準未達でrevertしました。OPT4 micro-opt bankをfeature-gated候補として評価しましたが、
 現行backend mainのOPT4-A featureでempty sentinelとfaulting PCの誤一致をunit testが検出しましたが、
 backend `37c50e6`で修正し、default／unconditional／8-byte／compactのfeature matrixを合格させました。
-DMA／audio／CLI／firmware再回帰が終わるまでbank復帰は保留します。隔離candidateで得た過去のexactness／性能値は
+DMA／audio低レベル回帰はbackend `6a675b1`でquantum-invariance 5/5を合格させました。CLI／firmware再回帰が終わるまでbank復帰は保留します。隔離candidateで得た過去のexactness／性能値は
 履歴証拠として保持しますが、全体再回帰前の現行mainの合格根拠には流用しません。OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
 10-run A/Bで中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく、OPT4-Eは正式シナリオ10-run A/B未完了かつ短縮screeningで正の信号なしのため、いずれもpromotionしていません。
 正式Template Bはremoteから復元して再測定でき、公式Hello 9.5B-cycle exactnessも正式target条件で
