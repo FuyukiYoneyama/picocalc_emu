@@ -6,12 +6,13 @@
 
 ## 現在の判定
 
-**sentinel回帰とDMA／audio低レベル比較は修正・合格済み、CLI／firmware再検証待ちとする。** レビュー対象のbackend code commit
+**sentinel回帰、DMA／audio低レベル比較、CLI E2Eは修正・合格済み、firmware再検証待ちとする。** レビュー対象のbackend code commit
 `b94e550`で発見した、通常12-byte `DecodedOp`の`matches_pc()`がempty tag `u32::MAX`を
 除外せずfaulting PCをcache hitと誤認する問題は、backend commit `37c50e6`で修正した。
 default、unconditional lookup、8-byte表現、compact dispatch keyの各feature matrixと
-unconditional harness testに加え、backend `6a675b1`のDMA／audio quantum-invariance 5/5も
-合格した。ただしCLI E2E／既存firmware回帰が未完了なので、まだbankへ復帰させない。
+unconditional harness testに加え、backend `6a675b1`のDMA／audio quantum-invariance 5/5、
+`00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker CLI
+E2Eも合格した。ただし既存firmware回帰が未完了なので、まだbankへ復帰させない。
 
 過去の隔離candidateで得たPicoTetris、Template B、公式Helloの測定値は、そのcommitに対する
 履歴証拠として有効である。しかし、後続のDMA／audio変更を含む現行mainの全体exactness根拠には
@@ -128,7 +129,7 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-CLI E2E、既存firmware回帰を閉じる。これらが終わるまで
+既存firmware回帰を閉じる。これが終わるまで
 Aをbankへ戻さず、A単独のpromotion、versioned validation、active target更新、
 bank総合性能測定を行わない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)

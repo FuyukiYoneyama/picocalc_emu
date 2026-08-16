@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio／priority低レベル回帰完了。backend `00b05f5`でquantum-invariance 10/10。CLI／firmware再回帰が終わるまでbank復帰は保留、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
+| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio／priority低レベル／CLI E2E回帰完了。backend `e0eda1c`でboard-less audio／WAV／UART markerを確認。firmware再回帰が終わるまでbank復帰は保留、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -54,7 +54,7 @@ R/NEXTの機能作業は完了しています。現行作業は、性能面で�
 U3-B以降が未着手です。
 OPT4／backend側は、性能測定を再開する前に
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
-の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了します。
+の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了します。修正・低レベルtest・CLI E2Eは完了し、残りはformat／Clippy gateと既存firmware再回帰です。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 `history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U3-B以降を開始する前に、
 目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の
