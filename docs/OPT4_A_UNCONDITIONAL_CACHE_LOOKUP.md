@@ -6,15 +6,16 @@
 
 ## 現在の判定
 
-**bank候補としての扱いを停止し、修正・再検証待ちとする。** レビュー対象のbackend code commit `b94e550`で
-`unconditional-cache-lookup-prototype`を有効にすると、
-`empty_sentinel_does_not_match_faulting_pc`が失敗する。通常12-byte `DecodedOp`の
-`matches_pc()`がempty tag `u32::MAX`を除外せず、faulting PC `u32::MAX`をcache hitと
-誤認してbus accessを飛ばすためである。
+**sentinel回帰は修正済み、広範囲再検証待ちとする。** レビュー対象のbackend code commit
+`b94e550`で発見した、通常12-byte `DecodedOp`の`matches_pc()`がempty tag `u32::MAX`を
+除外せずfaulting PCをcache hitと誤認する問題は、backend commit `37c50e6`で修正した。
+default、unconditional lookup、8-byte表現、compact dispatch keyの各feature matrixと
+unconditional harness testは合格した。ただしDMA／audio／CLI E2E／既存firmware回帰が未完了
+なので、まだbankへ復帰させない。
 
 過去の隔離candidateで得たPicoTetris、Template B、公式Helloの測定値は、そのcommitに対する
-履歴証拠として有効である。しかし、後続の共通helper化を含む現行mainのexactness根拠には
-流用しない。修正と有効feature matrixの再検証が終わるまでpromotion／bank総合測定へ進まない。
+履歴証拠として有効である。しかし、後続のDMA／audio変更を含む現行mainの全体exactness根拠には
+流用しない。step 2以降の検証が終わるまでpromotion／bank総合測定へ進まない。
 実行順序はbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を正典とする。
@@ -127,9 +128,8 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-現行mainのempty-sentinel回帰を修正し、通常12-byte表現と8-byte試作表現の有効feature matrixを
-再検証する。続いてDMA／audio／UART markerの低レベルtestとCLI E2E、既存firmware回帰を閉じる。
-これらが終わるまでAをbankへ戻さず、A単独のpromotion、versioned validation、active target更新、
+DMA／audio／UART markerの低レベルtestとCLI E2E、既存firmware回帰を閉じる。これらが終わるまで
+Aをbankへ戻さず、A単独のpromotion、versioned validation、active target更新、
 bank総合性能測定を行わない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を参照する。

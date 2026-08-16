@@ -5,7 +5,8 @@
 2026-08-16のbackend整合性レビューで、現行mainのOPT4-A featureにempty-sentinel回帰を確認した。
 新しい性能測定より先に、backend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
-を完了する。過去の隔離candidateの測定値は履歴として保持するが、現行mainの合格根拠にしない。
+に従う。sentinel修正とcache representationのfeature matrixは完了したが、DMA／audio／CLI／
+firmware回帰が終わるまで、過去の隔離candidateの測定値を現行mainの合格根拠にしない。
 
 ## 目的
 
@@ -40,7 +41,7 @@ target registry、promoted backendの固定値は変更しない。
 
 | 候補 | 状態 | 方針 |
 |---|---|---|
-| OPT4-A unconditional cache lookup | **現行mainでexactness不合格／候補停止** | 隔離candidateの代表workloadは一致したが、現行mainでempty sentinelとfaulting PCの誤一致を確認。修正と全feature再検証までbankへ含めない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-A unconditional cache lookup | **sentinel修正済み／全体再回帰待ち** | backend `37c50e6`で回帰を修正し、default／unconditional／8-byte／compactのfeature matrixを合格。DMA／audio／CLI／firmware検証完了までbankへ戻さない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
@@ -62,7 +63,7 @@ revertし、active targetを変更しない。
 
 ## 実行順序
 
-1. OPT4-Aのempty-sentinel回帰を修正し、default／12-byte／8-byteの有効feature matrixをローカルで確認する。
+1. OPT4-Aのempty-sentinel回帰を修正し、default／12-byte／8-byte／compactの有効feature matrixをローカルで確認する。**完了 2026-08-16**。
 2. DMA quantum-invarianceの比較状態をtimer／audio観測まで拡張する。
 3. HIGH_PRIORITYとtimer競合をquantum 1／16／64で局所試験する。
 4. timer-miss report、board-less audio/WAV、UART marker profileのCLI E2Eを追加する。
