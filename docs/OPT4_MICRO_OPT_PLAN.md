@@ -9,6 +9,11 @@
 比較、HIGH_PRIORITY／timer競合の局所試験、CLI／report E2Eは完了したが、firmware回帰が終わるまで、過去の隔離candidateの測定値を現行mainの
 合格根拠にしない。
 
+2026-08-16の現行main firmware回帰は部分完了である。audio targetはexactに一致したが、
+PicoTetris／multicore／PicoEditではUART・framebuffer・scenario等を保ったままcycle指紋に
+小さな差が出た。公式Helloの9.5B-cycle受入も未完了であるため、OPT4-Aをbankへ戻さず、
+promoted target／backend pinも変更しない。詳細な数値と再現条件はbackend側の計画書へ固定する。
+
 ## 目的
 
 OPT1-Bで得た正確性を維持したまま、1%未満の小さな改善も候補として積み上げる。
@@ -42,13 +47,13 @@ target registry、promoted backendの固定値は変更しない。
 
 | 候補 | 状態 | 方針 |
 |---|---|---|
-| OPT4-A unconditional cache lookup | **sentinel／DMA・audio／priority低レベル／CLI E2E回帰済み、firmware待ち** | backend `37c50e6`で回帰を修正し、default／unconditional／8-byte／compactのfeature matrix、`6a675b1`のDMA／audio quantum-invariance 5/5、`00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker E2Eを合格。firmware検証完了までbankへ戻さない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-A unconditional cache lookup | **sentinel／DMA・audio／priority低レベル／CLI E2E合格、firmware回帰partialでhold** | backend `37c50e6`で回帰を修正し、default／unconditional／8-byte／compactのfeature matrix、`6a675b1`のDMA／audio quantum-invariance 5/5、`00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker E2Eを合格。現行main firmwareではTetris -1 cycle、multicore +5、PicoEdit -4、Hello full未完了。bankへ戻さない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
 | OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
-| OPT4 bank判定 | **promotionなし。現在のbankは空** | Aは低レベルtest／CLI E2Eまで合格したが、firmware回帰待ち。B〜Eは不採用。既存firmware回帰を閉じるまでbankへ戻さない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
+| OPT4 bank判定 | **promotionなし。現在のbankは空** | Aは低レベルtest／CLI E2Eまで合格したが、firmware回帰はpartial（cycle差とHello full run未完了）。B〜Eは不採用。既存firmware回帰を閉じるまでbankへ戻さない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
 
 ## OPT4-Aの境界
 
@@ -70,7 +75,7 @@ revertし、active targetを変更しない。
 4. timer-miss report、board-less audio/WAV、UART marker profileのCLI E2Eを追加する。**完了 2026-08-16**。
 5. 公開文書を実装とtestの実範囲へ同期する。**完了 2026-08-16**。
 6. source変更が固まった後にfmt／Clippy gateを閉じる。
-7. 新backendでPicoTetris、audio、multicore、PSRAM、SD、PicoEdit、公式Helloをローカル再回帰する。
-8. 未説明の挙動差がない場合だけ、OPT4-Aをbankへ戻すか、versioned validation候補を作るかを別判断する。
+7. 新backendでPicoTetris、audio、multicore、PSRAM、SD、PicoEdit、公式Helloをローカル再回帰する。**部分完了 2026-08-16**（audio exact、他はcycle差またはHello full未完了）。
+8. 差分の原因を分類し、Hello fullを閉じる。全てのexactnessが揃った場合だけ、OPT4-Aをbankへ戻すか、versioned validation候補を作るかを別判断する。**未完了**。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。

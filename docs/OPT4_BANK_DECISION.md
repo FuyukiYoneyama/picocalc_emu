@@ -15,6 +15,24 @@ HIGH_PRIORITY／timer競合5/5、`e0eda1c`でboard-less audio／WAV／UART marke
 Aはなおfirmware回帰待ちであり、bankへはまだ戻さない。
 OPT4-B〜Eは従来どおり採用しない。
 
+## 現行mainのfirmware回帰（2026-08-16）
+
+現行backend `a67e81c9ad89fee548d4c3a9c96fe91c03438ad9`を、registry pinからcleanに再生成した
+firmwareへ適用した。これは隔離candidateの過去記録を上書きするものではなく、現在のmainを
+promotion候補に戻せるかを確認するローカル試験である。
+
+| target | 結果 | 差分 |
+|---|---|---|
+| `picotetris-opt1b` | hold | cycles `927528659`（旧pin `927528660`）。UART／framebuffer／85 stepsは一致。旧promoted backend `e985a9d…`では660、音声DMA sink導入直後のprobe `94818f8…`では658。 |
+| `picocalc-audio-r1` | pass | cycles `405523032`、DMA write `49152`、PCM SHA、UART／framebuffer／scenario一致。 |
+| `picocalc-multicore-r2` | hold | cycles `152548097`（旧pin `152548092`）。UART／framebuffer／scenarioは一致。 |
+| `picoedit-r1` | hold | default FAT32でcycles `827799818`（旧pin `827799822`）。UART／framebuffer／SD `12/13`／PSRAM `154/2471`／scenarioは一致。 |
+| `picocalc-helloworld-a` | pending | 100M／1B-cycle screeningは進行を確認したが、required markersと8MiB verifyを含む9.5B-cycle full runは長時間のため未完了。 |
+
+cycleはexactness契約の絶対条件なので、他の観測値が一致していても、この結果をPASSへ
+丸めない。音声／DMA、multicore、SD／PSRAMなどのモデル変更で説明できる可能性はあるが、
+原因とversioned validationを固定するまではbankへ戻さず、promoted targetも変更しない。
+
 これは性能の大小ではなく、**一つでも正式代表workloadが不一致なら即不採用とするexactness
 絶対条件**による判定である。
 
@@ -99,11 +117,13 @@ SD未接続、9.5B cycles）実行した。baseline正式recordとの比較はba
 
 ## 残件（OPT4の次の安全な手順）
 
-1. Aを含む現行bank（現在はAのみ）を元のpromoted baselineと同一条件で総合A/Bし、
+1. 現行mainのcycle差とHello full runを閉じる。差分が意図したモデル変更なら、targetごとの
+   versioned validationと必要な実機相関を用意する。
+2. Aを含む現行bank（現在はAのみ）を元のpromoted baselineと同一条件で総合A/Bし、
    複雑度、保守負担、追加メモリ、診断影響を記録する。
-2. 総合改善が再現し、exactnessと退行上限を満たす場合だけ、versioned validationを作成して
+3. 総合改善が再現し、exactnessと退行上限を満たす場合だけ、versioned validationを作成して
    promotion可否を別判断する。
-3. 新候補を加える場合も、PicoTetris、Template B、公式Helloのexactnessを先に閉じてから
+4. 新候補を加える場合も、PicoTetris、Template B、公式Helloのexactnessを先に閉じてから
    bank全体を再測定する。
 
 原因が閉じるまで、OPT4は**feature-gated実験候補のまま**とし、既定実行経路はOPT1-Bを維持する。

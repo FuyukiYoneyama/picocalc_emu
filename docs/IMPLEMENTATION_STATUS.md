@@ -93,8 +93,14 @@ DMA／audio低レベル回帰はbackend `6a675b1`でquantum-invariance 5/5、HIG
 正式Template Bはremoteから復元して再測定でき、公式Hello 9.5B-cycle exactnessも正式target条件で
 合格しました。これらは隔離candidateの記録です。現行mainの回帰修正、DMA／audio test拡張、
 CLI E2E、既存firmware再回帰を完了するまで、micro-opt bank全体の採否とpromotionを保留します。
-詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)
-を参照してください。
+2026-08-16の現行backend main (`a67e81c9…`) に対するfirmware再回帰は部分完了である。
+PicoTetrisは`-1` cycle、multicoreは`+5` cycle、PicoEditは`-4` cycleの差を確認し、
+UART／framebuffer／scenario等は一致した。audio targetはcycle／PCMとも一致した。公式Helloは
+100M／1B-cycleの短縮screeningまでで、9.5B-cycle正式受入は長時間のため完了していない。
+したがって、隔離candidateで過去に得た9.5B-cycle exactnessを**現行mainの合格根拠へ
+流用せず**、OPT4-Aのbank復帰とpromotionを保留している。詳細なコマンド、差分、判定は
+[`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](../../picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
+と[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照する。
 OPT4-C/D/Eの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
 [`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。正式promoted targetは変更していません。
