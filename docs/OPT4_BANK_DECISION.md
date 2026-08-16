@@ -10,8 +10,9 @@ OPT4-Aの隔離candidateはPicoTetrisで正の性能信号を得て、正式Temp
 exactnessも通過した。しかし2026-08-16、現行backend mainとの組合せでempty `DecodedOp`の
 sentinelとfaulting PCが一致する回帰をunit testが検出した。回帰はbackend commit `37c50e6`で
 修正し、cache representationのfeature matrixを再検証した。続くbackend `6a675b1`でDMA／audio
-quantum-invariance 5/5（timer累積値、miss分類、PCM／block／latencyを含む）も合格した。
-AはなおCLI／firmware回帰待ちであり、bankへはまだ戻さない。OPT4-B〜Eは従来どおり採用しない。
+quantum-invariance 5/5（timer累積値、miss分類、PCM／block／latencyを含む）、`00b05f5`で
+HIGH_PRIORITY／timer競合5/5も合格した。AはなおCLI／firmware回帰待ちであり、bankへはまだ戻さない。
+OPT4-B〜Eは従来どおり採用しない。
 
 これは性能の大小ではなく、**一つでも正式代表workloadが不一致なら即不採用とするexactness
 絶対条件**による判定である。
@@ -20,7 +21,7 @@ AはなおCLI／firmware回帰待ちであり、bankへはまだ戻さない。O
 
 | 候補 | exactness | 性能 | bank |
 |---|---|---|---|
-| OPT4-A unconditional cache lookup | 隔離candidateは代表workload合格。**sentinel／DMA・audio低レベル回帰済み、CLI／firmware待ち** | PicoTetris中央値3.821338%。正式Template B中央値0.471921%退行（CIは0を含む） | **bank復帰保留** |
+| OPT4-A unconditional cache lookup | 隔離candidateは代表workload合格。**sentinel／DMA・audio／priority低レベル回帰済み、CLI／firmware待ち** | PicoTetris中央値3.821338%。正式Template B中央値0.471921%退行（CIは0を含む） | **bank復帰保留** |
 | OPT4-B NVIC bitmap scan | 合格 | 10-run差0.048429%、paired 95% CIが0を含む | 不採用 |
 | OPT4-C 8-byte `DecodedOp` | 合格 | PicoTetris中央値1.909397%退行 | 不採用 |
 | OPT4-D diagnostic PC compile-out | 合格 | 正式SD/FAT32条件で正の改善を識別できず | 不採用 |

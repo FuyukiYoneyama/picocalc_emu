@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio低レベル回帰完了。backend `6a675b1`でquantum-invariance 5/5。CLI／firmware再回帰が終わるまでbank復帰は保留、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
+| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio／priority低レベル回帰完了。backend `00b05f5`でquantum-invariance 10/10。CLI／firmware再回帰が終わるまでbank復帰は保留、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -26,7 +26,7 @@
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
-現行の実験計画であり、OPT4-Aはsentinel回帰とDMA／audio低レベル回帰を修正・合格済みですが、
+現行の実験計画であり、OPT4-Aはsentinel回帰とDMA／audio／priority低レベル回帰を修正・合格済みですが、
 CLI／firmware再回帰を
 閉じるまでbank復帰を保留します。隔離candidateの測定記録は保持しますが、全体再回帰前の現行main
 のexactness根拠には流用しません。OPT4-Bは速度改善未確認、OPT4-Cは
