@@ -12,7 +12,7 @@ sentinelとfaulting PCが一致する回帰をunit testが検出した。回帰�
 修正し、cache representationのfeature matrixを再検証した。続くbackend `6a675b1`でDMA／audio
 quantum-invariance 5/5（timer累積値、miss分類、PCM／block／latencyを含む）、`00b05f5`で
 HIGH_PRIORITY／timer競合5/5、`e0eda1c`でboard-less audio／WAV／UART marker CLI E2Eも合格した。
-Aはなおfirmware回帰待ちであり、bankへはまだ戻さない。
+Aはfirmware回帰を完了したがcycle差が残るためholdであり、bankへはまだ戻さない。
 OPT4-B〜Eは従来どおり採用しない。
 
 ## 現行mainのfirmware回帰（2026-08-16）
@@ -27,11 +27,18 @@ promotion候補に戻せるかを確認するローカル試験である。
 | `picocalc-audio-r1` | pass | cycles `405523032`、DMA write `49152`、PCM SHA、UART／framebuffer／scenario一致。 |
 | `picocalc-multicore-r2` | hold | cycles `152548097`（旧pin `152548092`）。UART／framebuffer／scenarioは一致。 |
 | `picoedit-r1` | hold | default FAT32でcycles `827799818`（旧pin `827799822`）。UART／framebuffer／SD `12/13`／PSRAM `154/2471`／scenarioは一致。 |
-| `picocalc-helloworld-a` | pending | 100M／1B-cycle screeningは進行を確認したが、required markersと8MiB verifyを含む9.5B-cycle full runは長時間のため未完了。 |
+| `picocalc-helloworld-a` | pass | registry条件（`hwspi-rgb888`、keyboard `HI`、PSRAM verify）で`9,500,000,000` cycles、required UART marker 3件、PSRAM `8,388,608/0`、unknown MMIO 0、exception 0、exit 0。 |
 
-cycleはexactness契約の絶対条件なので、他の観測値が一致していても、この結果をPASSへ
+cycleはexactness契約の絶対条件なので、他の観測値が一致していても、3 targetの差をPASSへ
 丸めない。音声／DMA、multicore、SD／PSRAMなどのモデル変更で説明できる可能性はあるが、
-原因とversioned validationを固定するまではbankへ戻さず、promoted targetも変更しない。
+原因境界を記録しただけでcycle差を吸収したことにはならない。versioned validationと必要な実機
+相関を固定するまではbankへ戻さず、promoted targetも変更しない。
+
+`94818f8` probeと`00b05f5` checkpointの比較で、PicoTetrisは`658→659`、multicoreは
+`152548095→152548097`、PicoEditは`827799822→827799818`となった。現行main `a67e81c9…`
+もcheckpointと同じ値である。UART、framebuffer、scenario semantic判定、対象固有のSD／PSRAM／
+audio観測は一致し、後続のfeature-gated OPT4候補・診断計装・CLIテスト追加はこの差を変更していない。
+従って現時点の分類は「意図したdefault peripheral-model更新帯に伴うcycle指紋差」である。
 
 これは性能の大小ではなく、**一つでも正式代表workloadが不一致なら即不採用とするexactness
 絶対条件**による判定である。
@@ -117,7 +124,7 @@ SD未接続、9.5B cycles）実行した。baseline正式recordとの比較はba
 
 ## 残件（OPT4の次の安全な手順）
 
-1. 現行mainのcycle差とHello full runを閉じる。差分が意図したモデル変更なら、targetごとの
+1. 現行mainのcycle差の扱いを閉じる。差分が意図したモデル変更なら、targetごとの
    versioned validationと必要な実機相関を用意する。
 2. Aを含む現行bank（現在はAのみ）を元のpromoted baselineと同一条件で総合A/Bし、
    複雑度、保守負担、追加メモリ、診断影響を記録する。
