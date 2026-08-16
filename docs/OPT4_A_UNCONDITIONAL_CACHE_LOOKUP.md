@@ -1,21 +1,30 @@
 # OPT4-A unconditional decode-cache lookup
 
-> **現行の実験記録。** この候補はexactnessを満たすmicro-opt bank候補だが、
+> **隔離試作の測定記録と現行状態。** 過去の隔離candidateは下記workloadでexactnessを
+> 満たしたが、2026-08-16に現行backend mainとの組合せでempty-sentinel回帰が見つかった。
 > promoted targetやactive registryのpinは変更していない。
 
-## 判定
+## 現在の判定
 
-**micro-opt bank候補として保持するが、promotionはしない。** PicoTetrisの10回A/Bでは
-中央値が3.821338%改善した。一方、正式Template Bの同一release／trace OFF条件では中央値が
-0.471921%退行し、paired 95% CIも0を含む。公式Helloはtarget契約どおりの9.5B-cycle
-exactnessを通過した。exactnessゲートは閉じたが、bank全体の複雑度・総合性能を比較するまで
-production／promoted targetには混入させない。
+**bank候補としての扱いを停止し、修正・再検証待ちとする。** レビュー対象のbackend code commit `b94e550`で
+`unconditional-cache-lookup-prototype`を有効にすると、
+`empty_sentinel_does_not_match_faulting_pc`が失敗する。通常12-byte `DecodedOp`の
+`matches_pc()`がempty tag `u32::MAX`を除外せず、faulting PC `u32::MAX`をcache hitと
+誤認してbus accessを飛ばすためである。
+
+過去の隔離candidateで得たPicoTetris、Template B、公式Helloの測定値は、そのcommitに対する
+履歴証拠として有効である。しかし、後続の共通helper化を含む現行mainのexactness根拠には
+流用しない。修正と有効feature matrixの再検証が終わるまでpromotion／bank総合測定へ進まない。
+実行順序はbackend側の
+[`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
+を正典とする。
 
 ## 変更
 
 `decode_execute` のcache lookupで、cache投入時に既に保証されている
 `is_cacheable_pc`のregion判定を、実験feature時だけ省略する。
-slotのfull PC tag比較と空entry番兵(`u32::MAX`)の除外は維持する。
+隔離試作ではslotのfull PC tag比較と空entry番兵(`u32::MAX`)の除外を維持した。現行mainでは
+後続のrepresentation共通helper化により、通常12-byte表現からこの除外が失われている。
 
 - production default: 従来経路のまま
 - feature: `unconditional-cache-lookup-prototype`
@@ -27,7 +36,7 @@ slotのfull PC tag比較と空entry番兵(`u32::MAX`)の除外は維持する。
 正確性ゲートで停止し、空entryを明示除外するテストを追加して同一候補commitへ反映した。
 この失敗は候補を無条件に採用しない運用が機能した証拠として残す。
 
-## exactness
+## 隔離candidateで確認したhistorical exactness
 
 測定用候補は、正式promoted backend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1` のclean
 checkoutへOPT4-Aだけを適用した隔離commit
@@ -118,8 +127,9 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-OPT4-Aはfeature-gated bank候補として保持する。全代表workloadのexactnessは閉じているが、
-正式Template Bでは正の速度改善を確認できなかったため、現時点でA単独のpromotion、versioned
-validation、active target更新は行わない。次はAを含むbank全体を元のpromoted baselineと比較し、
-複雑度・保守負担・総合改善を記録して採否を決める。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)
+現行mainのempty-sentinel回帰を修正し、通常12-byte表現と8-byte試作表現の有効feature matrixを
+再検証する。続いてDMA／audio／UART markerの低レベルtestとCLI E2E、既存firmware回帰を閉じる。
+これらが終わるまでAをbankへ戻さず、A単独のpromotion、versioned validation、active target更新、
+bank総合性能測定を行わない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
+[`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を参照する。

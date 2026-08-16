@@ -2,6 +2,11 @@
 
 > **現行計画。** これは歴史記録ではない。現在の性能改善作業と採否条件はこの文書を正典とする。
 
+2026-08-16のbackend整合性レビューで、現行mainのOPT4-A featureにempty-sentinel回帰を確認した。
+新しい性能測定より先に、backend側の
+[`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
+を完了する。過去の隔離candidateの測定値は履歴として保持するが、現行mainの合格根拠にしない。
+
 ## 目的
 
 OPT1-Bで得た正確性を維持したまま、1%未満の小さな改善も候補として積み上げる。
@@ -35,19 +40,20 @@ target registry、promoted backendの固定値は変更しない。
 
 | 候補 | 状態 | 方針 |
 |---|---|---|
-| OPT4-A unconditional cache lookup | **exactness合格／bank候補** | PicoTetris、正式Template B、公式Hello 9.5B-cycleの全代表workloadで一致。PicoTetrisは中央値3.821338%改善、Template Bは中央値0.471921%退行（CIは0を含む）。bank全体評価までpromotionしない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-A unconditional cache lookup | **現行mainでexactness不合格／候補停止** | 隔離candidateの代表workloadは一致したが、現行mainでempty sentinelとfaulting PCの誤一致を確認。修正と全feature再検証までbankへ含めない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
 | OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
 | OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
 | OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
 | OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
-| OPT4 bank判定 | **Aをbank候補として保留** | 全代表workloadのexactnessは閉じたが、Template Bで正の改善を識別できない。A〜Eの採否とbank総合比較手順は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
+| OPT4 bank判定 | **promotionなし。現在のbankは空** | Aは現行mainの回帰修正待ち、B〜Eは不採用。修正後も低レベルtest、CLI E2E、既存firmware回帰を閉じるまでbankへ戻さない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
 
 ## OPT4-Aの境界
 
 `populate_decode_cache`は現在もcacheableなROM/XIP/SRAM PCだけを書き込む。invalidateは既存entryを
-消すだけで、新しい非cacheable entryを作らない。OPT4-Aはこの不変条件を利用し、lookup時には
-slotのentryとfull PC tagだけを比較する。tagが一致しない場合は従来どおりslow pathへ進む。
+消すだけで、新しいnon-cacheable entryを作らない。OPT4-Aはこの不変条件を利用するが、通常
+12-byte表現ではempty tagも`u32::MAX`であるため、full PC tag比較だけではfaulting PC
+`u32::MAX`を除外できない。representation共通helperは、有効entryであることも確認しなければならない。
 
 この変更はfeature `unconditional-cache-lookup-prototype`でのみ有効で、default buildの挙動と
 コード経路は変更しない。候補の受入には、既存unit test、全firmware exactness、10-run A/B、
@@ -56,13 +62,13 @@ revertし、active targetを変更しない。
 
 ## 実行順序
 
-1. OPT4-Aをcurrent promoted baselineへ適用し、exactnessをローカルで確認する。
-2. trace/proof OFFの10-run以上A/Bと95% CIを記録する。
-3. OPT4-Bは独立候補として測定済みであり、速度改善未確認のためpromotionしない。
-4. OPT4-Cは実装・exactness・10-run A/Bまで完了した。性能改善未確認かつ中央値退行のため、promotion／bank追加を行わない。
-5. OPT4-Dは実装・exactness・正式SD/FAT32条件での10-run A/Bまで完了した。測定分散が大きく、平均・中央値とも正の改善を識別できなかった。診断PC attributionの制約もあるため、promotion／bank追加を行わない。
-6. OPT4-Eは実装・exactnessまで完了した。正式シナリオ10-run A/Bはhost slowdownで未完了、短縮screeningでも正の改善信号がなく、promotion／bank追加を行わない。
-7. 次候補へ進む場合も、元のpromoted baselineとのexactnessと10-run A/Bを独立に記録し、候補をbank化する場合はbank全体で総合比較する。
-8. OPT4-Aは公式Helloを含む全代表workloadのexactnessを閉じた。bank全体の総合A/Bと複雑度評価が終わるまでactive targetと既定経路を変更しない。
+1. OPT4-Aのempty-sentinel回帰を修正し、default／12-byte／8-byteの有効feature matrixをローカルで確認する。
+2. DMA quantum-invarianceの比較状態をtimer／audio観測まで拡張する。
+3. HIGH_PRIORITYとtimer競合をquantum 1／16／64で局所試験する。
+4. timer-miss report、board-less audio/WAV、UART marker profileのCLI E2Eを追加する。
+5. 公開文書を実装とtestの実範囲へ同期する。
+6. source変更が固まった後にfmt／Clippy gateを閉じる。
+7. 新backendでPicoTetris、audio、multicore、PSRAM、SD、PicoEdit、公式Helloをローカル再回帰する。
+8. 未説明の挙動差がない場合だけ、OPT4-Aをbankへ戻すか、versioned validation候補を作るかを別判断する。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。

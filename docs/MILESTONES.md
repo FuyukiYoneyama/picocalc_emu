@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **A〜Eの候補評価完了。AはPicoTetrisで中央値3.821338%改善、正式Template Bは0.471921%退行（CIは0を含む）、公式Hello 9.5B-cycle exactnessは合格。Aはbank候補として保持し未promotion、B〜Eは採用なし。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)。exactness絶対条件、10-run A/B＋95% CI、複数候補はbank全体で評価** |
+| OPT4 | micro-opt bank | **A〜Eの隔離評価完了。ただし現行backend mainのA featureでempty-sentinel回帰を確認したため、現在のbankは空。Aは修正・再検証待ち、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -26,7 +26,8 @@
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
-現行の実験計画であり、OPT4-Aの採否はまだ確定していません。OPT4-Bは速度改善未確認、OPT4-Cは
+現行の実験計画であり、OPT4-Aは現行mainのsentinel回帰を閉じるまで候補停止です。隔離candidateの
+測定記録は保持しますが、現行mainのexactness根拠には流用しません。OPT4-Bは速度改善未確認、OPT4-Cは
 中央値退行、OPT4-Dは正式SD/FAT32条件でも正の改善未確認、OPT4-Eは正式性能測定未完了かつ短縮screeningで正の信号なしのため、いずれもpromoted targetへは採用していません。OPT4-C/D/Eの
 実装・exactness・A/B結果は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
@@ -49,6 +50,9 @@ R/NEXTの機能作業は完了しています。現行作業は、性能面で�
 [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
 **UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-Aは完了し、
 U3-B以降が未着手です。
+OPT4／backend側は、性能測定を再開する前に
+[`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
+の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了します。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 `history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U3-B以降を開始する前に、
 目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の

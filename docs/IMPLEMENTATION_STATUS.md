@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-15
+更新日: 2026-08-16
 
 ## 版とbackend
 
@@ -84,12 +84,15 @@ U3-Aの実行入口は[`USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)で
 R5前baseline 63.247秒から約2.492倍高速化しています。
 
 OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselineに対して4.1542%改善でしたが
-5%採用基準未達でrevertしました。現在はOPT4 micro-opt bankをfeature-gated候補として再開し、
-OPT4-Aはexactness passのbank候補、OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
+5%採用基準未達でrevertしました。OPT4 micro-opt bankをfeature-gated候補として評価しましたが、
+現行backend mainのOPT4-A featureでempty sentinelとfaulting PCの誤一致をunit testが検出しました。
+このため現在のbankは空で、Aは修正・再検証待ちです。隔離candidateで得た過去のexactness／性能値は
+履歴証拠として保持しますが、現行mainの合格根拠には流用しません。OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
 10-run A/Bで中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく、OPT4-Eは正式シナリオ10-run A/B未完了かつ短縮screeningで正の信号なしのため、いずれもpromotionしていません。
 正式Template Bはremoteから復元して再測定でき、公式Hello 9.5B-cycle exactnessも正式target条件で
-合格しました。AはPicoTetrisで正の速度信号を得たbank候補ですが、Template Bでは改善を識別できない
-ため、micro-opt bank全体の採否とpromotionを保留しています。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)
+合格しました。これらは隔離candidateの記録です。現行mainの回帰修正、DMA／audio test拡張、
+CLI E2E、既存firmware再回帰を完了するまで、micro-opt bank全体の採否とpromotionを保留します。
+詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)
 を参照してください。
 OPT4-C/D/Eの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
