@@ -1,0 +1,93 @@
+{
+  "schema_version": 8,
+  "backend_commit": "a67e81c9ad89fee548d4c3a9c96fe91c03438ad9",
+  "backend_build": {"commit": "a67e81c9ad89fee548d4c3a9c96fe91c03438ad9", "dirty": false},
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "a8816759038df060da3ead7a9e80b02f91e667822132b30c0c1b2436e81c0649"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 152548097,
+  "elapsed_us": 615000,
+  "pc": "0x1000539e",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": ["[NEXT2][MC][LAUNCH] status=pass ready=0xc0110001", "[NEXT2][MC][FIFO] status=pass vectors=4", "[NEXT2][MC][WFE_SEV] status=pass before=1 after=2", "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf", "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 1051, "raset": 1051, "ramwr": 1051, "ramrd": 0,
+    "pixels_written": 347136, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff", "non_black_pixels": 72320, "png": "final.png"},
+  "psram": {
+    "attached": true,
+    "tick_count": 59020112, "cs_falling_count": 7,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [{"command": 0, "count": 1}, {"command": 255, "count": 1}, {"command": 75, "count": 1}, {"command": 53, "count": 1}, {"command": 235, "count": 1}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 0, "blocks_read": 0, "blocks_written": 0,
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 0, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "next2-multicore-v1.json",
+    "name": "next2-multicore-v1",
+    "description": "NEXT-2A dual-core conformance observation. No keyboard input; stop only after the frozen overall PASS marker and preserve the final LCD state.",
+    "status": "pass",
+    "poll_ms": 1,
+    "steps_total": 2,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "all frozen multicore phases passed", "status": "pass", "at_ms": 615, "at_cycles": 152548097, "detail": "1700 UART bytes seen"},
+      {"index": 1, "op": "snapshot", "label": "NEXT-2A final PASS screen", "status": "pass", "at_ms": 615, "at_cycles": 152548097, "detail": "72320 non-black pixels", "rgb565_sha256": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff", "png_basename": "next2-multicore-final.png"}
+    ]
+  },
+  "uart": {"bytes": 1700, "sha256": "2c1ebc312c9190d72a0a3d745ecc0ad40978378cd6225e49d54d191191684959"}
+}

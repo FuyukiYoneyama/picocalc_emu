@@ -2,4 +2,6 @@
 # Treat them as binary evidence so whitespace checks do not rewrite or reject
 # the captured stream.
 firmware-validation/evidence/**/uart.log binary
+firmware-validation/evidence/**/*.uart binary
+firmware-validation/evidence/**/*-uart.log binary
 firmware-validation/evidence/**/uart.raw binary

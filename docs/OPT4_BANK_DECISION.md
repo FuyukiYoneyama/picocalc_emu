@@ -27,7 +27,7 @@ promotion候補に戻せるかを確認するローカル試験である。
 | `picocalc-audio-r1` | pass | cycles `405523032`、DMA write `49152`、PCM SHA、UART／framebuffer／scenario一致。 |
 | `picocalc-multicore-r2` | hold | cycles `152548097`（旧pin `152548092`）。UART／framebuffer／scenarioは一致。 |
 | `picoedit-r1` | hold | default FAT32でcycles `827799818`（旧pin `827799822`）。UART／framebuffer／SD `12/13`／PSRAM `154/2471`／scenarioは一致。 |
-| `picocalc-helloworld-a` | pass | registry条件（`hwspi-rgb888`、keyboard `HI`、PSRAM verify）で`9,500,000,000` cycles、required UART marker 3件、PSRAM `8,388,608/0`、unknown MMIO 0、exception 0、exit 0。 |
+| `picocalc-helloworld-a` | registry-contract pass | registry条件（`hwspi-rgb888`、keyboard `HI`、PSRAM verify）で`9,500,000,000` cycles、required UART marker 3件、PSRAM `8,388,608/0`、unknown MMIO 0、exception 0、exit 0。 |
 
 cycleはexactness契約の絶対条件なので、他の観測値が一致していても、3 targetの差をPASSへ
 丸めない。音声／DMA、multicore、SD／PSRAMなどのモデル変更で説明できる可能性はあるが、
@@ -38,7 +38,32 @@ cycleはexactness契約の絶対条件なので、他の観測値が一致して
 `152548095→152548097`、PicoEditは`827799822→827799818`となった。現行main `a67e81c9…`
 もcheckpointと同じ値である。UART、framebuffer、scenario semantic判定、対象固有のSD／PSRAM／
 audio観測は一致し、後続のfeature-gated OPT4候補・診断計装・CLIテスト追加はこの差を変更していない。
-従って現時点の分類は「意図したdefault peripheral-model更新帯に伴うcycle指紋差」である。
+従って現時点の**暫定分類**は「意図したdefault peripheral-model更新帯に伴うcycle指紋差」である。
+948 probeと00b checkpointの間に差分があること、現行mainが00b checkpointと同じ値になることは確認できたが、
+責任を負う単一commitまたは具体的なdomainまでは確定していない。この分類をcycle差の受入理由には使わず、
+影響targetは引き続きholdとする。
+
+## 検証証拠の固定
+
+2026-08-16の現行main回帰report、UART／framebuffer補助artifact、948／00b境界probeを
+[`firmware-validation/evidence/opt4-current-main-20260816-01/`](../firmware-validation/evidence/opt4-current-main-20260816-01/)
+へ固定した。`SHA256SUMS`で内容を検証できる。これは再現可能なローカル証拠であり、旧recordの更新、
+versioned validationの作成、target pinの更新、promotionを意味しない。
+
+## 受入判断（2026-08-16）
+
+- `picotetris-opt1b`、`picocalc-multicore-r2`、`picoedit-r1`はcycle差が残るため、現行mainを
+  versioned validationへ昇格しない。旧pinを維持し、実機相関もこの差分を解消する追加設計なしには
+  開始しない。
+- `picocalc-audio-r1`はcycle、PCM、timer、UART、framebuffer、scenarioの登録契約項目に合格した。
+- `picocalc-helloworld-a`はrequired marker、PSRAM、unknown MMIO、exception、cycle limitという
+  registry受入項目に合格した。ただしfull-report byte equalityの受入ではない。
+- audio／Helloの合格はOPT4-Aまたはmicro-opt bankのpromotionを意味しない。bankは空のまま、
+  promoted targetとbackend pinも変更しない。
+
+したがって今回のversioned validation／実機相関の判断は、**差分targetはhold、契約項目合格targetは
+個別に合格記録のみを残し、promotionは行わない**とする。責任commit／domainの特定は、OPT4を再開
+する場合の後続課題である。
 
 これは性能の大小ではなく、**一つでも正式代表workloadが不一致なら即不採用とするexactness
 絶対条件**による判定である。
@@ -47,7 +72,7 @@ audio観測は一致し、後続のfeature-gated OPT4候補・診断計装・CLI
 
 | 候補 | exactness | 性能 | bank |
 |---|---|---|---|
-| OPT4-A unconditional cache lookup | 隔離candidateは代表workload合格。**sentinel／DMA・audio／priority低レベル／CLI E2E回帰済み、firmware待ち** | PicoTetris中央値3.821338%。正式Template B中央値0.471921%退行（CIは0を含む） | **bank復帰保留** |
+| OPT4-A unconditional cache lookup | 隔離candidateは代表workload合格。**sentinel／DMA・audio／priority低レベル／CLI E2E／firmware回帰済み。3 targetのcycle差によりhold** | PicoTetris中央値3.821338%。正式Template B中央値0.471921%退行（CIは0を含む） | **bank復帰保留** |
 | OPT4-B NVIC bitmap scan | 合格 | 10-run差0.048429%、paired 95% CIが0を含む | 不採用 |
 | OPT4-C 8-byte `DecodedOp` | 合格 | PicoTetris中央値1.909397%退行 | 不採用 |
 | OPT4-D diagnostic PC compile-out | 合格 | 正式SD/FAT32条件で正の改善を識別できず | 不採用 |
@@ -105,7 +130,7 @@ paired differenceの95% CIは`[-0.208954, 0.180954] s`だった。前回の19.25
 `templates/rp2040-basic/build`のuntracked成果物は正式pinの証拠ではない。今回の正式BINはclean
 cloneから再生成した一時artifactであり、リポジトリへバイナリを追加していない。
 
-## 公式HelloのA候補exactness
+## 公式HelloのA候補registry受入項目
 
 正式Hello BIN (`925d4a97745744e130877b1a113b98f656e059ec9c4f9e6e906969e47fc44086`)を
 candidate backend `3651f4c1…`でtarget契約どおり（`hwspi-rgb888`、PSRAM verify、keyboard `HI`、
@@ -124,13 +149,13 @@ SD未接続、9.5B cycles）実行した。baseline正式recordとの比較はba
 
 ## 残件（OPT4の次の安全な手順）
 
-1. 現行mainのcycle差の扱いを閉じる。差分が意図したモデル変更なら、targetごとの
-   versioned validationと必要な実機相関を用意する。
+1. 現行mainのcycle差の扱いを閉じる。今回の受入判断では差分targetをholdした。再開時に差分commit／domainの
+   追加切り分け、targetごとのversioned validation、必要な実機相関のいずれを採用するかを決める。
 2. Aを含む現行bank（現在はAのみ）を元のpromoted baselineと同一条件で総合A/Bし、
    複雑度、保守負担、追加メモリ、診断影響を記録する。
 3. 総合改善が再現し、exactnessと退行上限を満たす場合だけ、versioned validationを作成して
    promotion可否を別判断する。
-4. 新候補を加える場合も、PicoTetris、Template B、公式Helloのexactnessを先に閉じてから
+4. 新候補を加える場合も、PicoTetris、Template B、公式Helloのregistry受入項目を先に閉じてから
    bank全体を再測定する。
 
 原因が閉じるまで、OPT4は**feature-gated実験候補のまま**とし、既定実行経路はOPT1-Bを維持する。

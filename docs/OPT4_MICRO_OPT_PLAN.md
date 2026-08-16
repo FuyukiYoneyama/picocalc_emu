@@ -6,12 +6,14 @@
 新しい性能測定より先に、backend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 に従う。sentinel修正とcache representationのfeature matrix、DMA／audioのquantum-invariance
-比較、HIGH_PRIORITY／timer競合の局所試験、CLI／report E2Eは完了したが、firmware回帰のexactness差分の扱いが決まるまで、過去の隔離candidateの測定値を現行mainの
-合格根拠にしない。
+比較、HIGH_PRIORITY／timer競合の局所試験、CLI／report E2E、firmware回帰を完了した。firmware回帰で
+cycle差が出た3 targetは暫定分類のうえholdとし、過去の隔離candidateの測定値を現行mainの
+exactness合格根拠へ流用しない。
 
-2026-08-16の現行main firmware回帰は実行完了した。audio targetと公式Helloはexactに一致したが、
+2026-08-16の現行main firmware回帰は実行完了した。audio targetは契約項目が一致し、公式Helloは
+registry受入項目に合格したが、
 PicoTetris／multicore／PicoEditではUART・framebuffer・scenario等を保ったままcycle指紋に小さな差が
-出た。差分は`94818f8` probeと`00b05f5` checkpointでdefault runtime更新帯に境界づけられ、後続の
+出た。差分は`94818f8` probeと`00b05f5` checkpointでdefault runtime更新帯に暫定的に境界づけられ、後続の
 feature-gated OPT4候補の影響ではない。cycle exactnessの不一致を吸収せず、OPT4-Aをbankへ戻さず、
 promoted target／backend pinも変更しない。詳細な数値と再現条件はbackend側の計画書へ固定する。
 
@@ -75,8 +77,12 @@ revertし、active targetを変更しない。
 3. HIGH_PRIORITYとtimer競合をquantum 1／16／64で局所試験する。**完了 2026-08-16**。
 4. timer-miss report、board-less audio/WAV、UART marker profileのCLI E2Eを追加する。**完了 2026-08-16**。
 5. 公開文書を実装とtestの実範囲へ同期する。**完了 2026-08-16**。
-6. source変更が固まった後にfmt／Clippy gateを閉じる。
-7. 新backendでPicoTetris、audio、multicore、PSRAM、SD、PicoEdit、公式Helloをローカル再回帰する。**実行完了 2026-08-16**（audio／Hello exact、3 targetはcycle差以外一致）。
-8. 差分の原因を分類し、Hello fullを閉じる。**Hello fullと差分境界分類は完了**したが、cycle exactness差を受け入れるversioned validation／実機相関の判断が残るため、OPT4-Aをbankへ戻すか、versioned validation候補を作るかは未決定。
+6. source変更が固まった後にfmt／Clippy gateを閉じる。**完了 2026-08-16**（対象crate gate）。
+7. 新backendでPicoTetris、audio、multicore、PSRAM、SD、PicoEdit、公式Helloをローカル再回帰する。**実行完了 2026-08-16**（audioは契約項目、Helloはregistry受入項目に合格。3 targetはcycle差以外一致）。
+8. 差分を**暫定分類**し、Hello fullをregistry受入項目単位で閉じる。**検証reportと境界probeは
+   `firmware-validation/evidence/opt4-current-main-20260816-01/`へ固定済み**。ただし、cycle exactnessの
+   不一致を受け入れるversioned validation／実機相関は今回実施せず、差分targetはholdとした。audio／Helloの
+   個別契約項目合格は記録したが、OPT4-Aをbankへ戻すか、versioned validation候補を作るpromotion判断は
+   行わない。責任commit／domainの確定はOPT4再開時の後続課題である。
 
 GitHub Actionsは通常開発では実行しない。測定・回帰・採否判断はローカルで完結させる。

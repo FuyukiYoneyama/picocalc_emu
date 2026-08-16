@@ -1,0 +1,102 @@
+{
+  "schema_version": 8,
+  "backend_commit": "00b05f54f47c1bf4a930bdec1f36a172a1a80a49",
+  "backend_build": {"commit": "00b05f54f47c1bf4a930bdec1f36a172a1a80a49", "dirty": false},
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 827799818,
+  "elapsed_us": 3320000,
+  "pc": "0x10004c7a",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 359, "raset": 359, "ramwr": 359, "ramrd": 0,
+    "pixels_written": 1480000, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9", "non_black_pixels": 14389, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 158844047, "cs_falling_count": 250,
+    "bytes_written": 154, "bytes_read": 2471,
+    "cmd_counts": {"write": 10, "fast_read": 235, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [{"command": 0, "count": 1}, {"command": 255, "count": 1}, {"command": 75, "count": 1}, {"command": 53, "count": 1}, {"command": 235, "count": 1}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 34, "blocks_read": 12, "blocks_written": 13,
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 518, "key_events_delivered": 30, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000000", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "picoedit-blind-v1.json",
+    "name": "picoedit-blind-v1",
+    "description": "Frozen NEXT-1 PicoEdit workflow. Uses official controller key codes and waits for application markers between logical phases.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 11,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "PicoEdit file list ready", "status": "pass", "at_ms": 570, "at_cycles": 140299818, "detail": "1645 UART bytes seen"},
+      {"index": 1, "op": "key_events", "label": "open selected INPUT.TXT", "status": "pass", "at_ms": 670, "at_cycles": 165299818, "detail": "sent 2 raw key event(s)"},
+      {"index": 2, "op": "wait_until", "label": "61-byte seed loaded into PSRAM", "status": "pass", "at_ms": 670, "at_cycles": 165299818, "detail": "1847 UART bytes seen"},
+      {"index": 3, "op": "key_events", "label": "Ctrl+F", "status": "pass", "at_ms": 970, "at_cycles": 240299818, "detail": "sent 4 raw key event(s)"},
+      {"index": 4, "op": "key_events", "label": "type draft and confirm", "status": "pass", "at_ms": 2070, "at_cycles": 515299818, "detail": "sent 12 raw key event(s)"},
+      {"index": 5, "op": "wait_until", "label": "draft found at frozen cursor", "status": "pass", "at_ms": 2070, "at_cycles": 515299818, "detail": "2196 UART bytes seen"},
+      {"index": 6, "op": "key_events", "label": "End then insert space-o-k", "status": "pass", "at_ms": 2770, "at_cycles": 690299818, "detail": "sent 8 raw key event(s)"},
+      {"index": 7, "op": "key_events", "label": "Ctrl+S", "status": "pass", "at_ms": 3070, "at_cycles": 765299818, "detail": "sent 4 raw key event(s)"},
+      {"index": 8, "op": "wait_until", "label": "safe save readback and SHA pass", "status": "pass", "at_ms": 3070, "at_cycles": 765299818, "detail": "2628 UART bytes seen"},
+      {"index": 9, "op": "wait", "label": "drain final Ctrl release", "status": "pass", "at_ms": 3320, "at_cycles": 827799818, "detail": "waited 250 ms"},
+      {"index": 10, "op": "snapshot", "label": "PicoEdit final screen", "status": "pass", "at_ms": 3320, "at_cycles": 827799818, "detail": "14389 non-black pixels", "rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9", "png_basename": "picoedit-final.png"}
+    ]
+  },
+  "uart": {"bytes": 2628, "sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"}
+}

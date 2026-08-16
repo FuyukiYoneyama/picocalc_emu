@@ -87,20 +87,25 @@ OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselin
 5%採用基準未達でrevertしました。OPT4 micro-opt bankをfeature-gated候補として評価しましたが、
 現行backend mainのOPT4-A featureでempty sentinelとfaulting PCの誤一致をunit testが検出しましたが、
 backend `37c50e6`で修正し、default／unconditional／8-byte／compactのfeature matrixを合格させました。
-DMA／audio低レベル回帰はbackend `6a675b1`でquantum-invariance 5/5、HIGH_PRIORITY／timer競合は`00b05f5`で5/5、board-less audio／WAV／UART marker CLI E2Eは`e0eda1c`で合格させました。現行firmware再回帰は実行済みですがcycle差の扱いが未決定のためbank復帰は保留します。隔離candidateで得た過去のexactness／性能値は
-履歴証拠として保持しますが、全体再回帰前の現行mainの合格根拠には流用しません。OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
+DMA／audio低レベル回帰はbackend `6a675b1`でquantum-invariance 5/5、HIGH_PRIORITY／timer競合は`00b05f5`で5/5、board-less audio／WAV／UART marker CLI E2Eは`e0eda1c`で合格させました。現行firmware再回帰、証拠固定、cycle差の暫定分類、差分targetをholdする受入判断まで完了したため、bank復帰は保留します。隔離candidateで得た過去のexactness／性能値は
+履歴証拠として保持しますが、cycle差のある現行mainをexactness合格へ丸める根拠には流用しません。OPT4-Bはexactness passだが速度改善未確認、OPT4-Cはexactness passだが
 10-run A/Bで中央値1.9094%退行、OPT4-Dは正式SD/FAT32条件で再測定しても分散が大きく、OPT4-Eは正式シナリオ10-run A/B未完了かつ短縮screeningで正の信号なしのため、いずれもpromotionしていません。
-正式Template Bはremoteから復元して再測定でき、公式Hello 9.5B-cycle exactnessも正式target条件で
-合格しました。これらは隔離candidateの記録です。現行mainの回帰修正、DMA／audio test拡張、
-CLI E2E、既存firmware再回帰を完了するまで、micro-opt bank全体の採否とpromotionを保留します。
+正式Template Bはremoteから復元して再測定でき、公式Helloは9.5B-cycleの**registry受入項目**を正式target条件で
+合格しました。これらは隔離candidateおよび現行main回帰の記録です。現行mainの回帰修正、
+DMA／audio test拡張、CLI E2E、既存firmware再回帰、証拠固定、cycle差の暫定分類、受入判断は
+完了しています。ただし3 targetのcycle差をexactness合格へ丸めないため、micro-opt bank全体の
+採否とpromotionは保留します。
 2026-08-16の現行backend main (`a67e81c9…`) に対するfirmware再回帰は実行完了した。
 PicoTetrisは`-1` cycle、multicoreは`+5` cycle、PicoEditは`-4` cycleの差を確認し、
 UART／framebuffer／scenario等は一致した。audio targetはcycle／PCMとも一致した。公式Helloも
 registry条件（`hwspi-rgb888`、keyboard `HI`、PSRAM verify、9.5B cycles）でexit 0、required
 marker 3件、PSRAM `8388608/0`、unknown MMIO 0、exception 0に合格した。したがって、Helloの
-full未完了は解消したが、3 targetのcycle差を**現行mainのexactness合格へ丸めず**、OPT4-Aのbank
+registry受入項目の未完了は解消したが、full-report byte equalityを主張せず、3 targetのcycle差を
+**現行mainのexactness合格へ丸めず**、OPT4-Aのbank
 復帰とpromotionを保留している。差分は`94818f8` probeと`00b05f5` checkpointでdefault runtime
-更新帯に境界づけられ、後続feature-gated候補では変化しない。詳細なコマンド、差分、判定は
+更新帯に暫定的に境界づけられ、後続feature-gated候補では変化しない。検証reportと境界probeは
+[`opt4-current-main-20260816-01`](../firmware-validation/evidence/opt4-current-main-20260816-01/)へ固定した。
+詳細なコマンド、差分、判定は
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](../../picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 と[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照する。
 OPT4-C/D/Eの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／

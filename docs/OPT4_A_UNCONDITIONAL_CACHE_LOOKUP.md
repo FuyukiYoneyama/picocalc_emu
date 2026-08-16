@@ -6,17 +6,18 @@
 
 ## 現在の判定
 
-**sentinel回帰、DMA／audio低レベル比較、CLI E2Eは修正・合格済み、firmware再検証待ちとする。** レビュー対象のbackend code commit
+**sentinel回帰、DMA／audio低レベル比較、CLI E2E、firmware再回帰は修正・合格済みである。** レビュー対象のbackend code commit
 `b94e550`で発見した、通常12-byte `DecodedOp`の`matches_pc()`がempty tag `u32::MAX`を
 除外せずfaulting PCをcache hitと誤認する問題は、backend commit `37c50e6`で修正した。
 default、unconditional lookup、8-byte表現、compact dispatch keyの各feature matrixと
 unconditional harness testに加え、backend `6a675b1`のDMA／audio quantum-invariance 5/5、
 `00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker CLI
-E2Eも合格した。ただし既存firmware回帰が未完了なので、まだbankへ復帰させない。
+E2Eも合格した。firmware再回帰では3 targetにcycle差が残ったため、差分を暫定分類してholdとし、
+bankへは復帰させない。
 
 過去の隔離candidateで得たPicoTetris、Template B、公式Helloの測定値は、そのcommitに対する
 履歴証拠として有効である。しかし、後続のDMA／audio変更を含む現行mainの全体exactness根拠には
-流用しない。step 2以降の検証が終わるまでpromotion／bank総合測定へ進まない。
+流用しない。検証は完了しているが、3 targetのcycle差をholdする受入判断により、promotion／bank総合測定へは進まない。
 実行順序はbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を正典とする。
@@ -96,8 +97,8 @@ trace OFF同士を同じrelease profileで再ビルドして10-run A/Bをやり�
 - 10組すべてでsemantic report、cycle、virtual time、UART、RGB565、PSRAM、SD、keyboard、verdictが一致
 
 公式Helloはtarget registryの正式条件（`hwspi-rgb888`、PSRAM 8MiB verify、keyboard `HI`、
-SD未接続、9.5B cycles）でcandidateを実行した。baselineの正式recordと、backend identityとPNG
-出力名を除くreportがbyte相当で一致した。
+SD未接続、9.5B cycles）でcandidateを実行した。ここでの判定はregistryが宣言する受入項目を対象とし、
+backend identityとPNG出力名を除くreport全体のbyte一致を主張するものではない。
 
 - cycles / elapsed_us: `9500000000` / `71447048`
 - UART SHA-256: `5559f2f1…`
@@ -106,7 +107,7 @@ SD未接続、9.5B cycles）でcandidateを実行した。baselineの正式recor
 - keyboard: `4 delivered / 0 remaining / 0 dropped / backlight 0`
 - verdict: `pass`、required UART markers: 全て存在
 
-従って、公式Helloのexactnessは不合格ではない。前回のSD接続・LCD variant不一致のrunは
+従って、公式Helloはregistry受入項目に合格しており、full-report exactnessを意味しない。前回のSD接続・LCD variant不一致のrunは
 比較条件不一致として破棄し、Aの採否判断には使わない。
 
 加えて、実装commit `213057aa...` とその直前の現行main `7dd0c344...` を直接比較する短い
@@ -129,8 +130,8 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 ## 次
 
-既存firmware回帰を閉じる。これが終わるまで
-Aをbankへ戻さず、A単独のpromotion、versioned validation、active target更新、
-bank総合性能測定を行わない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
+firmware再回帰とcycle差の暫定分類は完了している。現在の受入判断ではAをbankへ戻さず、A単独の
+promotion、versioned validation、active target更新、bank総合性能測定を行わない。再開時の手順は
+[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を参照する。

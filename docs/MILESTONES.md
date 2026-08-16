@@ -18,7 +18,7 @@
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
-| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio／priority低レベル／CLI E2E回帰完了。backend `e0eda1c`でboard-less audio／WAV／UART markerを確認。firmware再回帰が終わるまでbank復帰は保留、B〜Eは採用なし。promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
+| OPT4 | micro-opt bank | **Aのempty-sentinel／DMA・audio／priority低レベル／CLI E2E／firmware回帰を完了。現行mainで3 targetにcycle差が残るため暫定分類のうえhold。B〜Eは採用なし、bank復帰とpromotionは保留、promoted targetはOPT1-Bを維持。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)** |
 | NEXT-1 | 新規blind app（PicoEdit） | 完了 2026-08-09 |
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
@@ -26,10 +26,10 @@
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
-現行の実験計画であり、OPT4-Aはsentinel回帰とDMA／audio／priority低レベル回帰を修正・合格済みですが、
-CLI／firmware再回帰を
-閉じるまでbank復帰を保留します。隔離candidateの測定記録は保持しますが、全体再回帰前の現行main
-のexactness根拠には流用しません。OPT4-Bは速度改善未確認、OPT4-Cは
+現行の実験計画であり、OPT4-Aはsentinel回帰、DMA／audio／priority低レベル回帰、CLI E2E、
+firmware再回帰まで完了しています。現行mainの3 targetにcycle差があるため、差分を暫定分類し、
+bank復帰とpromotionを保留しています。隔離candidateの測定記録は保持しますが、現行mainの
+cycle差をexactness合格へ丸める根拠には流用しません。OPT4-Bは速度改善未確認、OPT4-Cは
 中央値退行、OPT4-Dは正式SD/FAT32条件でも正の改善未確認、OPT4-Eは正式性能測定未完了かつ短縮screeningで正の信号なしのため、いずれもpromoted targetへは採用していません。OPT4-C/D/Eの
 実装・exactness・A/B結果は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
 [`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
@@ -54,7 +54,9 @@ R/NEXTの機能作業は完了しています。現行作業は、性能面で�
 U3-B以降が未着手です。
 OPT4／backend側は、性能測定を再開する前に
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
-の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了します。修正・低レベルtest・CLI E2Eは完了し、残りはformat／Clippy gateと既存firmware再回帰です。
+の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了しました。現行mainの
+cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromoted targetは維持しています。
+新たなversioned validationや実機相関はこの記録から開始しません。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 `history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U3-B以降を開始する前に、
 目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の
