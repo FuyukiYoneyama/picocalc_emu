@@ -103,11 +103,14 @@ M-NESCO拡張は完了済みであり、次段階として、
 uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化（複数ブロック、CRC／token／CS境界、
 read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
 実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
-P0（現状棚卸しとclean trace採取）は完了した。production codeの追加実装はP1のwire契約固定後に
-判断する。
+P0（現状棚卸しとclean trace採取）とP1（wire契約・受入マトリクス）は完了した。P1ではproduction
+codeを変更していない。CMD18/CMD25/CMD12/CMD23は未観測・未実装のまま、P1で固定したsynthetic
+vectorとnegative mutationを先にunit test化してからP2のproduction判断へ進む。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
 M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
 [`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
+P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
+[`../firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)に固定した。
 これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
 

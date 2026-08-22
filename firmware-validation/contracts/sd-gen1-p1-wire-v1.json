@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "contract_id": "sd-gen1-p1-wire-v1-20260823",
+  "roadmap_package": "SD-GEN-1",
+  "status": "accepted_for_p2_design",
+  "production_code_changed_in_p1": false,
+  "purpose": "Freeze the observed SPI SD wire contract and isolate unobserved multi-block candidates before production implementation.",
+  "evidence": {
+    "p0_manifest": "firmware-validation/evidence/sd-gen1-p0-20260823-02/manifest.json",
+    "p0_manifest_sha256": "980140c12e875ac88b86a3c1df61f49507e1136b466f53d9b641c7fc27f279b2",
+    "backend_commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+    "sd_model_path": "crates/picocalc-board/src/sdcard.rs",
+    "sd_model_sha256": "536990c93252cc41c3efed55e0efc8ec5a5069b26b1acfdc3ab25752a651bf26",
+    "sd_wire_path": "crates/picocalc-board/src/sd_wire.rs",
+    "sd_wire_sha256": "2812b4fc4eb4890b312f407436c207685bad250777dc6978a7e6cfa88a72a48e"
+  },
+  "global_wire": {
+    "spi_frame_bits": 8,
+    "command_frame_bytes": 6,
+    "command_prefix_mask": "0xc0",
+    "command_prefix_value": "0x40",
+    "argument_encoding": "big_endian_u32",
+    "block_addressing": "sdhc_block",
+    "block_size_bytes": 512,
+    "idle_byte": "0xff",
+    "read_start_token": "0xfe",
+    "write_start_token": "0xfe",
+    "write_data_response_accepted": "0x05",
+    "r1_poll_rule": "first_response_byte_with_bit7_clear",
+    "data_crc": "recorded_but_not_validated_by_current_model",
+    "cs": {
+      "selection": "falling_edge",
+      "deselection": "rising_edge",
+      "deselect_effect": "discard_inflight_phase_reply_and_write_buffer",
+      "initialization_survives_deselect": true
+    }
+  },
+  "crc_policy": {
+    "mandatory_command_crc_indices": [0, 8],
+    "known_vectors": {
+      "cmd0_crc": "0x95",
+      "cmd8_0x000001aa_crc": "0x87"
+    },
+    "bad_crc_response": "r1_com_crc_error_without_extension_or_side_effect",
+    "other_command_crc": "record_only_until_a_new_contract_revision"
+  },
+  "command_matrix": [
+    {"name": "CMD0", "index": 0, "classification": "observed_runtime", "current_status": "implemented", "response": ["R1=0x01"]},
+    {"name": "CMD8", "index": 8, "classification": "observed_runtime", "current_status": "implemented", "response": ["R1", "R7=000001aa"]},
+    {"name": "CMD55", "index": 55, "classification": "observed_runtime", "current_status": "implemented", "response": ["R1"], "state_effect": "next_accepted_command_is_acmd"},
+    {"name": "ACMD41", "index": 41, "classification": "observed_runtime", "current_status": "implemented", "response": ["R1 idle for bounded polls", "R1 ready"], "requires_prefix": "CMD55"},
+    {"name": "CMD58", "index": 58, "classification": "observed_runtime", "current_status": "implemented", "response": ["R3 OCR with CCS"]},
+    {"name": "CMD17", "index": 17, "classification": "observed_runtime", "current_status": "implemented", "data": "R1 then FE then 512 bytes then two CRC bytes"},
+    {"name": "CMD16", "index": 16, "classification": "model_unit_only", "current_status": "implemented_no_runtime_evidence", "constraint": "512-byte block length remains fixed"},
+    {"name": "CMD24", "index": 24, "classification": "model_unit_only", "current_status": "implemented_no_runtime_evidence", "data": "FE then 512 bytes then CRC then accepted data response"},
+    {"name": "CMD18", "index": 18, "classification": "unobserved_synthetic_candidate", "current_status": "unsupported", "vector": "read two blocks from block 3"},
+    {"name": "CMD12", "index": 12, "classification": "unobserved_synthetic_candidate", "current_status": "unsupported", "vector": "stop CMD18 after second block"},
+    {"name": "CMD23", "index": 23, "classification": "unobserved_synthetic_candidate", "current_status": "unsupported", "vector": "pre-erase count two before CMD25"},
+    {"name": "CMD25", "index": 25, "classification": "unobserved_synthetic_candidate", "current_status": "unsupported", "vector": "write two blocks from block 3"}
+  ],
+  "negative_mutations": [
+    "mandatory command CRC bit flip",
+    "wrong read token",
+    "511-or-513-byte block",
+    "out-of-range block",
+    "CS high during an in-flight transfer",
+    "unimplemented command",
+    "trace enabled versus disabled"
+  ],
+  "acceptance_gates": {
+    "p1": [
+      "observed and unobserved command classes are explicit",
+      "wire fields and state boundaries are documented",
+      "machine-readable matrix matches the document",
+      "production SD source is unchanged"
+    ],
+    "p2_required_before_multi_block_production": [
+      "byte-level normal vectors",
+      "negative vectors and fail-closed reason fields",
+      "existing single-block regression",
+      "trace replay and trace on/off invariance",
+      "local deterministic repetitions and sequential performance measurement"
+    ]
+  },
+  "scope_exclusions": [
+    "card removal",
+    "write protect",
+    "USB BOOTSEL/MSC",
+    "analog power-loss corruption",
+    "generic UF2 compatibility"
+  ],
+  "ci": "not used; local validation only"
+}

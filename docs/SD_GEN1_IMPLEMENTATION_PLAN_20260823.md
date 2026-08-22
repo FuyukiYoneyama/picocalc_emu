@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **P0完了。次はP1 wire契約（production codeは未変更）**
+状態: **P1完了。次はP2最小state machine実装（production codeはP1で未変更）**
 
 ## 1. 目的
 
@@ -39,7 +39,7 @@ production codeを変更せず、次を固定する。
 3. traceに現れない経路は、production実装の根拠にしない。必要な経路は次のP1で
    synthetic契約として明示する。
 
-### SD-GEN-1-P1: wire契約と受入マトリクス
+### SD-GEN-1-P1: wire契約と受入マトリクス（完了 2026-08-23）
 
 コマンドを「既存回帰」「実traceで必要」「synthetic契約で追加」「対象外」に分類する。
 最低限、次の境界を個別に定義する。
@@ -53,6 +53,13 @@ production codeを変更せず、次を固定する。
 
 各項目に、wire列、期待response、model state、trace digest、negative mutationを持たせる。
 「コマンドを実装した」だけでは受入にしない。
+
+P1の固定結果は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
+[`../firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)に保存した。
+P0 traceで観測したCMD0/CMD8/CMD55/ACMD41/CMD58/CMD17、source/unit testだけで確認した
+CMD16/CMD24、未観測・未実装のCMD18/CMD25/CMD12/CMD23を分離している。P1ではproduction
+SD codeを変更していない。multi-blockのproduction追加は、P2でbyte-level synthetic vector、
+negative mutation、CS／busy境界を固定した後に判断する。
 
 ### SD-GEN-1-P2: 最小state machine実装
 
@@ -116,7 +123,7 @@ SD-GEN-1の完了条件は次の全てである。
 | 段階 | 目安 | 主な成果物 |
 |---|---:|---|
 | P0 棚卸し／trace | 4〜6時間 | clean trace、現状一覧 |
-| P1 wire契約 | 6〜8時間 | command/state受入マトリクス |
+| P1 wire契約 | 6〜8時間 | command/state受入マトリクス（完了） |
 | P2 state machine | 10〜16時間 | feature-gated production実装 |
 | P3 test／mutation | 8〜12時間 | unit、replay、negative record |
 | P4 アプリ回帰 | 8〜12時間 | U6／M-NESCO／FAT回帰 |
@@ -126,6 +133,7 @@ SD-GEN-1の完了条件は次の全てである。
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-P0は完了した。次に着手できるのは**SD-GEN-1-P1 wire契約**であり、CMD18/CMD12/CMD23/CMD25の
-production追加はP1で一次traceまたはsynthetic契約を承認するまで行わない。P0の記録は
-[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)に固定した。
+P0とP1は完了した。次に着手できるのは**SD-GEN-1-P2最小state machine実装**である。CMD18/CMD12/CMD23/CMD25の
+production追加は、P1で固定したbyte-level synthetic vectorとnegative mutationを先にunit testへ落とした後に判断する。
+P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
+P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。
