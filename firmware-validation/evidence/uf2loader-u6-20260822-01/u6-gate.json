@@ -1,0 +1,224 @@
+{
+  "acceptance": {
+    "boot2_unchanged": true,
+    "expected_proginfo_mutation": {
+      "range": {
+        "end_exclusive": "0x1000012c",
+        "start": "0x10000110"
+      },
+      "reason": "uf2loader writes magic, flash_end and selected filename"
+    },
+    "final_flash_reattach": true,
+    "flash_mutation_errors": false,
+    "flash_readback_exact_loader_model": true,
+    "loader_region_unchanged": true,
+    "sd_trace_deterministic": true,
+    "three_run_deterministic": true,
+    "uf2_blocks_strict": true,
+    "unknown_sd_commands": false,
+    "watchdog_resets_per_run": 1
+  },
+  "gate": "U6",
+  "provenance": {
+    "app_uf2": {
+      "block_count": 87,
+      "name": "lcd_hwspi_rgb565_expand.uf2",
+      "payload_bytes": 22272,
+      "sha256": "95efae84fddd9c5ff0cb64b20641418a4c9036b1217c78b578cc0cb9740dcbd6"
+    },
+    "backend_commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+    "backend_dir": "picoem-picocalc",
+    "bootloader_assembly": {
+      "base": "0x10000000",
+      "fill_byte": "0xff",
+      "output_name": "initial.bin",
+      "output_sha256": "b5e4c5d47cee14e3b7284159887f13b239baf27873803bb1a5a2c635c807d0b2",
+      "size_bytes": 2097152
+    },
+    "bootloader_uf2": {
+      "name": "bootloader_pico.uf2",
+      "sha256": "209ed48bf9b91d51768386274a8d02bece157f1b889139cf7e2ebb560c92d40d"
+    },
+    "loader_uf2": {
+      "block_count": 186,
+      "first_address": "0x20000000",
+      "last_address_exclusive": "0x2000ba00",
+      "name": "BOOT2040.uf2",
+      "sha256": "3f1a096937d38de98f7b4eed2b1ceae1c34c789d8fcb1e3f529a1ee9fab5a25c"
+    },
+    "runner": "picocalc-run",
+    "runner_sha256": "919b84aedb4b0eb6dd92a4aa21200b343ab83c103144356803da9c868aedfcb5",
+    "scenario": {
+      "name": "uf2loader-u6-e2e.json",
+      "sha256": "603fccde1b86eae06bf1cd778000683560787ffa9d6fc92329f02184ea91f115"
+    },
+    "sd_image": {
+      "manifest": {
+        "files": [
+          {
+            "path": "BOOT2040.UF2",
+            "sha256": "3f1a096937d38de98f7b4eed2b1ceae1c34c789d8fcb1e3f529a1ee9fab5a25c",
+            "size": 95232,
+            "type": "file"
+          },
+          {
+            "path": "pico1-apps",
+            "type": "directory"
+          },
+          {
+            "path": "pico1-apps/test.uf2",
+            "sha256": "95efae84fddd9c5ff0cb64b20641418a4c9036b1217c78b578cc0cb9740dcbd6",
+            "size": 44544,
+            "type": "file"
+          }
+        ],
+        "format": "fat32",
+        "image_bytes": 67108864,
+        "image_sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc",
+        "operation": "pack",
+        "sectors": 131072,
+        "sectors_per_cluster": 1,
+        "tree_sha256": "ed48b3565264fb53833e7f9532ebb0c9b051ac10282faf94886d33a46d8fc789"
+      },
+      "name": "input.sd.img",
+      "sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc"
+    },
+    "uf2loader_source_commit": "5c44a4b64749062b0200507ceeff3ef2b475e288",
+    "uf2loader_source_dir": "src"
+  },
+  "reattach": {
+    "flash_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+    "framebuffer_sha256": "9bc556df1f79436a7b2c4608e6bde978bb9c200626281c148a974f91c1eeb51d",
+    "report_path": "reattach/report.json",
+    "report_sha256": "c9e48960b74019a9a77a3ebf6855147ac913e306183289e8cf8d498a60a871de",
+    "sd_sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc",
+    "sd_trace_event_count": 0,
+    "sd_trace_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "uart_sha256": "dec3c67594f340dc818cfa007ab0344058b81d53f676424b88345f251df99182"
+  },
+  "repetitions": 3,
+  "runs": [
+    {
+      "flash_checks": {
+        "application_ranges": [
+          {
+            "end_exclusive": "0x10005700",
+            "start": "0x10000000"
+          }
+        ],
+        "boot2_unchanged": true,
+        "exact_loader_model": true,
+        "expected_model_diff_count": 0,
+        "final_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+        "initial_sha256": "b5e4c5d47cee14e3b7284159887f13b239baf27873803bb1a5a2c635c807d0b2",
+        "loader_region": {
+          "bytes": 16384,
+          "start": "0x101fc000"
+        },
+        "loader_region_unchanged": true,
+        "proginfo": {
+          "filename": "/pico1-apps/test.uf2",
+          "filename_matches": true,
+          "flash_end": "0x101fc000",
+          "magic": "0xe98cc638"
+        },
+        "proginfo_mutation_range": {
+          "end_exclusive": "0x1000012c",
+          "start": "0x10000110"
+        },
+        "unexpected_diff_ranges": []
+      },
+      "flash_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+      "framebuffer_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45",
+      "index": 1,
+      "report_path": "run-01/report.json",
+      "report_sha256": "fa83ee1935728abab2543896c412491b1fa6e9ae512ec1e0f569d107199e0de9",
+      "sd_sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc",
+      "sd_trace_event_count": 970,
+      "sd_trace_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+      "uart_sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b"
+    },
+    {
+      "flash_checks": {
+        "application_ranges": [
+          {
+            "end_exclusive": "0x10005700",
+            "start": "0x10000000"
+          }
+        ],
+        "boot2_unchanged": true,
+        "exact_loader_model": true,
+        "expected_model_diff_count": 0,
+        "final_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+        "initial_sha256": "b5e4c5d47cee14e3b7284159887f13b239baf27873803bb1a5a2c635c807d0b2",
+        "loader_region": {
+          "bytes": 16384,
+          "start": "0x101fc000"
+        },
+        "loader_region_unchanged": true,
+        "proginfo": {
+          "filename": "/pico1-apps/test.uf2",
+          "filename_matches": true,
+          "flash_end": "0x101fc000",
+          "magic": "0xe98cc638"
+        },
+        "proginfo_mutation_range": {
+          "end_exclusive": "0x1000012c",
+          "start": "0x10000110"
+        },
+        "unexpected_diff_ranges": []
+      },
+      "flash_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+      "framebuffer_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45",
+      "index": 2,
+      "report_path": "run-02/report.json",
+      "report_sha256": "fa83ee1935728abab2543896c412491b1fa6e9ae512ec1e0f569d107199e0de9",
+      "sd_sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc",
+      "sd_trace_event_count": 970,
+      "sd_trace_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+      "uart_sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b"
+    },
+    {
+      "flash_checks": {
+        "application_ranges": [
+          {
+            "end_exclusive": "0x10005700",
+            "start": "0x10000000"
+          }
+        ],
+        "boot2_unchanged": true,
+        "exact_loader_model": true,
+        "expected_model_diff_count": 0,
+        "final_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+        "initial_sha256": "b5e4c5d47cee14e3b7284159887f13b239baf27873803bb1a5a2c635c807d0b2",
+        "loader_region": {
+          "bytes": 16384,
+          "start": "0x101fc000"
+        },
+        "loader_region_unchanged": true,
+        "proginfo": {
+          "filename": "/pico1-apps/test.uf2",
+          "filename_matches": true,
+          "flash_end": "0x101fc000",
+          "magic": "0xe98cc638"
+        },
+        "proginfo_mutation_range": {
+          "end_exclusive": "0x1000012c",
+          "start": "0x10000110"
+        },
+        "unexpected_diff_ranges": []
+      },
+      "flash_sha256": "853b9d711fe82364b88a59c756b43dfb3456eddc4328640d660c5912df434d0c",
+      "framebuffer_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45",
+      "index": 3,
+      "report_path": "run-03/report.json",
+      "report_sha256": "fa83ee1935728abab2543896c412491b1fa6e9ae512ec1e0f569d107199e0de9",
+      "sd_sha256": "21d892e3313a577e86739da7bd2bfaabe49edd62db90480e391910962c8425dc",
+      "sd_trace_event_count": 970,
+      "sd_trace_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+      "uart_sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b"
+    }
+  ],
+  "schema_version": 1,
+  "status": "pass"
+}

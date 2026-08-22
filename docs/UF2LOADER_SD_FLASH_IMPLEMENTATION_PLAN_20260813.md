@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）・U3-B（runner-integrated directory snapshot）完了。U4はpreflight中、production実装未着手。**
+状態: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6・M-NESCO拡張受入完了。U6はcleanな実uf2loader source/buildを使う3回deterministic Gateに合格し、固定LCD fixtureの限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み。M-NESCO拡張は4ケースのA/B受入と証拠化を完了した。次段階はSD-GEN-1汎用SD protocol一般化である。USB BOOTSEL/MSCと全UF2互換性は対象外。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -13,8 +13,11 @@
 2. RP2040 flashのerase / program
 3. `Picocalc_NESco`をdirect bootでdebugできる中間マイルストーン
 4. ホストdirectoryからSD内容を読み込むsnapshot import
-5. 実loaderで観測したSD protocol gap
-6. boot2 entry、watchdog warm reset、実`uf2loader` end-to-end
+5. boot2 entry（U5-A）
+6. 実loaderで観測したSD protocol gap（U4）
+7. watchdog warm reset（U5-B）
+8. M-NESCO拡張受入（複数mapper／容量／read経路／flash再attach）
+9. 実`uf2loader` end-to-end
 
 `uf2loader`は今後の標準起動方式ではない。通常のアプリ開発・debugは、現在と同じBINの`direct_boot_from_flash(0x100)`を既定のまま使う。`uf2loader`はSD、flash erase/program、変更後XIP read、resetを一度に通す**高精度conformance workload**として使う。
 
@@ -220,6 +223,39 @@ M-NESCO-S1は「`Picocalc_NESco`をdirect bootでSD/flash debugへ使い始め�
 中間gateであり、複数size/mapperの網羅、全量のrun-to-run再attach比較、directory import、boot2、
 watchdog、実`uf2loader` end-to-endを完了したことを意味しない。これらはM-NESCO拡張受入またはU3以降で行う。
 
+### M-NESCO拡張受入 — **実装・受入完了 2026-08-22**
+
+U5-B watchdog warm resetの受入後、M-NESCO-S1を複数入力と複数観測経路へ拡張する。対象は
+複数mapper、小・中・大容量ROM、PRG／CHRの先頭・中間・末尾read、CPU instruction fetch／data read、
+core 1／DMAからのXIP read、flash export後の再attach、run間のflash SHA-256一致、SD sourceのROM
+file SHA-256一致である。mapper全般やuf2loader全体の互換性はこのgateの主張に含めない。
+
+ROM fixtureの合法なprovenance、iNES／NES 2.0 header、サイズ分類、境界sample、test-onlyのcore 1／DMA
+probe、run A／B／repeatの入力とfail-closed判定を、専用の実装前契約
+[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)へ固定した。
+診断oracle、host runner、計画4ケース＋追加mapper 1のA/B反復、clean source再build、evidence manifestを実装・固定した。
+このgateを完了しても`uf2loader supported`へ昇格せず、U6 end-to-endの限定capabilityとは別に扱う。
+実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](firmware-validation/evidence/m-nesco-ext-20260822-01/)に保存した。
+
+### M-NESCO後の次段階: SD-GEN-1 汎用SD protocol一般化 — **計画のみ**
+
+M-NESCO拡張受入が完了するまで、SDプロトコルの追加実装には着手しない。M-NESCO拡張は、
+複数ROM・flash/XIP read経路・再attachを先に閉じるための現在の受入ゲートである。
+
+その後のSD-GEN-1では、uf2loaderの固定版traceだけを基準にせず、PicoCalcアプリが利用する
+汎用SD block-device経路を対象にする。対象は実際の利用要求と一次traceから段階的に固定し、
+少なくとも次を個別の実装・unit test・trace契約として管理する。
+
+- single／multi-block readと停止・busy遷移
+- single／multi-block writeと事前消去指定
+- CRC、data token、CS境界、エラー応答
+- FAT16／FAT32を利用するFatFs経路の回帰
+- unknown command／不正token／途中失敗のfail-closed
+- uf2loader、NESco、その他の代表アプリごとのコマンド使用範囲
+
+SD-GEN-1の完了までは、`uf2loader-e2e` capabilityを汎用SD互換性の根拠に使わない。U6の固定版
+uf2loader受入は保持し、一般化による変更は新しいversioned validationとして追加する。
+
 ### U3-A: host directory ↔ RAW image 標準ツール — **完了 2026-08-13**
 
 runnerの前処理・後処理をAIごとの自作scriptにしないため、`picocalc_emu/tools/sd_image.py`を
@@ -275,17 +311,21 @@ runner reportの`sd.raw_image.bytes`／`source_sha256`を同じ生成物へfail-
 
 ### U4: uf2loader実行で判明したSD protocol gap
 
-実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。source上はCMD18を選択できる構造を持つが、U0のfirst-run recordにはSD command traceが含まれていないため、U4ではまだ必要性を確定していない。現行runnerはboot2を実行しないため、clean loader traceの取得にはU5のboot2 entryまたは同等のtrace入口が必要である。準備段階の依存関係・判定表は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)へ分離した。
+実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。U4-P2ではclean loaderを3回実行し、CMD17のみ（CMD18/CMD12/CMD23/CMD24/CMD25は未観測）でSRAM UIへ到達した。traceなし／traceありのreportとUARTも一致したため、**固定版uf2loaderのU4/U6受入経路に限っては**multi-block protocolのproduction追加を行わない。これは汎用SD互換性の宣言ではない。途中で検出したCMD17のR1→data token順序バグだけをunit test付きで修正した。準備・測定・判定は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)へ、U5-Aの実装境界と検証結果は[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)へ固定した。
 
-CMD18/CMD12が観測されなければ、実装したことにせず、U4は「追加変更不要」として閉じる。未観測のcommandを推測で広く追加しない。
+CMD18/CMD12が観測されなければ、固定版uf2loaderのU4受入では「追加変更不要」として閉じる。これは「エミュレーター全体で不要」という意味ではない。M-NESCO拡張受入完了後のSD-GEN-1で、uf2loader以外のアプリに必要なコマンドを一般化し、未対応コマンドは明示的にfail-closedする。未観測のcommandを現在のU4へ推測追加しない。
 
-**Gate U4:** single-blockの既存回帰を保ち、`BOOT2040.UF2`と選択したapp UF2を途中で欠落・重複せず読み切る。未知commandは従来どおりvisible failureとする。
+**Gate U4:** clean loader traceでsingle-blockの既存回帰を保ち、CMD18/CMD12等の追加gapがないことを確認する。今回のU4-P2では`BOOT2040.UF2`をSRAM UIへ読み込む経路までを確認し、multi-block追加なしと判定した。選択app UF2、flash書込み、watchdog resetを含むend-to-endはU6で受入する。未知commandは従来どおりvisible failureとする。
 
-### U5: boot2 entryとwatchdog warm reset
+### U5-A: boot2 entry
 
-既存defaultの`direct_boot_from_flash(0x100)`は変えない。通常のアプリdebugは今後もこの経路を使う。`--boot-mode boot2`を明示したuf2loader conformance runだけが、flash先頭の実際のboot2へ入る。
+既存defaultの`direct_boot_from_flash(0x100)`は変えない。通常のアプリdebugは今後もこの経路を使う。`--boot-mode boot2`を明示したuf2loader conformance runだけが、flash先頭の実際のboot2へ入る。実装境界、ローカル検証、正式受入条件は[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)に固定した。
 
-full bootromやUSBを実行するのではなく、RP2040 reset後にboot2へ制御を渡す最小の起動modeとする。RP2040版uf2loaderでは、flash先頭の256-byte custom boot2がtop 16 KiB内のflash-resident stage3へ渡り、stage3が`BOOT2040.UF2`をSRAMへloadしてUIへ渡す。この実配置とhandoffを迂回せずに通す。
+full bootromやUSBを実行するのではなく、RP2040 reset後にboot2へ制御を渡す最小の起動modeとする。RP2040版uf2loaderでは、flash先頭の256-byte custom boot2がtop 16 KiB内のflash-resident stage3へ渡り、stage3が`BOOT2040.UF2`をSRAMへloadしてUIへ渡す。この実配置とhandoffを迂回せずに通す。U5-Aではboot2→stage3 entryまでを受入範囲とし、SD protocol変更、watchdog reset、UF2選択までは含めない。
+
+**Gate U5-A:** `--boot-mode boot2`でclean uf2loader artifactを起動し、boot2からstage3 vector／entryへ到達する。既定app modeの既存reportと回帰は変えない。U5-A合格後にU4のclean SD protocol traceを取得する。
+
+### U5-B: watchdog warm reset
 
 watchdogはまず、`watchdog_reboot(0,0,0)`が使う即時TRIGGERを実装する。warm resetでは、
 
@@ -299,15 +339,22 @@ watchdogはまず、`watchdog_reboot(0,0,0)`が使う即時TRIGGERを実装す�
 
 起動時menu keyは、既存のpre-queued keyで0.5秒windowを再現できるかを先に試す。不足する場合だけ、scenario schemaへ最小の`preboot key event`を追加する。一般的なbranch/loop機能までは足さない。
 
-**Gate U5:** menu選択boot、app既定boot、flash後watchdog resetの3経路を区別してreportでき、reset前後でflash/SDは保持される。
+**Gate U5-B:** menu選択boot、app既定boot、flash後watchdog resetの3経路を区別してreportでき、reset前後でflash/SDは保持される。
 
 ### U6: 実uf2loader end-to-end
 
+実装前のartifact、入力時刻、観測項目、fail-closed条件は
+[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)に固定した。
 clean buildした外部uf2loaderと、自作test appを使って次を1つのscenarioで通す。
 
-1. `bootloader_pico.uf2`から作ったinitial flashをattach
-2. directory importまたは同一内容のRAW SDをattach
-3. 起動時にUp/F1/F5のいずれかを入力
+U6-P0のhost tool（`python3 tools/picocalc.py uf2 inspect/assemble`）とsynthetic UF2 unit testを実装した。
+さらに`python3 tools/picocalc.py uf2 e2e`を追加し、cleanな外部loader source／artifactとclean backendを
+固定した3回Gateを実装した。U5-Bのclean commitを前提に、M-NESCO拡張とは独立した固定LCD fixtureでP1〜P4のboot2、SD loader UI、
+UF2選択、erase/program、watchdog warm reset、再起動、再attach、determinismを一つの証拠manifestへ固定した。
+
+1. `bootloader_pico.uf2`から作った**raw initial flash**をattach（UF2を`--bin`へ直接渡さない）
+2. directory importまたは同一内容のRAW SDをattachし、rootに`BOOT2040.UF2`、`pico1-apps/TEST.UF2`を置く
+3. boot2からstage3へ入り、既存appのproginfoが無い主シナリオでは起動前キーなしでloader UIへ進む
 4. `BOOT2040.UF2` UIが起動
 5. `pico1-apps/TEST.UF2`を選択
 6. erase/program完了
@@ -327,7 +374,13 @@ clean buildした外部uf2loaderと、自作test appを使って次を1つのsce
 - UART、framebuffer、scenario timeline、structured verdict
 - loaderのtop 16 KiBと保存したboot2が不変である検査結果
 
-**Gate U6:** 同一入力の3 runがdeterministicで、全契約に合格する。ここで初めて`uf2loader supported`へcapabilityを昇格する。
+既存appがある状態でUp/F1/F5を押してloaderへ入る起動前キー経路は、現在のscenario投入時刻が
+stage3の0.5秒windowへ届くことを先に証明できた場合だけ追加coverageとする。主Gateはbootloader-only
+initial flashで閉じ、preboot key eventの未実装を隠れた前提にしない。
+
+**Gate U6:** 同一入力の3 runがdeterministicで、全契約に合格する。2026-08-22に合格し、
+[`firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)
+へ凍結した。ここで初めて、全UF2互換を意味しない限定された`uf2loader-e2e` capabilityを有効化する。
 
 ## 7. negative tests
 
@@ -384,13 +437,15 @@ clean buildした外部uf2loaderと、自作test appを使って次を1つのsce
 | M-NESCO Picocalc_NESco direct-boot実用検証 | 8〜14時間 |
 | U3-A host pack/extract標準ツール | **完了** |
 | U3-B runner-integrated directory import | **完了** |
-| U4 実traceで判明したSD gap（変更不要なら監査だけ） | 2〜12時間 |
-| U5 boot2 entry + watchdog warm reset | 16〜28時間 |
-| U6 実uf2loader scenario/negative/artifact | 16〜24時間 |
-| 文書・全local回帰・公開境界監査 | 8〜12時間 |
-| **残り合計（U3-B完了後）** | **88〜150時間** |
+| U4 実traceで判明したSD gap（P2判断完了、正式record再取得を残す） | **完了。clean trace／unit test／追加production codeなし** |
+| U5-A boot2 entry | **完了。production実装・clean evidence固定** |
+| U5-B watchdog warm reset | **完了。flash／SD保持とboot2再入場をlocal regressionで固定** |
+| M-NESCO拡張受入（fixture／probe／再attach／provenance） | **完了 2026-08-22** |
+| U6 実uf2loader scenario/negative/artifact | **完了 2026-08-22** |
+| 文書・全local回帰・公開境界監査 | **U0〜U6／M-NESCO拡張分を完了** |
+| **次の作業** | **SD-GEN-1の詳細計画を別文書で固定（工数未見積り）** |
 
-目安は**実働12〜21日**である（U3-Aのhost tool実装は完了済み）。実loaderが未観測のSD/SSI commandを要求する、warm resetが既存cycle契約へ広く影響する場合は上限を超える。その場合は問題を隠して範囲を縮めず、該当gateで停止して再見積りする。
+上表は実装前の工数見積りを履歴として残したものであり、完了後の残作業見積りではない。U0〜U6とM-NESCO拡張の実装・local回帰・証拠固定は完了した。次のSD-GEN-1は対象コマンドと代表アプリを先に確定してから、別途工数を見積もる。
 
 42〜60時間程度で作れるsyntheticな「SDからUF2を読んで直接chain-loadするデモ」は、本計画の最終目標ではない。今回は**実際のuf2loader、実際のflash helper、実際のwatchdog reboot**を通すため、その差分を工数へ含めている。
 
@@ -406,12 +461,14 @@ U0 契約固定
  -> U2 flash erase/program
  -> M-NESCO Picocalc_NEScoで実用開始判定
  -> U3-B directory import（完了）
+ -> U5-A boot2 entry
  -> U4 SD実loader gap（必要な場合だけ実装）
- -> U5 boot/reset
+ -> U5-B watchdog warm reset
+ -> M-NESCO拡張受入（複数mapper／サイズ／read path／flash再attach）
  -> U6 uf2loader end-to-end
  -> 文書/capability公開判定
 ```
 
-次に着手する作業は**U4「実loaderで判明したSD protocol gap」**である。U3-Aで用意した標準host
-pack/extractをU3-Bでrunnerの既存`--sd-image`経路へ安全に接続した。U4以降では、
-実loaderのprotocol gap、boot2、watchdog、最終`uf2loader` end-to-endを順に進める。
+U4-P2のclean trace取得とprotocol判断、U5-B、U6 Gate、M-NESCO拡張受入は完了した。`picocalc-run --sd-trace <path>`はdiagnostic-onlyのまま保持し、CMD18／CMD12等のproduction codeは追加していない。U6とM-NESCOのevidenceはbackend/sourceをclean commitへ固定したうえで取得し、固定LCD fixture専用のcapabilityとNESco-specific evidenceを分離して保存した。通常のdirect boot debugは変更しない。
+
+計画の実施順は、M-NESCO拡張をU6の固定LCD fixtureと独立したGateとして実施した。U6とM-NESCOは別々の証拠・capability境界を持つ。次段階はM-NESCOの固定4ケース＋追加mapper 1を越えるSD-GEN-1汎用化であり、未観測commandをこのgateへ推測追加しない。

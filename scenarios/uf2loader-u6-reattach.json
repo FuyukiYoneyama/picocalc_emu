@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "uf2loader-u6-reattach",
+  "description": "Reattach the exported flash image and boot the selected application directly.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait",
+      "ms": 2000
+    },
+    {
+      "op": "snapshot",
+      "label": "application after flash reattach",
+      "png": "app.png"
+    }
+  ]
+}

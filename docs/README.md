@@ -15,6 +15,9 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
+| U5-B watchdog warm resetの実装前契約 | [`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md) |
+| M-NESCO拡張受入の契約・実行証拠 | [`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)、[`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/) |
+| U6実uf2loader end-to-endの契約・実測結果 | [`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md) |
 | 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | 現行backend変更の修正・検証順序 | [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md) |
 | OPT4-A試作・A/B記録 | [`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
@@ -55,19 +58,37 @@
 | 対応・未対応範囲 | [`../firmware-validation/capability.json`](../firmware-validation/capability.json) |
 | firmware target registry | [`../reference-projects/firmware-targets.json`](../reference-projects/firmware-targets.json) |
 
-## 現行の次期実装計画
+## 現行計画（U0〜U6／M-NESCO拡張完了）
 
 SDのRAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot SD/flash debug開始）、
-host directory snapshot、boot2／warm resetをこの順序で段階的に実装し、最後に外部`uf2loader`の
+host directory snapshot、boot2／SD trace／warm resetを依存関係に沿って段階的に実装し、最後に外部`uf2loader`の
 end-to-end conformanceへ進む計画は
 [`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)が正典です。
 U0（clean provenance・fixture・first-failure trace）、U1（RAW SD）、U2（flash erase/program）、
 **M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）**、U3-A（host directory ↔ RAW
-pack/extract）とU3-B（runner-integrated directory snapshot）は完了しました。現在はU4のpreflight（clean
-artifact・boot2 trace入口・SD protocol traceの準備）段階で、production codeは未変更です。U4の実装判断は
-[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)に固定しています。M-NESCO-S1の証拠は
+pack/extract）とU3-B（runner-integrated directory snapshot）は完了しました。U4-P2では`--sd-trace`による
+diagnostic-only SD protocol traceをclean loaderで3回採取し、CMD17のみ（CMD18/CMD12等は未観測）と判定しました。
+CMD17のR1順序だけを修正し、multi-block production codeは追加していません。U5-A boot2 entry、U5-B
+watchdog warm reset、U6の実uf2loader end-to-end Gate、M-NESCO拡張受入まで完了しています。U6の契約と
+実測結果は[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)に固定し、機械可読な
+証拠は`../firmware-validation/evidence/uf2loader-u6-20260822-01/`に保存しています。
+U4の実装判断は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)、U5-Aの実装・受入境界は
+[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)、U5-Bの実装前契約は
+[`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md)に固定しています。M-NESCO-S1の証拠は
 `../firmware-validation/evidence/m-nesco-20260813-01/`にあります。通常のdirect bootによる
 アプリdebugは、この計画の前後で変わりません。
+
+U5-Bの受入後に行った、複数mapper・ROM容量・PRG／CHR境界read・CPU／core 1／DMA経路・flash再attachの
+**M-NESCO拡張受入**は完了しています。契約とfixture／provenance／fail-closed条件は
+[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)に固定しています。
+実行証拠は[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)にあります。このgateは`uf2loader-e2e`へ昇格せず、U6とは独立した固定LCD fixtureの受入です。
+U6は、boot2→stage3→SD上の`BOOT2040.UF2`→アプリUF2のerase/program→watchdog warm reset→
+書込み後app起動を同一artifactで通す最終gateです。固定source／artifactに限定した`uf2loader-e2e`
+capabilityを有効化し、USB BOOTSEL/MSCと任意UF2互換は未対応のままです。
+
+残る正式な機能項目は、M-NESCO拡張の固定4ケースを越える汎用化です。次段階は
+SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol一般化）であり、複数ブロック、
+CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で扱います。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。

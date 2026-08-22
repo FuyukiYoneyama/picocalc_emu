@@ -48,10 +48,10 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 
 ## 次の作業
 
-R/NEXTの機能作業は完了しています。現行作業は、性能面では
+R/NEXTの機能作業は完了しています。UF2Loader U0〜U6とM-NESCO拡張受入は完了しています。現行作業は、性能面では
 [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
-**UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-A、U3-Bは完了し、
-U4はpreflight中（production実装未着手）、U5以降は未着手です。
+**UF2Loader SD／flash統合（U0〜U6）**とM-NESCO拡張受入は完了し、U6の限定capabilityを有効化しました。U4はCMD18/CMD12追加なしと判定済みです。通常direct boot debugは従来どおりで、
+USB BOOTSEL/MSCや全UF2互換は未対応です。
 OPT4／backend側は、性能測定を再開する前に
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了しました。現行mainの
@@ -72,19 +72,36 @@ provenance固定は完了しており、現在はproduction codeを変更でき�
 | 4 | **M-NESCO-S1** — `Picocalc_NESco`を既存direct bootでSD/flash debug開始 | **完了 2026-08-13** |
 | 5a | U3-A host directory ↔ RAW pack／extract tool | **完了 2026-08-13** |
 | 5b | U3-B runner-integrated directory snapshot import | **完了 2026-08-22** |
-| 6 | U4 実loaderで判明したSD protocol gap | **preflight中（実装未着手） 2026-08-22** |
-| 7 | U5 boot2 entry／watchdog warm reset | 未着手 |
-| 8 | U6 実`uf2loader` end-to-end | 未着手 |
+| 6 | U5-A boot2 entry | **完了。`--boot-mode boot2` production実装・local evidence 2026-08-22** |
+| 7 | U4 実loaderで判明したSD protocol gap | **完了。clean trace 3回、CMD18/CMD12未観測、multi-block追加なし 2026-08-22** |
+| 8 | U5-B watchdog warm reset | **完了。flash／SD保持とboot2再入場をlocal regressionで固定 2026-08-22** |
+| 8.5 | **M-NESCO拡張受入** — 複数mapper／サイズ、ROM境界、CPU／PPU／core 1／DMA、flash再attach | **完了。4計画case（mapper 0/2/4/30）＋mapper 1追加、A/B各3回、2026-08-22** |
+| 9 | U6 実`uf2loader` end-to-end | **完了（独立fixture）。clean source/backendの3回Gate、readback・保護領域・trace・SHA・再attach合格 2026-08-22** |
+| 10 | **SD-GEN-1 汎用SD protocol generalization** — uf2loader以外のアプリを含む汎用SD経路 | **未着手。M-NESCO拡張受入完了後に開始** |
 
 M-NESCO-S1は番号付きR/NEXTの追加ではなく、U1とU2のGateが閉じた時点で
 `Picocalc_NESco`のdirect-boot SD/flash debugを解禁する中間マイルストーンです。
 FAT32 RAWからROMを選択し、erase/programとXIP反映を同一runで確認した証拠を
 `firmware-validation/evidence/m-nesco-20260813-01/`へ保存しています。この時点では
 複数size/mapperの網羅、run-to-run再attach比較、directory import、boot2、watchdog、
-`uf2loader supported`をまだ宣言しません。
+`uf2loader-e2e`の限定capabilityとは区別します。全UF2互換やUSB BOOTSEL/MSCは宣言しません。
 
-候補にはnegative conformance母数の拡充、追加blind app、SD fault／persistence、machine APIの
-client利便性がありますが、いずれも正式計画ではありません。
+M-NESCO拡張受入は、U5-B watchdog warm resetの受入後に実施した独立gateです。計画caseのmapper 0/2/4/30と追加mapper 1、small／medium／large
+ROM、PRG／CHRの先頭・中間・末尾read、CPU fetch／data、core 1／DMAのXIP read、flash export後の再attach、
+run間のflash SHA、SD sourceとROM file SHAの一致を、同一provenanceで確認しました。計画4ケース＋追加mapper 1の実行証拠は
+[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあり、
+[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定しています。このgate単独では`uf2loader-e2e`へ昇格しません。U6のclean Gateは別途完了済みです。
+
+U6の契約と結果は[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)に固定しています。
+bootloader-only initial flashを起点に、boot2→stage3→`BOOT2040.UF2`→アプリUF2のerase/program→
+watchdog warm reset→書込み後app起動を通し、3回determinism、strict UF2 negative unit test、
+再attachを閉じました。これはM-NESCO拡張とは独立した固定LCD fixtureであり、限定された固定source／artifact経路だけを
+`uf2loader-e2e` capabilityへ反映しています。
+
+次に正式に残っている機能項目は`SD-GEN-1`汎用SD protocol一般化です。M-NESCO拡張の
+fixtureと証拠は完了済みです。次段階の`SD-GEN-1`では、uf2loaderの固定traceに限定しないSDモデルの一般化
+（複数ブロック、CRC／token／CS境界、read/write、unknown/errorのfail-closed、アプリ別回帰）を行います。
+追加blind app、SD fault／persistence、machine APIのclient利便性は候補であり、SD-GEN-1とは別の正式計画ではありません。
 
 ## 詳細履歴
 

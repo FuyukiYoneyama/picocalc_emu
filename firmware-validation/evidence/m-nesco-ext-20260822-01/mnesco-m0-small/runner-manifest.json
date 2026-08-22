@@ -1,0 +1,234 @@
+{
+  "acceptance": "M-NESCO extension 1-15",
+  "cases": [
+    {
+      "flash_reattach": false,
+      "input": {
+        "basename": "BokosukaWars.nes",
+        "bytes": 40976,
+        "chr_bytes": 8192,
+        "chr_sample_sha256": "fb50dc0717ff266cf9baf82b1ce7a1c2ef6d9247859680b11a19fb7077f5f222",
+        "chr_samples": {
+          "first": 1,
+          "last": 0,
+          "middle": 0
+        },
+        "mapper": 0,
+        "name": "m0",
+        "prg_bytes": 32768,
+        "prg_sample_sha256": "84ee9ad94c4a82b8baa99922c696e23013f09d70bfe93ae98adfa10b2451348b",
+        "prg_samples": {
+          "first": 169,
+          "last": 252,
+          "middle": 68
+        },
+        "sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4",
+        "source_class": "caller-supplied read-only ROM",
+        "source_region_expected": "ram",
+        "submapper": 0,
+        "trainer": false
+      },
+      "run_a": [
+        {
+          "fingerprint_sha256": "226a2b3345b50cd2d4f612246ef3de7671fa4e34be128c3cb60c345047b7169c",
+          "flash_sha256": "3f99645282acdfd129255261e76ec905cca895059beffb449128e48d61bfe225",
+          "phase": "A",
+          "repeat": 1,
+          "sd_image_sha256": "16c40673c1aae758f55300662248a37eb856bf3b86899413b1f9971cd0a8f7a2",
+          "sd_trace_sha256": "617c7ad7b78be76d0c75e3ed1fde09e79ccd7147b261404b1b32837320963c05",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06fb09da",
+              "cpu_fetches": 28807,
+              "cpu_rom_reads": 71769,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "61a8f218"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 40976,
+              "chr_bytes": 8192,
+              "mapper": 0,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 32768,
+              "sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "chr": {
+                "bytes": 8192,
+                "sha256": "fb50dc0717ff266cf9baf82b1ce7a1c2ef6d9247859680b11a19fb7077f5f222"
+              },
+              "prg": {
+                "bytes": 32768,
+                "sha256": "84ee9ad94c4a82b8baa99922c696e23013f09d70bfe93ae98adfa10b2451348b"
+              }
+            },
+            "samples": {
+              "chr": {
+                "first": 1,
+                "last": 0,
+                "middle": 0
+              },
+              "prg": {
+                "first": 169,
+                "last": 252,
+                "middle": 68
+              }
+            },
+            "xip": {
+              "core1": "not_applicable",
+              "core1_digest": "00000000",
+              "dma": "not_applicable",
+              "dma_digest": "00000000"
+            }
+          },
+          "uart_sha256": "10d01e667b24b4f532ab85847d2001c3b49b4d4c0dcd68087a7bd9ebe899af28"
+        },
+        {
+          "fingerprint_sha256": "226a2b3345b50cd2d4f612246ef3de7671fa4e34be128c3cb60c345047b7169c",
+          "flash_sha256": "3f99645282acdfd129255261e76ec905cca895059beffb449128e48d61bfe225",
+          "phase": "A",
+          "repeat": 2,
+          "sd_image_sha256": "16c40673c1aae758f55300662248a37eb856bf3b86899413b1f9971cd0a8f7a2",
+          "sd_trace_sha256": "617c7ad7b78be76d0c75e3ed1fde09e79ccd7147b261404b1b32837320963c05",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06fb09da",
+              "cpu_fetches": 28807,
+              "cpu_rom_reads": 71769,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "61a8f218"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 40976,
+              "chr_bytes": 8192,
+              "mapper": 0,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 32768,
+              "sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "chr": {
+                "bytes": 8192,
+                "sha256": "fb50dc0717ff266cf9baf82b1ce7a1c2ef6d9247859680b11a19fb7077f5f222"
+              },
+              "prg": {
+                "bytes": 32768,
+                "sha256": "84ee9ad94c4a82b8baa99922c696e23013f09d70bfe93ae98adfa10b2451348b"
+              }
+            },
+            "samples": {
+              "chr": {
+                "first": 1,
+                "last": 0,
+                "middle": 0
+              },
+              "prg": {
+                "first": 169,
+                "last": 252,
+                "middle": 68
+              }
+            },
+            "xip": {
+              "core1": "not_applicable",
+              "core1_digest": "00000000",
+              "dma": "not_applicable",
+              "dma_digest": "00000000"
+            }
+          },
+          "uart_sha256": "10d01e667b24b4f532ab85847d2001c3b49b4d4c0dcd68087a7bd9ebe899af28"
+        },
+        {
+          "fingerprint_sha256": "226a2b3345b50cd2d4f612246ef3de7671fa4e34be128c3cb60c345047b7169c",
+          "flash_sha256": "3f99645282acdfd129255261e76ec905cca895059beffb449128e48d61bfe225",
+          "phase": "A",
+          "repeat": 3,
+          "sd_image_sha256": "16c40673c1aae758f55300662248a37eb856bf3b86899413b1f9971cd0a8f7a2",
+          "sd_trace_sha256": "617c7ad7b78be76d0c75e3ed1fde09e79ccd7147b261404b1b32837320963c05",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06fb09da",
+              "cpu_fetches": 28807,
+              "cpu_rom_reads": 71769,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "61a8f218"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 40976,
+              "chr_bytes": 8192,
+              "mapper": 0,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 32768,
+              "sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "chr": {
+                "bytes": 8192,
+                "sha256": "fb50dc0717ff266cf9baf82b1ce7a1c2ef6d9247859680b11a19fb7077f5f222"
+              },
+              "prg": {
+                "bytes": 32768,
+                "sha256": "84ee9ad94c4a82b8baa99922c696e23013f09d70bfe93ae98adfa10b2451348b"
+              }
+            },
+            "samples": {
+              "chr": {
+                "first": 1,
+                "last": 0,
+                "middle": 0
+              },
+              "prg": {
+                "first": 169,
+                "last": 252,
+                "middle": 68
+              }
+            },
+            "xip": {
+              "core1": "not_applicable",
+              "core1_digest": "00000000",
+              "dma": "not_applicable",
+              "dma_digest": "00000000"
+            }
+          },
+          "uart_sha256": "10d01e667b24b4f532ab85847d2001c3b49b4d4c0dcd68087a7bd9ebe899af28"
+        }
+      ],
+      "run_b": [],
+      "sd": {
+        "bytes": 67108864,
+        "file": {
+          "basename": "TEST.NES",
+          "bytes": 40976,
+          "sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4"
+        },
+        "format": "fat32",
+        "image_sha256": "16c40673c1aae758f55300662248a37eb856bf3b86899413b1f9971cd0a8f7a2",
+        "tree_sha256": "27e9b1273253073e5c8c7851a58e8741bffe9d34005fbbcb45cb23dc2945170a"
+      },
+      "status": "pass"
+    }
+  ],
+  "ci": "not used; local runner only",
+  "cycles": 2000000000,
+  "firmware": {
+    "basename": "Picocalc_NESco.bin",
+    "sha256": "4e601a45176ca99b0e65193a6aa2c4ee8d968177a316df95ac47526325800824"
+  },
+  "quantum": 256,
+  "repeats": 3,
+  "runner": {
+    "basename": "picocalc-run",
+    "sha256": "4745c256f215469c2ad554556936663261a3b3cffd67ef6622125d7712e85720"
+  },
+  "runner_backend_commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+  "schema": 1,
+  "status": "pass"
+}

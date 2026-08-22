@@ -21,6 +21,10 @@ from sd_image import (
     pack_tree,
     run_cli as run_sd_cli,
 )
+from uf2_image import (
+    add_cli as add_uf2_cli,
+    run_cli as run_uf2_cli,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -2124,6 +2128,7 @@ def main() -> int:
         help="show repositories and commits without cloning",
     )
     add_sd_cli(subparsers)
+    add_uf2_cli(subparsers)
     args, unknown = parser.parse_known_args()
     if unknown:
         # Unrecognized flags surface on the top-level parser regardless of
@@ -2233,6 +2238,8 @@ def main() -> int:
         return fetch_references(args.output, args.dry_run)
     if args.command == "sd":
         return run_sd_cli(args)
+    if args.command == "uf2":
+        return run_uf2_cli(args)
     return 2
 
 

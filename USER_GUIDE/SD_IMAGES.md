@@ -35,6 +35,35 @@ python3 tools/picocalc.py sd extract ./output.img ./sd-tree-after \
 このツールは既存の `picocalc.py` に統合されています。直接使う場合は同じ引数で
 `python3 tools/sd_image.py sd pack ...`／`sd extract ...`も利用できます。
 
+## UF2 を初期 flash image に変換する（U6-P0）
+
+firmware runner の `--bin` は UF2 コンテナではなく、XIP address を 0 offset に写した
+raw flash image を受け取ります。U6 の実 `uf2loader` 検証では、初期 flash を作る処理を
+毎回個別スクリプトで書かず、標準の `uf2` tool を使います。
+
+```sh
+cd /path/to/picocalc_emu
+
+# UF2 の magic、RP2040 family、block 順、address 範囲を検査する
+python3 tools/picocalc.py uf2 inspect /path/to/bootloader_pico.uf2 \
+  --json ./bootloader.uf2.json
+
+# 2 MiB の blank flash (0xff) に UF2 payload を XIP address で配置する
+python3 tools/picocalc.py uf2 assemble /path/to/bootloader_pico.uf2 \
+  ./initial.bin --flash-size-mib 2 --json ./initial.flash.json
+```
+
+既定では RP2040 family ID (`0xe48bff56`) と family flag を必須にし、payload の重複、
+範囲外、`NOT_MAIN_FLASH`、不連続な block 番号を拒否します。既存の出力は明示的に
+`--force`を指定しない限り上書きしません。生成された `initial.bin` を、既存の runner の
+`--bin` に渡します。
+
+この tool は UF2 を実行したり、SD の `BOOT2040.UF2` を自動的に配置したりしません。
+SD 側の loader artifact は U3-B の `sd pack`／`--sd-dir` で別途 snapshot に含めます。
+family 検査を緩める `--family-id none --allow-missing-family` は、U6 の正式検証では
+使用しないでください。inspect／assemble の JSON には入力・payload・出力の SHA-256 が
+含まれるため、provenance manifest の材料として保存できます。
+
 ## pack の契約
 
 - `--format fat32` が既定です。FAT16 は `--format fat16` を明示します。
@@ -80,10 +109,38 @@ python3 tools/picocalc.py test --mode firmware \
 reportの`sd.raw_image.source_sha256`／`bytes`とも照合されます。`--sd-image-out`はbackendのCOW
 exportであり、必要な場合だけ指定します。
 
+## U6実uf2loader Gate（限定conformance）
+
+外部`uf2loader`を使う最終経路を再現する場合は、個別のPython scriptを作らず、次のGateを使います。
+入力UF2、SD tree、cleanなuf2loader source、clean backend commitを明示し、同じ入力を3回実行します。
+
+```sh
+python3 tools/picocalc.py uf2 e2e \
+  --runner /path/to/picoem-picocalc/target/release/picocalc-run \
+  --backend-dir /path/to/picoem-picocalc \
+  --backend-commit <clean-backend-commit> \
+  --loader-source-dir /path/to/uf2loader/src \
+  --loader-source-commit <clean-uf2loader-commit> \
+  --bootloader-uf2 /path/to/bootloader_pico.uf2 \
+  --loader-uf2 /path/to/BOOT2040.UF2 \
+  --app-uf2 /path/to/app.uf2 \
+  --sd-dir ./u6-sd-tree \
+  --scenario scenarios/uf2loader-u6-e2e.json \
+  --reattach-scenario scenarios/uf2loader-u6-reattach.json \
+  --output ./u6-gate-output \
+  --repetitions 3
+```
+
+GateはUF2 block欠落／重複／family／範囲、boot2／loader保護領域、flash erase/program readback、
+SD command trace、watchdog warm reset、UART／report／framebuffer／flash SHA、再attachをfail-closedで
+判定します。成功証拠は[`../firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)にあります。
+これは固定source／artifactの限定経路であり、USB BOOTSEL/MSCや任意UF2互換を意味しません。
+
 ## 現在の範囲
 
 `sd pack/extract`はhost側の明示的な前処理・後処理です。U3-Bの`picocalc.py test --sd-dir`も
 同じpack実装を起動時に使うだけで、runnerがdirectoryを直接mountする機能ではありません。
-この機能の存在を`uf2loader supported`やSD protocol／boot2／watchdog対応の宣言とは解釈しません。
+`uf2 pack/extract`やdirectory snapshotの存在だけで、一般的な`uf2loader supported`を宣言しません。
+U6の限定conformanceは上記`uf2 e2e` Gateと機械可読capabilityの記載を正典とします。
 
 通常のアプリ debug では、SD image を使わない従来の host／firmware 実行もそのまま利用できます。

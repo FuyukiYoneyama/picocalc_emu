@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-16
+更新日: 2026-08-22
 
 ## 版とbackend
 
@@ -63,20 +63,47 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の現行計画（U0〜U2／M-NESCO-S1／U3-A／U3-B完了、U4 preflight中）
+## 現行計画（U0〜U6／M-NESCO拡張完了）
 
 SD RAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot debug開始）を完了した。
 host側の標準SD pack／extract（U3-A）とrunnerへのdirectory snapshot import（U3-B）は完了した。
-現在はU4のclean artifact／boot2 trace入口／SD protocol traceのpreflightを行い、その後にboot2／watchdog warm resetを
-この順序で段階的に追加し、最後に外部
-`uf2loader`をend-to-endで検証する計画を固定しています。
+U5-A boot2 entry、U4-P2 clean trace／protocol判断、U5-B watchdog warm reset、外部`uf2loader`の
+U6 end-to-end GateとM-NESCO拡張受入まで完了した。U4ではCMD17のsingle-block応答順序だけを修正し、
+CMD18/CMD12等のmulti-block production codeは追加していない。U6はcleanな外部loader source/buildと
+clean backendで同一入力を3回実行し、UF2 strict検査、flash readback、loader領域保護、SD trace、UART、
+report、framebuffer、watchdog warm reset、再attachを合格させた。
 計画書は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)です。
 `firmware-validation/evidence/m-nesco-20260813-01/`にM-NESCO-S1のreport、scenario、UART、画面証拠を置いた。
-U4以降は未完了であり、これらの機能はまだ`capability.json`の`uf2loader supported`へ移していません。
-U4はclean artifact、boot2 trace入口、実loader SD protocol traceの準備だけを進めています。CMD18／CMD12などの
-production codeは、clean traceで必要性が確認されるまで追加しません。準備の判定表は
-[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)を参照してください。
-通常のdirect bootアプリdebugと既存target回帰は変更しません。
+U4-P2とU5-Aの実装判断、U5-Bの受入、U6の正式evidenceはclean commitへ固定済みです。M-NESCO拡張の
+diagnostic oracle、計画4ケース＋追加mapper 1のA/B反復、clean source再build、証拠manifestも固定済みです。
+U6 Gateの証拠は`firmware-validation/evidence/uf2loader-u6-20260822-01/`にあります。`capability.json`には
+全UF2互換ではなく、clean uf2loader sourceの限定されたSD→flash→watchdog→再起動経路を示す
+`uf2loader-e2e`を追加しています。
+U4-P2では、`picocalc-run --sd-trace <path>`によるSDカード側の診断traceをclean loaderで3回取得しました。
+traceはrunner reportとは別のschema 1 JSON artifactで、command／response／data token／block長／CRC／CS区間を
+streaming digestと上限付きpreviewへ記録します。3回ともCMD17のみ（CMD18/CMD12/CMD23/CMD24/CMD25は未観測）で、
+trace digestとtraceなし／traceありのreport・UARTが一致しました。従ってmulti-block production codeは追加せず、
+CMD17のR1→data token順序バグはunit test付きで修正済みです。
+U4-P2の初期測定はdirty working treeの作業記録だったが、U6ではbackend commit
+`d1360cbb13fd807661474b49a1b5516b12567d00`をclean固定して再実行した。
+準備の判定表は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)と
+[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)です。U5-Bの実装前契約・受入条件は
+[`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md)を参照してください。
+M-NESCO拡張の契約・fixture・provenance・受入結果は
+[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)を参照してください。
+U6の実装前契約、UF2/raw flashのartifact境界、loader選択、watchdog後の再起動、determinism、negative条件は
+[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)を参照してください。U6-P0の
+`tools/picocalc.py uf2 inspect/assemble`とunit testは実装済みで、外部loaderを使ったU6-P1到達smokeも
+localで確認した。U6 Gateの正式結果は[`../firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)に固定した。
+通常のdirect bootアプリdebugと既存target回帰は変更しない。U6の標準入口は
+`python3 tools/picocalc.py uf2 e2e`であり、入力UF2、SD tree、外部loader source、backend commitを
+明示して実行する。
+次に正式な機能項目は、M-NESCO拡張で得た範囲を越えるSD-GEN-1汎用SD protocol一般化である。
+M-NESCO拡張は完了済みであり、次段階として、
+uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化（複数ブロック、CRC／token／CS境界、
+read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
+これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
+[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
 
 U3-Aの実行入口は[`USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)であり、U3-Bのwrapper入口は
 `python3 tools/picocalc.py test --mode firmware --sd-dir <directory>`である。どちらも決定的RAW
@@ -137,8 +164,10 @@ rejectしました。母数1なので一般的なfalse-acceptance率へ外挿し
   timer分数とDMA block長の可変化を受け入れるが、任意の音声経路の一般化や実機相関を保証しない。
   level解析はdigital境界だけで、実際の音圧やspeaker responseは含まない
 - bootrom execution、USB MSC boot
-- SD removal、write protect、host directoryへのlive同期、実`uf2loader` end-to-end
-- raw imageのCOW読み出し・atomic exportは実装済みだが、複数runの完全なNESco再attach比較は未完了
+- SD removal、write protect、host directoryへのlive同期
+- 任意のUF2 family／任意loader fork／USB BOOTSEL・MSC。`uf2loader-e2e`は固定source・固定artifactの
+  限定経路のみであり、一般的なUF2書込み互換ではない
+- raw imageのCOW読み出し・atomic exportは実装済み。M-NESCOの計画4ケース＋追加mapper 1で複数runの再attach比較を完了したが、任意ROM／任意mapperの一般互換性は保証しない
 - backendのRAW exportはatomicでデータ破損を防ぐが、未作成出力の相対／絶対表記違いによるsame-path
   拒否に既知の検査抜けがある。次回backend変更時にcanonical path比較と別表記テストを追加する
 - host backendのPIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式

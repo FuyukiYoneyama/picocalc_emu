@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "acceptance": "M-NESCO extension 1-15",
+  "status": "pass",
+  "ci": "not used; local runner only",
+  "nesco": {
+    "commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+    "dirty": false,
+    "firmware_rebuild_sha256": "4e601a45176ca99b0e65193a6aa2c4ee8d968177a316df95ac47526325800824"
+  },
+  "backend": {
+    "commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+    "dirty": false,
+    "runner_sha256": "4745c256f215469c2ad554556936663261a3b3cffd67ef6622125d7712e85720"
+  },
+  "firmware": {
+    "basename": "Picocalc_NESco.bin",
+    "sha256": "4e601a45176ca99b0e65193a6aa2c4ee8d968177a316df95ac47526325800824"
+  },
+  "host_runner": {
+    "path": "tools/mnesco_ext.py",
+    "sha256": "e27a4516832bfcd534c0a151c4c162871336e86b7f8eb5063ea359f4481497fe",
+    "repeats": 3,
+    "quantum": 256,
+    "cycles": 2000000000,
+    "cross_phase_validation": "applied to all A/B manifests"
+  },
+  "cases": [
+    {
+      "id": "mnesco-m0-small",
+      "record": "mnesco-m0-small/case.json",
+      "rom_basename": "BokosukaWars.nes",
+      "rom_sha256": "9d85c934e182378630e46a9f73d22472c368287a400f25d518451886cfcb43f4",
+      "bytes": 40976,
+      "mapper": 0,
+      "source": "ram",
+      "run_a": "3/3 deterministic pass",
+      "run_b": "not_applicable (RAM source)",
+      "flash_sha256": "3f99645282acdfd129255261e76ec905cca895059beffb449128e48d61bfe225",
+      "xip": "not_applicable"
+    },
+    {
+      "id": "mnesco-m2-medium",
+      "record": "mnesco-m2-medium/case.json",
+      "rom_basename": "Makai_Mura_(Japan).nes",
+      "rom_sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+      "bytes": 131088,
+      "mapper": 2,
+      "source": "xip",
+      "run_a": "3/3 deterministic pass",
+      "run_b": "3/3 deterministic pass; A/B flash SHA equal",
+      "flash_sha256": "5bf55aa1bca156c65eaa8c89736ac22537be82b4756367df4710f52420606a8a",
+      "xip": "core1+dma pass"
+    },
+    {
+      "id": "mnesco-m1-large",
+      "record": "mnesco-m1-large/case.json",
+      "rom_basename": "DragonQuest_3.nes",
+      "rom_sha256": "d990781d6871e112fa82d9e65d43b37a6705abd0133150b1773d32bad5de4179",
+      "bytes": 262160,
+      "mapper": 1,
+      "source": "xip",
+      "run_a": "3/3 deterministic pass",
+      "run_b": "3/3 deterministic pass; A/B flash SHA equal",
+      "flash_sha256": "3ef66d153792be88436a51075c8ed714aa54889c982fb0d93852d60b505ce6ac",
+      "xip": "core1+dma pass"
+    },
+    {
+      "id": "mnesco-m4-large",
+      "record": "mnesco-m4-large/case.json",
+      "rom_basename": "M4_P256K_C256K.nes",
+      "rom_sha256": "c5dca47517d1cdb5cc252382802418253b8edf1a0cbff6c6b60b62ba2b6317ca",
+      "bytes": 524304,
+      "mapper": 4,
+      "source": "xip",
+      "run_a": "3/3 deterministic pass",
+      "run_b": "3/3 deterministic pass; A/B flash SHA equal",
+      "flash_sha256": "c2ab46aa5a2af05d6a8a2a7514beacbf43af65f83ce9a605d98d2c6c79346d16",
+      "xip": "core1+dma pass; PRG+CHR boundary samples pass"
+    },
+    {
+      "id": "mnesco-m30-large",
+      "record": "mnesco-m30-large/case.json",
+      "rom_basename": "M30_FLASH_3BANK_FIXTURE.nes",
+      "rom_sha256": "f70e5c4c116797b0006f7bb5b4ebc8bb5a3fdc328d5aeb4ced58748c428ce7fb",
+      "bytes": 524304,
+      "mapper": 30,
+      "source": "xip",
+      "run_a": "3/3 deterministic pass",
+      "run_b": "3/3 deterministic pass; A/B flash SHA equal",
+      "flash_sha256": "0cf7fe33f49f6132ed5357cc7907c663a7c78928d923cdeb8fc3de61a1b3a520",
+      "xip": "core1+dma pass"
+    }
+  ],
+  "raw_inputs_stored": false,
+  "raw_outputs_stored": false
+}

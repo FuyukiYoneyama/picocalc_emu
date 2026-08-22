@@ -119,7 +119,7 @@
       "id": "flash-chip-commands",
       "what": "SPI-NOR flash behind XIP_SSI answers query, erase and program commands",
       "detail": "Read Unique ID (0x4B), JEDEC ID (0x9F), status registers, WREN/WRDI, sector/block erase and page program are modelled at transaction boundaries. QSPI SS framing used by the RP2040 SDK flash helpers is observed, mutation events update the XIP backing, and both cores' immutable-XIP decode state is invalidated. FIFO level registers track reply queues because firmware reads those rather than status flags.",
-      "limitation": "The real bootrom/QSPI-pad path is not executed, programming delay and power-loss corruption are not modelled, and support is bounded to the direct-boot/M-NESCO-S1 workload until the U5/U6 gates complete.",
+      "limitation": "The real bootrom/QSPI-pad path is not executed, programming delay and power-loss corruption are not modelled. The bounded boot2/uf2loader path is recorded separately as uf2loader-e2e.",
       "since_gate": 7
     },
     {
@@ -160,8 +160,18 @@
       "id": "flash-erase-program",
       "what": "Direct-boot firmware flash erase/program with XIP readback",
       "detail": "Validated WREN/status/erase/page-program transactions update the 2 MiB XIP image with NOR 1-to-0 semantics, reject WEL/alignment/range/page-crossing errors, invalidate immutable-XIP decode state and export a structured mutation report. M-NESCO-S1 exercised this path from a FAT32 RAW SD image with 12 erases and 179 page programs.",
-      "limitation": "This is not USB BOOTSEL, boot2, watchdog warm reset or the real uf2loader menu. Full mapper- and run-to-run NESco coverage remains future M-NESCO extension/U3+ work.",
+      "limitation": "Direct-boot and M-NESCO flash coverage remain bounded to the recorded workloads. The separate uf2loader-e2e entry covers one clean external-loader SD→flash→watchdog→reboot path; USB BOOTSEL/MSC and arbitrary UF2 compatibility are not implied.",
       "since_gate": "U2 / M-NESCO-S1"
+    },
+    {
+      "id": "uf2loader-e2e",
+      "what": "Bounded external uf2loader SD-to-flash programming and watchdog-reboot path",
+      "detail": "A clean uf2loader source at commit 5c44a4b64749062b0200507ceeff3ef2b475e288 was built for RP2040 and run through boot2→stage3→SD BOOT2040.UF2→loader UI→selected application UF2→flash erase/program→watchdog warm reset→second boot2→application launch. Three independent runs preserved identical report, UART, framebuffer, SD trace and final-flash SHA-256; strict UF2 block validation, NOR readback, boot2/top-loader protection and exported-flash reattach all passed.",
+      "limitation": "This is a fixed-source, fixed-artifact conformance workload, not generic UF2 support. It does not execute USB BOOTSEL/MSC, does not cover arbitrary UF2 family IDs or loader forks, does not provide live SD synchronization, and does not claim all PicoCalc applications or all flash sizes. Re-run after changing the external loader, backend, fixture or toolchain.",
+      "evidence": "firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json",
+      "source_commit": "5c44a4b64749062b0200507ceeff3ef2b475e288",
+      "backend_commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+      "since_gate": "U6 (2026-08-22)"
     },
     {
       "id": "scenario-runner",

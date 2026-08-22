@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "name": "mnesco-extension-flash-reattach",
+  "description": "Open the NESco menu, select the staged flash ROM, and leave a diagnostic observation window.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "wait for NESco menu scan",
+      "timeout_ms": 5000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[ROM] scan complete"
+      }
+    },
+    {
+      "op": "wait",
+      "label": "allow menu input polling to settle",
+      "ms": 250
+    },
+    {
+      "op": "key_events",
+      "label": "select the staged flash ROM",
+      "events": [
+        {"state": "pressed", "code": 10},
+        {"state": "released", "code": 10}
+      ],
+      "gap_ms": 200
+    },
+    {
+      "op": "wait_until",
+      "label": "observe NESco diagnostic markers",
+      "timeout_ms": 5000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NESCO_MNESCO_DONE]"
+      }
+    }
+  ]
+}

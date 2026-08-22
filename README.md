@@ -21,14 +21,22 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
-- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B完了、U4 preflight中（production実装未着手）**
-- 次の作業: [U4 preflight](docs/UF2LOADER_U4_PREFLIGHT_20260822.md)でclean trace取得条件を満たすこと。CMD18／CMD12のproduction実装はtrace確認後に限る
+- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6完了**。M-NESCO拡張受入（計画mapper 0/2/4/30、追加mapper 1、small/medium/large、SD→flash→再attach、CPU/PPU/core 1/DMA観測）も完了しました。U6はcleanな外部uf2loader source/buildで3回deterministic Gateに合格し、限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み
+- U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
+- 次の作業: **SD-GEN-1汎用SD protocol一般化の計画化**（uf2loader以外のアプリ、複数ブロック、CRC／token／CS境界、read/write、unknown/errorのfail-closed）。M-NESCO拡張で確認したのは4つの固定caseに限られ、mapper全般や任意ROMの互換性は宣言しません。U4-P2のclean traceではCMD17のみを観測したため、固定版uf2loader受入へCMD18／CMD12などのmulti-block production実装は追加していません
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
 [`capability.json`](firmware-validation/capability.json)を参照してください。
 M-NESCO-S1の実行証拠は
 [`firmware-validation/evidence/m-nesco-20260813-01/`](firmware-validation/evidence/m-nesco-20260813-01/)にあります。
+M-NESCO拡張の契約と実行証拠は
+[`docs/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](docs/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあります。
+実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](firmware-validation/evidence/m-nesco-ext-20260822-01/)です。
+U6実uf2loader end-to-endの実装前契約は
+[`docs/UF2LOADER_U6_PREFLIGHT_20260822.md`](docs/UF2LOADER_U6_PREFLIGHT_20260822.md)にあります。
+実際の限定U6 Gate結果は
+[`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)にあります。
 公開前の依存境界・ライセンス・ローカルゲートは
 [`docs/PUBLIC_RELEASE.md`](docs/PUBLIC_RELEASE.md)を参照してください。
 利用者向けの安定版、タグ、2リポジトリの対応付けは
@@ -204,8 +212,9 @@ target registryのfail-closed合否判定を置き換えず、単独ではtarget
 
 通常のPicoCalcユーザーと同じく、**uf2loader経由を標準経路**とします。BOOTSEL書込みは、
 flash書込み経路そのものを検証する場合や、uf2loaderを利用できない明示的理由がある場合だけです。
-これは実機への通常転送経路の説明です。エミュレーター内で実際のuf2loaderを実行する機能は、
-上記の未着手計画が完了するまで対応済みとは扱いません。
+これは実機への通常転送経路の説明です。エミュレーター内でも、外部uf2loaderの限定された
+SD→flash→watchdog→再起動経路を`python3 tools/picocalc.py uf2 e2e`で検証できます。
+USB BOOTSEL/MSCや任意UF2の一般互換を意味しません。
 
 実機へ渡す前に、少なくとも次を固定します。
 

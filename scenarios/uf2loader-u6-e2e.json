@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "name": "uf2loader-u6-e2e",
+  "description": "Boot2 -> BOOT2040 loader -> app UF2 -> warm reset -> app launch.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait",
+      "ms": 2000
+    },
+    {
+      "op": "snapshot",
+      "label": "loader before selection",
+      "png": "loader.png"
+    },
+    {
+      "op": "key_events",
+      "label": "select the lower-case application UF2",
+      "events": [
+        {
+          "state": "pressed",
+          "code": 182
+        },
+        {
+          "state": "released",
+          "code": 182
+        },
+        {
+          "state": "pressed",
+          "code": 10
+        },
+        {
+          "state": "released",
+          "code": 10
+        }
+      ],
+      "gap_ms": 200
+    },
+    {
+      "op": "wait",
+      "ms": 3000
+    },
+    {
+      "op": "snapshot",
+      "label": "application after loader reset",
+      "png": "app.png"
+    }
+  ]
+}

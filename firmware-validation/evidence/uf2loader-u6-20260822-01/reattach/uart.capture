@@ -1,0 +1,5 @@
+lcd_hwspi_rgb565_expand
+BUILD ID time="Jul  4 2026 10:29:21"
+LCD sd_boot/LVGL-style SPI1 RGB565-buffer-to-RGB888 pins sck=10 mosi=11 miso=12 cs=13 dc=14 rst=15 hz=25000000
+LCD RGB565-buffer-to-RGB888 init done
+RGB565_EXPAND frame=0 TL=red TR=green BL=blue BR=white
