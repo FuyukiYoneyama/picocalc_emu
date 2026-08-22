@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）・U3-B（runner-integrated directory snapshot）完了。U4以降は未着手。**
+状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）・U3-B（runner-integrated directory snapshot）完了。U4はpreflight中、production実装未着手。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -275,7 +275,9 @@ runner reportの`sd.raw_image.bytes`／`source_sha256`を同じ生成物へfail-
 
 ### U4: uf2loader実行で判明したSD protocol gap
 
-実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。source上はCMD18を選択できる構造を持つが、対象のFAT readが実際に複数sector要求になるかはU0 traceで確定する。CMD18/CMD12が観測されなければ、実装したことにせず、U4は「追加変更不要」として閉じる。未観測のcommandを推測で広く追加しない。
+実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。source上はCMD18を選択できる構造を持つが、U0のfirst-run recordにはSD command traceが含まれていないため、U4ではまだ必要性を確定していない。現行runnerはboot2を実行しないため、clean loader traceの取得にはU5のboot2 entryまたは同等のtrace入口が必要である。準備段階の依存関係・判定表は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)へ分離した。
+
+CMD18/CMD12が観測されなければ、実装したことにせず、U4は「追加変更不要」として閉じる。未観測のcommandを推測で広く追加しない。
 
 **Gate U4:** single-blockの既存回帰を保ち、`BOOT2040.UF2`と選択したapp UF2を途中で欠落・重複せず読み切る。未知commandは従来どおりvisible failureとする。
 

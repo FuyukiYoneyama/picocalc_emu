@@ -15,7 +15,7 @@
 | 画面やUARTを待ってキーを入れる | [`SCENARIOS.md`](SCENARIOS.md) |
 | 複数の実行を同時に監視する | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
 | SDのdirectoryとRAW imageを往復する | [`SD_IMAGES.md`](SD_IMAGES.md) |
-| 次期SD／flash／UF2Loader計画を確認する | [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md) |
+| 次期SD／flash／UF2Loader計画を確認する | [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)、[`U4 preflight`](../docs/UF2LOADER_U4_PREFLIGHT_20260822.md) |
 
 ## AIの実行ルール
 
@@ -93,4 +93,6 @@ M-NESCO-S1は、`--sd-image`と`--flash-image-out`を使うbackend診断経路�
 `picocalc.py test --mode firmware --sd-dir`を追加しました。`--sd-dir`は起動時の一回限りの
 FAT32 snapshotであり、boot2、watchdog、実`uf2loader` end-to-endを意味しません。実施順序と証拠は
 [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
+U4は現在preflight中です。実loaderのclean SD traceが得られるまで、CMD18／CMD12を推測で追加しません。
+trace取得条件と実装判断表は[`../docs/UF2LOADER_U4_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U4_PREFLIGHT_20260822.md)にあります。
 実装状況は常に[`capability.json`](../firmware-validation/capability.json)を優先します。

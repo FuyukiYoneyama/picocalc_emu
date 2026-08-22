@@ -21,8 +21,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
-- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B完了、U4以降未着手**
-- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU4（実loaderで判明したSD protocol gap）
+- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B完了、U4 preflight中（production実装未着手）**
+- 次の作業: [U4 preflight](docs/UF2LOADER_U4_PREFLIGHT_20260822.md)でclean trace取得条件を満たすこと。CMD18／CMD12のproduction実装はtrace確認後に限る
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は

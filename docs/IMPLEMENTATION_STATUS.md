@@ -63,15 +63,19 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の現行計画（U0〜U2／M-NESCO-S1／U3-A／U3-B完了、U4以降未着手）
+## 次の現行計画（U0〜U2／M-NESCO-S1／U3-A／U3-B完了、U4 preflight中）
 
 SD RAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot debug開始）を完了した。
 host側の標準SD pack／extract（U3-A）とrunnerへのdirectory snapshot import（U3-B）は完了した。
-次はboot2／watchdog warm resetをこの順序で段階的に追加し、最後に外部
+現在はU4のclean artifact／boot2 trace入口／SD protocol traceのpreflightを行い、その後にboot2／watchdog warm resetを
+この順序で段階的に追加し、最後に外部
 `uf2loader`をend-to-endで検証する計画を固定しています。
 計画書は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)です。
 `firmware-validation/evidence/m-nesco-20260813-01/`にM-NESCO-S1のreport、scenario、UART、画面証拠を置いた。
 U4以降は未完了であり、これらの機能はまだ`capability.json`の`uf2loader supported`へ移していません。
+U4はclean artifact、boot2 trace入口、実loader SD protocol traceの準備だけを進めています。CMD18／CMD12などの
+production codeは、clean traceで必要性が確認されるまで追加しません。準備の判定表は
+[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)を参照してください。
 通常のdirect bootアプリdebugと既存target回帰は変更しません。
 
 U3-Aの実行入口は[`USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)であり、U3-Bのwrapper入口は

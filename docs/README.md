@@ -63,7 +63,9 @@ end-to-end conformanceへ進む計画は
 [`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)が正典です。
 U0（clean provenance・fixture・first-failure trace）、U1（RAW SD）、U2（flash erase/program）、
 **M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）**、U3-A（host directory ↔ RAW
-pack/extract）とU3-B（runner-integrated directory snapshot）は完了しました。現在はU4（実loaderで判明したSD protocol gap）前です。M-NESCO-S1の証拠は
+pack/extract）とU3-B（runner-integrated directory snapshot）は完了しました。現在はU4のpreflight（clean
+artifact・boot2 trace入口・SD protocol traceの準備）段階で、production codeは未変更です。U4の実装判断は
+[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)に固定しています。M-NESCO-S1の証拠は
 `../firmware-validation/evidence/m-nesco-20260813-01/`にあります。通常のdirect bootによる
 アプリdebugは、この計画の前後で変わりません。
 

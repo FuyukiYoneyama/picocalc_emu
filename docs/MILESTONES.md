@@ -51,7 +51,7 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 R/NEXTの機能作業は完了しています。現行作業は、性能面では
 [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
 **UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-A、U3-Bは完了し、
-U4以降が未着手です。
+U4はpreflight中（production実装未着手）、U5以降は未着手です。
 OPT4／backend側は、性能測定を再開する前に
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了しました。現行mainの
@@ -72,7 +72,7 @@ provenance固定は完了しており、現在はproduction codeを変更でき�
 | 4 | **M-NESCO-S1** — `Picocalc_NESco`を既存direct bootでSD/flash debug開始 | **完了 2026-08-13** |
 | 5a | U3-A host directory ↔ RAW pack／extract tool | **完了 2026-08-13** |
 | 5b | U3-B runner-integrated directory snapshot import | **完了 2026-08-22** |
-| 6 | U4 実loaderで判明したSD protocol gap | 未着手 |
+| 6 | U4 実loaderで判明したSD protocol gap | **preflight中（実装未着手） 2026-08-22** |
 | 7 | U5 boot2 entry／watchdog warm reset | 未着手 |
 | 8 | U6 実`uf2loader` end-to-end | 未着手 |
 
