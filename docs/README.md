@@ -19,6 +19,7 @@
 | M-NESCO拡張受入の契約・実行証拠 | [`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)、[`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/) |
 | 次のSD-GEN-1汎用SD protocol計画 | [`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md) |
 | SD-GEN-1-P0の現状棚卸し | [`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md) |
+| SD-GEN-1-P0 M-NESCO wire trace | [`P0 trace evidence`](../firmware-validation/evidence/sd-gen1-p0-20260823-01/) |
 | U6実uf2loader end-to-endの契約・実測結果 | [`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md) |
 | 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | 現行backend変更の修正・検証順序 | [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md) |

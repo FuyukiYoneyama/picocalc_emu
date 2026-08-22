@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "p0-trace-pass-with-cross-phase-note",
+  "ci": "not used; local runner only",
+  "source": {
+    "repository": "Picocalc_NESco",
+    "commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+    "dirty": false,
+    "firmware_sha256": "71e7ee1ab5d1145e8e0eb8f7e3f50f399c442ce4c477190811ada2f42fec5457"
+  },
+  "backend": {
+    "commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+    "dirty": false,
+    "runner_sha256": "4745c256f215469c2ad554556936663261a3b3cffd67ef6622125d7712e85720"
+  },
+  "case": {
+    "name": "m2",
+    "mapper": 2,
+    "rom_bytes": 131088,
+    "rom_sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+    "run_a_repeats": 3,
+    "event_count": 2079,
+    "trace_sha256": "d8cc44007b800f6b5d6fa3a5b49c6abf4965321ae7484a1e3945f9d7d859d92f",
+    "commands": [0, 8, 17, 41, 55, 58],
+    "unknown_commands": 0,
+    "trace_files": [
+      {
+        "file": "mnesco-m2/m2-a-01.json",
+        "sha256": "583a7dc595f481c40efdf0a224048992ffa1a208cac929630d5e620ceb169cb6"
+      },
+      {
+        "file": "mnesco-m2/m2-a-02.json",
+        "sha256": "583a7dc595f481c40efdf0a224048992ffa1a208cac929630d5e620ceb169cb6"
+      },
+      {
+        "file": "mnesco-m2/m2-a-03.json",
+        "sha256": "583a7dc595f481c40efdf0a224048992ffa1a208cac929630d5e620ceb169cb6"
+      }
+    ]
+  },
+  "run_b": {
+    "runner_completed": 3,
+    "cross_phase_contract": "rejected: flash path was flash:/BUILTIN.NES"
+  },
+  "raw_inputs_stored": false
+}

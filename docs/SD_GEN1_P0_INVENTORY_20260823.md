@@ -1,7 +1,7 @@
 # SD-GEN-1-P0 現状棚卸し
 
 実施日: 2026-08-23  
-状態: **部分完了（source inventoryとU6 clean traceを固定。代表アプリtraceは未完）**
+状態: **部分完了（source inventory、U6 clean trace、M-NESCO Run A traceを固定。FAT traceとM-NESCO B契約は未完）**
 
 この文書は、SD-GEN-1のproduction実装を承認する文書ではない。現行モデルで確認できる
 範囲と、次に取得すべき一次traceを分離するための作業記録である。
@@ -45,8 +45,9 @@
 
 `firmware-validation/evidence/m-nesco-ext-20260822-01/`は、SD sourceとROM SHA、flash
 export／再attach、CPU／PPU／core 1／DMA XIPを固定している。ただし現在のrunner-manifestは
-旧版host runnerで作成したためSD wire trace本体を保存していない。したがって、M-NESCOのSD command使用範囲はP0の未完項目として
-扱い、既存のM-NESCO PASSをSD-GEN-1のtrace証拠へ流用しない。
+旧版host runnerで作成したためSD wire trace本体を保存していない。P0で再採取したmapper 2の
+Run A traceは[`sd-gen1-p0-20260823-01`](../firmware-validation/evidence/sd-gen1-p0-20260823-01/)へ固定した。
+Run Bはpath契約不一致で受入にしていない。既存のM-NESCO PASSをSD-GEN-1のtrace証拠へ流用しない。
 
 再採取時は`tools/mnesco_ext.py --retain-sd-traces <evidence-dir>`を使い、各runのtrace JSONを
 一時ディレクトリの終了前に保存する。このオプションは既定OFFで、既存の受入結果やreportを変更しない。
