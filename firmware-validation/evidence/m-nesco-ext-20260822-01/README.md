@@ -2,7 +2,7 @@
 
 判定: **PASS（ローカル検証）**
 
-この証拠は、M-NESCO拡張受入契約の3ケースを同一の診断BIN・同一clean backendで実行した結果です。GitHub Actionsは使用していません。各caseの詳細な反復値は、同じディレクトリの`mnesco-*/case.json`と`runner-manifest.json`に保存しています。
+この証拠は、M-NESCO拡張受入契約の計画4ケース＋追加1ケース（計5ケース）を、同一の診断BIN・同一clean backendで実行した結果です。GitHub Actionsは使用していません。各caseの詳細な反復値は、同じディレクトリの`mnesco-*/case.json`と`runner-manifest.json`に保存しています。
 
 ## 受入範囲
 

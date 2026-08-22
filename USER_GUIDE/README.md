@@ -18,6 +18,8 @@
 | 次期SD／flash／UF2Loader計画を確認する | [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)、[`U5-A boot2 実装・受入`](../docs/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)、[`U4 preflight`](../docs/UF2LOADER_U4_PREFLIGHT_20260822.md) |
 | U5-B watchdog warm resetの実装前契約を確認する | [`U5-B preflight`](../docs/UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md) |
 | M-NESCO拡張受入の契約・結果を確認する | [`M-NESCO拡張 evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)、[`preflight契約`](../docs/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md) |
+| SD-GEN-1の実装計画を確認する | [`SD-GEN-1 plan`](../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md) |
+| SD-GEN-1-P0の現状棚卸しを確認する | [`SD-GEN-1-P0 inventory`](../docs/SD_GEN1_P0_INVENTORY_20260823.md) |
 | 実uf2loader end-to-endの実装前契約を確認する | [`U6 preflight`](../docs/UF2LOADER_U6_PREFLIGHT_20260822.md) |
 
 ## AIの実行ルール
@@ -111,6 +113,8 @@ Gateを閉じています。
 M-NESCO拡張受入が完了したため、次段階は
 SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol）として、複数ブロック、CRC／token／CS境界、
 read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で実装します。
+実装順序と受入条件は[`../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)を正典とし、
+現在はP0のtrace採取だけを行います。
 U6の実装前契約は[`../docs/UF2LOADER_U6_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U6_PREFLIGHT_20260822.md)です。
 U6-P0の標準 `picocalc.py uf2 inspect/assemble` は実装済みで、UF2からraw XIP flash imageを
 決定的に生成できます。U6 Gateは`python3 tools/picocalc.py uf2 e2e`で実行し、cleanなexternal

@@ -102,6 +102,11 @@ localで確認した。U6 Gateの正式結果は[`../firmware-validation/evidenc
 M-NESCO拡張は完了済みであり、次段階として、
 uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化（複数ブロック、CRC／token／CS境界、
 read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
+実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
+現在はP0（現状棚卸しとclean trace採取）のみを開始可能とする。production codeの追加実装はP1の
+wire契約固定後に判断する。
+P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
+M-NESCO／FAT16／FAT32の代表wire traceは未採取として残している。
 これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
 

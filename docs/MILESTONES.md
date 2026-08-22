@@ -77,7 +77,7 @@ provenance固定は完了しており、現在はproduction codeを変更でき�
 | 8 | U5-B watchdog warm reset | **完了。flash／SD保持とboot2再入場をlocal regressionで固定 2026-08-22** |
 | 8.5 | **M-NESCO拡張受入** — 複数mapper／サイズ、ROM境界、CPU／PPU／core 1／DMA、flash再attach | **完了。4計画case（mapper 0/2/4/30）＋mapper 1追加、A/B各3回、2026-08-22** |
 | 9 | U6 実`uf2loader` end-to-end | **完了（独立fixture）。clean source/backendの3回Gate、readback・保護領域・trace・SHA・再attach合格 2026-08-22** |
-| 10 | **SD-GEN-1 汎用SD protocol generalization** — uf2loader以外のアプリを含む汎用SD経路 | **未着手。M-NESCO拡張受入完了後に開始** |
+| 10 | **SD-GEN-1 汎用SD protocol generalization** — uf2loader以外のアプリを含む汎用SD経路 | **P0（source inventory／U6 trace）進行中。production実装未着手。詳細は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)** |
 
 M-NESCO-S1は番号付きR/NEXTの追加ではなく、U1とU2のGateが閉じた時点で
 `Picocalc_NESco`のdirect-boot SD/flash debugを解禁する中間マイルストーンです。
@@ -99,7 +99,8 @@ watchdog warm reset→書込み後app起動を通し、3回determinism、strict 
 `uf2loader-e2e` capabilityへ反映しています。
 
 次に正式に残っている機能項目は`SD-GEN-1`汎用SD protocol一般化です。M-NESCO拡張の
-fixtureと証拠は完了済みです。次段階の`SD-GEN-1`では、uf2loaderの固定traceに限定しないSDモデルの一般化
+fixtureと証拠は完了済みです。詳細計画を[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)へ固定しました。
+次段階の`SD-GEN-1`では、uf2loaderの固定traceに限定しないSDモデルの一般化
 （複数ブロック、CRC／token／CS境界、read/write、unknown/errorのfail-closed、アプリ別回帰）を行います。
 追加blind app、SD fault／persistence、machine APIのclient利便性は候補であり、SD-GEN-1とは別の正式計画ではありません。
 

@@ -17,6 +17,8 @@
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
 | U5-B watchdog warm resetの実装前契約 | [`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md) |
 | M-NESCO拡張受入の契約・実行証拠 | [`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)、[`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/) |
+| 次のSD-GEN-1汎用SD protocol計画 | [`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md) |
+| SD-GEN-1-P0の現状棚卸し | [`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md) |
 | U6実uf2loader end-to-endの契約・実測結果 | [`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md) |
 | 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | 現行backend変更の修正・検証順序 | [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md) |
@@ -86,9 +88,10 @@ U6は、boot2→stage3→SD上の`BOOT2040.UF2`→アプリUF2のerase/program�
 書込み後app起動を同一artifactで通す最終gateです。固定source／artifactに限定した`uf2loader-e2e`
 capabilityを有効化し、USB BOOTSEL/MSCと任意UF2互換は未対応のままです。
 
-残る正式な機能項目は、M-NESCO拡張の固定4ケースを越える汎用化です。次段階は
+残る正式な機能項目は、M-NESCO拡張の計画4ケース＋追加1ケースを越える汎用化です。次段階は
 SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol一般化）であり、複数ブロック、
 CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で扱います。
+実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)に固定しています。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。
