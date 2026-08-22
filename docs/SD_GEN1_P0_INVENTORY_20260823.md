@@ -48,11 +48,20 @@ export／再attach、CPU／PPU／core 1／DMA XIPを固定している。ただ�
 SD wire traceを保存していない。したがって、M-NESCOのSD command使用範囲はP0の未完項目として
 扱い、既存のM-NESCO PASSをSD-GEN-1のtrace証拠へ流用しない。
 
+ソース棚卸しでは、`Picocalc_NESco/drivers/sdcard.c`がCMD17をsectorごとに発行し、
+CMD24をsectorごとのwriteに使い、CMD9でCSDを読むことを確認した。CMD18/CMD12/CMD23/
+CMD25の呼び出しは見つからない。これは実traceの代替ではないが、M-NESCO側でmulti-block
+を推測追加する根拠がないことを補強する。
+
 ### FAT16／FAT32代表経路
 
 hostのpack／extractとSD image unit testは既存回帰で保護されている。しかし、FatFs firmware
 のclean wire traceをSD-GEN-1用に固定したrecordはまだない。FAT filesystemの回帰と、SD
 wire protocolの回帰を混同しない。
+
+M-NESCOのFatFs diskioは`disk_read`／`disk_write`の`count`を受け取るが、下位の
+`sdcard_read_sectors`／`sdcard_write_sectors`は現状1 sectorずつCMD17／CMD24を発行する。
+従ってP0の次の観測対象は、`count > 1`が実際に渡るfilesystem操作と、そのときのwire列である。
 
 ## 3. P0で残る採取項目
 
