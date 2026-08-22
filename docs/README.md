@@ -22,6 +22,7 @@
 | SD-GEN-1-P0 初回autostart trace（履歴） | [`historical trace`](../firmware-validation/evidence/sd-gen1-p0-20260823-01/) |
 | SD-GEN-1-P0 完了record（M-NESCO A/B・FAT16/FAT32） | [`P0 completed evidence`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/) |
 | SD-GEN-1-P1 wire契約・受入マトリクス | [`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)、[`machine-readable contract`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json) |
+| SD-GEN-1-P2 feature-gated state machine | [`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATION_20260823.md)、[`synthetic vectors`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json) |
 | U6実uf2loader end-to-endの契約・実測結果 | [`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md) |
 | 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | 現行backend変更の修正・検証順序 | [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md) |
@@ -95,9 +96,10 @@ capabilityを有効化し、USB BOOTSEL/MSCと任意UF2互換は未対応のま�
 SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol一般化）であり、複数ブロック、
 CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で扱います。
 実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)に固定し、P0のtrace棚卸しと
-P1のwire契約・受入マトリクスまで完了しています。P1のmachine-readable契約は
-[`sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)です。次はP2の最小state machine実装ですが、
-CMD18/CMD25/CMD12/CMD23は未観測・未実装のままであり、P1で固定したsynthetic vectorとnegative mutationを先にunit test化します。
+P1のwire契約・受入マトリクスと、P2のfeature-gated最小state machineまで完了しています。P1のmachine-readable契約は
+[`sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)、P2のvectorは
+[`sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)です。P2は通常runtime／runnerへ接続しておらず、
+次はP3のtrace replay、negative report統合、U6／M-NESCO／FAT回帰です。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。

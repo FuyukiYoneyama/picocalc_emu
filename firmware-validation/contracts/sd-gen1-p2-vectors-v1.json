@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "contract_id": "sd-gen1-p2-vectors-v1-20260823",
+  "parent_contract_id": "sd-gen1-p1-wire-v1-20260823",
+  "roadmap_package": "SD-GEN-1",
+  "status": "local_feature_gate_pass",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "0e1288e4c516b7da3ad21f3cf1ec3532374ab8da",
+    "feature": "sd-gen1-multiblock",
+    "default_build_changed": false
+  },
+  "wire_constants": {
+    "block_size": 512,
+    "idle": "ff",
+    "read_token": "fe",
+    "write_token": "fc",
+    "stop_token": "fd",
+    "accepted_data_response": "05",
+    "busy_byte": "00"
+  },
+  "vectors": [
+    {
+      "id": "cmd18-two-blocks-cmd12",
+      "kind": "normal-read",
+      "command_frames": {
+        "cmd18_start_block_3": "52 00 00 00 03 01",
+        "cmd12_stop": "4c 00 00 00 00 01"
+      },
+      "sequence": [
+        "CMD18 frame while CS is low",
+        "R1 ready",
+        "FE + card_block(3) + FF FF",
+        "one host FF clock requests the next block",
+        "FE + card_block(4) + FF FF",
+        "CMD12 frame without a CS pulse",
+        "R1 ready and stream ends"
+      ],
+      "expected_blocks_read": 2,
+      "expected_protocol_errors": []
+    },
+    {
+      "id": "cmd23-cmd25-two-blocks",
+      "kind": "normal-write",
+      "command_frames": {
+        "cmd23_count_2": "57 00 00 00 02 01",
+        "cmd25_start_block_3": "59 00 00 00 03 01"
+      },
+      "sequence": [
+        "CMD23 R1 ready",
+        "CMD25 R1 ready",
+        "FC + 512 bytes A5 + FF FF",
+        "05 data accepted",
+        "00 busy for one clock",
+        "FC + 512 bytes 5A + FF FF",
+        "05 data accepted",
+        "00 busy for one clock",
+        "FD stop token"
+      ],
+      "expected_blocks_written": 2,
+      "expected_protocol_errors": []
+    },
+    {
+      "id": "cmd18-out-of-range",
+      "kind": "negative",
+      "command_frame": "52 00 00 00 40 01",
+      "expected": "R1 may be returned, but no FE token or payload is emitted",
+      "expected_protocol_error": "multi_read_block_out_of_range_64"
+    },
+    {
+      "id": "cmd25-single-block-token",
+      "kind": "negative",
+      "command_frames": {
+        "cmd25_start_block_3": "59 00 00 00 03 01"
+      },
+      "mutation": "send FE instead of FC",
+      "expected": "no payload is accepted and the mutation is recorded",
+      "expected_protocol_error": "multi_write_expected_fc_or_fd_got_fe"
+    },
+    {
+      "id": "cs-abort",
+      "kind": "negative",
+      "sequence": [
+        "CMD18 start and one complete block",
+        "raise CS before requesting the next block",
+        "select again and issue CMD17",
+        "CMD17 must return its own block without residual multi-read state"
+      ],
+      "expected_protocol_errors": []
+    }
+  ],
+  "local_acceptance": {
+    "feature_tests": 89,
+    "feature_tests_passed": 89,
+    "default_tests": 85,
+    "default_tests_passed": 85,
+    "clippy_feature_and_default": "pass",
+    "ci": "not used"
+  },
+  "scope_boundary": {
+    "enabled_only_by": "cargo test -p picocalc-board --features sd-gen1-multiblock",
+    "runtime_harness_enabled": false,
+    "uf2loader_capability_changed": false,
+    "next_gate": "P3 trace replay, mutation report integration, and app regression"
+  }
+}

@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **P1完了。次はP2最小state machine実装（production codeはP1で未変更）**
+状態: **P2完了（feature-gated local candidate）。次はP3 trace replay／negative検証**
 
 ## 1. 目的
 
@@ -61,7 +61,7 @@ CMD16/CMD24、未観測・未実装のCMD18/CMD25/CMD12/CMD23を分離してい�
 SD codeを変更していない。multi-blockのproduction追加は、P2でbyte-level synthetic vector、
 negative mutation、CS／busy境界を固定した後に判断する。
 
-### SD-GEN-1-P2: 最小state machine実装
+### SD-GEN-1-P2: 最小state machine実装（完了 2026-08-23、feature-gated）
 
 P1で必要性が確定した範囲だけを、既存single-block回帰を保ったまま実装する。
 
@@ -71,6 +71,12 @@ P1で必要性が確定した範囲だけを、既存single-block回帰を保っ
 - writeはSDの既存COW overlay／atomic export境界を再利用し、未変更sectorのbyte一致を
   維持する。
 - 既存`CMD17`の応答順序を変更しない。U6固定経路をfeatureなしでビルドできる状態を保つ。
+
+P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATION_20260823.md)と
+[`../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
+`sd-gen1-multiblock` feature付きboard unit testでCMD18/CMD12/CMD23/CMD25のsynthetic vector、
+誤token、範囲外、途中CS、既存single-block readbackを検証した。default featureでは従来経路を維持し、
+通常runner／uf2loader capabilityには接続していない。
 
 ### SD-GEN-1-P3: unit／trace replay／negative検証
 
@@ -124,7 +130,7 @@ SD-GEN-1の完了条件は次の全てである。
 |---|---:|---|
 | P0 棚卸し／trace | 4〜6時間 | clean trace、現状一覧 |
 | P1 wire契約 | 6〜8時間 | command/state受入マトリクス（完了） |
-| P2 state machine | 10〜16時間 | feature-gated production実装 |
+| P2 state machine | 10〜16時間 | feature-gated production実装（完了） |
 | P3 test／mutation | 8〜12時間 | unit、replay、negative record |
 | P4 アプリ回帰 | 8〜12時間 | U6／M-NESCO／FAT回帰 |
 | P5 record／docs | 4〜6時間 | versioned validation、capability判断 |
@@ -133,7 +139,8 @@ SD-GEN-1の完了条件は次の全てである。
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-P0とP1は完了した。次に着手できるのは**SD-GEN-1-P2最小state machine実装**である。CMD18/CMD12/CMD23/CMD25の
-production追加は、P1で固定したbyte-level synthetic vectorとnegative mutationを先にunit testへ落とした後に判断する。
+P0、P1、P2は完了した。次に着手できるのは**SD-GEN-1-P3 trace replay／negative検証**である。P2の
+multi-blockはfeature付きboard unit testだけであり、通常runtimeへの昇格、runner reportへのerror接続、
+U6／M-NESCO／FAT回帰はP3以降に行う。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
 P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。
