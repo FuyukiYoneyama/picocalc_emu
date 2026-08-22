@@ -1,7 +1,7 @@
 # SD-GEN-1-P0 現状棚卸し
 
 実施日: 2026-08-23  
-状態: **部分完了（source inventory、U6 clean trace、M-NESCO Run A traceを固定。FAT traceとM-NESCO B契約は未完）**
+状態: **完了（source inventory、U6 clean trace、M-NESCO A/B trace、FAT16/FAT32 traceを固定）**
 
 この文書は、SD-GEN-1のproduction実装を承認する文書ではない。現行モデルで確認できる
 範囲と、次に取得すべき一次traceを分離するための作業記録である。
@@ -44,10 +44,11 @@
 ### M-NESCO拡張
 
 `firmware-validation/evidence/m-nesco-ext-20260822-01/`は、SD sourceとROM SHA、flash
-export／再attach、CPU／PPU／core 1／DMA XIPを固定している。ただし現在のrunner-manifestは
-旧版host runnerで作成したためSD wire trace本体を保存していない。P0で再採取したmapper 2の
-Run A traceは[`sd-gen1-p0-20260823-01`](../firmware-validation/evidence/sd-gen1-p0-20260823-01/)へ固定した。
-Run Bはpath契約不一致で受入にしていない。既存のM-NESCO PASSをSD-GEN-1のtrace証拠へ流用しない。
+export／再attach、CPU／PPU／core 1／DMA XIPを固定している。P0では通常menu buildを使って
+mapper 2のRun A/B traceを各3回再採取し、`sd:/TEST.NES`→`flash:/TEST.NES`のpath契約を
+閉じた。証拠は[`sd-gen1-p0-20260823-02`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
+旧autostart buildで採取したRun Aのみのrecord（`sd-gen1-p0-20260823-01`）は履歴として保持するが、
+今回のP0完了判定は新しい通常menu recordを使う。既存のM-NESCO受入recordをwire traceの代替にはしない。
 
 再採取時は`tools/mnesco_ext.py --retain-sd-traces <evidence-dir>`を使い、各runのtrace JSONを
 一時ディレクトリの終了前に保存する。このオプションは既定OFFで、既存の受入結果やreportを変更しない。
@@ -59,30 +60,33 @@ CMD25の呼び出しは見つからない。これは実traceの代替ではな�
 
 ### FAT16／FAT32代表経路
 
-hostのpack／extractとSD image unit testは既存回帰で保護されている。しかし、FatFs firmware
-のclean wire traceをSD-GEN-1用に固定したrecordはまだない。FAT filesystemの回帰と、SD
-wire protocolの回帰を混同しない。
+hostのpack／extractとSD image unit testは既存回帰で保護されている。P0では同じmapper 2 ROMを
+決定的にpackしたFAT16／FAT32 imageを通常menu firmwareで各3回読み、clean wire traceを
+[`sd-gen1-p0-20260823-02`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
+FAT filesystemの回帰と、SD wire protocolの回帰は引き続き別に扱う。
 
 M-NESCOのFatFs diskioは`disk_read`／`disk_write`の`count`を受け取るが、下位の
 `sdcard_read_sectors`／`sdcard_write_sectors`は現状1 sectorずつCMD17／CMD24を発行する。
-従ってP0の次の観測対象は、`count > 1`が実際に渡るfilesystem操作と、そのときのwire列である。
+P1では、`count > 1`が実際に渡る別アプリまたはsynthetic契約を対象にし、そのときのwire列を
+現行single-block列と分けて受入matrixへ記載する。
 
-## 3. P0で残る採取項目
+## 3. P0で完了した採取項目
 
-1. M-NESCO診断BINをclean backendで起動し、SD traceを3回取得する（ROMの絶対pathは記録しない）。
-2. FAT16／FAT32を読む代表firmwareまたは既存sampleをclean backendで起動し、各3回取得する。
-3. 各traceについて、command集合、token、CRC、CS epoch、block境界、unknown/errorを集計する。
-4. P1のwire契約に移す候補と、未観測のため保留する候補を分ける。
+1. M-NESCO通常menuのA/Bをclean backendで各3回取得した（ROMの絶対pathは記録していない）。
+2. FAT16／FAT32代表imageをclean backendで各3回取得した。
+3. 各traceのcommand集合、token、CRC、CS epoch、block境界、unknown/errorを集計した。
+4. P1へ移す候補と、未観測のため保留する候補を分けた。
 
-代表firmwareが用意できない場合は、無理にproduction codeを追加せず、synthetic protocol契約を
-先に作成する。その場合も「実アプリで観測済み」とは記録しない。
+P1で別アプリの代表firmwareが用意できない場合は、無理にproduction codeを追加せず、synthetic
+protocol契約を先に作成する。その場合も「実アプリで観測済み」とは記録しない。
 
 ## 4. P0完了条件
 
 - 現行source inventoryがレビュー済みである。
 - U6 clean traceのcommand集合とdigestが再計算できる。
-- M-NESCOとFAT16/FAT32について、trace取得済みまたは「入力不足」と理由付きで保留されている。
+- M-NESCOとFAT16/FAT32について、3回deterministic traceを取得した。
 - P1へ渡すcommand/state候補と、未対応のまま残す範囲が一覧化されている。
 
-P0完了後に初めて、P1のwire契約とsynthetic test vectorを固定する。P0の途中ではCMD18／CMD12／
-CMD23／CMD25のproduction実装を開始しない。
+P0完了後に初めて、P1のwire契約とsynthetic test vectorを固定する。P0ではCMD18／CMD12／
+CMD23／CMD25のproduction実装を開始していない。P1で別アプリの一次traceまたはsynthetic契約が
+確定するまで、これらは未対応・可視化fail-closedのままとする。

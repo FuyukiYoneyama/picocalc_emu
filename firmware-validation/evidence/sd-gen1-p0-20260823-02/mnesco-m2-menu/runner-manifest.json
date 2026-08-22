@@ -1,0 +1,360 @@
+{
+  "acceptance": "M-NESCO extension 1-15",
+  "cases": [
+    {
+      "flash_reattach": true,
+      "input": {
+        "basename": "Makai_Mura_(Japan).nes",
+        "bytes": 131088,
+        "chr_bytes": 0,
+        "chr_sample_sha256": null,
+        "chr_samples": null,
+        "mapper": 2,
+        "name": "m2",
+        "prg_bytes": 131072,
+        "prg_sample_sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652",
+        "prg_samples": {
+          "first": 0,
+          "last": 97,
+          "middle": 255
+        },
+        "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+        "source_class": "caller-supplied read-only ROM",
+        "source_region_expected": "xip",
+        "submapper": 0,
+        "trainer": false
+      },
+      "run_a": [
+        {
+          "fingerprint_sha256": "d25d1043400f7a68e28a8507814a481d57cf9700585856463e07ae4318702699",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "A",
+          "repeat": 1,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-a-01.json",
+          "sd_trace_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "07a75e0b0dbd28421d9062fd914843e2f698a49fa8a0583c414f6c5e9cb4469d"
+        },
+        {
+          "fingerprint_sha256": "d25d1043400f7a68e28a8507814a481d57cf9700585856463e07ae4318702699",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "A",
+          "repeat": 2,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-a-02.json",
+          "sd_trace_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "07a75e0b0dbd28421d9062fd914843e2f698a49fa8a0583c414f6c5e9cb4469d"
+        },
+        {
+          "fingerprint_sha256": "d25d1043400f7a68e28a8507814a481d57cf9700585856463e07ae4318702699",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "A",
+          "repeat": 3,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-a-03.json",
+          "sd_trace_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "sd:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "07a75e0b0dbd28421d9062fd914843e2f698a49fa8a0583c414f6c5e9cb4469d"
+        }
+      ],
+      "run_b": [
+        {
+          "fingerprint_sha256": "66e9f47806951d2a89123bd7c80c7705d30cbe81aa289da38af4fd837a9751dc",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "B",
+          "repeat": 1,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-b-01.json",
+          "sd_trace_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "flash:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "d33b92915e59453a20283bca5ca2770ad773c2a26778e05db74250d434a30d5a"
+        },
+        {
+          "fingerprint_sha256": "66e9f47806951d2a89123bd7c80c7705d30cbe81aa289da38af4fd837a9751dc",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "B",
+          "repeat": 2,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-b-02.json",
+          "sd_trace_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "flash:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "d33b92915e59453a20283bca5ca2770ad773c2a26778e05db74250d434a30d5a"
+        },
+        {
+          "fingerprint_sha256": "66e9f47806951d2a89123bd7c80c7705d30cbe81aa289da38af4fd837a9751dc",
+          "flash_sha256": "0ce6f5f405aaaa6ae854e65f5fae8fe6d4ea6251343dc06da14efca650ac8194",
+          "phase": "B",
+          "repeat": 3,
+          "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+          "sd_trace_file": "m2-b-03.json",
+          "sd_trace_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23",
+          "uart": {
+            "counts": {
+              "cpu_digest": "06b9492e",
+              "cpu_fetches": 943649,
+              "cpu_rom_reads": 1887841,
+              "ppu_bus_reads": 66,
+              "ppu_digest": "bb50027b"
+            },
+            "done": "PASS",
+            "rom": {
+              "bytes": 131088,
+              "chr_bytes": 0,
+              "mapper": 2,
+              "path": "flash:/TEST.NES",
+              "prg_bytes": 131072,
+              "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+              "submapper": 0,
+              "trainer": false
+            },
+            "sample_digests": {
+              "prg": {
+                "bytes": 131072,
+                "sha256": "da8509555ad27dac0593c6952d947eff96058cb6e81376f852f54ef9caf7e652"
+              }
+            },
+            "samples": {
+              "chr": {},
+              "prg": {
+                "first": 0,
+                "last": 97,
+                "middle": 255
+              }
+            },
+            "xip": {
+              "core1": "pass",
+              "core1_digest": "e65f9d5b",
+              "dma": "pass",
+              "dma_digest": "e65f9d5b"
+            }
+          },
+          "uart_sha256": "d33b92915e59453a20283bca5ca2770ad773c2a26778e05db74250d434a30d5a"
+        }
+      ],
+      "sd": {
+        "bytes": 67108864,
+        "file": {
+          "basename": "TEST.NES",
+          "bytes": 131088,
+          "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53"
+        },
+        "format": "fat32",
+        "image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+        "tree_sha256": "2f586110183f7979fbcc9b74493cc701392e4bb26873a5dbbc8823b548381994"
+      },
+      "status": "pass"
+    }
+  ],
+  "ci": "not used; local runner only",
+  "cycles": 2000000000,
+  "firmware": {
+    "basename": "Picocalc_NESco.bin",
+    "sha256": "1b4c3277597030d8e0358be2aeb59fadc5c6289d2e47e337059e9c47aa92735f"
+  },
+  "quantum": 256,
+  "repeats": 3,
+  "runner": {
+    "basename": "picocalc-run",
+    "sha256": "919b84aedb4b0eb6dd92a4aa21200b343ab83c103144356803da9c868aedfcb5"
+  },
+  "runner_backend_commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+  "schema": 1,
+  "status": "pass"
+}

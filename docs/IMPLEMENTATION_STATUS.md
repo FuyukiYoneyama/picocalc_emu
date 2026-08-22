@@ -103,10 +103,11 @@ M-NESCO拡張は完了済みであり、次段階として、
 uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化（複数ブロック、CRC／token／CS境界、
 read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
 実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
-現在はP0（現状棚卸しとclean trace採取）のみを開始可能とする。production codeの追加実装はP1の
-wire契約固定後に判断する。
+P0（現状棚卸しとclean trace採取）は完了した。production codeの追加実装はP1のwire契約固定後に
+判断する。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
-M-NESCO／FAT16／FAT32の代表wire traceは未採取として残している。
+M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
+[`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
 これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
 

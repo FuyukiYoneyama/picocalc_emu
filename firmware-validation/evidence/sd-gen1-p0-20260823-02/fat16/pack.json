@@ -1,0 +1,17 @@
+{
+  "files": [
+    {
+      "path": "TEST.NES",
+      "sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+      "size": 131088,
+      "type": "file"
+    }
+  ],
+  "format": "fat16",
+  "image_bytes": 33554432,
+  "image_sha256": "eb7c536e3921491b2c45ef38fd1116a0046b3a6c0af20aaffdf3574993cd482a",
+  "operation": "pack",
+  "sectors": 65536,
+  "sectors_per_cluster": 1,
+  "tree_sha256": "2f586110183f7979fbcc9b74493cc701392e4bb26873a5dbbc8823b548381994"
+}

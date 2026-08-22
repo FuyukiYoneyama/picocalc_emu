@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "status": "pass",
+  "scope": "SD-GEN-1-P0 clean wire traces",
+  "ci": "not used; local runner only",
+  "source": {
+    "repository": "Picocalc_NESco",
+    "commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+    "dirty": false,
+    "firmware_sha256": "1b4c3277597030d8e0358be2aeb59fadc5c6289d2e47e337059e9c47aa92735f",
+    "build_flags": ["NESCO_MNESCO_EXT_ORACLE=ON", "NESCO_RUNTIME_LOGS=ON", "autostart=OFF"]
+  },
+  "backend": {
+    "commit": "d1360cbb13fd807661474b49a1b5516b12567d00",
+    "dirty": false,
+    "runner_sha256": "919b84aedb4b0eb6dd92a4aa21200b343ab83c103144356803da9c868aedfcb5"
+  },
+  "host_tool_sha256": "395701f5f073b90efe7e6f52b9af5fe21d02d2163aee30f94110956a85446038",
+  "mnesco_menu": {
+    "record": "mnesco-m2-menu/runner-manifest.json",
+    "rom_basename": "Makai_Mura_(Japan).nes",
+    "rom_sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+    "sd_image_sha256": "3cc402001ceea99523ea8968e71f8f5a8198e599da4f7b9d1da3bddb2fa564a7",
+    "run_a": {
+      "path": "sd:/TEST.NES",
+      "repeats": 3,
+      "event_count": 2083,
+      "trace_digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+      "trace_file_sha256": "6bc190caff1095a079391b17a50cda3232d7a67d2774e8a4d10bdbbd6c549596"
+    },
+    "run_b": {
+      "path": "flash:/TEST.NES",
+      "repeats": 3,
+      "event_count": 29,
+      "trace_digest_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23",
+      "trace_file_sha256": "95bc731d23979cabc0aa3960a74b7bb0bc5350b2888bfed3174b9f043ae22d26"
+    },
+    "unknown_commands": 0
+  },
+  "fat": {
+    "rom_sha256": "7421b53c43f5d4a1b8620f56696c827f1192ba3feeccde594e7e92af18a0ff53",
+    "fat16": {
+      "pack_record": "fat16/pack.json",
+      "image_sha256": "eb7c536e3921491b2c45ef38fd1116a0046b3a6c0af20aaffdf3574993cd482a",
+      "repeats": 3,
+      "event_count": 2081,
+      "trace_digest_sha256": "e189b48cb6bcb9600697959cf5bff18b1544a32dfa56e3938b2935847d1dcf6c",
+      "trace_file_sha256": "20e194380f0ecc4941856e052ccc2f8969b12b2c10ed2a5ad65a5e9fdb7dd8bd",
+      "unknown_commands": 0
+    },
+    "fat32": {
+      "pack_record": "fat32/pack.json",
+      "image_sha256": "1842d0c458d32499ab219dcee1870be877a4c7559f768c8998127270eff67995",
+      "repeats": 3,
+      "event_count": 2083,
+      "trace_digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+      "trace_file_sha256": "6bc190caff1095a079391b17a50cda3232d7a67d2774e8a4d10bdbbd6c549596",
+      "unknown_commands": 0
+    }
+  },
+  "observed_commands": ["CMD0", "CMD8", "CMD17", "CMD55", "ACMD41", "CMD58"],
+  "not_observed": ["CMD12", "CMD18", "CMD23", "CMD24", "CMD25"]
+}

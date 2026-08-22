@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **実装前の計画。production codeは未変更**
+状態: **P0完了。次はP1 wire契約（production codeは未変更）**
 
 ## 1. 目的
 
@@ -126,5 +126,6 @@ SD-GEN-1の完了条件は次の全てである。
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-現時点で着手するのは**SD-GEN-1-P0のみ**であり、CMD18/CMD12/CMD23/CMD25の
-production追加をこの計画書だけで承認したものではない。
+P0は完了した。次に着手できるのは**SD-GEN-1-P1 wire契約**であり、CMD18/CMD12/CMD23/CMD25の
+production追加はP1で一次traceまたはsynthetic契約を承認するまで行わない。P0の記録は
+[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)に固定した。
