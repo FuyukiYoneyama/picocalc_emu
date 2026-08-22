@@ -212,6 +212,17 @@ report = {
     "scenario": {"steps": []},
     "probe": "ok",
 }
+if "--sd-image" in args:
+    image = Path(value("--sd-image"))
+    digest = hashlib.sha256(image.read_bytes()).hexdigest()
+    report["sd"] = {
+        "raw_image": {
+            "bytes": image.stat().st_size,
+            "source_sha256": digest,
+        }
+    }
+    if mode == "wrong-sd":
+        report["sd"]["raw_image"]["source_sha256"] = "0" * 64
 if mode == "missing-field":
     del report["backend_build"]
 if mode == "missing-timeline":
@@ -227,9 +238,10 @@ raise SystemExit(code)
     def run_firmware_fixture(self, module, backend, firmware, scenario, registry, **overrides):
         arguments = dict(
             target_id="fixture", firmware=firmware, backend_dir=backend,
-            cycles=None, keys=None, sd=None, sd_format=None,
+            cycles=None, keys=None, sd=None, sd_dir=None, sd_format=None,
             lcd_variant=None, scenario_override=scenario, snapshot_dir=None,
-            uart_out=None, json_out=None, run_id=None,
+            uart_out=None, json_out=None, sd_image_out=None, sd_manifest_out=None,
+            run_id=None,
             progress_interval=10, no_progress=False,
         )
         arguments.update(overrides)
@@ -2511,6 +2523,107 @@ raise SystemExit(code)
         )
         self.assertEqual(completed.returncode, 2)
         self.assertIn("--sd-format requires --sd", completed.stderr)
+
+    def test_sd_dir_requires_its_own_fat32_snapshot_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree = root / "tree"
+            tree.mkdir()
+            (tree / "README.TXT").write_text("snapshot\n", encoding="utf-8")
+            for arguments, message in (
+                (("--sd",), "--sd-dir cannot be combined with --sd"),
+                (("--sd-format", "fat16"), "deterministic FAT32 snapshot profile"),
+            ):
+                completed = run(
+                    PICOCALC,
+                    "test",
+                    "--mode",
+                    "firmware",
+                    "--sd-dir",
+                    tree,
+                    *arguments,
+                )
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn(message, completed.stderr)
+
+    def test_sd_dir_packs_temp_image_for_runner_and_writes_manifest(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree = root / "tree"
+            tree.mkdir()
+            (tree / "BOOT2040.UF2").write_bytes(b"UF2 fixture\n")
+            (tree / "pico1-apps").mkdir()
+            (tree / "pico1-apps/TEST.UF2").write_bytes(b"TEST fixture\n")
+            manifest = root / "snapshot.json"
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            result = self.run_firmware_fixture(
+                module,
+                backend,
+                firmware,
+                scenario,
+                registry,
+                sd_dir=tree,
+                sd_manifest_out=manifest,
+            )
+            self.assertEqual(result, 0)
+            self.assertTrue(manifest.is_file())
+            snapshot = json.loads(manifest.read_text(encoding="utf-8"))
+            self.assertEqual(snapshot["format"], "fat32")
+            self.assertEqual(snapshot["image_bytes"], 64 * 1024 * 1024)
+            self.assertEqual(len(snapshot["image_sha256"]), 64)
+            self.assertEqual(snapshot["tree_sha256"], module.normalized_json_sha256([
+                item for item in snapshot["files"]
+            ]))
+            argv = json.loads((backend / "argv.json").read_text(encoding="utf-8"))
+            self.assertIn("--sd-image", argv)
+            self.assertNotIn("--sd", argv)
+            generated_image = Path(argv[argv.index("--sd-image") + 1])
+            self.assertFalse(generated_image.exists())
+
+    def test_sd_dir_report_must_identify_the_generated_snapshot(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree = root / "tree"
+            tree.mkdir()
+            (tree / "BOOT2040.UF2").write_bytes(b"UF2 fixture\n")
+            backend, _, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            (backend / "mode").write_text("wrong-sd", encoding="utf-8")
+            result = self.run_firmware_fixture(
+                module,
+                backend,
+                firmware,
+                scenario,
+                registry,
+                sd_dir=tree,
+            )
+            self.assertEqual(result, 1)
+
+    def test_pack_tree_rejects_structure_change_before_publishing_image(self):
+        import sd_image
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree = root / "tree"
+            tree.mkdir()
+            source = tree / "FIRST.BIN"
+            source.write_bytes(b"first\n")
+            output = root / "snapshot.img"
+            original_copy = sd_image._copy_file_to_image
+            mutated = False
+
+            def copy_and_mutate(stream, node, geometry):
+                nonlocal mutated
+                original_copy(stream, node, geometry)
+                if not mutated:
+                    (tree / "ADDED.BIN").write_bytes(b"added\n")
+                    mutated = True
+
+            with mock.patch.object(sd_image, "_copy_file_to_image", side_effect=copy_and_mutate):
+                with self.assertRaises(sd_image.SdImageError):
+                    sd_image.pack_tree(tree, output)
+            self.assertFalse(output.exists())
 
     def test_host_mode_rejects_firmware_sd_selection(self):
         completed = run(

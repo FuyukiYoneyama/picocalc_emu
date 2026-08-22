@@ -50,15 +50,15 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 
 R/NEXTの機能作業は完了しています。現行作業は、性能面では
 [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
-**UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-Aは完了し、
-U3-B以降が未着手です。
+**UF2Loader SD／flash統合（U0〜U6、M-NESCO）**です。U0〜U2、M-NESCO-S1、U3-A、U3-Bは完了し、
+U4以降が未着手です。
 OPT4／backend側は、性能測定を再開する前に
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 の修正・低レベルtest・CLI E2E・既存firmware再回帰をこの順序で完了しました。現行mainの
 cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromoted targetは維持しています。
 新たなversioned validationや実機相関はこの記録から開始しません。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
-`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U3-B以降を開始する前に、
+`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U4以降を開始する前に、
 目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の
 provenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
@@ -71,7 +71,7 @@ provenance固定は完了しており、現在はproduction codeを変更でき�
 | 3 | U2 flash erase/program | **完了 2026-08-13** |
 | 4 | **M-NESCO-S1** — `Picocalc_NESco`を既存direct bootでSD/flash debug開始 | **完了 2026-08-13** |
 | 5a | U3-A host directory ↔ RAW pack／extract tool | **完了 2026-08-13** |
-| 5b | U3-B runner-integrated directory snapshot import | 未着手 |
+| 5b | U3-B runner-integrated directory snapshot import | **完了 2026-08-22** |
 | 6 | U4 実loaderで判明したSD protocol gap | 未着手 |
 | 7 | U5 boot2 entry／watchdog warm reset | 未着手 |
 | 8 | U6 実`uf2loader` end-to-end | 未着手 |

@@ -143,8 +143,9 @@ host backend: 3 run(s), byte-identical, output sha256 e8061a221d52d838
 
 ## まだできないこと
 
-- **directory-backed Fast SDモード**（Milestone 2の項目）は未実装。カードは
-  ホストメモリ上のセクタ配列であり、ホストのディレクトリを見せる経路はない
+- **host backendのlive directory-backed Fast SDモード**（Milestone 2の項目）は未実装。host
+  backendのカードはホストメモリ上のセクタ配列であり、firmware runnerのU3-B snapshot wrapper
+  （`picocalc.py test --mode firmware --sd-dir`）とは別の経路である
 - multicore、割り込み、DMA、PIOは存在しない。これらに依存する挙動はfirmware
   backendでしか見えない
 - LCDのwire形式（A/B系統の違い）はhostに存在しない。`verify_pixels`は

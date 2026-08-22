@@ -21,8 +21,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
-- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A完了、U3-B以降未着手**
-- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU3-B（runner-integrated directory snapshot）
+- UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B完了、U4以降未着手**
+- 次の作業: [UF2Loader SD／flash統合](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)のU4（実loaderで判明したSD protocol gap）
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
@@ -236,6 +236,7 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - 全体音量とpercussion／破裂音を人間が判定する2問式の実機speaker通過基準
 - NEXT-3のSD CMD8 CRC negative conformance
 - NEXT-4 JSONL headless machine API
+- `picocalc.py test --mode firmware --sd-dir` による決定的FAT32 directory snapshot import（必要なら`--sd-image-out`／`--sd-manifest`）
 
 限定または未対応:
 
@@ -244,7 +245,7 @@ flash書込み経路そのものを検証する場合や、uf2loaderを利用で
 - 任意codec、別PWM slice／DMA destination／TREQ、mixingの音声一般化。診断sinkが受け入れるのは
   同じPWM5_CC経路に限ったtimer分数とDMA block長の変化であり、任意の音声経路や実機相関を意味しない
 - bootromの実行、USB MSC boot
-- SDのmulti-block、removal、write-protect、runner-integrated directory-backed storage
+- SDのmulti-block、removal、write-protect、host directoryへのlive同期
 - scenarioのloop／branch、任意report fieldの直接assert
 - 実機の見え方・聞こえ方・物理操作品質を機械だけで判定すること
 

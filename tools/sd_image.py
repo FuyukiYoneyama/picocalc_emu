@@ -606,6 +606,7 @@ def pack_tree(input_dir: Path, output_image: Path, fat_type: str = "fat32", size
     if not (1 <= len(volume_label) <= 11) or any(char not in " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'()-@^_`{}~" for char in volume_label):
         raise SdImageError("volume label must be 1..11 uppercase ASCII FAT characters")
     root = _scan_tree(input_dir)
+    initial_manifest = _node_manifest(root)
     geometry = _choose_geometry(size_mib * 2048, fat_type)
     fat = _assign_clusters(root, geometry)
     output_image.parent.mkdir(parents=True, exist_ok=True)
@@ -650,6 +651,14 @@ def pack_tree(input_dir: Path, output_image: Path, fat_type: str = "fat32", size
             write_node(root, 0)
             stream.flush()
             os.fsync(stream.fileno())
+        # The byte-copy loop detects changes to files that were present during
+        # the initial scan.  A second complete scan also catches a file being
+        # added, removed, renamed, or replaced by a directory while the image
+        # was being built.  Do this before publishing the temporary image so
+        # a failed snapshot never leaves a misleading output behind.
+        final_manifest = _node_manifest(_scan_tree(input_dir))
+        if final_manifest != initial_manifest:
+            raise SdImageError("input tree changed while packing")
         os.replace(temporary, output_image)
     except Exception:
         try:
@@ -657,7 +666,7 @@ def pack_tree(input_dir: Path, output_image: Path, fat_type: str = "fat32", size
         except FileNotFoundError:
             pass
         raise
-    manifest = _node_manifest(root)
+    manifest = initial_manifest
     return {
         "operation": "pack",
         "format": fat_type,

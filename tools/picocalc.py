@@ -15,7 +15,12 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from provenance import directory_sha256, git_dirty, git_head
-from sd_image import add_cli as add_sd_cli, run_cli as run_sd_cli
+from sd_image import (
+    SdImageError,
+    add_cli as add_sd_cli,
+    pack_tree,
+    run_cli as run_sd_cli,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1389,6 +1394,37 @@ def host_test(
     return 0 if passed else 1
 
 
+def _write_json_atomic(path: Path, value: object) -> None:
+    """Write a machine-readable sidecar without exposing a partial file."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=path.name + ".tmp-", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(encoded)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    except Exception:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _path_is_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def firmware_test(
     target_id: str,
     firmware: Path,
@@ -1405,6 +1441,9 @@ def firmware_test(
     run_id: Optional[str] = None,
     progress_interval: int = 10,
     no_progress: bool = False,
+    sd_dir: Optional[Path] = None,
+    sd_image_out: Optional[Path] = None,
+    sd_manifest_out: Optional[Path] = None,
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
 
@@ -1483,6 +1522,30 @@ def firmware_test(
         conflicts.append("SD format {} (target requires {})".format(
             sd_format, target_sd.get("format")
         ))
+    if sd_dir is not None:
+        if sd is True:
+            conflicts.append("SD directory snapshot cannot be combined with --sd")
+        if sd_format is not None:
+            conflicts.append("--sd-dir always uses the deterministic FAT32 snapshot profile")
+        if not target_sd.get("attached", False):
+            conflicts.append("SD directory snapshot (target requires attached SD)")
+        if target_sd.get("format") != "fat32":
+            conflicts.append("SD directory snapshot requires a FAT32 target profile")
+    if sd_image_out is not None and sd_dir is None:
+        conflicts.append("--sd-image-out requires --sd-dir in picocalc.py test")
+    if sd_manifest_out is not None and sd_dir is None:
+        conflicts.append("--sd-manifest requires --sd-dir")
+    if sd_dir is not None and sd_manifest_out is not None and _path_is_inside(sd_manifest_out, sd_dir):
+        conflicts.append("--sd-manifest must be outside the input directory snapshot")
+    if sd_dir is not None and sd_image_out is not None and _path_is_inside(sd_image_out, sd_dir):
+        conflicts.append("--sd-image-out must be outside the input directory snapshot")
+    if sd_image_out is not None and sd_manifest_out is not None:
+        try:
+            same_output = sd_image_out.resolve() == sd_manifest_out.resolve()
+        except OSError:
+            same_output = sd_image_out.absolute() == sd_manifest_out.absolute()
+        if same_output:
+            conflicts.append("--sd-image-out and --sd-manifest must be different paths")
     if lcd_variant is not None and lcd_variant != runner_contract["lcd_variant"]:
         conflicts.append("LCD variant {} (target requires {})".format(
             lcd_variant, runner_contract["lcd_variant"]
@@ -1557,9 +1620,30 @@ def firmware_test(
         print("build it with: cargo build --release -p picocalc-harness")
         return 2
 
+    sd_snapshot_report = None
     with tempfile.TemporaryDirectory(prefix="picocalc-r2-") as temporary:
         report_path = Path(temporary) / "report.json"
         uart_path = Path(temporary) / "uart.bin"
+        sd_image_path: Optional[Path] = None
+        if sd_dir is not None:
+            sd_image_path = Path(temporary) / "sd-snapshot.img"
+            try:
+                sd_snapshot_report = pack_tree(
+                    sd_dir,
+                    sd_image_path,
+                    fat_type="fat32",
+                    size_mib=64,
+                    volume_label="PICOCALC",
+                )
+            except (SdImageError, OSError, UnicodeError) as error:
+                print("cannot create SD directory snapshot: {}".format(error))
+                return 2
+            if sd_manifest_out is not None:
+                try:
+                    _write_json_atomic(sd_manifest_out, sd_snapshot_report)
+                except OSError as error:
+                    print("cannot write SD snapshot manifest: {}".format(error))
+                    return 2
         command = [
             str(runner),
             "--bin", str(firmware),
@@ -1584,7 +1668,12 @@ def firmware_test(
         if runner_contract.get("keys"):
             command.extend(["--keys", runner_contract["keys"]])
         if target_sd.get("attached", False):
-            command.extend(["--sd", "--sd-format", target_sd["format"]])
+            if sd_image_path is not None:
+                command.extend(["--sd-image", str(sd_image_path)])
+                if sd_image_out is not None:
+                    command.extend(["--sd-image-out", str(sd_image_out)])
+            else:
+                command.extend(["--sd", "--sd-format", target_sd["format"]])
         audio_sink = runner_contract.get("audio_sink")
         if audio_sink is not None:
             command.extend(
@@ -1658,6 +1747,21 @@ def firmware_test(
         {"path": "error", "op": "eq", "value": None},
         {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
     ]
+    if sd_snapshot_report is not None:
+        required_checks.extend(
+            [
+                {
+                    "path": "sd.raw_image.bytes",
+                    "op": "eq",
+                    "value": sd_snapshot_report["image_bytes"],
+                },
+                {
+                    "path": "sd.raw_image.source_sha256",
+                    "op": "eq",
+                    "value": sd_snapshot_report["image_sha256"],
+                },
+            ]
+        )
     failures = check_report(report, required_checks + target["acceptance"]["report_checks"])
     expected_report_sha = target["acceptance"].get("normalized_report_sha256")
     if expected_report_sha is not None:
@@ -1942,6 +2046,24 @@ def main() -> int:
         help="firmware mode: initial SD filesystem profile (requires --sd)",
     )
     test_parser.add_argument(
+        "--sd-dir",
+        type=Path,
+        help=(
+            "firmware mode: pack this host directory into a deterministic FAT32 "
+            "snapshot for the attached SD card"
+        ),
+    )
+    test_parser.add_argument(
+        "--sd-image-out",
+        type=Path,
+        help="firmware mode: preserve the snapshot's post-run RAW image (requires --sd-dir)",
+    )
+    test_parser.add_argument(
+        "--sd-manifest",
+        type=Path,
+        help="firmware mode: write the deterministic SD snapshot manifest (requires --sd-dir)",
+    )
+    test_parser.add_argument(
         "--run-id",
         type=valid_run_id,
         help="firmware mode: heartbeat run ID (default: <target>-<wrapper-pid>)",
@@ -2037,8 +2159,16 @@ def main() -> int:
             args.json_out,
         )
     if args.command == "test":
+        if args.sd and args.sd_dir is not None:
+            parser.error("--sd-dir cannot be combined with --sd")
+        if args.sd_format is not None and args.sd_dir is not None:
+            parser.error("--sd-dir always uses the deterministic FAT32 snapshot profile")
         if args.sd_format is not None and not args.sd:
             parser.error("--sd-format requires --sd")
+        if args.sd_image_out is not None and args.sd_dir is None:
+            parser.error("--sd-image-out requires --sd-dir")
+        if args.sd_manifest is not None and args.sd_dir is None:
+            parser.error("--sd-manifest requires --sd-dir")
         if args.no_progress and (
             args.run_id is not None or args.progress_interval is not None
         ):
@@ -2046,6 +2176,9 @@ def main() -> int:
         if args.mode == "host":
             if (
                 args.sd
+                or args.sd_dir is not None
+                or args.sd_image_out is not None
+                or args.sd_manifest is not None
                 or args.sd_format is not None
                 or args.cycles is not None
                 or args.keys is not None
@@ -2058,7 +2191,7 @@ def main() -> int:
                 or args.no_progress
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-format/--run-id/--progress-interval/--no-progress are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-dir/--sd-image-out/--sd-manifest/--sd-format/--run-id/--progress-interval/--no-progress are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -2080,6 +2213,9 @@ def main() -> int:
             args.run_id,
             args.progress_interval if args.progress_interval is not None else 10,
             args.no_progress,
+            sd_dir=args.sd_dir,
+            sd_image_out=args.sd_image_out,
+            sd_manifest_out=args.sd_manifest,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

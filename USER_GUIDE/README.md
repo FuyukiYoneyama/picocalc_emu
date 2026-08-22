@@ -88,9 +88,9 @@ SD RAW imageの標準的な作成・取り出し手順は[`SD_IMAGES.md`](SD_IMA
 
 UF2Loader計画ではU0（provenance）、U1（RAW SD）、U2（flash erase/program）、
 M-NESCO-S1（`Picocalc_NESco`のdirect-boot SD/flash debug開始）まで完了しています。
-host側のU3-A（directory ↔ RAW pack/extract）も完了しています。次はU3-B（runner-integrated
-directory snapshot）です。M-NESCO-S1は、`--sd-image`と
-`--flash-image-out`を使うbackend診断経路を提供しますが、`--sd-dir`、boot2、watchdog、
-実`uf2loader` end-to-endを意味しません。実施順序と証拠は
+host側のU3-A（directory ↔ RAW pack/extract）とU3-B（runner-integrated directory snapshot）も完了しています。
+M-NESCO-S1は、`--sd-image`と`--flash-image-out`を使うbackend診断経路を提供し、U3-Bでは
+`picocalc.py test --mode firmware --sd-dir`を追加しました。`--sd-dir`は起動時の一回限りの
+FAT32 snapshotであり、boot2、watchdog、実`uf2loader` end-to-endを意味しません。実施順序と証拠は
 [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 実装状況は常に[`capability.json`](../firmware-validation/capability.json)を優先します。

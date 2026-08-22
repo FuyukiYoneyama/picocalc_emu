@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）完了。U3-B以降は未着手。**
+状態: **U0・U1・U2完了。M-NESCO-S1（direct-boot SD/flash debug開始）完了。U3-A（host RAW pack/extract）・U3-B（runner-integrated directory snapshot）完了。U4以降は未着手。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -229,13 +229,14 @@ LFN、8.3 alias、atomic output、JSON manifestを提供する。symlink／speci
 破損BPB・FAT・LFN・chain、出力pathのsymlink、同時変更中の入力はfail-closedで拒否する。
 
 このツールはrunnerの`--sd-image`／`--sd-image-out`と組み合わせて使う。手順と制約は
-[`../USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)に固定した。これは`--sd-dir`の実装でも、
-host directoryのlive mountでもない。packしたimageのsuper-floppy sector 0がFAT BPBとなる。
+[`../USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)に固定した。U3-A単体は`--sd-dir`の
+実装でもhost directoryのlive mountでもない。U3-Bはこのpack処理をwrapperから一度だけ呼び出す。
+packしたimageのsuper-floppy sector 0がFAT BPBとなる。
 
 **Gate U3-A:** FAT32／FAT16のround-trip、同一treeのimage SHA一致、LFN／Unicode、symlink・collision・
 malformed image・入力同時変更の拒否をlocal testで確認する（CIは実行しない）。
 
-### U3-B: runner-integrated directory snapshot import
+### U3-B: runner-integrated directory snapshot import — **完了 2026-08-22**
 
 `--sd-dir`はhost filesystemをfirmwareへ直結しない。起動時に次の順でFAT32 imageを決定的に作り、既存SD SPI/FatFs経路へ渡す。
 
@@ -256,15 +257,21 @@ malformed image・入力同時変更の拒否をlocal testで確認する（CI�
 directory側への書戻しは行わない。これにより、hostの予期しない削除・rename・上書きを避ける。
 
 U3-Aでhost packerは確定したため、U3-Bはこのpack結果をrunner起動時に接続するCLI／contract／
-artifact境界に限定する。`mkfs.fat`や`mcopy`がhostに偶然入っていることを前提にしない。
+artifact境界に限定する。公開入口は`tools/picocalc.py test --mode firmware --sd-dir`であり、
+wrapperが一時RAWを作ってbackendの既存`--sd-image`へ渡す。`mkfs.fat`や`mcopy`がhostに偶然
+入っていることを前提にしない。`--sd-manifest`はtree/image SHAとentry一覧をatomicに保存し、
+runner reportの`sd.raw_image.bytes`／`source_sha256`を同じ生成物へfail-closedで照合する。
 
-U3-Bまたは次のbackend変更を行う際には、既知の非ブロッカーである`export_raw`のsame-path判定を
-同時に修正する。出力がまだ存在しない相対pathでも親directoryをcanonicalizeして入力実体と比較し、
-絶対／相対表記、`./`、symlink経由の別表記を拒否するテストを追加する。U3-Aのhost tool、既存の
-atomic export、M-NESCO-S1の受入を遡って変更する作業ではない。
+実装は`picocalc_emu`のwrapperと既存`sd_image.py`に限定し、`picoem-picocalc`のstandalone
+`--sd-image`契約は変更しない。ただし、U3-Aで既知だった`export_raw`のsame-path判定をbackend側で
+親directoryのcanonical pathまで比較し、symlink outputを拒否する回帰修正を同じ作業単位に含めた。
+`--sd-dir`は登録targetがattached FAT32を要求する場合だけ許可し、FAT16、detached target、
+`--sd`との併用は拒否する。これはlive host-directory mountや双方向同期ではなく、起動時の一回限り
+のsnapshot importである。
 
 **Gate U3-B:** rootの`BOOT2040.UF2`と`pico1-apps/TEST.UF2`をloader相当のFatFs経路で列挙/open/readでき、
 同じtreeから毎回同じimage SHAを得て、`--sd-image-out`と同一のmanifest境界を保つ。
+ローカルのCLI fixture、同時変更拒否、profile競合拒否、reportのsource SHA／bytes照合を完了した。
 
 ### U4: uf2loader実行で判明したSD protocol gap
 
@@ -374,12 +381,12 @@ clean buildした外部uf2loaderと、自作test appを使って次を1つのsce
 | U2 flash erase/program + cache coherence | 20〜32時間 |
 | M-NESCO Picocalc_NESco direct-boot実用検証 | 8〜14時間 |
 | U3-A host pack/extract標準ツール | **完了** |
-| U3-B runner-integrated directory import | 8〜16時間 |
+| U3-B runner-integrated directory import | **完了** |
 | U4 実traceで判明したSD gap（変更不要なら監査だけ） | 2〜12時間 |
 | U5 boot2 entry + watchdog warm reset | 16〜28時間 |
 | U6 実uf2loader scenario/negative/artifact | 16〜24時間 |
 | 文書・全local回帰・公開境界監査 | 8〜12時間 |
-| **残り合計（U3-A完了後）** | **96〜166時間** |
+| **残り合計（U3-B完了後）** | **88〜150時間** |
 
 目安は**実働12〜21日**である（U3-Aのhost tool実装は完了済み）。実loaderが未観測のSD/SSI commandを要求する、warm resetが既存cycle契約へ広く影響する場合は上限を超える。その場合は問題を隠して範囲を縮めず、該当gateで停止して再見積りする。
 
@@ -396,13 +403,13 @@ U0 契約固定
  -> U1 RAW
  -> U2 flash erase/program
  -> M-NESCO Picocalc_NEScoで実用開始判定
- -> U3-B directory import（U3-A host toolは完了）
+ -> U3-B directory import（完了）
  -> U4 SD実loader gap（必要な場合だけ実装）
  -> U5 boot/reset
  -> U6 uf2loader end-to-end
  -> 文書/capability公開判定
 ```
 
-次に着手する作業は**U3-B「runner-integrated directory snapshot import」**である。U3-Aで用意した
-標準host pack/extractを再利用し、M-NESCO-S1で確認したRAW SD／flash経路へ安全に接続する。U4以降では、
+次に着手する作業は**U4「実loaderで判明したSD protocol gap」**である。U3-Aで用意した標準host
+pack/extractをU3-Bでrunnerの既存`--sd-image`経路へ安全に接続した。U4以降では、
 実loaderのprotocol gap、boot2、watchdog、最終`uf2loader` end-to-endを順に進める。

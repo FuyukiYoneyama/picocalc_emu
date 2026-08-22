@@ -58,11 +58,32 @@ entry 数によっては FAT32 を選ぶ必要があります。
 - FAT copy の不一致、cluster chain の loop／共有／サイズ不一致、path traversal は fail-closed です。
 - JSON report には operation、format、image／tree SHA-256、entry manifest が含まれます。
 
+## runnerへdirectory snapshotを渡す（U3-B）
+
+通常のfirmware targetでhost directoryをSDの入力にしたい場合は、wrapperを使います。
+`--sd-dir`は常に固定profile（FAT32、64 MiB、volume label `PICOCALC`）で一度だけsnapshotを作り、
+backendの既存`--sd-image`へ渡します。host directoryをrun中にmountしたり、run中のfirmware書込みを
+directoryへlive同期したりはしません。
+
+```sh
+python3 tools/picocalc.py test --mode firmware \
+  --target <fat32-target> \
+  --firmware /absolute/path/to/app.bin \
+  --sd-dir ./sd-tree \
+  --sd-manifest ./sd-snapshot.json \
+  --sd-image-out ./sd-after.img \
+  --json ./run-report.json
+```
+
+`--sd-dir`は登録targetがattached FAT32を要求するときだけ使用できます。`--sd`、`--sd-format`
+との併用は拒否されます。`--sd-manifest`にはtree/imageのSHA-256とentry一覧が出力され、runner
+reportの`sd.raw_image.source_sha256`／`bytes`とも照合されます。`--sd-image-out`はbackendのCOW
+exportであり、必要な場合だけ指定します。
+
 ## 現在の範囲
 
-これは host 側の前処理・後処理ツールです。`picocalc test --mode firmware --sd-dir` のように
-runner が directory を直接 mount する機能ではありません。runner の既存 `--sd-image`／
-`--sd-image-out` と組み合わせて使います。directory snapshot の runner 統合（U3-B）は別の受入条件で
-行い、完了するまでは本ツールの存在を `uf2loader supported` の宣言とは解釈しません。
+`sd pack/extract`はhost側の明示的な前処理・後処理です。U3-Bの`picocalc.py test --sd-dir`も
+同じpack実装を起動時に使うだけで、runnerがdirectoryを直接mountする機能ではありません。
+この機能の存在を`uf2loader supported`やSD protocol／boot2／watchdog対応の宣言とは解釈しません。
 
 通常のアプリ debug では、SD image を使わない従来の host／firmware 実行もそのまま利用できます。
