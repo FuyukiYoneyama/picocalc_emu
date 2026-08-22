@@ -275,6 +275,7 @@ def run_one(
     initial_flash: Path,
     cycles: int,
     quantum: int,
+    retain_sd_traces: Path | None,
 ) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix=f"mnesco-{case.name}-{phase.lower()}-{repeat}-") as temp:
         work = Path(temp)
@@ -313,6 +314,12 @@ def run_one(
         if not sd_out.exists() or sha256_file(sd_out) != sha256_file(sd_image):
             raise GateError(f"{case.name} {phase}{repeat}: SD backing changed")
         trace = json.loads(trace_path.read_text())
+        trace_file = None
+        if retain_sd_traces is not None:
+            # The copied artifact contains protocol events only.  Keep the
+            # host input path out of the result and expose only a basename.
+            trace_file = f"{case.name}-{phase.lower()}-{repeat:02d}.json"
+            shutil.copyfile(trace_path, retain_sd_traces / trace_file)
         if trace.get("unknown_commands"):
             raise GateError(f"{case.name} {phase}{repeat}: SD trace contains unknown commands")
         if not flash_out.exists():
@@ -327,6 +334,7 @@ def run_one(
             "sd_image_sha256": sha256_file(sd_out),
             "flash_sha256": sha256_file(flash_out),
             "flash_path": str(flash_out),
+            "sd_trace_file": trace_file,
             "fingerprint_sha256": sha256_bytes(canonical(report).encode()),
         }, flash_out.read_bytes()
 
@@ -391,6 +399,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--scenario-sd", type=Path, required=True)
     parser.add_argument("--scenario-flash", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--retain-sd-traces",
+        type=Path,
+        help="optionally copy per-run SD trace JSON into this directory",
+    )
     parser.add_argument("--case", action="append", type=parse_case_arg, required=True,
                         help="NAME=ROM_PATH; repeat for each read-only input")
     parser.add_argument("--repeats", type=int, default=3)
@@ -406,6 +419,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     args.scenario_sd = args.scenario_sd.expanduser().resolve()
     args.scenario_flash = args.scenario_flash.expanduser().resolve()
     args.output = args.output.expanduser().resolve()
+    if args.retain_sd_traces is not None:
+        args.retain_sd_traces = args.retain_sd_traces.expanduser().resolve()
+        args.retain_sd_traces.mkdir(parents=True, exist_ok=True)
     if args.repeats != 3:
         raise SystemExit("M-NESCO acceptance requires exactly --repeats 3")
     if args.quantum < 1:
@@ -455,6 +471,7 @@ def main(argv: Iterable[str] | None = None) -> int:
                         case=case, phase="A", repeat=repeat, runner=args.runner, firmware=args.firmware,
                         backend_commit=args.backend_commit, scenario=args.scenario_sd, sd_image=sd_image,
                         initial_flash=args.firmware, cycles=args.cycles, quantum=args.quantum,
+                        retain_sd_traces=args.retain_sd_traces,
                     )
                     runs_a.append(result)
                     if flash_a is None:
@@ -471,6 +488,7 @@ def main(argv: Iterable[str] | None = None) -> int:
                             case=case, phase="B", repeat=repeat, runner=args.runner, firmware=args.firmware,
                             backend_commit=args.backend_commit, scenario=args.scenario_flash, sd_image=sd_image,
                             initial_flash=flash_path, cycles=args.cycles, quantum=args.quantum,
+                            retain_sd_traces=args.retain_sd_traces,
                         )
                         runs_b.append(result)
                         print(f"PASS {case.name} B{repeat}", flush=True)

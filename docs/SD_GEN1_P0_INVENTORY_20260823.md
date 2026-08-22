@@ -45,8 +45,11 @@
 
 `firmware-validation/evidence/m-nesco-ext-20260822-01/`は、SD sourceとROM SHA、flash
 export／再attach、CPU／PPU／core 1／DMA XIPを固定している。ただし現在のrunner-manifestは
-SD wire traceを保存していない。したがって、M-NESCOのSD command使用範囲はP0の未完項目として
+旧版host runnerで作成したためSD wire trace本体を保存していない。したがって、M-NESCOのSD command使用範囲はP0の未完項目として
 扱い、既存のM-NESCO PASSをSD-GEN-1のtrace証拠へ流用しない。
+
+再採取時は`tools/mnesco_ext.py --retain-sd-traces <evidence-dir>`を使い、各runのtrace JSONを
+一時ディレクトリの終了前に保存する。このオプションは既定OFFで、既存の受入結果やreportを変更しない。
 
 ソース棚卸しでは、`Picocalc_NESco/drivers/sdcard.c`がCMD17をsectorごとに発行し、
 CMD24をsectorごとのwriteに使い、CMD9でCSDを読むことを確認した。CMD18/CMD12/CMD23/
