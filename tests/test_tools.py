@@ -23,6 +23,7 @@ NEXT2_AUDIO_ORACLE = ROOT / "tools/next2_audio_oracle.py"
 NEXT2_AUDIO_ORACLE_V3 = ROOT / "tools/next2_audio_oracle_v3.py"
 NEXT2_AUDIO_NEGATIVE = ROOT / "tools/verify_next2_audio_negative.py"
 JUDGE_SPEAKER_LISTENING = ROOT / "tools/judge_speaker_listening.py"
+SD_TRACE_REPLAY = ROOT / "tools/sd_trace_replay.py"
 
 
 def run(*arguments, env=None):
@@ -3256,6 +3257,7 @@ raise SystemExit(code)
             self.assertEqual(self.run_firmware_fixture(
                 module, backend, firmware, scenario, registry
             ), 1)
+
             acceptance["normalized_report_sha256"] = normalized_report_sha
             registry.write_text(json.dumps(document), encoding="utf-8")
 
@@ -3270,6 +3272,36 @@ raise SystemExit(code)
             self.assertEqual(self.run_firmware_fixture(
                 module, backend, firmware, scenario, registry
             ), 1)
+
+    def test_sd_trace_replay_accepts_p0_repeat_and_rejects_digest_mutation(self):
+        traces = [
+            ROOT
+            / "firmware-validation/evidence/sd-gen1-p0-20260823-02/"
+            / "mnesco-m2-menu"
+            / f"m2-a-0{index}.json"
+            for index in range(1, 4)
+        ]
+        arguments = [SD_TRACE_REPLAY]
+        for trace in traces:
+            arguments.extend(("--trace", trace))
+        arguments.extend(("--compare-repeated", "--allow-command", 0))
+        arguments.extend(("--allow-command", 8))
+        arguments.extend(("--allow-command", 17))
+        arguments.extend(("--allow-command", 41))
+        arguments.extend(("--allow-command", 55))
+        arguments.extend(("--allow-command", 58))
+        completed = run(*arguments)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout)["status"], "pass")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            mutated = Path(temporary) / "mutated.json"
+            document = json.loads(traces[0].read_text(encoding="utf-8"))
+            document["digest_sha256"] = "0" * 64
+            mutated.write_text(json.dumps(document), encoding="utf-8")
+            rejected = run(SD_TRACE_REPLAY, "--trace", mutated)
+            self.assertEqual(rejected.returncode, 1)
+            self.assertEqual(json.loads(rejected.stdout)["status"], "fail")
 
 
 if __name__ == "__main__":

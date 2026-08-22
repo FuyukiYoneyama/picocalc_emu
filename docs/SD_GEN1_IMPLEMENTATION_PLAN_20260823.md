@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **P2完了（feature-gated local candidate）。次はP3 trace replay／negative検証**
+状態: **P3完了（local validation pass、通常runtime未昇格）。次はP4 representative runtime/app regression**
 
 ## 1. 目的
 
@@ -78,27 +78,39 @@ P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATIO
 誤token、範囲外、途中CS、既存single-block readbackを検証した。default featureでは従来経路を維持し、
 通常runner／uf2loader capabilityには接続していない。
 
-### SD-GEN-1-P3: unit／trace replay／negative検証
+### SD-GEN-1-P3: unit／trace replay／negative report統合／既存回帰（完了 2026-08-23）
 
-- command FSM、CRC、token、busy、CS、block境界をhardware-free unit testで検証する。
-- P0のclean traceをreplayし、streaming digestとpreviewを一致させる。
-- 各mutation（CRC、token、block長、CS、unknown command、範囲外sector）で、
-  `pass`を返さず原因を記録することを確認する。
-- trace ON/OFFで既存report、UART、framebufferがbyte一致することを確認する。
-- 速度比較は逐次実行で10回以上、中央値と95% CIを記録する。GitHub Actionsは使わず、
-  ローカルで再現できるコマンドを証拠へ残す。
+- command FSM、CRC、token、busy、CS、block境界をfeature-enabled hardware-free
+  unit testで検証した（board 90、harness 67 main tests、全てpass）。既定featureも
+  board 85、harness 66 main testsでpassした。
+- `tools/sd_trace_replay.py`を追加し、P0の完全preview traceから`SdTraceState`の
+  canonical streaming digestを再計算する。sequence、CS epoch、command、token、
+  512-byte data、CRC、preview truncationを検査し、反復trace比較も行う。
+- digest mutationはexit 1／`status=fail`で拒否し、feature-enabled runnerの
+  `protocol_errors`は`sd_protocol_error`としてjudged failureへ統合した。既定featureでは
+  report schemaとverdictを変更しない。
+- U6、M-NESCO SD／flash、FAT16、FAT32の凍結clean traceをreplayし、3回反復可能な
+  経路はevent countとdigestが一致した。結果は[`sd-gen1-p3-20260823-01/`](../firmware-validation/evidence/sd-gen1-p3-20260823-01/)
+  と[`sd-gen1-p3-validation-v1.json`](../firmware-validation/contracts/sd-gen1-p3-validation-v1.json)へ固定した。
+- 速度比較はこの段階では行わない。既存runtimeの速度・挙動を変更するpromotionではなく、
+  feature-gated診断と凍結trace replayである。CIは使わず全検証をローカルで行った。
 
-### SD-GEN-1-P4: アプリ回帰
+### SD-GEN-1-P4: representative runtime／アプリ回帰（未着手）
 
 次の順で回帰する。
 
 1. U6固定`uf2loader`（既存recordを変更せず、同じverdictを確認）。
 2. M-NESCOの計画4ケース＋追加mapper 1（SD source、flash export、再attach、XIP）。
 3. FatFsのFAT16／FAT32 pack、read、write、extract。
-4. P1で追加したmulti-blockを実際に使用する代表アプリまたはsynthetic firmware。
+4. P1で追加したmulti-blockを**既定で有効化した**代表アプリまたはsynthetic firmware。
 
 各段階で、unknown command、mutation error、flash SHA、SD image SHA、UART/reportの
 一致を確認する。失敗した段階より先へ進めない。
+
+P3で完了したU6／M-NESCO／FAT回帰は、既存の固定版runtimeのtrace replayであり、P2の
+multi-block featureを通常runnerへ昇格したことを意味しない。P4ではproduction runtimeへ
+接続した場合の新しいrecordを作り、既存U6／M-NESCO／FATの全契約を壊さないことを改めて
+実行確認する。
 
 ### SD-GEN-1-P5: versioned validationとcapability判断
 
@@ -131,16 +143,17 @@ SD-GEN-1の完了条件は次の全てである。
 | P0 棚卸し／trace | 4〜6時間 | clean trace、現状一覧 |
 | P1 wire契約 | 6〜8時間 | command/state受入マトリクス（完了） |
 | P2 state machine | 10〜16時間 | feature-gated production実装（完了） |
-| P3 test／mutation | 8〜12時間 | unit、replay、negative record |
-| P4 アプリ回帰 | 8〜12時間 | U6／M-NESCO／FAT回帰 |
+| P3 test／mutation／凍結回帰 | 8〜12時間 | unit、replay、negative record、既存trace回帰（完了） |
+| P4 runtime／アプリ回帰 | 8〜12時間 | feature昇格後のU6／M-NESCO／FAT再実行 |
 | P5 record／docs | 4〜6時間 | versioned validation、capability判断 |
 | **合計** | **40〜60時間** | 実装範囲確定後に再見積り |
 
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-P0、P1、P2は完了した。次に着手できるのは**SD-GEN-1-P3 trace replay／negative検証**である。P2の
-multi-blockはfeature付きboard unit testだけであり、通常runtimeへの昇格、runner reportへのerror接続、
-U6／M-NESCO／FAT回帰はP3以降に行う。
+P0、P1、P2、P3は完了した。P3で`sd-gen1-multiblock`のrunner診断接続、trace replay、negative
+report判定、既存U6／M-NESCO／FATの凍結trace回帰を行った。P2のmulti-blockはなおfeature-gatedで、
+通常runtime／capabilityへの昇格はしていない。次に着手できるのは**SD-GEN-1-P4 representative
+runtime／アプリ回帰**である。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
 P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。

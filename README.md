@@ -23,7 +23,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
 - UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6完了**。M-NESCO拡張受入（計画mapper 0/2/4/30、追加mapper 1、small/medium/large、SD→flash→再attach、CPU/PPU/core 1/DMA観測）も完了しました。U6はcleanな外部uf2loader source/buildで3回deterministic Gateに合格し、限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み
 - U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
-- 次の作業: **SD-GEN-1汎用SD protocol一般化のP0計画・trace採取**（uf2loader以外のアプリ、複数ブロック、CRC／token／CS境界、read/write、unknown/errorのfail-closed）。M-NESCO拡張で確認したのは計画4＋追加1の固定caseに限られ、mapper全般や任意ROMの互換性は宣言しません。U4-P2のclean traceではCMD17のみを観測したため、固定版uf2loader受入へCMD18／CMD12などのmulti-block production実装は追加していません。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P0棚卸しは[`docs/SD_GEN1_P0_INVENTORY_20260823.md`](docs/SD_GEN1_P0_INVENTORY_20260823.md)です
+- 次の作業: **SD-GEN-1-P4 representative runtime／アプリ回帰**。P0 trace採取、P1 wire契約、P2 feature-gated state machine、P3 trace replay／negative report統合／U6・M-NESCO・FAT凍結trace回帰は完了しました。multi-block production runtimeへの昇格はまだ行っていません。M-NESCO拡張で確認したのは計画4＋追加1の固定caseに限られ、mapper全般や任意ROMの互換性は宣言しません。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P3証拠は[`firmware-validation/evidence/sd-gen1-p3-20260823-01/`](firmware-validation/evidence/sd-gen1-p3-20260823-01/)です
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "contract_id": "sd-gen1-p3-validation-v1-20260823",
+  "parent_contract_id": "sd-gen1-p2-vectors-v1-20260823",
+  "roadmap_package": "SD-GEN-1",
+  "status": "local_validation_pass",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "f6cd89dda7e8bcaf2cdc23d574a1794067f7c302",
+    "feature": "sd-gen1-multiblock",
+    "default_build_changed": false
+  },
+  "replay": {
+    "tool": "tools/sd_trace_replay.py",
+    "tool_sha256": "b1858dc18cb493d0c4761256be956ca8a906be3bf85fc69e81c87a9851bb63af",
+    "complete_preview_required": true,
+    "canonical_digest_matches_record": true,
+    "repeated_runs_must_match": true
+  },
+  "negative": {
+    "mutated_digest_rejected": true,
+    "feature_protocol_error_forces_fail": true,
+    "default_runner_report_unchanged": true
+  },
+  "frozen_regressions": {
+    "u6_uf2loader": {"runs": 3, "status": "pass"},
+    "mnesco_sd_and_flash": {"runs": 6, "status": "pass"},
+    "fat16": {"runs": 3, "status": "pass"},
+    "fat32": {"runs": 3, "status": "pass"}
+  },
+  "scope_boundary": {
+    "production_multiblock_enabled": false,
+    "uf2loader_capability_changed": false,
+    "next_gate": "SD-GEN-1-P4 representative runtime/app regression"
+  }
+}

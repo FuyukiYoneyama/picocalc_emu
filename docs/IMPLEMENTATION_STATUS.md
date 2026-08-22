@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-22
+更新日: 2026-08-23
 
 ## 版とbackend
 
@@ -104,9 +104,10 @@ uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化�
 read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
 実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
 P0（現状棚卸しとclean trace採取）、P1（wire契約・受入マトリクス）、P2（feature-gated最小state
-machine）は完了した。P2では`sd-gen1-multiblock`を明示したboard unit testだけを有効化し、
-default build、通常runner、既存capabilityは変更していない。CMD18/CMD25/CMD12/CMD23の通常runtime
-互換性はまだ主張せず、P3でtrace replay、negative report統合、既存アプリ回帰を行う。
+machine）、P3（trace replay、negative report統合、既存U6／M-NESCO／FATの凍結trace回帰）は完了した。
+P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化し、default build、
+通常runner、既存capabilityは変更していない。CMD18/CMD25/CMD12/CMD23の通常runtime互換性はまだ主張せず、
+次はP4でfeatureを既定runtimeへ接続した代表アプリ回帰を行う。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
 M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
 [`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
@@ -116,6 +117,9 @@ P2のfeature実装・local test結果は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`
 [`../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
 これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
+P3のreplay tool、negative verdict、U6／M-NESCO／FAT16／FAT32回帰結果は
+[`../firmware-validation/evidence/sd-gen1-p3-20260823-01/`](../firmware-validation/evidence/sd-gen1-p3-20260823-01/)と
+[`../firmware-validation/contracts/sd-gen1-p3-validation-v1.json`](../firmware-validation/contracts/sd-gen1-p3-validation-v1.json)に固定した。
 
 U3-Aの実行入口は[`USER_GUIDE/SD_IMAGES.md`](../USER_GUIDE/SD_IMAGES.md)であり、U3-Bのwrapper入口は
 `python3 tools/picocalc.py test --mode firmware --sd-dir <directory>`である。どちらも決定的RAW

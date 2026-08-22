@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "status": "pass",
+  "scope": "SD-GEN-1-P3 trace replay, negative report integration, and frozen regressions",
+  "ci": "not used; local validation only",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "f6cd89dda7e8bcaf2cdc23d574a1794067f7c302",
+    "dirty": false,
+    "feature": "sd-gen1-multiblock",
+    "default_build_changed": false
+  },
+  "replay_tool": {
+    "path": "tools/sd_trace_replay.py",
+    "sha256": "b1858dc18cb493d0c4761256be956ca8a906be3bf85fc69e81c87a9851bb63af"
+  },
+  "trace_replay": {
+    "mnesco_menu_sd": {
+      "source_record": "../sd-gen1-p0-20260823-02/mnesco-m2-menu",
+      "runs": 3,
+      "event_count": 2083,
+      "digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+      "trace_file_sha256": "6bc190caff1095a079391b17a50cda3232d7a67d2774e8a4d10bdbbd6c549596",
+      "status": "pass"
+    },
+    "mnesco_menu_flash": {
+      "source_record": "../sd-gen1-p0-20260823-02/mnesco-m2-menu",
+      "runs": 3,
+      "event_count": 29,
+      "digest_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23",
+      "trace_file_sha256": "95bc731d23979cabc0aa3960a74b7bb0bc5350b2888bfed3174b9f043ae22d26",
+      "status": "pass"
+    },
+    "fat16": {
+      "source_record": "../sd-gen1-p0-20260823-02/fat16",
+      "runs": 3,
+      "event_count": 2081,
+      "digest_sha256": "e189b48cb6bcb9600697959cf5bff18b1544a32dfa56e3938b2935847d1dcf6c",
+      "trace_file_sha256": "20e194380f0ecc4941856e052ccc2f8969b12b2c10ed2a5ad65a5e9fdb7dd8bd",
+      "status": "pass"
+    },
+    "fat32": {
+      "source_record": "../sd-gen1-p0-20260823-02/fat32",
+      "runs": 3,
+      "event_count": 2083,
+      "digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366",
+      "trace_file_sha256": "6bc190caff1095a079391b17a50cda3232d7a67d2774e8a4d10bdbbd6c549596",
+      "status": "pass"
+    },
+    "u6_uf2loader": {
+      "source_record": "../uf2loader-u6-20260822-01/run-{01,02,03}",
+      "runs": 3,
+      "event_count": 970,
+      "digest_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+      "trace_file_sha256": "9d635976dc0d42440cfdc8cbd3143d1725237858f61def5ac1946669a90080bb",
+      "status": "pass"
+    },
+    "u6_reattach": {
+      "source_record": "../uf2loader-u6-20260822-01/reattach/sd-trace.json",
+      "runs": 1,
+      "event_count": 0,
+      "digest_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "trace_file_sha256": "58daff63d26b9ed7491a5709b77bb64f8bee94e4988b0ca8b7e5a4e6fcd4a056",
+      "status": "pass"
+    }
+  },
+  "negative": {
+    "digest_mutation": "pass: replay exits 1 and reports status=fail",
+    "protocol_error_verdict": "pass: feature runner unit test forces Verdict::Fail with sd_protocol_error",
+    "unknown_commands": 0,
+    "production_capability_changed": false
+  },
+  "regression": {
+    "u6_frozen_trace_replay": "pass",
+    "mnesco_frozen_trace_replay": "pass",
+    "fat16_frozen_trace_replay": "pass",
+    "fat32_frozen_trace_replay": "pass",
+    "default_runner_schema_preserved": true
+  },
+  "scope_boundary": {
+    "multi_block_runtime_promotion": false,
+    "uf2loader_capability_changed": false,
+    "next_gate": "P4 representative runtime/app regression and promotion decision"
+  }
+}
