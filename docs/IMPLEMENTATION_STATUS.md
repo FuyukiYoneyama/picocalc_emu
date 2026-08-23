@@ -63,7 +63,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の正式計画: I2C-EXT（E0〜E4完了、E5〜E6未完了）
+## 次の正式計画: I2C-EXT（E5 emulator回帰完了、実機相関・capability昇格待ち）
 
 任意の外付けI2C moduleをfirmware backendへ接続する計画として、
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)
@@ -78,6 +78,12 @@ picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachを�
 詳細sidecar（transaction digest、device state、protocol error）と`picocalc.py` target contract接続を追加した。
 次はE5実機相関、E6 capability判断である。E0の証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)。
+
+E5 emulator回帰は、cleanな`RTC/Picocalc_Clock` source（commit `f04982cf1d1bf24e3020d992a5f63961c6c8536c`）から
+生成した同一BIN/UF2、fixture `i2c-ext-e5-env-v1`、backend `f810d059958773d1b42a1c6d03cc15183cdc1a4f`で
+3回実行し、primary report、I2C schema 2 sidecar、UART、framebufferがすべてbyte一致した。
+E6のversioned validation `picocalc-clock-i2c-env-e5` は `pending-revalidation` として固定済みである。
+同一UF2の実機UART証拠を受領するまで、これは capability 昇格を意味しない。
 
 ## 完了済み計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5）
 

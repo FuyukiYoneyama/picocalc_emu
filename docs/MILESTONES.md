@@ -2,7 +2,7 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-次の機能計画は、任意I2C外部moduleを扱うI2C-EXTです。E0〜E4完了、E5〜E6は未完了です。
+次の機能計画は、任意I2C外部moduleを扱うI2C-EXTです。E0〜E4とE5 emulator回帰、E6 versioned validationは完了し、E5同一UF2実機相関とE6 capability昇格が残っています。
 
 ## 状態
 
@@ -24,7 +24,7 @@
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
-| I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E4完了。DS3231/AT24C32/AHT20/BMP280 model、任意profile接続、schema 2 sidecar（transaction digest／state／protocol error）、`picocalc.py` target contract接続を実装。E5実機相関、E6 capability昇格は未完了。private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e0-20260823-01`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
+| I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E4完了。E5 emulator回帰完了（同一BIN 3回、schema 2 sidecar／UART／画面が決定的）。E6 versioned validationとpending targetを固定済み。E5同一UF2実機相関とE6 capability昇格は未完了。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "fixture_id": "i2c-ext-e5-env-v1",
+  "profile": "picocalc-rtc-env-v1",
+  "bus": {
+    "controller": "i2c1",
+    "sda_gpio": 6,
+    "scl_gpio": 7,
+    "address_bits": 7
+  },
+  "devices": [
+    {
+      "kind": "ds3231",
+      "address": 104,
+      "state": {
+        "encoding": "register_bytes",
+        "initial_datetime": "2024-01-01T00:00:00Z",
+        "osf": false
+      }
+    },
+    {
+      "kind": "at24c32",
+      "address": 87,
+      "state": {
+        "encoding": "register_bytes",
+        "registers": {
+          "0x0000": 165,
+          "0x007f": 90
+        }
+      }
+    },
+    {
+      "kind": "aht20",
+      "address": 56,
+      "state": {
+        "encoding": "register_bytes",
+        "measurement_bytes": "18 80 00 06 00 00 23"
+      }
+    },
+    {
+      "kind": "bmp280",
+      "address": 119,
+      "state": {
+        "encoding": "register_bytes",
+        "calibration_bytes": "70 6b 43 67 18 fc 7d 8e 43 d6 d0 0b 27 0b 8c 00 f9 ff 8c 3c f8 c6 70 17",
+        "measurement_bytes": "65 5a c0 7e ed 00"
+      }
+    }
+  ],
+  "metadata": {
+    "description": "E5 deterministic environment-module fixture; keyboard is attached by the explicit runner keyboard option.",
+    "source": "picocalc-board built-in deterministic sensor samples"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": 8,
+  "backend_commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+  "backend_build": {"commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f", "dirty": false},
+  "firmware": {"basename": "Picocalc_Clock.bin", "sha256": "dbca04508de03ebcc01cecfe1ecb1a86fcac1bae5ca649fe843c676bb7a8daff"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 400000000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 400000000,
+  "elapsed_us": 3233081,
+  "pc": "0x1000e0b2",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "cycle_limit", "required_uart_markers": ["STARTUP PROBE"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 0, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": true, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x1a",
+    "caset": 1, "raset": 1, "ramwr": 1, "ramrd": 0,
+    "pixels_written": 102400, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xf0", "count": 2}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f", "non_black_pixels": 0, "png": "framebuffer.png"},
+  "psram": {
+    "attached": true,
+    "tick_count": 324831633, "cs_falling_count": 1,
+    "bytes_written": 0, "bytes_read": 0,
+    "cmd_counts": {"write": 0, "fast_read": 0, "reset_enable": 0, "reset": 0, "unknown": 0},
+    "verify": null
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 3, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 1, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": []
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]}
+  ],
+  "uart": {"bytes": 520, "sha256": "833a9fade3b1df559f566586cf7bc01dd16d0beaf803783d9ac4cd5e8f8ec2a2"}
+}

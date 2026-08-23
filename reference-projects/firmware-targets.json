@@ -1160,6 +1160,97 @@
         "record": "firmware-validation/validations/picocalc-audio-r1-r1.json",
         "sha256": "46462c580ca166849b75ea3c7b433c7eae80ba5a662b534ad78fb96991e9651b"
       }
+    },
+    {
+      "id": "picocalc-clock-i2c-env-e5",
+      "revision": 1,
+      "status": "pending-revalidation",
+      "status_reason": "E5 emulator correlation is complete; same-UF2 physical probe is required before activation or capability promotion.",
+      "source": {
+        "repository": "RTC/Picocalc_Clock",
+        "commit": "f04982cf1d1bf24e3020d992a5f63961c6c8536c",
+        "path": "RTC/Picocalc_Clock",
+        "description": "Picocalc_Clock DS3231/AT24C32/AHT20/BMP280 startup probe"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "compiler": "arm-none-eabi-gcc 13.2.1",
+        "cmake": "3.28.3",
+        "generator": "Unix Makefiles",
+        "build_type": "Release"
+      },
+      "build": {
+        "command": "cmake -S . -B build-e5 -G \"Unix Makefiles\" -DPICO_SDK_PATH=/home/fuyuki/pico_dvl/codex/pico-sdk -DCMAKE_BUILD_TYPE=Release -DPICO_NO_BI_PROGRAM_BUILD_DATE=1 && cmake --build build-e5 --parallel 2",
+        "reproduction_document": "docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md",
+        "purpose": "0.8.41-display-guard (CMake source currently pins this build-purpose string)"
+      },
+      "artifacts": {
+        "bin_basename": "Picocalc_Clock.bin",
+        "bin_sha256": "dbca04508de03ebcc01cecfe1ecb1a86fcac1bae5ca649fe843c676bb7a8daff",
+        "elf_sha256": "8bf037e1e59e8d55d96cfae04171943bdc88926b84c94efdb3888a2a0c5124fc",
+        "uf2_sha256": "1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 400000000,
+        "quantum": 1,
+        "stop_pc": null,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": false,
+          "format": "fat32"
+        },
+        "i2c": {
+          "profile": "picocalc-rtc-env-v1",
+          "fixture": "firmware-validation/fixtures/i2c-ext-e5-env-v1.json",
+          "fixture_sha256": "1a2849a79f5e76872d6eee436228d9b5af9fdd5deaef1dc30f8e5c1f8bb8278a",
+          "sidecar_checks": [
+            {"path": "attached_addresses", "op": "length_eq", "value": 5},
+            {"path": "observation.address_phases", "op": "eq", "value": 26},
+            {"path": "observation.address_acks", "op": "eq", "value": 26},
+            {"path": "observation.address_nacks", "op": "eq", "value": 0},
+            {"path": "observation.unknown_addresses", "op": "eq", "value": 0},
+            {"path": "observation.write_bytes", "op": "eq", "value": 21},
+            {"path": "observation.read_bytes", "op": "eq", "value": 181},
+            {"path": "observation.stop_count", "op": "eq", "value": 17},
+            {"path": "observation.data_nacks", "op": "eq", "value": 0},
+            {"path": "observation.protocol_errors", "op": "eq", "value": 0},
+            {"path": "observation.children", "op": "length_eq", "value": 5}
+          ]
+        }
+      },
+      "scenario": null,
+      "acceptance": {
+        "expected_stop_reason": "cycle_limit",
+        "required_uart_markers": ["STARTUP PROBE"],
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "cycle_limit"},
+          {"path": "cycles", "op": "eq", "value": 400000000},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "backend_build.commit", "op": "eq", "value": "f810d059958773d1b42a1c6d03cc15183cdc1a4f"},
+          {"path": "backend_build.dirty", "op": "eq", "value": false},
+          {"path": "exception", "op": "eq", "value": null},
+          {"path": "error", "op": "eq", "value": null},
+          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0}
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picocalc-clock-i2c-env-e5-r1.json",
+        "sha256": "e5d23c0d4ef879360f84e775ad2fa7e40fbf8e5a32be51b294727029e84daed0"
+      }
     }
   ]
 }

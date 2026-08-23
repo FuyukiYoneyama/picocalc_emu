@@ -1,0 +1,14 @@
+
+Picocalc_Clock version 0.8.51 build release
+BUILD ID git=f04982c dirty=0 time="2026-08-23 12:55:34 +0900" purpose="0.8.41-display-guard"
+Picocalc_Clock init display -> keyboard -> shared i2c probes -> rtc display
+STARTUP PROBE rtc=PASS eeprom=PASS keyboard=PASS rtc_status=0x00
+STARTUP BATTERY PASS raw=0x64 percent=100 charging=0
+STARTUP VBUS gpio=24 present=0
+SETTINGS eeprom load default slotA=invalid slotB=invalid
+Commands:
+  help
+  ?
+  set yyyy-mm-dd
+  set HH:MM:SS
+Current: 2024-01-01 Mon 00:00:00

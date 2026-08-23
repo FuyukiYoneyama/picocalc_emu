@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "record_id": "i2c-ext-e5-20260823-01",
+  "result": "pass",
+  "target": {
+    "id": "picocalc-clock-i2c-env-e5",
+    "revision": 1,
+    "contract_sha256": "9f5fe496c381b14acd3f9e58b7e44690824956c4d87b719f761eeb2729a2037c"
+  },
+  "emulator": {
+    "target": {
+      "id": "picocalc-clock-i2c-env-e5",
+      "revision": 1
+    },
+    "backend_commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+    "source_commit": "f04982cf1d1bf24e3020d992a5f63961c6c8536c",
+    "bin_sha256": "dbca04508de03ebcc01cecfe1ecb1a86fcac1bae5ca649fe843c676bb7a8daff",
+    "uf2_sha256": "1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962",
+    "fixture_sha256": "1a2849a79f5e76872d6eee436228d9b5af9fdd5deaef1dc30f8e5c1f8bb8278a",
+    "profile": "picocalc-rtc-env-v1",
+    "cycles": 400000000,
+    "quantum": 1,
+    "runs": 3,
+    "deterministic": true,
+    "run_artifacts": [
+      {
+        "run": 1,
+        "report": "run-01/report.json",
+        "report_sha256": "ce1b30fb5c154742bd3667a4ac51e68757fb170d4a3cae1854402e164b96ef34",
+        "i2c_report": "run-01/i2c-report.json",
+        "i2c_report_sha256": "431c8c45af9b9c4696d4be7b18e492aa6f711b4501c18050fe2e16919b10531f",
+        "uart": "run-01/uart.raw",
+        "uart_sha256": "833a9fade3b1df559f566586cf7bc01dd16d0beaf803783d9ac4cd5e8f8ec2a2",
+        "framebuffer": "run-01/framebuffer.png",
+        "framebuffer_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581"
+      },
+      {
+        "run": 2,
+        "report": "run-02/report.json",
+        "report_sha256": "ce1b30fb5c154742bd3667a4ac51e68757fb170d4a3cae1854402e164b96ef34",
+        "i2c_report": "run-02/i2c-report.json",
+        "i2c_report_sha256": "431c8c45af9b9c4696d4be7b18e492aa6f711b4501c18050fe2e16919b10531f",
+        "uart": "run-02/uart.raw",
+        "uart_sha256": "833a9fade3b1df559f566586cf7bc01dd16d0beaf803783d9ac4cd5e8f8ec2a2",
+        "framebuffer": "run-02/framebuffer.png",
+        "framebuffer_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581"
+      },
+      {
+        "run": 3,
+        "report": "run-03/report.json",
+        "report_sha256": "ce1b30fb5c154742bd3667a4ac51e68757fb170d4a3cae1854402e164b96ef34",
+        "i2c_report": "run-03/i2c-report.json",
+        "i2c_report_sha256": "431c8c45af9b9c4696d4be7b18e492aa6f711b4501c18050fe2e16919b10531f",
+        "uart": "run-03/uart.raw",
+        "uart_sha256": "833a9fade3b1df559f566586cf7bc01dd16d0beaf803783d9ac4cd5e8f8ec2a2",
+        "framebuffer": "run-03/framebuffer.png",
+        "framebuffer_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581"
+      }
+    ],
+    "sidecar_observation": {
+      "attached_addresses": ["0x1f", "0x38", "0x57", "0x68", "0x77"],
+      "address_phases": 26,
+      "address_acks": 26,
+      "address_nacks": 0,
+      "unknown_addresses": 0,
+      "write_bytes": 21,
+      "read_bytes": 181,
+      "stop_count": 17,
+      "data_nacks": 0,
+      "protocol_errors": 0,
+      "children": 5,
+      "transaction_digest_sha256": "76fccb6ff08982c742bdbcd7c2cea7c72524c74b2444de7bfc72f5630a9c59b4"
+    }
+  },
+  "hardware_correlation": {
+    "status": "pending",
+    "same_uf2": true,
+    "required_artifact": "RTC/Picocalc_Clock/build-e5/Picocalc_Clock.uf2",
+    "note": "The emulator evidence is complete. Capability promotion waits for one physical run of this exact UF2 with UART confirmation of the four module paths."
+  }
+}

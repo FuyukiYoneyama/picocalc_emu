@@ -89,6 +89,31 @@
                 "attached": {"type": "boolean"},
                 "format": {"enum": ["fat32", "fat16"]}
               }
+            },
+            "i2c": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["profile", "fixture", "fixture_sha256"],
+              "properties": {
+                "profile": {
+                  "enum": ["picocalc-rtc-v1", "picocalc-rtc-env-v1"]
+                },
+                "fixture": {"type": "string", "minLength": 1},
+                "fixture_sha256": {"$ref": "#/$defs/sha256"},
+                "sidecar_checks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["path", "op", "value"],
+                    "properties": {
+                      "path": {"type": "string", "minLength": 1},
+                      "op": {"enum": ["eq", "length_eq"]},
+                      "value": {}
+                    }
+                  }
+                }
+              }
             }
           }
         },
