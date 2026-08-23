@@ -182,7 +182,7 @@ registry受入項目の未完了は解消したが、full-report byte equality�
 更新帯に暫定的に境界づけられ、後続feature-gated候補では変化しない。このcheckpoint後にSD-GEN-1
 P0〜P5の実装・回帰がbackend mainへ追加されており、現在のlocal development mainは
 [`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)と`firmware-validation/capability.json`に記録した
-`d96f73b…`である。以下の`a67e81c9…`の数値はOPT4時点の凍結証拠であり、現在のbackend HEADを
+`f810d059…`である。`d96f73b…`はSD-GEN-1 P4/P5時点の旧local checkpointである。以下の`a67e81c9…`の数値はOPT4時点の凍結証拠であり、現在のbackend HEADを
 示すものではない。検証reportと境界probeは
 [`opt4-current-main-20260816-01`](../firmware-validation/evidence/opt4-current-main-20260816-01/)へ固定した。
 詳細なコマンド、差分、判定は

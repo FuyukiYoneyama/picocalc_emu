@@ -161,6 +161,6 @@ SD未接続、9.5B cycles）実行した。baseline正式recordとの比較はba
 原因が閉じるまで、OPT4は**feature-gated実験候補のまま**とし、既定実行経路はOPT1-Bを維持する。
 GitHub Actionsは使用しない。
 
-なお、この判定後にbackend mainへSD-GEN-1 P0〜P5が追加されている。現在のlocal development mainは
-`d96f73b…`であり、本書の`a67e81c…`に基づく数値は当時の凍結証拠である。OPT4の再開時は
+なお、この判定後にbackend mainへSD-GEN-1 P0〜P5、続いてI2C-EXT E0〜E6が追加されている。現在のlocal development mainは
+`f810d059…`であり、`d96f73b…`はSD-GEN-1 P4/P5時点の旧checkpoint、本書の`a67e81c…`に基づく数値は当時の凍結証拠である。OPT4の再開時は
 現行mainに対する新しいA/B・exactness測定を作成し、本書の数値を現在値として流用しない。

@@ -351,7 +351,7 @@ profile CLI、fixture/report、AHT20/BMP280を含む環境profileはE2以降の�
 `picocalc-rtc-v1`を明示指定したrunだけがDS3231/AT24C32をI2C1へattachし、
 `--i2c-fixture`をschema 1として検証してfixture basename/SHAと接続addressを暫定sidecarへ記録する。
 profileなしの通常runは変わらない。E2のmodel/profile範囲と、E4の詳細transaction digest／
-picocalc.py target contract接続は完了しており、firmware相関だけがE5の残件である。
+picocalc.py target contract接続まで完了し、E5の同一UF2実機相関とE6のversioned validation／capability固定で受入を閉じた。
 
 - DS3231は`0x00..0x06`のBCD時刻、`0x0F` status/OSF、およびsourceが実際にwriteする範囲だけをモデル化する
 - 2000–2099の月末、閏年、年越し、day-of-week、時刻write直後のreadbackをunit testする
@@ -361,7 +361,7 @@ picocalc.py target contract接続は完了しており、firmware相関だけが
 
 ### E3 — 環境sensor
 
-**完了（2026-08-23）**。AHT20（0x38）とBMP280（0x77）をpicocalc-boardの独立child modelとして実装し、picocalc-rtc-env-v1のbuilt-in／fixture接続を追加した。AHT20のstatus・init・measure・7-byte responseとCRC-8、BMP280のchip ID・24-byte calibration・forced conversion・6-byte measurement、共有virtual nanosecondsによる90 ms／40 ms ready待ちを対象とする。profileを省略した既定runは変わらない。model unit testとharness built-in profile testはローカル合格済み。詳細transaction digest／target contract接続はE4で完了し、実機相関だけがE5の残件である。
+**完了（2026-08-23）**。AHT20（0x38）とBMP280（0x77）をpicocalc-boardの独立child modelとして実装し、picocalc-rtc-env-v1のbuilt-in／fixture接続を追加した。AHT20のstatus・init・measure・7-byte responseとCRC-8、BMP280のchip ID・24-byte calibration・forced conversion・6-byte measurement、共有virtual nanosecondsによる90 ms／40 ms ready待ちを対象とする。profileを省略した既定runは変わらない。model unit testとharness built-in profile testはローカル合格済み。詳細transaction digest／target contract接続はE4で完了し、E5の同一UF2実機相関とE6のversioned validation／capability固定まで完了した。
 backend commit: `0481474`。
 
 ### E4 — runner/report/target contract
@@ -375,14 +375,14 @@ protocol error・最終state summaryを記録する。childのprotocol errorま�
 
 `tools/picocalc.py test --mode firmware`は、target registryの任意の`runner.i2c`契約（profile、repository内
 fixture、fixture SHA、sidecar checks）を検証し、固定されたfixtureだけをrunnerへ渡す。I2C契約を持たない
-targetでI2C optionを指定することは拒否する。現在のactive targetにはI2C契約を追加していないため、
-実行経路の昇格はE6まで行わない。
+targetでI2C optionを指定することは拒否する。この制約はprofileなしの既存targetを保護するため現在も有効だが、
+I2C契約を持つ`picocalc-clock-i2c-env-e5`はE6でactive targetへ昇格済みである。
 
 backend実装commit: `f810d05`。
 
 ### E5/E6 — runnerから実機相関まで
 
-E4完了後の作業は、firmware回帰と実機相関（E5）、versioned validationとbounded capability（E6）である。
+E4完了後に実施した作業は、firmware回帰と実機相関（E5）、versioned validationとbounded capability（E6）である。
 
 1. profileなしの既存targetとunit testをローカルで完走する（完了）
 2. DS3231/AT24C32/AHT20/BMP280のbyte-level fixtureをunit testする（E2/E3で完了）

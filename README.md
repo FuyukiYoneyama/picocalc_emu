@@ -24,6 +24,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6完了**。M-NESCO拡張受入（計画mapper 0/2/4/30、追加mapper 1、small/medium/large、SD→flash→再attach、CPU/PPU/core 1/DMA観測）も完了しました。U6はcleanな外部uf2loader source/buildで3回deterministic Gateに合格し、限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み
 - U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
 - SD-GEN-1-P0〜P5: **完了（P5 bounded capability accepted）**。P4でmulti-blockをdefault runtimeへ接続し、CMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackの実SPI0 synthetic firmware E2E、RAW export byte一致、既存U6・M-NESCO・FAT16/FAT32凍結trace再play、legacy no-default差分を確認しました。P5でversioned validation contractと限定範囲の`sd-multi-block` capabilityを追加しました。versioned targetと固定版`uf2loader-e2e`は変更していません。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P5証拠は[`firmware-validation/evidence/sd-gen1-p5-20260823-01/`](firmware-validation/evidence/sd-gen1-p5-20260823-01/)です
+- I2C-EXT: **E0〜E6完了**。DS3231／AT24C32／AHT20／BMP280を既定構成へ入れず、明示的なprofileでのみ接続するoptional capabilityを同一UF2実機相関まで固定しました。詳細は[`docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)と[`firmware-validation/capability.json`](firmware-validation/capability.json)です
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は
@@ -48,6 +49,7 @@ U6実uf2loader end-to-endの実装前契約は
 - 人間向け入口: このREADME
 - 通常利用とAIの実行手順: [USER_GUIDE/](USER_GUIDE/README.md)
 - 高度なAI監督・実機依頼の規則: [AI_START_HERE.md](AI_START_HERE.md)
+- 改造・backend変更・新しい検証targetを追加するAI／開発者: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
 - 文書全体の案内: [docs/README.md](docs/README.md)
 - 現在できること／できないこと: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - 複数firmware runの監視: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
@@ -65,6 +67,7 @@ host検証・firmware backendの直接実行には必要ありません。target
 [外部workspaceの説明](docs/EXTERNAL_WORKSPACE.md)の開発プロファイルを参照してください。
 
 過去の経緯、却下実験、詳細記録は[`docs/history/`](docs/history/README.md)へ分離しています。
+リポジトリを改造・拡張する場合の実行可能な手順は、まず[`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)を読みます。
 検証器が読む凍結R/NEXT契約は`docs/`直下に残します。歴史資料や凍結契約の「次は〜」は
 当時の判断であり、現在の作業指示ではありません。
 
@@ -254,7 +257,7 @@ USB BOOTSEL/MSCや任意UF2の一般互換を意味しません。
 - 任意codec、別PWM slice／DMA destination／TREQ、mixingの音声一般化。診断sinkが受け入れるのは
   同じPWM5_CC経路に限ったtimer分数とDMA block長の変化であり、任意の音声経路や実機相関を意味しない
 - bootromの実行、USB MSC boot
-- SDのmulti-block、removal、write-protect、host directoryへのlive同期
+- 任意／無制限のSD multi-block、removal、write-protect、host directoryへのlive同期（boundedな`sd-multi-block` profileは対応済み）
 - scenarioのloop／branch、任意report fieldの直接assert
 - 実機の見え方・聞こえ方・物理操作品質を機械だけで判定すること
 

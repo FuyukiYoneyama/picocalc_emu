@@ -17,8 +17,8 @@ PicoTetris／multicore／PicoEditではUART・framebuffer・scenario等を保っ
 feature-gated OPT4候補の影響ではない。cycle exactnessの不一致を吸収せず、OPT4-Aをbankへ戻さず、
 promoted target／backend pinも変更しない。詳細な数値と再現条件はbackend側の計画書へ固定する。
 
-このcheckpoint後にSD-GEN-1 P0〜P5のbackend変更がmainへ追加された。現在のlocal development mainは
-`d96f73b…`であり、`a67e81c9…`の値・差分はOPT4時点の凍結証拠である。OPT4を再開する場合は、
+このcheckpoint後にSD-GEN-1 P0〜P5、続いてI2C-EXT E0〜E6のbackend変更がmainへ追加された。現在のlocal development mainは
+`f810d059…`であり、`d96f73b…`はSD-GEN-1 P4/P5時点の旧checkpoint、`a67e81c9…`の値・差分はOPT4時点の凍結証拠である。OPT4を再開する場合は、
 現行mainを新しい基準として改めて測定する。
 
 ## 目的

@@ -5,6 +5,9 @@
 高度な運用が必要な場合に追加で読むものです。過去の調査記録や完了済みの
 R/OPT/NEXT文書は、この現在手順を上書きしません。
 
+エミュレーター本体を改造する、backendを変更する、新しい検証targetを追加する場合は、
+この文書に加えてリポジトリ直下の[`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)を必ず読みます。
+
 ## 最上位原則
 
 > 推測でハードウェア層を再実装しない。動作実績のあるBSP APIを、実績のある条件で使う。
@@ -36,7 +39,7 @@ UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完�
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 にあります。これらの完了済み計画を再開せず、I2C-EXTは固定されたoptional profileとして利用できます。
 
-現在の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
+直近の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
 [`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。実module/profileの
 E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time基盤、
 DS3231/AT24C32/AHT20/BMP280 model core、picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachは完了しています。

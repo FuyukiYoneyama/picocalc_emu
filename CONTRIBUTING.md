@@ -1,5 +1,9 @@
 # Contributing
 
+改造・backend変更・新しいtarget追加を行う人とAIは、まず
+[`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)を読みます。そこに、リポジトリ間の責任範囲、
+ローカル検証、target／evidence更新、I2C optional profileの追加手順をまとめています。
+
 Issues and pull requests are welcome. Before opening one, please run the
 smallest relevant local checks and include the command, host toolchain, and
 result in the report.
