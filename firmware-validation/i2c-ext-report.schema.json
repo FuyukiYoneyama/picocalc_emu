@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://picocalc.local/schemas/i2c-ext-report-v2.json",
+  "title": "PicoCalc optional I2C module observation sidecar",
+  "description": "Deterministic transaction and model-state evidence for an explicitly selected optional I2C profile.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile",
+    "fixture",
+    "bus",
+    "attached_addresses",
+    "model_scope",
+    "observation",
+    "status",
+    "verdict_status",
+    "verdict_reasons",
+    "stop_reason",
+    "cycles",
+    "error"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "profile": {"enum": ["picocalc-rtc-v1", "picocalc-rtc-env-v1"]},
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "basename", "sha256"],
+      "properties": {
+        "id": {"type": "string"},
+        "basename": {"type": ["string", "null"]},
+        "sha256": {"type": ["string", "null"]}
+      }
+    },
+    "bus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controller", "sda_gpio", "scl_gpio", "address_bits"],
+      "properties": {
+        "controller": {"const": "i2c1"},
+        "sda_gpio": {"const": 6},
+        "scl_gpio": {"const": 7},
+        "address_bits": {"const": 7}
+      }
+    },
+    "attached_addresses": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^0x[0-9a-f]{2}$"}
+    },
+    "model_scope": {"type": "string"},
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address_phases",
+        "address_acks",
+        "address_nacks",
+        "unknown_addresses",
+        "write_bytes",
+        "read_bytes",
+        "stop_count",
+        "data_nacks",
+        "protocol_errors",
+        "transaction_digest_sha256",
+        "children"
+      ],
+      "properties": {
+        "address_phases": {"type": "integer", "minimum": 0},
+        "address_acks": {"type": "integer", "minimum": 0},
+        "address_nacks": {"type": "integer", "minimum": 0},
+        "unknown_addresses": {"type": "integer", "minimum": 0},
+        "write_bytes": {"type": "integer", "minimum": 0},
+        "read_bytes": {"type": "integer", "minimum": 0},
+        "stop_count": {"type": "integer", "minimum": 0},
+        "data_nacks": {"type": "integer", "minimum": 0},
+        "protocol_errors": {"type": "integer", "minimum": 0},
+        "transaction_digest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "address",
+              "model",
+              "address_phases",
+              "address_acks",
+              "address_nacks",
+              "write_bytes",
+              "read_bytes",
+              "stop_count",
+              "data_nacks",
+              "protocol_errors",
+              "state"
+            ],
+            "properties": {
+              "address": {"type": "string", "pattern": "^0x[0-9a-f]{2}$"},
+              "model": {"type": "string"},
+              "address_phases": {"type": "integer", "minimum": 0},
+              "address_acks": {"type": "integer", "minimum": 0},
+              "address_nacks": {"type": "integer", "minimum": 0},
+              "write_bytes": {"type": "integer", "minimum": 0},
+              "read_bytes": {"type": "integer", "minimum": 0},
+              "stop_count": {"type": "integer", "minimum": 0},
+              "data_nacks": {"type": "integer", "minimum": 0},
+              "protocol_errors": {"type": "integer", "minimum": 0},
+              "state": {"type": "object"}
+            }
+          }
+        }
+      }
+    },
+    "status": {"enum": ["pass", "fail"]},
+    "verdict_status": {"enum": ["pass", "fail", "cannot_judge"]},
+    "verdict_reasons": {"type": "array", "items": {"type": "string"}},
+    "stop_reason": {"type": "string"},
+    "cycles": {"type": "integer", "minimum": 0},
+    "error": {"type": ["string", "null"]}
+  }
+}

@@ -242,6 +242,7 @@ raise SystemExit(code)
             cycles=None, keys=None, sd=None, sd_dir=None, sd_format=None,
             lcd_variant=None, scenario_override=scenario, snapshot_dir=None,
             uart_out=None, json_out=None, sd_image_out=None, sd_manifest_out=None,
+            i2c_profile=None, i2c_fixture=None, i2c_report=None,
             run_id=None,
             progress_interval=10, no_progress=False,
         )
@@ -3099,6 +3100,43 @@ raise SystemExit(code)
             document["targets"][0]["runner"]["audio_sink"] = {
                 "expected_count": 49_152,
                 "expected_sha256": "x" * 64,
+            }
+            registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+            with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                with self.assertRaises(ValueError):
+                    module.load_firmware_registry()
+
+    def test_e4_registry_accepts_a_pinned_i2c_contract(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            _, _, _, _, registry = self.make_firmware_fixture(temporary)
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            fixture = ROOT / "firmware-validation/i2c-ext-fixture.schema.json"
+            document["targets"][0]["runner"]["i2c"] = {
+                "profile": "picocalc-rtc-env-v1",
+                "fixture": "firmware-validation/i2c-ext-fixture.schema.json",
+                "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                "sidecar_checks": [
+                    {"path": "observation.children", "op": "length_eq", "value": 4}
+                ],
+            }
+            registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+            with mock.patch.object(module, "FIRMWARE_TARGETS", registry):
+                loaded = module.load_firmware_registry()
+            self.assertEqual(
+                loaded["targets"][0]["runner"]["i2c"]["profile"],
+                "picocalc-rtc-env-v1",
+            )
+
+    def test_e4_registry_rejects_i2c_fixture_outside_repository(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            _, _, _, _, registry = self.make_firmware_fixture(temporary)
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            document["targets"][0]["runner"]["i2c"] = {
+                "profile": "picocalc-rtc-v1",
+                "fixture": "../fixture.json",
+                "fixture_sha256": "a" * 64,
             }
             registry.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
             with mock.patch.object(module, "FIRMWARE_TARGETS", registry):

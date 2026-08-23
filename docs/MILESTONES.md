@@ -2,7 +2,7 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-次の機能計画は、任意I2C外部moduleを扱うI2C-EXTです。E0〜E3完了、E4以降は未完了です。
+次の機能計画は、任意I2C外部moduleを扱うI2C-EXTです。E0〜E4完了、E5〜E6は未完了です。
 
 ## 状態
 
@@ -24,7 +24,7 @@
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
-| I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E3完了。DS3231/AT24C32/AHT20/BMP280 modelと、任意picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachを実装。E4詳細sidecar/target接続、実機相関、capability昇格は未完了。private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e0-20260823-01`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`** |
+| I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E4完了。DS3231/AT24C32/AHT20/BMP280 model、任意profile接続、schema 2 sidecar（transaction digest／state／protocol error）、`picocalc.py` target contract接続を実装。E5実機相関、E6 capability昇格は未完了。private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e0-20260823-01`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
@@ -66,7 +66,7 @@ cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromo
 この条件を満たす次の正式計画として、I2C-EXTのE0〜E6を
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)に固定した。
 実装はE0（source/provenanceとwire contract）、E1（controller/mux/shared virtual-time）、E2の
-DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profile接続まで完了した。現在はE4/E5/E6で、capabilityはまだ変更しない。
+DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profile接続、schema 2 sidecar、target contract接続まで完了した。現在はE5/E6で、capabilityはまだ変更しない。
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
 ### UF2Loader計画の実施順序と中間マイルストーン

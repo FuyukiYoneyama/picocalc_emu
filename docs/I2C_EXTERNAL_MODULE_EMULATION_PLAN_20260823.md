@@ -1,6 +1,6 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **E0〜E3完了、E4以降未完了**（2026-08-23）
+状態: **E0〜E4完了、E5〜E6未完了**（2026-08-23）
 
 E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
@@ -8,7 +8,9 @@ E0ではproduction codeを変更していない。E1でcontroller address-phase�
 共有virtual-time抽出を実装した。E2ではDS3231/AT24C32の独立model core、fixture検証、
 picocalc-rtc-v1 profileのI2C1 attach、暫定sidecar metadataを実装した。E3ではAHT20/BMP280の
 独立model、CRC/calibration検証、conversion待ち、picocalc-rtc-env-v1 profile接続を実装した。
-E4の詳細sidecar/target接続、実機相関は未完了であり、capabilityはまだ変更しない。
+E4ではprofile専用の詳細sidecar（schema 2）、transaction digest、device state/protocol error観測を実装し、
+`picocalc.py`のversioned target contractからprofile・fixture・sidecar期待値を固定的に渡せるようにした。
+実機相関は未完了であり、capabilityはまだ変更しない。
 
 ## 目的
 
@@ -260,7 +262,7 @@ BMP280 calibration/dataは固定する。hostの時刻や実sensor値を読むop
 ### 4. sidecar reportとfail-closed
 
 既存のschema 8 reportと凍結targetを不必要に変更しないため、profile runは
-`--i2c-report`で独立した`i2c-module-report` schema 1を出す。少なくとも次を含める。
+`--i2c-report`で独立した`i2c-module-report` schema 2を出す。少なくとも次を含める。
 
 - profile、fixture provenance、I2C instance/pin、attached address一覧
 - deviceごとのtransaction数、read/write byte数、状態要約、streaming transaction digest
@@ -283,7 +285,7 @@ sidecar期待値をcontractで固定する。registered targetのdevice option�
 | E1 | I2C address-phase契約、bus muxと仮想時間hook | 3 trait実装移行、same-target RESTART semantics、10-bit abort bit訂正、既存VirtualClockの共有primitive化、keyboard + 複数childのactive routing、data NACK abort、duplicate拒否、legacy ACK isolation、通常/fast-forward時間advance test、独自module向け接続点stub | 18–28 h |
 | E2 | DS3231 + AT24C32 | BCD/read/write/OSF、calendar rollover、EEPROM pointer/page/readback/ready polling unit test | 12–18 h |
 | E3 | AHT20 + BMP280 | 実sourceが使うcommand/register sequence、ready待ち、fixture byte/CRC/calibration/data test | 12–20 h |
-| E4 | runner/wrapper/report接続 | CLI validation、sidecar provenance、fail-closed verdict、`picocalc.py` target contract接続 | 8–12 h |
+| E4 | runner/wrapper/report接続 | CLI validation、schema 2 sidecar provenance、transaction digest・state/protocol error、fail-closed verdict、`picocalc.py` target contract接続 | **完了 2026-08-23** |
 | E5 | firmware回帰と実機相関 | standalone transaction fixture、既存Clock app、3回determinism、実機1回の自動probe | 12–18 h |
 | E6 | versioned validation/capability | 新target、record、capability境界、利用文書を確定 | 6–10 h |
 
@@ -346,8 +348,8 @@ profile CLI、fixture/report、AHT20/BMP280を含む環境profileはE2以降の�
 **model coreとprofile接続実装済み（backend commits `f1ae8dc`、`5802b2e`、2026-08-23）**。
 `picocalc-rtc-v1`を明示指定したrunだけがDS3231/AT24C32をI2C1へattachし、
 `--i2c-fixture`をschema 1として検証してfixture basename/SHAと接続addressを暫定sidecarへ記録する。
-profileなしの通常runは変わらない。E2のmodel/profile範囲は完了したが、詳細transaction digest、
-picocalc.py target contract、firmware相関はE4/E5で行う。
+profileなしの通常runは変わらない。E2のmodel/profile範囲と、E4の詳細transaction digest／
+picocalc.py target contract接続は完了しており、firmware相関だけがE5の残件である。
 
 - DS3231は`0x00..0x06`のBCD時刻、`0x0F` status/OSF、およびsourceが実際にwriteする範囲だけをモデル化する
 - 2000–2099の月末、閏年、年越し、day-of-week、時刻write直後のreadbackをunit testする
@@ -357,17 +359,33 @@ picocalc.py target contract、firmware相関はE4/E5で行う。
 
 ### E3 — 環境sensor
 
-**完了（2026-08-23）**。AHT20（0x38）とBMP280（0x77）をpicocalc-boardの独立child modelとして実装し、picocalc-rtc-env-v1のbuilt-in／fixture接続を追加した。AHT20のstatus・init・measure・7-byte responseとCRC-8、BMP280のchip ID・24-byte calibration・forced conversion・6-byte measurement、共有virtual nanosecondsによる90 ms／40 ms ready待ちを対象とする。profileを省略した既定runは変わらない。model unit testとharness built-in profile testはローカル合格済み。詳細transaction digest、target contract、実機相関はE4/E5の残件である。
+**完了（2026-08-23）**。AHT20（0x38）とBMP280（0x77）をpicocalc-boardの独立child modelとして実装し、picocalc-rtc-env-v1のbuilt-in／fixture接続を追加した。AHT20のstatus・init・measure・7-byte responseとCRC-8、BMP280のchip ID・24-byte calibration・forced conversion・6-byte measurement、共有virtual nanosecondsによる90 ms／40 ms ready待ちを対象とする。profileを省略した既定runは変わらない。model unit testとharness built-in profile testはローカル合格済み。詳細transaction digest／target contract接続はE4で完了し、実機相関だけがE5の残件である。
 backend commit: `0481474`。
 
-### E4/E5/E6 — runnerから実機相関まで
+### E4 — runner/report/target contract
 
-E3完了後の現在の残件は、詳細sidecar／transaction digest・target contract（E4）、firmware回帰と実機相関（E5）、versioned validationとbounded capability（E6）である。
+**完了（2026-08-23）**。profileを指定したrunだけが、`firmware-validation/i2c-ext-report.schema.json`
+に対応するschema 2 sidecarを生成する。sidecarにはfixture provenance、I2C1 pin、address ACK/NACK、
+unknown address、read/write/STOP/data-NACK、streaming transaction SHA-256、childごとのmodel名・
+protocol error・最終state summaryを記録する。childのprotocol errorまたはdata-NACKはprimary verdictへ
+`i2c_protocol_error`として伝播し、sidecar生成失敗・不正JSON・schema/contract不一致はwrapperをfail-closed
+にする。profileなしの既存targetはsidecarも新しい引数も使わず、従来のreportを変更しない。
+
+`tools/picocalc.py test --mode firmware`は、target registryの任意の`runner.i2c`契約（profile、repository内
+fixture、fixture SHA、sidecar checks）を検証し、固定されたfixtureだけをrunnerへ渡す。I2C契約を持たない
+targetでI2C optionを指定することは拒否する。現在のactive targetにはI2C契約を追加していないため、
+実行経路の昇格はE6まで行わない。
+
+backend実装commit: `f810d05`。
+
+### E5/E6 — runnerから実機相関まで
+
+E4完了後の現在の残件は、firmware回帰と実機相関（E5）、versioned validationとbounded capability（E6）である。
 
 1. profileなしの既存targetとunit testをローカルで完走する
 2. DS3231/AT24C32/AHT20/BMP280のbyte-level fixtureをunit testする（E2/E3で完了）
 3. 独立I2C probe firmwareをfirmware backendで走らせ、address、read/write/readback、時間進行、
-   keyboard共存、sidecar digestを3回一致させる
+   keyboard共存、schema 2 sidecar digestを3回一致させる。これはE5で行う
 4. 固定した`Picocalc_Clock`または同等clean sourceを使い、startup probeと画面/UARTの期待値を検査する
 5. 同一UF2を実機へ一度だけ送る。自動probeのUART logでaddress ACK、RTC read、EEPROM readback、
    AHT20/BMP280のread成功を確認する。実機の環境値は固定fixture値との一致を要求しない

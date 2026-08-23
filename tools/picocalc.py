@@ -731,6 +731,42 @@ def load_firmware_registry(path: Optional[Path] = None) -> dict:
             or sd_contract.get("format") not in ("fat32", "fat16")
         ):
             raise ValueError("{}.runner.sd must contain attached and format".format(where))
+        i2c_contract = runner.get("i2c")
+        if i2c_contract is not None:
+            if not isinstance(i2c_contract, dict):
+                raise ValueError("{}.runner.i2c must be an object".format(where))
+            if i2c_contract.get("profile") not in (
+                "picocalc-rtc-v1",
+                "picocalc-rtc-env-v1",
+            ):
+                raise ValueError("{}.runner.i2c.profile is invalid".format(where))
+            fixture = i2c_contract.get("fixture")
+            if not isinstance(fixture, str) or not fixture:
+                raise ValueError("{}.runner.i2c.fixture must be a non-empty path".format(where))
+            fixture_path = Path(fixture)
+            if fixture_path.is_absolute() or ".." in fixture_path.parts:
+                raise ValueError("{}.runner.i2c.fixture must stay inside the repository".format(where))
+            if not is_sha256(i2c_contract.get("fixture_sha256")):
+                raise ValueError("{}.runner.i2c.fixture_sha256 must be a SHA-256".format(where))
+            sidecar_checks = i2c_contract.get("sidecar_checks", [])
+            if not isinstance(sidecar_checks, list):
+                raise ValueError("{}.runner.i2c.sidecar_checks must be an array".format(where))
+            for check_index, check in enumerate(sidecar_checks):
+                check_where = "{}.runner.i2c.sidecar_checks[{}]".format(where, check_index)
+                if (
+                    not isinstance(check, dict)
+                    or not isinstance(check.get("path"), str)
+                    or not check["path"]
+                ):
+                    raise ValueError("{} needs a path".format(check_where))
+                if check.get("op") not in ("eq", "length_eq") or "value" not in check:
+                    raise ValueError("{} needs op eq|length_eq and value".format(check_where))
+                if check["op"] == "length_eq" and (
+                    type(check["value"]) is not int or check["value"] < 0
+                ):
+                    raise ValueError(
+                        "{} length_eq value must be a non-negative integer".format(check_where)
+                    )
         scenario = target.get("scenario")
         if scenario is not None:
             if (
@@ -1448,6 +1484,9 @@ def firmware_test(
     sd_dir: Optional[Path] = None,
     sd_image_out: Optional[Path] = None,
     sd_manifest_out: Optional[Path] = None,
+    i2c_profile: Optional[str] = None,
+    i2c_fixture: Optional[Path] = None,
+    i2c_report: Optional[Path] = None,
 ) -> int:
     """Run a conformance target on the pinned firmware backend.
 
@@ -1511,6 +1550,7 @@ def firmware_test(
 
     runner_contract = target["runner"]
     target_sd = runner_contract.get("sd", {"attached": False, "format": "fat32"})
+    target_i2c = runner_contract.get("i2c")
     conflicts = []
     if cycles is not None and cycles != runner_contract["cycles"]:
         conflicts.append("cycles {} (target requires {})".format(
@@ -1554,6 +1594,37 @@ def firmware_test(
         conflicts.append("LCD variant {} (target requires {})".format(
             lcd_variant, runner_contract["lcd_variant"]
         ))
+    if target_i2c is None:
+        if i2c_profile is not None:
+            conflicts.append("I2C profile (target requires no optional I2C profile)")
+        if i2c_fixture is not None:
+            conflicts.append("I2C fixture (target requires no optional I2C profile)")
+        if i2c_report is not None:
+            conflicts.append("I2C report (target requires no optional I2C profile)")
+    else:
+        if i2c_profile is not None and i2c_profile != target_i2c["profile"]:
+            conflicts.append("I2C profile {} (target requires {})".format(
+                i2c_profile, target_i2c["profile"]
+            ))
+        target_fixture = ROOT / target_i2c["fixture"]
+        if not target_fixture.is_file():
+            print("target I2C fixture not found: {}".format(target_fixture))
+            return 2
+        target_fixture_sha = hashlib.sha256(target_fixture.read_bytes()).hexdigest()
+        if target_fixture_sha != target_i2c["fixture_sha256"]:
+            print("target I2C fixture does not match the pinned SHA-256")
+            print("  expected {}".format(target_i2c["fixture_sha256"]))
+            print("  actual   {}".format(target_fixture_sha))
+            return 1
+        if i2c_fixture is not None:
+            if not i2c_fixture.is_file():
+                print("I2C fixture not found: {}".format(i2c_fixture))
+                return 1
+            supplied_sha = hashlib.sha256(i2c_fixture.read_bytes()).hexdigest()
+            if supplied_sha != target_i2c["fixture_sha256"]:
+                conflicts.append("I2C fixture SHA-256 does not match the target")
+        i2c_profile = target_i2c["profile"]
+        i2c_fixture = i2c_fixture or target_fixture
     if conflicts:
         print("command line conflicts with target '{}':".format(target_id))
         for conflict in conflicts:
@@ -1625,10 +1696,12 @@ def firmware_test(
         return 2
 
     sd_snapshot_report = None
+    i2c_report_value = None
     with tempfile.TemporaryDirectory(prefix="picocalc-r2-") as temporary:
         report_path = Path(temporary) / "report.json"
         uart_path = Path(temporary) / "uart.bin"
         sd_image_path: Optional[Path] = None
+        i2c_report_path: Optional[Path] = None
         if sd_dir is not None:
             sd_image_path = Path(temporary) / "sd-snapshot.img"
             try:
@@ -1648,6 +1721,8 @@ def firmware_test(
                 except OSError as error:
                     print("cannot write SD snapshot manifest: {}".format(error))
                     return 2
+        if target_i2c is not None:
+            i2c_report_path = Path(temporary) / "i2c-report.json"
         command = [
             str(runner),
             "--bin", str(firmware),
@@ -1688,6 +1763,12 @@ def firmware_test(
                     audio_sink["expected_sha256"],
                 ]
             )
+        if target_i2c is not None:
+            command.extend([
+                "--i2c-profile", i2c_profile,
+                "--i2c-fixture", str(i2c_fixture),
+                "--i2c-report", str(i2c_report_path),
+            ])
         if scenario_path is not None:
             snapshots = (
                 snapshot_dir.resolve()
@@ -1736,6 +1817,22 @@ def firmware_test(
         if json_out is not None:
             json_out.parent.mkdir(parents=True, exist_ok=True)
             json_out.write_bytes(report_bytes)
+        if target_i2c is not None:
+            if i2c_report_path is None or not i2c_report_path.is_file():
+                print("runner did not produce the required I2C sidecar report")
+                return 2
+            try:
+                i2c_report_bytes = i2c_report_path.read_bytes()
+                i2c_report_value = json.loads(i2c_report_bytes)
+            except (OSError, UnicodeError, json.JSONDecodeError) as error:
+                print("I2C sidecar report is unreadable: {}".format(error))
+                return 2
+            if not isinstance(i2c_report_value, dict):
+                print("I2C sidecar report must be a JSON object")
+                return 2
+            if i2c_report is not None:
+                i2c_report.parent.mkdir(parents=True, exist_ok=True)
+                i2c_report.write_bytes(i2c_report_bytes)
 
     required_checks = [
         {"path": "schema_version", "op": "eq", "value": 8},
@@ -1767,6 +1864,29 @@ def firmware_test(
             ]
         )
     failures = check_report(report, required_checks + target["acceptance"]["report_checks"])
+    if target_i2c is not None:
+        if not isinstance(i2c_report_value, dict):
+            failures.append("i2c sidecar was not produced")
+        else:
+            failures.extend(
+                "i2c sidecar: {}".format(failure)
+                for failure in check_report(
+                    i2c_report_value,
+                    [
+                        {"path": "schema_version", "op": "eq", "value": 2},
+                        {"path": "profile", "op": "eq", "value": target_i2c["profile"]},
+                        {
+                            "path": "fixture.sha256",
+                            "op": "eq",
+                            "value": target_i2c["fixture_sha256"],
+                        },
+                        {"path": "status", "op": "eq", "value": "pass"},
+                        {"path": "verdict_status", "op": "eq", "value": "pass"},
+                        {"path": "observation.protocol_errors", "op": "eq", "value": 0},
+                        {"path": "observation.data_nacks", "op": "eq", "value": 0},
+                    ] + target_i2c.get("sidecar_checks", []),
+                )
+            )
     expected_report_sha = target["acceptance"].get("normalized_report_sha256")
     if expected_report_sha is not None:
         actual_report_sha = normalized_json_sha256(report)
@@ -2068,6 +2188,21 @@ def main() -> int:
         help="firmware mode: write the deterministic SD snapshot manifest (requires --sd-dir)",
     )
     test_parser.add_argument(
+        "--i2c-profile",
+        choices=["picocalc-rtc-v1", "picocalc-rtc-env-v1"],
+        help="firmware mode: assert the selected target's optional I2C profile",
+    )
+    test_parser.add_argument(
+        "--i2c-fixture",
+        type=Path,
+        help="firmware mode: optional I2C fixture override; its SHA must match the target",
+    )
+    test_parser.add_argument(
+        "--i2c-report",
+        type=Path,
+        help="firmware mode: preserve the target's I2C sidecar report",
+    )
+    test_parser.add_argument(
         "--run-id",
         type=valid_run_id,
         help="firmware mode: heartbeat run ID (default: <target>-<wrapper-pid>)",
@@ -2185,6 +2320,9 @@ def main() -> int:
                 or args.sd_image_out is not None
                 or args.sd_manifest is not None
                 or args.sd_format is not None
+                or args.i2c_profile is not None
+                or args.i2c_fixture is not None
+                or args.i2c_report is not None
                 or args.cycles is not None
                 or args.keys is not None
                 or args.lcd_variant is not None
@@ -2196,7 +2334,7 @@ def main() -> int:
                 or args.no_progress
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-dir/--sd-image-out/--sd-manifest/--sd-format/--run-id/--progress-interval/--no-progress are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-dir/--sd-image-out/--sd-manifest/--sd-format/--i2c-profile/--i2c-fixture/--i2c-report/--run-id/--progress-interval/--no-progress are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -2221,6 +2359,9 @@ def main() -> int:
             sd_dir=args.sd_dir,
             sd_image_out=args.sd_image_out,
             sd_manifest_out=args.sd_manifest,
+            i2c_profile=args.i2c_profile,
+            i2c_fixture=args.i2c_fixture,
+            i2c_report=args.i2c_report,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

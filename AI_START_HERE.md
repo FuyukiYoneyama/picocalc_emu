@@ -26,7 +26,7 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
-- I2C-EXT: E0〜E3完了。DS3231/AT24C32/AHT20/BMP280 modelと、任意の picocalc-rtc-v1／picocalc-rtc-env-v1 profile接続を実装。E4詳細sidecar/target接続、実機相関、capability昇格は未実施
+- I2C-EXT: E0〜E4完了。DS3231/AT24C32/AHT20/BMP280 model、任意profile接続、schema 2 sidecar（transaction digest／state／protocol error）、`picocalc.py` target contract接続を実装。E5実機相関とE6 capability昇格は未実施
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
@@ -34,13 +34,13 @@ UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完�
 [`firmware-validation/capability.json`](firmware-validation/capability.json)を正典とします。
 統合計画の全履歴と最終状態は
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
-にあります。これらの完了済み計画を再開せず、次の機能作業はI2C-EXTのE4/E5/E6から継続します。
+にあります。これらの完了済み計画を再開せず、次の機能作業はI2C-EXTのE5/E6から継続します。
 
 現在の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
 [`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。実module/profileの
 E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time基盤、
 DS3231/AT24C32/AHT20/BMP280 model core、picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachは完了しています。
-E4の詳細sidecar/target接続、実機相関、capability昇格は未実施です。RTC directoryの
+E4のschema 2 sidecar／target contract接続まで完了し、残りはE5実機相関とE6 capability昇格です。RTC directoryの
 sourceを直接変更してemulatorの動作へ合わせてはいけません。E0の固定証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 を参照します。
@@ -120,8 +120,13 @@ Host backendは高速ですがハードウェアモデルではありません�
 multicore、LCD wire形式を判断するときはfirmware backendを使います。
 
 私的I2C moduleを明示的に付ける場合だけ、picocalc-runへ
---i2c-profile picocalc-rtc-v1 --i2c-report <path>、または環境sensorを含める場合は --i2c-profile picocalc-rtc-env-v1 --i2c-report <path> を渡します。
-fixtureを使う場合は --i2c-fixture <fixture.json> も指定します。profileを省略した通常runには
+`--i2c-profile picocalc-rtc-v1 --i2c-report <path>`、または環境sensorを含める場合は
+`--i2c-profile picocalc-rtc-env-v1 --i2c-report <path>`を渡します。fixtureを使う場合は
+`--i2c-fixture <fixture.json>`も指定します。profile runのsidecarは
+[`firmware-validation/i2c-ext-report.schema.json`](firmware-validation/i2c-ext-report.schema.json)
+のschema 2で、transaction digest、各deviceのread/write/STOP、protocol error、最終stateを含みます。
+versioned targetから実行するときは、`picocalc.py test --mode firmware`がtargetに固定されたprofile・
+fixture SHA・sidecar checksを自動的にrunnerへ渡します。profileを省略した通常runには
 DS3231/AT24C32/AHT20/BMP280は接続されません。
 
 ```sh
