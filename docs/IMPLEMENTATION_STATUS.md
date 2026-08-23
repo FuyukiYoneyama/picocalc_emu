@@ -98,20 +98,19 @@ localで確認した。U6 Gateの正式結果は[`../firmware-validation/evidenc
 通常のdirect bootアプリdebugと既存target回帰は変更しない。U6の標準入口は
 `python3 tools/picocalc.py uf2 e2e`であり、入力UF2、SD tree、外部loader source、backend commitを
 明示して実行する。
-次に正式な機能項目は、M-NESCO拡張で得た範囲を越えるSD-GEN-1汎用SD protocol一般化である。
-M-NESCO拡張は完了済みであり、次段階として、
-uf2loader以外のアプリも対象にしたSD-GEN-1汎用SD protocol一般化（複数ブロック、CRC／token／CS境界、
-read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画で開始する。
-実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
+SD-GEN-1汎用SD protocol一般化はP0〜P5まで完了した。詳細計画は
+[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
 P0（現状棚卸しとclean trace採取）、P1（wire契約・受入マトリクス）、P2（feature-gated最小state
-machine）、P3（trace replay、negative report統合、既存U6／M-NESCO／FATの凍結trace回帰）は完了した。
-P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化した。P4で同featureを
+machine）、P3（trace replay、negative report統合、既存U6／M-NESCO／FATの凍結trace回帰）、P4（default runtime代表E2E）、
+P5（versioned validationとbounded capability判断）を完了した。
+P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化し、P4で同featureを
 board／harnessのdefault runtimeへ接続し、SPI0のCMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackを送るrepository-owned
 synthetic firmware E2Eを追加した。RAW exportのreadback byte一致も含め、default board 90件、legacy no-default 85件、default harness 67件、
 legacy harness 66件、clippy default／legacyをlocalでpassさせ、既存U6／M-NESCO／FAT16／FAT32の凍結trace
 も再playした。synthetic E2Eは3回実行し、reportの安定項目、trace、exported RAW imageが一致した。P4のreport／trace／SHAは[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
-既存versioned targetとcapabilityはまだ変更していない。CMD18/CMD25/CMD12/CMD23を含む汎用capabilityへの昇格は、
-P5のversioned validationとscope判断が完了するまで主張しない。
+既存versioned targetとU6／uf2loader capabilityは変更していない。P5でversioned validation contractを追加し、
+対象commandと未対応境界を限定した`sd-multi-block` capabilityだけをbounded supportとして昇格した。P5のdecision evidenceは
+[`../firmware-validation/evidence/sd-gen1-p5-20260823-01/`](../firmware-validation/evidence/sd-gen1-p5-20260823-01/)へ固定した。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
 M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
 [`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。

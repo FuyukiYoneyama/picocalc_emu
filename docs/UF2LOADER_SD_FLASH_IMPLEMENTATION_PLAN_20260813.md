@@ -2,7 +2,7 @@
 
 作成日: 2026-08-13
 対象: `picocalc_emu` / `picoem-picocalc`
-状態: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6・M-NESCO拡張受入完了。U6はcleanな実uf2loader source/buildを使う3回deterministic Gateに合格し、固定LCD fixtureの限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み。M-NESCO拡張は4ケースのA/B受入と証拠化を完了した。次段階はSD-GEN-1汎用SD protocol一般化である。USB BOOTSEL/MSCと全UF2互換性は対象外。**
+状態: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6・M-NESCO拡張受入・SD-GEN-1 P0〜P5完了。U6はcleanな実uf2loader source/buildを使う3回deterministic Gateに合格し、固定LCD fixtureの限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み。SD-GEN-1 P5ではdefault runtimeのbounded `sd-multi-block` capabilityをversioned validationとして受け入れた。USB BOOTSEL/MSCと全UF2互換性は対象外。**
 目標アプリ: RP2040 PicoCalc 用 [`pelrun/uf2loader`](https://github.com/pelrun/uf2loader)
 
 ## 1. 結論
@@ -237,10 +237,10 @@ probe、run A／B／repeatの入力とfail-closed判定を、専用の実装前�
 このgateを完了しても`uf2loader supported`へ昇格せず、U6 end-to-endの限定capabilityとは別に扱う。
 実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](firmware-validation/evidence/m-nesco-ext-20260822-01/)に保存した。
 
-### M-NESCO後の次段階: SD-GEN-1 汎用SD protocol一般化 — **計画のみ**
+### M-NESCO後の次段階: SD-GEN-1 汎用SD protocol一般化 — **P0〜P5完了**
 
-M-NESCO拡張受入が完了するまで、SDプロトコルの追加実装には着手しない。M-NESCO拡張は、
-複数ROM・flash/XIP read経路・再attachを先に閉じるための現在の受入ゲートである。
+M-NESCO拡張受入後に、SDプロトコルの一般化をP0〜P5の独立した段階として実施した。M-NESCO拡張は、
+複数ROM・flash/XIP read経路・再attachを先に閉じるための前提受入ゲートであった。
 
 その後のSD-GEN-1では、uf2loaderの固定版traceだけを基準にせず、PicoCalcアプリが利用する
 汎用SD block-device経路を対象にする。対象は実際の利用要求と一次traceから段階的に固定し、
@@ -253,8 +253,11 @@ M-NESCO拡張受入が完了するまで、SDプロトコルの追加実装に�
 - unknown command／不正token／途中失敗のfail-closed
 - uf2loader、NESco、その他の代表アプリごとのコマンド使用範囲
 
-SD-GEN-1の完了までは、`uf2loader-e2e` capabilityを汎用SD互換性の根拠に使わない。U6の固定版
-uf2loader受入は保持し、一般化による変更は新しいversioned validationとして追加する。
+SD-GEN-1 P5では、`uf2loader-e2e` capabilityを汎用SD互換性の根拠に流用せず、P4のdefault-runtime
+E2Eを親証拠とする新しいversioned validation contractを追加した。U6の固定版uf2loader受入は保持し、
+一般化した範囲だけを`sd-multi-block`のbounded capabilityとして反映した。契約とdecision evidenceは
+[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)および
+[`firmware-validation/evidence/sd-gen1-p5-20260823-01/`](../firmware-validation/evidence/sd-gen1-p5-20260823-01/)に固定している。
 
 ### U3-A: host directory ↔ RAW image 標準ツール — **完了 2026-08-13**
 
@@ -443,9 +446,10 @@ initial flashで閉じ、preboot key eventの未実装を隠れた前提にし�
 | M-NESCO拡張受入（fixture／probe／再attach／provenance） | **完了 2026-08-22** |
 | U6 実uf2loader scenario/negative/artifact | **完了 2026-08-22** |
 | 文書・全local回帰・公開境界監査 | **U0〜U6／M-NESCO拡張分を完了** |
-| **次の作業** | **SD-GEN-1の詳細計画を別文書で固定（工数未見積り）** |
+| **SD-GEN-1 P5** | **完了。versioned validation contract、bounded capability、decision evidenceを固定** |
 
-上表は実装前の工数見積りを履歴として残したものであり、完了後の残作業見積りではない。U0〜U6とM-NESCO拡張の実装・local回帰・証拠固定は完了した。次のSD-GEN-1は対象コマンドと代表アプリを先に確定してから、別途工数を見積もる。
+上表の初期工数は実装前の見積りを履歴として残したものであり、完了後の残作業見積りではない。U0〜U6、
+M-NESCO拡張、SD-GEN-1 P0〜P5の実装・local回帰・証拠固定は完了した。次の作業は新しい正式計画が立つまで保留する。
 
 42〜60時間程度で作れるsyntheticな「SDからUF2を読んで直接chain-loadするデモ」は、本計画の最終目標ではない。今回は**実際のuf2loader、実際のflash helper、実際のwatchdog reboot**を通すため、その差分を工数へ含めている。
 
@@ -466,9 +470,12 @@ U0 契約固定
  -> U5-B watchdog warm reset
  -> M-NESCO拡張受入（複数mapper／サイズ／read path／flash再attach）
  -> U6 uf2loader end-to-end
+ -> SD-GEN-1 P0〜P5 汎用SD protocol／versioned validation／bounded capability
  -> 文書/capability公開判定
 ```
 
 U4-P2のclean trace取得とprotocol判断、U5-B、U6 Gate、M-NESCO拡張受入は完了した。`picocalc-run --sd-trace <path>`はdiagnostic-onlyのまま保持し、CMD18／CMD12等のproduction codeは追加していない。U6とM-NESCOのevidenceはbackend/sourceをclean commitへ固定したうえで取得し、固定LCD fixture専用のcapabilityとNESco-specific evidenceを分離して保存した。通常のdirect boot debugは変更しない。
 
-計画の実施順は、M-NESCO拡張をU6の固定LCD fixtureと独立したGateとして実施した。U6とM-NESCOは別々の証拠・capability境界を持つ。次段階はM-NESCOの固定4ケース＋追加mapper 1を越えるSD-GEN-1汎用化であり、未観測commandをこのgateへ推測追加しない。
+計画の実施順は、M-NESCO拡張をU6の固定LCD fixtureと独立したGateとして実施し、その後SD-GEN-1を
+P0〜P5で完了した。U6とM-NESCO、SD-GEN-1は別々の証拠・capability境界を持つ。SD-GEN-1 P5で対象commandを
+versioned contractへ固定し、未観測commandを追加で推測していない。次の作業は新しい正式計画が立つまで保留する。

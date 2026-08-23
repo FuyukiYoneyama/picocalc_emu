@@ -17,7 +17,7 @@
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
 | U5-B watchdog warm resetの実装前契約 | [`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md) |
 | M-NESCO拡張受入の契約・実行証拠 | [`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)、[`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/) |
-| SD-GEN-1汎用SD protocol計画・P5判断 | [`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md) |
+| SD-GEN-1汎用SD protocol計画・P5判断 | [`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、[`P5 validation contract`](../firmware-validation/contracts/sd-gen1-p5-validation-v1.json)、[`P5 decision evidence`](../firmware-validation/evidence/sd-gen1-p5-20260823-01/) |
 | SD-GEN-1-P0の現状棚卸し | [`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md) |
 | SD-GEN-1-P0 初回autostart trace（履歴） | [`historical trace`](../firmware-validation/evidence/sd-gen1-p0-20260823-01/) |
 | SD-GEN-1-P0 完了record（M-NESCO A/B・FAT16/FAT32） | [`P0 completed evidence`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/) |
@@ -94,16 +94,18 @@ U6は、boot2→stage3→SD上の`BOOT2040.UF2`→アプリUF2のerase/program�
 書込み後app起動を同一artifactで通す最終gateです。固定source／artifactに限定した`uf2loader-e2e`
 capabilityを有効化し、USB BOOTSEL/MSCと任意UF2互換は未対応のままです。
 
-残る正式な機能項目は、M-NESCO拡張の計画4ケース＋追加1ケースを越える汎用化です。次段階は
-SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol一般化）であり、複数ブロック、
-CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で扱います。
-実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)に固定し、P0のtrace棚卸し、
-P1のwire契約・受入マトリクス、P2のfeature-gated最小state machine、P3のtrace replay／negative report統合／凍結回帰、P4のdefault runtime接続と代表E2E回帰まで完了しています。
+M-NESCO拡張の計画4ケース＋追加1ケースを越える汎用化として進めた
+SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol一般化）は、P0〜P5まで完了しています。
+複数ブロック、CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰を確認し、
+P5でversioned validation contractと限定範囲の`sd-multi-block` capabilityを受け入れました。
+詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)に固定し、P0のtrace棚卸し、
+P1のwire契約・受入マトリクス、P2のfeature-gated最小state machine、P3のtrace replay／negative report統合／凍結回帰、
+P4のdefault runtime接続と代表E2E回帰、P5のversioned validation／capability判断を完了しています。
 P1のmachine-readable契約は
 [`sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)、P2のvectorは
 [`sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)です。P2実装時点では通常runtime／runnerへ接続していませんでしたが、
 P4でdefault runtimeへ昇格しました。P4の代表E2EはCMD18→2 block→CMD12、CMD23/CMD25→1 block write→CMD17 readbackを実SPI0経路で実行し、RAW exportのbyte一致も確認しています。同じclean backendで3回再実行し、安定report項目・trace・exported imageが一致しました。既存U6／M-NESCO／FAT16／FAT32の凍結clean traceも再playしています。
-汎用capability／versioned targetの判断はP5へ残しています。
+versioned targetと固定版`uf2loader-e2e`は変更していません。次の作業は、新しい正式計画が立つまで保留です。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。

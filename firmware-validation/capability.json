@@ -137,10 +137,19 @@
     {
       "id": "sd-card",
       "what": "SD card in SPI mode on SPI0, with card detect on GP22",
-      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read and write. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 8 retains the selected format and block counters introduced in schema 6.",
-      "limitation": "There is no multi-block transfer, CSD/CID beyond bring-up, removal, write-protect or live host-directory synchronization, and writes complete immediately rather than holding the host through a programming delay. Deterministic startup snapshots are covered separately by directory-snapshot-import.",
+      "detail": "SPI bring-up as the BSP drives it (CMD0, CMD8, CMD55+ACMD41 answering busy a couple of times before ready, CMD58 reporting high capacity), plus single-block read/write and the bounded SD-GEN-1 multi-block surface. The generated test card is 64 MiB and defaults to FAT32 to match the filesystem choice of PicoCalc's bundled 32 GB card; FAT16 is an explicit compatibility profile. Both complete mount, write, sync, read, compare and remove through the BSP's Chan FatFs. Runner schema 8 retains the selected format and block counters introduced in schema 6.",
+      "limitation": "Multi-block support is bounded to the versioned SD-GEN-1 contract (CMD18/CMD12/CMD23/CMD25, 512-byte SPI blocks, token/CRC/CS/busy state, and COW export). CSD/CID beyond bring-up, removal, write-protect, live host-directory synchronization, and programming delay are not modelled. Deterministic startup snapshots are covered separately by directory-snapshot-import.",
       "correlated": "2026-08-09: BSP 0.9.0 public filesystem write path passed same-artifact PicoEdit correlation for FAT32 load, create/truncate write, sync, rename/backup and readback (firmware-validation/records/next1-picoedit-hardware-20260809-01/record.json). FAT16 remains host-only compatibility evidence.",
       "since_gate": "post-7; fat32-default completed in R1-SD"
+    },
+    {
+      "id": "sd-multi-block",
+      "what": "Bounded SPI SD multi-block read/write in the default PicoCalc runtime",
+      "detail": "The default board and harness runtime accepts CMD18 multi-block read with CMD12 stop, CMD23 pre-erase, and CMD25 multi-block write. P4 exercised the CPU → SIO → SPI0 → SD wire path, performed CMD17 readback after a CMD25 write, and exported the changed sector through the RAW COW path. Three runs matched in stable report projection, structured trace, and exported image.",
+      "limitation": "This is a versioned bounded protocol surface, not complete SD compatibility. It does not claim CSD/CID beyond bring-up, card removal, write-protect, live directory synchronization, USB BOOTSEL/MSC, arbitrary SD drivers, or arbitrary uf2loader forks. The fixed-source uf2loader-e2e capability remains unchanged.",
+      "validation": "firmware-validation/contracts/sd-gen1-p5-validation-v1.json",
+      "evidence": "firmware-validation/evidence/sd-gen1-p5-20260823-01/manifest.json",
+      "since_gate": "SD-GEN-1-P5 (2026-08-23)"
     },
     {
       "id": "raw-sd-image",

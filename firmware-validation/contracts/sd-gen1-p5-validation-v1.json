@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "contract_id": "sd-gen1-p5-validation-v1-20260823",
+  "parent_contract_id": "sd-gen1-p3-validation-v1-20260823",
+  "roadmap_package": "SD-GEN-1",
+  "status": "accepted_bounded",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2",
+    "dirty": false,
+    "default_features": ["sd-gen1-multiblock"]
+  },
+  "evidence": {
+    "p4_manifest": "firmware-validation/evidence/sd-gen1-p4-20260823-01/manifest.json",
+    "p4_manifest_sha256": "8850bfe983838a6c3cf4d7f6c96dba1cbc4e9cee25e36c6b338b723bc093aa20",
+    "report_sha256": "e88d199deb53db60fd14649d9ebd8c3fdb9537ecdfa110a55441fb9ae83f46a7",
+    "trace_sha256": "6861c4fb80df5172975bd6b0e9bda3b781575df75c28a3be5a6444e21292241d",
+    "trace_digest_sha256": "1f6f875dd1117e10098805610dbc698cb9927364a2febcd2bfe755d44e362aae",
+    "exported_image_sha256": "9d75d86dd1894419bf44b8a9f9ae54fc1b17949f4000485cacfe41dc0df2ee90"
+  },
+  "default_runtime": {
+    "test": "picoem-picocalc/crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs",
+    "board": "picocalc",
+    "backing": "raw-image-cow-with-atomic-export",
+    "commands": [18, 12, 23, 25, 17],
+    "blocks_read": 3,
+    "blocks_written": 1,
+    "readback_block": 6,
+    "readback_byte": "0xA5",
+    "unknown_commands": 0,
+    "protocol_errors": [],
+    "verdict": "pass"
+  },
+  "determinism": {
+    "runs": 3,
+    "stable_report_projection": true,
+    "trace_bytes_equal": true,
+    "exported_image_bytes_equal": true
+  },
+  "regressions": {
+    "u6_uf2loader": {"runs": 3, "status": "pass"},
+    "mnesco_sd": {"runs": 3, "status": "pass"},
+    "mnesco_flash": {"runs": 3, "status": "pass"},
+    "fat16": {"runs": 3, "status": "pass"},
+    "fat32": {"runs": 3, "status": "pass"},
+    "u6_reattach": {"runs": 1, "status": "pass"}
+  },
+  "negative": {
+    "trace_digest_mutation_rejected": true,
+    "protocol_error_forces_judged_failure": true,
+    "unknown_command_count": 0
+  },
+  "scope": {
+    "supported": [
+      "SPI single-block read/write: CMD17/CMD24",
+      "SPI multi-block read: CMD18 with block tokens and CMD12 stop",
+      "SPI multi-block write: CMD23 pre-erase, CMD25 data token and busy/stop handling",
+      "512-byte block boundaries, CRC/token/CS state and COW export"
+    ],
+    "not_claimed": [
+      "complete SD specification compatibility",
+      "CSD/CID beyond bring-up",
+      "card removal or write-protect",
+      "live host-directory synchronization",
+      "USB BOOTSEL/MSC",
+      "arbitrary external SD drivers or loader forks"
+    ]
+  },
+  "capability_decision": {
+    "id": "sd-multi-block",
+    "status": "supported_bounded",
+    "capability_changed": true,
+    "versioned_target_rewritten": false,
+    "uf2loader_capability_rewritten": false
+  },
+  "validation_commands": [
+    "cargo test --release -p rp2040-emu -p picocalc-board -p picocalc-harness",
+    "cargo test --release -p picocalc-harness --no-default-features",
+    "cargo clippy --release -p picocalc-board -p picocalc-harness --all-targets -- -D warnings",
+    "cargo clippy --release -p picocalc-board -p picocalc-harness --no-default-features --all-targets -- -D warnings",
+    "python3 tools/sd_trace_replay.py",
+    "python3 tools/verify_environment.py --json",
+    "python3 -m unittest discover -s tests -p 'test_*.py'"
+  ],
+  "ci": "not used; local validation only"
+}

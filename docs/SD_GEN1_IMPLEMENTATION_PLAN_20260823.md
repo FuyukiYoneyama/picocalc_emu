@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **P4完了（local validation pass、capability判断はP5へ保留）**
+状態: **P5完了（bounded capability accepted、local validation pass）**
 
 ## 1. 目的
 
@@ -126,17 +126,18 @@ multi-block featureを通常runnerへ昇格したことを意味しなかった�
 接続した新しいsynthetic recordを作り、既存U6／M-NESCO／FATの固定契約を壊さないことを
 再playで確認した。P4は汎用capabilityの昇格ではなく、P5へ渡すversioned validationの入力である。
 
-### SD-GEN-1-P5: versioned validationとcapability判断
+### SD-GEN-1-P5: versioned validationとcapability判断（完了 2026-08-23）
 
-P4の全ゲートが通った場合だけ、新しいschema／recordを作成する。既存U6 recordを
-上書きせず、SD protocol世代と対応command集合をregistryへ明記する。
+P4の全ゲートを満たしたため、既存U6／M-NESCO／FAT recordを上書きせず、
+[`sd-gen1-p5-validation-v1.json`](../firmware-validation/contracts/sd-gen1-p5-validation-v1.json)
+としてversioned validation contractを追加した。P4の不変manifestを親証拠として、
+backend commit、default feature、command集合、3回determinism、negative条件、scope境界を固定した。
 
-`capability.json`の汎用SD項目は、次を全て満たした後に限定範囲で更新する。
-
-- wire契約、unit test、trace replay、negative mutationが揃っている。
-- U6、M-NESCO、FAT16/FAT32回帰が全てpassしている。
-- 3回以上のdeterministic再実行でdigest／SHAが一致する。
-- 未対応範囲（USB BOOTSEL/MSC、card removal等）が明記されている。
+`capability.json`には`sd-multi-block`を**supported_bounded**として追加した。対象はCMD18/CMD12/CMD23/CMD25、
+512-byte block、token／CRC／CS／busy状態、COW exportである。既存の`uf2loader-e2e`とversioned targetは
+変更していない。CSD/CIDの完全互換、card removal、write-protect、live directory sync、USB BOOTSEL/MSC、
+任意loader／driverは未対応のまま明記した。P5 decision evidenceは
+[`sd-gen1-p5-20260823-01/`](../firmware-validation/evidence/sd-gen1-p5-20260823-01/)に保存した。
 
 ## 4. 受入条件
 
@@ -159,15 +160,15 @@ SD-GEN-1の完了条件は次の全てである。
 | P2 state machine | 10〜16時間 | feature-gated production実装（完了） |
 | P3 test／mutation／凍結回帰 | 8〜12時間 | unit、replay、negative record、既存trace回帰（完了） |
 | P4 runtime／アプリ回帰 | 8〜12時間 | feature昇格後のU6／M-NESCO／FAT再実行（完了） |
-| P5 record／docs | 4〜6時間 | versioned validation、capability判断 |
+| P5 record／docs | 4〜6時間 | versioned validation、bounded capability判断（完了） |
 | **合計** | **40〜60時間** | 実装範囲確定後に再見積り |
 
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-P0、P1、P2、P3、P4は完了した。P4で`sd-gen1-multiblock`をdefault runtimeへ接続し、
+P0、P1、P2、P3、P4、P5は完了した。P4で`sd-gen1-multiblock`をdefault runtimeへ接続し、
 SPI0のCMD18/CMD12/CMD23/CMD25/CMD17 synthetic firmware E2E（write/readbackを含む）、既存U6／M-NESCO／FATの凍結trace再play、legacy
-single-block差分境界を確認した。通常capability／versioned targetの昇格はまだ行っていない。
-次に着手できるのは**SD-GEN-1-P5 versioned validationとcapability判断**である。
+single-block差分境界を確認した。P5でversioned validation contractとbounded `sd-multi-block`
+capabilityを追加した。次の作業は別の正式計画が立つまで保留である。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
 P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。

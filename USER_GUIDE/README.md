@@ -114,7 +114,7 @@ Gateを閉じています。
 M-NESCO拡張受入後のSD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol）は、複数ブロック、
 CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰まで実装・回帰済みです。
 実装順序と受入条件は[`../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)を正典とし、
-P0〜P4は完了、次はP5のversioned validationとcapability判断です。
+P0〜P5は完了しました。P5でboundedな`sd-multi-block` capabilityを追加しました。versioned targetと固定版`uf2loader-e2e`は変更していません。
 U6の実装前契約は[`../docs/UF2LOADER_U6_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U6_PREFLIGHT_20260822.md)です。
 U6-P0の標準 `picocalc.py uf2 inspect/assemble` は実装済みで、UF2からraw XIP flash imageを
 決定的に生成できます。U6 Gateは`python3 tools/picocalc.py uf2 e2e`で実行し、cleanなexternal
