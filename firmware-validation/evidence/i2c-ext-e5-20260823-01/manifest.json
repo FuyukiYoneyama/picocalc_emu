@@ -5,7 +5,7 @@
   "target": {
     "id": "picocalc-clock-i2c-env-e5",
     "revision": 1,
-    "contract_sha256": "9f5fe496c381b14acd3f9e58b7e44690824956c4d87b719f761eeb2729a2037c"
+    "contract_sha256": "f26d28a082abbffadd570cd6684000c64c1fca669f6f28aba27d0fd9fde32190"
   },
   "emulator": {
     "target": {
@@ -75,7 +75,7 @@
   "hardware_correlation": {
     "status": "pending",
     "same_uf2": true,
-    "required_artifact": "RTC/Picocalc_Clock/build-e5/Picocalc_Clock.uf2",
+    "required_artifact": "picocalc_emu_ext/i2c-ext-e5/build/Picocalc_Clock.uf2",
     "note": "The emulator evidence is complete. Capability promotion waits for one physical run of this exact UF2 with UART confirmation of the four module paths."
   }
 }

@@ -1180,7 +1180,7 @@
         "build_type": "Release"
       },
       "build": {
-        "command": "cmake -S . -B build-e5 -G \"Unix Makefiles\" -DPICO_SDK_PATH=/home/fuyuki/pico_dvl/codex/pico-sdk -DCMAKE_BUILD_TYPE=Release -DPICO_NO_BI_PROGRAM_BUILD_DATE=1 && cmake --build build-e5 --parallel 2",
+        "command": "cmake -S /home/fuyuki/pico_dvl/codex/RTC/Picocalc_Clock -B /home/fuyuki/pico_dvl/codex/picocalc_emu_ext/i2c-ext-e5/build -G \"Unix Makefiles\" -DPICO_SDK_PATH=/home/fuyuki/pico_dvl/codex/pico-sdk -DCMAKE_BUILD_TYPE=Release -DPICO_NO_BI_PROGRAM_BUILD_DATE=1 && cmake --build /home/fuyuki/pico_dvl/codex/picocalc_emu_ext/i2c-ext-e5/build --parallel 2",
         "reproduction_document": "docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md",
         "purpose": "0.8.41-display-guard (CMake source currently pins this build-purpose string)"
       },
@@ -1249,7 +1249,7 @@
       },
       "validation": {
         "record": "firmware-validation/validations/picocalc-clock-i2c-env-e5-r1.json",
-        "sha256": "e5d23c0d4ef879360f84e775ad2fa7e40fbf8e5a32be51b294727029e84daed0"
+        "sha256": "22e50e47ed6d8c286963d72c6b6e637d2aeef5bf8cebbba0dad1df93fdc78cbd"
       }
     }
   ]

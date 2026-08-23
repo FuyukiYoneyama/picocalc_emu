@@ -24,7 +24,7 @@ The runner was invoked locally; GitHub Actions was not used.
 Use the normal PicoCalc `uf2loader` path for this exact artifact:
 
 ```text
-/home/fuyuki/pico_dvl/codex/RTC/Picocalc_Clock/build-e5/Picocalc_Clock.uf2
+/home/fuyuki/pico_dvl/codex/picocalc_emu_ext/i2c-ext-e5/build/Picocalc_Clock.uf2
 SHA-256: 1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962
 ```
 
