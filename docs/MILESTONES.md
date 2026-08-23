@@ -2,6 +2,7 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
+次の機能計画は、任意I2C外部moduleを扱うI2C-EXTです。E0〜E6は未着手です。
 
 ## 状態
 
@@ -23,6 +24,7 @@
 | NEXT-2 | bounded multicore／audio | NEXT-2A・2B完了 2026-08-09 |
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
+| I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **計画確定・E0〜E6未着手。private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)** |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
@@ -61,6 +63,9 @@ cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromo
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 `history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。新しい正式計画を
 開始する場合は、目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。
+この条件を満たす次の正式計画として、I2C-EXTのE0〜E6を
+[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)に固定した。
+実装開始はE0（source/provenanceとwire contract）からとし、capabilityはまだ変更しない。
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
 ### UF2Loader計画の実施順序と中間マイルストーン
