@@ -109,7 +109,7 @@ P3では`sd-gen1-multiblock`を明示したboard／harness testと診断report�
 board／harnessのdefault runtimeへ接続し、SPI0のCMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackを送るrepository-owned
 synthetic firmware E2Eを追加した。RAW exportのreadback byte一致も含め、default board 90件、legacy no-default 85件、default harness 67件、
 legacy harness 66件、clippy default／legacyをlocalでpassさせ、既存U6／M-NESCO／FAT16／FAT32の凍結trace
-も再playした。P4のreport／trace／SHAは[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
+も再playした。synthetic E2Eは3回実行し、reportの安定項目、trace、exported RAW imageが一致した。P4のreport／trace／SHAは[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
 既存versioned targetとcapabilityはまだ変更していない。CMD18/CMD25/CMD12/CMD23を含む汎用capabilityへの昇格は、
 P5のversioned validationとscope判断が完了するまで主張しない。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、

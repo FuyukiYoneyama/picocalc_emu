@@ -5,14 +5,14 @@
   "ci": "not used; local validation only",
   "backend": {
     "repository": "picoem-picocalc",
-    "commit": "b0a4c05bb53ae043a70cf531bd7413849f494bcf",
+    "commit": "e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2",
     "dirty": false,
     "default_features": ["sd-gen1-multiblock"]
   },
   "synthetic_runtime": {
     "test": "crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs",
     "firmware_sha256": "2444e9eb974edddc76d779d03a63842e9bf23c4f258f40ae9c3a1667c4c22b31",
-    "report_sha256": "748f21fa82f38b591628cdc371c8d73c17d8ca334bb24b8021e0b695ef3e32e5",
+    "report_sha256": "e88d199deb53db60fd14649d9ebd8c3fdb9537ecdfa110a55441fb9ae83f46a7",
     "trace_file_sha256": "6861c4fb80df5172975bd6b0e9bda3b781575df75c28a3be5a6444e21292241d",
     "trace_digest_sha256": "1f6f875dd1117e10098805610dbc698cb9927364a2febcd2bfe755d44e362aae",
     "output_image_sha256": "9d75d86dd1894419bf44b8a9f9ae54fc1b17949f4000485cacfe41dc0df2ee90",
@@ -21,6 +21,7 @@
     "blocks_written": 1,
     "readback_block": 6,
     "readback_byte": "0xA5",
+    "deterministic_runs": 3,
     "unknown_commands": 0,
     "protocol_errors": [],
     "verdict": "pass"

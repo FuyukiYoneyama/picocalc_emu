@@ -1,7 +1,7 @@
 {
   "schema_version": 8,
-  "backend_commit": "b0a4c05bb53ae043a70cf531bd7413849f494bcf",
-  "backend_build": {"commit": "b0a4c05bb53ae043a70cf531bd7413849f494bcf", "dirty": false},
+  "backend_commit": "e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2",
+  "backend_build": {"commit": "e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2", "dirty": false},
   "firmware": {"basename": "sd-multiblock-fixture.bin", "sha256": "2444e9eb974edddc76d779d03a63842e9bf23c4f258f40ae9c3a1667c4c22b31"},
   "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
   "execution_model": "Serial",

@@ -115,6 +115,7 @@ RAW exportのblock 6が全て`0xA5`であることを確認する。clean report
 command 0、`commands_seen=5`、`blocks_read=3`、`blocks_written=1`、UART marker
 `SD_MB_FIXTURE`、verdict `pass`である。詳細なreport／trace／SHAは
 [`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
+同じclean backendで3回実行し、reportの安定項目、structured trace、exported RAW imageのSHAが一致した。
 
 default board testは90件、legacy `--no-default-features`は85件、default harness main testは67件、
 legacy harness main testは66件で全てpassした。clippyもdefault／legacyの両方で`-D warnings`を通過した。

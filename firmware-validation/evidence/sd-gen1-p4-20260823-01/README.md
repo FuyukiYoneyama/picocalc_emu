@@ -14,16 +14,17 @@ promotion.
 
 | item | result |
 |---|---|
-| backend commit | `b0a4c05bb53ae043a70cf531bd7413849f494bcf` |
+| backend commit | `e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2` |
 | working tree | clean |
 | runner feature | default `sd-gen1-multiblock` |
 | firmware fixture SHA-256 | `2444e9eb974edddc76d779d03a63842e9bf23c4f258f40ae9c3a1667c4c22b31` |
-| report SHA-256 | `748f21fa82f38b591628cdc371c8d73c17d8ca334bb24b8021e0b695ef3e32e5` |
+| report SHA-256 | `e88d199deb53db60fd14649d9ebd8c3fdb9537ecdfa110a55441fb9ae83f46a7` |
 | SD trace file SHA-256 | `6861c4fb80df5172975bd6b0e9bda3b781575df75c28a3be5a6444e21292241d` |
 | verdict | `pass` |
 | SD commands | CMD18, CMD12, CMD23, CMD25, CMD17; unknown=0 |
 | blocks read / written | 3 / 1 (512 bytes each) |
 | readback | exported block 6 is 512 bytes of `0xA5` |
+| deterministic runs | 3; report contract projection, trace, and exported image matched |
 | protocol errors | 0 |
 | UART marker | `SD_MB_FIXTURE` |
 
