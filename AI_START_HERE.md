@@ -26,7 +26,7 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
-- I2C-EXT: E0完了、E1（controller/mux/shared virtual-time）完了、E2のDS3231/AT24C32 model core実装中。profile/fixture接続とcapability昇格は未実施
+- I2C-EXT: E0/E1完了、DS3231/AT24C32 modelと任意の picocalc-rtc-v1 profile接続を実装。E3環境sensor、E4詳細sidecar/target接続、capability昇格は未実施
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
@@ -34,12 +34,13 @@ UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完�
 [`firmware-validation/capability.json`](firmware-validation/capability.json)を正典とします。
 統合計画の全履歴と最終状態は
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
-にあります。これらの完了済み計画を再開せず、次の機能作業はI2C-EXTのE2（profile/fixture接続）から継続します。
+にあります。これらの完了済み計画を再開せず、次の機能作業はI2C-EXTのE3/E4から継続します。
 
 現在の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
 [`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。実module/profileの
-emulationとcapability昇格はまだ行っていません。E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time
-基盤とDS3231/AT24C32 model coreは完了し、次はE2のprofile/fixture接続です。RTC directoryの
+E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time基盤、
+DS3231/AT24C32 model core、任意 picocalc-rtc-v1 profileのfixture検証・I2C1 attachは完了しています。
+E3のAHT20/BMP280、E4の詳細sidecar/target接続、実機相関、capability昇格は未実施です。RTC directoryの
 sourceを直接変更してemulatorの動作へ合わせてはいけません。E0の固定証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 を参照します。
@@ -117,6 +118,11 @@ SDのdirectoryをfixtureとして渡す場合は、毎回独自スクリプト�
 
 Host backendは高速ですがハードウェアモデルではありません。PIO、DMA、I2C、割り込み、
 multicore、LCD wire形式を判断するときはfirmware backendを使います。
+
+私的I2C moduleを明示的に付ける場合だけ、picocalc-runへ
+--i2c-profile picocalc-rtc-v1 --i2c-report <path>を渡します。
+fixtureを使う場合は --i2c-fixture <fixture.json> も指定します。profileを省略した通常runには
+DS3231/AT24C32は接続されず、picocalc-rtc-env-v1はE3完了まで使用できません。
 
 ```sh
 python3 tools/picocalc.py test --mode firmware \

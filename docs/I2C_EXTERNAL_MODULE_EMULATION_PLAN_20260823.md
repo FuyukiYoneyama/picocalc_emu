@@ -1,11 +1,13 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **E0・E1完了、E2 model実装中**（2026-08-23）
+状態: **E0・E1完了、E2 model/profile接続実装済み、E3以降未完了**（2026-08-23）
 
 E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
 E0ではproduction codeを変更していない。E1でcontroller address-phase契約、mux、data-NACK伝播、
-共有virtual-time抽出を実装した。E2ではDS3231/AT24C32の独立model coreまで実装し、profile/fixture/sidecar接続は未着手である。capabilityはまだ変更しない。
+共有virtual-time抽出を実装した。E2ではDS3231/AT24C32の独立model core、fixture検証、
+picocalc-rtc-v1 profileのI2C1 attach、暫定sidecar metadataを実装した。E3の環境sensor、
+E4の詳細sidecar/target接続、実機相関は未完了であり、capabilityはまだ変更しない。
 
 ## 目的
 
@@ -340,8 +342,11 @@ profile CLI、fixture/report、AHT20/BMP280を含む環境profileはE2以降の�
 
 ### E2 — RTC/EEPROM
 
-**model core実装済み（backend commit `f1ae8dc`、2026-08-23）**。profile/fixture/sidecarへの接続と
-firmware回帰は未着手であり、E2全体は未完了である。
+**model coreとprofile接続実装済み（backend commits `f1ae8dc`、`5802b2e`、2026-08-23）**。
+`picocalc-rtc-v1`を明示指定したrunだけがDS3231/AT24C32をI2C1へattachし、
+`--i2c-fixture`をschema 1として検証してfixture basename/SHAと接続addressを暫定sidecarへ記録する。
+profileなしの通常runは変わらない。E2のmodel/profile範囲は完了したが、詳細transaction digest、
+picocalc.py target contract、firmware相関はE4/E5で行う。
 
 - DS3231は`0x00..0x06`のBCD時刻、`0x0F` status/OSF、およびsourceが実際にwriteする範囲だけをモデル化する
 - 2000–2099の月末、閏年、年越し、day-of-week、時刻write直後のreadbackをunit testする
