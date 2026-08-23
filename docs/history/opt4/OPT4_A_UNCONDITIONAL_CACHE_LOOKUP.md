@@ -132,6 +132,6 @@ cargo test --release -p picocalc-harness --features unconditional-cache-lookup-p
 
 firmware再回帰とcycle差の暫定分類は完了している。現在の受入判断ではAをbankへ戻さず、A単独の
 promotion、versioned validation、active target更新、bank総合性能測定を行わない。再開時の手順は
-[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)とbackend側の
+[`OPT4_BANK_DECISION.md`](../../OPT4_BANK_DECISION.md)とbackend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 を参照する。

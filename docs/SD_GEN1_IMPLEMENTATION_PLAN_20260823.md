@@ -54,7 +54,7 @@ production codeを変更せず、次を固定する。
 各項目に、wire列、期待response、model state、trace digest、negative mutationを持たせる。
 「コマンドを実装した」だけでは受入にしない。
 
-P1の固定結果は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
+P1の固定結果は[`history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
 [`../firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)に保存した。
 P0 traceで観測したCMD0/CMD8/CMD55/ACMD41/CMD58/CMD17、source/unit testだけで確認した
 CMD16/CMD24、未観測・未実装のCMD18/CMD25/CMD12/CMD23を分離している。P1ではproduction
@@ -72,7 +72,7 @@ P1で必要性が確定した範囲だけを、既存single-block回帰を保っ
   維持する。
 - 既存`CMD17`の応答順序を変更しない。U6固定経路をfeatureなしでビルドできる状態を保つ。
 
-P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATION_20260823.md)と
+P2の実装は[`history/sd-gen1/SD_GEN1_P2_IMPLEMENTATION_20260823.md`](history/sd-gen1/SD_GEN1_P2_IMPLEMENTATION_20260823.md)と
 [`../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
 `sd-gen1-multiblock` feature付きboard unit testでCMD18/CMD12/CMD23/CMD25のsynthetic vector、
 誤token、範囲外、途中CS、既存single-block readbackを検証した。default featureでは従来経路を維持し、
@@ -171,4 +171,4 @@ SPI0のCMD18/CMD12/CMD23/CMD25/CMD17 synthetic firmware E2E（write/readbackを�
 single-block差分境界を確認した。P5でversioned validation contractとbounded `sd-multi-block`
 capabilityを追加した。次の作業は別の正式計画が立つまで保留である。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
-P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。
+P1のwire契約は[`history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。

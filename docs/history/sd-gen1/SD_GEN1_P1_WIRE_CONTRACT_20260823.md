@@ -10,9 +10,9 @@ CMD23のmulti-block実装を「対応済み」とは扱わず、下表のsynthet
 として明示する。
 
 machine-readable正典は
-[`firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)、
+[`firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../../../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)、
 P0の実測証拠は
-[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)にある。
+[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../../../firmware-validation/evidence/sd-gen1-p0-20260823-02/)にある。
 
 ## 1. 証拠の境界
 

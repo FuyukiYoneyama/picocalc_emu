@@ -23,15 +23,17 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 - OPT1-B: promoted
 - OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
 - 現行計画の番号付き作業: すべて完了または正式終了
+- UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
+- SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
+- OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
 
-次の現行計画は、番号付きR/NEXTとは別のUF2Loader SD／flash統合です。
-U0（clean provenance）、U1（RAW SD）、U2（flash erase/program）、M-NESCO-S1（`Picocalc_NESco`の
-direct-boot SD/flash debug開始）は完了しています。詳細は
-[`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を読みます。
-host側のU3-A（directory ↔ RAW pack/extract）とU3-B（runner-integrated directory snapshot）も完了しており、
-次の順序はU4（実loaderで必要と判明したSD protocol gap） → U5 → U6です。
-M-NESCO-S1はU1とU2のGateが閉じた時点で成立する中間マイルストーンであり、
-複数mapper/再attachの完全相関、U4以降、`uf2loader supported`の表示を先取りしません。
+UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
+現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
+[`docs/MILESTONES.md`](docs/MILESTONES.md)、
+[`firmware-validation/capability.json`](firmware-validation/capability.json)を正典とします。
+統合計画の全履歴と最終状態は
+[`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+にあります。次の機能作業は新しい正式計画が立つまで開始しません。
 
 NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
 対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は

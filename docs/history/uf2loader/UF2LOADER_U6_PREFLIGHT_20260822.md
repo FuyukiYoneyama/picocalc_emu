@@ -4,11 +4,11 @@
 対象: `picocalc_emu` / `picoem-picocalc` / 外部 `uf2loader`
 状態: **U6 Gate合格（2026-08-22）。実行証拠を固定済み。限定されたuf2loader経路をcapabilityへ反映済み。**
 
-この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 の最終ゲート U6 について、入力artifact、実行順序、判定条件、失敗時の停止点を固定するものである。
 U5-B watchdog warm resetをcleanなbackend commitで閉じた後、M-NESCO拡張とは独立した固定LCD fixtureで
 実行した。M-NESCO拡張の実装・受入はこのrecordに含めない。USB BOOTSEL/MSCは対象に含めない。証拠は
-[`firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)
+[`firmware-validation/evidence/uf2loader-u6-20260822-01/`](../../../firmware-validation/evidence/uf2loader-u6-20260822-01/)
 へ固定している。
 
 U6-P0として `tools/uf2_image.py` と `python3 tools/picocalc.py uf2 inspect/assemble` を追加し、
@@ -274,7 +274,7 @@ backend `d1360cbb13fd807661474b49a1b5516b12567d00`を使い、同じFAT32 snapsh
 - unknown SD／flash command、flash mutation error、SD write、keyboard dropは0
 - boot2／loader top 16 KiBは不変、watchdog resetは各run 1回、再attachはPASS
 
-証拠の機械可読manifestは[`../firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json`](../firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json)
+証拠の機械可読manifestは[`../../../firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json`](../../../firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json)
 である。
 
 U6 Gateは完了している。今後M-NESCO拡張を実装する場合は、このU6 evidenceをNESco互換の根拠へ流用せず、

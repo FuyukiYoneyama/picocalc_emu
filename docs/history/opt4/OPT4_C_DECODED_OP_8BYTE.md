@@ -67,4 +67,4 @@ CIは0を含み、中央値はcandidate側の退行でした。したがって�
 - micro-opt bank: **追加なし**
 - promoted backend、target registry、versioned validation: **変更なし**
 
-この記録は試作の証拠であり、featureをdefaultへ昇格する根拠ではありません。OPT4の採否規則は[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)を参照してください。
+この記録は試作の証拠であり、featureをdefaultへ昇格する根拠ではありません。OPT4の採否規則は[`OPT4_MICRO_OPT_PLAN.md`](../../OPT4_MICRO_OPT_PLAN.md)を参照してください。

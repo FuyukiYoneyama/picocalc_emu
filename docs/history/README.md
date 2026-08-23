@@ -43,6 +43,11 @@
 - [`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)
 - [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)
 
+OPT4の候補単位の試作・A/B・revert記録は、現行の採否判断文書と分離して
+[`opt4/`](opt4/)へ移しています。現行の採否規則とhold判断は
+[`../OPT4_MICRO_OPT_PLAN.md`](../OPT4_MICRO_OPT_PLAN.md)と
+[`../OPT4_BANK_DECISION.md`](../OPT4_BANK_DECISION.md)を参照してください。
+
 OPT2／OPT3のcandidateは、正確性または性能gateの結果に従って不採用・revertされています。
 文書が存在することはactive実装を意味しません。
 
@@ -72,7 +77,16 @@ NEXT-4は現在利用するAPI仕様なので、歴史資料ではなく
 - [`PICOCALC_RUN_PROGRESS_HEARTBEAT_REQUEST_20260813.md`](PICOCALC_RUN_PROGRESS_HEARTBEAT_REQUEST_20260813.md)
 - [`NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`](NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md)
 
+追加提案のうち、heartbeatで代替されたレジスタ／メモリ観測提案と、前提未達で保留したPSRAM
+quantum動的化提案も、この履歴直下（[`MACHINE_API_DEBUG_OBSERVABILITY_REQUEST_20260813.md`](MACHINE_API_DEBUG_OBSERVABILITY_REQUEST_20260813.md)、
+[`PSRAM_QUANTUM_DYNAMIC_GATING_PROPOSAL_20260816.md`](PSRAM_QUANTUM_DYNAMIC_GATING_PROPOSAL_20260816.md)）に保存しています。
+
 UF2LoaderのSD／flash統合計画本体は歴史資料ではなく、現行計画として
 [`../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)に置いています。
-U0〜U2とM-NESCO-S1は完了し、U3以降が未着手です。このディレクトリにある
+U0〜U6、M-NESCO拡張、SD-GEN-1 P0〜P5は完了しています。このディレクトリにある
 `NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`は、計画へ統合される前の要求時点記録です。
+完了済みUF2Loaderのpreflightは[`uf2loader/`](uf2loader/)へ移しました。
+
+SD-GEN-1のP0〜P2作業記録は[`sd-gen1/`](sd-gen1/)へ移しました。P3〜P5のmachine-readable
+contractと実行証拠は`../firmware-validation/`にあり、現行計画は
+[`../SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)です。

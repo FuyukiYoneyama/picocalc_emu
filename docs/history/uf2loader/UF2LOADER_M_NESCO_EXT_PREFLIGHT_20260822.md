@@ -4,7 +4,7 @@
 対象: `picocalc_emu` / `picoem-picocalc` / `nes2/Picocalc_NESco`
 状態: **実装前の準備・受入契約。production code、target registry、capability、実行証拠は未変更**
 
-この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 の M-NESCO-S1 を拡張するための契約と実行結果である。U5-B watchdog warm reset完了後に実装・受入した。
 この段階では `uf2loader supported` へ昇格しない。USB BOOTSEL/MSC、実 `uf2loader` end-to-end、
 NESco のmapper互換性全般を宣言するものでもない。
@@ -292,7 +292,7 @@ mapper 1の追加caseを実行した。
 各caseでRun Aを3回、XIP caseではA exportを初期flashへ再attachしたRun Bを3回実行し、
 report、UART、SD trace、flash SHA、ROM identity、PRG／CHR境界sample、CPU／PPU／core 1／DMA
 観測digestの決定性を確認した。詳細なmanifestとsanitized case recordは
-[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
+[`../../../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../../../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
 
 NESco診断変更はcommit `7f3fa05971930e03653694117cbf6a435ec1dd4e`へ固定し、clean sourceから
 再buildしたBIN SHA-256は実行artifactと一致した。backendはcommit

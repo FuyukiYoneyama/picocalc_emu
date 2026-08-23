@@ -22,7 +22,7 @@
 
 ## 2. byte-level vector
 
-synthetic vectorは[`sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
+synthetic vectorは[`sd-gen1-p2-vectors-v1.json`](../../../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
 代表的なcommand frameは次の通りである。
 
 | 用途 | frame |

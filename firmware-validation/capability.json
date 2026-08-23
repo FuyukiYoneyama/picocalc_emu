@@ -25,7 +25,7 @@
         "status": "unpromoted",
         "promoted": false,
         "ci_run_id": 31315420348,
-        "local_development_commit": "7dd0c34481f3b08fc886f2963647a70b3fc2ac83",
+        "local_development_commit": "d96f73bf567a8ccfd22f1606ecd8c203d6865481",
         "meaning": "Last CI-observed unpromoted backend main. The current local development commit is recorded separately in local_development_commit and has only local validation because GitHub Actions is intentionally not run for ordinary development. Neither replaces the general promoted PicoTetris backend or the bounded audio acceptance backend."
       }
     },

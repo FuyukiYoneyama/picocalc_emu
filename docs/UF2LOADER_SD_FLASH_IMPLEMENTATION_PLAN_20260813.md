@@ -232,10 +232,10 @@ file SHA-256一致である。mapper全般やuf2loader全体の互換性はこ�
 
 ROM fixtureの合法なprovenance、iNES／NES 2.0 header、サイズ分類、境界sample、test-onlyのcore 1／DMA
 probe、run A／B／repeatの入力とfail-closed判定を、専用の実装前契約
-[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)へ固定した。
+[`history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)へ固定した。
 診断oracle、host runner、計画4ケース＋追加mapper 1のA/B反復、clean source再build、evidence manifestを実装・固定した。
 このgateを完了しても`uf2loader supported`へ昇格せず、U6 end-to-endの限定capabilityとは別に扱う。
-実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](firmware-validation/evidence/m-nesco-ext-20260822-01/)に保存した。
+実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に保存した。
 
 ### M-NESCO後の次段階: SD-GEN-1 汎用SD protocol一般化 — **P0〜P5完了**
 
@@ -314,15 +314,15 @@ runner reportの`sd.raw_image.bytes`／`source_sha256`を同じ生成物へfail-
 
 ### U4: uf2loader実行で判明したSD protocol gap
 
-実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。U4-P2ではclean loaderを3回実行し、CMD17のみ（CMD18/CMD12/CMD23/CMD24/CMD25は未観測）でSRAM UIへ到達した。traceなし／traceありのreportとUARTも一致したため、**固定版uf2loaderのU4/U6受入経路に限っては**multi-block protocolのproduction追加を行わない。これは汎用SD互換性の宣言ではない。途中で検出したCMD17のR1→data token順序バグだけをunit test付きで修正した。準備・測定・判定は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)へ、U5-Aの実装境界と検証結果は[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)へ固定した。
+実loaderのprotocol traceを一次証拠として、不足したcommand、data token列、CS解除またはstop commandによる終了、error/CRCの扱いを実装する。U4-P2ではclean loaderを3回実行し、CMD17のみ（CMD18/CMD12/CMD23/CMD24/CMD25は未観測）でSRAM UIへ到達した。traceなし／traceありのreportとUARTも一致したため、**固定版uf2loaderのU4/U6受入経路に限っては**multi-block protocolのproduction追加を行わない。これは汎用SD互換性の宣言ではない。途中で検出したCMD17のR1→data token順序バグだけをunit test付きで修正した。準備・測定・判定は完了済み履歴の[`history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md)へ、U5-Aの実装境界と検証結果は[`history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)へ固定した。
 
-CMD18/CMD12が観測されなければ、固定版uf2loaderのU4受入では「追加変更不要」として閉じる。これは「エミュレーター全体で不要」という意味ではない。M-NESCO拡張受入完了後のSD-GEN-1で、uf2loader以外のアプリに必要なコマンドを一般化し、未対応コマンドは明示的にfail-closedする。未観測のcommandを現在のU4へ推測追加しない。
+CMD18/CMD12が観測されなければ、固定版uf2loaderのU4受入では「追加変更不要」として閉じる。これは「エミュレーター全体で不要」という意味ではない。M-NESCO拡張受入後のSD-GEN-1 P0〜P5で、uf2loader以外のアプリ向けにboundedなmulti-block command surfaceを一般化し、未対応コマンドは明示的にfail-closedした。未観測のcommandを現在のU4へ推測追加していない。
 
 **Gate U4:** clean loader traceでsingle-blockの既存回帰を保ち、CMD18/CMD12等の追加gapがないことを確認する。今回のU4-P2では`BOOT2040.UF2`をSRAM UIへ読み込む経路までを確認し、multi-block追加なしと判定した。選択app UF2、flash書込み、watchdog resetを含むend-to-endはU6で受入する。未知commandは従来どおりvisible failureとする。
 
 ### U5-A: boot2 entry
 
-既存defaultの`direct_boot_from_flash(0x100)`は変えない。通常のアプリdebugは今後もこの経路を使う。`--boot-mode boot2`を明示したuf2loader conformance runだけが、flash先頭の実際のboot2へ入る。実装境界、ローカル検証、正式受入条件は[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)に固定した。
+既存defaultの`direct_boot_from_flash(0x100)`は変えない。通常のアプリdebugは今後もこの経路を使う。`--boot-mode boot2`を明示したuf2loader conformance runだけが、flash先頭の実際のboot2へ入る。実装境界、ローカル検証、正式受入条件は完了済み履歴の[`history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)に固定した。
 
 full bootromやUSBを実行するのではなく、RP2040 reset後にboot2へ制御を渡す最小の起動modeとする。RP2040版uf2loaderでは、flash先頭の256-byte custom boot2がtop 16 KiB内のflash-resident stage3へ渡り、stage3が`BOOT2040.UF2`をSRAMへloadしてUIへ渡す。この実配置とhandoffを迂回せずに通す。U5-Aではboot2→stage3 entryまでを受入範囲とし、SD protocol変更、watchdog reset、UF2選択までは含めない。
 
@@ -347,7 +347,7 @@ watchdogはまず、`watchdog_reboot(0,0,0)`が使う即時TRIGGERを実装す�
 ### U6: 実uf2loader end-to-end
 
 実装前のartifact、入力時刻、観測項目、fail-closed条件は
-[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)に固定した。
+[`history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md)に固定した。
 clean buildした外部uf2loaderと、自作test appを使って次を1つのscenarioで通す。
 
 U6-P0のhost tool（`python3 tools/picocalc.py uf2 inspect/assemble`）とsynthetic UF2 unit testを実装した。

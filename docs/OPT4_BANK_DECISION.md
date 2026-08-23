@@ -17,7 +17,7 @@ OPT4-B〜Eは従来どおり採用しない。
 
 ## 現行mainのfirmware回帰（2026-08-16）
 
-現行backend `a67e81c9ad89fee548d4c3a9c96fe91c03438ad9`を、registry pinからcleanに再生成した
+2026-08-16時点のbackend main checkpoint `a67e81c9ad89fee548d4c3a9c96fe91c03438ad9`を、registry pinからcleanに再生成した
 firmwareへ適用した。これは隔離candidateの過去記録を上書きするものではなく、現在のmainを
 promotion候補に戻せるかを確認するローカル試験である。
 
@@ -35,10 +35,10 @@ cycleはexactness契約の絶対条件なので、他の観測値が一致して
 相関を固定するまではbankへ戻さず、promoted targetも変更しない。
 
 `94818f8` probeと`00b05f5` checkpointの比較で、PicoTetrisは`658→659`、multicoreは
-`152548095→152548097`、PicoEditは`827799822→827799818`となった。現行main `a67e81c9…`
+`152548095→152548097`、PicoEditは`827799822→827799818`となった。当時のmain checkpoint `a67e81c9…`
 もcheckpointと同じ値である。UART、framebuffer、scenario semantic判定、対象固有のSD／PSRAM／
 audio観測は一致し、後続のfeature-gated OPT4候補・診断計装・CLIテスト追加はこの差を変更していない。
-従って現時点の**暫定分類**は「意図したdefault peripheral-model更新帯に伴うcycle指紋差」である。
+従って2026-08-16時点の**暫定分類**は「意図したdefault peripheral-model更新帯に伴うcycle指紋差」である。
 948 probeと00b checkpointの間に差分があること、現行mainが00b checkpointと同じ値になることは確認できたが、
 責任を負う単一commitまたは具体的なdomainまでは確定していない。この分類をcycle差の受入理由には使わず、
 影響targetは引き続きholdとする。
@@ -160,3 +160,7 @@ SD未接続、9.5B cycles）実行した。baseline正式recordとの比較はba
 
 原因が閉じるまで、OPT4は**feature-gated実験候補のまま**とし、既定実行経路はOPT1-Bを維持する。
 GitHub Actionsは使用しない。
+
+なお、この判定後にbackend mainへSD-GEN-1 P0〜P5が追加されている。現在のlocal development mainは
+`d96f73b…`であり、本書の`a67e81c…`に基づく数値は当時の凍結証拠である。OPT4の再開時は
+現行mainに対する新しいA/B・exactness測定を作成し、本書の数値を現在値として流用しない。

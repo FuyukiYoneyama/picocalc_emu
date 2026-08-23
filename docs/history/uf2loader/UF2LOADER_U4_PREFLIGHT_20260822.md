@@ -4,7 +4,7 @@
 
 状態: **U4-P2完了。diagnostic-only trace入口、clean loader trace 3回、protocol判断を完了。CMD18/CMD12のproduction追加は不要。U6 clean GateでもSD trace一致を再確認した。**
 
-この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 のU4-P1準備からU4-P2判定までを記録する。U4では、一般的なSD仕様や外部loaderのソースだけを根拠に
 CMD18/CMD12を追加しない。**cleanな実`uf2loader`がエミュレーター上で実際に発行したtrace**を
 一次証拠とし、観測された最小のprotocolだけを実装する。

@@ -31,10 +31,10 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 M-NESCO-S1の実行証拠は
 [`firmware-validation/evidence/m-nesco-20260813-01/`](firmware-validation/evidence/m-nesco-20260813-01/)にあります。
 M-NESCO拡張の契約と実行証拠は
-[`docs/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](docs/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあります。
+[`docs/history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](docs/history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあります。
 実行証拠は[`firmware-validation/evidence/m-nesco-ext-20260822-01/`](firmware-validation/evidence/m-nesco-ext-20260822-01/)です。
 U6実uf2loader end-to-endの実装前契約は
-[`docs/UF2LOADER_U6_PREFLIGHT_20260822.md`](docs/UF2LOADER_U6_PREFLIGHT_20260822.md)にあります。
+[`docs/history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md`](docs/history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md)にあります。
 実際の限定U6 Gate結果は
 [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)にあります。
 公開前の依存境界・ライセンス・ローカルゲートは

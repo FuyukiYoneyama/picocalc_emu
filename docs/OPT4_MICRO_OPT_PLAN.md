@@ -2,7 +2,7 @@
 
 > **現行計画。** これは歴史記録ではない。現在の性能改善作業と採否条件はこの文書を正典とする。
 
-2026-08-16のbackend整合性レビューで、現行mainのOPT4-A featureにempty-sentinel回帰を確認した。
+2026-08-16のbackend整合性レビューで、その時点のmainのOPT4-A featureにempty-sentinel回帰を確認した。
 新しい性能測定より先に、backend側の
 [`BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 に従う。sentinel修正とcache representationのfeature matrix、DMA／audioのquantum-invariance
@@ -10,12 +10,16 @@
 cycle差が出た3 targetは暫定分類のうえholdとし、過去の隔離candidateの測定値を現行mainの
 exactness合格根拠へ流用しない。
 
-2026-08-16の現行main firmware回帰は実行完了した。audio targetは契約項目が一致し、公式Helloは
+2026-08-16時点のmain checkpoint firmware回帰は実行完了した。audio targetは契約項目が一致し、公式Helloは
 registry受入項目に合格したが、
 PicoTetris／multicore／PicoEditではUART・framebuffer・scenario等を保ったままcycle指紋に小さな差が
 出た。差分は`94818f8` probeと`00b05f5` checkpointでdefault runtime更新帯に暫定的に境界づけられ、後続の
 feature-gated OPT4候補の影響ではない。cycle exactnessの不一致を吸収せず、OPT4-Aをbankへ戻さず、
 promoted target／backend pinも変更しない。詳細な数値と再現条件はbackend側の計画書へ固定する。
+
+このcheckpoint後にSD-GEN-1 P0〜P5のbackend変更がmainへ追加された。現在のlocal development mainは
+`d96f73b…`であり、`a67e81c9…`の値・差分はOPT4時点の凍結証拠である。OPT4を再開する場合は、
+現行mainを新しい基準として改めて測定する。
 
 ## 目的
 
@@ -50,11 +54,11 @@ target registry、promoted backendの固定値は変更しない。
 
 | 候補 | 状態 | 方針 |
 |---|---|---|
-| OPT4-A unconditional cache lookup | **sentinel／DMA・audio／priority低レベル／CLI E2E合格、firmware差分hold** | backend `37c50e6`で回帰を修正し、default／unconditional／8-byte／compactのfeature matrix、`6a675b1`のDMA／audio quantum-invariance 5/5、`00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker E2Eを合格。現行main firmwareはHelloを含め実行完了したが、Tetris -1 cycle、multicore +5、PicoEdit -4が残るためbankへ戻さない。詳細は[`OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
-| OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`OPT4_B_NVIC_BITMAP_SCAN.md`](OPT4_B_NVIC_BITMAP_SCAN.md) |
-| OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md) |
-| OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
-| OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md) |
+| OPT4-A unconditional cache lookup | **sentinel／DMA・audio／priority低レベル／CLI E2E合格、firmware差分hold** | backend `37c50e6`で回帰を修正し、default／unconditional／8-byte／compactのfeature matrix、`6a675b1`のDMA／audio quantum-invariance 5/5、`00b05f5`のHIGH_PRIORITY／timer競合5/5、`e0eda1c`のboard-less audio／WAV／UART marker E2Eを合格。現行main firmwareはHelloを含め実行完了したが、Tetris -1 cycle、multicore +5、PicoEdit -4が残るためbankへ戻さない。詳細は[`history/opt4/OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md`](history/opt4/OPT4_A_UNCONDITIONAL_CACHE_LOOKUP.md) |
+| OPT4-B NVIC bitmap scan | **exactness pass／速度改善未確認。promotionなし** | pending bitだけを`trailing_zeros`で走査したが、10-run A/Bの差はnoiseの範囲。詳細は[`history/opt4/OPT4_B_NVIC_BITMAP_SCAN.md`](history/opt4/OPT4_B_NVIC_BITMAP_SCAN.md) |
+| OPT4-C 8-byte `DecodedOp` | **exactness合格／性能不採用** | tag圧縮、valid bit、region invalidation、fault entryをfeature-gatedで試作。10-run A/Bで中央値退行、promotion／bank追加なし。詳細は[`history/opt4/OPT4_C_DECODED_OP_8BYTE.md`](history/opt4/OPT4_C_DECODED_OP_8BYTE.md) |
+| OPT4-D diagnostic PC compile-out | **exactness合格／性能不採用** | 通常命令の`active_pc`更新をfeature-gatedでcompile-out。正式PicoTetris（`--psram --keyboard --sd --sd-format fat32`）で再測定したが、分散が大きく正の改善を識別できず、診断時はPC attributionがstaleになり得るためpromotion／bank追加なし。詳細は[`history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md) |
+| OPT4-E compact dispatch key | **exactness合格／性能不採用** | 既存flags領域へdispatch keyを格納。正式シナリオ10-run A/Bはhost slowdownで未完了、100M-cycle短縮screeningでも正の信号なし。OPT4-Cの8-byte表現とは併用拒否。詳細は[`history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md`](history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md) |
 
 | OPT4 bank判定 | **promotionなし。現在のbankは空** | Aは低レベルtest／CLI E2Eまで合格し、firmware回帰もHelloを含め完了したが、3 targetのcycle差が残る。B〜Eは不採用。差分のversioned validation判断までbankへ戻さない。詳細は[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)に固定する。 |
 

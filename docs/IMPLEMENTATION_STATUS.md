@@ -63,13 +63,14 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 現行計画（U0〜U6／M-NESCO拡張完了）
+## 現行計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5完了）
 
 SD RAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot debug開始）を完了した。
 host側の標準SD pack／extract（U3-A）とrunnerへのdirectory snapshot import（U3-B）は完了した。
 U5-A boot2 entry、U4-P2 clean trace／protocol判断、U5-B watchdog warm reset、外部`uf2loader`の
 U6 end-to-end GateとM-NESCO拡張受入まで完了した。U4ではCMD17のsingle-block応答順序だけを修正し、
-CMD18/CMD12等のmulti-block production codeは追加していない。U6はcleanな外部loader source/buildと
+固定版uf2loaderのU4受入経路にはCMD18/CMD12等のmulti-block production codeを追加していない。別計画の
+SD-GEN-1 P4ではboundedなmulti-block経路をdefault runtimeへ接続した。U6はcleanな外部loader source/buildと
 clean backendで同一入力を3回実行し、UF2 strict検査、flash readback、loader領域保護、SD trace、UART、
 report、framebuffer、watchdog warm reset、再attachを合格させた。
 計画書は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)です。
@@ -86,13 +87,13 @@ trace digestとtraceなし／traceありのreport・UARTが一致しました。
 CMD17のR1→data token順序バグはunit test付きで修正済みです。
 U4-P2の初期測定はdirty working treeの作業記録だったが、U6ではbackend commit
 `d1360cbb13fd807661474b49a1b5516b12567d00`をclean固定して再実行した。
-準備の判定表は[`UF2LOADER_U4_PREFLIGHT_20260822.md`](UF2LOADER_U4_PREFLIGHT_20260822.md)と
-[`UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)です。U5-Bの実装前契約・受入条件は
-[`UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md)を参照してください。
+準備の判定表は完了済み履歴の[`history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md)と
+[`history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)です。U5-Bの実装前契約・受入条件は
+[`history/uf2loader/UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U5B_WATCHDOG_PREFLIGHT_20260822.md)を参照してください。
 M-NESCO拡張の契約・fixture・provenance・受入結果は
-[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)を参照してください。
+[`history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)を参照してください。
 U6の実装前契約、UF2/raw flashのartifact境界、loader選択、watchdog後の再起動、determinism、negative条件は
-[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)を参照してください。U6-P0の
+[`history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md)を参照してください。U6-P0の
 `tools/picocalc.py uf2 inspect/assemble`とunit testは実装済みで、外部loaderを使ったU6-P1到達smokeも
 localで確認した。U6 Gateの正式結果は[`../firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)に固定した。
 通常のdirect bootアプリdebugと既存target回帰は変更しない。U6の標準入口は
@@ -111,12 +112,12 @@ legacy harness 66件、clippy default／legacyをlocalでpassさせ、既存U6�
 既存versioned targetとU6／uf2loader capabilityは変更していない。P5でversioned validation contractを追加し、
 対象commandと未対応境界を限定した`sd-multi-block` capabilityだけをbounded supportとして昇格した。P5のdecision evidenceは
 [`../firmware-validation/evidence/sd-gen1-p5-20260823-01/`](../firmware-validation/evidence/sd-gen1-p5-20260823-01/)へ固定した。
-P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
+P0のsource inventoryとU6 clean trace確認は[`history/sd-gen1/SD_GEN1_P0_INVENTORY_20260823.md`](history/sd-gen1/SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
 M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
 [`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
-P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
+P1のwire契約は[`history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](history/sd-gen1/SD_GEN1_P1_WIRE_CONTRACT_20260823.md)と
 [`../firmware-validation/contracts/sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)に固定した。
-P2のfeature実装・local test結果は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATION_20260823.md)と
+P2のfeature実装・local test結果は[`history/sd-gen1/SD_GEN1_P2_IMPLEMENTATION_20260823.md`](history/sd-gen1/SD_GEN1_P2_IMPLEMENTATION_20260823.md)と
 [`../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)に固定した。
 これはU6の固定LCD fixture evidenceとは別のNESco-specific gateであり、計画4ケース＋追加mapper 1の証拠は
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定している。
@@ -145,22 +146,26 @@ DMA／audio低レベル回帰はbackend `6a675b1`でquantum-invariance 5/5、HIG
 DMA／audio test拡張、CLI E2E、既存firmware再回帰、証拠固定、cycle差の暫定分類、受入判断は
 完了しています。ただし3 targetのcycle差をexactness合格へ丸めないため、micro-opt bank全体の
 採否とpromotionは保留します。
-2026-08-16の現行backend main (`a67e81c9…`) に対するfirmware再回帰は実行完了した。
+2026-08-16時点のbackend main checkpoint (`a67e81c9…`) に対するfirmware再回帰は実行完了した。
 PicoTetrisは`-1` cycle、multicoreは`+5` cycle、PicoEditは`-4` cycleの差を確認し、
 UART／framebuffer／scenario等は一致した。audio targetはcycle／PCMとも一致した。公式Helloも
 registry条件（`hwspi-rgb888`、keyboard `HI`、PSRAM verify、9.5B cycles）でexit 0、required
 marker 3件、PSRAM `8388608/0`、unknown MMIO 0、exception 0に合格した。したがって、Helloの
 registry受入項目の未完了は解消したが、full-report byte equalityを主張せず、3 targetのcycle差を
-**現行mainのexactness合格へ丸めず**、OPT4-Aのbank
+**当時のmain checkpointのexactness合格へ丸めず**、OPT4-Aのbank
 復帰とpromotionを保留している。差分は`94818f8` probeと`00b05f5` checkpointでdefault runtime
-更新帯に暫定的に境界づけられ、後続feature-gated候補では変化しない。検証reportと境界probeは
+更新帯に暫定的に境界づけられ、後続feature-gated候補では変化しない。このcheckpoint後にSD-GEN-1
+P0〜P5の実装・回帰がbackend mainへ追加されており、現在のlocal development mainは
+[`FIRMWARE_BACKEND.md`](FIRMWARE_BACKEND.md)と`firmware-validation/capability.json`に記録した
+`d96f73b…`である。以下の`a67e81c9…`の数値はOPT4時点の凍結証拠であり、現在のbackend HEADを
+示すものではない。検証reportと境界probeは
 [`opt4-current-main-20260816-01`](../firmware-validation/evidence/opt4-current-main-20260816-01/)へ固定した。
 詳細なコマンド、差分、判定は
 [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](../../picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md)
 と[`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md)を参照する。
-OPT4-C/D/Eの詳細は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
-[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
-[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。正式promoted targetは変更していません。
+OPT4-C/D/Eの詳細は[`history/opt4/OPT4_C_DECODED_OP_8BYTE.md`](history/opt4/OPT4_C_DECODED_OP_8BYTE.md)／
+[`history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
+[`history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md`](history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。正式promoted targetは変更していません。
 候補ごとの採否条件は[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)を参照してください。
 
 ## 実機相関とnegative conformance

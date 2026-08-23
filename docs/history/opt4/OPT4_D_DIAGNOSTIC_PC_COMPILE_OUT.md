@@ -78,4 +78,4 @@ trace ONのbehavior証拠は、上記のtrace OFF exactnessとは別採取です
 - micro-opt bank: **追加なし**
 - promoted backend、target registry、versioned validation: **変更なし**
 
-OPT4全体の採否規則は[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)を参照してください。
+OPT4全体の採否規則は[`OPT4_MICRO_OPT_PLAN.md`](../../OPT4_MICRO_OPT_PLAN.md)を参照してください。

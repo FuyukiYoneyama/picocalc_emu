@@ -31,9 +31,9 @@ firmware再回帰まで完了しています。現行mainの3 targetにcycle差�
 bank復帰とpromotionを保留しています。隔離candidateの測定記録は保持しますが、現行mainの
 cycle差をexactness合格へ丸める根拠には流用しません。OPT4-Bは速度改善未確認、OPT4-Cは
 中央値退行、OPT4-Dは正式SD/FAT32条件でも正の改善未確認、OPT4-Eは正式性能測定未完了かつ短縮screeningで正の信号なしのため、いずれもpromoted targetへは採用していません。OPT4-C/D/Eの
-実装・exactness・A/B結果は[`OPT4_C_DECODED_OP_8BYTE.md`](OPT4_C_DECODED_OP_8BYTE.md)／
-[`OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
-[`OPT4_E_COMPACT_DISPATCH_KEY.md`](OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。
+実装・exactness・A/B結果は[`history/opt4/OPT4_C_DECODED_OP_8BYTE.md`](history/opt4/OPT4_C_DECODED_OP_8BYTE.md)／
+[`history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md`](history/opt4/OPT4_D_DIAGNOSTIC_PC_COMPILE_OUT.md)／
+[`history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md`](history/opt4/OPT4_E_COMPACT_DISPATCH_KEY.md)に記録しています。
 
 ## 現在の品質境界
 
@@ -59,9 +59,9 @@ OPT4／backend側は、性能測定を再開する前に
 cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromoted targetは維持しています。
 新たなversioned validationや実機相関はこの記録から開始しません。
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
-`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。U4以降を開始する前に、
-目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。U0の
-provenance固定は完了しており、現在はproduction codeを変更できる状態です。
+`history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。新しい正式計画を
+開始する場合は、目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。
+U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
 ### UF2Loader計画の実施順序と中間マイルストーン
 
@@ -90,10 +90,10 @@ FAT32 RAWからROMを選択し、erase/programとXIP反映を同一runで確認�
 M-NESCO拡張受入は、U5-B watchdog warm resetの受入後に実施した独立gateです。計画caseのmapper 0/2/4/30と追加mapper 1、small／medium／large
 ROM、PRG／CHRの先頭・中間・末尾read、CPU fetch／data、core 1／DMAのXIP read、flash export後の再attach、
 run間のflash SHA、SD sourceとROM file SHAの一致を、同一provenanceで確認しました。計画4ケース＋追加mapper 1の実行証拠は
-[`UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあり、
+[`history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)にあり、
 [`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)に固定しています。このgate単独では`uf2loader-e2e`へ昇格しません。U6のclean Gateは別途完了済みです。
 
-U6の契約と結果は[`UF2LOADER_U6_PREFLIGHT_20260822.md`](UF2LOADER_U6_PREFLIGHT_20260822.md)に固定しています。
+U6の契約と結果は[`history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md`](history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md)に固定しています。
 bootloader-only initial flashを起点に、boot2→stage3→`BOOT2040.UF2`→アプリUF2のerase/program→
 watchdog warm reset→書込み後app起動を通し、3回determinism、strict UF2 negative unit test、
 再attachを閉じました。これはM-NESCO拡張とは独立した固定LCD fixtureであり、限定された固定source／artifact経路だけを

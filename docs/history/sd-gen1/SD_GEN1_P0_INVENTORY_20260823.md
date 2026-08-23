@@ -46,7 +46,7 @@
 `firmware-validation/evidence/m-nesco-ext-20260822-01/`は、SD sourceとROM SHA、flash
 export／再attach、CPU／PPU／core 1／DMA XIPを固定している。P0では通常menu buildを使って
 mapper 2のRun A/B traceを各3回再採取し、`sd:/TEST.NES`→`flash:/TEST.NES`のpath契約を
-閉じた。証拠は[`sd-gen1-p0-20260823-02`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
+閉じた。証拠は[`sd-gen1-p0-20260823-02`](../../../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
 旧autostart buildで採取したRun Aのみのrecord（`sd-gen1-p0-20260823-01`）は履歴として保持するが、
 今回のP0完了判定は新しい通常menu recordを使う。既存のM-NESCO受入recordをwire traceの代替にはしない。
 
@@ -62,7 +62,7 @@ CMD25の呼び出しは見つからない。これは実traceの代替ではな�
 
 hostのpack／extractとSD image unit testは既存回帰で保護されている。P0では同じmapper 2 ROMを
 決定的にpackしたFAT16／FAT32 imageを通常menu firmwareで各3回読み、clean wire traceを
-[`sd-gen1-p0-20260823-02`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
+[`sd-gen1-p0-20260823-02`](../../../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。
 FAT filesystemの回帰と、SD wire protocolの回帰は引き続き別に扱う。
 
 M-NESCOのFatFs diskioは`disk_read`／`disk_write`の`count`を受け取るが、下位の

@@ -26,7 +26,7 @@ branch名や最新commitは受入レベルではありません。targetごと�
 | promoted | `e985a9d...5f1` | 通常PicoTetris回帰に使うOPT1-B accepted backend |
 | bounded audio acceptance | `d92db1b...1a3` | NEXT-2Bの凍結audio targetで受入済み |
 | last CI-observed experimental main | `d92db1b...1a3` | capability.jsonの`experimental_main`。CIで観測された最後のunpromoted anchor |
-| local development main | `ae49c6c` | U1 RAW SD、U2 flash erase/program、M-NESCO-S1 direct-boot debug経路を含む。Actionsは実行せずローカル検証のみ。general promotedとは別 |
+| local development main | `d96f73b` | SD-GEN-1 P4/P5のbounded multi-block経路とversioned validation evidenceを含み、threaded watchdog handoffのcompile fixとscoped lint hygieneを反映。Actionsは実行せずローカル検証のみ。general promotedとは別 |
 
 新しいmainが既存targetを自動的に置き換えることはありません。backend更新時は新しいtarget revision、
 validation、recordを作り、旧実機証拠を書き換えません。

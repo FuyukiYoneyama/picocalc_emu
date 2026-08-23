@@ -4,7 +4,7 @@
 対象: `picocalc_emu` / `picoem-picocalc`
 状態: **実装・受入完了。U6 clean Gateで各runのwatchdog epoch 1、flash／SD保持、boot2再入場を確認済み**
 
-この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
+この文書は、[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 のU5-Bを実装する前に、RP2040 watchdogの一次仕様、現行backendの境界、実装順序、受入条件を固定する。
 通常のdirect-bootアプリdebugの起動方法は変更しない。U6の実`uf2loader` end-to-endで必要になる
 `watchdog_reboot(0, 0, 0)`の最小経路だけを対象とし、任意タイマーの完全なwatchdog再現やUSB BOOTSEL/MSCは
