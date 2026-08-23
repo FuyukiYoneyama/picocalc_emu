@@ -63,7 +63,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の正式計画: I2C-EXT（E0・E1完了、E2未着手）
+## 次の正式計画: I2C-EXT（E0・E1完了、E2 model実装中）
 
 任意の外付けI2C moduleをfirmware backendへ接続する計画として、
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)
@@ -73,7 +73,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 RTC・EEPROM・環境sensorのemulation capabilityはまだ未実装であり、`capability.json`の既存
 `i2c-external-device`以上を主張しない。profileなしの通常runを変えず、E0でsource/provenanceと
 wire contractを固定し、E1ではcontroller address-phase契約、mux、data-NACK伝播、共有
-virtual-time抽出を実装した。次はE2のDS3231/AT24C32 modelである。E0の証拠は
+virtual-time抽出を実装し、DS3231/AT24C32の独立model coreを追加した。次はE2のprofile/fixture/sidecar接続である。E0の証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)。
 
 ## 完了済み計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5）

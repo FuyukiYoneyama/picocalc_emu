@@ -1,11 +1,11 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **E0・E1完了、E2未着手**（2026-08-23）
+状態: **E0・E1完了、E2 model実装中**（2026-08-23）
 
 E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
 E0ではproduction codeを変更していない。E1でcontroller address-phase契約、mux、data-NACK伝播、
-共有virtual-time抽出を実装した。次はE2のDS3231/AT24C32 modelであり、capabilityはまだ変更しない。
+共有virtual-time抽出を実装した。E2ではDS3231/AT24C32の独立model coreまで実装し、profile/fixture/sidecar接続は未着手である。capabilityはまだ変更しない。
 
 ## 目的
 
@@ -305,7 +305,7 @@ E1以降へ進まず、最小の独立probe firmwareを新規sourceとして固�
 **実装完了（backend commit `60ac700`、2026-08-23）**。E1の完了条件を満たす範囲として、
 controller/trait migration、same-target RESTART、data-NACK abort、legacy ACK isolation、
 board mux、共有`VirtualClock`、normal/lazy windowのdelta回帰、接続点stubを実装した。
-profile CLI、実module model、fixture/reportはE2以降の未着手範囲である。
+profile CLI、fixture/report、AHT20/BMP280を含む環境profileはE2以降の範囲である。
 
 - keyboard `0x1F`、DS3231 `0x68`、AT24C32 `0x57`、AHT20 `0x38`、BMP280 `0x77`を一つのI2C1 muxで識別する
 - `Keyboard`、`KeyboardWire`、`SpyDevice`の3実装を同一trait migrationで更新し、既存keyboard
@@ -339,6 +339,9 @@ profile CLI、実module model、fixture/reportはE2以降の未着手範囲で�
   新moduleを追加できない構造になっていないことを確認する
 
 ### E2 — RTC/EEPROM
+
+**model core実装済み（backend commit `f1ae8dc`、2026-08-23）**。profile/fixture/sidecarへの接続と
+firmware回帰は未着手であり、E2全体は未完了である。
 
 - DS3231は`0x00..0x06`のBCD時刻、`0x0F` status/OSF、およびsourceが実際にwriteする範囲だけをモデル化する
 - 2000–2099の月末、閏年、年越し、day-of-week、時刻write直後のreadbackをunit testする
