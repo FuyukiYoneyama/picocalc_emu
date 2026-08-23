@@ -1,12 +1,13 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **E0・E1完了、E2 model/profile接続実装済み、E3以降未完了**（2026-08-23）
+状態: **E0〜E3完了、E4以降未完了**（2026-08-23）
 
 E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
 E0ではproduction codeを変更していない。E1でcontroller address-phase契約、mux、data-NACK伝播、
 共有virtual-time抽出を実装した。E2ではDS3231/AT24C32の独立model core、fixture検証、
-picocalc-rtc-v1 profileのI2C1 attach、暫定sidecar metadataを実装した。E3の環境sensor、
+picocalc-rtc-v1 profileのI2C1 attach、暫定sidecar metadataを実装した。E3ではAHT20/BMP280の
+独立model、CRC/calibration検証、conversion待ち、picocalc-rtc-env-v1 profile接続を実装した。
 E4の詳細sidecar/target接続、実機相関は未完了であり、capabilityはまだ変更しない。
 
 ## 目的
@@ -356,15 +357,15 @@ picocalc.py target contract、firmware相関はE4/E5で行う。
 
 ### E3 — 環境sensor
 
-- AHT20はsourceが使うstatus、init command、measurement command、measurement responseを対象にする
-- BMP280はchip ID、calibration block、config/control write、measurement blockを対象にする
-- 返すAHT20 CRCとBMP280 calibration/dataはfixtureに固定し、既存アプリの補償計算結果をunit testする
-- conversion完了前read、誤command、未定義registerは明示的なprotocol errorとしてsidecarに残す
+**完了（2026-08-23）**。AHT20（0x38）とBMP280（0x77）をpicocalc-boardの独立child modelとして実装し、picocalc-rtc-env-v1のbuilt-in／fixture接続を追加した。AHT20のstatus・init・measure・7-byte responseとCRC-8、BMP280のchip ID・24-byte calibration・forced conversion・6-byte measurement、共有virtual nanosecondsによる90 ms／40 ms ready待ちを対象とする。profileを省略した既定runは変わらない。model unit testとharness built-in profile testはローカル合格済み。詳細transaction digest、target contract、実機相関はE4/E5の残件である。
+backend commit: `0481474`。
 
 ### E4/E5/E6 — runnerから実機相関まで
 
+E3完了後の現在の残件は、詳細sidecar／transaction digest・target contract（E4）、firmware回帰と実機相関（E5）、versioned validationとbounded capability（E6）である。
+
 1. profileなしの既存targetとunit testをローカルで完走する
-2. DS3231/AT24C32/AHT20/BMP280のbyte-level fixtureをunit testする
+2. DS3231/AT24C32/AHT20/BMP280のbyte-level fixtureをunit testする（E2/E3で完了）
 3. 独立I2C probe firmwareをfirmware backendで走らせ、address、read/write/readback、時間進行、
    keyboard共存、sidecar digestを3回一致させる
 4. 固定した`Picocalc_Clock`または同等clean sourceを使い、startup probeと画面/UARTの期待値を検査する
