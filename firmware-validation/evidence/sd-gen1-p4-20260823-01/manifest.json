@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "status": "local_validation_pass",
+  "scope": "SD-GEN-1-P4 default-runtime representative regression",
+  "ci": "not used; local validation only",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "0126d1bd08495fa157cd038b68465937a74f7abe",
+    "dirty": false,
+    "default_features": ["sd-gen1-multiblock"]
+  },
+  "synthetic_runtime": {
+    "test": "crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs",
+    "firmware_sha256": "4eb3940ccdc9e1ed3c5e1d9f6ad2f0f99c03f642d071aedb40c95e541be00a0d",
+    "report_sha256": "65fcfe408bae1a6092484a68992cb5c0f88eff34117307bb8ec539fd660bf850",
+    "trace_file_sha256": "ea40f02089ea06681c151cacf078aa01a9291a701cf202cf06aefd656969ff0e",
+    "trace_digest_sha256": "18b36ccbeb98b7d9cf313949756f7d7fc45115ccb617a41241f27fb320138d43",
+    "commands": [18, 12],
+    "blocks_read": 2,
+    "unknown_commands": 0,
+    "protocol_errors": [],
+    "verdict": "pass"
+  },
+  "frozen_trace_replay": {
+    "u6_uf2loader": {"runs": 3, "status": "pass", "digest_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3"},
+    "mnesco_sd": {"runs": 3, "status": "pass", "digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366"},
+    "mnesco_flash": {"runs": 3, "status": "pass", "digest_sha256": "ac242c6aec780fee8793ca99c2b010017e08b411a7968a723ec5490691c85f23"},
+    "fat16": {"runs": 3, "status": "pass", "digest_sha256": "e189b48cb6bcb9600697959cf5bff18b1544a32dfa56e3938b2935847d1dcf6c"},
+    "fat32": {"runs": 3, "status": "pass", "digest_sha256": "c3db672deded667f83e3daa4b6feedb8585aae709bf70850d287c649b6e87366"},
+    "u6_reattach": {"runs": 1, "status": "pass", "digest_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+  },
+  "scope_boundary": {
+    "capability_changed": false,
+    "versioned_targets_rewritten": false,
+    "next_gate": "SD-GEN-1-P5 versioned validation and capability decision"
+  }
+}

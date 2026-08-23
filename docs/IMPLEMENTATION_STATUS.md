@@ -105,9 +105,13 @@ read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画�
 実装前の詳細計画は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)であり、
 P0（現状棚卸しとclean trace採取）、P1（wire契約・受入マトリクス）、P2（feature-gated最小state
 machine）、P3（trace replay、negative report統合、既存U6／M-NESCO／FATの凍結trace回帰）は完了した。
-P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化し、default build、
-通常runner、既存capabilityは変更していない。CMD18/CMD25/CMD12/CMD23の通常runtime互換性はまだ主張せず、
-次はP4でfeatureを既定runtimeへ接続した代表アプリ回帰を行う。
+P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化した。P4で同featureを
+board／harnessのdefault runtimeへ接続し、SPI0のCMD18→2 block→CS保持中CMD12を送るrepository-owned
+synthetic firmware E2Eを追加した。default board 90件、legacy no-default 85件、default harness 67件、
+legacy harness 66件、clippy default／legacyをlocalでpassさせ、既存U6／M-NESCO／FAT16／FAT32の凍結trace
+も再playした。P4のreport／trace／SHAは[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
+既存versioned targetとcapabilityはまだ変更していない。CMD18/CMD25/CMD12/CMD23を含む汎用capabilityへの昇格は、
+P5のversioned validationとscope判断が完了するまで主張しない。
 P0のsource inventoryとU6 clean trace確認は[`SD_GEN1_P0_INVENTORY_20260823.md`](SD_GEN1_P0_INVENTORY_20260823.md)に記録し、
 M-NESCO通常menu A/B、FAT16、FAT32の代表wire traceを各3回deterministicで採取した完了recordを
 [`../firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ固定した。

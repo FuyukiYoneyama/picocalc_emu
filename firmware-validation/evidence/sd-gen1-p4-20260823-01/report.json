@@ -1,0 +1,46 @@
+{
+  "schema_version": 8,
+  "backend_commit": "0126d1bd08495fa157cd038b68465937a74f7abe",
+  "backend_build": {"commit": "0126d1bd08495fa157cd038b68465937a74f7abe", "dirty": false},
+  "firmware": {"basename": "sd-multiblock-fixture.bin", "sha256": "4eb3940ccdc9e1ed3c5e1d9f6ad2f0f99c03f642d071aedb40c95e541be00a0d"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 16,
+  "cycle_limit": 100000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 100013,
+  "elapsed_us": 15386,
+  "pc": "0x10009fe8",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "cycle_limit", "required_uart_markers": ["SD_MB_FIXTURE"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 0,
+    "init": {"swreset": 0, "slpout": 0, "slpin": 0, "dispon": 0, "dispoff": 0},
+    "state": {"sleeping": true, "display_on": false, "inverted": false},
+    "madctl": "0x00",
+    "colmod": "0x66",
+    "caset": 0, "raset": 0, "ramwr": 0, "ramrd": 0,
+    "pixels_written": 0, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": []
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "8eafc7bd411c1f02b9e972a83d2b0a4164eefc5ef51e6b63ad7acc78be4ad44f", "non_black_pixels": 0, "png": null},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 2, "blocks_read": 2, "blocks_written": 0,
+    "protocol_errors": [],
+    "unknown_commands": []
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": []
+  },
+  "pio": [],
+  "uart": {"bytes": 14, "sha256": "5dc1af3ba83deef29920eda8d932bf31186bd3e8e970c8e21f7ac40ddbd4d91a"}
+}

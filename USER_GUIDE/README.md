@@ -99,8 +99,9 @@ M-NESCO-S1は、`--sd-image`と`--flash-image-out`を使うbackend診断経路�
 FAT32 snapshotであり、boot2、watchdog、実`uf2loader` end-to-endを意味しません。実施順序と証拠は
 [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 U4-P2では`picocalc-run --sd-trace <path>`によるdiagnostic-only SD traceをclean loaderで3回取得し、
-CMD17のみ（CMD18／CMD12／CMD23／CMD24／CMD25は未観測）と判定しました。CMD17のR1順序だけを修正し、
-multi-block production codeは追加していません。U5-B watchdog warm reset、U6実uf2loader end-to-end
+CMD17のみ（CMD18／CMD12／CMD23／CMD24／CMD25は未観測）と判定しました。CMD17のR1順序だけを修正しました。
+SD-GEN-1-P4でmulti-block production codeをdefault runtimeへ接続し、CMD18/CMD12の実SPI0 synthetic
+E2Eを追加しています。U5-B watchdog warm reset、U6実uf2loader end-to-end
 Gateまで完了しています。M-NESCO拡張受入も計画4ケース＋追加mapper 1のローカルA/B deterministic gateを完了しています。
 trace取得条件と実装判断表は[`../docs/UF2LOADER_U4_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U4_PREFLIGHT_20260822.md)、
 boot2の実装境界は[`../docs/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)にあります。
@@ -110,11 +111,10 @@ M-NESCO拡張受入の契約と結果は
 実行証拠は[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)です。
 このgateは`uf2loader-e2e`へ昇格するものではありません。U6は固定LCD fixtureで先に
 Gateを閉じています。
-M-NESCO拡張受入が完了したため、次段階は
-SD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol）として、複数ブロック、CRC／token／CS境界、
-read/write、unknown/errorのfail-closed、代表アプリ回帰を別計画で実装します。
+M-NESCO拡張受入後のSD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol）は、複数ブロック、
+CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰まで実装・回帰済みです。
 実装順序と受入条件は[`../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)を正典とし、
-現在はP0のtrace採取だけを行います。
+P0〜P4は完了、次はP5のversioned validationとcapability判断です。
 U6の実装前契約は[`../docs/UF2LOADER_U6_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U6_PREFLIGHT_20260822.md)です。
 U6-P0の標準 `picocalc.py uf2 inspect/assemble` は実装済みで、UF2からraw XIP flash imageを
 決定的に生成できます。U6 Gateは`python3 tools/picocalc.py uf2 e2e`で実行し、cleanなexternal

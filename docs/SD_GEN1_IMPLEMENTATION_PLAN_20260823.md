@@ -2,7 +2,7 @@
 
 作成日: 2026-08-23  
 対象: `picocalc_emu` / `picoem-picocalc`  
-状態: **P3完了（local validation pass、通常runtime未昇格）。次はP4 representative runtime/app regression**
+状態: **P4完了（local validation pass、capability判断はP5へ保留）**
 
 ## 1. 目的
 
@@ -77,6 +77,7 @@ P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATIO
 `sd-gen1-multiblock` feature付きboard unit testでCMD18/CMD12/CMD23/CMD25のsynthetic vector、
 誤token、範囲外、途中CS、既存single-block readbackを検証した。default featureでは従来経路を維持し、
 通常runner／uf2loader capabilityには接続していない。
+これはP2実装時点の状態であり、P4でdefault featureへ昇格した。
 
 ### SD-GEN-1-P3: unit／trace replay／negative report統合／既存回帰（完了 2026-08-23）
 
@@ -88,16 +89,16 @@ P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATIO
   512-byte data、CRC、preview truncationを検査し、反復trace比較も行う。
 - digest mutationはexit 1／`status=fail`で拒否し、feature-enabled runnerの
   `protocol_errors`は`sd_protocol_error`としてjudged failureへ統合した。既定featureでは
-  report schemaとverdictを変更しない。
+  report schemaとverdictを変更しない（P3実行時点の既定featureに対する記録）。
 - U6、M-NESCO SD／flash、FAT16、FAT32の凍結clean traceをreplayし、3回反復可能な
   経路はevent countとdigestが一致した。結果は[`sd-gen1-p3-20260823-01/`](../firmware-validation/evidence/sd-gen1-p3-20260823-01/)
   と[`sd-gen1-p3-validation-v1.json`](../firmware-validation/contracts/sd-gen1-p3-validation-v1.json)へ固定した。
 - 速度比較はこの段階では行わない。既存runtimeの速度・挙動を変更するpromotionではなく、
   feature-gated診断と凍結trace replayである。CIは使わず全検証をローカルで行った。
 
-### SD-GEN-1-P4: representative runtime／アプリ回帰（未着手）
+### SD-GEN-1-P4: representative runtime／アプリ回帰（完了 2026-08-23）
 
-次の順で回帰する。
+次の順で回帰した。
 
 1. U6固定`uf2loader`（既存recordを変更せず、同じverdictを確認）。
 2. M-NESCOの計画4ケース＋追加mapper 1（SD source、flash export、再attach、XIP）。
@@ -105,12 +106,22 @@ P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATIO
 4. P1で追加したmulti-blockを**既定で有効化した**代表アプリまたはsynthetic firmware。
 
 各段階で、unknown command、mutation error、flash SHA、SD image SHA、UART/reportの
-一致を確認する。失敗した段階より先へ進めない。
+一致を確認した。U6／M-NESCO／FATはP3で固定したclean traceを再playし、default runtimeの
+挙動を直接証明する代表ケースはrepository-owned synthetic firmwareで追加した。
+
+既定featureのE2EはSPI0の実配線経路を通り、CMD18でblock 3を開始し、block 4まで読み、CSを
+上げずにCMD12を送る。clean reportは`protocol_errors=[]`、unknown command 0、`blocks_read=2`、
+UART marker `SD_MB_FIXTURE`、verdict `pass`である。詳細なreport／trace／SHAは
+[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
+
+default board testは90件、legacy `--no-default-features`は85件、default harness main testは67件、
+legacy harness main testは66件で全てpassした。clippyもdefault／legacyの両方で`-D warnings`を通過した。
+既存のversioned target／capabilityは書き換えていない。CIは使わず、全検証をlocalで行った。
 
 P3で完了したU6／M-NESCO／FAT回帰は、既存の固定版runtimeのtrace replayであり、P2の
-multi-block featureを通常runnerへ昇格したことを意味しない。P4ではproduction runtimeへ
-接続した場合の新しいrecordを作り、既存U6／M-NESCO／FATの全契約を壊さないことを改めて
-実行確認する。
+multi-block featureを通常runnerへ昇格したことを意味しなかった。P4ではproduction runtimeへ
+接続した新しいsynthetic recordを作り、既存U6／M-NESCO／FATの固定契約を壊さないことを
+再playで確認した。P4は汎用capabilityの昇格ではなく、P5へ渡すversioned validationの入力である。
 
 ### SD-GEN-1-P5: versioned validationとcapability判断
 
@@ -144,16 +155,16 @@ SD-GEN-1の完了条件は次の全てである。
 | P1 wire契約 | 6〜8時間 | command/state受入マトリクス（完了） |
 | P2 state machine | 10〜16時間 | feature-gated production実装（完了） |
 | P3 test／mutation／凍結回帰 | 8〜12時間 | unit、replay、negative record、既存trace回帰（完了） |
-| P4 runtime／アプリ回帰 | 8〜12時間 | feature昇格後のU6／M-NESCO／FAT再実行 |
+| P4 runtime／アプリ回帰 | 8〜12時間 | feature昇格後のU6／M-NESCO／FAT再実行（完了） |
 | P5 record／docs | 4〜6時間 | versioned validation、capability判断 |
 | **合計** | **40〜60時間** | 実装範囲確定後に再見積り |
 
 開始条件はP0のtraceとP1の契約が完了すること。P0で必要なcommandが見つからない
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
-P0、P1、P2、P3は完了した。P3で`sd-gen1-multiblock`のrunner診断接続、trace replay、negative
-report判定、既存U6／M-NESCO／FATの凍結trace回帰を行った。P2のmulti-blockはなおfeature-gatedで、
-通常runtime／capabilityへの昇格はしていない。次に着手できるのは**SD-GEN-1-P4 representative
-runtime／アプリ回帰**である。
+P0、P1、P2、P3、P4は完了した。P4で`sd-gen1-multiblock`をdefault runtimeへ接続し、
+SPI0のCMD18/CMD12 synthetic firmware E2E、既存U6／M-NESCO／FATの凍結trace再play、legacy
+single-block差分境界を確認した。通常capability／versioned targetの昇格はまだ行っていない。
+次に着手できるのは**SD-GEN-1-P5 versioned validationとcapability判断**である。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、
 P1のwire契約は[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)へ固定した。

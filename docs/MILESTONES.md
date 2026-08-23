@@ -77,7 +77,7 @@ provenance固定は完了しており、現在はproduction codeを変更でき�
 | 8 | U5-B watchdog warm reset | **完了。flash／SD保持とboot2再入場をlocal regressionで固定 2026-08-22** |
 | 8.5 | **M-NESCO拡張受入** — 複数mapper／サイズ、ROM境界、CPU／PPU／core 1／DMA、flash再attach | **完了。4計画case（mapper 0/2/4/30）＋mapper 1追加、A/B各3回、2026-08-22** |
 | 9 | U6 実`uf2loader` end-to-end | **完了（独立fixture）。clean source/backendの3回Gate、readback・保護領域・trace・SHA・再attach合格 2026-08-22** |
-| 10 | **SD-GEN-1 汎用SD protocol generalization** — uf2loader以外のアプリを含む汎用SD経路 | **P3完了（P0 trace／P1 wire契約／P2 feature-gated state machine／P3 replay・negative・U6／M-NESCO／FAT凍結回帰）。通常runtime未昇格。次はP4 representative runtime/app回帰。詳細は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、[`SD_GEN1_P1_WIRE_CONTRACT_20260823.md`](SD_GEN1_P1_WIRE_CONTRACT_20260823.md)、[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATION_20260823.md)、[`P3 evidence`](../firmware-validation/evidence/sd-gen1-p3-20260823-01/)** |
+| 10 | **SD-GEN-1 汎用SD protocol generalization** — uf2loader以外のアプリを含む汎用SD経路 | **P4完了（P0 trace／P1 wire契約／P2 state machine／P3 replay・negative・U6／M-NESCO／FAT凍結回帰／P4 default runtime代表E2E）。P5のversioned validation／capability判断は未完了。詳細は[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、[`P4 evidence`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)** |
 
 M-NESCO-S1は番号付きR/NEXTの追加ではなく、U1とU2のGateが閉じた時点で
 `Picocalc_NESco`のdirect-boot SD/flash debugを解禁する中間マイルストーンです。
@@ -98,11 +98,10 @@ watchdog warm reset→書込み後app起動を通し、3回determinism、strict 
 再attachを閉じました。これはM-NESCO拡張とは独立した固定LCD fixtureであり、限定された固定source／artifact経路だけを
 `uf2loader-e2e` capabilityへ反映しています。
 
-次に正式に残っている機能項目は`SD-GEN-1`汎用SD protocol一般化です。M-NESCO拡張の
-fixtureと証拠は完了済みです。詳細計画を[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)へ固定し、
-P0のtrace棚卸し、P1のwire契約・受入マトリクス、P2のfeature-gated synthetic state machine、P3のtrace replay／negative report統合／
-U6・M-NESCO・FAT凍結trace回帰まで完了しました。次段階の`SD-GEN-1-P4`では、multi-block featureを既定runtimeへ接続した
-代表アプリ回帰を行い、既存U6／M-NESCO／FAT契約を再確認します。
+`SD-GEN-1`汎用SD protocol一般化のP0〜P4は完了しました。M-NESCO拡張のfixtureと証拠は完了済みです。
+詳細計画を[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)へ固定し、P4でmulti-block featureを
+既定runtimeへ接続した代表synthetic firmware E2Eと、既存U6／M-NESCO／FAT凍結trace再playを完了しました。次はP5のversioned
+validationとcapability判断です。
 追加blind app、SD fault／persistence、machine APIのclient利便性は候補であり、SD-GEN-1とは別の正式計画ではありません。
 
 ## 詳細履歴

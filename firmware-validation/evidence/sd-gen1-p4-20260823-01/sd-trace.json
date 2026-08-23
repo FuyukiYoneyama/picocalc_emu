@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "trace_kind": "sd-spi-structured-v1",
+  "event_count": 4,
+  "digest_sha256": "18b36ccbeb98b7d9cf313949756f7d7fc45115ccb617a41241f27fb320138d43",
+  "preview_truncated": false,
+  "preview": [
+    {"kind":"command","sequence":0,"cs_epoch":1,"transfers":6,"index":18,"argument":3,"crc":1,"crc_valid":true,"response":[0],"data":{"direction":"read","block":3,"token":254,"length":512,"crc":[255,255]}},
+    {"kind":"block_data","sequence":1,"cs_epoch":1,"transfers":524,"data":{"direction":"read","block":4,"token":254,"length":512,"crc":[255,255]}},
+    {"kind":"command","sequence":2,"cs_epoch":1,"transfers":1045,"index":12,"argument":0,"crc":1,"crc_valid":true,"response":[0],"data":null},
+    {"kind":"deselect","sequence":3,"cs_epoch":1,"transfers":1053}
+  ]
+}
