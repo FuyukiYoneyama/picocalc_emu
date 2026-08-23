@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "contract_id": "i2c-ext-e0-wire-v1-20260823",
+  "roadmap_package": "I2C-EXT",
+  "status": "e0_frozen_for_e1",
+  "purpose": "Freeze the observed private-module provenance, bus wiring, and byte-level transactions before changing the emulator I2C controller or adding profiles.",
+  "evidence": {
+    "evidence_directory": "firmware-validation/evidence/i2c-ext-e0-20260823-01",
+    "manifest": "firmware-validation/evidence/i2c-ext-e0-20260823-01/source-manifest.json",
+    "manifest_sha256": "d76378279ddae26bc84ff240f1691ae6ff6000c4db9f444c52481387e4cfdeae"
+  },
+  "repositories": {
+    "backend": {
+      "repository": "picoem-picocalc",
+      "commit": "d96f73bf567a8ccfd22f1606ecd8c203d6865481",
+      "dirty": false,
+      "i2c_controller_path": "crates/rp2040-emu/src/peripherals/i2c.rs",
+      "board_keyboard_path": "crates/picocalc-board/src/keyboard.rs",
+      "harness_path": "crates/picocalc-harness/src/main.rs"
+    },
+    "pico_sdk": {
+      "path": "../pico-sdk",
+      "version": "2.2.0",
+      "commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+      "dirty": false
+    },
+    "picocalc_reference": {
+      "repository": "PicoCalc",
+      "commit": "a61c1f2f18185b32a667dde5c9393ced9ddd19ca",
+      "dirty": true,
+      "excluded_unrelated_paths": ["Code/PicoMite/main.c"],
+      "scope": "Only the selected keyboard source snapshot is used for this contract; no PicoCalc worktree change is part of I2C-EXT."
+    },
+    "picocalc_clock": {
+      "repository": "RTC/Picocalc_Clock",
+      "commit": "f04982cf1d1bf24e3020d992a5f63961c6c8536c",
+      "dirty": false
+    },
+    "picocalc_rtctest": {
+      "repository": "RTC/Picocalc_RTCtest",
+      "git_metadata": "absent",
+      "snapshot_identity": "source-file-sha256-manifest",
+      "dirty": "not_applicable"
+    }
+  },
+  "bus": {
+    "controller": "i2c1",
+    "sda_gpio": 6,
+    "scl_gpio": 7,
+    "clock_hz": {
+      "picocalc_clock": 400000,
+      "picocalc_rtctest": 10000,
+      "emulator_model": "transaction-level; SCL timing is not modeled"
+    },
+    "address_width_bits": 7,
+    "pullups": "external hardware detail; not modeled"
+  },
+  "address_map": [
+    {"kind": "keyboard", "address": "0x1f", "source": "RTC/Picocalc_Clock/README.md"},
+    {"kind": "aht20", "address": "0x38", "source": "RTC/Picocalc_Clock/src/platform/env_sensor_probe.cpp"},
+    {"kind": "at24c32", "address": "0x57", "source": "RTC/Picocalc_Clock/src/settings/settings_store.cpp"},
+    {"kind": "ds3231", "address": "0x68", "source": "RTC/Picocalc_Clock/src/rtc/ds3231.h"},
+    {"kind": "bmp280", "address": "0x77", "source": "RTC/Picocalc_Clock/src/platform/env_sensor_probe.cpp"}
+  ],
+  "wire_contract": {
+    "common": {
+      "address_phase": "7-bit target selected by IC_TAR; ACK/NACK is explicit",
+      "stop": "ends the active child transaction and commits device-defined STOP state",
+      "repeated_start": "same-target register-pointer/read transition; no STOP between write and read",
+      "unclaimed_address": "address NACK; no synthetic data byte",
+      "unknown_register_or_command": "protocol error; never silently return 0xff as success"
+    },
+    "ds3231": {
+      "address": "0x68",
+      "registers": {
+        "seconds_through_year": "0x00..0x06",
+        "status": "0x0f",
+        "osf_mask": "0x80"
+      },
+      "transactions": [
+        {"id": "read_datetime", "write_bytes": ["0x00"], "repeated_start": true, "read_bytes": 7, "stop": true},
+        {"id": "write_datetime", "write_bytes": ["0x00", "BCD(second)", "BCD(minute)", "BCD(hour)", "BCD(day_of_week)", "BCD(day)", "BCD(month)", "BCD(year-2000)"], "stop": true},
+        {"id": "read_status", "write_bytes": ["0x0f"], "repeated_start": true, "read_bytes": 1, "stop": true},
+        {"id": "clear_osf", "write_bytes": ["0x0f", "status & ~0x80"], "stop": true}
+      ],
+      "time_policy": "advance from shared deterministic virtual time; no host wall clock"
+    },
+    "at24c32": {
+      "address": "0x57",
+      "capacity_bytes": 4096,
+      "address_pointer_bytes": 2,
+      "page_size_bytes": 32,
+      "transactions": [
+        {"id": "sequential_read", "write_bytes": ["pointer_hi", "pointer_lo"], "repeated_start": true, "read_bytes": "1..N", "stop": true},
+        {"id": "page_write", "write_bytes": ["pointer_hi", "pointer_lo", "data_1..data_32"], "stop": true, "page_boundary_crossing": "reject"},
+        {"id": "ready_poll", "write_bytes": ["pointer_hi", "pointer_lo"], "stop": true, "until": "virtual_write_cycle_complete"}
+      ],
+      "observed_application_offsets": ["0x0000", "0x0040"],
+      "time_policy": "deterministic virtual write-cycle window"
+    },
+    "aht20": {
+      "address": "0x38",
+      "transactions": [
+        {"id": "read_status", "write_bytes": [], "read_bytes": 1, "stop": true},
+        {"id": "initialize", "write_bytes": ["0xbe", "0x08", "0x00"], "stop": true, "wait_ms": 20},
+        {"id": "measure", "write_bytes": ["0xac", "0x33", "0x00"], "stop": true, "wait_ms": 90},
+        {"id": "read_measurement", "write_bytes": [], "read_bytes": 7, "stop": true, "ready_bit": "status bit 7 clear"}
+      ],
+      "response_policy": "fixture bytes, including CRC, are authoritative"
+    },
+    "bmp280": {
+      "address": "0x77",
+      "registers": {
+        "chip_id": "0xd0",
+        "calibration": "0x88..0x9f",
+        "config": "0xf5",
+        "ctrl_meas": "0xf4",
+        "measurement": "0xf7..0xfc"
+      },
+      "transactions": [
+        {"id": "read_chip_id", "write_bytes": ["0xd0"], "repeated_start": true, "read_bytes": 1, "stop": true},
+        {"id": "read_calibration", "write_bytes": ["0x88"], "repeated_start": true, "read_bytes": 24, "stop": true},
+        {"id": "configure", "write_bytes": ["0xf5", "0x00"], "stop": true},
+        {"id": "start_measurement", "write_bytes": ["0xf4", "0x25"], "stop": true, "wait_ms": 40},
+        {"id": "read_measurement", "write_bytes": ["0xf7"], "repeated_start": true, "read_bytes": 6, "stop": true}
+      ],
+      "required_chip_id": "0x58",
+      "response_policy": "fixture calibration/data bytes are authoritative"
+    }
+  },
+  "negative_boundaries": [
+    "0x50 remains a legacy fallback only when no private profile is attached; it is not an AT24C32 profile address",
+    "0x76 is not an accepted BMP280 profile address",
+    "duplicate profile addresses are a configuration error",
+    "10-bit addressing remains unsupported and must fail closed",
+    "enabled IC_TAR writes are ignored; selecting another child uses STOP -> disable -> IC_TAR -> enable",
+    "host time and host sensor values are never accepted as fixture data"
+  ],
+  "e0_acceptance": {
+    "source_hashes_recorded": true,
+    "bus_and_addresses_recorded": true,
+    "byte_level_sequences_recorded": true,
+    "fixture_schema_added": true,
+    "production_code_changed": false,
+    "next_stage": "E1 controller address-phase contract, mux, data-NACK propagation, and shared virtual-time extraction"
+  },
+  "ci": "not used; local validation only"
+}

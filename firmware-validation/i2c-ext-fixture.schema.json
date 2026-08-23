@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://picocalc.local/schemas/i2c-ext-fixture-v1.json",
+  "title": "PicoCalc optional I2C module fixture",
+  "description": "Deterministic byte-level fixture for an explicitly selected optional I2C profile.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "fixture_id", "profile", "bus", "devices"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "fixture_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["picocalc-rtc-v1", "picocalc-rtc-env-v1"]
+    },
+    "bus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controller", "sda_gpio", "scl_gpio", "address_bits"],
+      "properties": {
+        "controller": {"const": "i2c1"},
+        "sda_gpio": {"const": 6},
+        "scl_gpio": {"const": 7},
+        "address_bits": {"const": 7}
+      }
+    },
+    "devices": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/device"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": {"type": "string"},
+        "source": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "address", "state"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["keyboard", "ds3231", "at24c32", "aht20", "bmp280", "custom"]
+        },
+        "address": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 119
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["encoding"],
+          "properties": {
+            "encoding": {"const": "register_bytes"},
+            "registers": {
+              "type": "object",
+              "propertyNames": {"pattern": "^0x[0-9a-fA-F]{1,4}$"},
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            },
+            "image_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "image_size": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "initial_datetime": {
+              "type": "string",
+              "pattern": "^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+            },
+            "osf": {"type": "boolean"},
+            "measurement_bytes": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-fA-F]{2})(?:[ -]?[0-9a-fA-F]{2})*$"
+            },
+            "calibration_bytes": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-fA-F]{2})(?:[ -]?[0-9a-fA-F]{2})*$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

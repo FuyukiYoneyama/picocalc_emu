@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "evidence_id": "i2c-ext-e0-20260823-01",
+  "roadmap_package": "I2C-EXT",
+  "stage": "E0",
+  "status": "frozen_for_e1",
+  "created_at": "2026-08-23",
+  "source_repositories": {
+    "backend": {"commit": "d96f73bf567a8ccfd22f1606ecd8c203d6865481", "dirty": false},
+    "pico_sdk": {"version": "2.2.0", "commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779", "dirty": false},
+    "picocalc_reference": {"commit": "a61c1f2f18185b32a667dde5c9393ced9ddd19ca", "dirty": true, "excluded_unrelated_paths": ["Code/PicoMite/main.c"]},
+    "picocalc_clock": {"commit": "f04982cf1d1bf24e3020d992a5f63961c6c8536c", "dirty": false},
+    "picocalc_rtctest": {"git_metadata": "absent"}
+  },
+  "files": [
+    {"path": "../RTC/Picocalc_Clock/README.md", "sha256": "9853bd34a72f213675953cd7643e689f8092dcb4ec6d5834bbe22f5c978be5e6"},
+    {"path": "../RTC/Picocalc_Clock/src/config/board_config.h", "sha256": "235efd71defb322788edee199e28aa373a70acfc0e84ff6e06c41b4db8749632"},
+    {"path": "../RTC/Picocalc_Clock/src/platform/env_sensor_probe.cpp", "sha256": "9902ec761b2d4aa75a5fe318b08eeba8bb550456853ead0c149b06e71a0ff9c7"},
+    {"path": "../RTC/Picocalc_Clock/src/platform/env_sensor_probe.h", "sha256": "d111f7b45bc55e9f043435bb6666776728b27497d515d4ffdb43869b6a1e7115"},
+    {"path": "../RTC/Picocalc_Clock/src/rtc/ds3231.c", "sha256": "69bd52bea1a1cd54930eceedc1a68c19800fd21ff4aa31324df5590abcb2259d"},
+    {"path": "../RTC/Picocalc_Clock/src/rtc/ds3231.h", "sha256": "316cd99d2749bdd5142f819010a197e2fd1746f0b4099cca1cd879f3d50f4fb2"},
+    {"path": "../RTC/Picocalc_Clock/src/settings/settings_store.cpp", "sha256": "459728c33219b261bceb449304d4e5bd44adb3ccc1fe42c26565c4084f931f17"},
+    {"path": "../RTC/Picocalc_Clock/src/settings/settings_store.h", "sha256": "57ca9d760da94382d6acbc6933fa4374d69a220031cb5f21e3a9344c9256a189"},
+    {"path": "../RTC/Picocalc_RTCtest/IMPLEMENTATION_PLAN.md", "sha256": "4b1f4c09953d997b77beedf9bf132097a5f189cc4d68d470573f9e95ca4e0886"},
+    {"path": "../RTC/Picocalc_RTCtest/README.md", "sha256": "681b858f320aa3a89982ddba459b3dc334ec794da1c92f8aa7f051187ef9737d"},
+    {"path": "../RTC/Picocalc_RTCtest/CMakeLists.txt", "sha256": "e149994a6d9e6b9d646b9a3b8136eeda4e9b50009f7c337cc03aed751550cf5a"},
+    {"path": "../RTC/Picocalc_RTCtest/ds3231.c", "sha256": "300cae40e018fea1817870ef175d6a3fdd18555b3b295ef1a48bde6d696de2b8"},
+    {"path": "../RTC/Picocalc_RTCtest/ds3231.h", "sha256": "64fce4fae3e9355b279856fba6ff6ce6a9ca32ef346e8f6dd2430914cf9812b8"},
+    {"path": "../RTC/Picocalc_RTCtest/main.c", "sha256": "d23a6ec1816e6297787424f9cd115b835973896aa42075b969306a8928f89aa2"},
+    {"path": "../RTC/Picocalc_RTCtest/pico_sdk_import.cmake", "sha256": "7b4db98ec410049c12567288304afb0186fcf20f6b2b8d446e6173d118a56881"}
+  ],
+  "wire_summary": {
+    "bus": "i2c1",
+    "pins": {"sda": 6, "scl": 7},
+    "addresses": {"keyboard": "0x1f", "aht20": "0x38", "at24c32": "0x57", "ds3231": "0x68", "bmp280": "0x77"},
+    "clock_hz": {"clock_app": 400000, "rtctest": 10000},
+    "timing_model": "transaction-level in current emulator"
+  },
+  "notes": [
+    "RTC/Picocalc_RTCtest is a source snapshot without git metadata; file hashes are the provenance identity.",
+    "The PicoCalc checkout has one unrelated user worktree modification outside the selected keyboard source; it was not changed or included in this work.",
+    "No production emulator code or RTC source was modified for E0."
+  ]
+}

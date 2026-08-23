@@ -26,7 +26,7 @@ UART回収の往復が発生します。まずhost／firmware backendで観測�
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
-- I2C-EXT: RTC/EEPROM/AHT20/BMP280の任意I2C外部module計画を確定。E0〜E6は未着手
+- I2C-EXT: E0（RTC/EEPROM/AHT20/BMP280のsource/provenance・wire contract固定）完了、E1実装開始。capability昇格は未実施
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
@@ -36,10 +36,12 @@ UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完�
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 にあります。これらの完了済み計画を再開せず、次の機能作業はI2C-EXTのE0から開始します。
 
-次の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
+現在の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
 [`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。まだ実装・capability昇格は
-行っていません。E0のsource/provenanceとwire contract固定を終えるまで、RTC directoryのsourceを
-直接変更してemulatorの動作へ合わせてはいけません。
+行っていません。E0のsource/provenanceとwire contract固定は完了し、次はE1です。RTC directoryの
+sourceを直接変更してemulatorの動作へ合わせてはいけません。E0の固定証拠は
+[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](firmware-validation/evidence/i2c-ext-e0-20260823-01/)
+を参照します。
 
 NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
 対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は

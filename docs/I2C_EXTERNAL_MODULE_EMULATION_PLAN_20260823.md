@@ -1,6 +1,11 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **計画確定・未実装**（2026-08-23）
+状態: **E0完了・E1実装開始**（2026-08-23）
+
+E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
+と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
+E0ではproduction codeを変更していない。次はE1のcontroller address-phase契約、mux、data-NACK伝播、
+共有virtual-time抽出であり、capabilityはまだ変更しない。
 
 ## 目的
 
