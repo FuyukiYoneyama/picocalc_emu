@@ -1164,8 +1164,8 @@
     {
       "id": "picocalc-clock-i2c-env-e5",
       "revision": 1,
-      "status": "pending-revalidation",
-      "status_reason": "E5 emulator correlation is complete; same-UF2 physical probe is required before activation or capability promotion.",
+      "status": "active",
+      "status_reason": "E5 same-UF2 emulator and physical correlation passed; bounded optional-profile capability is active.",
       "source": {
         "repository": "RTC/Picocalc_Clock",
         "commit": "f04982cf1d1bf24e3020d992a5f63961c6c8536c",
@@ -1249,7 +1249,7 @@
       },
       "validation": {
         "record": "firmware-validation/validations/picocalc-clock-i2c-env-e5-r1.json",
-        "sha256": "22e50e47ed6d8c286963d72c6b6e637d2aeef5bf8cebbba0dad1df93fdc78cbd"
+        "sha256": "07eeb0de04d5620544602c6e1eb5755e70b2d8daf6fef50bc66ecc662500f6d4"
       }
     }
   ]

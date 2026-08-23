@@ -63,27 +63,30 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の正式計画: I2C-EXT（E5 emulator回帰完了、実機相関・capability昇格待ち）
+## I2C-EXT（E0〜E6完了、optional profileをbounded capabilityとして昇格）
 
 任意の外付けI2C moduleをfirmware backendへ接続する計画として、
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)
 を固定した。初期対象はPicoCalcの共有I2C1（GP6/GP7）にあるDS3231、AT24C32、AHT20、BMP280で、
 既存keyboard controllerとの共存を必須にする。
 
-環境sensorのemulation capabilityはまだ未昇格であり、`capability.json`の既存
-`i2c-external-device`以上を主張しない。profileなしの通常runを変えず、E0でsource/provenanceと
+環境sensorのemulation capabilityは`i2c-external-rtc-env-v1`として昇格済みである。ただしこれは
+明示的に選択したoptional profileに限るbounded capabilityであり、標準PicoCalcへ無条件には適用しない。
+profileなしの通常runを変えず、E0でsource/provenanceと
 wire contractを固定し、E1ではcontroller address-phase契約、mux、data-NACK伝播、共有
 virtual-time抽出を実装し、DS3231/AT24C32/AHT20/BMP280の独立model coreと、任意の
 picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachを追加した。E4ではschema 2の
 詳細sidecar（transaction digest、device state、protocol error）と`picocalc.py` target contract接続を追加した。
-次はE5実機相関、E6 capability判断である。E0の証拠は
+E0の証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)。
 
 E5 emulator回帰は、cleanな`RTC/Picocalc_Clock` source（commit `f04982cf1d1bf24e3020d992a5f63961c6c8536c`）から
 生成した同一BIN/UF2、fixture `i2c-ext-e5-env-v1`、backend `f810d059958773d1b42a1c6d03cc15183cdc1a4f`で
 3回実行し、primary report、I2C schema 2 sidecar、UART、framebufferがすべてbyte一致した。
-E6のversioned validation `picocalc-clock-i2c-env-e5` は `pending-revalidation` として固定済みである。
-同一UF2の実機UART証拠を受領するまで、これは capability 昇格を意味しない。
+E6のversioned validation `picocalc-clock-i2c-env-e5-r1` は active target
+`picocalc-clock-i2c-env-e5` として固定済みである。E5の同一UF2実機UART証拠は
+[`firmware-validation/evidence/i2c-ext-e5-20260823-01/hardware-uart.log`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/hardware-uart.log)
+に保存し、startup probe、AHT20、BMP280の成功を確認した。
 
 ## 完了済み計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5）
 

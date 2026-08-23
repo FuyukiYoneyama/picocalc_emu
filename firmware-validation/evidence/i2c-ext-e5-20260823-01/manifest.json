@@ -5,7 +5,7 @@
   "target": {
     "id": "picocalc-clock-i2c-env-e5",
     "revision": 1,
-    "contract_sha256": "f26d28a082abbffadd570cd6684000c64c1fca669f6f28aba27d0fd9fde32190"
+    "contract_sha256": "38fd4af5a39047806c901894f010352a21e01be8a4b564ac78a2c8cadfd258b1"
   },
   "emulator": {
     "target": {
@@ -73,9 +73,21 @@
     }
   },
   "hardware_correlation": {
-    "status": "pending",
+    "status": "pass",
     "same_uf2": true,
     "required_artifact": "picocalc_emu_ext/i2c-ext-e5/build/Picocalc_Clock.uf2",
-    "note": "The emulator evidence is complete. Capability promotion waits for one physical run of this exact UF2 with UART confirmation of the four module paths."
+    "uf2_sha256": "1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962",
+    "source_log_sha256": "30aadc2d18e01be9b5947e4c73b1a22eba5a8070d6208747926472aeac578f8b",
+    "stored_log": "hardware-uart.log",
+    "stored_log_sha256": "a1eaad62032846db926e0eca37deac6747a6a4f5f58b992bda7815899e20d8e0",
+    "line_endings_normalized": true,
+    "checks": {
+      "build_git": "f04982c",
+      "build_dirty": 0,
+      "startup_probe": "rtc=PASS eeprom=PASS keyboard=PASS",
+      "aht20": "PASS",
+      "bmp280": "PASS"
+    },
+    "note": "The physical log was supplied after the exact UF2 run. Sensor values are environment-dependent and were not compared with the emulator fixture."
   }
 }

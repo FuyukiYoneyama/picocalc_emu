@@ -282,6 +282,17 @@
       "detail": "speaker-listening-assessment schema 1 binds BIN, UF2 and video SHA-256 to maximum physical volume, launch path, source-mix comparison and two human answers. overall_loudness accepts acceptable_quiet or appropriate; percussion_and_transients must be appropriate. An accepted quiet result passes without mandatory adjustment. Optional adjustment remains advisory. A result with appropriate overall loudness but too-loud or distorted transients fails with the explicit action preserve_overall_reduce_percussion_or_transients. New project quality contract schema 3 likewise treats its preferred digital level floor as advisory while retaining fail-closed exact audio and extreme rail bounds.",
       "limitation": "The tool records and consistently applies human judgement; it does not infer perceived quality from PCM or phone AGC. PicoCalc DOOM v0.1.1 and v0.1.2 are the first content-specific accepted-safe/known-bad pair, not a universal transfer function or threshold for every application.",
       "since_gate": "audio-quality-policy-20260811"
+    },
+    {
+      "id": "i2c-external-rtc-env-v1",
+      "what": "Optional PicoCalc I2C1 profile for DS3231, AT24C32, AHT20 and BMP280",
+      "status": "same_artifact_hardware_correlated",
+      "detail": "Target picocalc-clock-i2c-env-e5 pins source f04982c, BIN/UF2 identity, fixture i2c-ext-e5-env-v1 and backend f810d059. Three emulator runs produced byte-identical reports, schema 2 I2C sidecars, UART and framebuffers. The same UF2 then passed the physical startup probe: RTC, EEPROM and keyboard acknowledged, and the AHT20/BMP280 read paths returned valid values.",
+      "limitation": "This is an explicitly selected optional profile for the private external module wiring on I2C1 GP6/GP7. It does not imply that standard PicoCalc units contain these devices, does not read host sensor values, and does not model I2C electrical faults, arbitrary registers, hot-plugging, multi-master arbitration or other sensor variants. The deterministic fixture values are an emulator oracle; physical sensor values are expected to vary.",
+      "target": "picocalc-clock-i2c-env-e5",
+      "emulator_evidence": "firmware-validation/evidence/i2c-ext-e5-20260823-01/manifest.json",
+      "evidence": "firmware-validation/evidence/i2c-ext-e5-20260823-01/hardware-uart.log",
+      "since_gate": "I2C-EXT-E6"
     }
   ],
   "unsupported": [

@@ -10,16 +10,18 @@ phases ACKed; unknown addresses, data NACKs, and protocol errors are zero. The
 transaction digest, primary report, UART bytes, and framebuffer PNG are byte
 identical across all three runs.
 
-This is the emulator half of E5 and the versioned-validation input for E6. It
-does not claim physical correlation. The pending target remains
-`pending-revalidation`, and `capability.json` is intentionally unchanged until
-the exact UF2 listed in `manifest.json` is run on a PicoCalc and the physical
-UART confirms the same address/read paths. The historical `RTC/` hardware logs
-are not substituted for this same-artifact run.
+This is the complete E5/E6 evidence. The exact UF2 listed in `manifest.json`
+was run on a PicoCalc through the normal `uf2loader` path. The supplied physical
+UART log confirms the same build identity (`git=f04982c`, `dirty=0`), the
+startup probe for RTC, EEPROM and keyboard, and successful AHT20/BMP280 read
+paths. Physical sensor values are environment-dependent and are not compared
+with the deterministic emulator fixture. The target is active and the bounded
+`i2c-external-rtc-env-v1` capability is recorded in
+`firmware-validation/capability.json`.
 
 The runner was invoked locally; GitHub Actions was not used.
 
-## Remaining physical step
+## Physical correlation record
 
 Use the normal PicoCalc `uf2loader` path for this exact artifact:
 
@@ -28,15 +30,14 @@ Use the normal PicoCalc `uf2loader` path for this exact artifact:
 SHA-256: 1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962
 ```
 
-After boot, collect the UART output and send one line, `help`, followed by a
-newline. The required human-supplied evidence is:
+The received UART evidence contains:
 
 1. `STARTUP PROBE rtc=PASS eeprom=PASS keyboard=PASS`;
 2. a `Sensors:` section with a successful `AHT20` line and a successful
    `BMP280` line; and
-3. the exact UF2 SHA above, plus the UART log and a photo or screenshot of the
-   running application if available.
+3. the exact UF2 SHA above, recorded in `manifest.json` together with the
+   original source-log SHA and normalized stored-log SHA.
 
-The measured sensor values do not have to equal the deterministic emulator
-fixture. A failed or missing line is not silently converted to pass; it leaves
-the target pending and keeps `capability.json` unchanged.
+The normalized stored log is `hardware-uart.log`; the original supplied log is
+identified by `source_log_sha256` in `manifest.json`. No comparison of live
+environment values against the emulator fixture is implied.

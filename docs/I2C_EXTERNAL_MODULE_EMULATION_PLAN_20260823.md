@@ -1,6 +1,6 @@
 # 任意 I2C 外部モジュール emulation 計画（I2C-EXT）
 
-状態: **E0〜E4完了、E5 emulator回帰完了、E5実機相関待ち、E6 versioned validation完了・capability昇格待ち**（2026-08-23）
+状態: **E0〜E6完了（2026-08-23）**
 
 E0の固定証拠は[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)
 と[`firmware-validation/contracts/i2c-ext-e0-wire-v1.json`](../firmware-validation/contracts/i2c-ext-e0-wire-v1.json)にある。
@@ -10,9 +10,9 @@ picocalc-rtc-v1 profileのI2C1 attach、暫定sidecar metadataを実装した。
 独立model、CRC/calibration検証、conversion待ち、picocalc-rtc-env-v1 profile接続を実装した。
 E4ではprofile専用の詳細sidecar（schema 2）、transaction digest、device state/protocol error観測を実装し、
 `picocalc.py`のversioned target contractからprofile・fixture・sidecar期待値を固定的に渡せるようにした。
-E5の同一BIN emulator回帰は完了したが、同一UF2の実機probeは未実施である。E6では
-`picocalc-clock-i2c-env-e5`のpending targetとversioned validationを固定した。実機相関が完了するまで
-`capability.json`は変更しない。
+E5の同一BIN emulator回帰と同一UF2の実機probeが完了した。E6では
+`picocalc-clock-i2c-env-e5`をactive targetとしてversioned validationへ固定し、
+`capability.json`へoptional profileのbounded capabilityを追加した。
 
 ## 目的
 
@@ -392,13 +392,13 @@ E4完了後の作業は、firmware回帰と実機相関（E5）、versioned vali
 4. clean sourceから生成した同一`Picocalc_Clock.bin`／UF2を使い、startup probeと画面/UARTの期待値を
    emulatorで検査する（**E5完了**）。BIN SHAは`dbca04508de03ebcc01cecfe1ecb1a86fcac1bae5ca649fe843c676bb7a8daff`、
    UF2 SHAは`1d3223816f5d87f09a9ac3b56620037f838a43e0077f505254f87a52f89aa962`。
-5. **同一UF2を実機へ一度だけ送る（未完了）**。PicoCalcの通常経路（uf2loader）で起動し、UARTへ
+5. **同一UF2を実機へ一度だけ送る（完了）**。PicoCalcの通常経路（uf2loader）で起動し、UARTへ
    `help`を1行送る。`STARTUP PROBE rtc=PASS eeprom=PASS keyboard=PASS`、`Sensors:`配下の
    `AHT20`／`BMP280`成功行を回収する。実機の環境値は固定fixture値との一致を要求しない。具体的な
    path、SHA、終了条件は証拠READMEのhardware correlation欄に固定する。
-6. source/BIN/UF2/backend/profile/fixture/sidecarをversioned targetへ固定する（**E6 versioned validation完了**）。
-   targetは`pending-revalidation`であり、実機証拠を受領した後にのみ`active`へ変更し、
-   `capability.json`へbounded capabilityを追加する（**E6 capability昇格は未完了**）。
+6. source/BIN/UF2/backend/profile/fixture/sidecarと実機UARTをversioned targetへ固定する
+   （**E6完了**）。targetは`active`へ昇格し、`capability.json`へ
+   `i2c-external-rtc-env-v1`のbounded capabilityを追加した。
 
 GitHub Actionsはデバッグに使わない。各段階はlocal unit/build/firmware verificationを先に通し、
 関連変更をまとめてcommitする。CI構成を変える必要が出た場合は、使用量と理由を事前に承認する。

@@ -4,10 +4,10 @@
   "roadmap_package": "R4",
   "target_id": "picocalc-clock-i2c-env-e5",
   "target_revision": 1,
-  "target_contract_sha256": "f26d28a082abbffadd570cd6684000c64c1fca669f6f28aba27d0fd9fde32190",
+  "target_contract_sha256": "38fd4af5a39047806c901894f010352a21e01be8a4b564ac78a2c8cadfd258b1",
   "evidence": {
     "record": "firmware-validation/evidence/i2c-ext-e5-20260823-01/manifest.json",
-    "sha256": "1cda85397d606aae6032f81c378b54fa71580683ab97acff0e915d4f7519a040",
+    "sha256": "1fd795bd06dab0dc939630c12ed0ff316518dd9ca9e992702a25ff0121d9dd45",
     "record_id": "i2c-ext-e5-20260823-01",
     "section": "emulator"
   },

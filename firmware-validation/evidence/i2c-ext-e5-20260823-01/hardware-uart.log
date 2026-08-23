@@ -1,0 +1,31 @@
+
+Picocalc_Clock version 0.8.51 build release
+BUILD ID git=f04982c dirty=0 time="2026-08-23 12:55:34 +0900" purpose="0.8.41-display-guard"
+Picocalc_Clock init display -> keyboard -> shared i2c probes -> rtc display
+STARTUP PROBE rtc=PASS eeprom=PASS keyboard=PASS rtc_status=0x88
+STARTUP BATTERY PASS raw=0xE4 percent=100 charging=1
+STARTUP VBUS gpio=24 present=0
+SETTINGS eeprom load ok slot=B seq=160
+Commands:
+  help
+  ?
+  set yyyy-mm-dd
+  set HH:MM:SS
+Current: 2026-08-23 Sun 13:24:19
+Sensors:
+  AHT20   temp=30.40 C  humidity=55.19 %
+  BMP280  temp=30.26 C  pressure=1015.11 hPa
+  Average raw=30.33 C  offset=-2.00 C  adjusted=28.33 C
+UART poll=on reason=startup percent=100 charging=1
+> help
+Commands:
+  help
+  ?
+  set yyyy-mm-dd
+  set HH:MM:SS
+Current: 2026-08-23 Sun 13:24:33
+Sensors:
+  AHT20   temp=30.51 C  humidity=54.33 %
+  BMP280  temp=30.39 C  pressure=1015.09 hPa
+  Average raw=30.45 C  offset=-2.00 C  adjusted=28.45 C
+> 
