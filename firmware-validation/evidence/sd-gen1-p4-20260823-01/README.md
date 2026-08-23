@@ -4,8 +4,9 @@ Date: 2026-08-23
 
 P4 connects the SD-GEN-1 multi-block model to the default PicoCalc board and
 harness runtime.  A repository-owned Thumb fixture drives the real SPI0/CS
-path, reads two blocks with CMD18, sends CMD12 without raising CS, and emits a
-UART completion marker.  The existing U6, M-NESCO, FAT16, and FAT32 records
+path, reads two blocks with CMD18, sends CMD12 without raising CS, then writes
+one block with CMD23/CMD25 and reads it back with CMD17 before emitting a UART
+completion marker.  The existing U6, M-NESCO, FAT16, and FAT32 records
 remain frozen; their complete traces were replayed again after the runtime
 promotion.
 
@@ -13,20 +14,23 @@ promotion.
 
 | item | result |
 |---|---|
-| backend commit | `0126d1bd08495fa157cd038b68465937a74f7abe` |
+| backend commit | `b0a4c05bb53ae043a70cf531bd7413849f494bcf` |
 | working tree | clean |
 | runner feature | default `sd-gen1-multiblock` |
-| firmware fixture SHA-256 | `4eb3940ccdc9e1ed3c5e1d9f6ad2f0f99c03f642d071aedb40c95e541be00a0d` |
-| report SHA-256 | `65fcfe408bae1a6092484a68992cb5c0f88eff34117307bb8ec539fd660bf850` |
-| SD trace file SHA-256 | `ea40f02089ea06681c151cacf078aa01a9291a701cf202cf06aefd656969ff0e` |
+| firmware fixture SHA-256 | `2444e9eb974edddc76d779d03a63842e9bf23c4f258f40ae9c3a1667c4c22b31` |
+| report SHA-256 | `748f21fa82f38b591628cdc371c8d73c17d8ca334bb24b8021e0b695ef3e32e5` |
+| SD trace file SHA-256 | `6861c4fb80df5172975bd6b0e9bda3b781575df75c28a3be5a6444e21292241d` |
 | verdict | `pass` |
-| SD commands | CMD18, CMD12; unknown=0 |
-| blocks read | 2 (512 bytes each) |
+| SD commands | CMD18, CMD12, CMD23, CMD25, CMD17; unknown=0 |
+| blocks read / written | 3 / 1 (512 bytes each) |
+| readback | exported block 6 is 512 bytes of `0xA5` |
 | protocol errors | 0 |
 | UART marker | `SD_MB_FIXTURE` |
 
 The trace's semantic streaming digest is
-`18b36ccbeb98b7d9cf313949756f7d7fc45115ccb617a41241f27fb320138d43`.
+`1f6f875dd1117e10098805610dbc698cb9927364a2febcd2bfe755d44e362aae`.
+The exported COW image is `output.img`; its SHA-256 is
+`9d75d86dd1894419bf44b8a9f9ae54fc1b17949f4000485cacfe41dc0df2ee90`.
 
 The report and trace in this directory are the clean-run artifacts.  The
 fixture source is the checked-in
@@ -68,7 +72,8 @@ manifest.  No GitHub Actions run was used.
 
 ## Scope boundary
 
-P4 proves the default runtime's CMD18/CMD12 read path and compatibility with
+P4 proves the default runtime's CMD18/CMD12 read and CMD23/CMD25 write paths,
+including CMD17 readback, and compatibility with
 the existing U6/M-NESCO/FAT records.  It does not change `capability.json`,
 rewrite versioned target records, or claim USB BOOTSEL/MSC, card-removal, or
 write-protect support.  Capability and registry decisions remain the P5 gate.

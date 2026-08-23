@@ -106,8 +106,8 @@ read/write、unknown/errorのfail-closed、代表アプリ回帰）を別計画�
 P0（現状棚卸しとclean trace採取）、P1（wire契約・受入マトリクス）、P2（feature-gated最小state
 machine）、P3（trace replay、negative report統合、既存U6／M-NESCO／FATの凍結trace回帰）は完了した。
 P3では`sd-gen1-multiblock`を明示したboard／harness testと診断reportだけを有効化した。P4で同featureを
-board／harnessのdefault runtimeへ接続し、SPI0のCMD18→2 block→CS保持中CMD12を送るrepository-owned
-synthetic firmware E2Eを追加した。default board 90件、legacy no-default 85件、default harness 67件、
+board／harnessのdefault runtimeへ接続し、SPI0のCMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackを送るrepository-owned
+synthetic firmware E2Eを追加した。RAW exportのreadback byte一致も含め、default board 90件、legacy no-default 85件、default harness 67件、
 legacy harness 66件、clippy default／legacyをlocalでpassさせ、既存U6／M-NESCO／FAT16／FAT32の凍結trace
 も再playした。P4のreport／trace／SHAは[`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
 既存versioned targetとcapabilityはまだ変更していない。CMD18/CMD25/CMD12/CMD23を含む汎用capabilityへの昇格は、

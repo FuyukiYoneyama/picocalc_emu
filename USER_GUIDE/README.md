@@ -100,7 +100,7 @@ FAT32 snapshotであり、boot2、watchdog、実`uf2loader` end-to-endを意味�
 [`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 U4-P2では`picocalc-run --sd-trace <path>`によるdiagnostic-only SD traceをclean loaderで3回取得し、
 CMD17のみ（CMD18／CMD12／CMD23／CMD24／CMD25は未観測）と判定しました。CMD17のR1順序だけを修正しました。
-SD-GEN-1-P4でmulti-block production codeをdefault runtimeへ接続し、CMD18/CMD12の実SPI0 synthetic
+SD-GEN-1-P4でmulti-block production codeをdefault runtimeへ接続し、CMD18/CMD12 read、CMD23/CMD25 write、CMD17 readbackの実SPI0 synthetic
 E2Eを追加しています。U5-B watchdog warm reset、U6実uf2loader end-to-end
 Gateまで完了しています。M-NESCO拡張受入も計画4ケース＋追加mapper 1のローカルA/B deterministic gateを完了しています。
 trace取得条件と実装判断表は[`../docs/UF2LOADER_U4_PREFLIGHT_20260822.md`](../docs/UF2LOADER_U4_PREFLIGHT_20260822.md)、

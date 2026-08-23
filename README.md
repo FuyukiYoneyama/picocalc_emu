@@ -23,7 +23,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - 現在定義済みのR/NEXT作業パッケージ: **すべて完了または正式終了**
 - UF2Loader統合: **U0・U1・U2・M-NESCO-S1・U3-A・U3-B・U4-P2・U5-A・U5-B・U6完了**。M-NESCO拡張受入（計画mapper 0/2/4/30、追加mapper 1、small/medium/large、SD→flash→再attach、CPU/PPU/core 1/DMA観測）も完了しました。U6はcleanな外部uf2loader source/buildで3回deterministic Gateに合格し、限定されたSD→flash→watchdog→再起動経路をcapabilityへ反映済み
 - U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
-- SD-GEN-1-P0〜P4: **完了（P4 local validation pass）**。P4でmulti-blockをdefault runtimeへ接続し、CMD18→2 block→CS保持中CMD12の実SPI0 synthetic firmware E2E、既存U6・M-NESCO・FAT16/FAT32凍結trace再play、legacy no-default差分を確認しました。汎用capability／versioned targetの昇格はP5へ保留しています。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P4証拠は[`firmware-validation/evidence/sd-gen1-p4-20260823-01/`](firmware-validation/evidence/sd-gen1-p4-20260823-01/)です
+- SD-GEN-1-P0〜P4: **完了（P4 local validation pass）**。P4でmulti-blockをdefault runtimeへ接続し、CMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackの実SPI0 synthetic firmware E2E、RAW export byte一致、既存U6・M-NESCO・FAT16/FAT32凍結trace再play、legacy no-default差分を確認しました。汎用capability／versioned targetの昇格はP5へ保留しています。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P4証拠は[`firmware-validation/evidence/sd-gen1-p4-20260823-01/`](firmware-validation/evidence/sd-gen1-p4-20260823-01/)です
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は

@@ -102,7 +102,7 @@ P1のwire契約・受入マトリクス、P2のfeature-gated最小state machine�
 P1のmachine-readable契約は
 [`sd-gen1-p1-wire-v1.json`](../firmware-validation/contracts/sd-gen1-p1-wire-v1.json)、P2のvectorは
 [`sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)です。P2実装時点では通常runtime／runnerへ接続していませんでしたが、
-P4でdefault runtimeへ昇格しました。P4の代表E2EはCMD18→2 block→CMD12を実SPI0経路で実行し、既存U6／M-NESCO／FAT16／FAT32の凍結clean traceも再playしています。
+P4でdefault runtimeへ昇格しました。P4の代表E2EはCMD18→2 block→CMD12、CMD23/CMD25→1 block write→CMD17 readbackを実SPI0経路で実行し、RAW exportのbyte一致も確認しています。既存U6／M-NESCO／FAT16／FAT32の凍結clean traceも再playしています。
 汎用capability／versioned targetの判断はP5へ残しています。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。

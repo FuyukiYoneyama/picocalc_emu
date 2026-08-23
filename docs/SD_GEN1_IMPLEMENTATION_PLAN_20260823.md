@@ -110,8 +110,10 @@ P2の実装は[`SD_GEN1_P2_IMPLEMENTATION_20260823.md`](SD_GEN1_P2_IMPLEMENTATIO
 挙動を直接証明する代表ケースはrepository-owned synthetic firmwareで追加した。
 
 既定featureのE2EはSPI0の実配線経路を通り、CMD18でblock 3を開始し、block 4まで読み、CSを
-上げずにCMD12を送る。clean reportは`protocol_errors=[]`、unknown command 0、`blocks_read=2`、
-UART marker `SD_MB_FIXTURE`、verdict `pass`である。詳細なreport／trace／SHAは
+上げずにCMD12を送る。その後、CMD23/CMD25でblock 6へ512 byteを書き込み、CMD17でreadbackし、
+RAW exportのblock 6が全て`0xA5`であることを確認する。clean reportは`protocol_errors=[]`、unknown
+command 0、`commands_seen=5`、`blocks_read=3`、`blocks_written=1`、UART marker
+`SD_MB_FIXTURE`、verdict `pass`である。詳細なreport／trace／SHAは
 [`sd-gen1-p4-20260823-01/`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/)へ固定した。
 
 default board testは90件、legacy `--no-default-features`は85件、default harness main testは67件、
@@ -163,7 +165,7 @@ SD-GEN-1の完了条件は次の全てである。
 場合は、production codeを増やさず「未観測・未対応」として計画を縮小する。
 
 P0、P1、P2、P3、P4は完了した。P4で`sd-gen1-multiblock`をdefault runtimeへ接続し、
-SPI0のCMD18/CMD12 synthetic firmware E2E、既存U6／M-NESCO／FATの凍結trace再play、legacy
+SPI0のCMD18/CMD12/CMD23/CMD25/CMD17 synthetic firmware E2E（write/readbackを含む）、既存U6／M-NESCO／FATの凍結trace再play、legacy
 single-block差分境界を確認した。通常capability／versioned targetの昇格はまだ行っていない。
 次に着手できるのは**SD-GEN-1-P5 versioned validationとcapability判断**である。
 P0の記録は[`firmware-validation/evidence/sd-gen1-p0-20260823-02/`](../firmware-validation/evidence/sd-gen1-p0-20260823-02/)へ、

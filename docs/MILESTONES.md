@@ -100,7 +100,7 @@ watchdog warm reset→書込み後app起動を通し、3回determinism、strict 
 
 `SD-GEN-1`汎用SD protocol一般化のP0〜P4は完了しました。M-NESCO拡張のfixtureと証拠は完了済みです。
 詳細計画を[`SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)へ固定し、P4でmulti-block featureを
-既定runtimeへ接続した代表synthetic firmware E2Eと、既存U6／M-NESCO／FAT凍結trace再playを完了しました。次はP5のversioned
+既定runtimeへ接続した代表synthetic firmware E2E（CMD18/CMD12 read、CMD23/CMD25 write、CMD17 readback）と、既存U6／M-NESCO／FAT凍結trace再playを完了しました。次はP5のversioned
 validationとcapability判断です。
 追加blind app、SD fault／persistence、machine APIのclient利便性は候補であり、SD-GEN-1とは別の正式計画ではありません。
 
