@@ -63,17 +63,17 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 これらは凍結targetで証明した範囲です。似たworkload全般へ自動的に一般化しません。
 
-## 次の正式計画: I2C-EXT（E0完了・E1実装中）
+## 次の正式計画: I2C-EXT（E0・E1完了、E2未着手）
 
-任意の外付けI2C moduleをfirmware backendへ接続する次の計画として、
+任意の外付けI2C moduleをfirmware backendへ接続する計画として、
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)
 を固定した。初期対象はPicoCalcの共有I2C1（GP6/GP7）にあるDS3231、AT24C32、AHT20、BMP280で、
 既存keyboard controllerとの共存を必須にする。
 
 RTC・EEPROM・環境sensorのemulation capabilityはまだ未実装であり、`capability.json`の既存
 `i2c-external-device`以上を主張しない。profileなしの通常runを変えず、E0でsource/provenanceと
-wire contractを固定した。現在はE1のcontroller address-phase契約、mux、data-NACK伝播、共有
-virtual-time抽出を実装する段階である。E0の証拠は
+wire contractを固定し、E1ではcontroller address-phase契約、mux、data-NACK伝播、共有
+virtual-time抽出を実装した。次はE2のDS3231/AT24C32 modelである。E0の証拠は
 [`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](../firmware-validation/evidence/i2c-ext-e0-20260823-01/)。
 
 ## 完了済み計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5）
