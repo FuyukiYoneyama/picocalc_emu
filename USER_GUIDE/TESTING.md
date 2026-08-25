@@ -6,9 +6,16 @@
 |---|---:|---|---|
 | host | 高速 | アプリロジック、framebuffer、keyboard、PSRAM、filesystemの基本 | PIO、DMA、I2C transaction、interrupt、multicore、LCD wire形式 |
 | firmware | hostより低速 | raw BINのRP2040実行、PIO、DMA、GPIO、I2C、interrupt、LCD、SD、keyboard、multicoreの固定範囲 | 対応範囲外の機能、実機の見え方・聞こえ方・物理操作 |
+| HIL | 実機依存 | 実RP2040の起動、実クロック、実UART、実リセット、実loader／flash経路、実ペリフェラル初期化 | UARTに出していない内部状態、画面の見え方、音の聴感、物理操作 |
 
 firmware backendがhardware挙動の権威です。ただし、対応範囲を推測で広げず、
 [`capability.json`](../firmware-validation/capability.json)のsupported／unsupportedを確認してください。
+
+firmware backendの合格後、プロジェクトに安全なHIL runnerがある場合は、同じapplication
+artifactを実機で起動し、UART marker・リセット・周辺機器初期化を確認します。HILはfirmware
+backendを置き換えず、実シリコンと実基板でのみ見える差を補完します。runnerの既定動作は
+flashを書き換えないものとし、loader保護されたartifactの明示的な書き込みだけを別途許可します。
+詳細は[`HARDWARE_IN_THE_LOOP.md`](../docs/HARDWARE_IN_THE_LOOP.md)を参照してください。
 
 ## portable検証
 

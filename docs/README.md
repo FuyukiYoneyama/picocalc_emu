@@ -43,6 +43,7 @@
 | 複数firmware runのheartbeat監視 | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
 | 画面／UART条件に応じてキーを投入 | [`SCENARIO_RUNNER.md`](SCENARIO_RUNNER.md) |
 | JSONLで長寿命sessionを操作 | [`HEADLESS_MACHINE_API.md`](HEADLESS_MACHINE_API.md) |
+| エミュレーターを補完する実機HIL | [`HARDWARE_IN_THE_LOOP.md`](HARDWARE_IN_THE_LOOP.md) |
 | 外部projectのBSP由来と音声合否を固定 | [`EXTERNAL_PROJECT_QUALITY.md`](EXTERNAL_PROJECT_QUALITY.md) |
 | 音量advisoryと極端なrail張り付きを分離 | [`AUDIO_LEVEL_QUALITY.md`](AUDIO_LEVEL_QUALITY.md) |
 | 内蔵speakerの破綻境界を動画から校正 | [`SPEAKER_CALIBRATION.md`](SPEAKER_CALIBRATION.md) |

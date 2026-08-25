@@ -14,6 +14,7 @@
 |---|---|
 | 初めてアプリを作る | [`QUICKSTART.md`](QUICKSTART.md) |
 | host／firmwareで検証する | [`TESTING.md`](TESTING.md) |
+| エミュレーターを補完する実機HILを使う | [`../docs/HARDWARE_IN_THE_LOOP.md`](../docs/HARDWARE_IN_THE_LOOP.md) |
 | 画面やUARTを待ってキーを入れる | [`SCENARIOS.md`](SCENARIOS.md) |
 | 複数の実行を同時に監視する | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
 | SDのdirectoryとRAW imageを往復する | [`SD_IMAGES.md`](SD_IMAGES.md) |
@@ -30,6 +31,8 @@ AIは次の順序を変えません。
 4. **登録済みtarget**と**新規BINの診断実行**を混同しない。正式な回帰判定は登録targetだけで行う。
 5. LCD、SD、keyboard、PSRAM、audio APIを使うときは、下の最小API表に従う。BSP内部をコピーしない。
 6. 通常の検証でGitHub Actionsを使わない。build／test／validationはローカルで行う。
+7. HIL runnerがある場合は、エミュレーター合格後に非破壊のUART／リセットスモークを行い、
+   見た目・聴感・物理操作は別の実機確認として記録する。
 
 ### どの実行を選ぶか
 
@@ -74,6 +77,7 @@ AIは次の順序を変えません。
 - firmware runnerの入力: raw BIN（UF2／ELFの直接実行ではありません）
 - 実機へ渡すときの通常経路: PicoCalcの`uf2loader`
 - エミュレーターでRAW SD／flash mutationを検査する場合: firmware backendの明示的な診断CLI
+- 実機デバッグ: プロジェクトの安全なHIL runnerでUART／リセットを補完確認。loader保護とartifact SHAを記録
 
 SD RAW imageの標準的な作成・取り出し手順は[`SD_IMAGES.md`](SD_IMAGES.md)にあります。
 

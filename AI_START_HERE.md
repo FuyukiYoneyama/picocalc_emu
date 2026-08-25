@@ -12,9 +12,10 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 
 > 推測でハードウェア層を再実装しない。動作実績のあるBSP APIを、実績のある条件で使う。
 
-実機操作は人間が行います。AIの推測が外れるたびに、UF2転送、起動、キー操作、写真、
-UART回収の往復が発生します。まずhost／firmware backendで観測し、人間に依頼する操作を
-最後の必要最小限へ絞ってください。
+実機はエミュレーターの代替ではありませんが、プロジェクトが安全なHIL runnerを提供している
+場合は、AIもそのrunnerの非破壊なリセット・UART取得・起動marker確認を実行できます。flash
+書き込みは明示的な許可とloader保護検査が必要です。LCDの見え方、音声の聴感、キーの物理操作、
+電源条件の確認は人間に依頼します。詳細は[`実機HIL手順`](docs/HARDWARE_IN_THE_LOOP.md)を参照します。
 
 ## 現在地
 
@@ -109,7 +110,8 @@ LCD GPIO、初期化列、transfer粒度、SD SPI、keyboard I2C、PSRAM clock�
 2. `python3 tools/picocalc.py test --mode host`
 3. 固定targetによるfirmware scenario
 4. report、UART、snapshot、SHAの照合
-5. エミュレーターで判定できない項目だけ実機へ依頼
+5. エミュレーターで判定できない項目を、安全なHIL runnerで実機確認
+6. LCDの見え方、音声、物理キー、cold bootなど、runnerで判定できない項目だけ人間へ依頼
 
 SDのdirectoryをfixtureとして渡す場合は、毎回独自スクリプトを作らず、
 `picocalc.py test --mode firmware --sd-dir <directory>`を使います。wrapperが起動時に
@@ -170,6 +172,10 @@ machine APIは操作面であり、target registryの合否判定を置き換え
 通常の転送経路はPicoCalcの**uf2loader**です。BOOTSELを使うのは、それでしか検証できない
 明示的理由がある場合だけです。
 
+プロジェクトにHIL runnerがある場合は、まず非破壊のUART／リセットスモークを実行します。
+runnerの既定動作はflashを書き換えず、書き込みはloaderを保護したartifactに対する明示的な操作に
+限定します。runnerの設計と証拠の残し方は[`実機HIL手順`](docs/HARDWARE_IN_THE_LOOP.md)に従います。
+
 人間へ依頼する前に次を提示します。
 
 - UF2の絶対pathとSHA-256
@@ -201,4 +207,5 @@ UF2のファイル名だけで版を識別しません。起動ログの`[PICOCA
 - Scenario: [docs/SCENARIO_RUNNER.md](docs/SCENARIO_RUNNER.md)
 - 複数run heartbeat: [docs/CONCURRENT_RUNS.md](docs/CONCURRENT_RUNS.md)
 - Machine API: [docs/HEADLESS_MACHINE_API.md](docs/HEADLESS_MACHINE_API.md)
+- 実機HIL: [docs/HARDWARE_IN_THE_LOOP.md](docs/HARDWARE_IN_THE_LOOP.md)
 - 過去の経緯・却下実験: [docs/history/README.md](docs/history/README.md)

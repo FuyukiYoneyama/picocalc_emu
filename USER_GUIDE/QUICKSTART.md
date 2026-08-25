@@ -65,6 +65,10 @@ hostは高速ですが、PIO、DMA、I2C transaction、interrupt、multicore、L
 BOOTSELは、flash書込み経路そのものを検証する明示的な目的がある場合だけ使います。
 色、見え方、キーの物理感触、実際の聞こえ方はエミュレーターだけでは判定できません。
 
+プロジェクトにHIL runnerがある場合は、エミュレーター検証の後に、まずflashを書き換えない
+UART／アプリ再起動スモークを行います。実機HILのrunner契約、loader保護、証拠の残し方は
+[`実機HIL手順`](../docs/HARDWARE_IN_THE_LOOP.md)を参照してください。
+
 ## 終了コード
 
 - `0`: pass
