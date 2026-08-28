@@ -1465,6 +1465,350 @@ def _path_is_inside(path: Path, root: Path) -> bool:
         return False
 
 
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _runner_supports_heartbeat(runner: Path) -> bool:
+    """Detect the optional heartbeat flags without changing runner output."""
+    try:
+        completed = subprocess.run(
+            [str(runner), "--help"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    # A runner that cannot answer --help may be a test double or an older
+    # executable with a different help path. Preserve the established
+    # forwarding behavior in that ambiguous case; only a successful help
+    # response that omits both flags proves the old runner contract.
+    if completed.returncode != 0:
+        return True
+    return "--run-id" in completed.stdout and "--progress-interval" in completed.stdout
+
+
+def _receipt_path(path: Path) -> str:
+    """Represent repository artifacts relatively and external artifacts absolutely."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT.resolve()))
+    except ValueError:
+        return str(resolved)
+
+
+def _resolve_receipt_path(value: str) -> Path:
+    """Resolve a receipt path without allowing relative traversal outside ROOT."""
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        return candidate.resolve()
+    if ".." in candidate.parts:
+        raise ValueError("receipt relative paths must not contain '..': {}".format(value))
+    return (ROOT / candidate).resolve()
+
+
+def _preview_device_projection(target: dict) -> dict:
+    """Return the six device fields that schema-1 preview admission can identify."""
+    runner = target.get("runner", {})
+    allowed = {
+        "board", "lcd_variant", "quantum", "cycles", "stop_pc", "psram",
+        "psram_verify_range", "keyboard", "keys", "sd",
+    }
+    unknown = sorted(set(runner) - allowed)
+    if unknown:
+        raise ValueError(
+            "target '{}' has preview-ineligible runner fields: {}".format(
+                target.get("id", "<unknown>"), ", ".join(unknown)
+            )
+        )
+    sd = runner.get("sd", {"attached": False, "format": "fat32"})
+    if not isinstance(sd, dict) or set(sd) != {"attached", "format"}:
+        raise ValueError("target '{}' has an invalid SD projection".format(target.get("id", "<unknown>")))
+    if runner.get("board") != "picocalc":
+        raise ValueError("preview schema 1 only admits the picocalc board")
+    return {
+        "board": runner["board"],
+        "lcd_variant": runner["lcd_variant"],
+        "psram": bool(runner.get("psram", False)),
+        "keyboard": bool(runner.get("keyboard", False)),
+        "sd": {"attached": bool(sd["attached"]), "format": sd["format"]},
+    }
+
+
+def _validate_target_validation_record(target: dict) -> tuple[Path, dict]:
+    validation = target.get("validation")
+    if not isinstance(validation, dict) or set(validation) != {"record", "sha256"}:
+        raise ValueError("target validation attestation is incomplete")
+    record_path = ROOT / validation["record"]
+    if not record_path.is_file():
+        raise ValueError("target validation record not found: {}".format(record_path))
+    if _file_sha256(record_path) != validation["sha256"]:
+        raise ValueError("target validation record SHA-256 does not match the registry")
+    with record_path.open("r", encoding="utf-8") as source:
+        record = json.load(source)
+    contract_sha = firmware_target_contract_sha256(target)
+    if (
+        record.get("result") != "accepted"
+        or record.get("target_id") != target.get("id")
+        or record.get("target_revision") != target.get("revision")
+        or record.get("target_contract_sha256") != contract_sha
+    ):
+        raise ValueError("target validation record does not attest this target")
+    return record_path, record
+
+
+def _build_preview_receipt(
+    target: dict,
+    firmware: Path,
+    runner: Path,
+    report_path: Path,
+    report: dict,
+    runner_sha256: str,
+) -> dict:
+    validation_path, _record = _validate_target_validation_record(target)
+    device = _preview_device_projection(target)
+    target_id = target["id"]
+    receipt_id = "{}-rev{}-{}".format(
+        target_id, target["revision"], _file_sha256(firmware)[:12]
+    )
+    references = [
+        _receipt_path(validation_path),
+        target["source"].get("repo", target_id) + "@" + target["source"]["commit"],
+        target["backend"].get("repo", "picoem-picocalc") + "@" + target["backend"]["accepted"],
+    ]
+    scenario = target.get("scenario")
+    if isinstance(scenario, dict) and scenario.get("path"):
+        references.append(scenario["path"])
+    return {
+        "schema_version": 1,
+        "receipt_id": receipt_id,
+        "target": {
+            "id": target_id,
+            "revision": target["revision"],
+            "contract_sha256": firmware_target_contract_sha256(target),
+        },
+        "target_validation_record": {
+            "path": _receipt_path(validation_path),
+            "sha256": target["validation"]["sha256"],
+        },
+        "firmware": {
+            "path": _receipt_path(firmware),
+            "sha256": _file_sha256(firmware),
+        },
+        "backend": {
+            "accepted_commit": target["backend"]["accepted"],
+            "executable": {
+                "path": _receipt_path(runner),
+                "sha256": runner_sha256,
+            },
+        },
+        "report": {
+            "path": _receipt_path(report_path),
+            "sha256": _file_sha256(report_path),
+            "schema_version": report.get("schema_version"),
+        },
+        "device": device,
+        "provenance": {
+            "registry_path": _receipt_path(FIRMWARE_TARGETS),
+            "references": references,
+        },
+    }
+
+
+def _receipt_object(value: object, where: str, keys: set[str]) -> dict:
+    if not isinstance(value, dict) or set(value) != keys:
+        raise ValueError("{} must contain exactly {}".format(where, ", ".join(sorted(keys))))
+    return value
+
+
+def _receipt_path_hash(value: object, where: str) -> tuple[Path, str]:
+    entry = _receipt_object(value, where, {"path", "sha256"})
+    path_value = entry["path"]
+    if not isinstance(path_value, str) or not path_value:
+        raise ValueError("{}.path must be non-empty".format(where))
+    if not is_sha256(entry["sha256"]):
+        raise ValueError("{}.sha256 must be lowercase SHA-256".format(where))
+    path = _resolve_receipt_path(path_value)
+    if not path.is_file():
+        raise ValueError("{} does not exist: {}".format(where, path))
+    actual = _file_sha256(path)
+    if actual != entry["sha256"]:
+        raise ValueError("{}.sha256 mismatch: expected {}, got {}".format(where, entry["sha256"], actual))
+    return path, actual
+
+
+def preview_admission(
+    firmware: Path,
+    receipt_path: Path,
+    backend_dir: Optional[Path],
+    descriptor_out: Optional[Path],
+) -> int:
+    """Revalidate a receipt and write an immutable-input launch descriptor.
+
+    VRP-1 deliberately stops here: no GUI or emulator process is started.  A
+    future preview process consumes the descriptor only after this gate passes.
+    """
+    try:
+        receipt_file = receipt_path.resolve()
+        if not receipt_file.is_file():
+            raise ValueError("receipt not found: {}".format(receipt_file))
+        with receipt_file.open("r", encoding="utf-8") as source:
+            receipt = json.load(source)
+        if not isinstance(receipt, dict):
+            raise ValueError("receipt must be a JSON object")
+        required = {
+            "schema_version", "receipt_id", "target", "target_validation_record",
+            "firmware", "backend", "report", "device", "provenance",
+        }
+        if set(receipt) not in (required, required | {"fixture_only"}):
+            raise ValueError("receipt keys do not match schema 1")
+        if "fixture_only" in receipt:
+            raise ValueError("schema-only fixture receipts cannot be launched")
+        if receipt.get("schema_version") != 1:
+            raise ValueError("receipt schema_version must be 1")
+        if not isinstance(receipt.get("receipt_id"), str) or not re.fullmatch(
+            r"[a-z0-9][a-z0-9._-]{2,127}", receipt["receipt_id"]
+        ):
+            raise ValueError("receipt_id is invalid")
+
+        target_value = _receipt_object(receipt["target"], "receipt.target", {"id", "revision", "contract_sha256"})
+        target_id = target_value["id"]
+        if not isinstance(target_id, str) or not target_id:
+            raise ValueError("receipt.target.id is invalid")
+        if type(target_value["revision"]) is not int or target_value["revision"] < 1:
+            raise ValueError("receipt.target.revision is invalid")
+        if not is_sha256(target_value["contract_sha256"]):
+            raise ValueError("receipt.target.contract_sha256 is invalid")
+        target = load_firmware_target(target_id)
+        if target is None:
+            raise ValueError("receipt names unknown target {}".format(target_id))
+        if target["revision"] != target_value["revision"]:
+            raise ValueError("receipt target revision differs from registry")
+        if firmware_target_contract_sha256(target) != target_value["contract_sha256"]:
+            raise ValueError("receipt target contract SHA differs from registry")
+        device = _preview_device_projection(target)
+        if receipt["device"] != device:
+            raise ValueError("receipt device projection differs from target")
+
+        validation_path, validation_sha = _receipt_path_hash(
+            receipt["target_validation_record"], "receipt.target_validation_record"
+        )
+        target_validation = target.get("validation", {})
+        if (
+            target_validation.get("record") != _receipt_path(validation_path)
+            or target_validation.get("sha256") != validation_sha
+        ):
+            raise ValueError("receipt validation record differs from registry")
+        with validation_path.open("r", encoding="utf-8") as source:
+            validation = json.load(source)
+        if (
+            validation.get("result") != "accepted"
+            or validation.get("target_id") != target_id
+            or validation.get("target_revision") != target_value["revision"]
+            or validation.get("target_contract_sha256") != target_value["contract_sha256"]
+        ):
+            raise ValueError("validation record does not attest this target")
+
+        firmware_receipt = _receipt_object(receipt["firmware"], "receipt.firmware", {"path", "sha256"})
+        firmware_file, firmware_sha = _receipt_path_hash(firmware_receipt, "receipt.firmware")
+        requested_firmware = firmware.resolve()
+        if firmware_file != requested_firmware:
+            raise ValueError("CLI firmware path differs from receipt")
+
+        backend_value = _receipt_object(receipt["backend"], "receipt.backend", {"accepted_commit", "executable"})
+        accepted_commit = backend_value["accepted_commit"]
+        if not is_git_commit(accepted_commit) or accepted_commit != target["backend"]["accepted"]:
+            raise ValueError("receipt backend commit differs from registry")
+        runner_file, runner_sha = _receipt_path_hash(backend_value["executable"], "receipt.backend.executable")
+        backend = (backend_dir or resolve_backend(None))
+        if backend is None or not backend.is_dir():
+            raise ValueError("backend checkout not found")
+        backend = backend.resolve()
+        expected_runner = (backend / "target/release/picocalc-run").resolve()
+        if runner_file != expected_runner:
+            raise ValueError("receipt runner path does not belong to --backend-dir")
+        try:
+            head = subprocess.run(
+                ["git", "-C", str(backend), "rev-parse", "HEAD"],
+                capture_output=True, text=True, check=False,
+            )
+            clean = subprocess.run(
+                ["git", "-C", str(backend), "status", "--porcelain", "--untracked-files=no"],
+                capture_output=True, text=True, check=False,
+            )
+        except OSError as error:
+            raise ValueError("cannot inspect backend checkout: {}".format(error)) from error
+        if head.returncode != 0 or head.stdout.strip() != accepted_commit:
+            raise ValueError("backend HEAD does not match receipt commit")
+        if clean.returncode != 0 or clean.stdout.strip():
+            raise ValueError("backend checkout has tracked changes")
+        if _file_sha256(runner_file) != runner_sha:
+            raise ValueError("backend runner changed after receipt creation")
+
+        report_value = _receipt_object(receipt["report"], "receipt.report", {"path", "sha256", "schema_version"})
+        if report_value["schema_version"] != 8:
+            raise ValueError("receipt.report.schema_version must be 8")
+        report_file, report_sha = _receipt_path_hash(
+            {"path": report_value["path"], "sha256": report_value["sha256"]},
+            "receipt.report",
+        )
+        with report_file.open("r", encoding="utf-8") as source:
+            report = json.load(source)
+        if (
+            report.get("schema_version") != 8
+            or report.get("verdict", {}).get("status") != "pass"
+            or report.get("backend_build", {}).get("commit") != accepted_commit
+            or report.get("backend_build", {}).get("dirty") is not False
+            or report.get("firmware", {}).get("sha256") != firmware_sha
+            or report.get("board") != "picocalc"
+        ):
+            raise ValueError("report does not satisfy receipt admission")
+
+        provenance = _receipt_object(receipt["provenance"], "receipt.provenance", {"registry_path", "references"})
+        if provenance["registry_path"] != _receipt_path(FIRMWARE_TARGETS):
+            raise ValueError("receipt registry path differs")
+        references = provenance["references"]
+        if (
+            not isinstance(references, list)
+            or not references
+            or any(not isinstance(reference, str) or not reference for reference in references)
+            or len(set(references)) != len(references)
+        ):
+            raise ValueError("receipt provenance references must be non-empty unique strings")
+
+        descriptor = {
+            "schema_version": 1,
+            "status": "admitted",
+            "receipt_id": receipt["receipt_id"],
+            "target": target_value,
+            "firmware": {"path": str(firmware_file), "sha256": firmware_sha},
+            "backend": {
+                "directory": str(backend),
+                "commit": accepted_commit,
+                "runner": {"path": str(runner_file), "sha256": runner_sha},
+            },
+            "report": {"path": str(report_file), "sha256": report_sha, "schema_version": 8},
+            "device": device,
+            "launch": {"gui_started": False, "preview_ipc_schema": 1},
+        }
+        if descriptor_out is not None:
+            _write_json_atomic(descriptor_out, descriptor)
+            print("preview admission: PASS")
+            print("launch descriptor written to {}".format(descriptor_out))
+        else:
+            print(json.dumps(descriptor, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        print("preview admission: REFUSED: {}".format(error), file=sys.stderr)
+        return 1
+
+
 def firmware_test(
     target_id: str,
     firmware: Path,
@@ -1478,6 +1822,7 @@ def firmware_test(
     snapshot_dir: Optional[Path],
     uart_out: Optional[Path],
     json_out: Optional[Path],
+    receipt_out: Optional[Path] = None,
     run_id: Optional[str] = None,
     progress_interval: int = 10,
     no_progress: bool = False,
@@ -1494,6 +1839,9 @@ def firmware_test(
     Code 2 is the "cannot judge" case — the caller should treat it as
     hardware_required rather than as a failing run.
     """
+    if receipt_out is not None and json_out is None:
+        print("--receipt-out requires --json")
+        return 2
     if run_id is not None:
         try:
             valid_run_id(run_id)
@@ -1694,6 +2042,11 @@ def firmware_test(
         print("backend runner not built: {}".format(runner))
         print("build it with: cargo build --release -p picocalc-harness")
         return 2
+    runner_sha_before = _file_sha256(runner)
+    heartbeat_supported = _runner_supports_heartbeat(runner)
+    if not heartbeat_supported and (run_id is not None or progress_interval != 10):
+        print("backend runner does not support --run-id/--progress-interval")
+        return 2
 
     sd_snapshot_report = None
     i2c_report_value = None
@@ -1780,7 +2133,7 @@ def firmware_test(
             command.extend(["--snapshot-dir", str(snapshots)])
         if uart_out is not None:
             command.extend(["--uart", str(uart_path)])
-        if not no_progress:
+        if not no_progress and heartbeat_supported:
             command.extend(
                 [
                     "--run-id",
@@ -1807,6 +2160,10 @@ def firmware_test(
             return 2
         if not isinstance(report, dict):
             print("runner report must be a JSON object")
+            return 2
+        runner_sha_after = _file_sha256(runner)
+        if runner_sha_after != runner_sha_before:
+            print("backend runner changed while validation was running")
             return 2
         if uart_out is not None:
             if not uart_path.is_file():
@@ -1950,6 +2307,24 @@ def firmware_test(
         for failure in failures:
             print("  FAIL {}".format(failure))
         return 1
+    if receipt_out is not None:
+        try:
+            if receipt_out.resolve() == json_out.resolve():
+                print("--receipt-out must differ from --json")
+                return 2
+            receipt = _build_preview_receipt(
+                target,
+                firmware,
+                runner,
+                Path(json_out),
+                report,
+                runner_sha_before,
+            )
+            _write_json_atomic(receipt_out, receipt)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            print("cannot write validation receipt: {}".format(error))
+            return 2
+        print("receipt written to {}".format(receipt_out))
     return result.returncode
 
 
@@ -2218,6 +2593,32 @@ def main() -> int:
         help="firmware mode: disable runner heartbeat output",
     )
     test_parser.add_argument("--json", dest="json_out", type=Path)
+    test_parser.add_argument(
+        "--receipt-out",
+        type=Path,
+        help="firmware mode: write a validated preview admission receipt (requires --json)",
+    )
+
+    preview_parser = subparsers.add_parser(
+        "preview",
+        help="revalidate a receipt and write an admission descriptor (does not start a GUI)",
+    )
+    preview_parser.add_argument(
+        "--firmware", type=Path, required=True,
+        help="BIN path; must be the same bytes named by the receipt",
+    )
+    preview_parser.add_argument(
+        "--receipt", type=Path, required=True,
+        help="schema-1 receipt produced by `test --mode firmware --receipt-out`",
+    )
+    preview_parser.add_argument(
+        "--backend-dir", type=Path,
+        help="picoem-picocalc checkout (default: PICOEM_PICOCALC_DIR or ../picoem-picocalc)",
+    )
+    preview_parser.add_argument(
+        "--descriptor-out", type=Path,
+        help="write the admitted launch descriptor atomically",
+    )
 
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
@@ -2332,9 +2733,10 @@ def main() -> int:
                 or args.run_id is not None
                 or args.progress_interval is not None
                 or args.no_progress
+                or args.receipt_out is not None
             ):
                 parser.error(
-                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-dir/--sd-image-out/--sd-manifest/--sd-format/--i2c-profile/--i2c-fixture/--i2c-report/--run-id/--progress-interval/--no-progress are firmware-mode options; "
+                    "--cycles/--keys/--lcd-variant/--scenario/--snapshot-dir/--uart/--sd/--sd-dir/--sd-image-out/--sd-manifest/--sd-format/--i2c-profile/--i2c-fixture/--i2c-report/--run-id/--progress-interval/--no-progress/--receipt-out are firmware-mode options; "
                     "host mode tests FAT32 and FAT16 automatically"
                 )
             return host_test(args.build_dir, max(1, args.repeat), args.json_out)
@@ -2353,6 +2755,7 @@ def main() -> int:
             args.snapshot_dir,
             args.uart_out,
             args.json_out,
+            args.receipt_out,
             args.run_id,
             args.progress_interval if args.progress_interval is not None else 10,
             args.no_progress,
@@ -2362,6 +2765,13 @@ def main() -> int:
             i2c_profile=args.i2c_profile,
             i2c_fixture=args.i2c_fixture,
             i2c_report=args.i2c_report,
+        )
+    if args.command == "preview":
+        return preview_admission(
+            args.firmware,
+            args.receipt,
+            args.backend_dir,
+            args.descriptor_out,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

@@ -25,7 +25,7 @@
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 | I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E6完了。E5は同一BIN 3回のemulator回帰と、同一UF2の実機startup probe（RTC／EEPROM／keyboard／AHT20／BMP280）を合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
-| VRP | Validated Realtime Preview | **VRP-0完了（contract／fixture／WSLg capability／baseline）。** receipt生成、admission、preview IPC本体、GUI、audio、qualificationは未着手。VRP-0〜VRP-4は既存の`picotetris-opt1b`＋`picoedit-r1`で進め、正式qualification前にVRP-NES-0を完了する。VRP-7は1倍未達時だけ開始し、preview機能完成と1倍qualified完成を分離する。現時点ではcapabilityへ昇格しない |
+| VRP | Validated Realtime Preview | **VRP-0／VRP-1完了（contract／fixture／WSLg capability／baseline／receipt生成・admission）。** `picocalc.py preview`は参照artifactを再検証してadmitted descriptorを出力するが、GUIは起動しない。preview IPC本体、GUI、audio、qualificationは未着手。VRP-0〜VRP-4は既存の`picotetris-opt1b`＋`picoedit-r1`で進め、正式qualification前にVRP-NES-0を完了する。VRP-7は1倍未達時だけ開始し、preview機能完成と1倍qualified完成を分離する。現時点ではcapabilityへ昇格しない |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
@@ -70,8 +70,8 @@ cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromo
 DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profile接続、schema 2 sidecar、target contract接続、E5同一UF2実機probe、E6 active target／versioned validation／bounded capabilityまで完了した。
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
-次に開始する新規機能計画はValidated Realtime Previewです。実装順序は、VRP-0 contract/host
-spike、VRP-1 receipt/admission、VRP-2 shared session/preview API、VRP-3 GUI/input、VRP-4 audio、
+次に開始する新規機能計画はValidated Realtime Previewです。VRP-0 contract/host spikeとVRP-1
+receipt/admissionは完了しています。次の実装順序は、VRP-2 shared session/preview API、VRP-3 GUI/input、VRP-4 audio、
 VRP-5 qualification、VRP-6 capability/docsです。VRP-7 exact optimizationはVRP-5で1倍未達を
 確認した場合だけ開始します。詳細と各gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)

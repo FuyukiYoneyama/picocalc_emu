@@ -52,14 +52,16 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0完了、実装本体は未着手）
+### Validated Realtime Preview（VRP-0／VRP-1完了、preview本体は未着手）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-28時点では
-VRP-0のcontract／fixture、WSLg host capability probe、2 workloadのprovenance／GUIなしbaselineは
-固定済みです。ただしreceipt生成、admission、preview IPC、GUI、streaming audio、1倍qualificationは
+VRP-0のcontract／fixture、WSLg host capability probe、2 workloadのprovenance／GUIなしbaselineに加え、
+VRP-1のreceipt生成と共通admission（参照artifactの再hash、registry／validation record／backend clean
+pinの再検証、admitted descriptor出力）が固定済みです。preview IPC、GUI、streaming audio、1倍qualificationは
 未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
-realtime previewと呼び替えません。実施順序と安全gateは
+realtime previewと呼び替えません。VRP-1の旧backend heartbeat互換を含む実装記録は
+[`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-0〜VRP-4の初期workloadは`picotetris-opt1b`（revision 5）と`picoedit-r1`へ固定し、
 正式な`realtime-1x-qualified`昇格には、別途作成する再配布可能なNES-class target（VRP-NES-0）が必要です。

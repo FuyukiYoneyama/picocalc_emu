@@ -3347,6 +3347,103 @@ raise SystemExit(code)
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("VRP-0 contracts: PASS", completed.stdout)
 
+    def test_vrp1_receipt_admission_is_revalidated_and_fail_closed(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            backend, commit, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            validation_path = root / "firmware-validation/validations/fixture.json"
+            validation_path.parent.mkdir(parents=True)
+            validation_path.write_text(
+                json.dumps({
+                    "result": "accepted",
+                    "schema_version": 1,
+                    "target_contract_sha256": "pending",
+                    "target_id": "fixture",
+                    "target_revision": 1,
+                }),
+                encoding="utf-8",
+            )
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            target = document["targets"][0]
+            contract_sha = module.firmware_target_contract_sha256(target)
+            validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            validation["target_contract_sha256"] = contract_sha
+            validation_path.write_text(json.dumps(validation), encoding="utf-8")
+            target["validation"]["sha256"] = hashlib.sha256(
+                validation_path.read_bytes()
+            ).hexdigest()
+            registry.write_text(json.dumps(document), encoding="utf-8")
+
+            report_path = root / "report.json"
+            report = {
+                "schema_version": 8,
+                "verdict": {"status": "pass"},
+                "backend_build": {"commit": commit, "dirty": False},
+                "firmware": {"sha256": hashlib.sha256(firmware.read_bytes()).hexdigest()},
+                "board": "picocalc",
+            }
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            runner = backend / "target/release/picocalc-run"
+            with mock.patch.object(module, "ROOT", root), mock.patch.object(
+                module, "FIRMWARE_TARGETS", registry
+            ):
+                receipt = module._build_preview_receipt(
+                    target,
+                    firmware,
+                    runner,
+                    report_path,
+                    report,
+                    module._file_sha256(runner),
+                )
+                receipt_path = root / "receipt.json"
+                receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+                descriptor_path = root / "descriptor.json"
+                self.assertEqual(
+                    module.preview_admission(
+                        firmware, receipt_path, backend, descriptor_path
+                    ),
+                    0,
+                )
+                descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+                self.assertEqual(descriptor["status"], "admitted")
+
+                mutated = json.loads(receipt_path.read_text(encoding="utf-8"))
+                mutated["firmware"]["sha256"] = "0" * 64
+                mutated_path = root / "mutated-receipt.json"
+                mutated_path.write_text(json.dumps(mutated), encoding="utf-8")
+                self.assertEqual(
+                    module.preview_admission(firmware, mutated_path, backend, None),
+                    1,
+                )
+
+    def test_vrp1_receipt_requires_report_and_rejects_schema_fixture(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            backend, _commit, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            self.assertEqual(
+                self.run_firmware_fixture(
+                    module,
+                    backend,
+                    firmware,
+                    scenario,
+                    registry,
+                    receipt_out=Path(temporary) / "receipt.json",
+                ),
+                2,
+            )
+        fixture = ROOT / "docs/validated-realtime-preview/receipt-fixture-picotetris-opt1b-v1.json"
+        completed = run(
+            PICOCALC,
+            "preview",
+            "--firmware",
+            "/tmp/vrp1-no-firmware.bin",
+            "--receipt",
+            fixture,
+        )
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("schema-only fixture", completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

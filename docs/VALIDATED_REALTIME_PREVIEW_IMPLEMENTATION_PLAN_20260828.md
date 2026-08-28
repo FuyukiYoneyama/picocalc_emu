@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0 preflight complete; VRP-1 not started**
+Status: **Current implementation plan / VRP-0 and VRP-1 complete; VRP-2 not started**
 Date: 2026-08-28
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -194,7 +194,7 @@ optional I2C等へ対応するときはprojection schema revisionを上げ、fix
 変更前に次を固定する。
 
 1. receipt schema 1と、VRP-0で具体値を凍結したpreview IPC schema 1のfixture（UART0のTX/RX双方を含む）。正典は[`docs/validated-realtime-preview/`](validated-realtime-preview/)
-2. supported hostのWSLg GUI/audio capability。GUI/audio Rust crateはまだproduction dependencyへ追加せず、選定時のbuild/license確認はVRP-1のlockfile変更前に行う
+2. supported hostのWSLg GUI/audio capability。GUI/audio Rust crateはまだproduction dependencyへ追加せず、候補crateのbuild/license確認は実際に依存を追加するVRP-2/VRP-3のlockfile変更前に行う
 3. `picotetris-opt1b`（revision 5）と`picoedit-r1`（revision 1）のtarget/validation record、provenance、
    それぞれのbaseline手順
 4. 現行accepted backendでのGUIなし速度baseline
@@ -206,8 +206,8 @@ synthetic ROMを使い、そのsource/license/hashを固定する。
 
 **完了gate:** WSLg capability probeがwindowとsilent playback deviceの開閉を確認し、IPC schema 1
 fixtureの具体値と、上記2 workloadのprovenance・baseline手順が記録される。VRP-0ではproduction
-codeとRust GUI/audio dependencyを変更しない。候補crateのversion/build/license選定はVRP-1の
-最初のlockfile変更として別に記録する。実測結果は[`VRP0_HOST_SPIKE_20260828.md`](validated-realtime-preview/VRP0_HOST_SPIKE_20260828.md)、
+codeとRust GUI/audio dependencyを変更しない。VRP-1でも依存追加は行わず、候補crateのversion/build/license選定は
+VRP-2/VRP-3で最初にlockfileを変更する前に別記録する。実測結果は[`VRP0_HOST_SPIKE_20260828.md`](validated-realtime-preview/VRP0_HOST_SPIKE_20260828.md)、
 基準値は[`VRP0_BASELINE_20260828.json`](validated-realtime-preview/VRP0_BASELINE_20260828.json)を参照する。
 
 ### VRP-NES-0: NES-class target/fixture preparation（10〜20時間、正式qualificationの前提）
@@ -249,6 +249,16 @@ device projection違い、optional I2C targetを含む。
 
 **完了gate:** 手編集したreceiptだけではいずれの不一致も通らず、正しいreceiptだけがimmutableな
 launch descriptorを生成する。まだGUIは起動しない。
+
+**実装結果（2026-08-28）:** `tools/picocalc.py test --mode firmware`へ
+`--receipt-out`を追加し、PASS済みreportからschema 1 receiptを原子的に生成する。
+`picocalc.py preview`はreceipt、registry、validation record、BIN、report、backend HEAD／clean状態、
+runner bytes、device projectionを再検証し、GUIを起動せず`status=admitted`のlaunch descriptorだけを
+原子的に出力する。schema-only fixture、改変SHA、未知のsemantics-affecting runner fieldは拒否する。
+旧accepted backendのようにheartbeat optionを持たないrunnerは、既定のheartbeat引数を自動的に省略して
+互換実行し、明示的なheartbeat要求は`cannot judge`とする。実際の`picotetris-opt1b` clean build／run／
+admission結果とSHAは[`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)に固定した。
+VRP-1ではGUI、preview IPC本体、capability昇格は行わない。
 
 ### VRP-2: shared session coreとpreview backend API（24〜40時間）
 
@@ -373,8 +383,8 @@ timing/audio UX判定には使わない。
 
 | 順序 | package | 状態 |
 |---:|---|---|
-| 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependency選定はVRP-1で実施） |
-| 2 | VRP-1 receipt/admission | 未着手 |
+| 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
+| 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
 | 3 | VRP-2 shared session/preview API | 未着手 |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
