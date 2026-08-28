@@ -24,6 +24,7 @@ NEXT2_AUDIO_ORACLE_V3 = ROOT / "tools/next2_audio_oracle_v3.py"
 NEXT2_AUDIO_NEGATIVE = ROOT / "tools/verify_next2_audio_negative.py"
 JUDGE_SPEAKER_LISTENING = ROOT / "tools/judge_speaker_listening.py"
 SD_TRACE_REPLAY = ROOT / "tools/sd_trace_replay.py"
+VRP0_VERIFY = ROOT / "tools/verify_vrp0_contracts.py"
 
 
 def run(*arguments, env=None):
@@ -3340,6 +3341,11 @@ raise SystemExit(code)
             rejected = run(SD_TRACE_REPLAY, "--trace", mutated)
             self.assertEqual(rejected.returncode, 1)
             self.assertEqual(json.loads(rejected.stdout)["status"], "fail")
+
+    def test_vrp0_contract_fixtures_are_self_consistent(self):
+        completed = run(VRP0_VERIFY)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("VRP-0 contracts: PASS", completed.stdout)
 
 
 if __name__ == "__main__":

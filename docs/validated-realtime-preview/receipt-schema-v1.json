@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/validated-realtime-preview/receipt-v1.json",
+  "title": "PicoCalc validated realtime preview admission receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "target",
+    "target_validation_record",
+    "firmware",
+    "backend",
+    "report",
+    "device",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "fixture_only": {"const": true},
+    "receipt_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "contract_sha256"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "integer", "minimum": 1},
+        "contract_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "target_validation_record": {
+      "$ref": "#/$defs/path_hash"
+    },
+    "firmware": {
+      "$ref": "#/$defs/path_hash"
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted_commit", "executable"],
+      "properties": {
+        "accepted_commit": {"$ref": "#/$defs/commit"},
+        "executable": {"$ref": "#/$defs/path_hash"}
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "schema_version": {"const": 8}
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["board", "lcd_variant", "psram", "keyboard", "sd"],
+      "properties": {
+        "board": {"const": "picocalc"},
+        "lcd_variant": {"enum": ["pio-rgb565", "hwspi-rgb888", "hwspi-rgb565"]},
+        "psram": {"type": "boolean"},
+        "keyboard": {"type": "boolean"},
+        "sd": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["attached", "format"],
+          "properties": {
+            "attached": {"type": "boolean"},
+            "format": {"enum": ["fat16", "fat32"]}
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry_path", "references"],
+      "properties": {
+        "registry_path": {"type": "string", "minLength": 1},
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "path_hash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

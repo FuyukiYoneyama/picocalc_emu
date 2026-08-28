@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "fixture_id": "preview-ipc-v1-wire-fixture",
+  "contract": "docs/validated-realtime-preview/preview-ipc-schema-v1.json",
+  "valid_frames": [
+    {
+      "name": "hello",
+      "direction": "runner_to_preview",
+      "kind": 1,
+      "sequence": 0,
+      "payload_encoding": "canonical_json_utf8",
+      "payload_hex": "7b2270726f746f636f6c223a22707265766965772d697063222c22726f6c65223a2272756e6e6572222c22736368656d61223a317d",
+      "frame_hex": "504352500100010035000000000000007b2270726f746f636f6c223a22707265766965772d697063222c22726f6c65223a2272756e6e6572222c22736368656d61223a317d"
+    },
+    {
+      "name": "status",
+      "direction": "runner_to_preview",
+      "kind": 2,
+      "sequence": 1,
+      "payload_encoding": "canonical_json_utf8",
+      "payload_hex": "7b22636f766572616765223a226f6b222c227669727475616c5f6379636c65223a307d",
+      "frame_hex": "504352500100020023000000010000007b22636f766572616765223a226f6b222c227669727475616c5f6379636c65223a307d"
+    },
+    {
+      "name": "frame_rgb565_one_pixel",
+      "direction": "runner_to_preview",
+      "kind": 3,
+      "sequence": 2,
+      "payload_encoding": "u64_cycle_le_u16_width_le_u16_height_le_rgb565_le",
+      "payload_hex": "34120000000000000100010000f8",
+      "frame_hex": "50435250010003000e0000000200000034120000000000000100010000f8"
+    },
+    {
+      "name": "audio_pcm_s16_two_mono_frames",
+      "direction": "runner_to_preview",
+      "kind": 4,
+      "sequence": 3,
+      "payload_encoding": "u64_cycle_le_u32_rate_le_u16_channels_le_u16_frames_le_i16_le",
+      "payload_hex": "002000000000000022560000010002000000ff7f",
+      "frame_hex": "50435250010004001400000003000000002000000000000022560000010002000000ff7f"
+    },
+    {
+      "name": "key_event_enter_down",
+      "direction": "preview_to_runner",
+      "kind": 5,
+      "sequence": 0,
+      "payload_encoding": "canonical_json_utf8",
+      "payload_hex": "7b226b6579223a22456e746572222c227374617465223a22646f776e227d",
+      "frame_hex": "50435250010005001e000000000000007b226b6579223a22456e746572222c227374617465223a22646f776e227d"
+    },
+    {
+      "name": "reset",
+      "direction": "preview_to_runner",
+      "kind": 6,
+      "sequence": 1,
+      "payload_encoding": "empty",
+      "payload_hex": "",
+      "frame_hex": "50435250010006000000000001000000"
+    },
+    {
+      "name": "quit",
+      "direction": "preview_to_runner",
+      "kind": 7,
+      "sequence": 2,
+      "payload_encoding": "empty",
+      "payload_hex": "",
+      "frame_hex": "50435250010007000000000002000000"
+    },
+    {
+      "name": "uart_tx_A",
+      "direction": "runner_to_preview",
+      "kind": 8,
+      "sequence": 4,
+      "payload_encoding": "u64_cycle_le_u8",
+      "payload_hex": "563400000000000041",
+      "frame_hex": "50435250010008000900000004000000563400000000000041"
+    },
+    {
+      "name": "uart_rx_Z",
+      "direction": "preview_to_runner",
+      "kind": 9,
+      "sequence": 3,
+      "payload_encoding": "u8",
+      "payload_hex": "5a",
+      "frame_hex": "504352500100090001000000030000005a"
+    },
+    {
+      "name": "error_unknown_kind_report",
+      "direction": "runner_to_preview",
+      "kind": 10,
+      "sequence": 5,
+      "payload_encoding": "canonical_json_utf8",
+      "payload_hex": "7b22636f6465223a22756e6b6e6f776e5f6b696e64222c226d657373616765223a226d657373616765206b696e64203635353335206973206e6f7420737570706f72746564227d",
+      "frame_hex": "5043525001000a0047000000050000007b22636f6465223a22756e6b6e6f776e5f6b696e64222c226d657373616765223a226d657373616765206b696e64203635353335206973206e6f7420737570706f72746564227d"
+    },
+    {
+      "name": "goodbye_quit",
+      "direction": "runner_to_preview",
+      "kind": 11,
+      "sequence": 6,
+      "payload_encoding": "canonical_json_utf8",
+      "payload_hex": "7b22726561736f6e223a2271756974227d",
+      "frame_hex": "5043525001000b0011000000060000007b22726561736f6e223a2271756974227d"
+    }
+  ],
+  "reject_frames": [
+    {
+      "name": "unknown_kind",
+      "reason": "kind 65535 is not assigned",
+      "frame_hex": "504352500100ffff0000000007000000",
+      "expected_result": "reject"
+    },
+    {
+      "name": "truncated_status_payload",
+      "reason": "payload_length exceeds bytes supplied",
+      "frame_hex": "504352500100020023000000080000007b22636f766572616765223a226f6b222c227669727475616c5f6379636c65223a30",
+      "expected_result": "reject"
+    },
+    {
+      "name": "version_mismatch",
+      "reason": "version 2 is not supported",
+      "frame_hex": "50435250020001000000000009000000",
+      "expected_result": "reject"
+    }
+  ]
+}

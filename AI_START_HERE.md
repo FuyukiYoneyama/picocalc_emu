@@ -31,7 +31,7 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
 - I2C-EXT: E0〜E6完了。E5は同一BIN 3回のemulator回帰と同一UF2の実機startup probeを合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定
-- Validated Realtime Preview: 提案レビュー・実装計画完了、実装未着手。実装時は[`docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)のVRP-0から順に進め、GUIから先に作らない。VRP-0の固定targetは`picotetris-opt1b`（revision 5）と`picoedit-r1`であり、正式な1倍qualified昇格にはVRP-NES-0のNES-class targetが追加で必要である
+- Validated Realtime Preview: **VRP-0（contract／fixture／WSLg capability／baseline）完了、VRP-1未着手**。実装時は[`docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)のVRP-1から順に進め、GUIから先に作らない。VRP-0の固定targetは`picotetris-opt1b`（revision 5）と`picoedit-r1`であり、正式な1倍qualified昇格にはVRP-NES-0のNES-class targetが追加で必要である。契約fixtureは[`docs/validated-realtime-preview/`](docs/validated-realtime-preview/)にある
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、

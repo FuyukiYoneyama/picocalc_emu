@@ -25,7 +25,7 @@
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 | I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E6完了。E5は同一BIN 3回のemulator回帰と、同一UF2の実機startup probe（RTC／EEPROM／keyboard／AHT20／BMP280）を合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
-| VRP | Validated Realtime Preview | **提案レビュー・実装計画完了、実装未着手。** VRP-0〜VRP-4は既存の`picotetris-opt1b`＋`picoedit-r1`で進め、正式qualification前にVRP-NES-0を完了する。VRP-7は1倍未達時だけ開始し、preview機能完成と1倍qualified完成を分離する。現時点ではcapabilityへ昇格しない |
+| VRP | Validated Realtime Preview | **VRP-0完了（contract／fixture／WSLg capability／baseline）。** receipt生成、admission、preview IPC本体、GUI、audio、qualificationは未着手。VRP-0〜VRP-4は既存の`picotetris-opt1b`＋`picoedit-r1`で進め、正式qualification前にVRP-NES-0を完了する。VRP-7は1倍未達時だけ開始し、preview機能完成と1倍qualified完成を分離する。現時点ではcapabilityへ昇格しない |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した

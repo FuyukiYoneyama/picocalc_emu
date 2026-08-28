@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "baseline_id": "vrp0-gui-less-20260828",
+  "status": "screening_baseline_not_qualification",
+  "as_of": "2026-08-28",
+  "purpose": "Freeze the exact workload/provenance inputs and a GUI-less wall-time reference before preview presentation is implemented.",
+  "method": {
+    "tool": "tools/benchmark_firmware_realtime.py",
+    "timer": "time.perf_counter_ns around the release picocalc-run process",
+    "warmup_runs_excluded": 1,
+    "measured_runs_per_target": 3,
+    "runner_startup_and_artifact_writes_included": true,
+    "build_time_included": false,
+    "trace_enabled": false,
+    "execution": "sequential; no parallel runs",
+    "qualification_note": "VRP-5 retains the established 10-run/95% CI procedure; these three-run values are preflight screening only."
+  },
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "cpu_model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "logical_cpus": 12,
+    "reported_mhz_median": 3693.09,
+    "measurement_cpu": 0,
+    "sdk_path": "<pico-sdk>",
+    "sdk_version": "2.2.0",
+    "sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1"
+  },
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "dirty": false,
+    "runner_sha256": "0e955f6fbaad67fe2d1a9dbf79f3a1930ce0b164af8aa526919b83f5c0708aa2"
+  },
+  "targets": [
+    {
+      "id": "picotetris-opt1b",
+      "revision": 5,
+      "target_contract_sha256": "f3e8c251f6f9d9e6da0c8e2e43b474890db740474ac0b6a762927f316a1afc6f",
+      "source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+      "validation_record": {
+        "path": "firmware-validation/validations/picotetris-opt1b-r5.json",
+        "sha256": "9bef55b21d7005cac556ccf7256b595c5c6f8f1f8cd15b509a6bbf31b8f52996"
+      },
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+      "firmware": {
+        "path": "<fresh-dir>/build/PicoTetris.bin",
+        "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "build_command": "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-06T00:00:00Z --generator Ninja",
+      "historical_formal_reference": "firmware-validation/records/opt1-b-20260808-01/record.json",
+      "determinism": {
+        "all_reports_identical": true,
+        "all_uart_identical": true,
+        "all_snapshots_identical": true,
+        "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+        "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+        "snapshot_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "measurements": {
+        "wall_seconds": [28.216245212, 27.640030665, 27.42559964],
+        "median": 27.640030665,
+        "mean": 27.760625172333334,
+        "mean_ci95": [26.744815212478617, 28.776435132188052],
+        "real_time_percent_median": 13.440650790247593,
+        "slowdown_median": 7.440115925975775
+      }
+    },
+    {
+      "id": "picoedit-r1",
+      "revision": 1,
+      "target_contract_sha256": "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1",
+      "source_commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+      "validation_record": {
+        "path": "firmware-validation/validations/picoedit-r1-r1.json",
+        "sha256": "6dd2a03c31e8c2d1d675e6e92edefdd39636c721786e8e7984ea69b41a527c26"
+      },
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718",
+      "firmware": {
+        "path": "<fresh-dir>/build/picocalc_app.bin",
+        "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+        "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73"
+      },
+      "build_command": "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-09T08:00:00Z --generator Ninja",
+      "historical_reference": "firmware-validation/records/next1-picoedit-r1-20260809-01/record.json",
+      "determinism": {
+        "all_reports_identical": true,
+        "all_uart_identical": true,
+        "all_snapshots_identical": true,
+        "report_sha256": "1d8d0c6ddd92e640e62d585aa25b7195ec7f552644f33db5eb6381a6d87f6e15",
+        "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+        "snapshot_sha256": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+      },
+      "measurements": {
+        "wall_seconds": [13.569825572, 13.434515465, 13.355099195],
+        "median": 13.434515465,
+        "mean": 13.453146744,
+        "mean_ci95": [13.183424973423314, 13.722868514576685],
+        "real_time_percent_median": 24.712465504612823,
+        "slowdown_median": 4.046540802710844
+      }
+    }
+  ],
+  "provenance": {
+    "registry": "reference-projects/firmware-targets.json",
+    "runner": "picoem-picocalc@e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "source_workspaces": "temporary clean detached worktrees; paths are intentionally not part of the contract",
+    "local_only": true,
+    "ci_used": false
+  }
+}

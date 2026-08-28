@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "fixture_only": true,
+  "receipt_id": "vrp0-picoedit-r1-v1",
+  "target": {
+    "id": "picoedit-r1",
+    "revision": 1,
+    "contract_sha256": "063f848a8583e565d55ba7991f7022f0c7e3dc009f762040b532a9d6395e35d1"
+  },
+  "target_validation_record": {
+    "path": "firmware-validation/validations/picoedit-r1-r1.json",
+    "sha256": "6dd2a03c31e8c2d1d675e6e92edefdd39636c721786e8e7984ea69b41a527c26"
+  },
+  "firmware": {
+    "path": "<fresh-dir>/build/picocalc_app.bin",
+    "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+  },
+  "backend": {
+    "accepted_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "executable": {
+      "path": "<backend-checkout>/target/release/picocalc-run",
+      "sha256": "0e955f6fbaad67fe2d1a9dbf79f3a1930ce0b164af8aa526919b83f5c0708aa2"
+    }
+  },
+  "report": {
+    "path": "firmware-validation/records/next1-picoedit-r1-20260809-01/run-report.json",
+    "sha256": "1d8d0c6ddd92e640e62d585aa25b7195ec7f552644f33db5eb6381a6d87f6e15",
+    "schema_version": 8
+  },
+  "device": {
+    "board": "picocalc",
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "keyboard": true,
+    "sd": {"attached": true, "format": "fat32"}
+  },
+  "provenance": {
+    "registry_path": "reference-projects/firmware-targets.json",
+    "references": [
+      "firmware-validation/validations/picoedit-r1-r1.json",
+      "firmware-validation/records/next1-picoedit-r1-20260809-01/record.json",
+      "picoedit-picocalc@82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+      "picoem-picocalc@e985a9d7ecb51ef760506a105edd34e31cf9b5f1"
+    ]
+  }
+}
