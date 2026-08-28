@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-23
+更新日: 2026-08-28
 
 ## 版とbackend
 
@@ -51,6 +51,16 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
   控えめな区間音量をadvisory、極端なPWM rail張り付きをFAILとして分離
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
+
+### Validated Realtime Preview（未実装）
+
+Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
+`picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-28時点では
+提案レビューと実装計画までで、receipt、admission、preview IPC、GUI、streaming audio、1倍qualificationは
+未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
+realtime previewと呼び替えません。実施順序と安全gateは
+[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
+を正典とします。
 
 ### 範囲を固定して対応済み
 

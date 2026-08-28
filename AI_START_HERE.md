@@ -26,11 +26,12 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 - R0〜R6、NEXT-1〜NEXT-4: 完了
 - OPT1-B: promoted
 - OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
-- 現行計画の番号付き作業: すべて完了または正式終了
+- 既存R/NEXT/U/SD-GEN番号付き作業: すべて完了または正式終了。新規VRP計画は未着手
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
 - I2C-EXT: E0〜E6完了。E5は同一BIN 3回のemulator回帰と同一UF2の実機startup probeを合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定
+- Validated Realtime Preview: 提案レビュー・実装計画完了、実装未着手。実装時は[`docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)のVRP-0から順に進め、GUIから先に作らない
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
@@ -40,7 +41,11 @@ UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完�
 [`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
 にあります。これらの完了済み計画を再開せず、I2C-EXTは固定されたoptional profileとして利用できます。
 
-直近の正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
+現在の新規機能計画はValidated Realtime Previewです。これはfirmware validationの代替ではなく、
+PASS済みの同一BINと同一backend executableだけを対話観測する層です。現時点では未実装なので、
+通常のfirmware検証やmachine APIをpreviewまたは1倍対応済みと説明してはいけません。
+
+直近の完了済み正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
 [`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。実module/profileの
 E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time基盤、
 DS3231/AT24C32/AHT20/BMP280 model core、picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachは完了しています。

@@ -2,7 +2,7 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-直近の機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。現在、新しい番号付き機能計画は未定です。
+直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。現在の未実装計画はValidated Realtime Preview（VRP-0〜VRP-7）です。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
 
 ## 状態
 
@@ -25,6 +25,7 @@
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 | I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E6完了。E5は同一BIN 3回のemulator回帰と、同一UF2の実機startup probe（RTC／EEPROM／keyboard／AHT20／BMP280）を合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
+| VRP | Validated Realtime Preview | **提案レビュー・実装計画完了、実装未着手。** VRP-0〜VRP-6を順に実施し、VRP-7は1倍未達時だけ開始する。preview機能完成と1倍qualified完成を分離し、現時点ではcapabilityへ昇格しない |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
@@ -48,7 +49,7 @@ cycle差をexactness合格へ丸める根拠には流用しません。OPT4-Bは
 Host backendの合格だけでハードウェア挙動を合格にしません。runnerの終了コード0だけでも
 合格にせず、targetが固定したBIN、backend、scenario、stop reason、UART、report、snapshotを照合します。
 
-## 次の正式計画が決まるまでの状態
+## 現在の正式計画
 
 R/NEXTの機能作業は完了しています。UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5は完了しています。SD-GEN-1 P5で
 boundedな`sd-multi-block` capabilityをversioned validationとして受け入れました。現行作業は、性能面では
@@ -63,11 +64,18 @@ cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromo
 詳細は[`UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
 `history/`に残る古い「次はNEXT-*」「次はOPT*」を再開指示として扱いません。新しい正式計画を
 開始する場合は、目的、受入条件、対象リポジトリ、実機操作、ローカル検証、CI予算を計画書で再確認します。
-直近の正式計画として、I2C-EXTのE0〜E6を
+直近の完了済み正式計画として、I2C-EXTのE0〜E6を
 [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)に固定した。
 実装はE0（source/provenanceとwire contract）、E1（controller/mux/shared virtual-time）、E2の
 DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profile接続、schema 2 sidecar、target contract接続、E5同一UF2実機probe、E6 active target／versioned validation／bounded capabilityまで完了した。
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
+
+次に開始する新規機能計画はValidated Realtime Previewです。実装順序は、VRP-0 contract/host
+spike、VRP-1 receipt/admission、VRP-2 shared session/preview API、VRP-3 GUI/input、VRP-4 audio、
+VRP-5 qualification、VRP-6 capability/docsです。VRP-7 exact optimizationはVRP-5で1倍未達を
+確認した場合だけ開始します。詳細と各gateは
+[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
+を正典とし、提案書だけからproduction実装の順序を推測しません。
 
 ### UF2Loader計画の実施順序と中間マイルストーン
 

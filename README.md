@@ -25,6 +25,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
 - SD-GEN-1-P0〜P5: **完了（P5 bounded capability accepted）**。P4でmulti-blockをdefault runtimeへ接続し、CMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackの実SPI0 synthetic firmware E2E、RAW export byte一致、既存U6・M-NESCO・FAT16/FAT32凍結trace再play、legacy no-default差分を確認しました。P5でversioned validation contractと限定範囲の`sd-multi-block` capabilityを追加しました。versioned targetと固定版`uf2loader-e2e`は変更していません。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P5証拠は[`firmware-validation/evidence/sd-gen1-p5-20260823-01/`](firmware-validation/evidence/sd-gen1-p5-20260823-01/)です
 - I2C-EXT: **E0〜E6完了**。DS3231／AT24C32／AHT20／BMP280を既定構成へ入れず、明示的なprofileでのみ接続するoptional capabilityを同一UF2実機相関まで固定しました。詳細は[`docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)と[`firmware-validation/capability.json`](firmware-validation/capability.json)です
+- Validated Realtime Preview: **提案レビューと実装計画を完了、実装は未着手**。権威あるfirmware PASS済みの同一BINと同一`picocalc-run`だけを対話表示する計画であり、現時点ではpreview機能や1倍動作をsupportedとみなしません。現行計画は[`docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)です
 
 正確な状態は[実装状況](docs/IMPLEMENTATION_STATUS.md)、計画の完了表は
 [Milestones](docs/MILESTONES.md)、機械可読な対応範囲は

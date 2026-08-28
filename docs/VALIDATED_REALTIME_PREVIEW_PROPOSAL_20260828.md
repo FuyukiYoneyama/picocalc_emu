@@ -13,6 +13,7 @@ Tracking issue / PR: 未作成。P0 実装開始前に作成し、本書から�
 - [Concurrent runs](CONCURRENT_RUNS.md)
 - [Versioning](VERSIONING.md)
 - [Firmware target registry](../reference-projects/firmware-targets.json)
+- [Implementation plan](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 
 ## 0. 用語
 
@@ -134,6 +135,7 @@ NES 系 workload のような PicoCalc アプリでは、画面・入力・音�
 
 - virtual time と wall clock の関係
 - LCD framebuffer の時系列更新
+- PicoCalc UART0のTX/RX入出力
 - key down / held / up
 - reset / reboot
 - audio producer / DMA の時間進行
@@ -357,6 +359,8 @@ P0 は baseline を収集し、後続の設計記録で rolling / sustained rati
 P0 の最小 UI:
 
 - PicoCalc LCD 表示
+- PicoCalc本体スキン（写真presentation）へのLCD framebuffer合成
+- PicoCalc UART0のTX/RXを表示・入力する別console window（preview起動時に自動で開く）
 - PC keyboard -> PicoCalc keyboard event
 - key down / held / up
 - reset（sticky UX-invalid state は維持）
@@ -386,6 +390,10 @@ Esc      quit
 ```
 
 mute は host monitor sink だけに作用し、emulated audio device state や PWM / DMA の時間進行を変えない。
+
+UART consoleはrunnerのstderr/stdoutやhost shellではなく、PicoCalc UART0 peripheralの仮想TX/RX wireを
+扱う。TX/RXを方向付きで表示し、consoleから入力したbyteはemulated UART0 RX FIFOへ投入する。
+UART consoleを閉じても、firmware UARTを未接続へ黙って変更してはならない。consoleの状態をUIへ示す。
 
 host OS / GUI toolkit の keyboard auto-repeat は firmware 側の repeat / hold と混同しない。物理 key の press について preview frontend は原則として最初の key-down を一度だけ投入し、OS が同じ key-down を自動反復しても追加の press event として投入しない。key-up は実際の release 時に一度投入し、hold / repeat の時間的挙動は PicoCalc keyboard model / firmware-visible semantics に委ねる。GUI framework が repeat flag を提供する場合はそれを抑止判定に使う。
 
@@ -457,6 +465,8 @@ F12 等で得る preview screenshot は **UX 用の便宜的 capture** であり
 - wall-clock pacing と実測 ratio
 - firmware / app delay
 - LCD framebuffer の時系列状態
+- 任意presentation assetとしてのPicoCalc本体スキンと校正済みLCD開口部合成
+- PicoCalc UART0のTX/RX wireと、自動起動するUART console
 - keyboard down / held / up（host OS auto-repeat は重複 press として投入しない）
 - reset / reboot
 - reset を跨いで維持する sticky UX-invalid state
@@ -557,7 +567,7 @@ P0 / P1 の最初の完成条件を次とする。
 6. 現在の compiler / CMake / Ninja / picotool / Pico SDK が validation 時から変わっていても、validated firmware BIN と validated backend executable が byte-identical なら、それだけを理由に P0/P1 preview を拒否しない。
 7. 対話操作により unsupported / truncated MMIO に初めて到達した場合、既存 MachineSession observation から検出し、以後 `UX JUDGEMENT INVALID` を sticky 表示する。**F5 reset で underlying MMIO counter / entries が初期化されても sticky 状態と banner は維持され、admission gate を通った新規 process または revalidated reload でのみクリアできる。** preview 自身は hardware FAIL を生成しない。
 8. runtime device gate は `board`、`lcd_variant`、`psram`、`keyboard`、`sd.attached`、`sd.format` の6項目を一致必須とし、`cycles`、`keys`、`scenario`、`expected_stop_reason` を一致条件にしない。
-9. representative workload で LCD を連続表示でき、key down / held / up、reset、reload を対話操作できる。host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
+9. representative workload で LCD を連続表示でき、本体スキンを使う場合は校正済みLCD開口部へ表示できる。UART0のTX/RX console windowがpreview起動時に自動で開き、双方の入出力を対話操作できる。key down / held / up、reset、reloadも操作でき、host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
 10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。標準 monitor は PicoCalc 内蔵 speaker の音響模擬ではなく **headphone / electrical output class** を fidelity target とし、sample / PWM duty、sample rate / tempo、pitch、channel mapping、元の quantization / clipping 等の可聴な特徴を不必要に smoothing / enhancement しない。
 11. active PicoTetris 系 target と NES-class workload を各 10 分以上連続実行し、crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を記録できる。NES-class workload が未整備ならこの項目は未完了とする。
 12. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。

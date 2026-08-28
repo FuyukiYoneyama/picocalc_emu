@@ -15,6 +15,7 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
+| 現在の未実装計画（Validated Realtime Preview） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | 完了済みI2C-EXTのoptional capability（RTC/環境sensor） | [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md) |
 | 改造・backend変更・AI開発の入口 | [`../DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) |
 | M-NESCO拡張の実行証拠・完了記録 | [`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)、[`完了済み契約`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md) |
@@ -63,7 +64,7 @@
 | 対応・未対応範囲 | [`../firmware-validation/capability.json`](../firmware-validation/capability.json) |
 | firmware target registry | [`../reference-projects/firmware-targets.json`](../reference-projects/firmware-targets.json) |
 
-## 現行計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5完了）
+## 完了済み計画（U0〜U6／M-NESCO拡張／SD-GEN-1 P0〜P5）
 
 SDのRAW image、flash erase/program、`M-NESCO-S1`（`Picocalc_NESco`のdirect-boot SD/flash debug開始）、
 host directory snapshot、boot2／SD trace／warm resetを依存関係に沿って段階的に実装し、最後に外部`uf2loader`の
@@ -105,7 +106,8 @@ P1のmachine-readable契約は
 [`sd-gen1-p2-vectors-v1.json`](../firmware-validation/contracts/sd-gen1-p2-vectors-v1.json)です。P2の詳細作業記録は
 [`history/sd-gen1/`](history/sd-gen1/)へ移し、P2実装時点では通常runtime／runnerへ接続していませんでしたが、
 P4でdefault runtimeへ昇格しました。P4の代表E2EはCMD18→2 block→CMD12、CMD23/CMD25→1 block write→CMD17 readbackを実SPI0経路で実行し、RAW exportのbyte一致も確認しています。同じclean backendで3回再実行し、安定report項目・trace・exported imageが一致しました。既存U6／M-NESCO／FAT16／FAT32の凍結clean traceも再playしています。
-versioned targetと固定版`uf2loader-e2e`は変更していません。次の作業は、新しい正式計画が立つまで保留です。
+versioned targetと固定版`uf2loader-e2e`は変更していません。これらの完了済みSD作業を再開せず、
+新しい作業はValidated Realtime Previewの現行計画に従います。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。
