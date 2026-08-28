@@ -31,8 +31,14 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
    magic、version、endian、field幅、message kind、payload上限、異常系を未定義のままproduction
    codeへ進まない。
 
-既存の権威あるFirmware backend、schema 8、target registry、machine API schema 1は変更しない。
-previewはhardware PASS/FAILを生成しない。
+9. VRP-0で固定したtargetのbackend pinと、preview APIを実装した現在のbackendは同一とは限らない。
+   既存のvalidation record／target revisionを上書きせず、VRP-2のregistered-target gateへ入る前に、
+   現行backendで再検証した新しいversioned target revision、validation record、receiptを作る。
+   旧revisionの実機相関・batch証拠は歴史的な証拠として保持し、preview用の再検証結果と混同しない。
+
+既存の権威あるFirmware backendの履歴、schema 8、既存targetのvalidation record／revision、machine API
+schema 1は変更しない。VRP-2ではtarget registryのversioning規則に従った新revisionまたはpreview専用
+targetを追加できるが、既存entryを上書きしてはならない。previewはhardware PASS/FAILを生成しない。
 
 ## 2. 確認した現状
 
@@ -86,6 +92,12 @@ reload失敗時は旧sessionも停止し、`VALIDATION LOST — RELOAD REFUSED`�
 frontendへ渡すlaunch descriptorは一時artifactとして原子的に作り、BIN/runnerの期待SHAを含める。
 frontendはspawn直前にも両bytesを再hashする。初版の脅威modelは悪意あるlocal userへの耐タンパー性ではなく、
 buildやfile置換による**偶発的・不整合な迂回をfail-closedに検出すること**である。
+
+VRP-2でdescriptorを実際のrunner起動へ接続する際は、descriptorからrunnerのargv（または同等の
+versioned launch-contract snapshot）を復元できなければならない。frontendがmutableなtarget registryを
+再解釈して引数を組み立てるだけの設計は採用しない。descriptorのlaunch contractを拡張する場合は、
+descriptor schemaの必須field、正規化規則、SHA、拒否条件を同じ変更単位で固定し、descriptorの再検証なしに
+runnerをspawnしない。
 
 ### 3.3 preview IPC
 
@@ -187,6 +199,23 @@ preview admissionはreceiptのcopy値を信用せず、参照先を毎回再読�
 `cycles`、fixed `keys`、scenario、expected stop reason、audio oracleはvalidation専用なのでprojectionへ入れない。
 optional I2C等へ対応するときはprojection schema revisionを上げ、fixture SHAも明示的に追加する。
 
+### 4.2 VRP-2 current-backend revalidation
+
+VRP-0の固定targetは、作成時点のaccepted backendを保持する。2026-08-28時点では
+`picotetris-opt1b` revision 5と`picoedit-r1` revision 1が`e985a9d7…`を固定している一方、
+preview APIを含む開発backendは`e78d11e…`である。したがって、既存receiptをそのままpreview APIの
+実行証拠として使ってはならない。
+
+VRP-2のregistered-target gateは次の手順で閉じる。
+
+1. 旧target revision、validation record、receipt、実機証拠を変更せず保存する。
+2. 現行backendのclean checkoutとrunner SHAを固定し、同じsource/BIN/device projectionで2 workloadを再実行する。
+3. report、runner、BIN、contract、backend commitを含む新しいvalidation recordとtarget revision（または
+   明示的なpreview専用target）を作る。挙動差がある場合は旧revisionへ遡及修正せず、新revisionの差分として記録する。
+4. 新revisionからreceiptを生成し、descriptor admissionと後述のheadless launch consumerで再検証する。
+
+この工程が完了するまで、synthetic fixtureの三者比較をregistered targetの合格結果へ昇格しない。
+
 ## 5. 作業パッケージ
 
 ### VRP-0: contract・host spike・baseline preflight（4〜8時間）
@@ -266,6 +295,33 @@ VRP-1ではGUI、preview IPC本体、capability昇格は行わない。
 共通moduleへ分離する。batch scenarioとmachine APIを先に同じmoduleへ戻し、report bytes、cycle、
 UART、framebuffer、device observationの既存回帰が変わらないことを確認してから`--preview-api`を足す。
 
+VRP-2は、初期API実装とregistered-target受入を混同しないよう、次の4つの残作業へ分ける。
+
+#### VRP-2-a: current-backend versioned target
+
+上記§4.2の手順で、現行backendを固定した新revision／validation record／receiptを作る。旧revisionの
+report SHAや実機相関証拠を書き換えず、previewで実行するtargetのsource、BIN、runner、device projection、
+backend commitを一組のprovenanceとして保存する。
+
+#### VRP-2-b: admitted descriptor consumer
+
+`picocalc.py preview`が出力したdescriptorを入力として、GUIなしでrunnerをspawnするheadless consumer／
+smoke gateを追加する。consumerはdescriptorのlaunch contract、BIN／runner SHA、backend HEAD／clean状態を
+再検証し、PCRP hello→status→quitまでを実行する。手書きargvやmutable registryからの暗黙補完で起動した
+場合は合格にしない。
+
+#### VRP-2-c: machine API schema-1 compatibility
+
+既存machine APIの`run`、`step`、`run_until`、`input`、`observe`、`subscribe`、`snapshot`を代表する
+golden JSONL transcriptを固定し、preview実装前後で既存domainの応答が不変であることをローカルで確認する。
+新しい`observe domains=["preview"]`は追加domainとして扱い、既存domainの出力変更を許可しない。
+
+#### VRP-2-d: UART RX positive/overflow evidence
+
+RXを有効にした小さなrepository-owned firmware fixtureを追加し、previewからのaccepted RX、guest側の
+echo／応答、FIFO full／overrun、方向付きcounterを確認する。RX無効時の拒否だけではVRP-2のUART gateを
+閉じない。
+
 preview loopは既存`Pacer`を用い、clock変更時も`update_sys_clk_hz()`を呼ぶ。追加metricは
 session/rolling `virtual_time / wall_time`、lag、behind count、presentation/audio queue状態で、
 emulation hot pathの決定性へ入れない。
@@ -289,6 +345,10 @@ disk上のBINを再読しない。watchdog resetとは別の、preview operator�
 
 **完了gate:** 同じBINを同じvirtual cycleまで動かしたbatch/machine API/preview APIのUART、
 framebuffer、unsupported MMIO、audio digestが一致し、machine API schema 1の出力が不変。
+
+このgateは、board-backed synthetic fixtureのsmokeだけでは完了としない。VRP-2完了には、VRP-2-aの
+versioned target／receipt、VRP-2-bのdescriptor consumer、VRP-2-cのschema-1 transcript、VRP-2-dの
+UART RX正常系・overrun証拠をすべて同じbackend revisionで通すことを追加で要求する。
 
 **実装進捗（2026-08-28）:** backend側に`--preview-api`の初期実装を追加し、`MachineSession`を
 `src/session.rs`へ分離した。固定PCRP
@@ -401,7 +461,7 @@ timing/audio UX判定には使わない。
 |---:|---|---|
 | 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
-| 3 | VRP-2 shared session/preview API | **進行中。backendのpreview IPC初期実装・UART／reset／status・fail-closed E2E・`src/session.rs`分離・versioned observation projection/digest・board-backed synthetic UART fixtureのbatch／machine／preview三者report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）は完了。registered target admissionへ接続した完全gateは未完了** |
+| 3 | VRP-2 shared session/preview API | **進行中。backendのpreview IPC初期実装・UART／reset／status・fail-closed E2E・`src/session.rs`分離・versioned observation projection/digest・board-backed synthetic UART fixtureのbatch／machine／preview三者report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）は完了。残件は現行backendのversioned target／receipt、descriptor consumer、machine API schema-1 transcript、UART RX正常系・overrun、およびregistered target admissionへ接続した完全gate** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
@@ -409,7 +469,10 @@ timing/audio UX判定には使わない。
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
 
-VRP-0〜VRP-6のpreview実装中心工数は**96〜160時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。
+VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
+**112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。内訳上、VRP-2は
+初期API実装の24〜40時間に加え、versioned target／descriptor consumer／互換性transcript／UART
+正常系の残作業として**16〜32時間 + 再検証時間**を見込む。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。
@@ -423,11 +486,14 @@ GUIだけを先に作るとadmissionとbackend identityを後付けすること�
 3. admission supervisor/negative tests
 4. MachineSession機械的分離（挙動差ゼロ）
 5. preview IPC/backend loop
-6. frontend window/framebuffer
-7. keyboard/reset/reload/sticky state
-8. audio transport
-9. baseline/decision record
-10. capability/user/developer docs
+6. current-backend versioned target／validation record／receipt
+7. admitted descriptor consumer/headless launch smoke
+8. machine API schema-1 compatibility transcript／UART RX fixture
+9. frontend window/framebuffer
+10. keyboard/reset/reload/sticky state
+11. audio transport
+12. baseline/decision record
+13. capability/user/developer docs
 
 各単位でローカルtestを完了してから次へ進む。通常の試行錯誤にGitHub Actionsを使わず、
 workflow追加・trigger/job変更・CI実行増加は所有者の事前許可なしに行わない。pushをCIの代わりにしない。
@@ -439,6 +505,9 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 - GUI/audio dependencyがqualified hostで再現可能にbuild/runできない
 - same executable identityを維持できない構成変更が必要になった
 - batch/machine API/preview API間で同じvirtual boundaryのstateが一致しない
+- current backendを新しいversioned targetへ再検証できず、旧validation recordを書き換える必要が生じた
+- descriptorからrunnerの完全なlaunch contractを再現できず、手動argvまたはmutable registry依存が必要になった
+- machine API schema 1の既存domainまたはUART RX正常系の回帰証拠を固定できない
 - host presentationのdropがemulated eventを変える
 - optional device設定を6項目だけで安全に識別できないtargetを起動しようとした
 - baseline fixtureのsource/license/provenanceを固定できない
@@ -451,6 +520,7 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 ### 機能preview完成
 
 - authoritative PASSからreceiptを生成し、same BIN/same runnerだけを起動できる
+- registered targetのversioned receiptから、同じlaunch contractをheadless consumerで再検証・起動できる
 - GUI、input、reset/reload、coverage banner、audio statusが動く
 - hardware verdictを出さず、timing未達を明示する
 - 既存Firmware backendとmachine APIの契約が不変
