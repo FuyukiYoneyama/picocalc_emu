@@ -1,12 +1,11 @@
-# Validated Realtime Preview: VRP-0/VRP-1 contracts
+# Validated Realtime Preview: VRP-0/VRP-1 contracts and VRP-2 evidence
 
-This directory contains the immutable, machine-readable inputs produced by
-VRP-0 and VRP-1. It is a contract, provenance, and admission fixture, not a
-GUI implementation.
+This directory contains the immutable, machine-readable inputs and local
+evidence produced by VRP-0 through VRP-2-e. It is a contract, provenance, and
+admission fixture, not a GUI implementation.
 The files are deliberately kept separate from `firmware-validation/records/`:
 the latter are existing validation evidence, while these files describe the
-future preview transport and the receipt that will admit an already validated
-run.
+preview transport and the receipt that admits an already validated run.
 
 ## Canonical files
 
@@ -17,9 +16,14 @@ run.
 | [`receipt-fixture-picoedit-r1-v1.json`](receipt-fixture-picoedit-r1-v1.json) | Schema-only receipt fixture for `picoedit-r1` rev.1 |
 | [`preview-ipc-schema-v1.json`](preview-ipc-schema-v1.json) | Frozen local preview wire protocol |
 | [`preview-ipc-fixture-v1.json`](preview-ipc-fixture-v1.json) | Accepted and rejected byte-level IPC fixtures |
+| [`preview-launch-descriptor-schema-v1.json`](preview-launch-descriptor-schema-v1.json) | Admitted descriptor and immutable launch-contract schema |
 | [`VRP0_BASELINE_20260828.json`](VRP0_BASELINE_20260828.json) | Reproducibility and GUI-less screening baseline |
 | [`VRP0_HOST_SPIKE_20260828.md`](VRP0_HOST_SPIKE_20260828.md) | WSLg GUI/audio capability probe and dependency policy |
 | [`VRP1_RECEIPT_ADMISSION_20260828.md`](VRP1_RECEIPT_ADMISSION_20260828.md) | Receipt generation, revalidation, compatibility, and local acceptance |
+| [`VRP2A_CURRENT_BACKEND_20260828.md`](VRP2A_CURRENT_BACKEND_20260828.md) | Current-backend target revisions, reports, and receipt admission |
+| [`VRP2B_DESCRIPTOR_CONSUMER_20260829.md`](VRP2B_DESCRIPTOR_CONSUMER_20260829.md) | Headless descriptor consumer and PCRP hello/status/quit smoke gate |
+| [`VRP2CD_MACHINE_UART_20260829.md`](VRP2CD_MACHINE_UART_20260829.md) | Machine API schema-1 golden transcript and UART RX/overrun evidence |
+| [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
 
 The two receipt fixtures are intentionally **not launchable receipts**. Their
 firmware and runner paths use `<fresh-dir>` / `<backend-checkout>` placeholders;
@@ -31,7 +35,10 @@ VRP-1's `python3 tools/picocalc.py preview` command is an admission gate only:
 it revalidates a generated receipt and writes a launch descriptor, but it does
 not start a GUI or emulator process. The receipt and descriptor are normally
 kept beside the caller's validation artifacts; they are not required for
-ordinary `new`/`build`/`test` use.
+ordinary `new`/`build`/`test` use. VRP-2-c/d compatibility evidence is recorded
+separately from the receipt fixtures: it protects the established machine API
+and the directional UART RX queue without changing the authoritative firmware
+report schema.
 
 ## Verification
 
@@ -48,6 +55,39 @@ the frozen baseline points at the exact registry revisions and hashes. The
 second command is a local WSLg capability probe: it creates and closes a tiny
 Tk window and opens a silent PulseAudio playback stream. It does not add a
 runtime dependency, play audible data, or modify the emulator.
+
+The VRP-2-c/d backend tests are run in the `picoem-picocalc` checkout:
+
+```sh
+cargo test -p picocalc-harness --test machine_api_schema1_golden --locked
+cargo test -p picocalc-harness --test preview_api_e2e --locked
+cargo clippy -p picocalc-harness --tests --locked -- -D warnings
+```
+
+These are local compatibility tests. They do not perform hardware correlation,
+do not claim audio streaming, and do not promote the preview capability.
+
+The final registered-target gate is run locally after a fresh target revision
+has a clean backend pin, an externally supplied BIN, and a report containing
+the complete audio observation.  Use:
+
+```sh
+python3 tools/picocalc.py preview-digest-gate \
+  --descriptor /absolute/path/to/admitted-descriptor.json \
+  --backend-dir /absolute/path/to/picoem-picocalc \
+  --evidence-out /absolute/path/to/vrp2-complete-digest.json
+```
+
+It compares the registered report with fresh batch, machine-API, and
+preview-API projections at the same virtual cycle.  Missing observation data
+is refused rather than filled with defaults.  The command is a local gate and
+does not invoke GitHub Actions.
+
+The VRP-2 digest's audio member is the complete bounded DMA-to-PWM surface
+already present in schema-8 `audio_sink` (including due-cycle, block-gap, and
+service-latency digests).  The optional `--audio-analysis` loudness/rail
+statistics are deliberately not mixed into this digest; they require a
+separate versioned monitor contract in VRP-4.
 
 VRP-0 intentionally did not add `winit`, `cpal`, a GUI executable, or a
 preview IPC implementation. VRP-1 adds only standard-library Python receipt

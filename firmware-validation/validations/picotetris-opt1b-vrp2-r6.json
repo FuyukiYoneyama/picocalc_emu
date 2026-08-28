@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "record": "firmware-validation/records/vrp2-a-picotetris-20260828-01/record.json",
+    "record_id": "vrp2-a-picotetris-20260828-01",
+    "section": "firmware_run",
+    "sha256": "2eaba4d85579193dd69e9eaf6689b69d34768873eea99745f611cb115075f76c"
+  },
+  "result": "accepted",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target_contract_sha256": "ef77c2cd2b31f9bf7fb305b43e89c75c9e7c8ed9492b68b659e2ed33fa30fa66",
+  "target_id": "picotetris-opt1b-vrp2",
+  "target_revision": 6,
+  "validation_id": "picotetris-opt1b-vrp2-r6"
+}

@@ -1,7 +1,7 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0 and VRP-1 complete; VRP-2 backend API in progress**
-Date: 2026-08-28
+Status: **Current implementation plan / VRP-0, VRP-1, and VRP-2-a〜d complete; VRP-2 registered-target digest closure remains**
+Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
 
@@ -303,6 +303,15 @@ VRP-2は、初期API実装とregistered-target受入を混同しないよう、�
 report SHAや実機相関証拠を書き換えず、previewで実行するtargetのsource、BIN、runner、device projection、
 backend commitを一組のprovenanceとして保存する。
 
+**完了記録（2026-08-28）:** `picotetris-opt1b-vrp2` revision 6 と
+`picoedit-r1-vrp2` revision 2 を追加した。両方をbackend
+`d3767c901921811b5744925832956661fd344457`／runner SHA
+`f436d7dc4965b433a65ee7355014b1d93148dbb433e251927cbd9064e019a6d7`で
+clean revalidationし、UART・RGB565 framebuffer・scenario timelineは旧revisionと
+一致、cycle差はそれぞれ -1／-4 と記録した。validation record、target contract、
+receipt生成、`preview` admissionまでローカルでPASSした。旧revisionの実機証拠は変更して
+いない。詳細は[`validated-realtime-preview/VRP2A_CURRENT_BACKEND_20260828.md`](validated-realtime-preview/VRP2A_CURRENT_BACKEND_20260828.md)を参照する。
+
 #### VRP-2-b: admitted descriptor consumer
 
 `picocalc.py preview`が出力したdescriptorを入力として、GUIなしでrunnerをspawnするheadless consumer／
@@ -310,17 +319,71 @@ smoke gateを追加する。consumerはdescriptorのlaunch contract、BIN／runn
 再検証し、PCRP hello→status→quitまでを実行する。手書きargvやmutable registryからの暗黙補完で起動した
 場合は合格にしない。
 
+**完了記録（2026-08-29）:** `preview-headless`を追加した。admitted descriptorへ埋め込んだ
+schema-1 launch contract（argv、cwd、bootrom、contract SHA）を再検証し、runnerの全PCRP出力を
+schema-1のpayload／sequence／canonical JSON規則で検査する。hello→status後にquitを送信し、goodbyeと
+exit 0を要求する。descriptor mutation、timeout、EOF、unknown/direction-invalid kind、sequence不連続、
+JSON／binary payload不正はfail-closedで拒否する。実際のVRP-2-a 2 target descriptorとfake-runner
+unit testでローカルPASSした。詳細は[`validated-realtime-preview/VRP2B_DESCRIPTOR_CONSUMER_20260829.md`](validated-realtime-preview/VRP2B_DESCRIPTOR_CONSUMER_20260829.md)。
+
 #### VRP-2-c: machine API schema-1 compatibility
 
 既存machine APIの`run`、`step`、`run_until`、`input`、`observe`、`subscribe`、`snapshot`を代表する
 golden JSONL transcriptを固定し、preview実装前後で既存domainの応答が不変であることをローカルで確認する。
 新しい`observe domains=["preview"]`は追加domainとして扱い、既存domainの出力変更を許可しない。
 
+**完了記録（2026-08-29）:** `picoem-picocalc`の
+`crates/picocalc-harness/tests/fixtures/machine-api-schema1-golden.jsonl`へ、既存schema 1の
+`observe`／`step`／`subscribe`／`run`／`input`／`run_until`／`snapshot`を含む8交換のgolden transcriptを固定した。
+`machine_api_schema1_golden.rs`は実runnerへ同じJSON Linesを順に送り、応答JSONをbyteではなく構造化値として
+完全一致比較し、snapshot生成も確認する。`cargo test -p picocalc-harness --test machine_api_schema1_golden --locked`
+がローカルで合格し、preview専用`observe` domainを既存transcriptへ混入させない境界もテストコメントで固定した。
+
 #### VRP-2-d: UART RX positive/overflow evidence
 
 RXを有効にした小さなrepository-owned firmware fixtureを追加し、previewからのaccepted RX、guest側の
 echo／応答、FIFO full／overrun、方向付きcounterを確認する。RX無効時の拒否だけではVRP-2のUART gateを
 閉じない。
+
+**完了記録（2026-08-29）:** `preview_api_e2e`へrepository-ownedの決定的Thumb raw-flash fixtureを追加し、
+previewのUART RXへ16バイトを連続投入してguest側のecho順序とaccepted counterを確認した。17バイト目は
+bounded FIFOのoverrunとして方向付きerror／counterへ入り、RX disabled時の拒否経路も既存テストで保持する。
+テストはfixtureを一時生成して終了時に削除し、`cargo test -p picocalc-harness --test preview_api_e2e --locked`
+と`cargo clippy -p picocalc-harness --tests --locked -- -D warnings`をローカルで合格させた。これはUART
+wire／queue semanticsの証拠であり、実機音声やhardware qualificationを主張するものではない。
+
+#### VRP-2-e: registered-target complete digest gate
+
+`tools/picocalc.py preview-digest-gate`を追加し、VRP-2-aのadmitted
+descriptorを入力として、登録targetの同一BIN・同一scenarioをbatch、machine API、preview APIの
+三経路へ渡し、descriptorが参照するregistered reportを含む**四者**のobservation projection／
+canonical digest、scenario timeline、終端virtual cycle、target report checksを比較する。
+projectionはRust backendのpreview observation schema 1と同じく、schema-8の`audio_sink`にある
+DMA-to-PWM観測面（write/error、PCM／edge／due-cycle、block/gap、service-latency）を完全に含み、
+RGB565 framebuffer、UART、unsupported-MMIOも含む。`--audio-analysis`のhost側loudness/rail統計は
+別artifactであり、VRP-2のexactness projectionへ推測混入しない。観測値が欠ける古いreportへaudioを
+推測補完せず、完全digest gateを拒否する。音声分析値を受入入力にする場合はVRP-4で別のversioned
+monitor contractを定義する。
+
+実装はfake registered-targetでdescriptor admissionからevidence原子書込みまでローカルテスト済み
+だが、現行VRP-2-a記録はcomplete `audio_sink` projection作成前で、対象BINも配布workspaceに無い。
+したがって実targetの合格record、target capability昇格、VRP-2全体完了はまだ宣言しない。実受入には、
+新しいclean backend pin、audio-analysis付きfresh report、SHA一致BIN、versioned validation／receiptを
+揃え、次のコマンドをローカルで実行する。
+
+```sh
+python3 tools/picocalc.py preview-digest-gate \
+  --descriptor /absolute/path/to/admitted-descriptor.json \
+  --backend-dir /absolute/path/to/picoem-picocalc \
+  --evidence-out /absolute/path/to/vrp2-complete-digest.json
+```
+
+詳細な受入境界とnon-claimは[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定する。
+
+VRP-2-c／dの互換性・UART RX証拠は完了した。残るVRP-2の受入作業は、VRP-2-aで作成したversioned
+registered targetのlaunch contractに対して、上記VRP-2-eの完全なprojection digestを同一virtual cycleで
+実targetへ再検証し、receipt／admissionへ接続することである。実targetの完全gateが閉じるまでVRP-2全体を
+完了、previewをsupported、またはhardware qualification済みとは扱わない。
 
 preview loopは既存`Pacer`を用い、clock変更時も`update_sys_clk_hz()`を呼ぶ。追加metricは
 session/rolling `virtual_time / wall_time`、lag、behind count、presentation/audio queue状態で、
@@ -331,8 +394,8 @@ disk上のBINを再読しない。watchdog resetとは別の、preview operator�
 
 #### PicoCalc UART0 console
 
-現在のUART modelはfirmware TXの観測を持つ一方、外部RX stimulusをまだ提供していない。UARTウィンドウを
-「ログ表示」として実装して済ませず、VRP-2で次を追加する。
+現在のUART modelはfirmware TXの観測に加え、VRP-2-dで外部RX stimulusと方向付きcounterを提供する。
+UARTウィンドウを「ログ表示」として実装して済ませず、次の境界を維持する。
 
 - UART0 TX byteをvirtual cycle付きでpreviewへ逐次送る
 - previewからUART0 RXへ投入するbounded queueと、UART FIFO full/overrunの既存semanticsを使用する
@@ -348,9 +411,10 @@ framebuffer、unsupported MMIO、audio digestが一致し、machine API schema 1
 
 このgateは、board-backed synthetic fixtureのsmokeだけでは完了としない。VRP-2完了には、VRP-2-aの
 versioned target／receipt、VRP-2-bのdescriptor consumer、VRP-2-cのschema-1 transcript、VRP-2-dの
-UART RX正常系・overrun証拠をすべて同じbackend revisionで通すことを追加で要求する。
+UART RX正常系・overrun証拠、VRP-2-eのregistered-target完全digestをすべて同じbackend revisionで通す
+ことを追加で要求する。
 
-**実装進捗（2026-08-28）:** backend側に`--preview-api`の初期実装を追加し、`MachineSession`を
+**実装進捗（2026-08-29）:** backend側に`--preview-api`の初期実装を追加し、`MachineSession`を
 `src/session.rs`へ分離した。固定PCRP
 schema 1のframe reader/writer、sequence・direction・payloadのfail-closed検証、UART0のTX/RX
 wire、key/reset/quit入力、RGB565初期・差分frame、pacer status、bounded input queueを実装し、
@@ -365,6 +429,11 @@ PCMは`audio.state=not_streamed`として明示し、bounded host audioはVRP-4�
 する。backend側の利用・制約は
 [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md)
 を参照する。
+
+VRP-2-c／dの互換性・UART RX証拠と、VRP-2-eのgate実装・fake-target検査は完了した。残るVRP-2の
+受入作業は、VRP-2-aで作成したversioned registered targetを、complete `audio_sink` reportを含むfresh
+revalidationへ更新し、実BINでVRP-2-eを実行してreceipt／admissionへ接続することである。これが閉じるまで
+VRP-2全体を完了、previewをsupported、またはhardware qualification済みとは扱わない。
 
 ### VRP-3: GUI・本体スキン・LCD・keyboard・UART・reset/reload（24〜36時間）
 
@@ -461,7 +530,7 @@ timing/audio UX判定には使わない。
 |---:|---|---|
 | 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
-| 3 | VRP-2 shared session/preview API | **進行中。backendのpreview IPC初期実装・UART／reset／status・fail-closed E2E・`src/session.rs`分離・versioned observation projection/digest・board-backed synthetic UART fixtureのbatch／machine／preview三者report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）は完了。残件は現行backendのversioned target／receipt、descriptor consumer、machine API schema-1 transcript、UART RX正常系・overrun、およびregistered target admissionへ接続した完全gate** |
+| 3 | VRP-2 shared session/preview API | **進行中。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査は完了。残件はcomplete `audio_sink`を含むfresh report／新backend pin／実BINによるregistered-target完全digest最終再検証と受入record** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
@@ -470,9 +539,10 @@ timing/audio UX判定には使わない。
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
 
 VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
-**112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。内訳上、VRP-2は
-初期API実装の24〜40時間に加え、versioned target／descriptor consumer／互換性transcript／UART
-正常系の残作業として**16〜32時間 + 再検証時間**を見込む。
+**112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。VRP-2の初期API、
+versioned target、descriptor consumer、machine API transcript、UART RX正常系は実装済みであり、
+残るregistered-target digest closureの工数は、対象targetの再実行とreceipt／admission接続を測定したうえで
+別途確定する。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。

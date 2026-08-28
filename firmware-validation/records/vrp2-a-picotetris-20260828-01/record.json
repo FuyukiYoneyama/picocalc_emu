@@ -1,0 +1,66 @@
+{
+  "comparison": {
+    "cycle_delta_vs_superseded": -1,
+    "framebuffer_rgb565_identical_to_superseded": true,
+    "hardware_correlation": "not_claimed",
+    "supersedes": "picotetris-opt1b@5",
+    "timeline_identical_to_superseded": true,
+    "uart_byte_identical_to_superseded": true
+  },
+  "evidence": {
+    "report": {
+      "path": "firmware-validation/records/vrp2-a-picotetris-20260828-01/run-report.json",
+      "sha256": "8c6fd9f7c402950b8f752780505c703e0293f247779889dca6125e3bb57d724b"
+    },
+    "uart_transcript": {
+      "path": "firmware-validation/records/vrp2-a-picotetris-20260828-01/uart.log",
+      "sha256": "a5dd427d9af79cb5f4541b1a4a243ddbdc4052b8bfbd921b529c0a689ef6e3a4"
+    }
+  },
+  "firmware_run": {
+    "backend_commit": "d3767c901921811b5744925832956661fd344457",
+    "backend_dirty": false,
+    "target": {
+      "id": "picotetris-opt1b-vrp2",
+      "revision": 6,
+      "contract_sha256": "ef77c2cd2b31f9bf7fb305b43e89c75c9e7c8ed9492b68b659e2ed33fa30fa66"
+    },
+    "cycles": 927528659,
+    "elapsed_us": 3715000,
+    "firmware_bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "normalized_report_sha256": "aca35844de16edd1465278c7d48463386115d6bce34d383be74530128b909751",
+    "runner_sha256": "f436d7dc4965b433a65ee7355014b1d93148dbb433e251927cbd9064e019a6d7",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "stop_reason": "scenario_done",
+    "timeline_sha256": "8403b8f9d8aa9e4cfb84b03ac0082529873d79c14e5079994085893e06f69589",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "verdict": "pass"
+  },
+  "preview_revalidation": {
+    "device_projection": {
+      "board": "picocalc",
+      "keyboard": true,
+      "lcd_variant": "pio-rgb565",
+      "psram": true,
+      "sd": {
+        "attached": true,
+        "format": "fat32"
+      }
+    },
+    "hardware_correlation_completed": false,
+    "note": "Current backend revalidation for preview admission; superseded hardware evidence remains immutable.",
+    "preview_api_backend": "d3767c901921811b5744925832956661fd344457",
+    "runner_executable_sha256": "f436d7dc4965b433a65ee7355014b1d93148dbb433e251927cbd9064e019a6d7"
+  },
+  "record_id": "vrp2-a-picotetris-20260828-01",
+  "result": "pass",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target": {
+    "contract_sha256": "ef77c2cd2b31f9bf7fb305b43e89c75c9e7c8ed9492b68b659e2ed33fa30fa66",
+    "id": "picotetris-opt1b-vrp2",
+    "revision": 6
+  },
+  "title": "VRP-2-a current-backend versioned preview target revalidation"
+}

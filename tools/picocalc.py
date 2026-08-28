@@ -7,10 +7,12 @@ import hashlib
 import json
 import os
 import re
+import select
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -1541,6 +1543,59 @@ def _preview_device_projection(target: dict) -> dict:
     }
 
 
+def _preview_launch_contract(
+    target: dict, firmware: Path, backend: Path, runner: Path
+) -> dict:
+    """Build the exact, versioned argv used by a preview descriptor.
+
+    The descriptor is deliberately self-contained: a consumer validates this
+    contract instead of reconstructing an invocation from a mutable registry
+    at spawn time.  The registry is still checked for the target contract
+    SHA, but all path and option bytes used for the launch are recorded here.
+    """
+    runner_contract = target.get("runner", {})
+    for field in ("stop_pc", "keys", "psram_verify_range"):
+        if runner_contract.get(field) is not None:
+            raise ValueError(
+                "target '{}' has preview-ineligible launch field '{}'".format(
+                    target.get("id", "<unknown>"), field
+                )
+            )
+    backend = backend.resolve()
+    firmware = firmware.resolve()
+    runner = runner.resolve()
+    bootrom = backend / "roms/rp2040/bootrom-rp2040-b2.bin"
+    if not bootrom.is_file():
+        raise ValueError("preview bootrom not found: {}".format(bootrom))
+    argv = [
+        str(runner),
+        "--bin", str(firmware),
+        "--bootrom", str(bootrom),
+        "--board", runner_contract["board"],
+        "--lcd-variant", runner_contract["lcd_variant"],
+        "--quantum", str(runner_contract["quantum"]),
+        "--backend-commit", target["backend"]["accepted"],
+        "--preview-api",
+    ]
+    if runner_contract.get("psram", False):
+        argv.append("--psram")
+    if runner_contract.get("keyboard", False):
+        argv.append("--keyboard")
+    sd = runner_contract.get("sd", {"attached": False, "format": "fat32"})
+    if sd.get("attached", False):
+        argv.extend(["--sd", "--sd-format", sd["format"]])
+    return {
+        "schema_version": 1,
+        "mode": "preview-api",
+        "cwd": str(backend),
+        "argv": argv,
+        "bootrom": {
+            "path": str(bootrom),
+            "sha256": _file_sha256(bootrom),
+        },
+    }
+
+
 def _validate_target_validation_record(target: dict) -> tuple[Path, dict]:
     validation = target.get("validation")
     if not isinstance(validation, dict) or set(validation) != {"record", "sha256"}:
@@ -1770,6 +1825,8 @@ def preview_admission(
         ):
             raise ValueError("report does not satisfy receipt admission")
 
+        launch_contract = _preview_launch_contract(target, firmware_file, backend, runner_file)
+
         provenance = _receipt_object(receipt["provenance"], "receipt.provenance", {"registry_path", "references"})
         if provenance["registry_path"] != _receipt_path(FIRMWARE_TARGETS):
             raise ValueError("receipt registry path differs")
@@ -1795,7 +1852,12 @@ def preview_admission(
             },
             "report": {"path": str(report_file), "sha256": report_sha, "schema_version": 8},
             "device": device,
-            "launch": {"gui_started": False, "preview_ipc_schema": 1},
+            "launch": {
+                "gui_started": False,
+                "preview_ipc_schema": 1,
+                "contract": launch_contract,
+                "contract_sha256": normalized_json_sha256(launch_contract),
+            },
         }
         if descriptor_out is not None:
             _write_json_atomic(descriptor_out, descriptor)
@@ -1807,6 +1869,983 @@ def preview_admission(
     except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
         print("preview admission: REFUSED: {}".format(error), file=sys.stderr)
         return 1
+
+
+def _validate_preview_descriptor(
+    descriptor_path: Path, backend_override: Optional[Path]
+) -> tuple[dict, dict, Path, Path, Path, dict]:
+    """Revalidate an admitted descriptor without consulting caller argv.
+
+    The registry is used only to confirm the descriptor's target contract.
+    The actual launch bytes (argv, cwd, and bootrom) must match the immutable
+    launch contract embedded in the descriptor exactly.
+    """
+    with descriptor_path.resolve().open("r", encoding="utf-8") as source:
+        descriptor = json.load(source)
+    if not isinstance(descriptor, dict):
+        raise ValueError("preview descriptor must be a JSON object")
+    required = {
+        "schema_version", "status", "receipt_id", "target", "firmware",
+        "backend", "report", "device", "launch",
+    }
+    if set(descriptor) != required:
+        raise ValueError("preview descriptor keys do not match schema 1")
+    if descriptor.get("schema_version") != 1 or descriptor.get("status") != "admitted":
+        raise ValueError("preview descriptor is not an admitted schema-1 descriptor")
+    target_value = _receipt_object(
+        descriptor["target"], "descriptor.target", {"id", "revision", "contract_sha256"}
+    )
+    target = load_firmware_target(target_value["id"])
+    if target is None:
+        raise ValueError("descriptor names unknown target {}".format(target_value["id"]))
+    if (
+        target["revision"] != target_value["revision"]
+        or firmware_target_contract_sha256(target) != target_value["contract_sha256"]
+    ):
+        raise ValueError("descriptor target contract differs from registry")
+    _validate_target_validation_record(target)
+    device = _preview_device_projection(target)
+    if descriptor["device"] != device:
+        raise ValueError("descriptor device projection differs from target")
+
+    firmware_value = _receipt_object(
+        descriptor["firmware"], "descriptor.firmware", {"path", "sha256"}
+    )
+    firmware, firmware_sha = _receipt_path_hash(firmware_value, "descriptor.firmware")
+    backend_value = _receipt_object(
+        descriptor["backend"], "descriptor.backend", {"directory", "commit", "runner"}
+    )
+    backend = Path(backend_value["directory"]).expanduser().resolve()
+    if backend_override is not None and backend_override.resolve() != backend:
+        raise ValueError("descriptor backend directory differs from --backend-dir")
+    if not backend.is_dir():
+        raise ValueError("descriptor backend checkout not found: {}".format(backend))
+    if backend_value["commit"] != target["backend"]["accepted"]:
+        raise ValueError("descriptor backend commit differs from target")
+    runner_value = _receipt_object(
+        backend_value["runner"], "descriptor.backend.runner", {"path", "sha256"}
+    )
+    runner, runner_sha = _receipt_path_hash(runner_value, "descriptor.backend.runner")
+    expected_runner = (backend / "target/release/picocalc-run").resolve()
+    if runner != expected_runner:
+        raise ValueError("descriptor runner path does not belong to backend checkout")
+    if _file_sha256(runner) != runner_sha:
+        raise ValueError("descriptor runner SHA-256 changed")
+    head = subprocess.run(
+        ["git", "-C", str(backend), "rev-parse", "HEAD"],
+        capture_output=True, text=True, check=False,
+    )
+    clean = subprocess.run(
+        ["git", "-C", str(backend), "status", "--porcelain", "--untracked-files=no"],
+        capture_output=True, text=True, check=False,
+    )
+    if head.returncode != 0 or head.stdout.strip() != backend_value["commit"]:
+        raise ValueError("backend HEAD differs from descriptor")
+    if clean.returncode != 0 or clean.stdout.strip():
+        raise ValueError("backend checkout has tracked changes")
+
+    report_value = _receipt_object(
+        descriptor["report"], "descriptor.report", {"path", "sha256", "schema_version"}
+    )
+    if report_value["schema_version"] != 8:
+        raise ValueError("descriptor report schema_version must be 8")
+    report, report_sha = _receipt_path_hash(
+        {"path": report_value["path"], "sha256": report_value["sha256"]},
+        "descriptor.report",
+    )
+    with report.open("r", encoding="utf-8") as source:
+        report_data = json.load(source)
+    if (
+        report_data.get("schema_version") != 8
+        or report_data.get("verdict", {}).get("status") != "pass"
+        or report_data.get("backend_build", {}).get("commit") != backend_value["commit"]
+        or report_data.get("backend_build", {}).get("dirty") is not False
+        or report_data.get("firmware", {}).get("sha256") != firmware_sha
+        or report_data.get("board") != "picocalc"
+    ):
+        raise ValueError("descriptor report does not satisfy admission")
+
+    launch = _receipt_object(
+        descriptor["launch"],
+        "descriptor.launch",
+        {"gui_started", "preview_ipc_schema", "contract", "contract_sha256"},
+    )
+    if launch["gui_started"] is not False or launch["preview_ipc_schema"] != 1:
+        raise ValueError("descriptor launch metadata is not schema 1")
+    contract = _receipt_object(
+        launch["contract"],
+        "descriptor.launch.contract",
+        {"schema_version", "mode", "cwd", "argv", "bootrom"},
+    )
+    if not is_sha256(launch["contract_sha256"]):
+        raise ValueError("descriptor launch contract SHA-256 is invalid")
+    if normalized_json_sha256(contract) != launch["contract_sha256"]:
+        raise ValueError("descriptor launch contract SHA-256 changed")
+    if contract["schema_version"] != 1 or contract["mode"] != "preview-api":
+        raise ValueError("descriptor launch contract is not preview-api schema 1")
+    if not isinstance(contract["argv"], list) or not all(
+        isinstance(value, str) and value for value in contract["argv"]
+    ):
+        raise ValueError("descriptor launch argv must be a non-empty string list")
+    bootrom_value = _receipt_object(
+        contract["bootrom"], "descriptor.launch.contract.bootrom", {"path", "sha256"}
+    )
+    bootrom, bootrom_sha = _receipt_path_hash(
+        bootrom_value, "descriptor.launch.contract.bootrom"
+    )
+    expected_contract = _preview_launch_contract(target, firmware, backend, runner)
+    if contract != expected_contract:
+        raise ValueError("descriptor launch contract differs from target/device contract")
+    if bootrom_sha != _file_sha256(bootrom):
+        raise ValueError("descriptor bootrom SHA-256 changed")
+    return descriptor, target, firmware, backend, runner, contract
+
+
+_PREVIEW_KIND_NAMES = {
+    1: "hello", 2: "status", 3: "frame_rgb565", 4: "audio_pcm_s16",
+    8: "uart_tx", 10: "error", 11: "goodbye",
+}
+
+
+def _preview_read_exact(stream, length: int, deadline: float) -> bytes:
+    data = bytearray()
+    while len(data) < length:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("preview backend timed out")
+        ready, _, _ = select.select([stream.fileno()], [], [], remaining)
+        if not ready:
+            raise TimeoutError("preview backend timed out")
+        chunk = os.read(stream.fileno(), length - len(data))
+        if not chunk:
+            raise EOFError("preview backend closed stdout before the expected frame")
+        data.extend(chunk)
+    return bytes(data)
+
+
+def _preview_json_payload(payload: bytes) -> object:
+    try:
+        value = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("preview JSON payload is invalid: {}".format(error)) from error
+    canonical = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    if canonical != payload:
+        raise ValueError("preview JSON payload is not canonical")
+    return value
+
+
+def _preview_read_frame(stream, expected_sequence: int, deadline: float) -> tuple[int, bytes]:
+    header = _preview_read_exact(stream, 16, deadline)
+    if header[:4] != b"PCRP":
+        raise ValueError("preview backend sent bad IPC magic")
+    if int.from_bytes(header[4:6], "little") != 1:
+        raise ValueError("preview backend sent an unsupported IPC version")
+    kind = int.from_bytes(header[6:8], "little")
+    if kind not in _PREVIEW_KIND_NAMES:
+        raise ValueError("preview backend sent an unknown or input-only message kind")
+    length = int.from_bytes(header[8:12], "little")
+    if length > 8 * 1024 * 1024:
+        raise ValueError("preview backend payload exceeds schema-1 limit")
+    sequence = int.from_bytes(header[12:16], "little")
+    if sequence != expected_sequence:
+        raise ValueError(
+            "preview backend sequence discontinuity: expected {}, got {}".format(
+                expected_sequence, sequence
+            )
+        )
+    payload = _preview_read_exact(stream, length, deadline)
+    if kind in (1, 2, 10, 11):
+        value = _preview_json_payload(payload)
+        if not isinstance(value, dict):
+            raise ValueError("preview JSON message must contain an object")
+        if kind == 1 and (
+            value.get("protocol") != "preview-ipc"
+            or value.get("role") != "runner"
+            or value.get("schema") != 1
+        ):
+            raise ValueError("preview hello does not declare schema 1 runner")
+    elif kind == 3:
+        if len(payload) < 12:
+            raise ValueError("preview RGB565 frame is truncated")
+        width = int.from_bytes(payload[8:10], "little")
+        height = int.from_bytes(payload[10:12], "little")
+        if len(payload) != 12 + width * height * 2:
+            raise ValueError("preview RGB565 frame length is invalid")
+    elif kind == 4:
+        if len(payload) < 16:
+            raise ValueError("preview PCM frame is truncated")
+        channels = int.from_bytes(payload[12:14], "little")
+        frames = int.from_bytes(payload[14:16], "little")
+        if channels == 0 or len(payload) != 16 + frames * channels * 2:
+            raise ValueError("preview PCM frame length is invalid")
+    elif kind == 8 and len(payload) != 9:
+        raise ValueError("preview UART TX frame length is invalid")
+    return kind, payload
+
+
+def _preview_quit_frame(sequence: int) -> bytes:
+    return (
+        b"PCRP"
+        + (1).to_bytes(2, "little")
+        + (7).to_bytes(2, "little")
+        + (0).to_bytes(4, "little")
+        + sequence.to_bytes(4, "little")
+    )
+
+
+_REPORT_AUDIO_PROJECTION_FIELDS = (
+    # This is intentionally the schema-8 `audio_sink` DMA-to-PWM surface,
+    # not the optional host-side loudness/rail analysis artifact. Keep this
+    # list in lockstep with session.rs::audio_observation_json and the
+    # preview E2E common projection; adding a field requires a projection
+    # contract update rather than silently dropping it.
+    "status",
+    "dma_write_count",
+    "target_write_attempt_count",
+    "other_pwm_cc_write_count",
+    "wrong_width_count",
+    "wrong_treq_count",
+    "missing_due_cycle_count",
+    "pcm_sha256",
+    "first_words",
+    "last_words",
+    "timer_index",
+    "treq",
+    "sample_rate_hz",
+    "timer_event_count",
+    "timer_miss_count",
+    "timer_miss_audio_not_busy",
+    "timer_miss_other_dma_selected",
+    "timer_miss_no_dma_selected",
+    "timer_miss_multiple_due_in_window",
+    "timer_due_cycle_sha256",
+    "block_start_count",
+    "block_frame_min",
+    "block_frame_max",
+    "malformed_block_count",
+    "block_boundary_gap_count",
+    "block_boundary_gap_min_cycles",
+    "block_boundary_gap_max_cycles",
+    "block_boundary_gap_sha256",
+    "gap_5208_count",
+    "gap_5209_count",
+    "unexpected_gap_count",
+    "service_latency_min_cycles",
+    "service_latency_max_cycles",
+    "service_latency_sha256",
+)
+
+
+def _canonical_json_sha256(value: object) -> str:
+    """Hash the no-LF canonical JSON used by the Rust preview projection."""
+    canonical = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _normalize_audio_words(value: object, where: str) -> list:
+    if not isinstance(value, list):
+        raise ValueError("{} must be an array".format(where))
+    normalized = []
+    for index, word in enumerate(value):
+        if type(word) is int and word >= 0:
+            normalized.append(word)
+            continue
+        if isinstance(word, str) and word.startswith(("0x", "0X")):
+            try:
+                normalized.append(int(word[2:], 16))
+            except ValueError as error:
+                raise ValueError("{}[{}] is not hexadecimal".format(where, index)) from error
+            continue
+        raise ValueError("{}[{}] is not a non-negative integer or 0x word".format(where, index))
+    return normalized
+
+
+def _common_audio_projection(source: object, report: bool, where: str) -> dict:
+    if not isinstance(source, dict):
+        raise ValueError("{} must be an object".format(where))
+    allowed = set(_REPORT_AUDIO_PROJECTION_FIELDS)
+    if report:
+        allowed.update(("expected_count", "expected_sha256", "timer_fraction"))
+    else:
+        allowed.add("timer_fraction_x")
+        allowed.add("timer_fraction_y")
+    unknown = sorted(set(source) - allowed)
+    if unknown:
+        raise ValueError(
+            "{} contains unknown field(s): {}".format(where, ", ".join(unknown))
+        )
+    output = {}
+    for field in _REPORT_AUDIO_PROJECTION_FIELDS:
+        if field not in source:
+            raise ValueError("{}.{} is missing".format(where, field))
+        value = source[field]
+        if field in ("first_words", "last_words"):
+            value = _normalize_audio_words(value, "{}.{}".format(where, field))
+        output[field] = value
+    if report:
+        fraction = source.get("timer_fraction")
+        if not isinstance(fraction, str) or fraction.count("/") != 1:
+            raise ValueError("{}.timer_fraction is invalid".format(where))
+        numerator, denominator = fraction.split("/")
+        try:
+            x = int(numerator)
+            y = int(denominator)
+        except ValueError as error:
+            raise ValueError("{}.timer_fraction is not numeric".format(where)) from error
+        if x < 0 or y < 0:
+            raise ValueError("{}.timer_fraction must be non-negative".format(where))
+    else:
+        x = source.get("timer_fraction_x")
+        y = source.get("timer_fraction_y")
+        if type(x) is not int or x < 0 or type(y) is not int or y < 0:
+            raise ValueError("{}.timer_fraction_x/y are invalid".format(where))
+    output["timer_fraction_x"] = x
+    output["timer_fraction_y"] = y
+    return output
+
+
+def _report_hex_integer(value: object, where: str) -> int:
+    if not isinstance(value, str) or not value.startswith(("0x", "0X")):
+        raise ValueError("{} must be a 0x-prefixed hexadecimal string".format(where))
+    try:
+        return int(value[2:], 16)
+    except ValueError as error:
+        raise ValueError("{} is not hexadecimal".format(where)) from error
+
+
+def _framebuffer_projection(source: object, report: bool, where: str) -> dict:
+    if not isinstance(source, dict):
+        raise ValueError("{} must be an object".format(where))
+    allowed = {"height", "non_black_pixels", "rgb565_sha256", "width"}
+    if report:
+        allowed.add("png")
+    unknown = sorted(set(source) - allowed)
+    if unknown:
+        raise ValueError(
+            "{} contains unknown field(s): {}".format(where, ", ".join(unknown))
+        )
+    output = {}
+    for field in ("height", "non_black_pixels", "width"):
+        value = source.get(field)
+        if type(value) is not int or value < 0:
+            raise ValueError("{}.{} is invalid".format(where, field))
+        output[field] = value
+    digest = source.get("rgb565_sha256")
+    if not is_sha256(digest):
+        raise ValueError("{}.rgb565_sha256 is invalid".format(where))
+    output["rgb565_sha256"] = digest
+    return output
+
+
+def _report_observation_projection(report: object) -> dict:
+    """Project a schema-8 report onto the exact preview observation surface."""
+    if not isinstance(report, dict):
+        raise ValueError("registered/batch report must be an object")
+    framebuffer_projection = _framebuffer_projection(
+        report.get("framebuffer"), True, "report.framebuffer"
+    )
+    uart = report.get("uart")
+    if not isinstance(uart, dict) or set(uart) != {"bytes", "sha256"}:
+        raise ValueError("report.uart must contain exactly bytes and sha256")
+    if type(uart["bytes"]) is not int or uart["bytes"] < 0 or not is_sha256(uart["sha256"]):
+        raise ValueError("report.uart values are invalid")
+    entries = report.get("unsupported_mmio")
+    if not isinstance(entries, list):
+        raise ValueError("report.unsupported_mmio must be an array")
+    normalized_entries = []
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or set(entry) != {"addr", "count", "pc"}:
+            raise ValueError("report.unsupported_mmio[{}] is invalid".format(index))
+        if type(entry["count"]) is not int or entry["count"] < 0:
+            raise ValueError("report.unsupported_mmio[{}].count is invalid".format(index))
+        normalized_entries.append(
+            {
+                "addr": _report_hex_integer(entry["addr"], "report.unsupported_mmio[{}].addr".format(index)),
+                "count": entry["count"],
+                "pc": _report_hex_integer(entry["pc"], "report.unsupported_mmio[{}].pc".format(index)),
+            }
+        )
+    truncated = report.get("unsupported_mmio_truncated")
+    if type(truncated) is not bool:
+        raise ValueError("report.unsupported_mmio_truncated is invalid")
+    return {
+        "audio": _common_audio_projection(report.get("audio_sink"), True, "report.audio_sink"),
+        "framebuffer": framebuffer_projection,
+        "schema_version": 1,
+        "uart": {"bytes": uart["bytes"], "sha256": uart["sha256"]},
+        "unsupported_mmio": {"entries": normalized_entries, "truncated": truncated},
+    }
+
+
+def _preview_observation_projection(projection: object) -> dict:
+    """Validate and normalize a schema-1 preview projection without guessing."""
+    if not isinstance(projection, dict):
+        raise ValueError("preview observation projection must be an object")
+    expected = {"audio", "framebuffer", "schema_version", "uart", "unsupported_mmio"}
+    if set(projection) != expected or projection.get("schema_version") != 1:
+        raise ValueError("preview observation projection fields do not match schema 1")
+    framebuffer_projection = _framebuffer_projection(
+        projection.get("framebuffer"), False, "preview.framebuffer"
+    )
+    uart = projection.get("uart")
+    if not isinstance(uart, dict) or set(uart) != {"bytes", "sha256"}:
+        raise ValueError("preview uart must contain exactly bytes and sha256")
+    if type(uart["bytes"]) is not int or uart["bytes"] < 0 or not is_sha256(uart["sha256"]):
+        raise ValueError("preview uart values are invalid")
+    unsupported = projection.get("unsupported_mmio")
+    if not isinstance(unsupported, dict) or set(unsupported) != {"entries", "truncated"}:
+        raise ValueError("preview unsupported_mmio projection is invalid")
+    if type(unsupported["truncated"]) is not bool or not isinstance(unsupported["entries"], list):
+        raise ValueError("preview unsupported_mmio projection is invalid")
+    normalized_entries = []
+    for index, entry in enumerate(unsupported["entries"]):
+        if not isinstance(entry, dict) or set(entry) != {"addr", "count", "pc"}:
+            raise ValueError("preview unsupported_mmio[{}] is invalid".format(index))
+        if type(entry["addr"]) is not int or type(entry["count"]) is not int or type(entry["pc"]) is not int:
+            raise ValueError("preview unsupported_mmio[{}] values are invalid".format(index))
+        normalized_entries.append(dict(entry))
+    return {
+        "audio": _common_audio_projection(projection["audio"], False, "preview.audio"),
+        "framebuffer": framebuffer_projection,
+        "schema_version": 1,
+        "uart": {"bytes": uart["bytes"], "sha256": uart["sha256"]},
+        "unsupported_mmio": {
+            "entries": normalized_entries,
+            "truncated": unsupported["truncated"],
+        },
+    }
+
+
+def _preview_status_observation(status: object) -> tuple[int, dict, str]:
+    if not isinstance(status, dict):
+        raise ValueError("preview status must be an object")
+    cycle = status.get("virtual_cycle")
+    if type(cycle) is not int or cycle < 0:
+        raise ValueError("preview status virtual_cycle is invalid")
+    observation = status.get("observation")
+    if not isinstance(observation, dict) or set(observation) != {
+        "digest_sha256", "projection", "schema_version"
+    }:
+        raise ValueError("preview status observation is invalid")
+    if observation["schema_version"] != 1 or not is_sha256(observation["digest_sha256"]):
+        raise ValueError("preview status observation schema/digest is invalid")
+    projection = _preview_observation_projection(observation["projection"])
+    digest = _canonical_json_sha256(projection)
+    if digest != observation["digest_sha256"]:
+        raise ValueError("preview observation digest does not match its projection")
+    return cycle, projection, digest
+
+
+def _readline_deadline(stream, deadline: float) -> str:
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("machine API backend timed out")
+        ready, _, _ = select.select([stream.fileno()], [], [], remaining)
+        if not ready:
+            raise TimeoutError("machine API backend timed out")
+        line = stream.readline()
+        if not line:
+            raise EOFError("machine API backend closed stdout before a response")
+        return line
+
+
+def _terminate_child(process) -> None:
+    if process is not None and process.poll() is None:
+        process.kill()
+        process.wait()
+
+
+def _run_preview_replay(
+    contract: dict, scenario: Path, cycle_limit: int, snapshot_dir: Path, timeout_seconds: float
+) -> tuple[dict, dict]:
+    argv = list(contract["argv"])
+    argv.extend(
+        [
+            "--cycles", str(cycle_limit),
+            "--replay-scenario", str(scenario),
+            "--snapshot-dir", str(snapshot_dir),
+        ]
+    )
+    process = None
+    try:
+        process = subprocess.Popen(
+            argv,
+            cwd=contract["cwd"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        deadline = time.monotonic() + timeout_seconds
+        expected_sequence = 0
+        kinds = []
+        final_status = None
+        while final_status is None:
+            kind, payload = _preview_read_frame(process.stdout, expected_sequence, deadline)
+            expected_sequence += 1
+            kinds.append(_PREVIEW_KIND_NAMES[kind])
+            if len(kinds) == 1 and kind != 1:
+                raise ValueError("preview replay did not start with hello")
+            if kind == 1 and expected_sequence != 1:
+                raise ValueError("preview replay hello was not the first frame")
+            if kind == 2:
+                status = _preview_json_payload(payload)
+                replay = status.get("replay") if isinstance(status, dict) else None
+                if isinstance(replay, dict) and replay.get("status") == "pass":
+                    if replay.get("passed") is not True or replay.get("steps_completed") != replay.get("steps_total"):
+                        raise ValueError("preview replay reported an incomplete pass")
+                    _preview_status_observation(status)
+                    final_status = status
+            elif kind == 10:
+                error = _preview_json_payload(payload)
+                raise ValueError("preview replay emitted error: {}".format(error))
+            elif kind == 11:
+                raise ValueError("preview replay ended before scenario completion")
+        process.stdin.write(_preview_quit_frame(0))
+        process.stdin.flush()
+        while True:
+            kind, _payload = _preview_read_frame(process.stdout, expected_sequence, deadline)
+            expected_sequence += 1
+            kinds.append(_PREVIEW_KIND_NAMES[kind])
+            if kind == 10:
+                raise ValueError("preview replay emitted an error after completion")
+            if kind == 11:
+                break
+        remaining = max(0.0, deadline - time.monotonic())
+        process.wait(timeout=remaining)
+        if process.returncode != 0:
+            diagnostic = process.stderr.read().decode("utf-8", errors="replace").strip()
+            raise ValueError(
+                "preview replay exited {}{}".format(
+                    process.returncode,
+                    ": " + diagnostic if diagnostic else "",
+                )
+            )
+        cycle, projection, digest = _preview_status_observation(final_status)
+        return final_status, {
+            "cycle": cycle,
+            "projection": projection,
+            "digest_sha256": digest,
+            "message_count": len(kinds),
+            "message_kinds": kinds,
+        }
+    finally:
+        _terminate_child(process)
+        if process is not None:
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    stream.close()
+
+
+def _run_machine_replay(
+    contract: dict, scenario: Path, cycle_limit: int, snapshot_dir: Path, timeout_seconds: float
+) -> dict:
+    argv = ["--machine-api" if value == "--preview-api" else value for value in contract["argv"]]
+    argv.extend(
+        [
+            "--cycles", str(cycle_limit),
+            "--replay-scenario", str(scenario),
+            "--snapshot-dir", str(snapshot_dir),
+        ]
+    )
+    process = None
+    try:
+        process = subprocess.Popen(
+            argv,
+            cwd=contract["cwd"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        request = {"schema": 1, "id": "vrp2-digest", "op": "observe", "domains": ["preview"]}
+        process.stdin.write(json.dumps(request, separators=(",", ":")) + "\n")
+        process.stdin.flush()
+        deadline = time.monotonic() + timeout_seconds
+        line = _readline_deadline(process.stdout, deadline)
+        response = json.loads(line)
+        if not isinstance(response, dict) or response.get("ok") is not True:
+            raise ValueError("machine API replay did not return ok=true")
+        result = response.get("result")
+        preview = result.get("preview") if isinstance(result, dict) else None
+        if not isinstance(preview, dict):
+            raise ValueError("machine API replay response lacks result.preview")
+        cycle, projection, digest = _preview_status_observation(
+            {
+                "virtual_cycle": preview.get("virtual_cycle"),
+                "observation": {
+                    "schema_version": preview.get("schema_version"),
+                    "projection": preview.get("projection"),
+                    "digest_sha256": preview.get("digest_sha256"),
+                },
+            }
+        )
+        if response.get("cycle") != cycle:
+            raise ValueError("machine API top-level cycle differs from preview cycle")
+        process.stdin.close()
+        remaining = max(0.0, deadline - time.monotonic())
+        process.wait(timeout=remaining)
+        if process.returncode != 0:
+            diagnostic = process.stderr.read().strip()
+            raise ValueError(
+                "machine API replay exited {}{}".format(
+                    process.returncode,
+                    ": " + diagnostic if diagnostic else "",
+                )
+            )
+        return {"cycle": cycle, "projection": projection, "digest_sha256": digest}
+    finally:
+        _terminate_child(process)
+        if process is not None:
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    stream.close()
+
+
+def _scenario_contract_path(target: dict) -> Path:
+    scenario = target.get("scenario")
+    if not isinstance(scenario, dict) or not isinstance(scenario.get("path"), str):
+        raise ValueError("VRP-2 complete digest gate requires a registered scenario")
+    path = (ROOT / scenario["path"]).resolve()
+    if not _path_is_inside(path, ROOT) or not path.is_file():
+        raise ValueError("registered target scenario not found: {}".format(path))
+    actual = _file_sha256(path)
+    if actual != scenario.get("sha256"):
+        raise ValueError("registered target scenario SHA-256 does not match")
+    return path
+
+
+def _batch_replay_command(
+    contract: dict,
+    target: dict,
+    scenario: Path,
+    report_path: Path,
+    audio_analysis_path: Path,
+    snapshot_dir: Path,
+) -> list[str]:
+    argv = [value for value in contract["argv"] if value != "--preview-api"]
+    acceptance = target["acceptance"]
+    argv.extend(
+        [
+            "--cycles", str(target["runner"]["cycles"]),
+            "--scenario", str(scenario),
+            "--snapshot-dir", str(snapshot_dir),
+            "--json", str(report_path),
+            "--audio-analysis", str(audio_analysis_path),
+            "--expect-stop", acceptance["expected_stop_reason"],
+        ]
+    )
+    for marker in acceptance["required_uart_markers"]:
+        argv.extend(["--expect-uart", marker])
+    return argv
+
+
+def _run_batch_replay(
+    contract: dict, target: dict, scenario: Path, snapshot_dir: Path, timeout_seconds: float
+) -> tuple[dict, dict]:
+    report_path = snapshot_dir.parent / "batch-report.json"
+    audio_analysis_path = snapshot_dir.parent / "batch-audio-analysis.json"
+    argv = _batch_replay_command(
+        contract, target, scenario, report_path, audio_analysis_path, snapshot_dir
+    )
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=contract["cwd"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise TimeoutError("batch replay timed out") from error
+    if not report_path.is_file():
+        raise ValueError(
+            "batch replay did not produce a report (exit {})".format(completed.returncode)
+        )
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("batch replay report is unreadable: {}".format(error)) from error
+    if not isinstance(report, dict):
+        raise ValueError("batch replay report must be an object")
+    if completed.returncode != 0 or report.get("verdict", {}).get("status") != "pass":
+        diagnostic = completed.stderr.strip()
+        raise ValueError(
+            "batch replay failed exit={} verdict={}{}".format(
+                completed.returncode,
+                report.get("verdict", {}).get("status"),
+                ": " + diagnostic if diagnostic else "",
+            )
+        )
+    if not audio_analysis_path.is_file():
+        raise ValueError("batch replay did not produce audio-analysis evidence")
+    try:
+        audio_analysis = json.loads(audio_analysis_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("batch audio-analysis evidence is unreadable: {}".format(error)) from error
+    errors = audio_analysis_errors(audio_analysis)
+    if errors:
+        raise ValueError("batch audio-analysis evidence is invalid: {}".format("; ".join(errors)))
+    return report, {
+        "report_sha256": _file_sha256(report_path),
+        "audio_analysis_sha256": _file_sha256(audio_analysis_path),
+        "exit_code": completed.returncode,
+    }
+
+
+def preview_digest_gate(
+    descriptor_path: Path,
+    backend_override: Optional[Path],
+    timeout_seconds: float,
+    evidence_out: Optional[Path],
+) -> int:
+    """Run the registered-target batch/machine/preview complete-digest gate."""
+    if timeout_seconds <= 0:
+        print("preview-digest-gate: timeout must be positive", file=sys.stderr)
+        return 2
+    try:
+        descriptor, target, _firmware, _backend, _runner, contract = _validate_preview_descriptor(
+            descriptor_path, backend_override
+        )
+        scenario = _scenario_contract_path(target)
+        registered_report_path = Path(descriptor["report"]["path"]).resolve()
+        try:
+            registered_report = json.loads(registered_report_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError("registered report is unreadable: {}".format(error)) from error
+        registered_projection = _report_observation_projection(registered_report)
+        registered_digest = _canonical_json_sha256(registered_projection)
+        registered_cycle = registered_report.get("cycles")
+        if type(registered_cycle) is not int or registered_cycle < 0:
+            raise ValueError("registered report cycles is invalid")
+        with tempfile.TemporaryDirectory(prefix="picocalc-vrp2-digest-") as temporary:
+            root = Path(temporary)
+            batch_snapshots = root / "batch-snapshots"
+            machine_snapshots = root / "machine-snapshots"
+            preview_snapshots = root / "preview-snapshots"
+            for snapshot_dir in (batch_snapshots, machine_snapshots, preview_snapshots):
+                snapshot_dir.mkdir()
+            batch_report, batch_meta = _run_batch_replay(
+                contract, target, scenario, batch_snapshots, timeout_seconds
+            )
+            batch_projection = _report_observation_projection(batch_report)
+            batch_digest = _canonical_json_sha256(batch_projection)
+            failures = check_report(batch_report, target["acceptance"]["report_checks"])
+            expected_report_sha = target["acceptance"].get("normalized_report_sha256")
+            if expected_report_sha is not None:
+                actual_report_sha = normalized_json_sha256(batch_report)
+                if actual_report_sha != expected_report_sha:
+                    failures.append("batch normalized report SHA-256 differs from registry")
+            expected_timeline_sha = target["acceptance"].get("timeline_sha256")
+            registered_timeline = registered_report.get("scenario", {}).get("steps")
+            batch_timeline = batch_report.get("scenario", {}).get("steps")
+            if not isinstance(registered_timeline, list) or not isinstance(batch_timeline, list):
+                failures.append("scenario.steps is missing from registered or batch report")
+            else:
+                registered_timeline_sha = normalized_json_sha256(registered_timeline)
+                batch_timeline_sha = normalized_json_sha256(batch_timeline)
+                if registered_timeline_sha != batch_timeline_sha:
+                    failures.append("batch scenario timeline differs from registered report")
+                if expected_timeline_sha is not None and batch_timeline_sha != expected_timeline_sha:
+                    failures.append("batch scenario timeline SHA-256 differs from registry")
+            if batch_report.get("cycles") != registered_cycle:
+                failures.append("batch virtual cycle differs from registered report")
+            if failures:
+                raise ValueError("batch report contract failed: {}".format("; ".join(failures)))
+
+            preview_status, preview_meta = _run_preview_replay(
+                contract,
+                scenario,
+                target["runner"]["cycles"],
+                preview_snapshots,
+                timeout_seconds,
+            )
+            machine_meta = _run_machine_replay(
+                contract,
+                scenario,
+                target["runner"]["cycles"],
+                machine_snapshots,
+                timeout_seconds,
+            )
+            comparisons = {
+                "batch_machine_preview_registered_projection": (
+                    batch_projection == machine_meta["projection"]
+                    and batch_projection == preview_meta["projection"]
+                    and batch_projection == registered_projection
+                ),
+                "canonical_digest_equal": (
+                    batch_digest == machine_meta["digest_sha256"]
+                    and batch_digest == preview_meta["digest_sha256"]
+                    and batch_digest == registered_digest
+                ),
+                "cycle_equal": (
+                    batch_report["cycles"] == machine_meta["cycle"]
+                    and batch_report["cycles"] == preview_meta["cycle"]
+                    and batch_report["cycles"] == registered_cycle
+                ),
+            }
+            if not all(comparisons.values()):
+                raise ValueError("complete digest comparison failed: {}".format(comparisons))
+            evidence = {
+                "schema_version": 1,
+                "gate": "VRP-2-registered-target-complete-digest",
+                "status": "pass",
+                "descriptor": {
+                    "path": _receipt_path(descriptor_path),
+                    "sha256": _file_sha256(descriptor_path),
+                },
+                "target": descriptor["target"],
+                "firmware": descriptor["firmware"],
+                "backend": descriptor["backend"],
+                "scenario": {
+                    "path": _receipt_path(scenario),
+                    "sha256": _file_sha256(scenario),
+                },
+                "boundary": {
+                    "virtual_cycle": registered_cycle,
+                    "stop_reason": target["acceptance"]["expected_stop_reason"],
+                },
+                "digests": {
+                    "registered_projection_sha256": registered_digest,
+                    "batch_projection_sha256": batch_digest,
+                    "machine_projection_sha256": machine_meta["digest_sha256"],
+                    "preview_projection_sha256": preview_meta["digest_sha256"],
+                },
+                "runs": {
+                    "batch": batch_meta,
+                    "machine": {"cycle": machine_meta["cycle"]},
+                    "preview": {
+                        "cycle": preview_meta["cycle"],
+                        "message_count": preview_meta["message_count"],
+                        "message_kinds": preview_meta["message_kinds"],
+                        "replay_status": preview_status["replay"],
+                    },
+                },
+                "comparisons": comparisons,
+            }
+        if evidence_out is not None:
+            _write_json_atomic(evidence_out, evidence)
+        print(
+            "preview-digest-gate: PASS target={} cycle={} digest={}".format(
+                target["id"], registered_cycle, registered_digest
+            )
+        )
+        return 0
+    except TimeoutError as error:
+        print("preview-digest-gate: CANNOT JUDGE: {}".format(error), file=sys.stderr)
+        return 2
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        print("preview-digest-gate: REFUSED: {}".format(error), file=sys.stderr)
+        return 1
+
+
+def preview_headless(
+    descriptor_path: Path,
+    backend_override: Optional[Path],
+    timeout_seconds: float,
+    transcript_out: Optional[Path],
+) -> int:
+    """Consume an admitted descriptor and smoke-test runner hello/status/quit."""
+    if timeout_seconds <= 0:
+        print("preview-headless: timeout must be positive", file=sys.stderr)
+        return 2
+    try:
+        descriptor, target, _firmware, _backend, _runner, contract = _validate_preview_descriptor(
+            descriptor_path, backend_override
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        print("preview-headless: REFUSED: {}".format(error), file=sys.stderr)
+        return 1
+
+    process = None
+    kinds: List[str] = []
+    deadline = time.monotonic() + timeout_seconds
+    try:
+        process = subprocess.Popen(
+            contract["argv"],
+            cwd=contract["cwd"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        expected_sequence = 0
+        saw_hello = False
+        saw_status = False
+        sent_quit = False
+        saw_goodbye = False
+        while not saw_goodbye:
+            kind, _payload = _preview_read_frame(
+                process.stdout, expected_sequence, deadline
+            )
+            expected_sequence += 1
+            kinds.append(_PREVIEW_KIND_NAMES[kind])
+            if not kinds[:-1] and kind != 1:
+                raise ValueError("preview backend did not start with hello")
+            if kind == 1:
+                saw_hello = True
+            elif kind == 2:
+                if not saw_hello:
+                    raise ValueError("preview backend sent status before hello")
+                saw_status = True
+                if not sent_quit:
+                    process.stdin.write(_preview_quit_frame(0))
+                    process.stdin.flush()
+                    sent_quit = True
+            elif kind == 10:
+                raise ValueError("preview backend emitted an error message")
+            elif kind == 11:
+                if not saw_status or not sent_quit:
+                    raise ValueError("preview backend ended before status/quit")
+                saw_goodbye = True
+        remaining = max(0.0, deadline - time.monotonic())
+        process.wait(timeout=remaining)
+        if process.returncode != 0:
+            diagnostic = process.stderr.read().decode("utf-8", errors="replace")
+            raise RuntimeError(
+                "preview backend exited {}{}".format(
+                    process.returncode,
+                    ": " + diagnostic.strip() if diagnostic.strip() else "",
+                )
+            )
+        if transcript_out is not None:
+            _write_json_atomic(
+                transcript_out,
+                {
+                    "schema_version": 1,
+                    "status": "pass",
+                    "target": {
+                        "id": descriptor["target"]["id"],
+                        "revision": descriptor["target"]["revision"],
+                    },
+                    "message_kinds": kinds,
+                    "hello": saw_hello,
+                    "status": saw_status,
+                    "goodbye": saw_goodbye,
+                },
+            )
+        print(
+            "preview-headless: PASS target={} messages={}".format(
+                target["id"], ",".join(kinds)
+            )
+        )
+        return 0
+    except (OSError, ValueError, EOFError, TimeoutError, RuntimeError) as error:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
+        print("preview-headless: FAIL: {}".format(error), file=sys.stderr)
+        return 2
+    finally:
+        if process is not None:
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    stream.close()
 
 
 def firmware_test(
@@ -2620,6 +3659,51 @@ def main() -> int:
         help="write the admitted launch descriptor atomically",
     )
 
+    preview_headless_parser = subparsers.add_parser(
+        "preview-headless",
+        help="consume an admitted descriptor and smoke-test runner hello/status/quit",
+    )
+    preview_headless_parser.add_argument(
+        "--descriptor", type=Path, required=True,
+        help="schema-1 admitted launch descriptor from `preview`",
+    )
+    preview_headless_parser.add_argument(
+        "--backend-dir", type=Path,
+        help="optional backend checkout assertion; otherwise use the descriptor path",
+    )
+    preview_headless_parser.add_argument(
+        "--timeout-seconds", type=float, default=10.0,
+        help="maximum hello/status/quit session duration (default: 10)",
+    )
+    preview_headless_parser.add_argument(
+        "--transcript-out", type=Path,
+        help="write the observed message-kind smoke transcript atomically",
+    )
+
+    preview_digest_parser = subparsers.add_parser(
+        "preview-digest-gate",
+        help=(
+            "run a registered target through batch, machine API, and preview API "
+            "and require complete observation digest equality"
+        ),
+    )
+    preview_digest_parser.add_argument(
+        "--descriptor", type=Path, required=True,
+        help="schema-1 admitted launch descriptor from `preview`",
+    )
+    preview_digest_parser.add_argument(
+        "--backend-dir", type=Path,
+        help="optional backend checkout assertion; otherwise use the descriptor path",
+    )
+    preview_digest_parser.add_argument(
+        "--timeout-seconds", type=float, default=900.0,
+        help="maximum duration for each registered-target run (default: 900)",
+    )
+    preview_digest_parser.add_argument(
+        "--evidence-out", type=Path,
+        help="write the complete-digest evidence record atomically",
+    )
+
     verify_parser = subparsers.add_parser(
         "verify", help="verify portable BSP fingerprints and optional reference evidence"
     )
@@ -2772,6 +3856,20 @@ def main() -> int:
             args.receipt,
             args.backend_dir,
             args.descriptor_out,
+        )
+    if args.command == "preview-headless":
+        return preview_headless(
+            args.descriptor,
+            args.backend_dir,
+            args.timeout_seconds,
+            args.transcript_out,
+        )
+    if args.command == "preview-digest-gate":
+        return preview_digest_gate(
+            args.descriptor,
+            args.backend_dir,
+            args.timeout_seconds,
+            args.evidence_out,
         )
     if args.command == "verify":
         if (args.strict_commit or args.reference_root is not None) and not args.references:

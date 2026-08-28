@@ -116,7 +116,10 @@ class ToolTests(unittest.TestCase):
         subprocess.run(["git", "-C", backend, "config", "user.email", "r2@example.invalid"], check=True)
         subprocess.run(["git", "-C", backend, "config", "user.name", "R2 Test"], check=True)
         (backend / "tracked").write_text("backend\n", encoding="utf-8")
-        subprocess.run(["git", "-C", backend, "add", "tracked"], check=True)
+        bootrom = backend / "roms/rp2040/bootrom-rp2040-b2.bin"
+        bootrom.parent.mkdir(parents=True)
+        bootrom.write_bytes(b"bootrom fixture\n")
+        subprocess.run(["git", "-C", backend, "add", "tracked", str(bootrom.relative_to(backend))], check=True)
         subprocess.run(["git", "-C", backend, "commit", "-qm", "fixture"], check=True)
         commit = subprocess.run(
             ["git", "-C", backend, "rev-parse", "HEAD"],
@@ -3366,6 +3369,8 @@ raise SystemExit(code)
             )
             document = json.loads(registry.read_text(encoding="utf-8"))
             target = document["targets"][0]
+            target["runner"]["keys"] = None
+            target["runner"]["psram_verify_range"] = None
             contract_sha = module.firmware_target_contract_sha256(target)
             validation = json.loads(validation_path.read_text(encoding="utf-8"))
             validation["target_contract_sha256"] = contract_sha
@@ -3443,6 +3448,324 @@ raise SystemExit(code)
         )
         self.assertEqual(completed.returncode, 1)
         self.assertIn("schema-only fixture", completed.stderr)
+
+    def test_vrp2b_headless_consumer_revalidates_descriptor_and_protocol(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            backend, commit, firmware, _scenario, registry = self.make_firmware_fixture(
+                temporary, with_scenario=False
+            )
+            validation_path = root / "firmware-validation/validations/fixture.json"
+            validation_path.parent.mkdir(parents=True)
+            validation_path.write_text(
+                json.dumps({
+                    "result": "accepted",
+                    "schema_version": 1,
+                    "target_contract_sha256": "pending",
+                    "target_id": "fixture",
+                    "target_revision": 1,
+                }),
+                encoding="utf-8",
+            )
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            target = document["targets"][0]
+            target["runner"]["keys"] = None
+            target["runner"]["psram_verify_range"] = None
+            contract_sha = module.firmware_target_contract_sha256(target)
+            validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            validation["target_contract_sha256"] = contract_sha
+            validation_path.write_text(json.dumps(validation), encoding="utf-8")
+            target["validation"]["sha256"] = hashlib.sha256(
+                validation_path.read_bytes()
+            ).hexdigest()
+            registry.write_text(json.dumps(document), encoding="utf-8")
+
+            report_path = root / "report.json"
+            report = {
+                "schema_version": 8,
+                "verdict": {"status": "pass"},
+                "backend_build": {"commit": commit, "dirty": False},
+                "firmware": {"sha256": hashlib.sha256(firmware.read_bytes()).hexdigest()},
+                "board": "picocalc",
+            }
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+
+            runner = backend / "target/release/picocalc-run"
+            runner.write_text(
+                """#!/usr/bin/env python3
+import json, sys
+def emit(kind, payload, sequence):
+    out = sys.stdout.buffer
+    out.write(b'PCRP' + (1).to_bytes(2, 'little') + kind.to_bytes(2, 'little') +
+              len(payload).to_bytes(4, 'little') + sequence.to_bytes(4, 'little') + payload)
+    out.flush()
+hello = json.dumps({'protocol':'preview-ipc','role':'runner','schema':1}, separators=(',', ':'), sort_keys=True).encode()
+status = json.dumps({'status':'ready'}, separators=(',', ':'), sort_keys=True).encode()
+goodbye = json.dumps({'reason':'quit'}, separators=(',', ':'), sort_keys=True).encode()
+emit(1, hello, 0)
+emit(2, status, 1)
+header = sys.stdin.buffer.read(16)
+if len(header) != 16 or header[:4] != b'PCRP' or int.from_bytes(header[6:8], 'little') != 7:
+    raise SystemExit(3)
+emit(11, goodbye, 2)
+""",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+
+            with mock.patch.object(module, "ROOT", root), mock.patch.object(
+                module, "FIRMWARE_TARGETS", registry
+            ):
+                receipt = module._build_preview_receipt(
+                    target,
+                    firmware,
+                    runner,
+                    report_path,
+                    report,
+                    module._file_sha256(runner),
+                )
+                receipt_path = root / "receipt.json"
+                receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+                descriptor_path = root / "descriptor.json"
+                self.assertEqual(
+                    module.preview_admission(
+                        firmware, receipt_path, backend, descriptor_path
+                    ),
+                    0,
+                )
+                transcript_path = root / "transcript.json"
+                self.assertEqual(
+                    module.preview_headless(descriptor_path, backend, 3.0, transcript_path),
+                    0,
+                )
+                transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
+                self.assertEqual(
+                    transcript["message_kinds"], ["hello", "status", "goodbye"]
+                )
+
+                mutated = json.loads(descriptor_path.read_text(encoding="utf-8"))
+                mutated["launch"]["contract"]["argv"][0] = "/tmp/not-the-runner"
+                mutated_path = root / "mutated-descriptor.json"
+                mutated_path.write_text(json.dumps(mutated), encoding="utf-8")
+                self.assertEqual(
+                    module.preview_headless(mutated_path, backend, 3.0, None), 1
+                )
+
+    def test_vrp2_registered_digest_gate_compares_all_three_paths(self):
+        module = self.load_picocalc_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            backend, commit, firmware, scenario, registry = self.make_firmware_fixture(temporary)
+            scenario_dir = root / "scenarios"
+            scenario_dir.mkdir()
+            registered_scenario = scenario_dir / "fixture.json"
+            registered_scenario.write_bytes(scenario.read_bytes())
+
+            validation_path = root / "firmware-validation/validations/fixture.json"
+            validation_path.parent.mkdir(parents=True)
+            document = json.loads(registry.read_text(encoding="utf-8"))
+            target = document["targets"][0]
+            target["runner"]["keys"] = None
+            target["runner"]["psram_verify_range"] = None
+            target["scenario"] = {
+                "path": "scenarios/fixture.json",
+                "sha256": hashlib.sha256(registered_scenario.read_bytes()).hexdigest(),
+            }
+
+            audio = {
+                "status": "inactive",
+                "dma_write_count": 0,
+                "target_write_attempt_count": 0,
+                "other_pwm_cc_write_count": 0,
+                "wrong_width_count": 0,
+                "wrong_treq_count": 0,
+                "missing_due_cycle_count": 0,
+                "pcm_sha256": "0" * 64,
+                "expected_count": None,
+                "expected_sha256": None,
+                "first_words": ["0x00000001"],
+                "last_words": ["0x00000002"],
+                "timer_index": 0,
+                "treq": 0,
+                "timer_fraction": "3/15625",
+                "sample_rate_hz": 0,
+                "timer_event_count": 0,
+                "timer_miss_count": 0,
+                "timer_miss_audio_not_busy": 0,
+                "timer_miss_other_dma_selected": 0,
+                "timer_miss_no_dma_selected": 0,
+                "timer_miss_multiple_due_in_window": 0,
+                "timer_due_cycle_sha256": "0" * 64,
+                "block_start_count": 0,
+                "block_frame_min": None,
+                "block_frame_max": None,
+                "malformed_block_count": 0,
+                "block_boundary_gap_count": 0,
+                "block_boundary_gap_min_cycles": None,
+                "block_boundary_gap_max_cycles": None,
+                "block_boundary_gap_sha256": "0" * 64,
+                "gap_5208_count": 0,
+                "gap_5209_count": 0,
+                "unexpected_gap_count": 0,
+                "service_latency_min_cycles": None,
+                "service_latency_max_cycles": None,
+                "service_latency_sha256": "0" * 64,
+            }
+            report = {
+                "schema_version": 8,
+                "backend_commit": commit,
+                "backend_build": {"commit": commit, "dirty": False},
+                "firmware": {"sha256": hashlib.sha256(firmware.read_bytes()).hexdigest()},
+                "execution_model": "Serial",
+                "board": "picocalc",
+                "lcd_variant": "hwspi-rgb888",
+                "step_quantum": 1,
+                "cycle_limit": 123,
+                "cycles": 77,
+                "stop_reason": "scenario_done",
+                "exception": None,
+                "error": None,
+                "verdict": {"status": "pass"},
+                "unsupported_mmio": [],
+                "unsupported_mmio_truncated": False,
+                "framebuffer": {
+                    "width": 320,
+                    "height": 320,
+                    "non_black_pixels": 0,
+                    "rgb565_sha256": "1" * 64,
+                },
+                "uart": {"bytes": 0, "sha256": "2" * 64},
+                "audio_sink": audio,
+                "scenario": {
+                    "status": "pass",
+                    "steps_total": 0,
+                    "steps": [],
+                },
+                "probe": "ok",
+            }
+            projection = module._report_observation_projection(report)
+            projection_digest = module._canonical_json_sha256(projection)
+
+            # Commit the fake runner so the target/backend pin is a real
+            # clean commit, exactly as descriptor admission requires.  The
+            # runner derives that commit at execution time; the test can
+            # therefore create the registered report after the commit without
+            # a self-referential sequence of commits.
+            report["backend_commit"] = "PLACEHOLDER"
+            report["backend_build"]["commit"] = "PLACEHOLDER"
+            runner = backend / "target/release/picocalc-run"
+            runner.write_text(
+                """#!/usr/bin/env python3
+import json, subprocess, sys
+from pathlib import Path
+
+PROJECTION = %s
+DIGEST = %r
+REPORT = %s
+
+def value(flag):
+    return sys.argv[sys.argv.index(flag) + 1]
+
+def emit(kind, payload, sequence):
+    out = sys.stdout.buffer
+    out.write(b'PCRP' + (1).to_bytes(2, 'little') + kind.to_bytes(2, 'little') +
+              len(payload).to_bytes(4, 'little') + sequence.to_bytes(4, 'little') + payload)
+    out.flush()
+
+args = sys.argv[1:]
+backend_dir = Path(__file__).resolve().parents[2]
+commit = subprocess.check_output(
+    ['git', '-C', str(backend_dir), 'rev-parse', 'HEAD'], text=True
+).strip()
+REPORT['backend_commit'] = commit
+REPORT['backend_build']['commit'] = commit
+if '--preview-api' in args:
+    hello = json.dumps({'protocol':'preview-ipc','role':'runner','schema':1}, separators=(',', ':'), sort_keys=True).encode()
+    status = json.dumps({'observation': {'digest_sha256': DIGEST, 'projection': PROJECTION, 'schema_version': 1},
+                         'replay': {'cycle_limit': 123, 'name': 'fixture', 'passed': True,
+                                    'status': 'pass', 'steps_completed': 0, 'steps_total': 0},
+                         'virtual_cycle': 77}, separators=(',', ':'), sort_keys=True).encode()
+    goodbye = json.dumps({'reason':'quit'}, separators=(',', ':'), sort_keys=True).encode()
+    emit(1, hello, 0)
+    emit(2, status, 1)
+    header = sys.stdin.buffer.read(16)
+    if len(header) != 16 or header[:4] != b'PCRP' or int.from_bytes(header[6:8], 'little') != 7:
+        raise SystemExit(3)
+    emit(11, goodbye, 2)
+elif '--machine-api' in args:
+    line = sys.stdin.readline()
+    preview = {'digest_sha256': DIGEST, 'projection': PROJECTION, 'schema_version': 1, 'virtual_cycle': 77}
+    response = {'cycle': 77, 'events': [], 'id': 'vrp2-digest', 'ok': True, 'result': {'preview': preview}}
+    sys.stdout.write(json.dumps(response, separators=(',', ':'), sort_keys=True) + '\\n')
+    sys.stdout.flush()
+else:
+    report_path = Path(value('--json'))
+    report_path.write_text(json.dumps(REPORT, separators=(',', ':'), sort_keys=True), encoding='utf-8')
+    Path(value('--audio-analysis')).write_text(json.dumps({
+        'schema_version': 2, 'boundary': 'dma_to_pwm5_cc',
+        'interpretation': 'digital_level_only_not_speaker_loudness',
+        'backend_build': REPORT['backend_build'],
+        'firmware': {'file': 'firmware.bin', 'sha256': REPORT['firmware']['sha256']},
+        'observation_status': 'inactive', 'pcm_sha256': '0' * 64,
+        'pcm_format': 'stereo_s16le_from_pwm8_duty', 'sample_rate_hz': 0,
+        'channel_count': 2, 'frame_count': 0, 'window_frames': 1024,
+        'active_abs_threshold': 512, 'peak_abs_left': 0, 'peak_abs_right': 0,
+        'stream_rms': 0, 'max_window_rms': 0, 'dc_offset_left': 0,
+        'dc_offset_right': 0, 'active_frame_count': 0,
+        'active_frame_ratio_ppm': 0, 'rail_sample_count': 0,
+        'rail_sample_ratio_ppm': 0, 'max_consecutive_rail_frames': 0,
+        'out_of_range_duty_sample_count': 0,
+        'rail_interpretation': 'post_quantizer_pwm_rail_usage_not_source_clip_count'
+    }, separators=(',', ':'), sort_keys=True), encoding='utf-8')
+""" % (repr(projection), projection_digest, repr(report)),
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            subprocess.run(["git", "-C", str(backend), "add", str(runner.relative_to(backend))], check=True)
+            subprocess.run(["git", "-C", str(backend), "commit", "-qm", "preview digest fixture"], check=True)
+            commit = subprocess.run(
+                ["git", "-C", str(backend), "rev-parse", "HEAD"],
+                check=True, capture_output=True, text=True,
+            ).stdout.strip()
+            target["backend"]["accepted"] = commit
+            target["validation"]["record"] = "firmware-validation/validations/fixture.json"
+            contract_sha = module.firmware_target_contract_sha256(target)
+            validation_path.write_text(
+                json.dumps({
+                    "result": "accepted", "schema_version": 1,
+                    "target_contract_sha256": contract_sha,
+                    "target_id": "fixture", "target_revision": 1,
+                }), encoding="utf-8"
+            )
+            target["validation"]["sha256"] = hashlib.sha256(validation_path.read_bytes()).hexdigest()
+            report["backend_commit"] = commit
+            report["backend_build"]["commit"] = commit
+            report_path = root / "report.json"
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            document["targets"][0] = target
+            registry.write_text(json.dumps(document), encoding="utf-8")
+            with mock.patch.object(module, "ROOT", root), mock.patch.object(
+                module, "FIRMWARE_TARGETS", registry
+            ):
+                receipt = module._build_preview_receipt(
+                    target, firmware, runner, report_path, report, module._file_sha256(runner)
+                )
+                receipt_path = root / "receipt.json"
+                receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+                descriptor_path = root / "descriptor.json"
+                self.assertEqual(
+                    module.preview_admission(firmware, receipt_path, backend, descriptor_path), 0
+                )
+                evidence_path = root / "digest-evidence.json"
+                self.assertEqual(
+                    module.preview_digest_gate(descriptor_path, backend, 5.0, evidence_path), 0
+                )
+                evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+                self.assertEqual(evidence["status"], "pass")
+                self.assertTrue(evidence["comparisons"]["batch_machine_preview_registered_projection"])
+                self.assertTrue(evidence["comparisons"]["canonical_digest_equal"])
+                self.assertTrue(evidence["comparisons"]["cycle_equal"])
 
 
 if __name__ == "__main__":

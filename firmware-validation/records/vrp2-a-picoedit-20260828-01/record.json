@@ -1,0 +1,66 @@
+{
+  "comparison": {
+    "cycle_delta_vs_superseded": -4,
+    "framebuffer_rgb565_identical_to_superseded": true,
+    "hardware_correlation": "not_claimed",
+    "supersedes": "picoedit-r1@1",
+    "timeline_identical_to_superseded": true,
+    "uart_byte_identical_to_superseded": true
+  },
+  "evidence": {
+    "report": {
+      "path": "firmware-validation/records/vrp2-a-picoedit-20260828-01/run-report.json",
+      "sha256": "384d756c78411ff369056b7fb132012c94a6007a83bdbdc3be4483597a66fcd0"
+    },
+    "uart_transcript": {
+      "path": "firmware-validation/records/vrp2-a-picoedit-20260828-01/uart.log",
+      "sha256": "d5483670b639fe3bd69caeac22a7d2863f3f71bdb86826957b4ea036a59a49dd"
+    }
+  },
+  "firmware_run": {
+    "backend_commit": "d3767c901921811b5744925832956661fd344457",
+    "backend_dirty": false,
+    "target": {
+      "id": "picoedit-r1-vrp2",
+      "revision": 2,
+      "contract_sha256": "1f55a47ec0dd369d36ba9c92abe7f032432821866df1dbfb6b089d9e3f21f945"
+    },
+    "cycles": 827799818,
+    "elapsed_us": 3320000,
+    "firmware_bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+    "framebuffer_rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+    "normalized_report_sha256": "7943d139398652d5f99beea8873355e5b6a24723da3a56180f6b11756d0413f5",
+    "runner_sha256": "f436d7dc4965b433a65ee7355014b1d93148dbb433e251927cbd9064e019a6d7",
+    "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718",
+    "stop_reason": "scenario_done",
+    "timeline_sha256": "f1da8985f2736b2b927245177f9390fa649fb27aca1dc80150e8af74d783617d",
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "verdict": "pass"
+  },
+  "preview_revalidation": {
+    "device_projection": {
+      "board": "picocalc",
+      "keyboard": true,
+      "lcd_variant": "pio-rgb565",
+      "psram": true,
+      "sd": {
+        "attached": true,
+        "format": "fat32"
+      }
+    },
+    "hardware_correlation_completed": false,
+    "note": "Current backend revalidation for preview admission; superseded hardware evidence remains immutable.",
+    "preview_api_backend": "d3767c901921811b5744925832956661fd344457",
+    "runner_executable_sha256": "f436d7dc4965b433a65ee7355014b1d93148dbb433e251927cbd9064e019a6d7"
+  },
+  "record_id": "vrp2-a-picoedit-20260828-01",
+  "result": "pass",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target": {
+    "contract_sha256": "1f55a47ec0dd369d36ba9c92abe7f032432821866df1dbfb6b089d9e3f21f945",
+    "id": "picoedit-r1-vrp2",
+    "revision": 2
+  },
+  "title": "VRP-2-a current-backend versioned preview target revalidation"
+}
