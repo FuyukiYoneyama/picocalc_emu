@@ -2,7 +2,7 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。現在の未実装計画はValidated Realtime Preview（VRP-0〜VRP-7）です。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
+直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。現在の未実装計画はValidated Realtime Preview（VRP-0〜VRP-7、正式qualification前提としてVRP-NES-0を含む）です。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
 
 ## 状態
 
@@ -25,7 +25,7 @@
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 | I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E6完了。E5は同一BIN 3回のemulator回帰と、同一UF2の実機startup probe（RTC／EEPROM／keyboard／AHT20／BMP280）を合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
-| VRP | Validated Realtime Preview | **提案レビュー・実装計画完了、実装未着手。** VRP-0〜VRP-6を順に実施し、VRP-7は1倍未達時だけ開始する。preview機能完成と1倍qualified完成を分離し、現時点ではcapabilityへ昇格しない |
+| VRP | Validated Realtime Preview | **提案レビュー・実装計画完了、実装未着手。** VRP-0〜VRP-4は既存の`picotetris-opt1b`＋`picoedit-r1`で進め、正式qualification前にVRP-NES-0を完了する。VRP-7は1倍未達時だけ開始し、preview機能完成と1倍qualified完成を分離する。現時点ではcapabilityへ昇格しない |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した

@@ -21,6 +21,15 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
 5. 既存promoted PicoTetris記録は実時間比14.636593%であり、仮想1秒にwall約6.83秒を要した。
    現行backendを再測定するまでは参考値だが、GUIを付けるだけで1倍になるとは見込まない。
    初回成果を「正直な計測付きpreview」、1倍到達を別のqualification gateとして扱う。
+6. VRP-0の既存workloadは、曖昧な「active PicoTetris」ではなく、現在のpromoted target
+   **`picotetris-opt1b`（revision 5）**と、性質の異なる再現可能な
+   **`picoedit-r1`（revision 1）**に固定する。`picocalc-audio-r1`はVRP-4のaudio検証用fixtureとして扱う。
+7. registryには現在NES-class targetが存在しない。NES-classはVRP-0の開始を塞ぐ暗黙の前提にせず、
+   `VRP-NES-0`として別途target/fixtureを作成する。これは正式な`realtime-1x-qualified`昇格の
+   前提だが、previewのreceipt・GUI・UART実装は既存2 targetで先に進められる。
+8. preview IPC schema 1はVRP-0の最初の成果物として、具体的なwire fixtureとともに凍結する。
+   magic、version、endian、field幅、message kind、payload上限、異常系を未定義のままproduction
+   codeへ進まない。
 
 既存の権威あるFirmware backend、schema 8、target registry、machine API schema 1は変更しない。
 previewはhardware PASS/FAILを生成しない。
@@ -92,6 +101,12 @@ length-prefixed framingを使う。
 - UART consoleはrunnerのstderr/stdoutやhost shellではなく、PicoCalc UART0 peripheralの仮想TX/RX wireを表示・操作する
 - maximum payload length、unknown kind、truncated frameをfail-closedで拒否
 - protocol stdoutに通常logを混ぜず、診断logはstderrへ出す
+
+ここで列挙した項目は概念上の要件ではなく、**VRP-0で具体値を決定してschema 1 fixtureへ凍結する**。
+fixtureには少なくともhello/status、RGB565 frame、key/reset/quit、UART TX/RX、PCM、unknown kind、
+truncated frameの代表バイト列を含める。magic値、整数のendian、各fieldのbyte幅、message kindの
+番号、payload最大値、version不一致とEOFの扱いをfixtureのREADMEへ明記し、fixtureのレビューが終わる
+までpreview production codeを追加しない。
 
 IPCはlocal process間だけを対象とし、network APIやremote controlは初版へ入れない。
 
@@ -172,17 +187,32 @@ optional I2C等へ対応するときはprojection schema revisionを上げ、fix
 
 変更前に次を固定する。
 
-1. receipt schema 1とpreview IPC schema 1のfixture（UART0のTX/RX双方を含む）
+1. receipt schema 1と、VRP-0で具体値を凍結したpreview IPC schema 1のfixture（UART0のTX/RX双方を含む）
 2. supported host、GUI/audio dependency、third-party license
-3. active PicoTetris targetと、再配布可能なNES-class target/fixture
+3. `picotetris-opt1b`（revision 5）と`picoedit-r1`（revision 1）のtarget/validation record、provenance、
+   それぞれのbaseline手順
 4. 現行accepted backendでのGUIなし速度baseline
 5. performance測定中は並列runを行わない条件
 
-NES-class fixtureにはreal cartridge ROMや再配布条件不明のdataを入れない。適切なhomebrewまたは
+NES-class workloadはこのgateでは要求しない。正式な1倍qualified判定に必要なfixtureは、下記の
+`VRP-NES-0`で別途準備する。実cartridge ROMや再配布条件不明のdataは使わず、適切なhomebrewまたは
 synthetic ROMを使い、そのsource/license/hashを固定する。
 
-**完了gate:** dependency spikeがWSLgで本体window、UART0 console、input/audio deviceを開閉でき、2 workloadの
-provenanceとbaseline手順が記録される。production codeはまだ変更しない。
+**完了gate:** dependency spikeがWSLgで本体window、UART0 console、input/audio deviceを開閉でき、
+IPC schema 1 fixtureの具体値と、上記2 workloadのprovenance・baseline手順が記録される。production
+codeはまだ変更しない。
+
+### VRP-NES-0: NES-class target/fixture preparation（10〜20時間、正式qualificationの前提）
+
+registryには現在NES-class targetがないため、これを既存targetの別名として扱わない。再配布可能な
+homebrewまたはsynthetic ROMを選定し、source、license、生成手順、BIN SHA、validation record、
+target contract、registry entryを独立した証拠として固定する。real cartridge ROMや再配布条件が不明な
+外部data、個人所有物をfixtureへ含めない。
+
+この作業はpreviewのreceipt・IPC・GUI実装を開始するための必須条件ではないが、正式な
+`realtime-1x-qualified` capabilityを宣言する前には必須である。targetを作成できない場合は、
+previewを`validated-preview-admission`または`realtime candidate`として提供できるが、1倍qualifiedへ
+昇格してはならない。
 
 ### VRP-1: receipt生成と共通admission（12〜20時間）
 
@@ -282,7 +312,9 @@ UART、framebufferが一致する。host failureがemulator停止やfalse PASS�
 
 ### VRP-5: baseline・threshold決定・qualification（10〜18時間 + 実測時間）
 
-まずthresholdを決めずに測る。PicoTetrisとNES-classをそれぞれ単独実行し、次を保存する。
+まずthresholdを決めずに測る。初期のpreview candidate測定は`picotetris-opt1b`と`picoedit-r1`を
+それぞれ単独実行する。正式な1倍qualification測定は、`VRP-NES-0`完了後に
+`picotetris-opt1b`とNES-class targetをそれぞれ単独実行する。いずれも次を保存する。
 
 - host/OS/CPU、backend/BIN/receipt SHA
 - session ratioとrolling ratio
@@ -293,14 +325,16 @@ UART、framebufferが一致する。host failureがemulator停止やfalse PASS�
 - CPU使用率と最大RSS（補助値）
 
 screeningは各workload 10 wall分以上でよいが、1倍qualificationは各workload **10 virtual分以上**を
-要求する。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能previewとrealtime-qualifiedを
-混同しない。
+要求する。NES-classが未整備の場合、existing workloadの測定を完了しても正式な1倍qualificationは
+未完了とする。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能preview、realtime candidate、
+realtime-qualifiedを混同しない。
 
 baseline reviewでrealtime許容幅とlag上限を別decision recordへ固定し、その同じ条件でqualificationを
 再実行する。測定値を見てから都合よく各runの閾値を変更しない。
 
-**完了gate:** 2 workloadのrecordがあり、`UNCALIBRATED`、`REALTIME NOT MET`、または
-`REALTIME OK`の根拠が機械可読に残る。
+**完了gate:** preview candidateについては`picotetris-opt1b`と`picoedit-r1`の2 workload recordがあり、
+`UNCALIBRATED`または`REALTIME NOT MET`の根拠が機械可読に残る。正式な
+`REALTIME OK`／`realtime-1x-qualified`には、これに加えて`VRP-NES-0`のNES-class recordが必要である。
 
 ### VRP-6: versioning・capability・利用文書（6〜10時間）
 
@@ -331,16 +365,18 @@ timing/audio UX判定には使わない。
 
 | 順序 | package | 状態 |
 |---:|---|---|
-| 1 | VRP-0 contract/host spike/baseline preflight | 未着手 |
+| 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | 未着手 |
 | 2 | VRP-1 receipt/admission | 未着手 |
 | 3 | VRP-2 shared session/preview API | 未着手 |
-| 4 | VRP-3 GUI/input/reset/reload | 未着手 |
+| 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
-| 6 | VRP-5 baseline/threshold/qualification | 未着手 |
-| 7 | VRP-6 capability/docs/versioning | 未着手 |
-| 8 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
+| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
+| 7 | VRP-5 baseline/threshold/qualification | 未着手 |
+| 8 | VRP-6 capability/docs/versioning | 未着手 |
+| 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
 
-VRP-0〜VRP-6の中心工数は**96〜160時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。
+VRP-0〜VRP-6のpreview実装中心工数は**96〜160時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。
+正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。
 
@@ -387,7 +423,8 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 
 ### 1倍qualified完成
 
-- 上記に加え、固定した2 workload/host/thresholdでVRP-5 qualificationに合格
+- 上記に加え、`picotetris-opt1b`と`VRP-NES-0`で固定したNES-class targetの2 workload/host/thresholdで
+  VRP-5 qualificationに合格
 - 10 virtual分以上の各runでratio/lag/presentation/audio metricを保存
 - capabilityにqualified範囲だけを明示
 

@@ -60,7 +60,8 @@ Firmware backendでPASSした同一raw BINと、validationで実際に使ったb
 未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
 realtime previewと呼び替えません。実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
-を正典とします。
+を正典とします。VRP-0〜VRP-4の初期workloadは`picotetris-opt1b`（revision 5）と`picoedit-r1`へ固定し、
+正式な`realtime-1x-qualified`昇格には、別途作成する再配布可能なNES-class target（VRP-NES-0）が必要です。
 
 ### 範囲を固定して対応済み
 
