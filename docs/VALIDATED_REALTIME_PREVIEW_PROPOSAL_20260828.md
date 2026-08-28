@@ -198,7 +198,22 @@ preview launcher は receipt の値だけを信用せず、起動ごとに少な
 5. ディスク上の firmware BIN を再 SHA-256 し、validation で固定された artifact hash と一致すること
 6. target registry が固定する accepted backend commit と、validation 時の backend commit が一致すること
 7. **実際に preview が起動しようとしている backend executable を再 SHA-256 し、validation 時に記録した `backend_executable_sha256` と一致すること**
-8. preview の board / LCD variant / device attachment 等、Firmware validation と同一であることが preview semantics に必要な固定 device configuration が一致すること
+8. Firmware validation と preview で、次の **preview semantics に必要な device configuration 6 項目だけ**が一致すること
+   - `board`
+   - `lcd_variant`
+   - `psram`
+   - `keyboard`
+   - `sd.attached`
+   - `sd.format`
+
+項目 8 は target registry の `runner` block 全体一致を意味しない。次は preview の実行方式上、validation と一致しなくてよいため runtime gate に含めない。
+
+- `cycles`: validation は bounded run、preview は長寿命の対話 session である
+- `keys`: validation の固定入力列を preview の対話入力へ持ち込まない
+- `scenario`: preview は authoritative scenario を実行しない
+- `expected_stop_reason`: preview は `cycle_limit` / `scenario_done` 等の validation stop contract を持たない
+
+上記6項目以外を device gate に追加する場合は、「preview semantics が変わるため一致が必要」という理由と field 名を本書または後続の versioned contract に明記してから追加する。「等」や `runner` 全体比較で gate 範囲を暗黙に拡張しない。
 
 不一致は warning ではなく起動拒否とする。
 
@@ -313,7 +328,7 @@ preview はこれを hardware FAIL と判定しない一方、**その時点以�
 
 既存 [`HEADLESS_MACHINE_API.md`](HEADLESS_MACHINE_API.md) の MachineSession が持つ `unsupported_mmio` observation / counter を利用し、新しい peripheral emulation を追加せずに状態を監視する。
 
-unsupported MMIO entry の発生、または unsupported MMIO observation の truncation を検出した時点で、session に sticky な UX-invalid state を立て、例えば次を常時表示する。
+unsupported MMIO entry の発生、または unsupported MMIO observation の truncation を検出した時点で、preview frontend 自身に sticky な UX-invalid state を立て、例えば次を常時表示する。
 
 ```text
 UNSUPPORTED MMIO REACHED — UX JUDGEMENT INVALID FROM THIS POINT
@@ -321,7 +336,11 @@ Model coverage: INVALID
 Hardware verdict: NOT PROVIDED BY THIS MODE
 ```
 
-preview process は診断目的で実行を継続してもよいが、その時点以降の画面、音、入力 latency、timing、機能挙動を実機の根拠として扱わない。banner を隠して通常の `Validated` 状態へ戻してはならない。新しい clean session を admission gate から開始した場合だけ状態をクリアできる。
+preview process は診断目的で実行を継続してもよいが、その時点以降の画面、音、入力 latency、timing、機能挙動を実機の根拠として扱わない。banner を隠して通常の `Validated` 状態へ戻してはならない。
+
+**F5 reset は sticky UX-invalid state をクリアしない。** underlying MachineSession の reset によって `unsupported_mmio` counter / entries がゼロへ戻っても、preview frontend が保持する sticky state と banner は残す。F5 は同一 admitted session 内の firmware reset であり、新しい trust admission ではない。
+
+sticky UX-invalid state をクリアできるのは、admission gate を通って新しい clean session を開始する経路だけとする。具体的には process の新規起動、または §5.5 の revalidation に PASS した `Ctrl+R` である。reload revalidation が失敗した場合は session 自体を停止するため banner を通常状態へ戻さない。
 
 これは preview の verdict ではない。authoritative FAIL / PASS は引き続き Firmware backend の責務である。
 
@@ -340,7 +359,7 @@ P0 の最小 UI:
 - PicoCalc LCD 表示
 - PC keyboard -> PicoCalc keyboard event
 - key down / held / up
-- reset
+- reset（sticky UX-invalid state は維持）
 - reload validated artifact（必ず §5.5 の再検証を通す）
 - screenshot
 - host audio monitor 状態
@@ -359,7 +378,7 @@ python3 tools/picocalc.py preview \
 ショートカット例:
 
 ```text
-F5       reset in-memory validated session
+F5       reset in-memory validated session; keep sticky UX-invalid state
 Ctrl+R   revalidate, then reload validated artifact
 F12      screenshot
 M        mute/unmute host audio monitor
@@ -368,13 +387,15 @@ Esc      quit
 
 mute は host monitor sink だけに作用し、emulated audio device state や PWM / DMA の時間進行を変えない。
 
+host OS / GUI toolkit の keyboard auto-repeat は firmware 側の repeat / hold と混同しない。物理 key の press について preview frontend は原則として最初の key-down を一度だけ投入し、OS が同じ key-down を自動反復しても追加の press event として投入しない。key-up は実際の release 時に一度投入し、hold / repeat の時間的挙動は PicoCalc keyboard model / firmware-visible semantics に委ねる。GUI framework が repeat flag を提供する場合はそれを抑止判定に使う。
+
 ### 7.2 headless machine API との関係
 
 既存 [`HEADLESS_MACHINE_API.md`](HEADLESS_MACHINE_API.md) の `--machine-api` は仮想 cycle 境界で決定的に操作する API であり、wall-clock pacing を契約に含めない。したがって **machine API をそのまま realtime preview と呼び替えない**。
 
 preview は同じ `MachineSession` の input / observe / snapshot primitive を再利用する別 frontend とする。AI-assisted UX inspection では、preview frontend が同じ semantic operation を使って programmatic input と framebuffer snapshot を行えるようにするが、既存 machine API schema 1 の決定性契約や authoritative verdict を変更しない。
 
-`unsupported_mmio` も同じ MachineSession observation を読む。preview 専用の第二のカウンタや別判定ロジックを作らない。
+`unsupported_mmio` も同じ MachineSession observation を読む。preview 専用の第二の MMIO counter や別判定ロジックを作らず、sticky UX-invalid state だけを frontend が保持する。
 
 ### 7.3 同時実行
 
@@ -414,11 +435,13 @@ F12 等で得る preview screenshot は **UX 用の便宜的 capture** であり
 - launch / reload admission revalidation
 - firmware BIN SHA-256 identity
 - backend executable SHA-256 identity
+- fixed device configuration 6 項目 (`board`, `lcd_variant`, `psram`, `keyboard`, `sd.attached`, `sd.format`)
 - wall-clock pacing と実測 ratio
 - firmware / app delay
 - LCD framebuffer の時系列状態
-- keyboard down / held / up
+- keyboard down / held / up（host OS auto-repeat は重複 press として投入しない）
 - reset / reboot
+- reset を跨いで維持する sticky UX-invalid state
 - emulated audio timing
 - UX に現れる SD wait の virtual-time 進行
 - realtime miss / presentation drop / audio underrun の可視化
@@ -453,8 +476,11 @@ P0 では新 core を作らず、semantic shortcut を導入しない。
 - schema 8 PASS / target identity の確認
 - validated firmware BIN SHA-256 の起動時確認
 - validation で実際に使った backend executable SHA-256 の記録と起動時確認
+- fixed device configuration 6 項目の一致確認
 - reload 時に起動時と同じ admission gate を再実行
 - unsupported / truncated MMIO 到達時の sticky UX-invalid banner
+- F5 reset を跨いだ sticky UX-invalid state の維持
+- host OS / GUI toolkit の keyboard auto-repeat 抑止
 
 P0 では **現在の source tree、compiler、CMake、Ninja、picotool、Pico SDK の再検査コードを書かない**。同一 validated BIN の runtime admission には不要であり、正しい artifact を環境差だけで拒否する false rejection を作らないためである。
 
@@ -510,17 +536,18 @@ P0 / P1 の最初の完成条件を次とする。
 4. backend source commit が同じでも、実際に起動する backend executable SHA-256 が validation 時と異なれば launch / reload の両方で拒否する。
 5. `Ctrl+R` は起動時と同じ admission revalidation を必ず先に実行し、不一致時は新 artifact を実行せず現在 session を停止して validated 表示を解除する。
 6. 現在の compiler / CMake / Ninja / picotool / Pico SDK が validation 時から変わっていても、validated firmware BIN と validated backend executable が byte-identical なら、それだけを理由に P0/P1 preview を拒否しない。
-7. 対話操作により unsupported / truncated MMIO に初めて到達した場合、既存 MachineSession observation から検出し、以後 `UX JUDGEMENT INVALID` を sticky 表示する。preview 自身は hardware FAIL を生成しない。
-8. representative workload で LCD を連続表示でき、key down / held / up、reset、reload を対話操作できる。
-9. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。
-10. active PicoTetris 系 target と NES-class workload を各 10 分以上連続実行し、crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を記録できる。NES-class workload が未整備ならこの項目は未完了とする。
-11. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。
-12. 1× 未達を隠すために CPU cycle、emulated frame、IRQ、PIO、DMA、device event、virtual audio event を skip しない。
-13. scenario / trace / evidence を要求せずに UX session を開始できる。
-14. preview の観測から hardware compatibility の PASS / FAIL を生成しない。
-15. preview screenshot を conformance / golden artifact として扱わない。
-16. Firmware backend の既存 schema 8 verdict、target registry、promotion policy、machine API schema 1 の決定性契約を変更しない。
-17. realtime PASS の数値 threshold は P0 baseline の記録をレビューした後に別の設計記録で固定する。それまでは「計測できたこと」と「1× 合格」を分離する。
+7. 対話操作により unsupported / truncated MMIO に初めて到達した場合、既存 MachineSession observation から検出し、以後 `UX JUDGEMENT INVALID` を sticky 表示する。**F5 reset で underlying MMIO counter / entries が初期化されても sticky 状態と banner は維持され、admission gate を通った新規 process または revalidated reload でのみクリアできる。** preview 自身は hardware FAIL を生成しない。
+8. runtime device gate は `board`、`lcd_variant`、`psram`、`keyboard`、`sd.attached`、`sd.format` の6項目を一致必須とし、`cycles`、`keys`、`scenario`、`expected_stop_reason` を一致条件にしない。
+9. representative workload で LCD を連続表示でき、key down / held / up、reset、reload を対話操作できる。host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
+10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。
+11. active PicoTetris 系 target と NES-class workload を各 10 分以上連続実行し、crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を記録できる。NES-class workload が未整備ならこの項目は未完了とする。
+12. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。
+13. 1× 未達を隠すために CPU cycle、emulated frame、IRQ、PIO、DMA、device event、virtual audio event を skip しない。
+14. scenario / trace / evidence を要求せずに UX session を開始できる。
+15. preview の観測から hardware compatibility の PASS / FAIL を生成しない。
+16. preview screenshot を conformance / golden artifact として扱わない。
+17. Firmware backend の既存 schema 8 verdict、target registry、promotion policy、machine API schema 1 の決定性契約を変更しない。
+18. realtime PASS の数値 threshold は P0 baseline の記録をレビューした後に別の設計記録で固定する。それまでは「計測できたこと」と「1× 合格」を分離する。
 
 ## 13. 非目標
 
@@ -531,6 +558,7 @@ P0 / P1 の最初の完成条件を次とする。
 - `ExecutionModel::Serial` の正確性基準変更
 - machine API v1 を wall-clock API へ変更すること
 - P0/P1 起動時に source/toolchain 全体を再検証すること
+- validation runner の `cycles` / fixed `keys` / `scenario` / expected stop contract を preview へ強制すること
 - arbitrary UF2 direct boot
 - USB BOOTSEL / MSC 再現
 - speaker / enclosure / physical volume を含む実音響再現
@@ -559,7 +587,7 @@ validated BIN + validated backend executable identity
         v
 Validated Realtime Preview
         |
-        | unsupported MMIO -> UX judgement invalid from that point
+        | unsupported MMIO -> sticky UX judgement invalid (survives F5 reset)
         | 1× qualified      -> timing / UX inspection
         | 1× not met        -> timing judgement invalid, diagnostic observation only
         v
@@ -569,8 +597,8 @@ human / AI-assisted UX inspection
 必要なら hardware final check
 ```
 
-この提案の核心は、**preview が Firmware backend の後にしか来ないこと**、**reload でも gate を迂回できないこと**、**実際に動かす firmware BIN と backend executable の bytes を pin すること**、そして **1× や model coverage を満たせないときに嘘をつかないこと**である。
+この提案の核心は、**preview が Firmware backend の後にしか来ないこと**、**reload でも gate を迂回できないこと**、**F5 reset でも model-coverage 警告を消せないこと**、**実際に動かす firmware BIN と backend executable の bytes を pin すること**、そして **1× や model coverage を満たせないときに嘘をつかないこと**である。
 
 Firmware backend は「この source / build / artifact を登録された PicoCalc hardware model 上で受け入れてよいか」を判定する。Validated Realtime Preview は、その検証済み artifact を同じ backend executable で wall-clock 実行したときの UX を観測する。
 
-P0/P1 では source/toolchain provenance を保存しつつ、runtime gate は同一 BIN / backend executable の identity に絞る。新しい build を見たい場合は必ず Firmware backend へ戻る。preview 自身は hardware correctness の権限を持たない。
+P0/P1 では source/toolchain provenance を保存しつつ、runtime gate は同一 BIN / backend executable と明示された6つの device configuration に絞る。新しい build を見たい場合は必ず Firmware backend へ戻る。preview 自身は hardware correctness の権限を持たない。
