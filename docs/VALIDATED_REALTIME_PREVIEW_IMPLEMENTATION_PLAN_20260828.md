@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0 and VRP-1 complete; VRP-2 not started**
+Status: **Current implementation plan / VRP-0 and VRP-1 complete; VRP-2 backend API in progress**
 Date: 2026-08-28
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -38,7 +38,7 @@ previewはhardware PASS/FAILを生成しない。
 
 | 項目 | 現状 | 実装への影響 |
 |---|---|---|
-| `MachineSession` | `picocalc-harness/src/main.rs`内の非公開型 | 共通session moduleへ機械的に分離してからpreview APIを接続する |
+| `MachineSession` | `picocalc-harness/src/session.rs`のcrate内共有型 | batch scenario、machine API、preview APIが同じsessionとstep境界を共有する |
 | 既存TUI | 独自の簡易LCD/GPIO経路 | PicoCalc previewのdevice modelとして流用しない |
 | wall-clock pacer | `picoem-common::Pacer`として実装済み | core semanticsを変えず再利用する |
 | pacer metric | cycle、wall、emulation、spin、behind count | rolling ratioとlagはcold pathで導出・追加する |
@@ -290,6 +290,22 @@ disk上のBINを再読しない。watchdog resetとは別の、preview operator�
 **完了gate:** 同じBINを同じvirtual cycleまで動かしたbatch/machine API/preview APIのUART、
 framebuffer、unsupported MMIO、audio digestが一致し、machine API schema 1の出力が不変。
 
+**実装進捗（2026-08-28）:** backend側に`--preview-api`の初期実装を追加し、`MachineSession`を
+`src/session.rs`へ分離した。固定PCRP
+schema 1のframe reader/writer、sequence・direction・payloadのfail-closed検証、UART0のTX/RX
+wire、key/reset/quit入力、RGB565初期・差分frame、pacer status、bounded input queueを実装し、
+未知messageのexit 2と正常quitをrunner process E2Eで確認した。さらに同じsession境界から
+UART、framebuffer、unsupported-MMIO、audio-sinkを含むversioned observation projectionと
+canonical digestをpreview status／machine APIの`preview`観測domainへ追加した。既存batch／
+machine APIのreport生成経路は変更していない。現在はpreviewとbatch/machineを同じvirtual
+cycleで走らせるbackend／machine／previewの三者比較を、board-backed synthetic UART fixtureの
+report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）として追加した。
+これはregistered target admissionへ接続した完全なdigest gateではなく、VRP-2完了とは判定しない。
+PCMは`audio.state=not_streamed`として明示し、bounded host audioはVRP-4の責務と
+する。backend側の利用・制約は
+[`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md)
+を参照する。
+
 ### VRP-3: GUI・本体スキン・LCD・keyboard・UART・reset/reload（24〜36時間）
 
 新しい`picocalc-preview`はemulator coreをlinkせず、preview IPC clientに限定する。
@@ -385,7 +401,7 @@ timing/audio UX判定には使わない。
 |---:|---|---|
 | 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
-| 3 | VRP-2 shared session/preview API | 未着手 |
+| 3 | VRP-2 shared session/preview API | **進行中。backendのpreview IPC初期実装・UART／reset／status・fail-closed E2E・`src/session.rs`分離・versioned observation projection/digest・board-backed synthetic UART fixtureのbatch／machine／preview三者report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）は完了。registered target admissionへ接続した完全gateは未完了** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
