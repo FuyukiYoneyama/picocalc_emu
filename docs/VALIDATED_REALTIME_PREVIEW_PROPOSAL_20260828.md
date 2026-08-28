@@ -408,11 +408,29 @@ preview は同じ `MachineSession` の input / observe / snapshot primitive を�
 preview では次を分離する。
 
 1. **Emulated audio timing**: PWM / DMA / audio producer の virtual-time 進行。UX timing に効くため保持する。
-2. **Host audio monitor**: PC speaker へ出す best-effort 再生。人間が開始・停止・テンポを確認する補助機能であり、hardware speaker の再現ではない。
+2. **Host audio monitor**: PC speaker / headphone へ出す best-effort 再生。人間が開始・停止・テンポ・音色・粗さを確認する補助機能である。
+
+### 8.1 音声 fidelity target
+
+音声については、画面表示の便宜的な host presentation より高い fidelity を目標にする。PicoCalc の音声経路が PWM duty / DMA 等として backend から観測できる workload では、**その sample value と virtual-time 上の timing をできるだけ保持して PCM へ再構成する**。
+
+標準 host audio monitor の比較対象は、PicoCalc 内蔵 speaker の音響特性ではなく、**PicoCalc の headphone / electrical audio output をイヤホン等で聴いた場合と同程度の内容・粗さ・テンポを得ること**とする。内蔵 speaker 固有の小型 speaker 特性、筐体共振、物理音量、設置状態は fidelity target に含めない。
+
+ここでいう「同程度」は analog 回路の厳密な電気特性一致を保証する意味ではない。少なくとも次を不必要に変えないことを目標とする。
+
+- sample / PWM duty に由来する波形の粗さ
+- sample rate / playback tempo
+- pitch
+- channel mapping
+- firmware が生成した clipping / quantization / DC tendency 等の可聴な特徴
+
+host 側で聞きやすくするためだけの smoothing、noise reduction、dynamic-range enhancement、EQ、spatialization、exciter 等を標準経路へ入れてはならない。host device の sample rate へ変換する必要がある場合も、**PicoCalc より勝手に高音質化した音を fidelity target としない**。必要な resampling / buffering は transport として扱い、元の sample/timing の意味を可能な限り保持する。
+
+将来、内蔵 speaker の聞こえ方を模擬する機能を追加する場合は、標準 monitor とは分離した optional `speaker simulation` とし、headphone-class の標準音声出力を置き換えない。
 
 P0 では backend が対象 audio stream を提供できる workload では host monitor を利用可能にする。未対応 stream では `Audio: timing-only` と明示し、無音を実機の無音と解釈させない。
 
-host monitor では underrun / overrun / dropped buffer を観測し、発生時は `Audio: degraded` を表示する。preview 由来の underrun、host DAC、OS mixer、speaker の音を firmware bug や実機音質の証拠にしてはならない。
+host monitor では underrun / overrun / dropped buffer を観測し、発生時は `Audio: degraded` を表示する。preview 由来の underrun、host DAC、OS mixer、speaker / headphone の個体差を firmware bug や実機音質の証拠にしてはならない。
 
 host volume / mute を提供する場合、それは monitor gain のみを変更し、emulated PWM duty や firmware-visible volume state を変更しない。
 
@@ -443,6 +461,7 @@ F12 等で得る preview screenshot は **UX 用の便宜的 capture** であり
 - reset / reboot
 - reset を跨いで維持する sticky UX-invalid state
 - emulated audio timing
+- supported audio workload の sample / PWM duty と timing の意味を保持する headphone-class host audio monitor
 - UX に現れる SD wait の virtual-time 進行
 - realtime miss / presentation drop / audio underrun の可視化
 - **unsupported / truncated MMIO の既存 observation と UX-invalid banner**
@@ -539,7 +558,7 @@ P0 / P1 の最初の完成条件を次とする。
 7. 対話操作により unsupported / truncated MMIO に初めて到達した場合、既存 MachineSession observation から検出し、以後 `UX JUDGEMENT INVALID` を sticky 表示する。**F5 reset で underlying MMIO counter / entries が初期化されても sticky 状態と banner は維持され、admission gate を通った新規 process または revalidated reload でのみクリアできる。** preview 自身は hardware FAIL を生成しない。
 8. runtime device gate は `board`、`lcd_variant`、`psram`、`keyboard`、`sd.attached`、`sd.format` の6項目を一致必須とし、`cycles`、`keys`、`scenario`、`expected_stop_reason` を一致条件にしない。
 9. representative workload で LCD を連続表示でき、key down / held / up、reset、reload を対話操作できる。host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
-10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。
+10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。標準 monitor は PicoCalc 内蔵 speaker の音響模擬ではなく **headphone / electrical output class** を fidelity target とし、sample / PWM duty、sample rate / tempo、pitch、channel mapping、元の quantization / clipping 等の可聴な特徴を不必要に smoothing / enhancement しない。
 11. active PicoTetris 系 target と NES-class workload を各 10 分以上連続実行し、crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を記録できる。NES-class workload が未整備ならこの項目は未完了とする。
 12. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。
 13. 1× 未達を隠すために CPU cycle、emulated frame、IRQ、PIO、DMA、device event、virtual audio event を skip しない。
@@ -561,7 +580,7 @@ P0 / P1 の最初の完成条件を次とする。
 - validation runner の `cycles` / fixed `keys` / `scenario` / expected stop contract を preview へ強制すること
 - arbitrary UF2 direct boot
 - USB BOOTSEL / MSC 再現
-- speaker / enclosure / physical volume を含む実音響再現
+- speaker / enclosure / physical volume を含む実音響再現（標準音声の fidelity target は headphone / electrical output class とする）
 - 物理 key feel、LCD の物理色・残像・視野角の再現
 - preview を CI authoritative verdict にすること
 
