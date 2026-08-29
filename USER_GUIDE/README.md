@@ -16,6 +16,7 @@
 | host／firmwareで検証する | [`TESTING.md`](TESTING.md) |
 | エミュレーターを補完する実機HILを使う | [`../docs/HARDWARE_IN_THE_LOOP.md`](../docs/HARDWARE_IN_THE_LOOP.md) |
 | 画面やUARTを待ってキーを入れる | [`SCENARIOS.md`](SCENARIOS.md) |
+| admitted BINをPicoCalc skin／LCD／UART0で対話表示 | [`PREVIEW_GUI.md`](PREVIEW_GUI.md) |
 | 複数の実行を同時に監視する | [`CONCURRENT_RUNS.md`](CONCURRENT_RUNS.md) |
 | SDのdirectoryとRAW imageを往復する | [`SD_IMAGES.md`](SD_IMAGES.md) |
 | UF2Loader／SD／flashの完了状態と境界を確認する | [`統合計画`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)、[`対応範囲`](../firmware-validation/capability.json) |

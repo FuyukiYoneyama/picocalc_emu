@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-2-e complete; VRP-3 onward remains**
+Status: **Current implementation plan / VRP-0〜VRP-3 complete locally; VRP-4 onward remains**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -131,9 +131,9 @@ IPCはlocal process間だけを対象とし、network APIやremote controlは初
 ### 3.4 初版host範囲
 
 最初のqualified hostは、現在の主要開発環境である **Ubuntu 24.04 on WSL2/WSLg x86_64** とする。
-GUI候補は`winit` + software framebuffer presentation、audio候補は`cpal`とする。VRP-0で
-build/runtime/license/WSLg audioを確認し、合格するまでdependencyをproduction pathへ固定しない。
-他OSは「動く可能性」と「qualified」を区別する。
+VRP-3のGUIはRust GUI dependencyを追加せず、Python標準ライブラリのTkで実装する。これにより
+receiptが指定するRust runnerのbyte identityと、frontendのwindow障害を分離する。audio候補の
+`cpal`はVRP-4までproduction pathへ固定しない。他OSは「動く可能性」と「qualified」を区別する。
 
 ### 3.5 PicoCalc本体スキン
 
@@ -141,7 +141,7 @@ build/runtime/license/WSLg audioを確認し、合格するまでdependencyをpr
 previewのpresentation assetとして扱う。実装時には共有workspaceの`log/`を実行時依存にせず、次の条件を満たす
 repository assetへ取り込む。
 
-- `assets/preview/picocalc-device-skin.jpg`（または同等の明示的なasset path）として固定する
+- `assets/preview/picocalc-device-skin.png`（または同等の明示的なasset path）として固定する
 - EXIF、撮影日時、機種情報などの不要なmetadataを除去し、asset SHA-256と由来・利用許諾を記録する
 - VRP-0で画像の表示向き、LCD開口部4点のnormalized座標、必要な透視変換を校正する
 - backendの320x320 RGB565 framebufferを、校正済みのLCD開口部へ合成する。写真のキーボードや本体を
@@ -454,7 +454,8 @@ VRP-7 exact optimizationはVRP-5で1倍未達を確認した場合だけ開始�
 - key mappingとdown/up。OS auto-repeat key-downを重複投入しない
 - F5 reset、Ctrl+R reload request、F12 screenshot、Esc quit
 - validation identity、target/measured speed、timing、coverage、audio、hardware verdict banner
-- repaint coalescing/drop count。backend frame/device eventはskipしない
+- repaint coalescing/drop count。表示側の古いframe描画だけはcoalesceできるが、backendが発行した
+  device event、status、UART、error、cycle、observationはskip／再解釈しない
 - unsupported/truncated MMIOのsticky UX-invalid state
 - sticky stateはF5で保持、admission済みreloadだけでclear
 
@@ -464,6 +465,30 @@ presentationを含むため、raw framebufferのgolden imageとは別物であ�
 **完了gate:** 本体スキンの校正済み開口部へframebufferが合成され、key down/hold/up、auto-repeat抑止、
 UART consoleの自動起動とTX/RX双方の表示・入力、reset、成功reload、拒否reload、sticky coverageを自動testし、
 人間のWSLg smokeで本体windowとUART windowを確認する。
+
+**実装結果（2026-08-29）:** `tools/picocalc_preview.py`を追加し、`preview-gui`サブコマンドから
+admitted descriptorを再検証して、descriptorの完全なlaunch contractに記録されたrunnerだけをTkの
+子processとして起動する。Rust GUI/audio依存やemulator coreの再実装は行っていない。提示された
+PicoCalc写真はEXIFを除去した`assets/preview/picocalc-device-skin.png`（607x1026、SHA-256をREADMEへ固定）
+としてpresentation asset化し、校正済み開口部へ320x320 RGB565を表示する。アセットのSHA／サイズ異常は
+`skin unavailable`として明示し、`--skin none`では整数倍率のLCDへfallbackする。
+
+UART0は本体とは別のconsole windowを起動時に自動作成し、TXのvirtual cycle付きhex/text表示、UTF-8／
+raw-hex RX入力、accepted／overrunのbackend counterを表示する。TkのOS auto-repeat `KeyPress`は重複
+`down`へ変換せず、初回`down`・UI timerの`held`・`up`へ分離する。F5 resetはsticky UX-invalidを保持し、
+Ctrl+Rはadmissionを再実行して成功時だけsticky stateをclear、変更／欠落時は
+`VALIDATION LOST — RELOAD REFUSED`を表示する。F12はpresentation screenshot、Escはpreview quitへ予約する。
+backendのerror、coverage停止、unsupported/truncated attribution、IPC読取失敗はsticky UX-invalidとして
+表示し、GUIは終了コード2を返す。`audio=not_streamed`は維持し、host PCM再生はVRP-4へ残す。
+
+headlessな`tests/test_preview_gui.py`でPCRP input fixture、方向／payload fail-closed、RGB565変換、
+key down/held/up、OS repeat抑止、UART entry focus、reset／成功・拒否reload、sticky stateを検査した。
+実Tk／backendを必要とする画面合成・UART console自動起動・実runner TX/RXの確認は、別のWSLg local
+smokeとして行う。WSLg実行では登録済み`picoedit-r1-vrp2f`の
+descriptorを使い、本体window・自動UART0 window・初期frame・clean child shutdownを確認した。詳細と
+実行境界は[`validated-realtime-preview/VRP3_GUI_20260829.md`](validated-realtime-preview/VRP3_GUI_20260829.md)
+に固定する。これはGUI機能の完了であり、host audio playback、hardware verdict、`realtime-1x-qualified`
+昇格を意味しない。
 
 ### VRP-4: bounded host audio monitor（16〜28時間）
 
@@ -538,7 +563,7 @@ timing/audio UX判定には使わない。
 | 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
-| 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
+| 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 audio monitor | 未着手 |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
@@ -548,7 +573,7 @@ timing/audio UX判定には使わない。
 VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
 **112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。VRP-2の初期API、
 versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
-closureは完了している。今後の工数はVRP-3以降のGUI／audio／qualificationで見積もる。
+closure、VRP-3 GUI/inputは完了している。今後の工数はVRP-4以降のaudio／qualificationで見積もる。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。

@@ -93,6 +93,36 @@ cargo clippy --locked --release \
 git diff --check
 ```
 
+### Validated Realtime Preview frontend (VRP-3)
+
+`tools/picocalc_preview.py`は、admitted descriptorのlaunch contractを再検証して
+`picocalc-run --preview-api`を子process起動する薄型Tk frontendです。GUIへemulator coreを
+再実装したり、registryからmutableなargvを再構成したりしません。PCRPのwire変更は
+`docs/validated-realtime-preview/preview-ipc-schema-v1.json`とfixtureをversion更新し、
+backend／consumer／negative testを同じ変更単位で更新します。
+
+VRP-3の表示処理（skin、RGB565変換、screenshot）はpresentation専用です。古いframeの描画を
+coalesceしてpresentation dropとして数えることは許可しますが、backendが発行したdevice event、
+status、UART、cycle、error、report digestを落としたり変更したりしてはいけません。UART consoleはPicoCalc UART0の仮想TX/RX wireであり、host
+stdin/stdoutやkeyboard入力と混同しません。F5 resetはsticky UX-invalidを保持し、Ctrl+Rは
+admission成功時だけ新childを起動します。`audio=not_streamed`をhost音声再生済みと説明せず、
+音声transportはVRP-4へ分離します。
+
+frontend変更の最小ローカルゲートは次です。
+
+```sh
+python3 -m unittest -q tests.test_preview_gui
+python3 -m unittest -q tests.test_tools
+python3 tools/picocalc.py preview-headless --descriptor /absolute/path/to/admitted-descriptor.json
+python3 tools/picocalc.py preview-gui --descriptor /absolute/path/to/admitted-descriptor.json --smoke-seconds 2
+git diff --check
+```
+
+WSLgのwindow確認はCIの代替ではなく、ローカルのpresentation smokeです。skin assetを変更する
+場合はEXIF等のmetadataを除去し、由来・許諾・SHA・開口部校正を
+`assets/preview/README.md`へ更新します。descriptor、target、validation record、backend
+runnerの不変証拠を改変してGUIの都合に合わせてはいけません。
+
 実機相関・target更新が無いdocs-only変更でfirmwareを長時間実行する必要はありません。
 逆にdevice model、runner、BSP、schema、target contractを変更した場合は、関連unit testだけで済ませず、
 既存の受入targetを固定backendで再実行します。CIの結果をローカル検証の代わりにしません。

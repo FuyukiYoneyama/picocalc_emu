@@ -1,12 +1,13 @@
-# Validated Realtime Preview: VRP-0/VRP-1 contracts and VRP-2 evidence
+# Validated Realtime Preview: VRP-0〜VRP-3 contracts, evidence, and GUI
 
 This directory contains the immutable, machine-readable inputs and local
-evidence produced by VRP-0 through VRP-2-e. The registered-target complete
+evidence produced by VRP-0 through VRP-3. The registered-target complete
 digest gate is closed for the two versioned targets recorded below. It is a
-contract, provenance, and admission fixture, not a GUI implementation.
+contract, provenance, admission, and GUI implementation record.
 The files are deliberately kept separate from `firmware-validation/records/`:
 the latter are existing validation evidence, while these files describe the
-preview transport and the receipt that admits an already validated run.
+preview transport, admission receipt, and thin frontend that consumes an
+already validated run.
 
 ## Canonical files
 
@@ -25,6 +26,7 @@ preview transport and the receipt that admits an already validated run.
 | [`VRP2B_DESCRIPTOR_CONSUMER_20260829.md`](VRP2B_DESCRIPTOR_CONSUMER_20260829.md) | Headless descriptor consumer and PCRP hello/status/quit smoke gate |
 | [`VRP2CD_MACHINE_UART_20260829.md`](VRP2CD_MACHINE_UART_20260829.md) | Machine API schema-1 golden transcript and UART RX/overrun evidence |
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
+| [`VRP3_GUI_20260829.md`](VRP3_GUI_20260829.md) | Tk GUI, PicoCalc skin/LCD composition, UART0 console, input, reset/reload, and local WSLg acceptance |
 
 ## VRP-2-e real-target closure
 
@@ -110,7 +112,8 @@ statistics are deliberately not mixed into this digest; they require a
 separate versioned monitor contract in VRP-4.
 
 VRP-0 intentionally did not add `winit`, `cpal`, a GUI executable, or a
-preview IPC implementation. VRP-1 adds only standard-library Python receipt
-generation/admission and no Rust GUI/audio dependency. The complete-digest
-gate does not promote a GUI, host audio transport, hardware correlation, or
-`realtime-1x-qualified` capability; those remain later VRP gates.
+preview IPC implementation. VRP-1/2 added receipt/admission and the
+authoritative preview backend. VRP-3 adds the standard-library Python/Tk
+frontend, but no Rust GUI/audio dependency and no emulator-core copy. The
+GUI does not promote host audio transport, hardware correlation, or
+`realtime-1x-qualified`; those remain VRP-4/5 gates.

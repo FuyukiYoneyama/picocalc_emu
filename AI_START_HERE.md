@@ -26,12 +26,12 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 - R0〜R6、NEXT-1〜NEXT-4: 完了
 - OPT1-B: promoted
 - OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
-- 既存R/NEXT/U/SD-GEN番号付き作業: すべて完了または正式終了。Validated Realtime PreviewはVRP-2-a〜eまで完了し、実targetの完全digest gateも受入済み。VRP-3以降は未着手
+- 既存R/NEXT/U/SD-GEN番号付き作業: すべて完了または正式終了。Validated Realtime PreviewはVRP-0〜VRP-3まで完了し、実targetの完全digest gate、Tk GUI、PicoCalc skin、LCD、UART0 console、入力、reset/reloadをローカル／WSLgで受入済み。VRP-4以降は未着手
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
 - SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
 - OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
 - I2C-EXT: E0〜E6完了。E5は同一BIN 3回のemulator回帰と同一UF2の実機startup probeを合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定
-- Validated Realtime Preview: **VRP-0／VRP-1／VRP-2-a〜e完了（VRP-2-e実target gate受入済み）**。`python3 tools/picocalc.py test --mode firmware --receipt-out ...`でPASS済みrunのreceiptを生成し、`python3 tools/picocalc.py preview ...`でadmissionを再検証できます。`preview-digest-gate`はclean backend `c1c20d7d86a3006569375bc333cf72494e95eb46`で、`picotetris-opt1b-vrp2f` revision 8と`picoedit-r1-vrp2f` revision 4のbatch／machine API／preview API／registered report四者projection digestを実BIN・fresh audio reportとともに受入しました。各証拠は[`firmware-validation/records/`](firmware-validation/records/)と[`docs/validated-realtime-preview/`](docs/validated-realtime-preview/)にあります。これはGUI、host audio transport、実機相関、または1倍qualifiedを意味しません。次はVRP-3 GUI/input、VRP-4 audio、VRP-5 qualification、VRP-6 capability/docsです。正式な1倍qualified昇格にはVRP-NES-0のNES-class targetが追加で必要です
+- Validated Realtime Preview: **VRP-0／VRP-1／VRP-2-a〜e／VRP-3完了（VRP-2-e実target gate、VRP-3 GUIを受入済み）**。`python3 tools/picocalc.py test --mode firmware --receipt-out ...`でPASS済みrunのreceiptを生成し、`python3 tools/picocalc.py preview ...`でadmissionを再検証できます。`preview-digest-gate`はclean backend `c1c20d7d86a3006569375bc333cf72494e95eb46`で、`picotetris-opt1b-vrp2f` revision 8と`picoedit-r1-vrp2f` revision 4のbatch／machine API／preview API／registered report四者projection digestを実BIN・fresh audio reportとともに受入しました。`python3 tools/picocalc.py preview-gui --descriptor ...`は同じdescriptorからTk薄型frontendを起動し、PicoCalc skinへLCDを合成してUART0 consoleを自動表示します。key down/held/up・auto-repeat抑止、F5 reset、Ctrl+R再admission reload、F12 screenshot、sticky UX-invalidを含む詳細は[`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)にあります。各証拠は[`firmware-validation/records/`](firmware-validation/records/)と[`docs/validated-realtime-preview/`](docs/validated-realtime-preview/)にあります。これはhost audio transport、実機相関、または1倍qualifiedを意味しません。次はVRP-4 audio、VRP-5 qualification、VRP-6 capability/docsです。正式な1倍qualified昇格にはVRP-NES-0のNES-class targetが追加で必要です
 
 UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
 現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
@@ -47,7 +47,7 @@ PASS済みの同一BINと同一backend executableだけを対話観測する層�
 IPC、UART0 TX/RX、RGB565 frame、reset/quit、pacer status、fail-closed入力、shared session分離、
 versioned observation projection/digestまで実装済みです。board-backed synthetic UART fixtureのbatch／machine／preview
 を同一cycleで比較するreport-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）に加え、
-実targetへ接続した完全digest gateも完了しています。GUI、audio、1倍qualificationは未完了です。受入済みtargetと証拠は[`docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)を参照してください。
+実targetへ接続した完全digest gateも完了しています。VRP-3ではTk GUI、PicoCalc skin／LCD合成、自動UART0 console、key down/held/up・auto-repeat抑止、reset/reload、F12 screenshot、sticky UX-invalidを受入済みです。host streaming audioと1倍qualificationは未完了です。受入済みtargetと証拠は[`docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)、GUIの実装記録は[`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)を参照してください。
 通常のfirmware検証やmachine APIをpreviewまたは1倍対応済みと説明してはいけません。VRP-2-c/dのローカル証拠だけではregistered-target digest gateを完了したことになりません。
 
 直近の完了済み正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う

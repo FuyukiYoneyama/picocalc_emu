@@ -52,7 +52,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0〜VRP-2-e完了、VRP-3以降未着手）
+### Validated Realtime Preview（VRP-0〜VRP-3完了、VRP-4以降未着手）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
@@ -67,14 +67,20 @@ VRP-2-aでは現行backendを固定した`picotetris-opt1b-vrp2` revision 6と`p
 追加し、両targetのreceipt生成・registered target admissionまでローカルで確認しました。VRP-2-bでは
 admitted descriptorのlaunch contractを再検証して、同じrunnerをspawnするheadless consumerの
 hello／status／quit smoke gateを追加しました。VRP-2-cでは既存machine API 7 operationを含む8交換のgolden JSONL transcriptを実runnerで再生し、応答とsnapshotを完全一致させました。VRP-2-dではrepository-ownedのUART echo fixtureでRX accepted 16 byte、17 byte目のFIFO overrun、方向付きcounter、RX disabled拒否を確認しました。`preview-digest-gate`の実装とfake-target検査に加え、2026-08-29にclean backend・実BIN・fresh complete audio reportを用いたVRP-2-e実target gateを2つのversioned targetで完了しました。四者projection digest、timeline、終端cycle、report checksが一致し、証拠は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)と`firmware-validation/records/vrp2-f-*/`にあります。
-GUI、streaming audio、1倍qualificationも未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
+VRP-3では、admitted descriptorを再検証して同一runnerを子process起動するTk薄型GUI、提示画像から作った
+PicoCalc skin、320x320 RGB565 LCD合成、自動UART0 console、UART text/raw RX、キーdown/held/upとOS
+auto-repeat抑止、F5 reset、Ctrl+Rの再admission reload、F12 screenshot、sticky UX-invalid表示を実装し、
+WSLgで本体window／UART windowの起動とclean shutdownを確認しました。詳細な実装記録は
+[`validated-realtime-preview/VRP3_GUI_20260829.md`](validated-realtime-preview/VRP3_GUI_20260829.md)、
+skinの由来・SHA・校正は[`../assets/preview/README.md`](../assets/preview/README.md)を参照してください。
+host streaming audio、1倍qualificationも未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
 realtime previewと呼び替えません。VRP-1の旧backend heartbeat互換を含む実装記録は
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
-を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。VRP-0〜VRP-4の初期workloadは`picotetris-opt1b`（revision 5）と`picoedit-r1`へ固定し、
+を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。
 正式な`realtime-1x-qualified`昇格には、別途作成する再配布可能なNES-class target（VRP-NES-0）が必要です。
-VRP-0の正典fixtureは[`docs/validated-realtime-preview/`](validated-realtime-preview/)にあり、候補の
-`winit`／`cpal`はまだproduction dependencyへ追加していません。
+VRP-0の正典fixtureは[`docs/validated-realtime-preview/`](validated-realtime-preview/)にあり、VRP-3 GUIは
+Python標準ライブラリTkで実装したため`winit`／`cpal`はproduction dependencyへ追加していません。
 
 ### 範囲を固定して対応済み
 

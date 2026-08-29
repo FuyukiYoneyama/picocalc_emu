@@ -3672,6 +3672,41 @@ def main() -> int:
         help="write the admitted launch descriptor atomically",
     )
 
+    preview_gui_parser = subparsers.add_parser(
+        "preview-gui",
+        help=(
+            "launch the thin Tk PicoCalc preview GUI from an admitted descriptor "
+            "(opens the UART0 console automatically)"
+        ),
+    )
+    preview_gui_parser.add_argument(
+        "--descriptor", type=Path, required=True,
+        help="schema-1 admitted launch descriptor from `preview`",
+    )
+    preview_gui_parser.add_argument(
+        "--backend-dir", type=Path,
+        help="optional backend checkout assertion; otherwise use the descriptor path",
+    )
+    preview_gui_parser.add_argument(
+        "--skin", type=Path,
+        help=(
+            "PicoCalc presentation skin PNG (default: bundled sanitized asset); "
+            "use the literal 'none' for a bare LCD"
+        ),
+    )
+    preview_gui_parser.add_argument(
+        "--scale", type=int, default=2,
+        help="integer scale for bare LCD mode (default: 2)",
+    )
+    preview_gui_parser.add_argument(
+        "--screenshot-dir", type=Path,
+        help="directory for F12 presentation screenshots (default: ./preview-screenshots)",
+    )
+    preview_gui_parser.add_argument(
+        "--smoke-seconds", type=float,
+        help="close automatically after this duration for a local WSLg smoke test",
+    )
+
     preview_headless_parser = subparsers.add_parser(
         "preview-headless",
         help="consume an admitted descriptor and smoke-test runner hello/status/quit",
@@ -3869,6 +3904,24 @@ def main() -> int:
             args.receipt,
             args.backend_dir,
             args.descriptor_out,
+        )
+    if args.command == "preview-gui":
+        if args.scale < 1:
+            parser.error("--scale must be positive")
+        if args.smoke_seconds is not None and args.smoke_seconds <= 0:
+            parser.error("--smoke-seconds must be positive")
+        # Keep Tk and the GUI module out of normal tool startup.  The module
+        # lives beside this script, so this import resolves to the repository
+        # implementation even when the test suite imports picocalc.py by path.
+        from picocalc_preview import run_gui
+
+        return run_gui(
+            args.descriptor,
+            args.backend_dir,
+            args.skin,
+            args.scale,
+            args.screenshot_dir,
+            args.smoke_seconds,
         )
     if args.command == "preview-headless":
         return preview_headless(
