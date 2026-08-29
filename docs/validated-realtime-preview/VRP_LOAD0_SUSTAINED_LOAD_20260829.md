@@ -1,6 +1,6 @@
 # VRP-LOAD-0: repository-owned sustained-load profile
 
-Status: **prototype implemented; 1 virtual-second clean-clone runtime/input smoke passed; 120-second vertical slice, admission, and preparation gate pending**
+Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice, admission, and preparation gate pending**
 Date: 2026-08-29
 
 ## Purpose

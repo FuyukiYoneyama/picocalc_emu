@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 planned as the repository-owned 1x workload; VRP-5 onward remain; VRP-5 reusable backend-pin preflight pending**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 prototype in progress as the repository-owned 1x workload; VRP-5 onward remain; VRP-5 reusable backend-pin preflight pending**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
