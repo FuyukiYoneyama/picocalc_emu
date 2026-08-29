@@ -6,6 +6,8 @@
 
 ## 状態
 
+VRP-2-eの`c1c20d7d86a3006569375bc333cf72494e95eb46`は当時の不変evidenceとして保持するが、現在のbackend branch／tagから到達できないため、VRP-5の再現可能なbackend pinとしては使用しない。到達可能なclean backendでの新しいversioned target／validation／receiptを先に作る。`VRP-LOAD-0`のsource／fixture prototypeはこのpreflightと並行できるが、正式qualificationは両方のgate後に行う。
+
 ### VRP-NES-0／NESco歴史資料の境界（2026-08-29時点）
 
 VRP-NES-0で使用した診断NESco checkoutは、ローカルの

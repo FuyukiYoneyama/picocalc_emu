@@ -12,10 +12,18 @@ time pressure.  The qualification requirement is therefore a load profile,
 not a dependency on the semantics or implementation of an external emulator
 project.
 
-The formal VRP-5 workload pair will be:
+The formal VRP-5 workload pair is defined at the logical-workload level as:
 
-- `picotetris-opt1b` revision 5
+- `picotetris-opt1b` revision 5 as the baseline workload identity
 - `VRP-LOAD-0`
+
+The launch record must additionally name a reachable, clean, versioned target
+id/revision for the `picotetris-opt1b` workload.  The old
+`picotetris-opt1b-vrp2f` revision 8, which pins the unreachable
+`c1c20d7d86a3006569375bc333cf72494e95eb46`, is not reusable for VRP-5 until it
+has been revalidated under the backend-pin preflight.  The baseline revision,
+the VRP-2-f revision, and the VRP-4 revision 9 must not be described as the
+same target.
 
 `picoedit-r1` remains a useful preview candidate and contrast workload, but it
 is not a substitute for the sustained-load qualification profile.
@@ -38,6 +46,45 @@ repository-owned source or reproducible, redistributable fixtures.
 The profile must not skip CPU cycles, emulated frames, IRQs, PIO/DMA events,
 device events, or virtual audio events to reach 1x.
 
+## Implementation contract before firmware coding
+
+The six requirements above are necessary but are not yet an executable
+fixture specification.  Before source coding starts, create one versioned
+profile record containing all of the following:
+
+- repository-owned source directory, license, target id/revision, artifact
+  names, and source/fixture/BIN SHA-256 values;
+- exact display update rate, RGB565 frame-generation algorithm, seed, LCD
+  device profile, and frame/event marker;
+- audio channel count, sample format, DMA timer/block/buffer configuration,
+  deterministic pattern/seed, and expected audio observation/digest;
+- CPU/core-1 workload, allowed waits, the `step_until` exact-idle-fast-forward
+  policy, and the observation proving that the workload still applies timing
+  pressure;
+- fixed key or UART input sequence, input virtual cycles, virtual duration,
+  cycle limit, stop marker, and expected authoritative observation digest;
+- clean-clone build commands, SDK/BSP/compiler/CMake/Ninja identity, reachable
+  backend commit, backend executable SHA-256, and output manifest; and
+- separate definitions for core throughput/timing metrics and GUI
+  input-to-visible-response metrics.
+
+The profile must provide a runnable command for the deterministic headless
+qualification path and a separate command or procedure for the same-BIN
+preview API/GUI UX smoke.  A timer around the release runner alone is not
+evidence of GUI UX.  If input-to-visible-response cannot be measured, the
+result must be labelled `continuous-load timing`, not `1x UX`.
+
+The first implementation gate is a 1--2 virtual-minute vertical slice from a
+clean clone: build, run, report/receipt, existing admission, and preview path.
+It must produce the profile fields and artifacts above before the workload is
+called implemented.  Only then may the preparation gate run for at least 10
+virtual minutes.
+
+The existing backend may exactly fast-forward a proven both-cores-blocked
+interval to an event boundary.  This is not automatically an invalid shortcut;
+the profile must explicitly state whether it is allowed and how semantic
+equivalence and sustained timing pressure are evidenced.
+
 ## Preparation gate
 
 Before VRP-5 qualification, execute the same input at least three times and
@@ -58,6 +105,14 @@ The realtime tolerance and lag ceiling are fixed in a separate decision record
 after the initial baseline review but before the qualification run.  They must
 not be adjusted per run after seeing the result.
 
+The decision record is not a post-hoc pass recipe.  It must contain the
+non-negotiable conditions (for example digest mismatch, drop, or underrun),
+the ratio/lag statistic, qualification run count, threshold-selection rule,
+and the mechanical `REALTIME OK` / `REALTIME NOT MET` decision.  A baseline
+may inform a threshold only under that predeclared rule; target revision,
+measurement path, threshold, and included runs must not be changed after
+qualification results are visible.
+
 ## External-project boundary
 
 `Picocalc_NESco` is not an input to this profile.  `picocalc_emu` must not
@@ -69,6 +124,21 @@ The existing `VRP-NES-0` synthetic NROM fixture and local evidence remain
 historical, non-qualifying records.  If NES-specific conformance is later
 desired, it must be a separate optional test using an owner-supplied,
 unmodified public clean ref or reproducible artifact.
+
+## Backend prerequisite
+
+The `VRP-LOAD-0` source and vertical slice may be implemented in parallel with
+backend-pin recovery.  Formal target validation and VRP-5 qualification may
+not start until the backend commit is reachable from a branch or tag and the
+backend checkout is clean.  As of 2026-08-29, `c1c20d7d86a3006569375bc333cf72494e95eb46`
+is not reachable from a branch or tag; the current `main` is
+`65c795e87321e79b960ac8a7495a205de6a24ec0`.  Existing c1-pinned evidence is
+immutable historical evidence, not a reason to rewrite old records.
+
+Any existing uncommitted backend changes must be classified separately before
+revalidation.  They must either be recorded in a dedicated backend commit
+with its own identity or be removed by the owner; they must not be silently
+included in a preview implementation commit.
 
 ## Completion gate
 

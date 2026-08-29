@@ -348,9 +348,13 @@ sticky UX-invalid state をクリアできるのは、admission gate を通っ�
 
 ### 6.5 realtime 許容幅
 
-数値 threshold は測定前に決めない。
+drop／underrun／digest不一致などの絶対条件は測定前に固定する。ratio／lagの性能thresholdを
+baselineから決める場合も、あらかじめ選択規則と統計方法を記録し、qualification runの開始前に
+decision recordとして凍結する。測定結果を通してからthreshold、対象run、target revision、測定経路を
+変更してはならない。
 
-P0 は baseline を収集し、後続の設計記録で rolling / sustained ratio、許容 overrun、audio underrun 等の gate を固定する。threshold が固定されるまでは `REALTIME OK` を authoritative な受入表示には使わない。
+P0 は baseline を収集し、後続の設計記録で rolling / sustained ratio、許容 overrun、audio underrun 等の
+gateを固定する。decision recordが固定されるまでは`REALTIME OK`をauthoritativeな受入表示には使わない。
 
 ## 7. 対話 UI、AI 操作、同時実行
 
@@ -528,6 +532,14 @@ P0の実装preflightとpreview candidate測定は、現在registryに存在す�
 session ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を保存する。
 10 分は安定性・host fluctuation・入力反復を観測する最低 duration であり、realtime 許容幅そのものではない。
 
+ここで`picotetris-opt1b` revision 5は論理workload／baseline identityであり、正式なlaunchには
+branchまたはtagから到達できるclean backend pinを持つversioned targetを使う。旧
+`picotetris-opt1b-vrp2f` revision 8の到達不能なbackend pinを、VRP-5の再現可能な入力として自動的に
+流用してはならない。`VRP-LOAD-0`は、source／target／display／audio／CPU／input／scenario／build／
+evidenceの具体値をversioned profileへ固定し、1〜2 virtual分のvertical sliceを通してから準備gateへ進む。
+throughput／timingのheadless測定と、同じBINを使うGUIのinput-to-visible-response観測は別metric・別artifact
+とし、後者がない場合は`1倍UX`ではなく`継続負荷timing`と表示する。
+
 ### Phase P1: validation receipt の正式化
 
 `tools/picocalc.py` に、成功した Firmware backend run とその実行 executable から receipt を生成する機能を追加する。
@@ -575,16 +587,19 @@ P0 / P1 の最初の完成条件を次とする。
 8. runtime device gate は `board`、`lcd_variant`、`psram`、`keyboard`、`sd.attached`、`sd.format` の6項目を一致必須とし、`cycles`、`keys`、`scenario`、`expected_stop_reason` を一致条件にしない。
 9. representative workload で LCD を連続表示でき、本体スキンを使う場合は校正済みLCD開口部へ表示できる。UART0のTX/RX console windowがpreview起動時に自動で開き、双方の入出力を対話操作できる。key down / held / up、reset、reloadも操作でき、host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
 10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。標準 monitor は PicoCalc 内蔵 speaker の音響模擬ではなく **headphone / electrical output class** を fidelity target とし、sample / PWM duty、sample rate / tempo、pitch、channel mapping、元の quantization / clipping 等の可聴な特徴を不必要に smoothing / enhancement しない。
-11. `picotetris-opt1b`（revision 5）と、repository-owned `VRP-LOAD-0` workloadを各 10 分以上連続実行し、
-crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を
-記録できる。`VRP-LOAD-0`が未整備なら、preview candidateは利用できてもこの正式qualification項目は未完了とする。
+11. `picotetris-opt1b`（revision 5の論理workloadを表す、到達可能なbackend pin付きversioned launch target）と、
+repository-owned `VRP-LOAD-0` workloadを、逐次10-run、各run 10 virtual分以上で実行し、crashせず、
+wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrunを記録できる。
+`VRP-LOAD-0`またはreusable backend pinが未整備なら、preview candidateは利用できてもこの正式qualification項目は未完了とする。
 12. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。
 13. 1× 未達を隠すために CPU cycle、emulated frame、IRQ、PIO、DMA、device event、virtual audio event を skip しない。
 14. scenario / trace / evidence を要求せずに UX session を開始できる。
 15. preview の観測から hardware compatibility の PASS / FAIL を生成しない。
 16. preview screenshot を conformance / golden artifact として扱わない。
 17. Firmware backend の既存 schema 8 verdict、target registry、promotion policy、machine API schema 1 の決定性契約を変更しない。
-18. realtime PASS の数値 threshold は P0 baseline の記録をレビューした後に別の設計記録で固定する。それまでは「計測できたこと」と「1× 合格」を分離する。
+18. realtime PASSの数値thresholdは、P0 baselineをレビューした後に、事前に記録した選択規則・統計方法に
+従う別の設計記録でqualification開始前に固定する。各runの結果を見てthreshold、対象run、target revision、
+測定経路を変更せず、それまでは「計測できたこと」と「1×合格」を分離する。
 
 ## 13. 非目標
 

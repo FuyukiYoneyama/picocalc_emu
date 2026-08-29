@@ -194,3 +194,14 @@ repository-owned synthetic NROM fixture
 1. その入手元は誰の管理下にあるか
 2. こちらの変更を伴うか。伴うならその変更を証拠として公開する必要が生じないか
 3. 同種の前例が既にリポジトリ内にないか
+
+## 7. 後続確認: VRP-5のbackend pin
+
+本書の§2.1採用後、VRP-2-eで記録したbackend commit
+`c1c20d7d86a3006569375bc333cf72494e95eb46`が、backendのbranch／tagから
+到達できない状態であることを確認した。これはNES依存の是正とは別の再現性問題である。
+
+既存VRP-2-eのevidence／recordは時点証拠として不変に保持するが、VRP-5の入力としては再利用しない。
+到達可能なclean backendで新しいversioned target／validation／receiptを作ることを、VRP-5の
+reusable backend pin preflightとして正典計画へ追加した。`VRP-LOAD-0`のsource／fixture prototypeは
+このpreflightと並行できるが、formal target受入とqualificationは両方のgate後に行う。

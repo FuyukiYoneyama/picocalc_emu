@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 planned as the repository-owned 1x workload; VRP-5 onward remain**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 planned as the repository-owned 1x workload; VRP-5 onward remain; VRP-5 reusable backend-pin preflight pending**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -36,6 +36,14 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
    既存のvalidation record／target revisionを上書きせず、VRP-2のregistered-target gateへ入る前に、
    現行backendで再検証した新しいversioned target revision、validation record、receiptを作る。
    旧revisionの実機相関・batch証拠は歴史的な証拠として保持し、preview用の再検証結果と混同しない。
+10. VRP-2-eで固定した`c1c20d7d86a3006569375bc333cf72494e95eb46`は、証拠の一部としては変更せず保持するが、
+    2026-08-29時点の`picoem-picocalc`のbranch／tagから到達できない。したがって、このcommitを
+    VRP-5の再現可能な測定pinとして再利用しない。VRP-5前に、到達可能なclean backendで新しい
+    versioned target、validation record、receiptを作る。これはVRP-0〜VRP-4の実装・証拠を取り消す条件ではない。
+11. `picoem-picocalc`に既存の未コミット差分がある間は、backend identityを「clean」と記録しない。
+    差分はpreview変更へ混ぜず、意味のある変更か整形だけかを確認したうえで、別commitとして固定するか、
+    所有者の判断で作業ツリーから取り除く。VRP-LOAD-0のsource／fixture設計とprototypeは並行できるが、
+    その正式target受入とVRP-5のqualification測定は、このclean reachable-pin gate後に行う。
 
 既存の権威あるFirmware backendの履歴、schema 8、既存targetのvalidation record／revision、machine API
 schema 1は変更しない。VRP-2ではtarget registryのversioning規則に従った新revisionまたはpreview専用
@@ -217,6 +225,29 @@ VRP-2のregistered-target gateは次の手順で閉じる。
 
 この工程が完了するまで、synthetic fixtureの三者比較をregistered targetの合格結果へ昇格しない。
 
+### 4.3 VRP-5前提: 到達可能なbackend pinとclean worktree
+
+VRP-2-eのlocal gateは、当時のclean checkoutで得た不変の歴史証拠として保持する。しかし、後続の
+qualificationが同じbackendを再現できることは別の条件である。次の確認を、VRP-5の測定開始前に行う。
+
+1. `git branch -a --contains <accepted-commit>`と`git tag --contains <accepted-commit>`で、target registryが
+   指すbackend commitが現在のbranchまたはtagから到達できることを確認する。objectが存在するだけでは
+   再現可能なpinとみなさない。
+2. 到達不能な`c1c20d7d86a3006569375bc333cf72494e95eb46`を固定する
+   `picotetris-opt1b-vrp2f` revision 8／`picoedit-r1-vrp2f` revision 4は、既存recordを改変せず、
+   VRP-5の入力としては保留する。
+3. 現行の到達可能なbackend（2026-08-29時点の`main`は`65c795e87321e79b960ac8a7495a205de6a24ec0`）を
+   clean checkoutで固定し、同じBIN／runner／device projectionを新しいversioned targetとして再検証する。
+   `picotetris-opt1b`の論理workloadを使う場合も、baseline revision 5と新しいlaunch target id／revisionを
+   混同しない。
+4. backend作業ツリーにある未コミット差分は、preview実装commitへ混ぜない。cargo fmt由来に見える場合でも、
+   実際の差分を確認し、別commitのidentityへ含めるか、clean checkoutへ戻すかを先に決める。
+5. 新targetのvalidation record、backend executable SHA、receipt、admitted descriptorを作り、旧revisionの
+   evidence／SHA／実機記録は変更しない。ここまでを`VRP-5 reusable backend pin gate`の完了とする。
+
+このgateと`VRP-LOAD-0`のsource／fixture prototypeは並行してよい。ただし、`VRP-LOAD-0`の正式target
+recordとVRP-5 qualificationは、到達可能なbackend pin、clean worktree、再現可能なartifactが揃うまで開始しない。
+
 ## 5. 作業パッケージ
 
 ### VRP-0: contract・host spike・baseline preflight（4〜8時間）
@@ -255,10 +286,49 @@ source、fixture、生成手順から構成する。
 4. 固定入力・固定seed・固定device profileで10 virtual分以上連続実行する。
 5. clean cloneからsource、fixture、BIN、runner、backend、toolchainを再現できるようにする。
 
+上記は負荷の目的を定める要求であり、同じ実装と同じ判定を再現するには、firmwareのsourceを
+書き始める前に次の実装契約を1つのmachine-readableまたはversioned recordへ固定する。
+
+- **所有権とidentity:** source directory、license、target id／revision、BINの生成元、許諾された
+  fixtureの一覧とSHA-256。`picotetris-opt1b` revision 5は比較用の論理workload identityであり、
+  実際のVRP-5 launchには到達可能なbackend pinを持つversioned targetを使用する。旧`vrp2f` r8を
+  自動的に現行targetとみなさない。
+- **display contract:** 320x320 RGB565全画面更新の具体的な更新レート、frame生成アルゴリズム、seed、
+  LCD/PicoCalc device profile、frame/event marker。単に「画面が動く」だけでは合格条件にしない。
+- **audio contract:** 48 kHzのchannel数、sample format、DMA timer／block／buffer条件、決定的な生成
+  pattern／seed、期待するsource／sink observation、audio event digest。`48 kHz`だけではfixtureを
+  一意に再現できない。
+- **CPU／multicore contract:** 継続負荷の処理内容、core 0／core 1の役割、停止・待機を許す箇所、
+  `step_until`のexact idle fast-forwardを許すかどうか。許す場合は意味論が同一であることと、負荷中に
+  timing pressureを隠していないことをreportへ記録する。
+- **input／scenario contract:** key down／held／upまたはUART入力の列、入力cycle、seed、virtual duration、
+  cycle limit、終了marker、期待するauthoritative observation digest。host wall clockをguestの入力源に
+  しない。
+- **execution／evidence contract:** clean cloneからのbuild command、SDK／BSP／compiler／CMake／Ninja、
+  backend commitとexecutable SHA、headless qualificationの実行経路、preview API／GUIのUX smoke経路、
+  出力manifestと全artifact SHA。既存のrelease runner timerだけでGUI UXを測ったことにしない。
+- **UX timing contract:** 1倍のthroughputを測るmetricと、入力から画面反映までの応答を測るmetricを分離し、
+  後者を測らない場合は「1倍UX」ではなく「継続負荷timing qualification」と表示する。
+
+このrecordを作ること自体はVRP-LOAD-0の実装完了ではない。最初に1〜2 virtual分のvertical sliceを
+clean cloneから build → run → report／receipt → existing admission／preview pathまで通し、上記契約の
+各値を収集できることを確認する。その後に10 virtual分の準備runへ進む。vertical sliceでsource、target、
+scenario、metricのいずれかが未定義なら、正式実装・測定を開始したと扱わない。
+
+なお、現在のbackendの`step_until`は、両core停止中の安全なevent boundaryまでexactに進めることがある。
+これはcycleを捨てる不正なshortcutとは限らないため、「idle fast-forward禁止」は実装者の印象で判定せず、
+許可範囲と観測証拠を上記CPU／multicore contractへ明記する。
+
 準備gateでは同じ入力を少なくとも3回実行し、source／fixture／artifactのSHA、wall-clock ratio、
 rolling ratio、pacer backlog／overrun、presentation drop、audio underrun／overrun、
 authoritative observation digestを保存する。1倍の許容幅とlag上限は、測定結果を見た後に変更
 できないよう、VRP-5 qualificationの前に別decision recordで固定する。
+
+このdecision recordは、qualification結果を通すための後付け閾値になってはならない。drop／underrun／
+digest不一致などの絶対条件、ratio／lagの統計方法、run数、許容値の選択根拠、`REALTIME OK`／
+`REALTIME NOT MET`の機械的判定式を記載し、準備baselineの閲覧後かつqualification run開始前に凍結する。
+baselineを見て決めてよいのは、事前に定めた選択規則の範囲に限る。各runの結果を見て閾値や対象runを
+変更してはならない。
 
 **状態（2026-08-29）:** 未実装・未測定。これはVRP-0〜VRP-4の完了を取り消さず、VRP-5へ進むための
 新しいrepository-owned workload preparationである。実装時に外部sourceの取得、改変branchの作成、
@@ -554,9 +624,12 @@ authoritative projectionは不変だった。証拠は`firmware-validation/recor
 
 ### VRP-5: baseline・threshold決定・qualification（10〜18時間 + 実測時間）
 
-まずthresholdを決めずに測る。初期のpreview candidate測定は`picotetris-opt1b`と`picoedit-r1`を
-それぞれ単独実行する。正式な1倍qualification測定は、`VRP-LOAD-0`完了後に
-`picotetris-opt1b`と`VRP-LOAD-0`をそれぞれ単独実行する。いずれも次を保存する。
+`VRP-5 reusable backend pin gate`と`VRP-LOAD-0`のcompletion gateを先に閉じる。初期のpreview candidate
+測定は`picotetris-opt1b`と`picoedit-r1`をそれぞれ単独実行する。正式な1倍qualification測定は、
+`VRP-LOAD-0`完了後に、`picotetris-opt1b`の論理workloadを表す到達可能なversioned launch targetと
+`VRP-LOAD-0`をそれぞれ単独実行する。`picotetris-opt1b` revision 5、旧`picotetris-opt1b-vrp2f` r8、
+現行`picotetris-opt1b-vrp4` r9は同じものとして扱わず、実際に使ったtarget id／revisionをrecordへ固定する。
+いずれも次を保存する。
 
 - host/OS/CPU、backend/BIN/receipt SHA
 - session ratioとrolling ratio
@@ -566,17 +639,29 @@ authoritative projectionは不変だった。証拠は`firmware-validation/recor
 - unsupported/truncated MMIO
 - CPU使用率と最大RSS（補助値）
 
-screeningは各workload 10 wall分以上でよいが、1倍qualificationは各workload **10 virtual分以上**を
-要求する。`VRP-LOAD-0`が未整備の場合、existing workloadの測定を完了しても正式な1倍qualificationは
-未完了とする。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能preview、realtime candidate、
-realtime-qualifiedを混同しない。
+測定経路を2つに分ける。coreのthroughput／timingは、既存release runnerまたは同じ境界を持つpreview
+APIのheadless経路で測定し、正確なcommand、timer範囲、virtual boundary、出力manifestをrecordする。
+GUIを起動した事実だけをcore timingの証拠にしない。UX確認は同じadmitted descriptor／同じBINでpreview
+API／GUIを別途実行し、固定入力に対するkey down／held／upから画面反映までの応答観測を保存する。
+応答観測を実装できない場合、結果の表示名は`1倍UX`ではなく`継続負荷timing`に限定する。
+
+screeningは各workload 10 wall分以上でよい。qualificationは既存baselineが定めた逐次10-run／95% CI
+手順を維持し、各workload **10 virtual分以上を各runで要求する**。並列runは行わない。run数、統計方法、
+ratio／lag／drop／underrunの合格条件は、qualification開始前にdecision recordへ凍結する。
+`VRP-LOAD-0`またはreusable backend pinが未整備の場合、existing workloadの測定を完了しても正式な
+1倍qualificationは未完了とする。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能preview、
+realtime candidate、realtime-qualifiedを混同しない。
 
 baseline reviewでrealtime許容幅とlag上限を別decision recordへ固定し、その同じ条件でqualificationを
-再実行する。測定値を見てから都合よく各runの閾値を変更しない。
+実行する。baselineを参照してよいのは、あらかじめ記載した選択規則に従う場合だけであり、測定値を
+見てから都合よく各runの閾値、対象run、target revision、測定経路を変更しない。
 
 **完了gate:** preview candidateについては`picotetris-opt1b`と`picoedit-r1`の2 workload recordがあり、
 `UNCALIBRATED`または`REALTIME NOT MET`の根拠が機械可読に残る。正式な
-`REALTIME OK`／`realtime-1x-qualified`には、これに加えて`VRP-LOAD-0`のrepository-owned workload recordが必要である。
+`REALTIME OK`／`realtime-1x-qualified`には、これに加えて、到達可能なbackend pinを持つ`picotetris-opt1b`
+launch target、`VRP-LOAD-0`のrepository-owned workload record、凍結済みdecision record、逐次10-runの
+qualification evidenceが必要である。GUIの入力応答観測を行わない場合は、`realtime-1x-qualified`を
+「1倍UX」の意味で表示しない。
 
 ### VRP-6: versioning・capability・利用文書（6〜10時間）
 
@@ -586,6 +671,8 @@ baseline reviewでrealtime許容幅とlag上限を別decision recordへ固定し
 - 1倍未達なら後者をsupportedへしない
 - supported host、known limitation、audio fidelity、hardware verdictなしを明記
 - receipt/IPC schemaをversioned contractとして固定
+- 利用者向けには、`機能preview`、`継続負荷timing`、`1倍UX`、`hardware correlation`を別の状態として
+  最短の起動手順とともに表示し、ratio／lag／behind／drop／`timing-only`／`degraded`の意味を平易に説明する
 
 release tagはこの計画だけでは作らない。commit/push/tagは所有者の個別指示に従う。
 
@@ -612,8 +699,9 @@ timing/audio UX判定には使わない。
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
-| 6 | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | 未着手。320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定する |
-| 7 | VRP-5 baseline/threshold/qualification | 未着手 |
+| 6a | VRP-5 reusable backend pin preflight | **未着手。c1c20d7はbranch／tagから到達不能。既存VRP-2-e evidenceは保持し、到達可能なclean backendで新revisionを作る** |
+| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | 未着手。実装契約、vertical slice、320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定する。6aと並行可能 |
+| 7 | VRP-5 baseline/threshold/qualification | **未着手。6aのreusable pin gateと6bのcompletion gate後に開始** |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
 
@@ -622,6 +710,9 @@ VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-targ
 versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
 closure、VRP-3 GUI/input、VRP-4の実装・local test・formal evidenceは完了している。今後の工数はqualificationで見積もる。
 正式な1倍qualificationまで行う場合は、これにVRP-LOAD-0の**10〜20時間**とその測定時間を加える。
+この10〜20時間はsource／fixtureのprototypeおよび初期integrationの見積りであり、target registry／
+validation／receipt、到達可能なbackend pinの再受入、decision record、逐次qualification runの時間を
+含まない。測定時間はhost性能と負荷profileで変動するため、完了予定時間として扱わない。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。
 
@@ -643,6 +734,10 @@ GUIだけを先に作るとadmissionとbackend identityを後付けすること�
 12. baseline/decision record
 13. capability/user/developer docs
 
+`picoem-picocalc`のclean checkout、到達可能なbackend pin、未コミット差分の扱いは、preview文書の
+commitへ暗黙に含めない。backend側の整形差分を採用する場合も、対象範囲・理由・検証結果を別commitで
+固定し、そのcommitを新targetのbackend identityへ明示的に記録する。
+
 各単位でローカルtestを完了してから次へ進む。通常の試行錯誤にGitHub Actionsを使わず、
 workflow追加・trigger/job変更・CI実行増加は所有者の事前許可なしに行わない。pushをCIの代わりにしない。
 
@@ -650,6 +745,8 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 
 次の場合は無理に先へ進まず、原因と再開条件を記録する。
 
+- VRP-5で使うbackend commitがbranch／tagから到達できない、またはbackend worktreeがcleanでない
+- backend pinの再受入、target revision、decision record、qualification run数のいずれかを機械可読に固定できない
 - GUI/audio dependencyがqualified hostで再現可能にbuild/runできない
 - same executable identityを維持できない構成変更が必要になった
 - batch/machine API/preview API間で同じvirtual boundaryのstateが一致しない
@@ -662,6 +759,7 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 - VRP-LOAD-0の負荷特性、source、fixture、clean clone再現性を固定できない
 - 外部プロジェクトの改変branchを資格判定または公開成果物の前提にしなければ負荷を再現できない
 - 1倍未達を隠すsemantic shortcutが必要になった
+- `1倍UX`を名乗るのに入力から画面反映までの応答を測定できない
 
 ## 9. 完成の定義
 
@@ -677,9 +775,12 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 
 ### 1倍qualified完成
 
-- 上記に加え、`picotetris-opt1b`とrepository-owned `VRP-LOAD-0`の2 workload/host/thresholdで
-  VRP-5 qualificationに合格
-- 10 virtual分以上の各runでratio/lag/presentation/audio metricを保存
+- 上記に加え、到達可能なclean backend pinで再受入した`picotetris-opt1b` launch targetと、
+  repository-owned `VRP-LOAD-0`の2 workload/host/thresholdでVRP-5 qualificationに合格
+- 凍結済みdecision recordに従う逐次10-run／95% CIのqualification evidenceがあり、各runで10 virtual分以上の
+  ratio／lag／presentation／audio metricを保存
+- `1倍UX`と表示する場合は、同じadmitted BINを使うGUI経路で固定入力のinput-to-visible-response観測も保存する。
+  それを行わない場合は、表示名を`継続負荷timing`に限定する
 - capabilityにqualified範囲だけを明示
 
 前者だけが完成しても有用な対話viewerにはなるが、「1倍エミュレーター完成」とは表現しない。

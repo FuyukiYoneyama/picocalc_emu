@@ -50,6 +50,13 @@ atomic complete-digest gate output. The real BINs and clean backend checkout
 are external inputs whose SHA-256 values are recorded in the registry and
 receipt; they are not committed as large binaries.
 
+The r8/r4 records above remain immutable evidence of the local VRP-2-e gate.
+Their backend pin `c1c20d7d86a3006569375bc333cf72494e95eb46` is not reachable
+from a backend branch or tag as of 2026-08-29, so it is not a reusable VRP-5
+qualification pin. VRP-5 requires a new versioned target, validation record,
+and receipt on a reachable clean backend; this does not revoke the historical
+record.
+
 The two receipt fixtures are intentionally **not launchable receipts**. Their
 firmware and runner paths use `<fresh-dir>` / `<backend-checkout>` placeholders;
 they demonstrate the schema and provenance relationships without checking in
