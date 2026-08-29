@@ -1,0 +1,48 @@
+{
+  "backend": {
+    "accepted_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "executable": {
+      "path": "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+      "sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": false,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp-load0-source-clean-r6/reference-projects/vrp-load0-sustained/build-vslice-120s/picocalc_app.bin",
+    "sha256": "b7fd7608ee97186cfac4407aae204c7773b1eacd5d7026bcff0fe00f5929b229"
+  },
+  "provenance": {
+    "references": [
+      "firmware-validation/validations/vrp-load0-r1-vslice-r1.json",
+      "picocalc_emu@40a9e07ca34c895cb90b4a1af550e5ed236a26c6",
+      "picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0",
+      "scenarios/vrp-load0-r1.json"
+    ],
+    "registry_path": "reference-projects/firmware-targets.json"
+  },
+  "receipt_id": "vrp-load0-r1-vslice-rev1-b7fd7608ee97",
+  "report": {
+    "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/wrapper-report.json",
+    "schema_version": 8,
+    "sha256": "2b75916548241bcbb2de5f0aa7f800b078bbff16ae57d64dce333b992663daf6"
+  },
+  "schema_version": 1,
+  "target": {
+    "contract_sha256": "a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a",
+    "id": "vrp-load0-r1-vslice",
+    "revision": 1
+  },
+  "target_validation_record": {
+    "path": "firmware-validation/validations/vrp-load0-r1-vslice-r1.json",
+    "sha256": "8255d2d9cfbebc7177adbba9ef6a15edd2e70f0efd771e4647a129894655f891"
+  }
+}

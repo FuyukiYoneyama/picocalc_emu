@@ -1,7 +1,7 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 prototype and 120-second vertical slice complete as the repository-owned 1x workload; load admission/preparation and VRP-5 qualification remain**
-Date: 2026-08-28 (updated 2026-08-29)
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 preview-only target, receipt/admission, and headless path complete; LOAD-0 completion, preparation, threshold, and VRP-5 qualification remain**
+Date: 2026-08-28 (updated 2026-08-30)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
 
@@ -43,7 +43,7 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
 11. `picoem-picocalc`に既存の未コミット差分がある間は、backend identityを「clean」と記録しない。
     差分はpreview変更へ混ぜず、意味のある変更か整形だけかを確認したうえで、別commitとして固定するか、
     所有者の判断で作業ツリーから取り除く。VRP-LOAD-0のsource／fixture設計とprototypeは並行できるが、
-    その正式target受入とVRP-5のqualification測定は、このclean reachable-pin gate後に行う。
+    最終LOAD-0 target受入とVRP-5のqualification測定は、このclean reachable-pin gate後に行う。
 
 既存の権威あるFirmware backendの履歴、schema 8、既存targetのvalidation record／revision、machine API
 schema 1は変更しない。VRP-2ではtarget registryのversioning規則に従った新revisionまたはpreview専用
@@ -254,8 +254,11 @@ record、receipt、admitted descriptor、headless preview consumerが合格し�
 backend pin gateの完了であり、`VRP-LOAD-0`のcompletion、threshold decision、VRP-5 qualification、
 `realtime-1x-qualified`を意味しない。
 
-このgateと`VRP-LOAD-0`のsource／fixture prototypeは並行してよい。ただし、`VRP-LOAD-0`の正式target
-recordとVRP-5 qualificationは、到達可能なbackend pin、clean worktree、再現可能なartifactが揃うまで開始しない。
+このgateと`VRP-LOAD-0`のsource／fixture prototypeは並行してよい。到達可能なbackend pin、clean worktree、
+再現可能なartifactが揃った後は、1〜2 virtual分の実行を代替しない**preview-only vertical-slice target**の
+record／receipt／admissionを作成してよい。2026-08-30に`vrp-load0-r1-vslice` revision 1でこの経路を受入した。
+ただし、これはLOAD-0 completion、3回determinism、10 virtual分以上のpreparation、threshold decision、または
+VRP-5 qualificationの開始・合格を意味しない。最終LOAD-0 target受入とVRP-5 qualificationは、completion gate後に行う。
 
 ## 5. 作業パッケージ
 
@@ -343,9 +346,10 @@ digest不一致などの絶対条件、ratio／lagの統計方法、run数、許
 baselineを見て決めてよいのは、事前に定めた選択規則の範囲に限る。各runの結果を見て閾値や対象runを
 変更してはならない。
 
-**状態（2026-08-29）:** repository-owned fixtureのprototype実装、2つのclean cloneによる固定条件build再現性、
-1秒／2秒のruntime／input smoke（公式scenarioを含む）までは完了。1〜2 virtual分のvertical slice、admission／receipt、10 virtual分以上の
-準備run、threshold decision、VRP-5 qualificationは未完了である。これはVRP-0〜VRP-4の完了を取り消さず、
+**状態（2026-08-30）:** repository-owned fixtureのprototype実装、2つのclean cloneによる固定条件build再現性、
+1秒／2秒のruntime／input smoke（公式scenarioを含む）、120秒のvertical slice、preview-only targetのreceipt／admission／
+headless preview consumerまでは完了。3回determinism、10 virtual分以上の準備run、threshold decision、VRP-5 qualificationは未完了である。
+preview-only targetは受入経路を実行するためのactive targetであり、LOAD-0 completionや1倍速の判定ではない。これはVRP-0〜VRP-4の完了を取り消さず、
 VRP-5へ進むための新しいrepository-owned workload preparationである。実装時に外部sourceの取得、改変branchの作成、
 外部projectへの公開・pushを必要条件にしてはならない。詳細なprofileは
 [`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
@@ -715,7 +719,7 @@ timing/audio UX判定には使わない。
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
 | 6a | VRP-5 reusable backend pin preflight | **完了 2026-08-29。到達可能な`65c795e...`のclean backendで`picotetris-opt1b-vrp5` r10を新規作成し、2 clean cloneのBIN／UF2一致、firmware report、validation record、receipt、admission、headless preview consumerを確認。旧c1c20d7-pinned evidenceは不変のまま保持** |
-| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke、120秒vertical slice（公式scenario）とnon-formal completion recordを確認。load側admission／receipt、3回determinism、10 virtual分以上の準備runは未完了** |
+| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke、120秒vertical sliceを確認。preview-only target `vrp-load0-r1-vslice` r1のwrapper report、receipt、admission、headless preview consumerまで受入済み。3回determinism、10 virtual分以上の準備run、LOAD-0 completionは未完了** |
 | 7 | VRP-5 baseline/threshold/qualification | **未着手。6aのreusable pin gateと6bのcompletion gate後に開始** |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-29
+更新日: 2026-08-30
 
 ## 版とbackend
 
@@ -93,8 +93,9 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 （`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
 継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画です。
 repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1秒／2秒の
-runtime／input smoke（公式scenarioを含む）、120秒のnon-formal vertical sliceまでは完了しています。LOAD-0の
-正式target化・load側admission／receipt、3回determinism、10 virtual分以上の準備run、threshold decision、
+runtime／input smoke（公式scenarioを含む）、120秒のnon-formal vertical slice、preview-only target
+`vrp-load0-r1-vslice` revision 1のwrapper report／receipt／admission／headless preview consumerまでは完了しています。
+これは受入経路の確認であり、LOAD-0 completion、3回determinism、10 virtual分以上の準備run、threshold decision、
 VRP-5 qualificationは未完了です。vertical sliceの証拠は
 [`validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md`](validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md)と
 `firmware-validation/records/vrp-load0-vslice-120s-20260829-01/`にあります。詳細は

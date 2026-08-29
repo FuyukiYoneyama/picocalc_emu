@@ -1,11 +1,13 @@
 # VRP-LOAD-0 profile r1
 
-Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice passed; load admission/receipt and preparation gate pending**
-Recorded: 2026-08-29
+Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice and preview-only target admission passed; three-run determinism and preparation gate pending**
+Recorded: 2026-08-30
 
 This is the first versioned implementation contract for the repository-owned
-sustained-load fixture. It is a prototype profile, not a `realtime-1x-qualified`
-verdict and not yet an active firmware target in the registry.
+sustained-load fixture. It is not a `realtime-1x-qualified` verdict. The
+preview-only vertical-slice target `vrp-load0-r1-vslice` revision 1 is active
+only to exercise the existing receipt/admission/headless-preview path; it is
+not the final LOAD-0 qualification target and does not claim 1x UX.
 
 ## Identity
 
@@ -34,10 +36,11 @@ same toolchain, fixed timestamp, and CMake cache, produced identical values:
 - `build-smoke/picocalc_app.bin`: `4e66d504b6fe03bdf753242a8c82f900c80c398a50578b0e48c4d9671db361f8`
 - `build-smoke/picocalc_app.uf2`: `1f24954bd25644f0079392f584a0a47deec0a7f60f53eab0f2950ca06c03b754`
 
-These are smoke-build outputs, not an active registry target and not a
-qualification artifact. The default 120-second artifact now has a successful
-non-formal vertical-slice run recorded below; it remains outside the target
-registry until the load completion gate is closed.
+These are smoke-build outputs, not a qualification artifact. The default
+120-second artifact has a successful non-formal vertical-slice run recorded
+below. A separate preview-only registry target now connects that artifact to
+the existing receipt/admission path; LOAD-0 completion remains gated on
+determinism and preparation evidence.
 
 ## Bounded runtime smoke record
 
@@ -98,9 +101,10 @@ preparation gate.
 ## 120-second vertical slice record
 
 The checked-in r1 scenario was then run from the clean source clone with the
-clean backend runner. This is a successful non-formal vertical slice. It does
-not yet create an active `VRP-LOAD-0` target or close the three-run preparation
-gate.
+clean backend runner. This is a successful non-formal vertical slice. It is
+now connected to the preview-only target `vrp-load0-r1-vslice` revision 1, but
+that target does not close the three-run preparation gate or complete
+`VRP-LOAD-0`.
 
 | item | observed value |
 | --- | --- |
@@ -144,10 +148,38 @@ The preserved artifacts are:
 - scenario timeline SHA-256:
   `71cd85d25ef16f0d8aed916d755048c7d9bc040bf9e455aeae118c9f87b0a572`.
 
-The next gates are a load-specific receipt/admission path, at least three
-deterministic runs with the same fixture, and the 10-virtual-minute
-preparation run. No realtime threshold or `realtime-1x-qualified` claim is
-made here.
+The load-specific receipt/admission path is now accepted for the preview-only
+vertical-slice target. The next gates are at least three deterministic runs
+with the same fixture and the 10-virtual-minute preparation run. No realtime
+threshold or `realtime-1x-qualified` claim is made here.
+
+## Preview-only target and admission record
+
+The target registry contains `vrp-load0-r1-vslice` revision 1. It is an
+active, preview-only target for this 120-second slice, not the final
+`VRP-LOAD-0` target. Its contract SHA-256 is
+`a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a`.
+
+The formal validation record is
+`firmware-validation/records/vrp-load0-r1-vslice-20260829-01/record.json`.
+The wrapper revalidation report has normalized SHA-256
+`d22f37fcee948043c168b6b981ec6bd91580f655d2482717e966c579dee43585`,
+report SHA-256
+`2b75916548241bcbb2de5f0aa7f800b078bbff16ae57d64dce333b992663daf6`,
+and the same UART/timeline observations as the direct vertical-slice record.
+The receipt, admitted descriptor, and headless transcript are preserved in the
+same directory; their SHA-256 values are respectively
+`ffd935cfd5ce1aa4056942a68dedb7cd991e1daf9eb91f4786e7a032c5438667`,
+`f2800c6fdb042958234a772a035c3fd3f244fe11d2f6c757570fa0a03a72d330`, and
+`c99013321d28ba8e7993174c04374986ab1c548729d776c2a802ba33d38bf508`.
+Admission passed and the headless consumer returned `hello`,
+`frame_rgb565`, two `status` messages, and `goodbye`.
+
+The direct report used abbreviated expected UART marker labels, while the
+wrapper report used the full `[VRP-LOAD0][START]` and
+`[VRP-LOAD0][COMPLETE]` labels from the target contract. The raw UART bytes,
+timeline, and workload observations match; this explains the two normalized
+report fingerprints without hiding an execution difference.
 
 ## Fixed workload contract
 
@@ -252,9 +284,10 @@ backend runner, was:
 
 This command completed successfully for r1. The earlier exploratory run was
 intentionally stopped before the current source commit and is not evidence.
-The vertical-slice record is non-formal: no target validation record, active
-registry target, load-specific receipt/admission, threshold decision, or VRP-5
-qualification result is claimed by this profile.
+The direct vertical-slice record remains non-formal; the separate
+preview-only target validation, receipt/admission, and headless transcript are
+recorded above. Neither record claims the LOAD-0 completion gate, threshold
+decision, or VRP-5 qualification result.
 
 The recorded backend was
 `picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0`, built as a clean

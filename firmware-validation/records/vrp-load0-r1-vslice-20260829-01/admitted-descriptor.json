@@ -1,0 +1,69 @@
+{
+  "backend": {
+    "commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "directory": "/tmp/vrp-load0-backend-clean-r2",
+    "runner": {
+      "path": "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+      "sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": false,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp-load0-source-clean-r6/reference-projects/vrp-load0-sustained/build-vslice-120s/picocalc_app.bin",
+    "sha256": "b7fd7608ee97186cfac4407aae204c7773b1eacd5d7026bcff0fe00f5929b229"
+  },
+  "launch": {
+    "contract": {
+      "argv": [
+        "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+        "--bin",
+        "/tmp/vrp-load0-source-clean-r6/reference-projects/vrp-load0-sustained/build-vslice-120s/picocalc_app.bin",
+        "--bootrom",
+        "/tmp/vrp-load0-backend-clean-r2/roms/rp2040/bootrom-rp2040-b2.bin",
+        "--board",
+        "picocalc",
+        "--lcd-variant",
+        "pio-rgb565",
+        "--quantum",
+        "1",
+        "--backend-commit",
+        "65c795e87321e79b960ac8a7495a205de6a24ec0",
+        "--preview-api",
+        "--psram",
+        "--keyboard"
+      ],
+      "bootrom": {
+        "path": "/tmp/vrp-load0-backend-clean-r2/roms/rp2040/bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+      },
+      "cwd": "/tmp/vrp-load0-backend-clean-r2",
+      "mode": "preview-api",
+      "schema_version": 1
+    },
+    "contract_sha256": "4c0e991fbda747cdce6c44400167c843556f69cff4428d3f40f0ca3f0ed5b95e",
+    "gui_started": false,
+    "preview_ipc_schema": 1
+  },
+  "receipt_id": "vrp-load0-r1-vslice-rev1-b7fd7608ee97",
+  "report": {
+    "path": "/home/fuyuki/pico_dvl/codex/picocalc_emu/firmware-validation/records/vrp-load0-r1-vslice-20260829-01/wrapper-report.json",
+    "schema_version": 8,
+    "sha256": "2b75916548241bcbb2de5f0aa7f800b078bbff16ae57d64dce333b992663daf6"
+  },
+  "schema_version": 1,
+  "status": "admitted",
+  "target": {
+    "contract_sha256": "a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a",
+    "id": "vrp-load0-r1-vslice",
+    "revision": 1
+  }
+}

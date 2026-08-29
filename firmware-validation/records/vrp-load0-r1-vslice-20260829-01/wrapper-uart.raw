@@ -1,0 +1,28 @@
+[PICOCALC][BOOT] bsp=0.9.0 app=vrp-load0-r1 variant=pio-rgb565 bsp_git=40a9e07ca34c895cb90b4a1af550e5ed236a26c6 app_git=40a9e07ca34c895cb90b4a1af550e5ed236a26c6 build=2026-08-29T00:00:00Z
+[PICOCALC][BOOT] clock status=ok target_khz=250000 actual_khz=250000
+[PICOCALC][BOOT] settle status=ok delay_ms=100
+[PICOCALC][LCD] variant=pio-rgb565
+LCD NESco-style init sequence sent 0x3A=0x65 RGB565
+[PICOCALC][LCD][PIO] transport=pio0_blocking driver=vendor/lcd_rgb565_pio.cpp reference=general-lcd-pico_skyace colmod=0x65 wire=rgb565 clkdiv=2.00 window_max=160x160 call_unit=160_pixels
+[PICOCALC][LCD] init status=ok
+[PICOCALC][PSRAM][POLICY] reference=pico_rescue sysclk_khz=250000 pins=cs20,sck21,mosi2,miso3 driver=pio1 candidates=2.00/0,3.00/0,1.50/1
+[PICOCALC][PSRAM][VERIFY] status=pass address=0x019040 bytes=24 mismatches=0 write_us=4 read_us=4
+[PICOCALC][PSRAM][PROBE] status=pass pio=1 sm=0 sysclk_khz=250000 clkdiv=2.00 spi_hz=62500000 fudge=0 id=0d5d5332c6817946
+[PICOCALC][PSRAM] status=ok capacity=8388608 clkdiv=2.00 spi_hz=62500000 self_test=pass
+[PICOCALC][BACKLIGHT] mode=unchanged status=ok
+[PICOCALC][AUDIO][BOOT] audio=stream rate=48000 pwm_wrap=255 carrier=976562 dma_half=128 ring=512 dma_timer=0 dma_frac=3/15625 quant=error_diffusion_100pct_8bit
+[PICOCALC][AUDIO] status=ok mode=stream output=stopped-until-start
+[VRP-LOAD0][START] profile=vrp-load0-r1 duration_s=120 display=320x320_rgb565@30Hz audio=stereo_pcm@48000Hz cpu=core0+core1 input=scene-fixed-sequence frame_drop_policy=forbidden exact_idle_fast_forward=not_expected
+[VRP-LOAD0][HEARTBEAT] virtual_us=10532639 frames=301 audio_produced=478208 audio_consumed=477952 audio_irq=3730 audio_underruns=0 audio_write_drops=0 core0_units=160288 core1_units=277269 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=20532651 frames=601 audio_produced=954496 audio_consumed=954240 audio_irq=7451 audio_underruns=0 audio_write_drops=0 core0_units=320661 core1_units=553860 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=30532635 frames=901 audio_produced=1430784 audio_consumed=1430528 audio_irq=11172 audio_underruns=0 audio_write_drops=0 core0_units=481055 core1_units=830456 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=40532644 frames=1201 audio_produced=1907072 audio_consumed=1906816 audio_irq=14893 audio_underruns=0 audio_write_drops=0 core0_units=641419 core1_units=1107046 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=50532639 frames=1501 audio_produced=2383360 audio_consumed=2383104 audio_irq=18614 audio_underruns=0 audio_write_drops=0 core0_units=801768 core1_units=1383635 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=60532642 frames=1801 audio_produced=2859648 audio_consumed=2859392 audio_irq=22335 audio_underruns=0 audio_write_drops=0 core0_units=962120 core1_units=1660221 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=70532645 frames=2101 audio_produced=3335936 audio_consumed=3335680 audio_irq=26056 audio_underruns=0 audio_write_drops=0 core0_units=1122466 core1_units=1936811 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=80532645 frames=2401 audio_produced=3812224 audio_consumed=3811968 audio_irq=29777 audio_underruns=0 audio_write_drops=0 core0_units=1282807 core1_units=2213400 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=90532644 frames=2701 audio_produced=4288512 audio_consumed=4288256 audio_irq=33498 audio_underruns=0 audio_write_drops=0 core0_units=1443154 core1_units=2489989 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=100532644 frames=3001 audio_produced=4764800 audio_consumed=4764544 audio_irq=37219 audio_underruns=0 audio_write_drops=0 core0_units=1603489 core1_units=2766574 input_events=4
+[VRP-LOAD0][HEARTBEAT] virtual_us=110532636 frames=3301 audio_produced=5241088 audio_consumed=5240832 audio_irq=40940 audio_underruns=0 audio_write_drops=0 core0_units=1763835 core1_units=3043165 input_events=4
+[VRP-LOAD0][RESULT] duration_us=120000000 elapsed_us=120000028 frames=3600 frame_digest=0xb2250c35 frame_lag_max_us=45737 audio_produced=5716096 audio_consumed=5715840 audio_irq=44651 audio_underruns=0 audio_write_drops=0 audio_ring=512/512 core0_units=1924159 core0_digest=0x26a1d301 core1_units=3319052 core1_digest=0xad30308a input_events=4 input_digest=0xf3cd494e
+[VRP-LOAD0][COMPLETE]

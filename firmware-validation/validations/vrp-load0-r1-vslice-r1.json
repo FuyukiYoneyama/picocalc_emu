@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "record": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/record.json",
+    "record_id": "vrp-load0-r1-vslice-20260829-01",
+    "section": "firmware_run",
+    "sha256": "1af0452f403830e5899fa70e9e03fe821e1825300f0a1c5fc3279e9c3e138280"
+  },
+  "result": "accepted",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target_contract_sha256": "a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a",
+  "target_id": "vrp-load0-r1-vslice",
+  "target_revision": 1,
+  "validation_id": "vrp-load0-r1-vslice-r1"
+}

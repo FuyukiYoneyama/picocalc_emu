@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "vrp-load0-r1-vslice-20260829-01",
+  "title": "VRP-LOAD-0 r1 preview-only vertical-slice target acceptance",
+  "result": "pass",
+  "target": {
+    "id": "vrp-load0-r1-vslice",
+    "revision": 1,
+    "contract_sha256": "a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a"
+  },
+  "firmware_run": {
+    "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "backend_dirty": false,
+    "target": {
+      "id": "vrp-load0-r1-vslice",
+      "revision": 1,
+      "contract_sha256": "a7d6f586e20b7a6c136f1dd0e408cb9707fac9cd571549340d19c025e737b94a"
+    },
+    "source_commit": "40a9e07ca34c895cb90b4a1af550e5ed236a26c6",
+    "scenario_sha256": "bbd319321fe7e7373681d73bb823ea4bcb72d5054c40742fe7878caf2824be2d",
+    "firmware_bin_sha256": "b7fd7608ee97186cfac4407aae204c7773b1eacd5d7026bcff0fe00f5929b229",
+    "firmware_uf2_sha256": "fea2ce4deb49570ecd4c8fc7edd0e5bc2d603de5164eb4f42f5be40a011ad6f1",
+    "runner_sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "report": {
+      "path": "firmware-validation/records/vrp-load0-vslice-120s-20260829-01/run-report.json",
+      "sha256": "c25b83f3ed89eb3b97e57e23bf04797396a2c4b81ecb75b179c956cf8010b4a6"
+    },
+    "audio_analysis": {
+      "path": "firmware-validation/records/vrp-load0-vslice-120s-20260829-01/audio-analysis.json",
+      "sha256": "dcfecd1173ad96e164373b31a6803bf65cb98c175191c6c49e78901171f99a47"
+    },
+    "uart": {
+      "path": "firmware-validation/records/vrp-load0-vslice-120s-20260829-01/uart.raw",
+      "sha256": "01052749132c4604317bee51133e90ea37eb5db633fb6e677993e80654bffddf"
+    },
+    "normalized_report_sha256": "ba9d276605531578e1baecf18f652c1253c1cd083c08c3f267f5589454f47dbd",
+    "timeline_sha256": "71cd85d25ef16f0d8aed916d755048c7d9bc040bf9e455aeae118c9f87b0a572",
+    "stop_reason": "scenario_done",
+    "cycles": 30135011760,
+    "elapsed_us": 120545058,
+    "display_frames": 3600,
+    "display_pixels_dropped": 0,
+    "audio_sample_rate_hz": 48000,
+    "audio_dma_write_count": 5716980,
+    "audio_unexpected_gap_count": 0,
+    "audio_pcm_sha256": "0ebec6929613f4077de3dae9b37cb531e3df931b344e320885d6e66bc21aa361",
+    "keyboard_events_delivered": 4
+  },
+  "wrapper_revalidation": {
+    "result": "pass",
+    "report": {
+      "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/wrapper-report.json",
+      "sha256": "2b75916548241bcbb2de5f0aa7f800b078bbff16ae57d64dce333b992663daf6",
+      "normalized_report_sha256": "d22f37fcee948043c168b6b981ec6bd91580f655d2482717e966c579dee43585"
+    },
+    "uart": {
+      "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/wrapper-uart.raw",
+      "sha256": "01052749132c4604317bee51133e90ea37eb5db633fb6e677993e80654bffddf"
+    },
+    "timeline_sha256": "71cd85d25ef16f0d8aed916d755048c7d9bc040bf9e455aeae118c9f87b0a572",
+    "matches_direct_run": true,
+    "report_difference": "Only verdict.required_uart_markers differs: the direct evidence used START/COMPLETE, while this target wrapper used the full [VRP-LOAD0] markers required by the registry contract. All workload observations and the UART byte stream match."
+  },
+  "admission": {
+    "receipt": {
+      "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/receipt.json",
+      "integrity": "validated by the receipt/admission path"
+    },
+    "descriptor": {
+      "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/admitted-descriptor.json",
+      "sha256": "f2800c6fdb042958234a772a035c3fd3f244fe11d2f6c757570fa0a03a72d330"
+    },
+    "headless_transcript": {
+      "path": "firmware-validation/records/vrp-load0-r1-vslice-20260829-01/headless-transcript.json",
+      "sha256": "c99013321d28ba8e7993174c04374986ab1c548729d776c2a802ba33d38bf508",
+      "status": "pass",
+      "message_kinds": [
+        "hello",
+        "frame_rgb565",
+        "status",
+        "status",
+        "goodbye"
+      ]
+    }
+  },
+  "qualification_claim": {
+    "target_kind": "preview_only_vertical_slice",
+    "load0_complete": false,
+    "determinism_runs": "not_started",
+    "preparation_runs": "not_started",
+    "threshold_decision": false,
+    "realtime_qualified": false,
+    "note": "This target exists to exercise the existing receipt/admission/preview path with the completed 120-second slice. It is not the final VRP-LOAD-0 target and does not claim 1x UX."
+  }
+}

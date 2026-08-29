@@ -3817,6 +3817,106 @@
       "status_reason": "VRP-5 reusable backend pin preflight only: the same PicoTetris source, BIN, scenario, and device projection were revalidated on reachable clean backend 65c795e87321e79b960ac8a7495a205de6a24ec0. This target does not claim VRP-LOAD-0 completion, a threshold decision, or realtime qualification; historical c1-pinned records remain immutable."
     },
     {
+      "id": "vrp-load0-r1-vslice",
+      "revision": 1,
+      "status": "active",
+      "source": {
+        "repo": "picocalc_emu",
+        "remote": "https://github.com/FuyukiYoneyama/picocalc_emu.git",
+        "commit": "40a9e07ca34c895cb90b4a1af550e5ed236a26c6",
+        "path": "reference-projects/vrp-load0-sustained",
+        "bsp": "0.9.0",
+        "app": "vrp-load0-r1"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local https://github.com/FuyukiYoneyama/picocalc_emu.git <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach 40a9e07ca34c895cb90b4a1af550e5ed236a26c6",
+          "python3 tools/picocalc.py build --project <fresh-dir>/reference-projects/vrp-load0-sustained --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-29T00:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-29T00:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "picocalc_app.bin",
+        "bin_sha256": "b7fd7608ee97186cfac4407aae204c7773b1eacd5d7026bcff0fe00f5929b229",
+        "uf2_sha256": "fea2ce4deb49570ecd4c8fc7edd0e5bc2d603de5164eb4f42f5be40a011ad6f1"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 40000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": false,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/vrp-load0-r1.json",
+        "sha256": "bbd319321fe7e7373681d73bb823ea4bcb72d5054c40742fe7878caf2824be2d"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[VRP-LOAD0][START]",
+          "[VRP-LOAD0][COMPLETE]"
+        ],
+        "normalized_report_sha256": "d22f37fcee948043c168b6b981ec6bd91580f655d2482717e966c579dee43585",
+        "timeline_sha256": "71cd85d25ef16f0d8aed916d755048c7d9bc040bf9e455aeae118c9f87b0a572",
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
+          {"path": "cycles", "op": "eq", "value": 30135011760},
+          {"path": "elapsed_us", "op": "eq", "value": 120545058},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "scenario.status", "op": "eq", "value": "pass"},
+          {"path": "scenario.steps_total", "op": "eq", "value": 4},
+          {"path": "scenario.steps", "op": "length_eq", "value": 4},
+          {"path": "framebuffer.width", "op": "eq", "value": 320},
+          {"path": "framebuffer.height", "op": "eq", "value": 320},
+          {"path": "lcd.pixels_written", "op": "eq", "value": 368742400},
+          {"path": "lcd.pixels_dropped", "op": "eq", "value": 0},
+          {"path": "audio_sink.sample_rate_hz", "op": "eq", "value": 48000},
+          {"path": "audio_sink.dma_write_count", "op": "eq", "value": 5716980},
+          {"path": "audio_sink.pcm_sha256", "op": "eq", "value": "0ebec6929613f4077de3dae9b37cb531e3df931b344e320885d6e66bc21aa361"},
+          {"path": "audio_sink.unexpected_gap_count", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 4},
+          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
+          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
+          {"path": "psram.attached", "op": "eq", "value": true},
+          {"path": "backend_build.commit", "op": "eq", "value": "65c795e87321e79b960ac8a7495a205de6a24ec0"},
+          {"path": "backend_build.dirty", "op": "eq", "value": false}
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/vrp-load0-r1-vslice-r1.json",
+        "sha256": "8255d2d9cfbebc7177adbba9ef6a15edd2e70f0efd771e4647a129894655f891"
+      },
+      "status_reason": "Preview-only vertical-slice target for the repository-owned VRP-LOAD-0 r1 fixture. The 120-second slice is accepted for receipt/admission path testing, but this target does not claim VRP-LOAD-0 completion, three-run determinism, a frozen threshold, realtime qualification, or 1x UX; a later qualification target/revision must supersede it."
+    },
+    {
       "id": "vrp-nes0-synthetic-nrom",
       "revision": 1,
       "status": "pending-revalidation",

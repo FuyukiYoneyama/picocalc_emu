@@ -1,7 +1,7 @@
 # VRP-LOAD-0: repository-owned sustained-load profile
 
-Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice passed; load admission and preparation gate pending**
-Date: 2026-08-29
+Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice and preview-only target admission passed; three-run determinism and preparation gate pending**
+Date: 2026-08-30
 
 ## Purpose
 
@@ -25,11 +25,13 @@ work, 48 kHz audio, four delivered keyboard events, and complete UART result
 records. The two-second smoke used the checked-in 1,000 ms-offset scenario.
 
 This does not complete `VRP-LOAD-0`. The checked-in 120-second scenario has
-now passed the headless 1--2 virtual-minute vertical-slice run, but it has not
-yet been connected to a load-specific receipt/admission/preview record or the
-three-run 10-minute preparation gate. The slice observed a high frame lag and
-report-wide timer-miss diagnostic; these remain inputs to the later baseline
-and threshold decision, not an unrecorded pass or failure.
+passed the vertical-slice run and is now connected to the preview-only target
+`vrp-load0-r1-vslice` revision 1. Its wrapper report passed the load-specific
+receipt/admission path and the headless preview consumer. This target is only
+an admission-path record; it does not close the three-run 10-minute
+preparation gate. The slice observed a high frame lag and report-wide
+timer-miss diagnostic; these remain inputs to the later baseline and threshold
+decision, not an unrecorded pass or failure.
 
 The non-formal slice record is
 `firmware-validation/records/vrp-load0-vslice-120s-20260829-01/record.json`.
@@ -107,13 +109,14 @@ preview API/GUI UX smoke.  A timer around the release runner alone is not
 evidence of GUI UX.  If input-to-visible-response cannot be measured, the
 result must be labelled `continuous-load timing`, not `1x UX`.
 
-The first implementation gate remains a 1--2 virtual-minute vertical slice
-from a clean clone: build, run, report/receipt, existing admission, and
-preview path. The current one-virtual-second smoke is deliberately shorter
-than that gate and is recorded only as implementation progress. The profile
-fields and artifacts above must be produced by the vertical slice before the
-workload is called complete. Only then may the preparation gate run for at
-least 10 virtual minutes.
+The first implementation gate is a 1--2 virtual-minute vertical slice from a
+clean clone: build, run, report/receipt, existing admission, and preview path.
+The current one-virtual-second smoke is deliberately shorter than that gate
+and is recorded only as implementation progress. The 120-second slice has now
+passed this path through preview-only target `vrp-load0-r1-vslice` revision 1.
+The profile fields and artifacts are therefore available for the next gate,
+but the workload is not called complete until at least three deterministic
+runs and the 10-virtual-minute preparation run pass.
 
 The existing backend may exactly fast-forward a proven both-cores-blocked
 interval to an event boundary.  This is not automatically an invalid shortcut;
@@ -163,12 +166,15 @@ unmodified public clean ref or reproducible artifact.
 ## Backend prerequisite
 
 The `VRP-LOAD-0` source and vertical slice may be implemented in parallel with
-backend-pin recovery.  Formal target validation and VRP-5 qualification may
-not start until the backend commit is reachable from a branch or tag and the
-backend checkout is clean.  As of 2026-08-29, `c1c20d7d86a3006569375bc333cf72494e95eb46`
-is not reachable from a branch or tag; the current `main` is
-`65c795e87321e79b960ac8a7495a205de6a24ec0`.  Existing c1-pinned evidence is
-immutable historical evidence, not a reason to rewrite old records.
+backend-pin recovery. Formal validation of the preview-only vertical-slice
+target became allowable after the backend commit was reachable and the clean
+checkout was fixed; it is recorded as `vrp-load0-r1-vslice` revision 1. Final
+LOAD-0 completion and VRP-5 qualification still require the preparation gate
+and the separately frozen threshold decision. As of 2026-08-29,
+`c1c20d7d86a3006569375bc333cf72494e95eb46` is not reachable from a branch or
+tag; the current `main` is `65c795e87321e79b960ac8a7495a205de6a24ec0`.
+Existing c1-pinned evidence is immutable historical evidence, not a reason to
+rewrite old records.
 
 Any existing uncommitted backend changes must be classified separately before
 revalidation.  They must either be recorded in a dedicated backend commit
