@@ -26,8 +26,8 @@ volatile uint32_t g_core1_digest = kCpuSeed;
 
 uint32_t g_core0_units = 0;
 uint32_t g_core0_digest = kCpuSeed ^ 0xa5a5'5a5au;
-uint32_t g_audio_phase = kAudioSeed;
-uint32_t g_audio_produced = 0;
+volatile uint32_t g_audio_phase = kAudioSeed;
+volatile uint32_t g_audio_produced = 0;
 uint32_t g_input_events = 0;
 uint32_t g_input_digest = 0x811c'9dc5u;
 uint32_t g_frame_count = 0;
@@ -49,9 +49,16 @@ uint32_t xorshift32(uint32_t value) {
     return value;
 }
 
+void __not_in_flash_func(service_audio)();
+
 void __not_in_flash_func(core1_load)() {
     uint32_t state = kCpuSeed ^ 0x2468'ace0u;
     while (!g_core1_stop) {
+        // The BSP explicitly supports a core-1 producer racing the core-0
+        // DMA IRQ. Keep the stream supplied while core 0 is occupied by the
+        // full-screen transfer; this is part of the concurrent workload, not
+        // an idle or event-skipping shortcut.
+        service_audio();
         // This is intentionally a real instruction stream, not a delay. The
         // volatile publication makes each batch observable and prevents the
         // compiler from erasing the deterministic arithmetic workload.
@@ -84,7 +91,7 @@ void run_core0_load() {
     ++g_core0_units;
 }
 
-void service_audio() {
+void __not_in_flash_func(service_audio)() {
     while (picocalc::audio::writable_samples() != 0u) {
         const uint32_t phase = g_audio_phase++ % kAudioPeriodSamples;
         const int32_t sample = phase < (kAudioPeriodSamples / 2u)
@@ -155,7 +162,7 @@ void print_heartbeat(uint64_t now_us) {
 
 void print_completion(uint64_t now_us, uint64_t start_us) {
     const auto audio = picocalc::audio::stats();
-    printf("[VRP-LOAD0][COMPLETE] duration_us=%llu elapsed_us=%llu "
+    printf("[VRP-LOAD0][RESULT] duration_us=%llu elapsed_us=%llu "
            "frames=%lu frame_digest=0x%08lx frame_lag_max_us=%lu "
            "audio_produced=%lu audio_consumed=%lu audio_irq=%lu "
            "audio_underruns=%lu audio_write_drops=%lu audio_ring=%lu/%lu "
@@ -180,6 +187,10 @@ void print_completion(uint64_t now_us, uint64_t start_us) {
            static_cast<unsigned long>(g_core1_digest),
            static_cast<unsigned long>(g_input_events),
            static_cast<unsigned long>(g_input_digest));
+    // Keep the terminal marker after the complete result record. A scenario
+    // runner may stop as soon as it observes the marker, so placing it at the
+    // beginning would truncate the UART evidence after the first few fields.
+    printf("[VRP-LOAD0][COMPLETE]\n");
 }
 
 }  // namespace
@@ -218,13 +229,11 @@ int main() {
 
     while (true) {
         service_input();
-        service_audio();
         const uint64_t now_us = time_us_64();
         if (now_us >= end_us) {
             g_core1_stop = true;
             __dmb();
             while (!g_core1_stopped) {
-                service_audio();
                 run_core0_load();
                 tight_loop_contents();
             }
