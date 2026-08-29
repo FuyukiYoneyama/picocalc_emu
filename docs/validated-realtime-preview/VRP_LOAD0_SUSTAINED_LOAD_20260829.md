@@ -1,6 +1,6 @@
 # VRP-LOAD-0: repository-owned sustained-load profile
 
-Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice, admission, and preparation gate pending**
+Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice passed; load admission and preparation gate pending**
 Date: 2026-08-29
 
 ## Purpose
@@ -24,12 +24,24 @@ virtual-second input smokes with 320x320 full-screen writes, core-0/core-1
 work, 48 kHz audio, four delivered keyboard events, and complete UART result
 records. The two-second smoke used the checked-in 1,000 ms-offset scenario.
 
-This does not complete `VRP-LOAD-0`. The checked-in 120-second scenario has not
-yet been run through the 1--2 virtual-minute vertical-slice gate, the same-BIN
-admission/preview path, or the three-run 10-minute preparation gate. The smoke
-observed a high frame lag and report-wide timer-miss diagnostic; these remain
-inputs to the later baseline and threshold decision, not an unrecorded pass or
-failure.
+This does not complete `VRP-LOAD-0`. The checked-in 120-second scenario has
+now passed the headless 1--2 virtual-minute vertical-slice run, but it has not
+yet been connected to a load-specific receipt/admission/preview record or the
+three-run 10-minute preparation gate. The slice observed a high frame lag and
+report-wide timer-miss diagnostic; these remain inputs to the later baseline
+and threshold decision, not an unrecorded pass or failure.
+
+The non-formal slice record is
+`firmware-validation/records/vrp-load0-vslice-120s-20260829-01/record.json`.
+It fixes the successful run as `scenario_done` after 120,000,000 virtual
+microseconds and preserves the report, audio-analysis, and UART artifacts.
+The run produced 3,600 scheduled frames with zero presentation drops, 0
+firmware audio underruns, 0 audio write drops, 48,000 Hz audio observation,
+and four delivered fixed keyboard events. Both CPU cores reported sustained
+work. The measured virtual/wall ratio was `0.019292827826945906`, so this is
+not a 1x result. The report-wide audio timer-miss and block-boundary counters
+are retained as observations rather than being hidden or converted into a
+threshold pass.
 
 The formal VRP-5 workload pair is defined at the logical-workload level as:
 

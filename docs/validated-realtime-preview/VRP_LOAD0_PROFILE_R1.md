@@ -1,6 +1,6 @@
 # VRP-LOAD-0 profile r1
 
-Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice pending**
+Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice passed; load admission/receipt and preparation gate pending**
 Recorded: 2026-08-29
 
 This is the first versioned implementation contract for the repository-owned
@@ -24,7 +24,7 @@ verdict and not yet an active firmware target in the registry.
 Checked-in source file hashes:
 
 - `CMakeLists.txt`: `d99f062e9bb01f3a442ea3a772955ddb67f31e4f9c881a2f0dca9bd8f07a3410`
-- `README.md`: `6c53ebc65eaf6ed50946cb3680c53f64000d838fe5be0dd28bb5ddd87157be8d`
+- `README.md`: `687584c61832504242e68dafc8ccdb4c8ed350ec959e541c26772b4cdfb2fe9a`
 - `app/main.cpp`: `a46167f921186a2b13266410d987a11dee1621fbeafb43ef41b3a19d162f8298`
 
 The following artifact pair is a bounded, non-formal one-virtual-second smoke
@@ -35,7 +35,9 @@ same toolchain, fixed timestamp, and CMake cache, produced identical values:
 - `build-smoke/picocalc_app.uf2`: `1f24954bd25644f0079392f584a0a47deec0a7f60f53eab0f2950ca06c03b754`
 
 These are smoke-build outputs, not an active registry target and not a
-qualification artifact. The default 120-second artifact remains pending.
+qualification artifact. The default 120-second artifact now has a successful
+non-formal vertical-slice run recorded below; it remains outside the target
+registry until the load completion gate is closed.
 
 ## Bounded runtime smoke record
 
@@ -72,8 +74,7 @@ Smoke output manifest (not checked in as formal evidence):
 
 The checked-in 1,000 ms-offset scenario was not used with this one-second
 firmware build because its input sequence begins at the completion boundary.
-It remains the scenario for the pending 120-second vertical slice and later
-qualification runs.
+It remains the scenario for later qualification runs.
 
 The checked-in scenario was separately exercised with a two-virtual-second
 non-formal build. Its result was complete and the fixed 1,000 ms input offset
@@ -93,6 +94,60 @@ delivered all four events:
 This two-second run remains an integration smoke. It does not satisfy the
 required 1--2 virtual-minute vertical slice or the 10-virtual-minute
 preparation gate.
+
+## 120-second vertical slice record
+
+The checked-in r1 scenario was then run from the clean source clone with the
+clean backend runner. This is a successful non-formal vertical slice. It does
+not yet create an active `VRP-LOAD-0` target or close the three-run preparation
+gate.
+
+| item | observed value |
+| --- | --- |
+| backend | `picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0` |
+| backend worktree | clean (`dirty=false`) |
+| runner SHA-256 | `613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c` |
+| firmware BIN SHA-256 | `b7fd7608ee97186cfac4407aae204c7773b1eacd5d7026bcff0fe00f5929b229` |
+| scenario SHA-256 | `bbd319321fe7e7373681d73bb823ea4bcb72d5054c40742fe7878caf2824be2d` |
+| execution | `picocalc`, `pio-rgb565`, PSRAM + keyboard, Serial, quantum 1 |
+| stop | `scenario_done`, 30,135,011,760 cycles, report elapsed 120,545,058 us |
+| result interval | 120,000,000 us, 3,600 frames, frame digest `0xb2250c35`, max frame lag 45,737 us |
+| LCD observation | 368,742,400 pixels written, 0 dropped, 320x320 framebuffer fully populated |
+| audio result interval | 5,716,096 produced / 5,715,840 consumed, 0 firmware underruns, 0 write drops |
+| audio sink observation | 48,000 Hz, 5,716,980 DMA writes, 0 unexpected gaps; 128-frame blocks |
+| CPU/input | core0 1,924,159 units; core1 3,319,052 units; 4 keyboard events delivered |
+| authoritative digests | core0 `0x26a1d301`; core1 `0xad30308a`; input `0xf3cd494e` |
+
+The report-wide audio diagnostics also contain 45,664 timer misses and
+44,663 block-boundary gaps. They are preserved as observed values; they are
+not silently relabelled as underruns or discarded. The firmware RESULT line
+and the `unexpected_gap_count=0` observation are kept separate from any later
+threshold decision.
+
+The measured runner wall-clock finish interval was 6,219.928 s for 120.0
+virtual seconds: virtual/wall ratio `0.019292827826945906` (about 51.83 wall
+seconds per virtual second). This is a load-profile observation, not a 1x
+result.
+
+The complete non-formal artifact record is
+`firmware-validation/records/vrp-load0-vslice-120s-20260829-01/record.json`.
+The preserved artifacts are:
+
+- report JSON SHA-256:
+  `c25b83f3ed89eb3b97e57e23bf04797396a2c4b81ecb75b179c956cf8010b4a6`;
+- audio-analysis JSON SHA-256:
+  `dcfecd1173ad96e164373b31a6803bf65cb98c175191c6c49e78901171f99a47`;
+- UART raw SHA-256:
+  `01052749132c4604317bee51133e90ea37eb5db633fb6e677993e80654bffddf`;
+- normalized report SHA-256:
+  `ba9d276605531578e1baecf18f652c1253c1cd083c08c3f267f5589454f47dbd`;
+- scenario timeline SHA-256:
+  `71cd85d25ef16f0d8aed916d755048c7d9bc040bf9e455aeae118c9f87b0a572`.
+
+The next gates are a load-specific receipt/admission path, at least three
+deterministic runs with the same fixture, and the 10-virtual-minute
+preparation run. No realtime threshold or `realtime-1x-qualified` claim is
+made here.
 
 ## Fixed workload contract
 
@@ -178,30 +233,33 @@ The toolchain used for the recorded build was:
 - Ninja 1.11.1
 - picotool v2.2.0-a4
 
-The pending formal 120-second headless run, using the clean backend runner, is:
+The recorded non-formal 120-second vertical-slice command, using the clean
+backend runner, was:
 
 ```sh
 <clean-backend>/target/release/picocalc-run \
-  --bin <source>/reference-projects/vrp-load0-sustained/build/picocalc_app.bin \
+  --bin <source>/reference-projects/vrp-load0-sustained/build-vslice-120s/picocalc_app.bin \
   --bootrom <clean-backend>/roms/rp2040/bootrom-rp2040-b2.bin \
   --board picocalc --lcd-variant pio-rgb565 --quantum 1 \
-  --cycles 40000000000 --psram --keyboard \
+  --cycles 40000000000 --backend-commit 65c795e87321e79b960ac8a7495a205de6a24ec0 \
+  --psram --keyboard --audio-analysis <out>/audio-analysis.json \
+  --json <out>/report.json --uart <out>/uart.bin \
   --scenario <source>/scenarios/vrp-load0-r1.json \
   --expect-stop scenario_done \
   --expect-uart '[VRP-LOAD0][START]' \
   --expect-uart '[VRP-LOAD0][COMPLETE]'
 ```
 
-This formal command has not yet been run successfully for r1. The earlier
-exploratory run was intentionally stopped before the current source commit and
-is not evidence. The bounded smoke above passed, but no validation record,
-receipt, active registry target, threshold decision, or VRP-5 qualification
-result is claimed by this profile.
+This command completed successfully for r1. The earlier exploratory run was
+intentionally stopped before the current source commit and is not evidence.
+The vertical-slice record is non-formal: no target validation record, active
+registry target, load-specific receipt/admission, threshold decision, or VRP-5
+qualification result is claimed by this profile.
 
-The backend intended for the next run is
+The recorded backend was
 `picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0`, built as a clean
 temporary checkout. The repository backend currently has pre-existing dirty
-formatting-like changes, so it is not used as the formal runner input.
+formatting-like changes, so it was not used for this run.
 
 ## UX boundary
 

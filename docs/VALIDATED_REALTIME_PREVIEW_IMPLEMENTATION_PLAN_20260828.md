@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 prototype and 120-second vertical slice in progress as the repository-owned 1x workload; VRP-5 qualification remains**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 prototype and 120-second vertical slice complete as the repository-owned 1x workload; load admission/preparation and VRP-5 qualification remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -715,7 +715,7 @@ timing/audio UX判定には使わない。
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
 | 6a | VRP-5 reusable backend pin preflight | **完了 2026-08-29。到達可能な`65c795e...`のclean backendで`picotetris-opt1b-vrp5` r10を新規作成し、2 clean cloneのBIN／UF2一致、firmware report、validation record、receipt、admission、headless preview consumerを確認。旧c1c20d7-pinned evidenceは不変のまま保持** |
-| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke（公式scenarioを含む）を確認。120秒vertical sliceを実行中で、completion record、load側admission／receipt、3回determinism、10 virtual分以上の準備runは未完了。6aと並行可能** |
+| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke、120秒vertical slice（公式scenario）とnon-formal completion recordを確認。load側admission／receipt、3回determinism、10 virtual分以上の準備runは未完了** |
 | 7 | VRP-5 baseline/threshold/qualification | **未着手。6aのreusable pin gateと6bのcompletion gate後に開始** |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

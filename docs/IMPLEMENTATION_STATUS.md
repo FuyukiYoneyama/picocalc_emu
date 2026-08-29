@@ -52,7 +52,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-LOAD-0／VRP-5以降未完了）
+### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-5 reusable backend pin preflight完了、VRP-LOAD-0 completion／VRP-5 qualification以降未完了）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
@@ -88,13 +88,16 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。
-ただし、VRP-2-eのbackend pin `c1c20d7d86a3006569375bc333cf72494e95eb46`は、2026-08-29時点でbackendのbranch／tagから到達できません。VRP-2-eの既存evidence／recordを無効化・改変するのではなく、VRP-5で再現可能な入力として使う前に、到達可能なclean backend（現行`main`は`65c795e87321e79b960ac8a7495a205de6a24ec0`）で新しいversioned target／validation／receiptを作ります。backend作業ツリーにある14ファイルの未コミット差分も、preview変更へ混ぜず、別commitへ固定するか所有者判断で取り除くかを先に決めます。このreusable backend pin preflightと`VRP-LOAD-0`のsource／fixture prototypeは並行できますが、VRP-5 qualificationは両方のcompletion gate後です。
+ただし、VRP-2-eのbackend pin `c1c20d7d86a3006569375bc333cf72494e95eb46`は、2026-08-29時点でbackendのbranch／tagから到達できません。VRP-2-eの既存evidence／recordを無効化・改変せず、到達可能なclean backend（`main`の`65c795e87321e79b960ac8a7495a205de6a24ec0`）で新しい`picotetris-opt1b-vrp5` revision 10／validation／receiptを作成し、admissionとheadless preview consumerまで確認しました。backend作業ツリーにある14ファイルの未コミット差分はpreview変更へ混ぜていません。このreusable backend pin preflightの証拠は[`validated-realtime-preview/VRP5_BACKEND_PIN_PREFLIGHT_20260829.md`](validated-realtime-preview/VRP5_BACKEND_PIN_PREFLIGHT_20260829.md)に固定し、VRP-LOAD-0のsource／fixture prototypeとは独立に扱います。VRP-5 qualificationはVRP-LOAD-0のcompletion gate後です。
 正式な`realtime-1x-qualified`昇格には、NESの意味論ではなく、repository-ownedな継続負荷workload
 （`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
 継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画です。
 repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1秒／2秒の
-runtime／input smoke（公式scenarioを含む）までは完了しています。1〜2 virtual分のvertical slice、admission／receipt、
-10 virtual分以上の準備run、threshold decision、VRP-5 qualificationは未完了です。詳細は
+runtime／input smoke（公式scenarioを含む）、120秒のnon-formal vertical sliceまでは完了しています。LOAD-0の
+正式target化・load側admission／receipt、3回determinism、10 virtual分以上の準備run、threshold decision、
+VRP-5 qualificationは未完了です。vertical sliceの証拠は
+[`validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md`](validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md)と
+`firmware-validation/records/vrp-load0-vslice-120s-20260829-01/`にあります。詳細は
 [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
 と正典計画を参照してください。
 `VRP-NES-0`のsynthetic NROM fixture、target、validation、3回local evidenceは歴史資料として保持しますが、
