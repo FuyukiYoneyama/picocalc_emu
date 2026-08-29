@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "record": "firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/record.json",
+    "record_id": "vrp-nes0-synthetic-nrom-20260829-01",
+    "section": "firmware_run",
+    "sha256": "d3db202da8c710e96f7f7f6603b22b2dccdcda406a2c90c373cb8a7cae953bc0"
+  },
+  "result": "accepted",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target_contract_sha256": "1b0d67e3e9ec232abf4b0ee888a8af6324b25b316a8492d193465c498dc6197e",
+  "target_id": "vrp-nes0-synthetic-nrom",
+  "target_revision": 1,
+  "validation_id": "vrp-nes0-synthetic-nrom-r1"
+}

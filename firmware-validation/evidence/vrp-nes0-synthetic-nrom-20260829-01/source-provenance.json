@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "https://github.com/FuyukiYoneyama/Picocalc_NESco.git",
+    "commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+    "branch": "codex/mnesco-extension",
+    "public_ref_available": false,
+    "diagnostic_options": [
+      "NESCO_MNESCO_EXT_ORACLE=ON",
+      "NESCO_MNESCO_AUTOSTART_SD=ON"
+    ],
+    "license_summary": "project MIT; infones GPL-2; fatfs and font retain their upstream notices"
+  },
+  "fixture": {
+    "path": "firmware-validation/fixtures/vrp-nes0-synthetic-nrom/TEST.NES",
+    "sha256": "592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306",
+    "generator": "tools/generate_vrp_nes0_nrom.py",
+    "license": "MIT"
+  }
+}

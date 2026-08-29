@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "vrp-nes0-synthetic-nrom",
+  "description": "Autostart the repository-owned synthetic NROM fixture from FAT32 SD and wait for the NESco oracle.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "wait for synthetic NROM oracle",
+      "timeout_ms": 10000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[NESCO_MNESCO_DONE] result=PASS"
+      }
+    }
+  ]
+}

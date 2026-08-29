@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 and VRP-5 onward remain**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 local preparation complete with public-source revalidation pending; VRP-5 onward remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -245,6 +245,20 @@ registryには現在NES-class targetがないため、これを既存targetの�
 homebrewまたはsynthetic ROMを選定し、source、license、生成手順、BIN SHA、validation record、
 target contract、registry entryを独立した証拠として固定する。real cartridge ROMや再配布条件が不明な
 外部data、個人所有物をfixtureへ含めない。
+
+**実施結果（2026-08-29）:** repository-ownedのsynthetic NROM-256（trainer付き、mapper 0、
+41,488 bytes）と標準ライブラリだけの決定的generatorを追加した。NESco診断BINをclean backendで
+3回実行し、SD FAT32入力、flash staging、XIP、core 1、DMA、UART、framebuffer、report、SD trace、
+flash exportがすべてbyte-identicalになることを確認した。証拠は
+[`VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
+と[`vrp-nes0-synthetic-nrom-20260829-01`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)
+に固定し、target entryとvalidation attestationも作成した。
+
+ただし使用したNESco診断commit
+`7f3fa05971930e03653694117cbf6a435ec1dd4e`は、現在の公開remoteに到達可能なrefがない。
+そのため`vrp-nes0-synthetic-nrom`は`pending-revalidation`に留め、source commitがclean cloneから
+取得可能になるまで`active`へ昇格しない。これはfixtureまたはbackendの不合格ではなく、外部source
+provenanceの公開待ちである。正式な`realtime-1x-qualified` capabilityの前提は未完了のままとする。
 
 この作業はpreviewのreceipt・IPC・GUI実装を開始するための必須条件ではないが、正式な
 `realtime-1x-qualified` capabilityを宣言する前には必須である。targetを作成できない場合は、
@@ -585,7 +599,7 @@ timing/audio UX判定には使わない。
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
-| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
+| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | **fixture・local run完了。targetは`pending-revalidation`（診断commitの公開ref待ち）** |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

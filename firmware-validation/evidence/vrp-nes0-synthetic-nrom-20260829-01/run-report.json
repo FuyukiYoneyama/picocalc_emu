@@ -1,0 +1,93 @@
+{
+  "schema_version": 8,
+  "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+  "backend_build": {"commit": "65c795e87321e79b960ac8a7495a205de6a24ec0", "dirty": false},
+  "firmware": {"basename": "Picocalc_NESco.bin", "sha256": "c6f5137ad76d8a6cb8e25825d6b30960c0e2fbfb3bdc543f4061686627edf40c"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 341758120,
+  "elapsed_us": 1405000,
+  "pc": "0x2000235e",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": ["[NESCO_MNESCO_DONE] result=PASS", "[NESCO_MNESCO] rom path=sd:/TEST.NES", "[NESCO_MNESCO] source_region=xip"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 1059, "raset": 1059, "ramwr": 1059, "ramrd": 0,
+    "pixels_written": 2563916, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "36aabb6dfb6ca3b8b0b5218d9871745ceeefe7bee32dbbadf00faa171e28daa2", "non_black_pixels": 222, "png": "final.png"},
+  "psram": {
+    "attached": true,
+    "tick_count": 268522069, "cs_falling_count": 1,
+    "bytes_written": 0, "bytes_read": 0,
+    "cmd_counts": {"write": 0, "fast_read": 0, "reset_enable": 0, "reset": 0, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 12, "program_count": 179, "program_bytes": 45824, "command_counts": [{"command": 0, "count": 180}, {"command": 255, "count": 180}, {"command": 6, "count": 191}, {"command": 32, "count": 12}, {"command": 5, "count": 191}, {"command": 53, "count": 180}, {"command": 235, "count": 180}, {"command": 2, "count": 179}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 339, "blocks_read": 330, "blocks_written": 0,
+    "raw_image": {"bytes": 67108864, "blocks": 131072, "dirty_blocks": 0, "source_sha256": "fadf2945420e11bce719f8f188a5067d8520368042c4db819267b4f14e2c5257" },
+    "protocol_errors": [],
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 608, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "vrp-nes0-synthetic-nrom.json",
+    "name": "vrp-nes0-synthetic-nrom",
+    "description": "Autostart the repository-owned synthetic NROM fixture from FAT32 SD and wait for the NESco oracle.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 1,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "wait for synthetic NROM oracle", "status": "pass", "at_ms": 1405, "at_cycles": 341758120, "detail": "1034 UART bytes seen"}
+    ]
+  },
+  "uart": {"bytes": 1034, "sha256": "7d22e8ce6222deaf5251c247e3f1409afcc259cf16b14bd6d8f7ce91a84feffa"}
+}

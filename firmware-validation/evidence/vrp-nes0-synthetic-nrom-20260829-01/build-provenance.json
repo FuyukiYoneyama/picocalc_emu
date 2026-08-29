@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "source_commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+  "pico_sdk": {
+    "version": "2.2.0",
+    "commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779"
+  },
+  "toolchain": {
+    "arm_none_eabi_gcc": "13.2.1",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1"
+  },
+  "cmake": {
+    "generator": "Ninja",
+    "build_type": "Release",
+    "options": [
+      "NESCO_MNESCO_EXT_ORACLE=ON",
+      "NESCO_MNESCO_AUTOSTART_SD=ON"
+    ],
+    "fixed_build_date_header": "firmware-validation/fixtures/vrp-nes0-synthetic-nrom/fixed-build-date.h",
+    "builds_compared": 2,
+    "bin_reproducible": true,
+    "uf2_reproducible": true
+  },
+  "artifacts": {
+    "bin": {
+      "name": "Picocalc_NESco.bin",
+      "sha256": "c6f5137ad76d8a6cb8e25825d6b30960c0e2fbfb3bdc543f4061686627edf40c"
+    },
+    "uf2": {
+      "name": "Picocalc_NESco.uf2",
+      "sha256": "6631fb44232792be7625ae46e545d78df5dccd16fa00cfc17720df9046eed647"
+    }
+  }
+}

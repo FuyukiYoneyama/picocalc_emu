@@ -1,0 +1,15 @@
+881a6291e618cc93cf68fd6c14bc17469f49b66b2f1aa9ebc4b3aa9c90b8124d  README.md
+5f518a381c20249b1223e305b4f078e64ca7c57aa52f74178f7b11a0aa78a770  build-provenance.json
+80738fd926bad52eacba813cde8a6cdf1516c76879f12bf8b5e5942c0ed9ba87  final.png
+2389e9c769cacd087244c2ec5baaec027fdbed6868a397768ca4efad7db25dab  flash-final.img
+d3db202da8c710e96f7f7f6603b22b2dccdcda406a2c90c373cb8a7cae953bc0  record.json
+e541e9f6bb3fb0d9936c04d4bb47676cf12385edfbe56dc20302d680b77e5b38  run-report.json
+58c3c992ef94707124d44e1a3af6ce4da7d64b1c5a54b68854b1e9e58fc5d20f  sd-manifest.json
+78a9ea3fcc0ee840b56c3bcd9129b4cb37a084c01e31792e3ce823b24339f02e  sd-trace.json
+9d63a9c945dd7c80c9c9f56c42ea630275b7e2039526486b34ffc95570d9daf6  source-provenance.json
+7d22e8ce6222deaf5251c247e3f1409afcc259cf16b14bd6d8f7ce91a84feffa  uart.raw
+592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306  ../../fixtures/vrp-nes0-synthetic-nrom/TEST.NES
+592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306  ../../fixtures/vrp-nes0-synthetic-nrom/sd/TEST.NES
+a1899db322dd6c2ed2c275851000278efb61d60ed62097d94ac304fe61f7be95  ../../fixtures/vrp-nes0-synthetic-nrom/fixed-build-date.h
+549fbcd7bf3f023a973a56521dc1764d4a3b016d01c9b40d63a80acc7abbbf13  ../../../scenarios/vrp-nes0-synthetic-nrom.json
+d29abaa96cca91924a283ecabfc21a491389a4eee68abfc201f1255325b34876  ../../../tools/generate_vrp_nes0_nrom.py

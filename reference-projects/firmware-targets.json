@@ -3605,6 +3605,123 @@
       },
       "supersedes": "picoedit-r1-vrp2e",
       "status_reason": "VRP-2-e registered-target complete digest revalidation with fresh schema-8/audio artifacts and clean backend c1c20d7d86a3006569375bc333cf72494e95eb46; superseded evidence remains immutable and hardware correlation is not claimed."
+    },
+    {
+      "id": "vrp-nes0-synthetic-nrom",
+      "revision": 1,
+      "status": "pending-revalidation",
+      "status_reason": "VRP-NES-0 synthetic NROM fixture and local three-run evidence are complete. The diagnostic NESco source commit is not yet reachable from its public remote ref, so this target remains pending until source provenance is publicly reproducible.",
+      "source": {
+        "repo_url": "https://github.com/FuyukiYoneyama/Picocalc_NESco.git",
+        "repo": "Picocalc_NESco",
+        "commit": "7f3fa05971930e03653694117cbf6a435ec1dd4e",
+        "branch": "codex/mnesco-extension",
+        "public_ref_available": false,
+        "license_summary": "project MIT; infones GPL-2; fatfs and font retain their upstream notices",
+        "diagnostic_options": [
+          "NESCO_MNESCO_EXT_ORACLE=ON",
+          "NESCO_MNESCO_AUTOSTART_SD=ON"
+        ],
+        "fixture": "firmware-validation/fixtures/vrp-nes0-synthetic-nrom/TEST.NES",
+        "fixture_sha256": "592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "generator": "Ninja",
+        "commands": [
+          "git clone <picocalc-nesco-repository> <nesco-source>",
+          "git -C <nesco-source> checkout --detach 7f3fa05971930e03653694117cbf6a435ec1dd4e",
+          "python3 tools/generate_vrp_nes0_nrom.py firmware-validation/fixtures/vrp-nes0-synthetic-nrom/TEST.NES",
+          "mkdir -p <sd-tree> && cp firmware-validation/fixtures/vrp-nes0-synthetic-nrom/TEST.NES <sd-tree>/TEST.NES",
+          "PICO_SDK_PATH=<pico-sdk-2.2.0> CFLAGS=-include<repo>/firmware-validation/fixtures/vrp-nes0-synthetic-nrom/fixed-build-date.h CXXFLAGS=-include<repo>/firmware-validation/fixtures/vrp-nes0-synthetic-nrom/fixed-build-date.h cmake -S <nesco-source> -B <nesco-build> -G Ninja -DCMAKE_BUILD_TYPE=Release -DNESCO_MNESCO_EXT_ORACLE=ON -DNESCO_MNESCO_AUTOSTART_SD=ON",
+          "cmake --build <nesco-build> --clean-first -j4"
+        ],
+        "fixed_build_date_header": "firmware-validation/fixtures/vrp-nes0-synthetic-nrom/fixed-build-date.h",
+        "reproducible_defines": [
+          "__DATE__=Jan 01 2026",
+          "__TIME__=00:00:00"
+        ],
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "reproduction_status": "blocked_until_diagnostic_commit_is_public"
+      },
+      "artifacts": {
+        "bin_basename": "Picocalc_NESco.bin",
+        "bin_sha256": "c6f5137ad76d8a6cb8e25825d6b30960c0e2fbfb3bdc543f4061686627edf40c",
+        "uf2_sha256": "6631fb44232792be7625ae46e545d78df5dccd16fa00cfc17720df9046eed647"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 1000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/vrp-nes0-synthetic-nrom.json",
+        "sha256": "549fbcd7bf3f023a973a56521dc1764d4a3b016d01c9b40d63a80acc7abbbf13"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[NESCO_MNESCO] rom path=sd:/TEST.NES",
+          "[NESCO_MNESCO] rom path=sd:/TEST.NES bytes=41488 mapper=0 submapper=0 prg=32768 chr=8192 trainer=1 sha256=592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306",
+          "[NESCO_MNESCO] source_region=xip",
+          "[NESCO_MNESCO] core1_xip=pass",
+          "[NESCO_MNESCO] dma_xip=pass",
+          "[NESCO_MNESCO_DONE] result=PASS"
+        ],
+        "normalized_report_sha256": "8c110f848590fd3e13eceb4b51e91853e88b6e26448c6d3f52a3663a7d787706",
+        "timeline_sha256": "d3c65b13104d098ba84de4d3140090aa33553d4706acd0011e844ebc0adc8b13",
+        "report_checks": [
+          {"path": "verdict.status", "op": "eq", "value": "pass"},
+          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
+          {"path": "cycles", "op": "eq", "value": 341758120},
+          {"path": "elapsed_us", "op": "eq", "value": 1405000},
+          {"path": "execution_model", "op": "eq", "value": "Serial"},
+          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
+          {"path": "sd.format", "op": "eq", "value": "fat32"},
+          {"path": "sd.blocks_read", "op": "eq", "value": 330},
+          {"path": "sd.blocks_written", "op": "eq", "value": 0},
+          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
+          {"path": "flash.erase_count", "op": "eq", "value": 12},
+          {"path": "flash.program_count", "op": "eq", "value": 179},
+          {"path": "flash.program_bytes", "op": "eq", "value": 45824},
+          {"path": "flash.unknown_commands", "op": "length_eq", "value": 0},
+          {"path": "flash.errors", "op": "length_eq", "value": 0},
+          {"path": "scenario.status", "op": "eq", "value": "pass"},
+          {"path": "scenario.steps_total", "op": "eq", "value": 1},
+          {"path": "scenario.steps", "op": "length_eq", "value": 1},
+          {"path": "backend_build.commit", "op": "eq", "value": "65c795e87321e79b960ac8a7495a205de6a24ec0"},
+          {"path": "backend_build.dirty", "op": "eq", "value": false},
+          {"path": "uart.sha256", "op": "eq", "value": "7d22e8ce6222deaf5251c247e3f1409afcc259cf16b14bd6d8f7ce91a84feffa"},
+          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "36aabb6dfb6ca3b8b0b5218d9871745ceeefe7bee32dbbadf00faa171e28daa2"},
+          {"path": "lcd.unknown_commands", "op": "length_eq", "value": 13}
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/vrp-nes0-synthetic-nrom-r1.json",
+        "sha256": "c9918ee9cddbbf4c340a2d6bdb4ce7782f90bd4ad5555afb332db1c01a33db84"
+      }
     }
   ]
 }

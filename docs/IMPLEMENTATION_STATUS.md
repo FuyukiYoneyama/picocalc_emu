@@ -88,7 +88,15 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。
-正式な`realtime-1x-qualified`昇格には、別途作成する再配布可能なNES-class target（VRP-NES-0）が必要です。
+正式な`realtime-1x-qualified`昇格には、再配布可能なNES-class target（VRP-NES-0）が必要です。
+VRP-NES-0ではrepository-owned synthetic NROM-256 fixture、決定的generator、NESco診断BIN、FAT32
+SD／flash staging／XIP／core 1／DMAの3回local firmware evidenceを固定しました。target
+`vrp-nes0-synthetic-nrom`とversioned validationは作成済みですが、使用したNESco診断commit
+`7f3fa05971930e03653694117cbf6a435ec1dd4e`が公開remoteから取得できないため、targetは
+`pending-revalidation`です。source provenanceがclean cloneで再現可能になるまで、active target・
+`realtime-1x-qualified` capability・VRP-5正式測定へ昇格しません。詳細は
+[`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
+と[`firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)にあります。
 VRP-0の正典fixtureは[`docs/validated-realtime-preview/`](validated-realtime-preview/)にあり、VRP-3 GUIは
 Python標準ライブラリTkで実装したため`winit`／`cpal`はproduction dependencyへ追加していません。
 

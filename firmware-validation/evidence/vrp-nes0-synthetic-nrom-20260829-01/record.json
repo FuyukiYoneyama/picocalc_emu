@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "vrp-nes0-synthetic-nrom-20260829-01",
+  "title": "VRP-NES-0 synthetic NROM local firmware validation",
+  "result": "pass",
+  "target": {
+    "id": "vrp-nes0-synthetic-nrom",
+    "revision": 1,
+    "contract_sha256": "1b0d67e3e9ec232abf4b0ee888a8af6324b25b316a8492d193465c498dc6197e"
+  },
+  "firmware_run": {
+    "target": {
+      "id": "vrp-nes0-synthetic-nrom",
+      "revision": 1,
+      "contract_sha256": "1b0d67e3e9ec232abf4b0ee888a8af6324b25b316a8492d193465c498dc6197e"
+    },
+    "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "backend_dirty": false,
+    "runner_sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c",
+    "firmware_bin_sha256": "c6f5137ad76d8a6cb8e25825d6b30960c0e2fbfb3bdc543f4061686627edf40c",
+    "firmware_uf2_sha256": "6631fb44232792be7625ae46e545d78df5dccd16fa00cfc17720df9046eed647",
+    "cycles": 341758120,
+    "cycle_limit": 1000000000,
+    "elapsed_us": 1405000,
+    "stop_reason": "scenario_done",
+    "verdict": "pass",
+    "report": {
+      "path": "firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/run-report.json",
+      "sha256": "e541e9f6bb3fb0d9936c04d4bb47676cf12385edfbe56dc20302d680b77e5b38",
+      "normalized_sha256": "8c110f848590fd3e13eceb4b51e91853e88b6e26448c6d3f52a3663a7d787706"
+    },
+    "uart": {
+      "path": "firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/uart.raw",
+      "bytes": 1034,
+      "sha256": "7d22e8ce6222deaf5251c247e3f1409afcc259cf16b14bd6d8f7ce91a84feffa"
+    },
+    "framebuffer_rgb565_sha256": "36aabb6dfb6ca3b8b0b5218d9871745ceeefe7bee32dbbadf00faa171e28daa2",
+    "scenario": {
+      "path": "scenarios/vrp-nes0-synthetic-nrom.json",
+      "sha256": "549fbcd7bf3f023a973a56521dc1764d4a3b016d01c9b40d63a80acc7abbbf13",
+      "timeline_sha256": "d3c65b13104d098ba84de4d3140090aa33553d4706acd0011e844ebc0adc8b13"
+    },
+    "sd_snapshot": {
+      "format": "fat32",
+      "image_bytes": 67108864,
+      "tree_sha256": "61168ff7f3cbed5e798e4acd5f0a0925d9157e995a8dc36fce38661ace5fc695",
+      "image_sha256": "fadf2945420e11bce719f8f188a5067d8520368042c4db819267b4f14e2c5257",
+      "fixture_sha256": "592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306"
+    },
+    "flash_export_sha256": "2389e9c769cacd087244c2ec5baaec027fdbed6868a397768ca4efad7db25dab",
+    "observed": {
+      "mapper": 0,
+      "submapper": 0,
+      "prg_bytes": 32768,
+      "chr_bytes": 8192,
+      "trainer": true,
+      "source_region": "xip",
+      "core1_xip": "pass",
+      "dma_xip": "pass",
+      "cpu_fetches": 10000,
+      "cpu_rom_reads": 29888,
+      "ppu_bus_reads": 555086,
+      "sd_blocks_read": 330,
+      "sd_commands_seen": 339,
+      "flash_erase_count": 12,
+      "flash_program_count": 179,
+      "flash_program_bytes": 45824,
+      "flash_unknown_commands": 0,
+      "flash_errors": 0
+    },
+    "determinism": {
+      "runs": 3,
+      "byte_identical": [
+        "run-report.json",
+        "uart.raw",
+        "sd-trace.json",
+        "final.png",
+        "flash-final.img"
+      ]
+    }
+  }
+}

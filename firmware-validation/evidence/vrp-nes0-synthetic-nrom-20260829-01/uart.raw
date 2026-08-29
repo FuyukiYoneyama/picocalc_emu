@@ -1,0 +1,14 @@
+PicoCalc NESco Ver. 1.2.4
+[NESCO_MNESCO] rom path=sd:/TEST.NES bytes=41488 mapper=0 submapper=0 prg=32768 chr=8192 trainer=1 sha256=592e79406ebe9def8bed2c8c02b7a9f4fc51f5f2bf6562843a36d1e591468306
+[NESCO_MNESCO] sample=prg point=first offset=0 value=78
+[NESCO_MNESCO] sample=prg point=middle offset=16383 value=EA
+[NESCO_MNESCO] sample=prg point=last offset=32767 value=80
+[NESCO_MNESCO] sample=prg digest=6ed6f4f08f2db18b8749fd80483d7f8465600b19164b880a9217cb4ce0395ef6 bytes=32768
+[NESCO_MNESCO] sample=chr point=first offset=0 value=11
+[NESCO_MNESCO] sample=chr point=middle offset=4095 value=6B
+[NESCO_MNESCO] sample=chr point=last offset=8191 value=EB
+[NESCO_MNESCO] sample=chr digest=8c94bfa73c2db067165c8c3ecbfe4705c2366955e4788df8a03aa881d1ce348a bytes=8192
+[NESCO_MNESCO] source_region=xip
+[NESCO_MNESCO] cpu_fetches=10000 cpu_rom_reads=29888 cpu_digest=21247acb ppu_bus_reads=555086 ppu_digest=9d6e497d
+[NESCO_MNESCO] core1_xip=pass digest=f9632713 dma_xip=pass digest=f9632713
+[NESCO_MNESCO_DONE] result=PASS
