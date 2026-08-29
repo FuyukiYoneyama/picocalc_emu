@@ -1,0 +1,48 @@
+{
+  "backend": {
+    "accepted_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "executable": {
+      "path": "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+      "sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": true,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp5-picotetris-source-clean-r1/build/PicoTetris.bin",
+    "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "provenance": {
+    "references": [
+      "firmware-validation/validations/picotetris-opt1b-vrp5-r10.json",
+      "picotetris@fed84f358d7dcadb1457752e687355ddb1875c48",
+      "picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0",
+      "scenarios/tetris-line-clear.json"
+    ],
+    "registry_path": "reference-projects/firmware-targets.json"
+  },
+  "receipt_id": "picotetris-opt1b-vrp5-rev10-0784d80d0d00",
+  "report": {
+    "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/wrapper-report.json",
+    "schema_version": 8,
+    "sha256": "d4f33f8fd59265e97cb8d439895039362d05e999a23850ab81db15e931978fbb"
+  },
+  "schema_version": 1,
+  "target": {
+    "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+    "id": "picotetris-opt1b-vrp5",
+    "revision": 10
+  },
+  "target_validation_record": {
+    "path": "firmware-validation/validations/picotetris-opt1b-vrp5-r10.json",
+    "sha256": "b1d84772db870fbef50e5c7cd7ea318bc60b574a2dc375f768a0dafee536127e"
+  }
+}

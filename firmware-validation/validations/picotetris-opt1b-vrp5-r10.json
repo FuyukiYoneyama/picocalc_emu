@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "record": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/record.json",
+    "record_id": "vrp5-pin-picotetris-20260829-01",
+    "section": "firmware_run",
+    "sha256": "c94af33dd75e8ea5df68fb88eebab03a6e771ed84c37a9a673dacdbe63d546bd"
+  },
+  "result": "accepted",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target_contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+  "target_id": "picotetris-opt1b-vrp5",
+  "target_revision": 10,
+  "validation_id": "picotetris-opt1b-vrp5-r10"
+}

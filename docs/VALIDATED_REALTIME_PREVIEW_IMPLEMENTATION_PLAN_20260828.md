@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 prototype in progress as the repository-owned 1x workload; VRP-5 onward remain; VRP-5 reusable backend-pin preflight pending**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 prototype and 120-second vertical slice in progress as the repository-owned 1x workload; VRP-5 qualification remains**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -244,6 +244,15 @@ qualificationが同じbackendを再現できることは別の条件である。
    実際の差分を確認し、別commitのidentityへ含めるか、clean checkoutへ戻すかを先に決める。
 5. 新targetのvalidation record、backend executable SHA、receipt、admitted descriptorを作り、旧revisionの
    evidence／SHA／実機記録は変更しない。ここまでを`VRP-5 reusable backend pin gate`の完了とする。
+
+**Gate result (2026-08-29):** `picotetris-opt1b-vrp5` revision 10を追加し、到達可能な
+`picoem-picocalc@65c795e87321e79b960ac8a7495a205de6a24ec0`のclean checkoutで、同じsource／BIN／scenario／
+device projectionを再検証した。2つのclean source cloneでBIN／UF2が一致し、firmware report、validation
+record、receipt、admitted descriptor、headless preview consumerが合格した。recordとartifactは
+[`VRP5_BACKEND_PIN_PREFLIGHT_20260829.md`](validated-realtime-preview/VRP5_BACKEND_PIN_PREFLIGHT_20260829.md)
+および`firmware-validation/records/vrp5-pin-picotetris-20260829-01/`に固定した。これはreusable
+backend pin gateの完了であり、`VRP-LOAD-0`のcompletion、threshold decision、VRP-5 qualification、
+`realtime-1x-qualified`を意味しない。
 
 このgateと`VRP-LOAD-0`のsource／fixture prototypeは並行してよい。ただし、`VRP-LOAD-0`の正式target
 recordとVRP-5 qualificationは、到達可能なbackend pin、clean worktree、再現可能なartifactが揃うまで開始しない。
@@ -705,8 +714,8 @@ timing/audio UX判定には使わない。
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
-| 6a | VRP-5 reusable backend pin preflight | **未着手。c1c20d7はbranch／tagから到達不能。既存VRP-2-e evidenceは保持し、到達可能なclean backendで新revisionを作る** |
-| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke（公式scenarioを含む）を確認。1〜2 virtual分vertical slice、admission／receipt、10 virtual分以上の準備runは未完了。6aと並行可能** |
+| 6a | VRP-5 reusable backend pin preflight | **完了 2026-08-29。到達可能な`65c795e...`のclean backendで`picotetris-opt1b-vrp5` r10を新規作成し、2 clean cloneのBIN／UF2一致、firmware report、validation record、receipt、admission、headless preview consumerを確認。旧c1c20d7-pinned evidenceは不変のまま保持** |
+| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1秒／2秒runtime／input smoke（公式scenarioを含む）を確認。120秒vertical sliceを実行中で、completion record、load側admission／receipt、3回determinism、10 virtual分以上の準備runは未完了。6aと並行可能** |
 | 7 | VRP-5 baseline/threshold/qualification | **未着手。6aのreusable pin gateと6bのcompletion gate後に開始** |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

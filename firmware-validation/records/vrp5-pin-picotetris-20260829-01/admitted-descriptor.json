@@ -1,0 +1,72 @@
+{
+  "backend": {
+    "commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "directory": "/tmp/vrp-load0-backend-clean-r2",
+    "runner": {
+      "path": "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+      "sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": true,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp5-picotetris-source-clean-r1/build/PicoTetris.bin",
+    "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "launch": {
+    "contract": {
+      "argv": [
+        "/tmp/vrp-load0-backend-clean-r2/target/release/picocalc-run",
+        "--bin",
+        "/tmp/vrp5-picotetris-source-clean-r1/build/PicoTetris.bin",
+        "--bootrom",
+        "/tmp/vrp-load0-backend-clean-r2/roms/rp2040/bootrom-rp2040-b2.bin",
+        "--board",
+        "picocalc",
+        "--lcd-variant",
+        "pio-rgb565",
+        "--quantum",
+        "1",
+        "--backend-commit",
+        "65c795e87321e79b960ac8a7495a205de6a24ec0",
+        "--preview-api",
+        "--psram",
+        "--keyboard",
+        "--sd",
+        "--sd-format",
+        "fat32"
+      ],
+      "bootrom": {
+        "path": "/tmp/vrp-load0-backend-clean-r2/roms/rp2040/bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+      },
+      "cwd": "/tmp/vrp-load0-backend-clean-r2",
+      "mode": "preview-api",
+      "schema_version": 1
+    },
+    "contract_sha256": "a75282354305acdcfe0fcfdca926a0b59e5f4baf377ee7e201e278989b82563a",
+    "gui_started": false,
+    "preview_ipc_schema": 1
+  },
+  "receipt_id": "picotetris-opt1b-vrp5-rev10-0784d80d0d00",
+  "report": {
+    "path": "/home/fuyuki/pico_dvl/codex/picocalc_emu/firmware-validation/records/vrp5-pin-picotetris-20260829-01/wrapper-report.json",
+    "schema_version": 8,
+    "sha256": "d4f33f8fd59265e97cb8d439895039362d05e999a23850ab81db15e931978fbb"
+  },
+  "schema_version": 1,
+  "status": "admitted",
+  "target": {
+    "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+    "id": "picotetris-opt1b-vrp5",
+    "revision": 10
+  }
+}

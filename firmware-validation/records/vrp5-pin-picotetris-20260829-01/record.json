@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "vrp5-pin-picotetris-20260829-01",
+  "title": "VRP-5 reusable backend pin preflight (PicoTetris baseline; reachable backend)",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-opt1b-vrp5",
+    "revision": 10,
+    "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f"
+  },
+  "firmware_run": {
+    "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "backend_dirty": false,
+    "target": {
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f"
+    },
+    "firmware_bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "runner_sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "cycles": 927528659,
+    "elapsed_us": 3715000,
+    "stop_reason": "scenario_done",
+    "execution_model": "Serial",
+    "verdict": "pass",
+    "normalized_report_sha256": "8a29684f636871a01df9eb45658ae297517bfe1f8189c59cfc2b11b5e4e36570",
+    "timeline_sha256": "8403b8f9d8aa9e4cfb84b03ac0082529873d79c14e5079994085893e06f69589",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "audio_observation_status": "pass",
+    "audio_pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+    "audio_dma_write_count": 1000,
+    "report": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/run-report.json",
+      "sha256": "d4f33f8fd59265e97cb8d439895039362d05e999a23850ab81db15e931978fbb"
+    },
+    "audio_analysis": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/audio-analysis.json",
+      "sha256": "5c2e437d0d34217f7e4aef1998e2805749a6f1f6d7ed804e1a8d7d60f2033374",
+      "schema_version": 1
+    },
+    "uart_artifact": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/uart.raw",
+      "sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+    },
+    "snapshot": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/snapshots/tetris-line-clear.png",
+      "sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+    }
+  },
+  "admission": {
+    "receipt": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/receipt.json",
+      "integrity": "validated by the receipt/admission path"
+    },
+    "descriptor": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/admitted-descriptor.json",
+      "sha256": "026c2b012b42dff2534e82251db2b4852928bcd8c65d04ac410e78ad947e3405"
+    },
+    "headless_transcript": {
+      "path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/headless-transcript.json",
+      "sha256": "a2df0586c3294ba7bc56800619be6dcdad7d303e65da68062b565ac16d810ccc",
+      "status": "pass",
+      "message_kinds": ["hello", "frame_rgb565", "status", "status", "goodbye"]
+    },
+    "wrapper_revalidation": {
+      "report_path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/wrapper-report.json",
+      "report_sha256": "d4f33f8fd59265e97cb8d439895039362d05e999a23850ab81db15e931978fbb",
+      "uart_path": "firmware-validation/records/vrp5-pin-picotetris-20260829-01/wrapper-uart.raw",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "matches_initial_run": true
+    }
+  },
+  "build_reproducibility": {
+    "source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+    "source_repo": "https://github.com/FuyukiYoneyama/picotetris.git",
+    "builds_compared": 2,
+    "bin_reproducible": true,
+    "uf2_reproducible": true,
+    "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+  },
+  "qualification_claim": {
+    "status": "not_started",
+    "vrp_load0_complete": false,
+    "threshold_decision": false,
+    "realtime_qualified": false,
+    "note": "This closes only the reusable backend-pin preflight; it is not VRP-5 qualification and does not register VRP-LOAD-0."
+  },
+  "provenance": {
+    "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "runner_sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "scenario": "scenarios/tetris-line-clear.json",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "firmware_bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+  }
+}
