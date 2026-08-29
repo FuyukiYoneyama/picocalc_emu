@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0, VRP-1, and VRP-2-a〜d complete; VRP-2 registered-target digest closure remains**
+Status: **Current implementation plan / VRP-0〜VRP-2-e complete; VRP-3 onward remains**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -295,7 +295,8 @@ VRP-1ではGUI、preview IPC本体、capability昇格は行わない。
 共通moduleへ分離する。batch scenarioとmachine APIを先に同じmoduleへ戻し、report bytes、cycle、
 UART、framebuffer、device observationの既存回帰が変わらないことを確認してから`--preview-api`を足す。
 
-VRP-2は、初期API実装とregistered-target受入を混同しないよう、次の4つの残作業へ分ける。
+VRP-2は、初期API実装とregistered-target受入を混同しないよう、当初は次の4つの作業へ分けた。
+以下の完了記録が示すとおり、VRP-2-a〜eはすべて完了している。
 
 #### VRP-2-a: current-backend versioned target
 
@@ -365,11 +366,16 @@ RGB565 framebuffer、UART、unsupported-MMIOも含む。`--audio-analysis`のhos
 推測補完せず、完全digest gateを拒否する。音声分析値を受入入力にする場合はVRP-4で別のversioned
 monitor contractを定義する。
 
-実装はfake registered-targetでdescriptor admissionからevidence原子書込みまでローカルテスト済み
-だが、現行VRP-2-a記録はcomplete `audio_sink` projection作成前で、対象BINも配布workspaceに無い。
-したがって実targetの合格record、target capability昇格、VRP-2全体完了はまだ宣言しない。実受入には、
-新しいclean backend pin、audio-analysis付きfresh report、SHA一致BIN、versioned validation／receiptを
-揃え、次のコマンドをローカルで実行する。
+実装はfake registered-targetでdescriptor admissionからevidence原子書込みまでローカルテスト済みであり、
+2026-08-29に実targetでも受入した。clean backend `c1c20d7d86a3006569375bc333cf72494e95eb46`と
+runner SHA `f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c`を固定し、
+実BIN、`--audio-analysis`付きfresh schema-8 report、versioned validation／receipt／descriptorを
+新revisionへ接続した。`picotetris-opt1b-vrp2f` revision 8と`picoedit-r1-vrp2f` revision 4の
+両方で、batch／machine API／preview API／registered reportの四者projection digest、timeline、
+終端virtual cycle、target report checksが一致し、gateはexit 0となった。各targetの証拠は
+[`firmware-validation/records/vrp2-f-picotetris-20260829-01/`](../firmware-validation/records/vrp2-f-picotetris-20260829-01/)
+と[`firmware-validation/records/vrp2-f-picoedit-20260829-01/`](../firmware-validation/records/vrp2-f-picoedit-20260829-01/)
+に保存する。旧revision・旧validation・旧実機証拠は変更していない。
 
 ```sh
 python3 tools/picocalc.py preview-digest-gate \
@@ -380,10 +386,10 @@ python3 tools/picocalc.py preview-digest-gate \
 
 詳細な受入境界とnon-claimは[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定する。
 
-VRP-2-c／dの互換性・UART RX証拠は完了した。残るVRP-2の受入作業は、VRP-2-aで作成したversioned
-registered targetのlaunch contractに対して、上記VRP-2-eの完全なprojection digestを同一virtual cycleで
-実targetへ再検証し、receipt／admissionへ接続することである。実targetの完全gateが閉じるまでVRP-2全体を
-完了、previewをsupported、またはhardware qualification済みとは扱わない。
+VRP-2-c／dの互換性・UART RX証拠と、VRP-2-eのregistered-target完全digest受入は完了した。
+この完了記録は、VRP-2-aで作成したversioned registered targetのlaunch contractに対する
+同一virtual cycleのprojection digest、receipt／admission接続までを含む。これはpreviewをsupported、
+またはhardware qualification済みと扱うことを意味しない。
 
 preview loopは既存`Pacer`を用い、clock変更時も`update_sys_clk_hz()`を呼ぶ。追加metricは
 session/rolling `virtual_time / wall_time`、lag、behind count、presentation/audio queue状態で、
@@ -424,16 +430,17 @@ canonical digestをpreview status／machine APIの`preview`観測domainへ追加
 machine APIのreport生成経路は変更していない。現在はpreviewとbatch/machineを同じvirtual
 cycleで走らせるbackend／machine／previewの三者比較を、board-backed synthetic UART fixtureの
 report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）として追加した。
-これはregistered target admissionへ接続した完全なdigest gateではなく、VRP-2完了とは判定しない。
+これはregistered target admissionへ接続した完全なdigest gateとは別の、初期実装時点のsmokeである。
 PCMは`audio.state=not_streamed`として明示し、bounded host audioはVRP-4の責務と
 する。backend側の利用・制約は
 [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md)
 を参照する。
 
-VRP-2-c／dの互換性・UART RX証拠と、VRP-2-eのgate実装・fake-target検査は完了した。残るVRP-2の
-受入作業は、VRP-2-aで作成したversioned registered targetを、complete `audio_sink` reportを含むfresh
-revalidationへ更新し、実BINでVRP-2-eを実行してreceipt／admissionへ接続することである。これが閉じるまで
-VRP-2全体を完了、previewをsupported、またはhardware qualification済みとは扱わない。
+VRP-2-c／dの互換性・UART RX証拠、VRP-2-eのgate実装・fake-target検査、実targetのcomplete digest
+受入は完了した。VRP-2-eの実target記録は上記のversioned revisionと証拠ディレクトリを参照する。
+ただしこれはGUI、host audio transport、実機hardware correlation、または`realtime-1x-qualified`
+を意味しない。次はVRP-3 GUI/input、VRP-4 audio、VRP-5 qualification、VRP-6 capability/docsであり、
+VRP-7 exact optimizationはVRP-5で1倍未達を確認した場合だけ開始する。
 
 ### VRP-3: GUI・本体スキン・LCD・keyboard・UART・reset/reload（24〜36時間）
 
@@ -530,7 +537,7 @@ timing/audio UX判定には使わない。
 |---:|---|---|
 | 1 | VRP-0 contract/host spike/baseline preflight（`picotetris-opt1b` + `picoedit-r1`） | **完了 2026-08-28**（Rust GUI/audio dependencyは未追加） |
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
-| 3 | VRP-2 shared session/preview API | **進行中。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査は完了。残件はcomplete `audio_sink`を含むfresh report／新backend pin／実BINによるregistered-target完全digest最終再検証と受入record** |
+| 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | 未着手 |
 | 5 | VRP-4 audio monitor | 未着手 |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
@@ -540,9 +547,8 @@ timing/audio UX判定には使わない。
 
 VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
 **112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。VRP-2の初期API、
-versioned target、descriptor consumer、machine API transcript、UART RX正常系は実装済みであり、
-残るregistered-target digest closureの工数は、対象targetの再実行とreceipt／admission接続を測定したうえで
-別途確定する。
+versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
+closureは完了している。今後の工数はVRP-3以降のGUI／audio／qualificationで見積もる。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。

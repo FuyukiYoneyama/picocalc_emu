@@ -52,7 +52,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0／VRP-1／VRP-2-a〜d完了、VRP-2-e実装済み・実target受入残り）
+### Validated Realtime Preview（VRP-0〜VRP-2-e完了、VRP-3以降未着手）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
@@ -62,11 +62,11 @@ pinの再検証、admitted descriptor出力）が固定済みです。backend側
 IPC、UART0 TX/RX、RGB565 frame、reset/quit、pacer status、fail-closed入力、`src/session.rs`への
 MachineSession共有分離、UART／framebuffer／unsupported-MMIO／audio-sinkのversioned observation
 projectionとcanonical digestが実装されています。board-backed synthetic UART fixtureのbatch／machine／preview三者を
-同一cycleで比較するreport-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）はローカル確認済みですが、
+同一cycleで比較するreport-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）に加え、
 VRP-2-aでは現行backendを固定した`picotetris-opt1b-vrp2` revision 6と`picoedit-r1-vrp2` revision 2を
 追加し、両targetのreceipt生成・registered target admissionまでローカルで確認しました。VRP-2-bでは
 admitted descriptorのlaunch contractを再検証して、同じrunnerをspawnするheadless consumerの
-hello／status／quit smoke gateを追加しました。VRP-2-cでは既存machine API 7 operationを含む8交換のgolden JSONL transcriptを実runnerで再生し、応答とsnapshotを完全一致させました。VRP-2-dではrepository-ownedのUART echo fixtureでRX accepted 16 byte、17 byte目のFIFO overrun、方向付きcounter、RX disabled拒否を確認しました。`preview-digest-gate`の実装とfake-target検査まで完了し、残るのはcomplete `audio_sink`を含むfresh reportとSHA一致BINを用いてregistered targetを同一virtual cycleの完全digest gateへ接続する実受入です。
+hello／status／quit smoke gateを追加しました。VRP-2-cでは既存machine API 7 operationを含む8交換のgolden JSONL transcriptを実runnerで再生し、応答とsnapshotを完全一致させました。VRP-2-dではrepository-ownedのUART echo fixtureでRX accepted 16 byte、17 byte目のFIFO overrun、方向付きcounter、RX disabled拒否を確認しました。`preview-digest-gate`の実装とfake-target検査に加え、2026-08-29にclean backend・実BIN・fresh complete audio reportを用いたVRP-2-e実target gateを2つのversioned targetで完了しました。四者projection digest、timeline、終端cycle、report checksが一致し、証拠は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)と`firmware-validation/records/vrp2-f-*/`にあります。
 GUI、streaming audio、1倍qualificationも未実装です。したがって現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIを
 realtime previewと呼び替えません。VRP-1の旧backend heartbeat互換を含む実装記録は
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは

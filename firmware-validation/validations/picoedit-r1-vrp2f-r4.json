@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "record": "firmware-validation/records/vrp2-f-picoedit-20260829-01/record.json",
+    "record_id": "vrp2-f-picoedit-20260829-01",
+    "section": "firmware_run",
+    "sha256": "dfee5ae9e9468879b7b455270b4d73dcdc6f3e58dc3b0bac816aa2f4defee4c7"
+  },
+  "result": "accepted",
+  "roadmap_package": "R4",
+  "schema_version": 1,
+  "target_contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+  "target_id": "picoedit-r1-vrp2f",
+  "target_revision": 4,
+  "validation_id": "picoedit-r1-vrp2f-r4"
+}

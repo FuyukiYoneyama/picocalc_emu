@@ -1,0 +1,72 @@
+{
+  "backend": {
+    "commit": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+    "directory": "/tmp/vrp2-real/backend",
+    "runner": {
+      "path": "/tmp/vrp2-real/backend/target/release/picocalc-run",
+      "sha256": "af264234c00e9f48d92aa610654187f7c0d9bbb340b941bacbe51f6bb94720bf"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": true,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp2-real/picoedit/build/picocalc_app.bin",
+    "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+  },
+  "launch": {
+    "contract": {
+      "argv": [
+        "/tmp/vrp2-real/backend/target/release/picocalc-run",
+        "--bin",
+        "/tmp/vrp2-real/picoedit/build/picocalc_app.bin",
+        "--bootrom",
+        "/tmp/vrp2-real/backend/roms/rp2040/bootrom-rp2040-b2.bin",
+        "--board",
+        "picocalc",
+        "--lcd-variant",
+        "pio-rgb565",
+        "--quantum",
+        "1",
+        "--backend-commit",
+        "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+        "--preview-api",
+        "--psram",
+        "--keyboard",
+        "--sd",
+        "--sd-format",
+        "fat32"
+      ],
+      "bootrom": {
+        "path": "/tmp/vrp2-real/backend/roms/rp2040/bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+      },
+      "cwd": "/tmp/vrp2-real/backend",
+      "mode": "preview-api",
+      "schema_version": 1
+    },
+    "contract_sha256": "6b20fdde3ab41201a8fbe683d590f6cf3c73c17007234ccc9b455d6529a163b7",
+    "gui_started": false,
+    "preview_ipc_schema": 1
+  },
+  "receipt_id": "picoedit-r1-vrp2e-rev3-17cb513b8dd3",
+  "report": {
+    "path": "/home/fuyuki/pico_dvl/codex/picocalc_emu/firmware-validation/records/vrp2-e-picoedit-20260829-01/run-report.json",
+    "schema_version": 8,
+    "sha256": "1872364311dbcf41c6738a4a88f4d3d7c6b79c09100177355fbd995a76d95f71"
+  },
+  "schema_version": 1,
+  "status": "admitted",
+  "target": {
+    "contract_sha256": "93f31a8a449bbec6f0a3a8ded3fe8978fb9005a160227c12f5b01487d69dd40c",
+    "id": "picoedit-r1-vrp2e",
+    "revision": 3
+  }
+}

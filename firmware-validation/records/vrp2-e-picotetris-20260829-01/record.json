@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "vrp2-e-picotetris-20260829-01",
+  "title": "VRP-2-e registered-target complete digest acceptance (PicoTetris)",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-opt1b-vrp2e",
+    "revision": 7,
+    "contract_sha256": "885f5cced50f23d288a01e1a41fdc7a2e578efc2da09e9db1f77584c8d04328a"
+  },
+  "firmware_run": {
+    "backend_commit": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+    "backend_dirty": false,
+    "target": {
+      "id": "picotetris-opt1b-vrp2e",
+      "revision": 7,
+      "contract_sha256": "885f5cced50f23d288a01e1a41fdc7a2e578efc2da09e9db1f77584c8d04328a"
+    },
+    "firmware_bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "runner_sha256": "af264234c00e9f48d92aa610654187f7c0d9bbb340b941bacbe51f6bb94720bf",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "cycles": 927528659,
+    "elapsed_us": 3715000,
+    "stop_reason": "scenario_done",
+    "verdict": "pass",
+    "normalized_report_sha256": "876f1637d817cbc86a0dec145dfb684adab7ef81219ea98c51810752caf9b92a",
+    "timeline_sha256": "8403b8f9d8aa9e4cfb84b03ac0082529873d79c14e5079994085893e06f69589",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+    "audio_observation_status": "pass",
+    "audio_pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+    "audio_dma_write_count": 1000,
+    "report": {
+      "path": "firmware-validation/records/vrp2-e-picotetris-20260829-01/run-report.json",
+      "sha256": "2d7bd251269a89fe72dac3fb341c70b97bfe9855f53865843c46604a10716a7d"
+    },
+    "audio_analysis": {
+      "path": "firmware-validation/records/vrp2-e-picotetris-20260829-01/audio-analysis.json",
+      "sha256": "e6d8ab5326729f678e6f301d3b9d0cf441e558ed3a4048a4e9cfb6c9710ed8ac",
+      "schema_version": 1
+    }
+  },
+  "comparison": {
+    "supersedes": "picotetris-opt1b-vrp2@6",
+    "timeline_identical_to_superseded": true,
+    "uart_byte_identical_to_superseded": true,
+    "framebuffer_rgb565_identical_to_superseded": true,
+    "backend_changed": true,
+    "hardware_correlation": "not_claimed"
+  },
+  "preview_revalidation": {
+    "device_projection": {
+      "board": "picocalc",
+      "lcd_variant": "pio-rgb565",
+      "psram": true,
+      "keyboard": true,
+      "sd": {
+        "attached": true,
+        "format": "fat32"
+      }
+    },
+    "complete_audio_observation": true,
+    "hardware_correlation_completed": false,
+    "backend_commit": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+    "note": "Fresh schema-8 report and audio-analysis artifact for VRP-2-e; four-way digest gate is recorded separately."
+  }
+}

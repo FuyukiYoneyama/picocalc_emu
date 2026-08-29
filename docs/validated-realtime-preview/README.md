@@ -1,8 +1,9 @@
 # Validated Realtime Preview: VRP-0/VRP-1 contracts and VRP-2 evidence
 
 This directory contains the immutable, machine-readable inputs and local
-evidence produced by VRP-0 through VRP-2-e. It is a contract, provenance, and
-admission fixture, not a GUI implementation.
+evidence produced by VRP-0 through VRP-2-e. The registered-target complete
+digest gate is closed for the two versioned targets recorded below. It is a
+contract, provenance, and admission fixture, not a GUI implementation.
 The files are deliberately kept separate from `firmware-validation/records/`:
 the latter are existing validation evidence, while these files describe the
 preview transport and the receipt that admits an already validated run.
@@ -24,6 +25,24 @@ preview transport and the receipt that admits an already validated run.
 | [`VRP2B_DESCRIPTOR_CONSUMER_20260829.md`](VRP2B_DESCRIPTOR_CONSUMER_20260829.md) | Headless descriptor consumer and PCRP hello/status/quit smoke gate |
 | [`VRP2CD_MACHINE_UART_20260829.md`](VRP2CD_MACHINE_UART_20260829.md) | Machine API schema-1 golden transcript and UART RX/overrun evidence |
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
+
+## VRP-2-e real-target closure
+
+The local gate passed on 2026-08-29 with clean backend commit
+`c1c20d7d86a3006569375bc333cf72494e95eb46` (runner SHA
+`f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c`).
+The accepted revisions are:
+
+| Target | Revision | Four-way digest | Evidence |
+|---|---:|---|---|
+| `picotetris-opt1b-vrp2f` | 8 | `9604a3784bcaedfaccbd928357bba0b57dd2f584b06db08405ab988deabb59cc` | [`vrp2-f-picotetris-20260829-01`](../../firmware-validation/records/vrp2-f-picotetris-20260829-01/) |
+| `picoedit-r1-vrp2f` | 4 | `9e79f1ddd84c6e507ac25ce89bf00a3b1a993cf2255fa27add25e4bac3c32fb3` | [`vrp2-f-picoedit-20260829-01`](../../firmware-validation/records/vrp2-f-picoedit-20260829-01/) |
+
+Each evidence directory contains the fresh schema-8 report and audio sidecar,
+versioned validation record, schema-1 receipt, admitted descriptor, and the
+atomic complete-digest gate output. The real BINs and clean backend checkout
+are external inputs whose SHA-256 values are recorded in the registry and
+receipt; they are not committed as large binaries.
 
 The two receipt fixtures are intentionally **not launchable receipts**. Their
 firmware and runner paths use `<fresh-dir>` / `<backend-checkout>` placeholders;
@@ -69,7 +88,8 @@ do not claim audio streaming, and do not promote the preview capability.
 
 The final registered-target gate is run locally after a fresh target revision
 has a clean backend pin, an externally supplied BIN, and a report containing
-the complete audio observation.  Use:
+the complete audio observation.  The command used for the accepted evidence
+is:
 
 ```sh
 python3 tools/picocalc.py preview-digest-gate \
@@ -91,5 +111,6 @@ separate versioned monitor contract in VRP-4.
 
 VRP-0 intentionally did not add `winit`, `cpal`, a GUI executable, or a
 preview IPC implementation. VRP-1 adds only standard-library Python receipt
-generation/admission and no Rust GUI/audio dependency. No capability is
-promoted until the later preview and qualification gates pass.
+generation/admission and no Rust GUI/audio dependency. The complete-digest
+gate does not promote a GUI, host audio transport, hardware correlation, or
+`realtime-1x-qualified` capability; those remain later VRP gates.

@@ -1,0 +1,16 @@
+{
+  "goodbye": true,
+  "hello": true,
+  "message_kinds": [
+    "hello",
+    "frame_rgb565",
+    "status",
+    "goodbye"
+  ],
+  "schema_version": 1,
+  "status": true,
+  "target": {
+    "id": "picoedit-r1-vrp2f",
+    "revision": 4
+  }
+}

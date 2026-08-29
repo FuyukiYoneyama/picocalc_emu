@@ -1,7 +1,6 @@
 # VRP-2-e: registered-target complete digest gate
 
-Status: **implementation present; registered-target acceptance pending a
-revalidated target with complete audio observation**
+Status: **complete for two registered targets; GUI/audio/qualification remain separate**
 Date: 2026-08-29
 
 ## Purpose
@@ -81,13 +80,22 @@ path is the only persistent output.
 The implementation is covered by a repository-owned fake registered-target
 test that exercises descriptor admission, batch/machine/preview execution,
 projection normalization, canonical digest equality, cycle equality, and
-atomic evidence output.  This is not a claim that the real VRP-2-a targets have
-passed: their currently recorded reports predate the complete `audio_sink`
-projection, and their BINs are not distributed in this repository.  A real
-acceptance run therefore requires a new clean backend pin, externally supplied
-BINs whose SHA matches the new target revisions, fresh reports with complete
-audio analysis, and newly versioned receipts/validation records.  Existing
-historical records remain immutable.
+atomic evidence output.  The real-target gate was then completed locally on
+2026-08-29 using clean backend commit
+`c1c20d7d86a3006569375bc333cf72494e95eb46` and runner SHA
+`f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c`.
+The versioned targets `picotetris-opt1b-vrp2f` revision 8 and
+`picoedit-r1-vrp2f` revision 4 each use a SHA-matched real BIN, a fresh
+schema-8 report with the complete `audio_sink` surface, a schema-1 receipt,
+an admitted descriptor, and a validation record.  The four-way registered /
+batch / machine-API / preview-API projection digest and terminal cycle passed
+for both targets.  Evidence is kept in:
+
+- `firmware-validation/records/vrp2-f-picotetris-20260829-01/`
+- `firmware-validation/records/vrp2-f-picoedit-20260829-01/`
+
+Existing historical records and superseded target revisions remain immutable.
 
 This gate does not add a GUI, host audio transport, hardware correlation, or
-`realtime-1x-qualified` capability.
+`realtime-1x-qualified` capability.  It proves only the registered-target
+complete-digest contract; VRP-3 onward remains a separate plan.

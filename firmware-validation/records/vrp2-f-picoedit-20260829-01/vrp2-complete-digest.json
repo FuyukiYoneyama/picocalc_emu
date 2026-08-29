@@ -1,0 +1,75 @@
+{
+  "backend": {
+    "commit": "c1c20d7d86a3006569375bc333cf72494e95eb46",
+    "directory": "/tmp/vrp2-real/backend",
+    "runner": {
+      "path": "/tmp/vrp2-real/backend/target/release/picocalc-run",
+      "sha256": "f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c"
+    }
+  },
+  "boundary": {
+    "stop_reason": "scenario_done",
+    "virtual_cycle": 827799818
+  },
+  "comparisons": {
+    "batch_machine_preview_registered_projection": true,
+    "canonical_digest_equal": true,
+    "cycle_equal": true
+  },
+  "descriptor": {
+    "path": "firmware-validation/records/vrp2-f-picoedit-20260829-01/admitted-descriptor.json",
+    "sha256": "2167fd414abaa975fcf6c09b09a8559d64c188cd9d92bfb9ec1f92b431a5c1ab"
+  },
+  "digests": {
+    "batch_projection_sha256": "9e79f1ddd84c6e507ac25ce89bf00a3b1a993cf2255fa27add25e4bac3c32fb3",
+    "machine_projection_sha256": "9e79f1ddd84c6e507ac25ce89bf00a3b1a993cf2255fa27add25e4bac3c32fb3",
+    "preview_projection_sha256": "9e79f1ddd84c6e507ac25ce89bf00a3b1a993cf2255fa27add25e4bac3c32fb3",
+    "registered_projection_sha256": "9e79f1ddd84c6e507ac25ce89bf00a3b1a993cf2255fa27add25e4bac3c32fb3"
+  },
+  "firmware": {
+    "path": "/tmp/vrp2-real/picoedit/build/picocalc_app.bin",
+    "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+  },
+  "gate": "VRP-2-registered-target-complete-digest",
+  "runs": {
+    "batch": {
+      "audio_analysis_sha256": "ffafd5364c749a6b290514ae0d527a63ade2bd65b85122604e516ccb4865aa40",
+      "exit_code": 0,
+      "report_sha256": "c09fdad1debb62f7bf5100105640e599015a7949fa3fb9fc503123dbeef69acb"
+    },
+    "machine": {
+      "cycle": 827799818
+    },
+    "preview": {
+      "cycle": 827799818,
+      "message_count": 6,
+      "message_kinds": [
+        "hello",
+        "frame_rgb565",
+        "status",
+        "frame_rgb565",
+        "status",
+        "goodbye"
+      ],
+      "replay_status": {
+        "cycle_limit": 4000000000,
+        "name": "picoedit-blind-v1",
+        "passed": true,
+        "status": "pass",
+        "steps_completed": 11,
+        "steps_total": 11
+      }
+    }
+  },
+  "scenario": {
+    "path": "scenarios/picoedit-blind-v1.json",
+    "sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+  },
+  "schema_version": 1,
+  "status": "pass",
+  "target": {
+    "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+    "id": "picoedit-r1-vrp2f",
+    "revision": 4
+  }
+}

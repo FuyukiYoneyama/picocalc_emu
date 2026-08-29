@@ -3092,6 +3092,14 @@ def firmware_test(
     with tempfile.TemporaryDirectory(prefix="picocalc-r2-") as temporary:
         report_path = Path(temporary) / "report.json"
         uart_path = Path(temporary) / "uart.bin"
+        # A preview admission receipt is only useful when the registered
+        # report exposes the complete schema-8 audio observation surface.
+        # The authoritative runner emits that surface whenever
+        # `--audio-analysis` is requested; keep the sidecar temporary here
+        # because the public receipt deliberately records only the report and
+        # provenance.  VRP-2-e replays the same request and persists its own
+        # caller-owned audio evidence separately.
+        audio_analysis_path = Path(temporary) / "audio-analysis.json"
         sd_image_path: Optional[Path] = None
         i2c_report_path: Optional[Path] = None
         if sd_dir is not None:
@@ -3155,6 +3163,8 @@ def firmware_test(
                     audio_sink["expected_sha256"],
                 ]
             )
+        if receipt_out is not None:
+            command.extend(["--audio-analysis", str(audio_analysis_path)])
         if target_i2c is not None:
             command.extend([
                 "--i2c-profile", i2c_profile,
@@ -3199,6 +3209,9 @@ def firmware_test(
             return 2
         if not isinstance(report, dict):
             print("runner report must be a JSON object")
+            return 2
+        if receipt_out is not None and not audio_analysis_path.is_file():
+            print("runner did not produce the required audio-analysis evidence")
             return 2
         runner_sha_after = _file_sha256(runner)
         if runner_sha_after != runner_sha_before:

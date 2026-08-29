@@ -1,0 +1,48 @@
+{
+  "backend": {
+    "accepted_commit": "c1c20d7d86a3006569375bc333cf72494e95eb46",
+    "executable": {
+      "path": "/tmp/vrp2-real/backend/target/release/picocalc-run",
+      "sha256": "f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c"
+    }
+  },
+  "device": {
+    "board": "picocalc",
+    "keyboard": true,
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "sd": {
+      "attached": true,
+      "format": "fat32"
+    }
+  },
+  "firmware": {
+    "path": "/tmp/vrp2-real/picoedit/build/picocalc_app.bin",
+    "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+  },
+  "provenance": {
+    "references": [
+      "firmware-validation/validations/picoedit-r1-vrp2f-r4.json",
+      "picoedit-picocalc@82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+      "picoem-picocalc@c1c20d7d86a3006569375bc333cf72494e95eb46",
+      "scenarios/picoedit-blind-v1.json"
+    ],
+    "registry_path": "reference-projects/firmware-targets.json"
+  },
+  "receipt_id": "picoedit-r1-vrp2f-rev4-17cb513b8dd3",
+  "report": {
+    "path": "firmware-validation/records/vrp2-f-picoedit-20260829-01/run-report.json",
+    "schema_version": 8,
+    "sha256": "c09fdad1debb62f7bf5100105640e599015a7949fa3fb9fc503123dbeef69acb"
+  },
+  "schema_version": 1,
+  "target": {
+    "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+    "id": "picoedit-r1-vrp2f",
+    "revision": 4
+  },
+  "target_validation_record": {
+    "path": "firmware-validation/validations/picoedit-r1-vrp2f-r4.json",
+    "sha256": "264434f4ea0df5d70fe73105d41a446cef95fb06ab1d874f34fac74fe3d0bd2d"
+  }
+}

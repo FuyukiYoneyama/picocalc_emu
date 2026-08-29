@@ -1,0 +1,75 @@
+{
+  "backend": {
+    "commit": "c1c20d7d86a3006569375bc333cf72494e95eb46",
+    "directory": "/tmp/vrp2-real/backend",
+    "runner": {
+      "path": "/tmp/vrp2-real/backend/target/release/picocalc-run",
+      "sha256": "f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c"
+    }
+  },
+  "boundary": {
+    "stop_reason": "scenario_done",
+    "virtual_cycle": 927528659
+  },
+  "comparisons": {
+    "batch_machine_preview_registered_projection": true,
+    "canonical_digest_equal": true,
+    "cycle_equal": true
+  },
+  "descriptor": {
+    "path": "firmware-validation/records/vrp2-f-picotetris-20260829-01/admitted-descriptor.json",
+    "sha256": "66c38b2e9cb7720e906ae101d02831ef31447fc2f4bcbb9b065c9aea04415b76"
+  },
+  "digests": {
+    "batch_projection_sha256": "9604a3784bcaedfaccbd928357bba0b57dd2f584b06db08405ab988deabb59cc",
+    "machine_projection_sha256": "9604a3784bcaedfaccbd928357bba0b57dd2f584b06db08405ab988deabb59cc",
+    "preview_projection_sha256": "9604a3784bcaedfaccbd928357bba0b57dd2f584b06db08405ab988deabb59cc",
+    "registered_projection_sha256": "9604a3784bcaedfaccbd928357bba0b57dd2f584b06db08405ab988deabb59cc"
+  },
+  "firmware": {
+    "path": "/tmp/vrp2-real/picotetris/build/PicoTetris.bin",
+    "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "gate": "VRP-2-registered-target-complete-digest",
+  "runs": {
+    "batch": {
+      "audio_analysis_sha256": "a106483a2ad00e5c3bd4cad7ab63b0d8437d66e52a8f1366cc3835f0d58a11b8",
+      "exit_code": 0,
+      "report_sha256": "32e124ee4a2456fe46e049e71345463da0aa8587165ac176d2381e514890a2e6"
+    },
+    "machine": {
+      "cycle": 927528659
+    },
+    "preview": {
+      "cycle": 927528659,
+      "message_count": 6,
+      "message_kinds": [
+        "hello",
+        "frame_rgb565",
+        "status",
+        "frame_rgb565",
+        "status",
+        "goodbye"
+      ],
+      "replay_status": {
+        "cycle_limit": 8000000000,
+        "name": "tetris-line-clear",
+        "passed": true,
+        "status": "pass",
+        "steps_completed": 85,
+        "steps_total": 85
+      }
+    }
+  },
+  "scenario": {
+    "path": "scenarios/tetris-line-clear.json",
+    "sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  },
+  "schema_version": 1,
+  "status": "pass",
+  "target": {
+    "contract_sha256": "44f22ecdb54d04088bf53a6e958cdd673a46d6582092cf82234e452d4c11fb8a",
+    "id": "picotetris-opt1b-vrp2f",
+    "revision": 8
+  }
+}

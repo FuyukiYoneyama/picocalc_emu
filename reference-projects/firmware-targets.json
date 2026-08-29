@@ -27,8 +27,12 @@
       },
       "build": {
         "generator": "Ninja",
-        "cmake_options": ["-DCMAKE_BUILD_TYPE=Release"],
-        "reproducible_defines": ["-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"],
+        "cmake_options": [
+          "-DCMAKE_BUILD_TYPE=Release"
+        ],
+        "reproducible_defines": [
+          "-DPICO_NO_BI_PROGRAM_BUILD_DATE=1"
+        ],
         "builds_compared": 2
       },
       "artifacts": {
@@ -52,7 +56,10 @@
         "psram_verify_range": "0:8388608",
         "keyboard": true,
         "keys": "HI",
-        "sd": {"attached": false, "format": "fat32"}
+        "sd": {
+          "attached": false,
+          "format": "fat32"
+        }
       },
       "scenario": null,
       "acceptance": {
@@ -63,18 +70,66 @@
           "kbd backlight 0"
         ],
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "cycle_limit"},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "psram.attached", "op": "eq", "value": true},
-          {"path": "psram.verify.matched", "op": "eq", "value": 8388608},
-          {"path": "psram.verify.mismatched", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 4},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "cycle_limit"
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "psram.verify.matched",
+            "op": "eq",
+            "value": 8388608
+          },
+          {
+            "path": "psram.verify.mismatched",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 4
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          }
         ]
       },
       "validation": {
@@ -145,7 +200,10 @@
         "psram": true,
         "keyboard": true,
         "keys": null,
-        "sd": {"attached": true, "format": "fat32"}
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
       },
       "scenario": null,
       "acceptance": {
@@ -156,12 +214,36 @@
           "[PICOCALC][READY] keyboard=waiting"
         ],
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "cycle_limit"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "cycle_limit"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          }
         ]
       },
       "validation": {
@@ -220,7 +302,10 @@
         "psram": true,
         "keyboard": true,
         "keys": null,
-        "sd": {"attached": true, "format": "fat32"}
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
       },
       "scenario": {
         "path": "scenarios/tetris-line-clear.json",
@@ -236,25 +321,101 @@
         "normalized_report_sha256": "eca38c789523f25429b64eed29de77adcde0d60f18537803f79cc1e6e1232b10",
         "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 927528660},
-          {"path": "elapsed_us", "op": "eq", "value": 3715000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 85},
-          {"path": "scenario.steps", "op": "length_eq", "value": 85},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 362},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 927528660
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3715000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 85
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 85
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 362
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -315,7 +476,10 @@
         "psram": true,
         "keyboard": true,
         "keys": null,
-        "sd": {"attached": true, "format": "fat32"}
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
       },
       "scenario": {
         "path": "scenarios/tetris-line-clear.json",
@@ -331,25 +495,101 @@
         "normalized_report_sha256": "40b641683e3d1f946ac49abd8063fdccbbdd51c55751411e92ad429c5b00020b",
         "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 927528660},
-          {"path": "elapsed_us", "op": "eq", "value": 3715000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 85},
-          {"path": "scenario.steps", "op": "length_eq", "value": 85},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 362},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 927528660
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3715000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 85
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 85
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 362
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -410,7 +650,10 @@
         "psram": true,
         "keyboard": true,
         "keys": null,
-        "sd": {"attached": true, "format": "fat32"}
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
       },
       "scenario": {
         "path": "scenarios/tetris-line-clear.json",
@@ -426,25 +669,101 @@
         "normalized_report_sha256": "4988d22dc703f939a603920c94ed3a74bd590ca729c4e170a9a80fd48bb5a03d",
         "timeline_sha256": "50eb1f6c7382b9c5d4f7764b8825a7aa641bbb744433899c6d644108e6be2dd1",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 927528660},
-          {"path": "elapsed_us", "op": "eq", "value": 3715000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 85},
-          {"path": "scenario.steps", "op": "length_eq", "value": 85},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 362},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 927528660
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3715000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 85
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 85
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 362
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -506,7 +825,10 @@
         "psram": true,
         "keyboard": true,
         "keys": null,
-        "sd": {"attached": true, "format": "fat32"}
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
       },
       "scenario": {
         "path": "scenarios/r5-correlation.json",
@@ -521,25 +843,101 @@
         "normalized_report_sha256": "f983959ae020f1633046e73fedb843485d1f52617615f3e1b5638c6cd7b020ce",
         "timeline_sha256": "d2bfa45832408c909460cd7579d211b0c05730751549d76617a9d36662a16d19",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 9879987214},
-          {"path": "elapsed_us", "op": "eq", "value": 39525002},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "202f5b83617147a1536b4729c33a31168072001169c104f2dbffcd768251bb83"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "3f630e04d2fb2c6c9fcd8446052d48d03a4a00aab797d7aef21e67a459830abe"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 5},
-          {"path": "scenario.steps", "op": "length_eq", "value": 5},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 136},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 9879987214
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 39525002
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "202f5b83617147a1536b4729c33a31168072001169c104f2dbffcd768251bb83"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "3f630e04d2fb2c6c9fcd8446052d48d03a4a00aab797d7aef21e67a459830abe"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 5
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 5
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 136
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -791,30 +1189,126 @@
         "normalized_report_sha256": "f38acb11ba766fd240e24bf36e2e4a3c3761a0e5276c4c13cfb594525fdd0ccb",
         "timeline_sha256": "05544f3170701d84e470624db378cfbe67b9dd9e8d678e170ab2245bdc258d66",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 827799822},
-          {"path": "elapsed_us", "op": "eq", "value": 3320000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 11},
-          {"path": "scenario.steps", "op": "length_eq", "value": 11},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 30},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.blocks_read", "op": "eq", "value": 12},
-          {"path": "sd.blocks_written", "op": "eq", "value": 13},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true},
-          {"path": "psram.bytes_written", "op": "eq", "value": 154},
-          {"path": "psram.bytes_read", "op": "eq", "value": 2471}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 827799822
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3320000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 11
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 11
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 30
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.blocks_read",
+            "op": "eq",
+            "value": 12
+          },
+          {
+            "path": "sd.blocks_written",
+            "op": "eq",
+            "value": 13
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "psram.bytes_written",
+            "op": "eq",
+            "value": 154
+          },
+          {
+            "path": "psram.bytes_read",
+            "op": "eq",
+            "value": 2471
+          }
         ]
       },
       "validation": {
@@ -895,30 +1389,126 @@
         "normalized_report_sha256": "07fee5aa4ae03827fb721c2011f2e38a58ac362fc7692b443f7309b568a3fb29",
         "timeline_sha256": "83e9982c5340b1d85e9101ea8eef8ea60663865c96d6c57c50cd57691717d19f",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 152548085},
-          {"path": "elapsed_us", "op": "eq", "value": 615000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "backend_build.commit", "op": "eq", "value": "38683d65800ef36026f674dd47228024d69eb5e7"},
-          {"path": "backend_build.dirty", "op": "eq", "value": false},
-          {"path": "exception", "op": "eq", "value": null},
-          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "b8fb0614c444ca7ba66164718367bd0f11c608122fc04c417e1bfd0e7844fee5"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 2},
-          {"path": "scenario.steps", "op": "length_eq", "value": 2},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 152548085
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 615000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "38683d65800ef36026f674dd47228024d69eb5e7"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "exception",
+            "op": "eq",
+            "value": null
+          },
+          {
+            "path": "unsupported_mmio",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "b8fb0614c444ca7ba66164718367bd0f11c608122fc04c417e1bfd0e7844fee5"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 2
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 2
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -1000,30 +1590,126 @@
         "normalized_report_sha256": "c45b9ae38fea9a29883f812ae4fb5f92c24e55c38f324d4ee3335a3eead5c5f3",
         "timeline_sha256": "c06b5c1fcdc25e71f48ee8a7cef2616df58aeb804c00ea4ffa82ee68e26c808d",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 152548092},
-          {"path": "elapsed_us", "op": "eq", "value": 615000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "backend_build.commit", "op": "eq", "value": "38683d65800ef36026f674dd47228024d69eb5e7"},
-          {"path": "backend_build.dirty", "op": "eq", "value": false},
-          {"path": "exception", "op": "eq", "value": null},
-          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "2c1ebc312c9190d72a0a3d745ecc0ad40978378cd6225e49d54d191191684959"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 2},
-          {"path": "scenario.steps", "op": "length_eq", "value": 2},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_selects", "op": "eq", "value": 0},
-          {"path": "keyboard.unknown_reg_writes", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 152548092
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 615000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "38683d65800ef36026f674dd47228024d69eb5e7"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "exception",
+            "op": "eq",
+            "value": null
+          },
+          {
+            "path": "unsupported_mmio",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "2c1ebc312c9190d72a0a3d745ecc0ad40978378cd6225e49d54d191191684959"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 2
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 2
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -1108,52 +1794,236 @@
         "normalized_report_sha256": "c956af5314c85e5d89d95d632c3838b2d4a9669403610b297e2197bf745a689e",
         "timeline_sha256": "828895d75e1b46bfb25d36bc4d4e1b5b9466ee9fdb900c582b1c4cb8272c3d55",
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "scenario_done"},
-          {"path": "cycles", "op": "eq", "value": 405523032},
-          {"path": "elapsed_us", "op": "eq", "value": 1627000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "backend_build.commit", "op": "eq", "value": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3"},
-          {"path": "backend_build.dirty", "op": "eq", "value": false},
-          {"path": "exception", "op": "eq", "value": null},
-          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "uart.sha256", "op": "eq", "value": "e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d"},
-          {"path": "framebuffer.rgb565_sha256", "op": "eq", "value": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740"},
-          {"path": "scenario.status", "op": "eq", "value": "pass"},
-          {"path": "scenario.steps_total", "op": "eq", "value": 2},
-          {"path": "scenario.steps", "op": "length_eq", "value": 2},
-          {"path": "audio_sink.status", "op": "eq", "value": "pass"},
-          {"path": "audio_sink.dma_write_count", "op": "eq", "value": 49152},
-          {"path": "audio_sink.target_write_attempt_count", "op": "eq", "value": 49152},
-          {"path": "audio_sink.other_pwm_cc_write_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.wrong_width_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.wrong_treq_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.missing_due_cycle_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.pcm_sha256", "op": "eq", "value": "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f"},
-          {"path": "audio_sink.timer_index", "op": "eq", "value": 0},
-          {"path": "audio_sink.treq", "op": "eq", "value": 59},
-          {"path": "audio_sink.timer_fraction", "op": "eq", "value": "3/15625"},
-          {"path": "audio_sink.timer_due_cycle_sha256", "op": "eq", "value": "28337d71e91fd6e68a4c5d7521557152c8468ef64cbf2e2b34f1da4892890d32"},
-          {"path": "audio_sink.block_start_count", "op": "eq", "value": 384},
-          {"path": "audio_sink.malformed_block_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.block_boundary_gap_count", "op": "eq", "value": 383},
-          {"path": "audio_sink.block_boundary_gap_min_cycles", "op": "eq", "value": 5209},
-          {"path": "audio_sink.block_boundary_gap_max_cycles", "op": "eq", "value": 10417},
-          {"path": "audio_sink.block_boundary_gap_sha256", "op": "eq", "value": "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06"},
-          {"path": "audio_sink.gap_5208_count", "op": "eq", "value": 32640},
-          {"path": "audio_sink.gap_5209_count", "op": "eq", "value": 16128},
-          {"path": "audio_sink.unexpected_gap_count", "op": "eq", "value": 0},
-          {"path": "audio_sink.service_latency_min_cycles", "op": "eq", "value": 0},
-          {"path": "audio_sink.service_latency_max_cycles", "op": "eq", "value": 6},
-          {"path": "audio_sink.service_latency_sha256", "op": "eq", "value": "7c496ba3791e33ef5ae6071a6ec07956f6d1d1bd79f66d728a9acc230590a7a8"},
-          {"path": "keyboard.key_events_delivered", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_remaining", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0},
-          {"path": "sd.format", "op": "eq", "value": "fat32"},
-          {"path": "sd.unknown_commands", "op": "length_eq", "value": 0},
-          {"path": "psram.attached", "op": "eq", "value": true}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 405523032
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 1627000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "d92db1b391a6bab078ca73ee4eb1b2ca88e394a3"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "exception",
+            "op": "eq",
+            "value": null
+          },
+          {
+            "path": "unsupported_mmio",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 2
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 2
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "audio_sink.dma_write_count",
+            "op": "eq",
+            "value": 49152
+          },
+          {
+            "path": "audio_sink.target_write_attempt_count",
+            "op": "eq",
+            "value": 49152
+          },
+          {
+            "path": "audio_sink.other_pwm_cc_write_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.wrong_width_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.wrong_treq_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.missing_due_cycle_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.pcm_sha256",
+            "op": "eq",
+            "value": "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f"
+          },
+          {
+            "path": "audio_sink.timer_index",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.treq",
+            "op": "eq",
+            "value": 59
+          },
+          {
+            "path": "audio_sink.timer_fraction",
+            "op": "eq",
+            "value": "3/15625"
+          },
+          {
+            "path": "audio_sink.timer_due_cycle_sha256",
+            "op": "eq",
+            "value": "28337d71e91fd6e68a4c5d7521557152c8468ef64cbf2e2b34f1da4892890d32"
+          },
+          {
+            "path": "audio_sink.block_start_count",
+            "op": "eq",
+            "value": 384
+          },
+          {
+            "path": "audio_sink.malformed_block_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.block_boundary_gap_count",
+            "op": "eq",
+            "value": 383
+          },
+          {
+            "path": "audio_sink.block_boundary_gap_min_cycles",
+            "op": "eq",
+            "value": 5209
+          },
+          {
+            "path": "audio_sink.block_boundary_gap_max_cycles",
+            "op": "eq",
+            "value": 10417
+          },
+          {
+            "path": "audio_sink.block_boundary_gap_sha256",
+            "op": "eq",
+            "value": "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06"
+          },
+          {
+            "path": "audio_sink.gap_5208_count",
+            "op": "eq",
+            "value": 32640
+          },
+          {
+            "path": "audio_sink.gap_5209_count",
+            "op": "eq",
+            "value": 16128
+          },
+          {
+            "path": "audio_sink.unexpected_gap_count",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.service_latency_min_cycles",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "audio_sink.service_latency_max_cycles",
+            "op": "eq",
+            "value": 6
+          },
+          {
+            "path": "audio_sink.service_latency_sha256",
+            "op": "eq",
+            "value": "7c496ba3791e33ef5ae6071a6ec07956f6d1d1bd79f66d728a9acc230590a7a8"
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "validation": {
@@ -1214,37 +2084,131 @@
           "fixture": "firmware-validation/fixtures/i2c-ext-e5-env-v1.json",
           "fixture_sha256": "1a2849a79f5e76872d6eee436228d9b5af9fdd5deaef1dc30f8e5c1f8bb8278a",
           "sidecar_checks": [
-            {"path": "attached_addresses", "op": "length_eq", "value": 5},
-            {"path": "observation.address_phases", "op": "eq", "value": 26},
-            {"path": "observation.address_acks", "op": "eq", "value": 26},
-            {"path": "observation.address_nacks", "op": "eq", "value": 0},
-            {"path": "observation.unknown_addresses", "op": "eq", "value": 0},
-            {"path": "observation.write_bytes", "op": "eq", "value": 21},
-            {"path": "observation.read_bytes", "op": "eq", "value": 181},
-            {"path": "observation.stop_count", "op": "eq", "value": 17},
-            {"path": "observation.data_nacks", "op": "eq", "value": 0},
-            {"path": "observation.protocol_errors", "op": "eq", "value": 0},
-            {"path": "observation.children", "op": "length_eq", "value": 5}
+            {
+              "path": "attached_addresses",
+              "op": "length_eq",
+              "value": 5
+            },
+            {
+              "path": "observation.address_phases",
+              "op": "eq",
+              "value": 26
+            },
+            {
+              "path": "observation.address_acks",
+              "op": "eq",
+              "value": 26
+            },
+            {
+              "path": "observation.address_nacks",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "path": "observation.unknown_addresses",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "path": "observation.write_bytes",
+              "op": "eq",
+              "value": 21
+            },
+            {
+              "path": "observation.read_bytes",
+              "op": "eq",
+              "value": 181
+            },
+            {
+              "path": "observation.stop_count",
+              "op": "eq",
+              "value": 17
+            },
+            {
+              "path": "observation.data_nacks",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "path": "observation.protocol_errors",
+              "op": "eq",
+              "value": 0
+            },
+            {
+              "path": "observation.children",
+              "op": "length_eq",
+              "value": 5
+            }
           ]
         }
       },
       "scenario": null,
       "acceptance": {
         "expected_stop_reason": "cycle_limit",
-        "required_uart_markers": ["STARTUP PROBE"],
+        "required_uart_markers": [
+          "STARTUP PROBE"
+        ],
         "report_checks": [
-          {"path": "verdict.status", "op": "eq", "value": "pass"},
-          {"path": "stop_reason", "op": "eq", "value": "cycle_limit"},
-          {"path": "cycles", "op": "eq", "value": 400000000},
-          {"path": "execution_model", "op": "eq", "value": "Serial"},
-          {"path": "backend_build.commit", "op": "eq", "value": "f810d059958773d1b42a1c6d03cc15183cdc1a4f"},
-          {"path": "backend_build.dirty", "op": "eq", "value": false},
-          {"path": "exception", "op": "eq", "value": null},
-          {"path": "error", "op": "eq", "value": null},
-          {"path": "unsupported_mmio", "op": "length_eq", "value": 0},
-          {"path": "unsupported_mmio_truncated", "op": "eq", "value": false},
-          {"path": "keyboard.key_events_dropped", "op": "eq", "value": 0},
-          {"path": "keyboard.key_events_overwritten", "op": "eq", "value": 0}
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "cycle_limit"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 400000000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "f810d059958773d1b42a1c6d03cc15183cdc1a4f"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "exception",
+            "op": "eq",
+            "value": null
+          },
+          {
+            "path": "error",
+            "op": "eq",
+            "value": null
+          },
+          {
+            "path": "unsupported_mmio",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          }
         ]
       },
       "validation": {
@@ -1645,6 +2609,814 @@
       },
       "supersedes": "picoedit-r1",
       "status_reason": "VRP-2-a current-backend versioned preview revalidation; superseded evidence remains immutable and hardware correlation is not claimed."
+    },
+    {
+      "id": "picotetris-opt1b-vrp2e",
+      "revision": 7,
+      "supersedes": "picotetris-opt1b-vrp2",
+      "status": "active",
+      "source": {
+        "repo": "picotetris",
+        "commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+        "remote": "https://github.com/FuyukiYoneyama/picotetris.git",
+        "bsp": "0.8.8",
+        "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+        "bsp_tree_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d",
+        "app": "picotetris-opt1b"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone https://github.com/FuyukiYoneyama/picotetris.git <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach fed84f358d7dcadb1457752e687355ddb1875c48",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-06T00:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-06T00:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "PicoTetris.bin",
+        "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 8000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/tetris-line-clear.json",
+        "sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[TETRIS] start",
+          "[TETRIS] cleared=",
+          "score=1400 lines=13"
+        ],
+        "normalized_report_sha256": "876f1637d817cbc86a0dec145dfb684adab7ef81219ea98c51810752caf9b92a",
+        "timeline_sha256": "8403b8f9d8aa9e4cfb84b03ac0082529873d79c14e5079994085893e06f69589",
+        "report_checks": [
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 927528659
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3715000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 85
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 85
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 362
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "pass"
+          }
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picotetris-opt1b-vrp2e-r7.json",
+        "sha256": "28fa5ba111f162415aa999842b8a9cac813bf36519d8be1a6e6d6ae8fc4aa026"
+      },
+      "status_reason": "VRP-2-a current-backend versioned preview revalidation; superseded evidence remains immutable and hardware correlation is not claimed."
+    },
+    {
+      "id": "picoedit-r1-vrp2e",
+      "revision": 3,
+      "status": "active",
+      "source": {
+        "repo": "picoedit-picocalc",
+        "commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+        "bsp": "0.9.0",
+        "bsp_source_commit": "a0041b56516ed56ddff23e80d1900a7c0fc6ab15",
+        "bsp_tree_sha256": "997a68966d6c38c786e7045a2b703f6c02a247b5e0a8956f0153d809080cb73c",
+        "app": "PicoEdit"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local <picoedit-source> <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach 82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-09T08:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-09T08:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "picocalc_app.bin",
+        "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+        "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 4000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/picoedit-blind-v1.json",
+        "sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[PICOEDIT][STORE] type=psram address=0x00010000 capacity=65536 shadow_document=none",
+          "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61 sha256=4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7 store=psram",
+          "[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+        ],
+        "normalized_report_sha256": "c0ad39870443f764439373a646359aab184435842108ae428ed9250d0b751471",
+        "timeline_sha256": "f1da8985f2736b2b927245177f9390fa649fb27aca1dc80150e8af74d783617d",
+        "report_checks": [
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 827799818
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3320000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 11
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 11
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 30
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.blocks_read",
+            "op": "eq",
+            "value": 12
+          },
+          {
+            "path": "sd.blocks_written",
+            "op": "eq",
+            "value": 13
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "psram.bytes_written",
+            "op": "eq",
+            "value": 154
+          },
+          {
+            "path": "psram.bytes_read",
+            "op": "eq",
+            "value": 2471
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "inactive"
+          }
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picoedit-r1-vrp2e-r3.json",
+        "sha256": "00801119f9fb0d379bf587cee9b404a945c5503ab97abfa5c5417460107bec37"
+      },
+      "supersedes": "picoedit-r1-vrp2",
+      "status_reason": "VRP-2-a current-backend versioned preview revalidation; superseded evidence remains immutable and hardware correlation is not claimed."
+    },
+    {
+      "id": "picotetris-opt1b-vrp2f",
+      "revision": 8,
+      "supersedes": "picotetris-opt1b-vrp2e",
+      "status": "active",
+      "source": {
+        "repo": "picotetris",
+        "commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+        "remote": "https://github.com/FuyukiYoneyama/picotetris.git",
+        "bsp": "0.8.8",
+        "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+        "bsp_tree_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d",
+        "app": "picotetris-opt1b"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone https://github.com/FuyukiYoneyama/picotetris.git <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach fed84f358d7dcadb1457752e687355ddb1875c48",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-06T00:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-06T00:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "PicoTetris.bin",
+        "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "c1c20d7d86a3006569375bc333cf72494e95eb46",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 8000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/tetris-line-clear.json",
+        "sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[TETRIS] start",
+          "[TETRIS] cleared=",
+          "score=1400 lines=13"
+        ],
+        "normalized_report_sha256": "8f472be00413e6f064c99fed36afa374d234c465417c049440270ea8ab0ae5af",
+        "timeline_sha256": "8403b8f9d8aa9e4cfb84b03ac0082529873d79c14e5079994085893e06f69589",
+        "report_checks": [
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 927528659
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3715000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 85
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 85
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 362
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "c1c20d7d86a3006569375bc333cf72494e95eb46"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "pass"
+          }
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picotetris-opt1b-vrp2f-r8.json",
+        "sha256": "664591a59fc61d73d05755d540fe98d6ce88911098af45d2181736d7a3ad505b"
+      },
+      "status_reason": "VRP-2-e registered-target complete digest revalidation with fresh schema-8/audio artifacts and clean backend c1c20d7d86a3006569375bc333cf72494e95eb46; superseded evidence remains immutable and hardware correlation is not claimed."
+    },
+    {
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "status": "active",
+      "source": {
+        "repo": "picoedit-picocalc",
+        "commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+        "bsp": "0.9.0",
+        "bsp_source_commit": "a0041b56516ed56ddff23e80d1900a7c0fc6ab15",
+        "bsp_tree_sha256": "997a68966d6c38c786e7045a2b703f6c02a247b5e0a8956f0153d809080cb73c",
+        "app": "PicoEdit"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone --no-local <picoedit-source> <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach 82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --lcd-variant pio-rgb565 --build-timestamp 2026-08-09T08:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-09T08:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "picocalc_app.bin",
+        "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+        "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "c1c20d7d86a3006569375bc333cf72494e95eb46",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 4000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/picoedit-blind-v1.json",
+        "sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[PICOEDIT][STORE] type=psram address=0x00010000 capacity=65536 shadow_document=none",
+          "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61 sha256=4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7 store=psram",
+          "[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+        ],
+        "normalized_report_sha256": "f5082c051116dba208772ee4b534f6fc207d6714d51c0370188a5fc9a414eded",
+        "timeline_sha256": "f1da8985f2736b2b927245177f9390fa649fb27aca1dc80150e8af74d783617d",
+        "report_checks": [
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 827799818
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 3320000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 11
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 11
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 30
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_overwritten",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.blocks_read",
+            "op": "eq",
+            "value": 12
+          },
+          {
+            "path": "sd.blocks_written",
+            "op": "eq",
+            "value": 13
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "psram.bytes_written",
+            "op": "eq",
+            "value": 154
+          },
+          {
+            "path": "psram.bytes_read",
+            "op": "eq",
+            "value": 2471
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "c1c20d7d86a3006569375bc333cf72494e95eb46"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "inactive"
+          }
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picoedit-r1-vrp2f-r4.json",
+        "sha256": "264434f4ea0df5d70fe73105d41a446cef95fb06ab1d874f34fac74fe3d0bd2d"
+      },
+      "supersedes": "picoedit-r1-vrp2e",
+      "status_reason": "VRP-2-e registered-target complete digest revalidation with fresh schema-8/audio artifacts and clean backend c1c20d7d86a3006569375bc333cf72494e95eb46; superseded evidence remains immutable and hardware correlation is not claimed."
     }
   ]
 }
