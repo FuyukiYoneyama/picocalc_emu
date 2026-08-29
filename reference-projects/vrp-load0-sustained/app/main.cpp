@@ -65,6 +65,12 @@ void __not_in_flash_func(core1_load)() {
     }
     g_core1_stopped = true;
     __dmb();
+    // A Pico SDK core-1 entry must not return through core1_wrapper: its
+    // bootstrap return address is not an application continuation. Publish
+    // the stop state, then remain parked until the MCU is reset.
+    while (true) {
+        __wfe();
+    }
 }
 
 void run_core0_load() {
