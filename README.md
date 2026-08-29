@@ -19,7 +19,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - SD RAWの標準pack／extract: [`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)
 - 対話型preview GUI（PicoCalc skin／LCD／UART0／入力）: [`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)
 - bounded host audio monitor（可変rate／drop診断／非同期transport）: [`docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)
-- 1倍UX qualification workload: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定するr1 prototypeを実装済みで、固定条件BIN／UF2再現性と1 virtual秒のruntime／input smokeを確認済みです。1〜2 virtual分のvertical slice、admission／receipt、10 virtual分以上の準備run、VRP-5 formal qualificationは未完了です
+- 1倍UX qualification workload: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定するr1 prototypeを実装済みで、固定条件BIN／UF2再現性と1秒／2秒のruntime／input smoke（公式scenarioを含む）を確認済みです。1〜2 virtual分のvertical slice、admission／receipt、10 virtual分以上の準備run、VRP-5 formal qualificationは未完了です
 - 通常のfirmware回帰backend: OPT1-B promoted commitをtargetごとに固定
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み

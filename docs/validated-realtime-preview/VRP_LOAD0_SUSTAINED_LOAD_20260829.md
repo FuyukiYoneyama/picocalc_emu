@@ -19,9 +19,10 @@ The repository-owned r1 fixture is implemented at source commit
 `reference-projects/vrp-load0-sustained/`. Its bounded smoke build is
 reproducible: two independent clean clones with the same toolchain, timestamp,
 and CMake cache produced identical BIN/UF2 hashes. A clean backend runner at
-`65c795e87321e79b960ac8a7495a205de6a24ec0` then passed a one-virtual-second
-input smoke with 320x320 full-screen writes, core-0/core-1 work, 48 kHz audio,
-four delivered keyboard events, and a complete UART result record.
+`65c795e87321e79b960ac8a7495a205de6a24ec0` then passed one- and two-
+virtual-second input smokes with 320x320 full-screen writes, core-0/core-1
+work, 48 kHz audio, four delivered keyboard events, and complete UART result
+records. The two-second smoke used the checked-in 1,000 ms-offset scenario.
 
 This does not complete `VRP-LOAD-0`. The checked-in 120-second scenario has not
 yet been run through the 1--2 virtual-minute vertical-slice gate, the same-BIN

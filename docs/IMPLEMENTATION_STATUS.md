@@ -92,8 +92,8 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 正式な`realtime-1x-qualified`昇格には、NESの意味論ではなく、repository-ownedな継続負荷workload
 （`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
 継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画です。
-repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1 virtual秒の
-runtime／input smokeまでは完了しています。1〜2 virtual分のvertical slice、admission／receipt、
+repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1秒／2秒の
+runtime／input smoke（公式scenarioを含む）までは完了しています。1〜2 virtual分のvertical slice、admission／receipt、
 10 virtual分以上の準備run、threshold decision、VRP-5 qualificationは未完了です。詳細は
 [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
 と正典計画を参照してください。

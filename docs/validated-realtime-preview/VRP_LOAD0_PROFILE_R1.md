@@ -1,6 +1,6 @@
 # VRP-LOAD-0 profile r1
 
-Status: **prototype implemented; clean-clone build reproducible; 1 virtual-second runtime/input smoke passed; 120-second vertical slice pending**
+Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice pending**
 Recorded: 2026-08-29
 
 This is the first versioned implementation contract for the repository-owned
@@ -74,6 +74,25 @@ The checked-in 1,000 ms-offset scenario was not used with this one-second
 firmware build because its input sequence begins at the completion boundary.
 It remains the scenario for the pending 120-second vertical slice and later
 qualification runs.
+
+The checked-in scenario was separately exercised with a two-virtual-second
+non-formal build. Its result was complete and the fixed 1,000 ms input offset
+delivered all four events:
+
+- BIN: `c0b2a03522102e7f0fd31799becca863a0e4e24cf018647cdf247e4481e0e64f`
+- UF2: `5e15db4c9dc3d3a25e6c848dbeb3f09be8a05318df6c81d977563846f6281133`
+- RESULT: `duration_us=2000000`, `elapsed_us=2000017`, `frames=60`,
+  `audio_underruns=0`, `audio_write_drops=0`, `input_events=4`
+- scenario stop: `scenario_done` after 634,997,246 cycles / 2,545,000 us
+- report-wide LCD: 6,246,400 pixels written, 0 dropped
+- report-wide audio sink: 48,000 Hz, 96,885 DMA writes, 0 unexpected gaps
+- report SHA-256: `0cd93f98cc05dea6e17113c43a90e1a45fd3f90300755a656e40885cd8f9ebda`
+- UART SHA-256: `b4acdddd175f6eb564f28e5fe2798407d301448da50875d066cfa2c2084f9e4a`
+- audio-analysis SHA-256: `c0173cddf1fae29c529c45ce5df37fc0ad33c4dedc73ae63a082deab110c25f5`
+
+This two-second run remains an integration smoke. It does not satisfy the
+required 1--2 virtual-minute vertical slice or the 10-virtual-minute
+preparation gate.
 
 ## Fixed workload contract
 
