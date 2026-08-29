@@ -287,7 +287,9 @@ source、fixture、生成手順から構成する。
 5. clean cloneからsource、fixture、BIN、runner、backend、toolchainを再現できるようにする。
 
 上記は負荷の目的を定める要求であり、同じ実装と同じ判定を再現するには、firmwareのsourceを
-書き始める前に次の実装契約を1つのmachine-readableまたはversioned recordへ固定する。
+書き始める前に次の実装契約を1つのmachine-readableまたはversioned recordへ固定する。r1では
+この契約を[`VRP_LOAD0_PROFILE_R1.md`](validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md)へ固定してから
+source codingを開始した。以後のsource／scenario変更は、既存recordを黙って書き換えずrevisionを上げる。
 
 - **所有権とidentity:** source directory、license、target id／revision、BINの生成元、許諾された
   fixtureの一覧とSHA-256。`picotetris-opt1b` revision 5は比較用の論理workload identityであり、
@@ -310,10 +312,12 @@ source、fixture、生成手順から構成する。
 - **UX timing contract:** 1倍のthroughputを測るmetricと、入力から画面反映までの応答を測るmetricを分離し、
   後者を測らない場合は「1倍UX」ではなく「継続負荷timing qualification」と表示する。
 
-このrecordを作ること自体はVRP-LOAD-0の実装完了ではない。最初に1〜2 virtual分のvertical sliceを
-clean cloneから build → run → report／receipt → existing admission／preview pathまで通し、上記契約の
-各値を収集できることを確認する。その後に10 virtual分の準備runへ進む。vertical sliceでsource、target、
-scenario、metricのいずれかが未定義なら、正式実装・測定を開始したと扱わない。
+このrecordを作ること自体はVRP-LOAD-0の実装完了ではない。r1ではまず1 virtual秒のpre-gate smokeを
+clean cloneからbuild → runし、画面、音声、core 0／1、入力、終端UART recordが観測可能であることを確認した。
+このsmokeは1〜2 virtual分のvertical sliceではない。次に1〜2 virtual分のvertical sliceをclean cloneから
+build → run → report／receipt → existing admission／preview pathまで通し、上記契約の各値を収集できることを
+確認する。その後に10 virtual分以上の準備runへ進む。vertical sliceでsource、target、scenario、metricの
+いずれかが未定義なら、formal completion・qualificationを開始したと扱わない。
 
 なお、現在のbackendの`step_until`は、両core停止中の安全なevent boundaryまでexactに進めることがある。
 これはcycleを捨てる不正なshortcutとは限らないため、「idle fast-forward禁止」は実装者の印象で判定せず、
@@ -330,8 +334,10 @@ digest不一致などの絶対条件、ratio／lagの統計方法、run数、許
 baselineを見て決めてよいのは、事前に定めた選択規則の範囲に限る。各runの結果を見て閾値や対象runを
 変更してはならない。
 
-**状態（2026-08-29）:** 未実装・未測定。これはVRP-0〜VRP-4の完了を取り消さず、VRP-5へ進むための
-新しいrepository-owned workload preparationである。実装時に外部sourceの取得、改変branchの作成、
+**状態（2026-08-29）:** repository-owned fixtureのprototype実装、2つのclean cloneによる固定条件build再現性、
+1 virtual秒のruntime／input smokeまでは完了。1〜2 virtual分のvertical slice、admission／receipt、10 virtual分以上の
+準備run、threshold decision、VRP-5 qualificationは未完了である。これはVRP-0〜VRP-4の完了を取り消さず、
+VRP-5へ進むための新しいrepository-owned workload preparationである。実装時に外部sourceの取得、改変branchの作成、
 外部projectへの公開・pushを必要条件にしてはならない。詳細なprofileは
 [`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
 に固定する。
@@ -700,7 +706,7 @@ timing/audio UX判定には使わない。
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
 | 6a | VRP-5 reusable backend pin preflight | **未着手。c1c20d7はbranch／tagから到達不能。既存VRP-2-e evidenceは保持し、到達可能なclean backendで新revisionを作る** |
-| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | 未着手。実装契約、vertical slice、320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定する。6aと並行可能 |
+| 6b | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | **進行中。repository-owned r1 fixtureを`40a9e07`で実装し、2 clean cloneの固定条件BIN／UF2一致、quantum 1の1 virtual秒runtime／input smokeを確認。1〜2 virtual分vertical slice、admission／receipt、10 virtual分以上の準備runは未完了。6aと並行可能** |
 | 7 | VRP-5 baseline/threshold/qualification | **未着手。6aのreusable pin gateと6bのcompletion gate後に開始** |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

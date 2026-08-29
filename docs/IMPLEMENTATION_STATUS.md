@@ -91,8 +91,11 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 ただし、VRP-2-eのbackend pin `c1c20d7d86a3006569375bc333cf72494e95eb46`は、2026-08-29時点でbackendのbranch／tagから到達できません。VRP-2-eの既存evidence／recordを無効化・改変するのではなく、VRP-5で再現可能な入力として使う前に、到達可能なclean backend（現行`main`は`65c795e87321e79b960ac8a7495a205de6a24ec0`）で新しいversioned target／validation／receiptを作ります。backend作業ツリーにある14ファイルの未コミット差分も、preview変更へ混ぜず、別commitへ固定するか所有者判断で取り除くかを先に決めます。このreusable backend pin preflightと`VRP-LOAD-0`のsource／fixture prototypeは並行できますが、VRP-5 qualificationは両方のcompletion gate後です。
 正式な`realtime-1x-qualified`昇格には、NESの意味論ではなく、repository-ownedな継続負荷workload
 （`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
-継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画であり、
-実装・測定は未着手です。詳細は[`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
+継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画です。
+repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1 virtual秒の
+runtime／input smokeまでは完了しています。1〜2 virtual分のvertical slice、admission／receipt、
+10 virtual分以上の準備run、threshold decision、VRP-5 qualificationは未完了です。詳細は
+[`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
 と正典計画を参照してください。
 `VRP-NES-0`のsynthetic NROM fixture、target、validation、3回local evidenceは歴史資料として保持しますが、
 `historical / non-qualifying`であり、VRP-5のblockerや`realtime-1x-qualified`の入力ではありません。

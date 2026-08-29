@@ -13,11 +13,12 @@ inside an existing artifact record.
 The workload does all of the following concurrently:
 
 - updates the complete 320x320 RGB565 panel at a fixed 30 Hz schedule;
-- keeps the public stereo PCM stream producer supplied while the BSP's 48 kHz
-  PWM/DMA consumer runs;
+- pre-fills the public stereo PCM ring and then keeps its producer supplied on
+  core 1 while the BSP's 48 kHz PWM/DMA consumer runs on the other side;
 - runs deterministic arithmetic on both RP2040 cores without sleep or WFE;
 - consumes a fixed explicit keyboard event sequence; and
-- emits machine-readable start, heartbeat, and completion records on UART0.
+- emits machine-readable start, heartbeat, a complete result record, and a
+  terminal completion marker on UART0.
 
 The app uses only `picocalc/bsp.h` and Pico SDK multicore APIs. It does not use
 or require `Picocalc_NESco`.

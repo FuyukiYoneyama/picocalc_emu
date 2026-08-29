@@ -1,6 +1,6 @@
 # VRP-LOAD-0: repository-owned sustained-load profile
 
-Status: **planned; implementation and measurement not started**
+Status: **prototype implemented; 1 virtual-second clean-clone runtime/input smoke passed; 120-second vertical slice, admission, and preparation gate pending**
 Date: 2026-08-29
 
 ## Purpose
@@ -11,6 +11,24 @@ preview preserves UX timing under continuous display, audio, CPU, and virtual
 time pressure.  The qualification requirement is therefore a load profile,
 not a dependency on the semantics or implementation of an external emulator
 project.
+
+## Current implementation status
+
+The repository-owned r1 fixture is implemented at source commit
+`40a9e07ca34c895cb90b4a1af550e5ed236a26c6` under
+`reference-projects/vrp-load0-sustained/`. Its bounded smoke build is
+reproducible: two independent clean clones with the same toolchain, timestamp,
+and CMake cache produced identical BIN/UF2 hashes. A clean backend runner at
+`65c795e87321e79b960ac8a7495a205de6a24ec0` then passed a one-virtual-second
+input smoke with 320x320 full-screen writes, core-0/core-1 work, 48 kHz audio,
+four delivered keyboard events, and a complete UART result record.
+
+This does not complete `VRP-LOAD-0`. The checked-in 120-second scenario has not
+yet been run through the 1--2 virtual-minute vertical-slice gate, the same-BIN
+admission/preview path, or the three-run 10-minute preparation gate. The smoke
+observed a high frame lag and report-wide timer-miss diagnostic; these remain
+inputs to the later baseline and threshold decision, not an unrecorded pass or
+failure.
 
 The formal VRP-5 workload pair is defined at the logical-workload level as:
 
@@ -46,11 +64,13 @@ repository-owned source or reproducible, redistributable fixtures.
 The profile must not skip CPU cycles, emulated frames, IRQs, PIO/DMA events,
 device events, or virtual audio events to reach 1x.
 
-## Implementation contract before firmware coding
+## Implementation contract for the prototype and qualification
 
 The six requirements above are necessary but are not yet an executable
-fixture specification.  Before source coding starts, create one versioned
-profile record containing all of the following:
+fixture specification.  The r1 source was coded against the versioned profile
+record, and future source or scenario changes must create a new profile
+revision rather than silently changing this contract. The record contains all
+of the following:
 
 - repository-owned source directory, license, target id/revision, artifact
   names, and source/fixture/BIN SHA-256 values;
@@ -74,11 +94,13 @@ preview API/GUI UX smoke.  A timer around the release runner alone is not
 evidence of GUI UX.  If input-to-visible-response cannot be measured, the
 result must be labelled `continuous-load timing`, not `1x UX`.
 
-The first implementation gate is a 1--2 virtual-minute vertical slice from a
-clean clone: build, run, report/receipt, existing admission, and preview path.
-It must produce the profile fields and artifacts above before the workload is
-called implemented.  Only then may the preparation gate run for at least 10
-virtual minutes.
+The first implementation gate remains a 1--2 virtual-minute vertical slice
+from a clean clone: build, run, report/receipt, existing admission, and
+preview path. The current one-virtual-second smoke is deliberately shorter
+than that gate and is recorded only as implementation progress. The profile
+fields and artifacts above must be produced by the vertical slice before the
+workload is called complete. Only then may the preparation gate run for at
+least 10 virtual minutes.
 
 The existing backend may exactly fast-forward a proven both-cores-blocked
 interval to an event boundary.  This is not automatically an invalid shortcut;
