@@ -29,6 +29,7 @@ already validated run.
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
 | [`VRP3_GUI_20260829.md`](VRP3_GUI_20260829.md) | Tk GUI, PicoCalc skin/LCD composition, UART0 console, input, reset/reload, and local WSLg acceptance |
 | [`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md) | Bounded host PCM monitor, resampling, drop accounting, and local acceptance boundary |
+| [`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](VRP_LOAD0_SUSTAINED_LOAD_20260829.md) | Repository-owned sustained-load profile planned for the future 1x qualification |
 | [`../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json`](../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json) | Formal VRP-4 `off`/`on`/`forced-drop` registered-target evidence |
 
 ## VRP-2-e real-target closure

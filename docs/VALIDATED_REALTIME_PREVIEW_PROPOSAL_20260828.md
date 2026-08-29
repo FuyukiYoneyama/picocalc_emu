@@ -1,8 +1,8 @@
 # Validated Realtime Preview 提案
 
-Status: Proposal (review revised)  
-Date: 2026-08-28  
-Owner: FuyukiYoneyama  
+Status: Proposal (review revised; VRP-LOAD-0 correction adopted)
+Date: 2026-08-28 (updated 2026-08-29)
+Owner: FuyukiYoneyama
 Tracking issue / PR: 未作成。P0 実装開始前に作成し、本書から相互リンクする。
 
 関連文書:
@@ -518,13 +518,15 @@ P0の実装preflightとpreview candidate測定は、現在registryに存在す�
 - **`picotetris-opt1b`（revision 5）** — 現在のpromoted PicoTetris target
 - **`picoedit-r1`（revision 1）** — PicoTetrisとは性質の異なる、再現可能なinteractive workload
 
-registryには現在NES-class targetが存在しないため、NES-class workloadは`VRP-NES-0`として別途
-再配布可能なtarget/fixtureを準備する。正式な`realtime-1x-qualified`判定では
-`picotetris-opt1b`とNES-class targetを使用し、NES-class fixtureが未整備の間は、既存2 workloadの
-結果だけで1倍qualifiedへ昇格しない。既存2 workloadによるpreview candidateの実装・測定自体は
-先に進めてよい。
+`realtime-1x-qualified`判定で必要なのはNESの意味論ではなく、全画面描画・音声・CPU・virtual timeを
+継続させる負荷特性である。正式workloadはrepository-ownedな`VRP-LOAD-0`として定義し、
+`picotetris-opt1b`と組み合わせる。既存の`VRP-NES-0` fixture／evidenceは歴史資料として保持するが、
+資格判定の依存にはしない。
 
-各preview candidate workloadは **10 分以上の連続 interactive session** を crash なしで実行し、session ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を保存する。正式な1倍qualificationでは、`VRP-NES-0`完了後に`picotetris-opt1b`とNES-class targetについて同じ観測を行う。10 分は安定性・host fluctuation・入力反復を観測する最低 duration であり、realtime 許容幅そのものではない。
+`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、継続CPU負荷、clean clone再現性を
+固定する。各preview candidate workloadは **10 分以上の連続 interactive session** を crash なしで実行し、
+session ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を保存する。
+10 分は安定性・host fluctuation・入力反復を観測する最低 duration であり、realtime 許容幅そのものではない。
 
 ### Phase P1: validation receipt の正式化
 
@@ -573,7 +575,9 @@ P0 / P1 の最初の完成条件を次とする。
 8. runtime device gate は `board`、`lcd_variant`、`psram`、`keyboard`、`sd.attached`、`sd.format` の6項目を一致必須とし、`cycles`、`keys`、`scenario`、`expected_stop_reason` を一致条件にしない。
 9. representative workload で LCD を連続表示でき、本体スキンを使う場合は校正済みLCD開口部へ表示できる。UART0のTX/RX console windowがpreview起動時に自動で開き、双方の入出力を対話操作できる。key down / held / up、reset、reloadも操作でき、host OS / GUI toolkit の auto-repeat による重複 key-down を firmware press event として投入しない。
 10. supported audio workload では emulated audio timing を保持し、host monitor の mute / underrun / degradation 状態を UI で区別できる。標準 monitor は PicoCalc 内蔵 speaker の音響模擬ではなく **headphone / electrical output class** を fidelity target とし、sample / PWM duty、sample rate / tempo、pitch、channel mapping、元の quantization / clipping 等の可聴な特徴を不必要に smoothing / enhancement しない。
-11. `picotetris-opt1b`（revision 5）と、`VRP-NES-0`で固定したNES-class workloadを各 10 分以上連続実行し、crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を記録できる。NES-class workloadが未整備なら、preview candidateは利用できてもこの正式qualification項目は未完了とする。
+11. `picotetris-opt1b`（revision 5）と、repository-owned `VRP-LOAD-0` workloadを各 10 分以上連続実行し、
+crash せず、wall-clock ratio、rolling ratio、pacer backlog / overrun、presentation drop、audio underrun / overrun を
+記録できる。`VRP-LOAD-0`が未整備なら、preview candidateは利用できてもこの正式qualification項目は未完了とする。
 12. realtime 許容幅が未固定の間は `Timing: UNCALIBRATED` を表示でき、core が追従できない session では `REALTIME NOT MET` を隠さない。
 13. 1× 未達を隠すために CPU cycle、emulated frame、IRQ、PIO、DMA、device event、virtual audio event を skip しない。
 14. scenario / trace / evidence を要求せずに UX session を開始できる。

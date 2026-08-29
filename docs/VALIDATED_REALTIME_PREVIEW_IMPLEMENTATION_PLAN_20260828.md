@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 local preparation complete with owner-controlled external-artifact revalidation pending; VRP-5 onward remain**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-LOAD-0 planned as the repository-owned 1x workload; VRP-5 onward remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -24,9 +24,10 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
 6. VRP-0の既存workloadは、曖昧な「active PicoTetris」ではなく、現在のpromoted target
    **`picotetris-opt1b`（revision 5）**と、性質の異なる再現可能な
    **`picoedit-r1`（revision 1）**に固定する。`picocalc-audio-r1`はVRP-4のaudio検証用fixtureとして扱う。
-7. registryには現在NES-class targetが存在しない。NES-classはVRP-0の開始を塞ぐ暗黙の前提にせず、
-   `VRP-NES-0`として別途target/fixtureを作成する。これは正式な`realtime-1x-qualified`昇格の
-   前提だが、previewのreceipt・GUI・UART実装は既存2 targetで先に進められる。
+7. 正式な1倍判定で必要なのはNESの意味論ではなく、全画面描画・音声・CPU・virtual timeを
+   継続させる負荷特性である。したがって外部`Picocalc_NESco`はVRP-5の必須依存にせず、
+   repository-ownedな`VRP-LOAD-0`負荷プロファイルを正式workloadとして別途準備する。
+   既存の`VRP-NES-0` fixture／evidenceは歴史資料として保持し、資格判定には使用しない。
 8. preview IPC schema 1はVRP-0の最初の成果物として、具体的なwire fixtureとともに凍結する。
    magic、version、endian、field幅、message kind、payload上限、異常系を未定義のままproduction
    codeへ進まない。
@@ -229,9 +230,10 @@ VRP-2のregistered-target gateは次の手順で閉じる。
 4. 現行accepted backendでのGUIなし速度baseline
 5. performance測定中は並列runを行わない条件
 
-NES-class workloadはこのgateでは要求しない。正式な1倍qualified判定に必要なfixtureは、下記の
-`VRP-NES-0`で別途準備する。実cartridge ROMや再配布条件不明のdataは使わず、適切なhomebrewまたは
-synthetic ROMを使い、そのsource/license/hashを固定する。
+`VRP-LOAD-0`はこのgateでは要求しない。VRP-0は既存2 targetでreceipt、admission、GUI、UART、
+audioの実装を先行できる。正式な1倍qualified判定に必要な継続負荷fixtureは、下記の
+`VRP-LOAD-0`で別途準備する。負荷fixture、source、license、生成手順、hashはすべて
+repository-ownedまたは再配布可能な入力として固定する。
 
 **完了gate:** WSLg capability probeがwindowとsilent playback deviceの開閉を確認し、IPC schema 1
 fixtureの具体値と、上記2 workloadのprovenance・baseline手順が記録される。VRP-0ではproduction
@@ -239,50 +241,42 @@ codeとRust GUI/audio dependencyを変更しない。VRP-1でも依存追加は�
 VRP-2/VRP-3で最初にlockfileを変更する前に別記録する。実測結果は[`VRP0_HOST_SPIKE_20260828.md`](validated-realtime-preview/VRP0_HOST_SPIKE_20260828.md)、
 基準値は[`VRP0_BASELINE_20260828.json`](validated-realtime-preview/VRP0_BASELINE_20260828.json)を参照する。
 
-### VRP-NES-0: NES-class target/fixture preparation（10〜20時間、正式qualificationの前提）
+### VRP-LOAD-0: repository-owned sustained-load target/fixture（10〜20時間、正式qualificationの前提）
 
-registryには現在NES-class targetがないため、これを既存targetの別名として扱わない。再配布可能な
-homebrewまたはsynthetic ROMを選定し、source、license、生成手順、BIN SHA、validation record、
-target contract、registry entryを独立した証拠として固定する。real cartridge ROMや再配布条件が不明な
-外部data、個人所有物をfixtureへ含めない。
+VRP-5が必要とするのはNES-classの意味論ではなく、1倍UXを判定できる継続負荷である。
+`VRP-LOAD-0`は外部プロジェクトの機能を借りるのではなく、`picocalc_emu`が所有・公開できる
+source、fixture、生成手順から構成する。
 
-**実施結果（2026-08-29）:** repository-ownedのsynthetic NROM-256（trainer付き、mapper 0、
-41,488 bytes）と標準ライブラリだけの決定的generatorを追加した。NESco診断BINをclean backendで
-3回実行し、SD FAT32入力、flash staging、XIP、core 1、DMA、UART、framebuffer、report、SD trace、
-flash exportがすべてbyte-identicalになることを確認した。証拠は
-[`VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
-と[`vrp-nes0-synthetic-nrom-20260829-01`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)
-に固定し、target entryとvalidation attestationも作成した。
+最低限、次の負荷特性を固定する。
 
-ただし使用したNESco診断commit
-`7f3fa05971930e03653694117cbf6a435ec1dd4e`は、現在の公開remoteに到達可能なrefがない。
-そのため`vrp-nes0-synthetic-nrom`は`pending-revalidation`に留め、source commitがclean cloneから
-取得可能になるまで`active`へ昇格しない。これはfixtureまたはbackendの不合格ではなく、外部source
-provenanceが未提供であるためである。`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`は
-その計画・改造・ブランチ公開・pushを行わない。正式な`realtime-1x-qualified` capabilityの前提は
-未完了のままとする。
+1. 320x320 RGB565の全画面を固定レートで連続更新する。
+2. 48 kHzのDMA-paced audioを同時に連続ストリーミングする。
+3. CPUを継続的に負荷し、idle fast-forwardやsemantic shortcutが効かない状態にする。
+4. 固定入力・固定seed・固定device profileで10 virtual分以上連続実行する。
+5. clean cloneからsource、fixture、BIN、runner、backend、toolchainを再現できるようにする。
 
-#### 外部NEScoの責任境界（2026-08-29時点の状態）
+準備gateでは同じ入力を少なくとも3回実行し、source／fixture／artifactのSHA、wall-clock ratio、
+rolling ratio、pacer backlog／overrun、presentation drop、audio underrun／overrun、
+authoritative observation digestを保存する。1倍の許容幅とlag上限は、測定結果を見た後に変更
+できないよう、VRP-5 qualificationの前に別decision recordで固定する。
 
-この記録で扱う診断変更は、NEScoのローカルcheckoutにある
-`codex/mnesco-extension`（commit `7f3fa05971930e03653694117cbf6a435ec1dd4e`）だけである。
-そのcheckoutはcleanで、GitHubの`Picocalc_NESco` remoteにはこのbranchは存在しない。確認できる
-remote refは`main`（`acf605358b0808052b87bc3e64aabf413d2d22b7`）と、今回の作業で作成していない
-既存の`perf/bg-tile-share-log`（`c2430c0bcf536ccf7aec18039bb6dfb81eb9ad13`）である。
-このため、NEScoを公開remoteで`main`へ統合したり、診断branchを新たに公開したりすることは
-`picocalc_emu`の作業範囲に含めない。
+**状態（2026-08-29）:** 未実装・未測定。これはVRP-0〜VRP-4の完了を取り消さず、VRP-5へ進むための
+新しいrepository-owned workload preparationである。実装時に外部sourceの取得、改変branchの作成、
+外部projectへの公開・pushを必要条件にしてはならない。詳細なprofileは
+[`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
+に固定する。
 
-`picocalc_emu`が保持するのは、repository-owned synthetic ROM、提供されたBIN/UF2、SHA-256、
-runner report、trace、validation recordなどの**入力識別情報と検証記録**だけである。SHA-256は
-同一バイト列の確認には使えるが、NEScoのソース再構成、ライセンス判断、動作の一般的保証を意味しない。
-将来このtargetを再検証する場合は、NESco側の所有者が独立に公開refまたは再現可能なartifactを
-提供し、その入力をエミュレーターが検査する。提供がない限り、targetは`pending-revalidation`の
-ままとし、エミュレーター側でNEScoソースを取り込んだり改造したりしない。
+#### VRP-NES-0／NEScoの歴史資料としての扱い
 
-この作業はpreviewのreceipt・IPC・GUI実装を開始するための必須条件ではないが、正式な
-`realtime-1x-qualified` capabilityを宣言する前には必須である。targetを作成できない場合は、
-previewを`validated-preview-admission`または`realtime candidate`として提供できるが、1倍qualifiedへ
-昇格してはならない。
+既存のrepository-owned synthetic NROM、NESco診断BIN、target entry、validation、実行evidenceは
+削除せず、`historical / non-qualifying`として保持する。これらはSD→flash→XIP、core 1、DMA、
+UART、framebufferの当時のlocal結果を示すが、VRP-5の1倍資格、NEScoの一般的互換性、公開sourceの
+再現性を示さない。
+
+`vrp-nes0-synthetic-nrom`の`pending-revalidation`状態も歴史的な再検証可能性の記録として残すが、
+VRP-5のblockerとはしない。将来NES固有の適合性を確認する場合だけ、NESco所有者が提供する
+未改変の公開clean refまたは再現可能なartifactを、別のoptional conformanceとして扱う。
+`codex/mnesco-extension`のような診断branchは正式証拠・資格判定・公開成果物に使用しない。
 
 ### VRP-1: receipt生成と共通admission（12〜20時間）
 
@@ -561,8 +555,8 @@ authoritative projectionは不変だった。証拠は`firmware-validation/recor
 ### VRP-5: baseline・threshold決定・qualification（10〜18時間 + 実測時間）
 
 まずthresholdを決めずに測る。初期のpreview candidate測定は`picotetris-opt1b`と`picoedit-r1`を
-それぞれ単独実行する。正式な1倍qualification測定は、`VRP-NES-0`完了後に
-`picotetris-opt1b`とNES-class targetをそれぞれ単独実行する。いずれも次を保存する。
+それぞれ単独実行する。正式な1倍qualification測定は、`VRP-LOAD-0`完了後に
+`picotetris-opt1b`と`VRP-LOAD-0`をそれぞれ単独実行する。いずれも次を保存する。
 
 - host/OS/CPU、backend/BIN/receipt SHA
 - session ratioとrolling ratio
@@ -573,7 +567,7 @@ authoritative projectionは不変だった。証拠は`firmware-validation/recor
 - CPU使用率と最大RSS（補助値）
 
 screeningは各workload 10 wall分以上でよいが、1倍qualificationは各workload **10 virtual分以上**を
-要求する。NES-classが未整備の場合、existing workloadの測定を完了しても正式な1倍qualificationは
+要求する。`VRP-LOAD-0`が未整備の場合、existing workloadの測定を完了しても正式な1倍qualificationは
 未完了とする。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能preview、realtime candidate、
 realtime-qualifiedを混同しない。
 
@@ -582,7 +576,7 @@ baseline reviewでrealtime許容幅とlag上限を別decision recordへ固定し
 
 **完了gate:** preview candidateについては`picotetris-opt1b`と`picoedit-r1`の2 workload recordがあり、
 `UNCALIBRATED`または`REALTIME NOT MET`の根拠が機械可読に残る。正式な
-`REALTIME OK`／`realtime-1x-qualified`には、これに加えて`VRP-NES-0`のNES-class recordが必要である。
+`REALTIME OK`／`realtime-1x-qualified`には、これに加えて`VRP-LOAD-0`のrepository-owned workload recordが必要である。
 
 ### VRP-6: versioning・capability・利用文書（6〜10時間）
 
@@ -618,7 +612,7 @@ timing/audio UX判定には使わない。
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
-| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | **fixture・local run完了。NEScoは独立プロジェクトで診断commitはローカルのみ。targetは`pending-revalidation`（所有者提供のref/artifact待ち）** |
+| 6 | VRP-LOAD-0 repository-owned sustained-load target/fixture（VRP-5正式qualification前に完了） | 未着手。320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定する |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
@@ -627,7 +621,7 @@ VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-targ
 **128〜220時間 + 実測時間**である（本体スキン校正、UART RX/TX、bounded host audio monitorを含む）。VRP-2の初期API、
 versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
 closure、VRP-3 GUI/input、VRP-4の実装・local test・formal evidenceは完了している。今後の工数はqualificationで見積もる。
-正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
+正式な1倍qualificationまで行う場合は、これにVRP-LOAD-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。
 
@@ -665,6 +659,8 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 - host presentationのdropがemulated eventを変える
 - optional device設定を6項目だけで安全に識別できないtargetを起動しようとした
 - baseline fixtureのsource/license/provenanceを固定できない
+- VRP-LOAD-0の負荷特性、source、fixture、clean clone再現性を固定できない
+- 外部プロジェクトの改変branchを資格判定または公開成果物の前提にしなければ負荷を再現できない
 - 1倍未達を隠すsemantic shortcutが必要になった
 
 ## 9. 完成の定義
@@ -681,7 +677,7 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 
 ### 1倍qualified完成
 
-- 上記に加え、`picotetris-opt1b`と`VRP-NES-0`で固定したNES-class targetの2 workload/host/thresholdで
+- 上記に加え、`picotetris-opt1b`とrepository-owned `VRP-LOAD-0`の2 workload/host/thresholdで
   VRP-5 qualificationに合格
 - 10 virtual分以上の各runでratio/lag/presentation/audio metricを保存
 - capabilityにqualified範囲だけを明示

@@ -3,20 +3,20 @@
 実行ループの内側で評価されるJSON手順書を置く。形式と操作・条件の一覧は
 [`../docs/SCENARIO_RUNNER.md`](../docs/SCENARIO_RUNNER.md)にある。
 
-## `vrp-nes0-synthetic-nrom.json`
+## `vrp-nes0-synthetic-nrom.json`（歴史資料）
 
-これはValidated Realtime PreviewのNES-class準備で使う、repository-owned synthetic
+これはValidated Realtime Previewの旧NES-class準備で使った、repository-owned synthetic
 NROM-256（mapper 0）をFAT32 SDから自動起動し、NEScoのM-NESCO oracleが完了するまで
-待つscenarioである。ROM本体、生成器、ライセンス、再現条件は
+待つ歴史的scenarioである。VRP-5の正式qualificationには使用しない。ROM本体、生成器、ライセンス、再現条件は
 [`../firmware-validation/fixtures/vrp-nes0-synthetic-nrom/`](../firmware-validation/fixtures/vrp-nes0-synthetic-nrom/)
 と[`../docs/validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](../docs/validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
 に固定している。市販カートリッジのdumpや第三者ゲームデータは含まない。
 
-現時点のregistry target `vrp-nes0-synthetic-nrom` は、診断NESco commitの公開refが
-ないため`pending-revalidation`である。したがって、公開sourceをclean cloneから取得
-できるようになるまでは、registryの正式wrapperではなく、証拠記録にある固定backend・
-BIN・SD imageを使った手順だけが再現経路である。targetを勝手に`active`へ変更しては
-ならない。source provenanceが解決した後は、registryの`--sd-dir`手順へ切り替える。
+registry target `vrp-nes0-synthetic-nrom` は、診断NESco commitの公開refがないため
+`pending-revalidation`である。この状態は歴史的なsource provenance記録であり、VRP-5の
+blockerではない。NES固有の適合性を将来確認する場合は、所有者提供の未改変公開clean refまたは
+再現可能なartifactを別のoptional conformanceとして扱う。`picocalc_emu`からNEScoのbranchを
+作成・改造・公開・pushしてはならない。
 
 ## `tetris-line-clear.json`
 

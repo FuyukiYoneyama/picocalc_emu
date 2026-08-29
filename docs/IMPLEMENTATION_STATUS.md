@@ -52,7 +52,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-NES-0／VRP-5以降未完了）
+### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-LOAD-0／VRP-5以降未完了）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
@@ -88,15 +88,18 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。
-正式な`realtime-1x-qualified`昇格には、再配布可能なNES-class target（VRP-NES-0）が必要です。
-VRP-NES-0ではrepository-owned synthetic NROM-256 fixture、決定的generator、NESco診断BIN、FAT32
-SD／flash staging／XIP／core 1／DMAの3回local firmware evidenceを固定しました。target
-`vrp-nes0-synthetic-nrom`とversioned validationは作成済みですが、使用したNESco診断commit
-`7f3fa05971930e03653694117cbf6a435ec1dd4e`が公開remoteから取得できないため、targetは
-`pending-revalidation`です。`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`側から
-診断branchを作成・改造・公開・pushしません。NESco側の所有者が公開refまたは再現可能なartifactを
-提供しない限り、source provenanceがclean cloneで再現可能にならないため、active target・
-`realtime-1x-qualified` capability・VRP-5正式測定へ昇格しません。詳細は
+正式な`realtime-1x-qualified`昇格には、NESの意味論ではなく、repository-ownedな継続負荷workload
+（`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
+継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画であり、
+実装・測定は未着手です。詳細は[`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
+と正典計画を参照してください。
+`VRP-NES-0`のsynthetic NROM fixture、target、validation、3回local evidenceは歴史資料として保持しますが、
+`historical / non-qualifying`であり、VRP-5のblockerや`realtime-1x-qualified`の入力ではありません。
+使用したNESco診断commit `7f3fa05971930e03653694117cbf6a435ec1dd4e`は公開remoteに到達できないため、
+既存targetの`pending-revalidation`状態も歴史的な再検証可能性の記録として維持します。
+`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`側からbranchを作成・改造・公開・pushしません。
+NES固有の適合性を将来確認する場合は、所有者提供の未改変公開clean refまたは再現可能なartifactによる
+optional conformanceとして別管理します。詳細は
 [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
 と[`firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)にあります。
 VRP-0の正典fixtureは[`docs/validated-realtime-preview/`](validated-realtime-preview/)にあり、VRP-3 GUIは

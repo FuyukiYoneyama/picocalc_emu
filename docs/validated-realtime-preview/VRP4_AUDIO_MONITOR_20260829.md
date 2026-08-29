@@ -147,7 +147,7 @@ the versioned record and validation chain are in the same directory and
 
 This closes the VRP-4 formal evidence gate only.  It does not promote
 `realtime-1x-qualified`, hardware-audio fidelity, or any capability entry;
-those remain subject to the separate VRP-NES-0/VRP-5/VRP-6 gates.
+those remain subject to the separate VRP-LOAD-0/VRP-5/VRP-6 gates.
 
 No GitHub Actions run, push, release tag, or hardware write is part of this
 implementation step.  The existing VRP-2/VRP-3 descriptor and exactness

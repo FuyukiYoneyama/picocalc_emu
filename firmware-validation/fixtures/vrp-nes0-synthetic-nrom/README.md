@@ -1,9 +1,9 @@
 # VRP-NES-0 synthetic NROM fixture
 
-This directory contains the repository-owned NES-class input for the
-Validated Realtime Preview qualification baseline.  It is an original,
-deterministic test image; it is not a dump of a commercial cartridge and it
-contains no third-party game data.
+This directory contains the repository-owned NES-class input used by the
+historical VRP-NES-0 preparation record.  It is an original, deterministic
+test image; it is not a dump of a commercial cartridge and it contains no
+third-party game data.  It is not the VRP-5 1x qualification baseline.
 
 ## Generation
 

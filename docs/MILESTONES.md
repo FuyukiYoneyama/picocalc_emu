@@ -2,11 +2,11 @@
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。Validated Realtime PreviewはVRP-0〜VRP-4を受入しています。VRP-2-eではclean backend・実BIN・fresh complete audio reportによるregistered-target四者digest gateを2つのversioned targetで受入、VRP-3ではTk薄型GUI・PicoCalc skin・LCD・keyboard・UART0 console・reset/reloadをWSLgで受入、VRP-4では同一registered targetのmonitor off／on／forced-drop formal evidenceを固定しました。VRP-NES-0はsynthetic NROM fixture・3回のlocal firmware run・target/validation evidenceまで完了しましたが、診断NESco commitの公開refがないためtargetは`pending-revalidation`です。VRP-5〜VRP-7、正式qualificationとcapability昇格は未完了です。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
+直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。Validated Realtime PreviewはVRP-0〜VRP-4を受入しています。VRP-2-eではclean backend・実BIN・fresh complete audio reportによるregistered-target四者digest gateを2つのversioned targetで受入、VRP-3ではTk薄型GUI・PicoCalc skin・LCD・keyboard・UART0 console・reset/reloadをWSLgで受入、VRP-4では同一registered targetのmonitor off／on／forced-drop formal evidenceを固定しました。VRP-5〜VRP-7、正式qualificationとcapability昇格は未完了です。NEScoに依存しないrepository-ownedな継続負荷workload `VRP-LOAD-0`をVRP-5の正式qualification前提として新たに計画し、既存VRP-NES-0のfixture・target・evidenceは歴史資料として保持します。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
 
 ## 状態
 
-### NESco外部プロジェクト境界（2026-08-29時点）
+### VRP-NES-0／NESco歴史資料の境界（2026-08-29時点）
 
 VRP-NES-0で使用した診断NESco checkoutは、ローカルの
 `codex/mnesco-extension`（`7f3fa05971930e03653694117cbf6a435ec1dd4e`）でcleanである。
@@ -17,8 +17,10 @@ VRP-NES-0で使用した診断NESco checkoutは、ローカルの
 `Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`はNEScoの計画・改造・branch公開・pushを
 行わない。`picocalc_emu`側で保持するのは提供されたBIN/UF2、SHA-256、report、trace、validation
 recordなどの入力識別情報と検証記録だけである。SHA-256は同一バイト列の確認には使えるが、NESco
-ソースの再構成、ライセンス判断、一般的な動作保証を意味しない。公開refまたは再現可能なartifactが
-NESco側の所有者から提供されるまでは、VRP-NES-0 targetを`pending-revalidation`のまま保持する。
+ソースの再構成、ライセンス判断、一般的な動作保証を意味しない。このtargetは
+`historical / non-qualifying`であり、`pending-revalidation`状態は当時の外部source再現性を記録する
+ために保持する。VRP-5のblockerにはしない。将来NES固有の適合性を再確認する場合だけ、NESco側の
+所有者が提供する未改変の公開refまたは再現可能なartifactをoptional conformanceとして扱う。
 
 | 順序 | 作業パッケージ | 最終状態 |
 |---|---|---|
@@ -39,7 +41,7 @@ NESco側の所有者から提供されるまでは、VRP-NES-0 targetを`pending
 | NEXT-3 | negative conformance | 完了 2026-08-10 |
 | NEXT-4 | 安定headless machine API | 完了 2026-08-10 |
 | I2C-EXT | 任意I2C外部module（RTC/EEPROM/AHT20/BMP280） | **E0〜E6完了。E5は同一BIN 3回のemulator回帰と、同一UF2の実機startup probe（RTC／EEPROM／keyboard／AHT20／BMP280）を合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定。** private hardwareを既定構成へ入れず、run単位profileとしてattach/detachする。固定証拠は[`i2c-ext-e5-20260823-01`](../firmware-validation/evidence/i2c-ext-e5-20260823-01/)、詳細は[`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)。backend commitsは`60ac700`、`f1ae8dc`、`5802b2e`、`0481474`、`f810d05`** |
-| VRP | Validated Realtime Preview | **VRP-0〜VRP-4完了（VRP-4 formal evidence 2026-08-29）。** 固定PCRP IPC、UART0 TX/RX、RGB565 frame、reset/quit、pacer status、fail-closed入力、`src/session.rs`へのMachineSession共通module分離、UART／framebuffer／unsupported-MMIO／audio-sinkのversioned observation projection/digestを実装し、runner process E2Eをローカル確認済み。VRP-2-aではversioned target／validation record／receipt、VRP-2-bではdescriptor consumer、VRP-2-cではmachine API golden transcript、VRP-2-dではUART RX accepted／echo／FIFO overrun fixtureを固定した。VRP-2-eではclean backend `c1c20d7d…`・実BIN・fresh complete audio reportを用い、`picotetris-opt1b-vrp2f` revision 8と`picoedit-r1-vrp2f` revision 4でregistered／batch／machine／preview四者digest、timeline、終端cycle、report checksを受入した。VRP-3ではTk薄型GUI、PicoCalc skin、320x320 RGB565 LCD合成、自動UART0 console、key down/held/up・auto-repeat抑止、F5 reset、Ctrl+R再admission reload、F12 screenshot、sticky UX-invalidを追加し、WSLg smokeを確認した。VRP-4ではbounded backend tap／非同期writer／frontend・host queue、可変rate resampling、drop/underrun/epoch statusを実装し、同一`picotetris-opt1b-vrp4` revision 9でmonitor off／on／forced-dropの3条件を比較したformal evidenceを固定した。VRP-NES-0ではrepository-owned synthetic NROM、NESco診断BIN、FAT32 SD、flash/XIP、core 1/DMA、UART/framebuffer/reportの3回byte-identical local evidenceを固定したが、NEScoは独立プロジェクトで診断commitはローカルのみのためtargetは`pending-revalidation`。証拠は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)、[`validated-realtime-preview/VRP3_GUI_20260829.md`](validated-realtime-preview/VRP3_GUI_20260829.md)、[`validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)、[`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)、[`firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)にある。`picocalc.py preview`は参照artifactを再検証してadmitted descriptorを出力し、`preview-headless`と`preview-gui`はGUIなし／GUI付きでそのdescriptorを消費する。VRP-5 qualification、VRP-6 capability/docs、条件付きVRP-7は未完了。現時点では`realtime-1x-qualified`やhardware-audio capabilityへ昇格しない |
+| VRP | Validated Realtime Preview | **VRP-0〜VRP-4完了（VRP-4 formal evidence 2026-08-29）。** 固定PCRP IPC、UART0 TX/RX、RGB565 frame、reset/quit、pacer status、fail-closed入力、`src/session.rs`へのMachineSession共通module分離、UART／framebuffer／unsupported-MMIO／audio-sinkのversioned observation projection/digestを実装し、runner process E2Eをローカル確認済み。VRP-2-a〜eではversioned target／validation record／receipt、descriptor consumer、machine API／UART fixture、registered／batch／machine／preview四者digestを受入した。VRP-3ではTk薄型GUI、PicoCalc skin、320x320 RGB565 LCD合成、自動UART0 console、key down/held/up・auto-repeat抑止、reset/reload、sticky UX-invalidを追加し、WSLg smokeを確認した。VRP-4ではbounded backend tap／非同期writer／frontend・host queue、可変rate resampling、drop/underrun/epoch statusを実装し、同一registered targetのmonitor off／on／forced-drop formal evidenceを固定した。VRP-5 qualification、VRP-6 capability/docs、条件付きVRP-7は未完了。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面・48 kHz DMA音声・継続CPU負荷・clean clone再現性を固定する計画で未着手。既存VRP-NES-0 fixture／target／evidenceは歴史資料として保持し、`realtime-1x-qualified`の前提にはしない。 |
 
 R0〜NEXT-4の15項目には最終処置があります。OPT2とOPT3は正確性を優先する性能gateにより
 正式終了しました。不採用candidateはactive targetへ混入していません。OPT4はその後に定義した
@@ -85,7 +87,7 @@ DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profil
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
 次に開始した新規機能計画はValidated Realtime Previewです。VRP-0 contract/host spike、VRP-1
-receipt/admission、VRP-2-a current-backend versioned target revalidation、VRP-2-b descriptor consumer、VRP-2-c machine API schema-1 transcript、VRP-2-d UART RX、VRP-2-e registered-target digest gate実装と実target受入、VRP-3のTk GUI／PicoCalc skin／LCD／keyboard／UART0 console／reset-reload、VRP-4のbounded host audio monitorとregistered-target off／on／forced-drop formal evidenceは完了しています。shared sessionとversioned observation projection/digest、board-backed synthetic UART fixtureの三者report-compatible observation digest smoke gateも実装済みです。VRP-NES-0はsynthetic NROM fixtureと3回local firmware evidenceまで完了していますが、NEScoは独立プロジェクトで診断sourceはローカルのみです。所有者からrefまたはartifactが提供された場合だけ再検証し、その後にVRP-5 qualification、VRP-6 capability/docsへ進みます。VRP-7 exact optimizationはVRP-5で1倍未達を
+receipt/admission、VRP-2-a current-backend versioned target revalidation、VRP-2-b descriptor consumer、VRP-2-c machine API schema-1 transcript、VRP-2-d UART RX、VRP-2-e registered-target digest gate実装と実target受入、VRP-3のTk GUI／PicoCalc skin／LCD／keyboard／UART0 console／reset-reload、VRP-4のbounded host audio monitorとregistered-target off／on／forced-drop formal evidenceは完了しています。shared sessionとversioned observation projection/digest、board-backed synthetic UART fixtureの三者report-compatible observation digest smoke gateも実装済みです。VRP-LOAD-0はrepository-ownedな320x320 RGB565全画面・48 kHz DMA音声・継続CPU負荷・clean clone再現性を固定する計画で、実装・測定は未着手です。既存VRP-NES-0のsynthetic NROM fixtureと3回local firmware evidenceは歴史資料として保持し、VRP-5の依存にはしません。VRP-7 exact optimizationはVRP-5で1倍未達を
 確認した場合だけ開始します。詳細と各gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とし、提案書だけからproduction実装の順序を推測しません。

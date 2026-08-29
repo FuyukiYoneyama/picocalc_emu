@@ -15,10 +15,11 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
-| 現在の計画（Validated Realtime Preview／VRP-NES-0・VRP-5以降。VRP-0〜VRP-4 formal evidenceまで完了） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
+| 現在の計画（Validated Realtime Preview／VRP-LOAD-0・VRP-5以降。VRP-0〜VRP-4 formal evidenceまで完了） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | VRP-2 backendのrunner実装・IPC境界・ローカル検証 | [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md) |
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |
-| VRP-NES-0のsynthetic NROM fixture・3回local evidence・NESco所有者提供待ちのtarget状態 | [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md) |
+| VRP-LOAD-0のrepository-owned sustained-load計画 | [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md) |
+| VRP-NES-0の歴史資料・非適格fixture/evidence | [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md) |
 | 完了済みI2C-EXTのoptional capability（RTC/環境sensor） | [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md) |
 | 改造・backend変更・AI開発の入口 | [`../DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) |
 | M-NESCO拡張の実行証拠・完了記録 | [`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)、[`完了済み契約`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md) |
