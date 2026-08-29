@@ -93,7 +93,9 @@ VRP-NES-0ではrepository-owned synthetic NROM-256 fixture、決定的generator�
 SD／flash staging／XIP／core 1／DMAの3回local firmware evidenceを固定しました。target
 `vrp-nes0-synthetic-nrom`とversioned validationは作成済みですが、使用したNESco診断commit
 `7f3fa05971930e03653694117cbf6a435ec1dd4e`が公開remoteから取得できないため、targetは
-`pending-revalidation`です。source provenanceがclean cloneで再現可能になるまで、active target・
+`pending-revalidation`です。`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`側から
+診断branchを作成・改造・公開・pushしません。NESco側の所有者が公開refまたは再現可能なartifactを
+提供しない限り、source provenanceがclean cloneで再現可能にならないため、active target・
 `realtime-1x-qualified` capability・VRP-5正式測定へ昇格しません。詳細は
 [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md)
 と[`firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/`](../firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/)にあります。

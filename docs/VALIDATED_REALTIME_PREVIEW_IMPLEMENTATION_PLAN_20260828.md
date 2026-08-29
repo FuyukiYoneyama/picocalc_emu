@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 local preparation complete with public-source revalidation pending; VRP-5 onward remain**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 local preparation complete with owner-controlled external-artifact revalidation pending; VRP-5 onward remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -258,7 +258,26 @@ flash exportがすべてbyte-identicalになることを確認した。証拠は
 `7f3fa05971930e03653694117cbf6a435ec1dd4e`は、現在の公開remoteに到達可能なrefがない。
 そのため`vrp-nes0-synthetic-nrom`は`pending-revalidation`に留め、source commitがclean cloneから
 取得可能になるまで`active`へ昇格しない。これはfixtureまたはbackendの不合格ではなく、外部source
-provenanceの公開待ちである。正式な`realtime-1x-qualified` capabilityの前提は未完了のままとする。
+provenanceが未提供であるためである。`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`は
+その計画・改造・ブランチ公開・pushを行わない。正式な`realtime-1x-qualified` capabilityの前提は
+未完了のままとする。
+
+#### 外部NEScoの責任境界（2026-08-29時点の状態）
+
+この記録で扱う診断変更は、NEScoのローカルcheckoutにある
+`codex/mnesco-extension`（commit `7f3fa05971930e03653694117cbf6a435ec1dd4e`）だけである。
+そのcheckoutはcleanで、GitHubの`Picocalc_NESco` remoteにはこのbranchは存在しない。確認できる
+remote refは`main`（`acf605358b0808052b87bc3e64aabf413d2d22b7`）と、今回の作業で作成していない
+既存の`perf/bg-tile-share-log`（`c2430c0bcf536ccf7aec18039bb6dfb81eb9ad13`）である。
+このため、NEScoを公開remoteで`main`へ統合したり、診断branchを新たに公開したりすることは
+`picocalc_emu`の作業範囲に含めない。
+
+`picocalc_emu`が保持するのは、repository-owned synthetic ROM、提供されたBIN/UF2、SHA-256、
+runner report、trace、validation recordなどの**入力識別情報と検証記録**だけである。SHA-256は
+同一バイト列の確認には使えるが、NEScoのソース再構成、ライセンス判断、動作の一般的保証を意味しない。
+将来このtargetを再検証する場合は、NESco側の所有者が独立に公開refまたは再現可能なartifactを
+提供し、その入力をエミュレーターが検査する。提供がない限り、targetは`pending-revalidation`の
+ままとし、エミュレーター側でNEScoソースを取り込んだり改造したりしない。
 
 この作業はpreviewのreceipt・IPC・GUI実装を開始するための必須条件ではないが、正式な
 `realtime-1x-qualified` capabilityを宣言する前には必須である。targetを作成できない場合は、
@@ -599,7 +618,7 @@ timing/audio UX判定には使わない。
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
 | 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
-| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | **fixture・local run完了。targetは`pending-revalidation`（診断commitの公開ref待ち）** |
+| 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | **fixture・local run完了。NEScoは独立プロジェクトで診断commitはローカルのみ。targetは`pending-revalidation`（所有者提供のref/artifact待ち）** |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |

@@ -1,6 +1,6 @@
 # VRP-NES-0: NES-class fixture preparation
 
-Status: **local preparation complete; registry target pending public source revalidation**
+Status: **local preparation complete; registry target pending owner-supplied external-artifact revalidation**
 Date: 2026-08-29
 
 VRP-NES-0 supplies the NES-class workload required before a future
@@ -42,6 +42,17 @@ the registry entry `vrp-nes0-synthetic-nrom` is `pending-revalidation` rather
 than `active`.  No public qualification claim is made until a clean clone can
 obtain the exact diagnostic commit.
 
+`Picocalc_NESco` remains an independent project.  Its local diagnostic
+checkout is clean, but `codex/mnesco-extension` is not a public branch.  The
+remote snapshot at this date contains `main`
+(`acf605358b0808052b87bc3e64aabf413d2d22b7`) and a pre-existing
+`perf/bg-tile-share-log`
+(`c2430c0bcf536ccf7aec18039bb6dfb81eb9ad13`); neither was created by this
+fixture work.  `picocalc_emu` does not modify, publish, or push NESco.  It
+consumes only the supplied BIN/UF2 and their hashes plus the resulting
+validation records.  A hash proves byte identity, not NESco source provenance
+or general firmware correctness.
+
 The deterministic build used Pico SDK 2.2.0 (`a1438dff…`), GCC 13.2.1,
 CMake 3.28.3, Ninja 1.11.1, and the repository-owned
 `fixed-build-date.h`.  Two clean builds produced identical BIN and UF2:
@@ -82,9 +93,9 @@ correlation, does not change the promoted preview target, and does not enable
 
 ## Next action
 
-Publish or otherwise make the exact diagnostic NESco commit reachable from a
-clean source clone, then rerun the authoritative `picocalc.py test --mode
-firmware` command using the registered target and `--sd-dir`.  Only after that
-run passes with the pinned BIN/backend/scenario and the source provenance is
-reproducible may this target move from `pending-revalidation` to `active` and
-feed VRP-5 qualification.
+If the NESco owner later supplies a public ref or a reproducible artifact,
+rerun the authoritative `picocalc.py test --mode firmware` command from that
+supplied input.  Do not create or publish an NESco branch from `picocalc_emu`.
+Until such an input is supplied, keep the target `pending-revalidation`; the
+existing BIN/UF2 hashes and local evidence remain historical input identifiers
+and do not constitute a public NESco source release.
