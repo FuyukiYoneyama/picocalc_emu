@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 implemented locally; formal VRP-4 gate and VRP-5 onward remain**
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-NES-0 and VRP-5 onward remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -517,10 +517,13 @@ PCMを観測するための補助経路である。
 player終了、host／ingress／IPC drop、reset epoch、authoritative tap isolationを確認した。非同期output
 writerのforced-drop testも追加し、emulation threadが遅いhost sinkを待たないことを検査した。
 
-**完了gate（正式記録待ち）:** monitor off/on/forced dropの3条件で、同じvirtual boundaryのaudio event digest、
-cycle、UART、framebufferが一致し、host failureがemulator停止やfalse PASSへ変換されないことを、同じ
-registered target／backend／BINのversioned evidenceへ固定する。実装と局所テストは完了したが、この3条件の
-registered-target evidenceが作成されるまでVRP-4をformal qualified capabilityへ昇格しない。
+**完了gate（2026-08-29、local）:** `picotetris-opt1b-vrp4` revision 9を同じ
+registered target／clean backend／BINで`off`／`on`／`forced-drop`の3条件実行し、同じvirtual boundaryの
+audio event digest、cycle、UART、framebuffer、message sequenceを確認した。`on`ではPCM 1,000 frameを
+受信・送信しhost drop 0、`forced-drop`では決定的に8 blockをdropして`degraded`を示しつつ、
+authoritative projectionは不変だった。証拠は`firmware-validation/records/vrp4-picotetris-20260829-01/`
+に固定した。VRP-4 formal evidenceは完了したが、これは`realtime-1x-qualified`やhardware-audio capabilityへの
+昇格を意味しない。
 
 ### VRP-5: baseline・threshold決定・qualification（10〜18時間 + 実測時間）
 
@@ -581,7 +584,7 @@ timing/audio UX判定には使わない。
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
-| 5 | VRP-4 bounded host audio monitor | **実装完了 2026-08-29（local unit／E2E。registered-target off/on/forced-drop evidenceとformal gateは未完了）** |
+| 5 | VRP-4 bounded host audio monitor | **完了 2026-08-29（local unit／E2E、registered-target off/on/forced-drop formal evidence）** |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
@@ -590,7 +593,7 @@ timing/audio UX判定には使わない。
 VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
 **128〜220時間 + 実測時間**である（本体スキン校正、UART RX/TX、bounded host audio monitorを含む）。VRP-2の初期API、
 versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
-closure、VRP-3 GUI/input、VRP-4の実装とlocal testは完了している。今後の工数はVRP-4 formal evidence、qualificationで見積もる。
+closure、VRP-3 GUI/input、VRP-4の実装・local test・formal evidenceは完了している。今後の工数はqualificationで見積もる。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。

@@ -52,7 +52,7 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0〜VRP-4実装完了、formal gate／VRP-5以降未完了）
+### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-NES-0／VRP-5以降未完了）
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
@@ -78,9 +78,13 @@ dropの分離counter、`stream_epoch`付きresetを追加しました。host pla
  [`validated-realtime-preview/VRP3_GUI_20260829.md`](validated-realtime-preview/VRP3_GUI_20260829.md)と
  [`validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)、
 skinの由来・SHA・校正は[`../assets/preview/README.md`](../assets/preview/README.md)を参照してください。
-VRP-4のlocal実装は完了していますが、同一registered targetでmonitor off/on/forced-dropの3条件を比較した
-versioned evidenceとformal audio-monitor qualificationは未完了です。1倍qualificationも未実装です。したがって
-現行capabilityにpreviewやrealtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替えません。VRP-1の旧backend heartbeat互換を含む実装記録は
+VRP-4では、同一registered target `picotetris-opt1b-vrp4` revision 9を用いたmonitor
+off／on／forced-dropの3条件formal evidenceを作成し、終端cycle・authoritative projection／digest・UART・
+framebuffer・message sequenceの一致、host送信成功、決定的queue dropと`degraded`表示を確認しました。証拠は
+[`firmware-validation/records/vrp4-picotetris-20260829-01/`](../firmware-validation/records/vrp4-picotetris-20260829-01/)、
+詳細は[`validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)です。
+これは1倍qualification、hardware-audio fidelity、またはcapability昇格を意味しません。現行capabilityにpreviewや
+realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替えません。VRP-1の旧backend heartbeat互換を含む実装記録は
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。

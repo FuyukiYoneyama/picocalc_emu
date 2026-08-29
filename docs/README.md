@@ -15,7 +15,7 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
-| 現在の計画（Validated Realtime Preview／VRP-5以降。VRP-0〜VRP-4のlocal実装は完了、VRP-4 formal evidence待ち） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
+| 現在の計画（Validated Realtime Preview／VRP-NES-0・VRP-5以降。VRP-0〜VRP-4 formal evidenceまで完了） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | VRP-2 backendのrunner実装・IPC境界・ローカル検証 | [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md) |
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |
 | 完了済みI2C-EXTのoptional capability（RTC/環境sensor） | [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md) |

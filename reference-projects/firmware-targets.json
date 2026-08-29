@@ -3205,6 +3205,194 @@
       "status_reason": "VRP-2-e registered-target complete digest revalidation with fresh schema-8/audio artifacts and clean backend c1c20d7d86a3006569375bc333cf72494e95eb46; superseded evidence remains immutable and hardware correlation is not claimed."
     },
     {
+      "id": "picotetris-opt1b-vrp4",
+      "revision": 9,
+      "supersedes": "picotetris-opt1b-vrp2f",
+      "status": "active",
+      "source": {
+        "repo": "picotetris",
+        "commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+        "remote": "https://github.com/FuyukiYoneyama/picotetris.git",
+        "bsp": "0.8.8",
+        "bsp_source_commit": "cbfc90467e2b8392fbd0429c83925b94ca365824",
+        "bsp_tree_sha256": "8198311924ff6d30867bcadfa81b46fd7fa9cb8857499a49f49f496e97545e7d",
+        "app": "picotetris-opt1b"
+      },
+      "toolchain": {
+        "pico_sdk": "2.2.0",
+        "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+        "arm_none_eabi_gcc": "13.2.1",
+        "cmake": "3.28.3",
+        "ninja": "1.11.1"
+      },
+      "build": {
+        "commands": [
+          "git clone https://github.com/FuyukiYoneyama/picotetris.git <fresh-dir>",
+          "git -C <fresh-dir> checkout --detach fed84f358d7dcadb1457752e687355ddb1875c48",
+          "python3 tools/picocalc.py build --project <fresh-dir> --sdk <pico-sdk-2.2.0> --picotool-dir /usr/local/lib/cmake/picotool --lcd-variant pio-rgb565 --jobs 2 --build-timestamp 2026-08-06T00:00:00Z --generator Ninja"
+        ],
+        "timestamp_used": "2026-08-06T00:00:00Z",
+        "generator": "Ninja",
+        "builds_compared": 2,
+        "bin_reproducible": true,
+        "uf2_reproducible": true,
+        "elf_reproducible_across_build_paths": false
+      },
+      "artifacts": {
+        "bin_basename": "PicoTetris.bin",
+        "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "backend": {
+        "repo": "picoem-picocalc",
+        "branch": "main",
+        "accepted": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+        "report_schema": 8
+      },
+      "runner": {
+        "board": "picocalc",
+        "lcd_variant": "pio-rgb565",
+        "cycles": 8000000000,
+        "quantum": 1,
+        "psram": true,
+        "keyboard": true,
+        "keys": null,
+        "sd": {
+          "attached": true,
+          "format": "fat32"
+        }
+      },
+      "scenario": {
+        "path": "scenarios/tetris-preview-audio-smoke.json",
+        "sha256": "f9e6773f12085172ba95bace241d6edc0ab85bd3a0c1f4aeb1b7f68ea2acf9bc"
+      },
+      "acceptance": {
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [
+          "[TETRIS] start"
+        ],
+        "normalized_report_sha256": "2749cb4eed5f14fe010cfa3f8490f640738fd2fbc2dfc4c85a2fcce811c6e3ef",
+        "timeline_sha256": "674e10fda1b7a324afec4d43385d8ae347a254710f8a41d1349d7dde7fc80bfb",
+        "report_checks": [
+          {
+            "path": "verdict.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "stop_reason",
+            "op": "eq",
+            "value": "scenario_done"
+          },
+          {
+            "path": "cycles",
+            "op": "eq",
+            "value": 252528659
+          },
+          {
+            "path": "elapsed_us",
+            "op": "eq",
+            "value": 1015000
+          },
+          {
+            "path": "execution_model",
+            "op": "eq",
+            "value": "Serial"
+          },
+          {
+            "path": "unsupported_mmio_truncated",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "uart.sha256",
+            "op": "eq",
+            "value": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"
+          },
+          {
+            "path": "framebuffer.rgb565_sha256",
+            "op": "eq",
+            "value": "9ebf46df1ad3007f7f023cc94b94c65abf523f8d203cfc09ebb8846bdc9e9c9b"
+          },
+          {
+            "path": "scenario.status",
+            "op": "eq",
+            "value": "pass"
+          },
+          {
+            "path": "scenario.steps_total",
+            "op": "eq",
+            "value": 2
+          },
+          {
+            "path": "scenario.steps",
+            "op": "length_eq",
+            "value": 2
+          },
+          {
+            "path": "keyboard.key_events_delivered",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_remaining",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.key_events_dropped",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_selects",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "keyboard.unknown_reg_writes",
+            "op": "eq",
+            "value": 0
+          },
+          {
+            "path": "sd.format",
+            "op": "eq",
+            "value": "fat32"
+          },
+          {
+            "path": "sd.unknown_commands",
+            "op": "length_eq",
+            "value": 0
+          },
+          {
+            "path": "psram.attached",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "path": "backend_build.commit",
+            "op": "eq",
+            "value": "65c795e87321e79b960ac8a7495a205de6a24ec0"
+          },
+          {
+            "path": "backend_build.dirty",
+            "op": "eq",
+            "value": false
+          },
+          {
+            "path": "audio_sink.status",
+            "op": "eq",
+            "value": "pass"
+          }
+        ]
+      },
+      "validation": {
+        "record": "firmware-validation/validations/picotetris-opt1b-vrp4-r9.json",
+        "sha256": "385480efdf73aa375d80b72eb0df546e757bd0a84217575a05e7020642d0bb61"
+      },
+      "status_reason": "VRP-4 formal registered-target audio-monitor gate; same source/BIN/device as VRP-2-f with a short deterministic preview-audio scenario, current clean backend 65c795e87321e79b960ac8a7495a205de6a24ec0, monitor off/on/forced-drop evidence recorded without changing authoritative observation digest."
+    },
+    {
       "id": "picoedit-r1-vrp2f",
       "revision": 4,
       "status": "active",

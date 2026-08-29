@@ -1,6 +1,6 @@
 # VRP-4 bounded host audio monitor
 
-Status: **implemented locally; formal registered-target three-condition gate remains to be recorded**
+Status: **formal registered-target three-condition gate passed locally 2026-08-29**
 Date: 2026-08-29
 
 ## Scope
@@ -121,10 +121,33 @@ The tests cover variable-rate/variable-block payloads, the 128-frame protocol
 limit, bounded resampling, host queue drops, ingress drops, player exit,
 missing-player timing-only operation, reset epoch semantics, authoritative
 audio-tap isolation, and an asynchronous output queue whose droppable frames
-are rejected without waiting for a stalled sink.  A full registered-target
-`monitor off / on / forced drop` digest comparison is a follow-up evidence
-record; until that record is created, VRP-4 must not be described as a
-`realtime-1x-qualified` or hardware-audio capability.
+are rejected without waiting for a stalled sink.
+
+The formal registered-target gate was run locally with the exact `picotetris-opt1b-vrp4`
+revision 9 descriptor, clean backend `65c795e87321e79b960ac8a7495a205de6a24ec0`,
+and the validated `PicoTetris.bin`.  The command was:
+
+```sh
+python3 -u tools/vrp4_audio_gate.py \
+  --descriptor firmware-validation/records/vrp4-picotetris-20260829-01/admitted-descriptor.json \
+  --backend-dir /tmp/vrp4-backend-65c795e \
+  --timeout-seconds 900 \
+  --evidence-out firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json
+```
+
+All three conditions reached the same virtual boundary (`252528659`) and
+authoritative observation digest (`1cc632e5f1b4f580b671642f78cfe814377211a49ac8cc2018e324db872d696b`),
+with identical projection and message sequence.  `off` received 1,000 PCM
+frames, `on` received and sent 1,000 frames with zero host drops, and the
+deterministic queue-saturation case recorded eight bounded host drops and
+`degraded` state without changing emulation.  The complete gate output is
+[`vrp4-audio-gate.json`](../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json);
+the versioned record and validation chain are in the same directory and
+[`picotetris-opt1b-vrp4-r9.json`](../../firmware-validation/validations/picotetris-opt1b-vrp4-r9.json).
+
+This closes the VRP-4 formal evidence gate only.  It does not promote
+`realtime-1x-qualified`, hardware-audio fidelity, or any capability entry;
+those remain subject to the separate VRP-NES-0/VRP-5/VRP-6 gates.
 
 No GitHub Actions run, push, release tag, or hardware write is part of this
 implementation step.  The existing VRP-2/VRP-3 descriptor and exactness

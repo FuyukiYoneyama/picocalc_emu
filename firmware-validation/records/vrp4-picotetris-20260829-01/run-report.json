@@ -1,0 +1,133 @@
+{
+  "schema_version": 8,
+  "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+  "backend_build": {"commit": "65c795e87321e79b960ac8a7495a205de6a24ec0", "dirty": false},
+  "firmware": {"basename": "PicoTetris.bin", "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 8000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 252528659,
+  "elapsed_us": 1015000,
+  "pc": "0x100029be",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": ["[TETRIS] start"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 650, "raset": 650, "ramwr": 650, "ramrd": 0,
+    "pixels_written": 338000, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "9ebf46df1ad3007f7f023cc94b94c65abf523f8d203cfc09ebb8846bdc9e9c9b", "non_black_pixels": 14292, "png": null},
+  "psram": {
+    "attached": true,
+    "tick_count": 50554954, "cs_falling_count": 7,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [{"command": 0, "count": 1}, {"command": 255, "count": 1}, {"command": 75, "count": 1}, {"command": 53, "count": 1}, {"command": 235, "count": 1}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 0, "blocks_read": 0, "blocks_written": 0,
+    "protocol_errors": [],
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 28, "key_events_delivered": 0, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x00", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "audio_sink": {
+    "status": "pass",
+    "dma_write_count": 1000,
+    "target_write_attempt_count": 1000,
+    "other_pwm_cc_write_count": 0,
+    "wrong_width_count": 0,
+    "wrong_treq_count": 0,
+    "missing_due_cycle_count": 0,
+    "pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+    "expected_count": null,
+    "expected_sha256": null,
+    "first_words": ["0x00800080", "0x00880088", "0x00900090", "0x00980098", "0x009f009f", "0x00a700a7", "0x00ad00ad", "0x00b200b2"],
+    "last_words": ["0x00480048", "0x00450045", "0x00410041", "0x00410041", "0x003f003f", "0x00400040", "0x00420042", "0x00450045"],
+    "timer_index": 0,
+    "treq": 59,
+    "timer_fraction": "3/15625",
+    "sample_rate_hz": 48000,
+    "timer_event_count": 25431,
+    "timer_miss_count": 24431,
+    "timer_miss_audio_not_busy": 24431,
+    "timer_miss_other_dma_selected": 0,
+    "timer_miss_no_dma_selected": 0,
+    "timer_miss_multiple_due_in_window": 0,
+    "timer_due_cycle_sha256": "cb17d6bdb5643b3abe64e1d96f3b2590b954347ed46e6f81e182cc842b065054",
+    "block_start_count": 8,
+    "block_frame_min": 128,
+    "block_frame_max": 128,
+    "malformed_block_count": 0,
+    "block_boundary_gap_count": 7,
+    "block_boundary_gap_min_cycles": 20833,
+    "block_boundary_gap_max_cycles": 20834,
+    "block_boundary_gap_sha256": "7e6d1b1dbd60c77ea8cd74989ee6b5dc6cb660498393f70139c3423b75de3fdc",
+    "gap_5208_count": 662,
+    "gap_5209_count": 330,
+    "unexpected_gap_count": 0,
+    "service_latency_min_cycles": 0,
+    "service_latency_max_cycles": 0,
+    "service_latency_sha256": "668946bab9868b28489bb906205ee1026045c8bcd3ca62a1bdf733c65491351b"
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "tetris-preview-audio-smoke.json",
+    "name": "tetris-preview-audio-smoke",
+    "description": "Short deterministic preview fixture: reach the game marker and keep the machine alive long enough to emit the boot PCM blocks.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 2,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "game started", "status": "pass", "at_ms": 515, "at_cycles": 127528659, "detail": "1387 UART bytes seen"},
+      {"index": 1, "op": "wait", "label": "audio preview window", "status": "pass", "at_ms": 1015, "at_cycles": 252528659, "detail": "waited 500 ms"}
+    ]
+  },
+  "uart": {"bytes": 1387, "sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"}
+}

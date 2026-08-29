@@ -2365,8 +2365,20 @@ def _terminate_child(process) -> None:
 
 
 def _run_preview_replay(
-    contract: dict, scenario: Path, cycle_limit: int, snapshot_dir: Path, timeout_seconds: float
+    contract: dict,
+    scenario: Path,
+    cycle_limit: int,
+    snapshot_dir: Path,
+    timeout_seconds: float,
+    audio_monitor=None,
 ) -> tuple[dict, dict]:
+    """Replay a scenario and optionally feed PCM to a host-only monitor.
+
+    The monitor is deliberately a callback on the presentation side.  It is
+    never consulted for completion, digest, or error handling, so a bounded
+    host queue cannot change the authoritative preview result.  Keeping this
+    hook optional preserves the existing VRP-2 digest gate's no-monitor path.
+    """
     argv = list(contract["argv"])
     argv.extend(
         [
@@ -2396,6 +2408,11 @@ def _run_preview_replay(
                 raise ValueError("preview replay did not start with hello")
             if kind == 1 and expected_sequence != 1:
                 raise ValueError("preview replay hello was not the first frame")
+            if kind == 4 and audio_monitor is not None:
+                # _preview_read_frame has already validated the schema-1 PCM
+                # dimensions.  A host-side parse/resampling failure is a
+                # monitor diagnostic, not an emulation verdict.
+                audio_monitor.consume_payload(payload)
             if kind == 2:
                 status = _preview_json_payload(payload)
                 replay = status.get("replay") if isinstance(status, dict) else None

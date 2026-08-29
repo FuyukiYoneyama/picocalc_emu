@@ -29,6 +29,7 @@ already validated run.
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
 | [`VRP3_GUI_20260829.md`](VRP3_GUI_20260829.md) | Tk GUI, PicoCalc skin/LCD composition, UART0 console, input, reset/reload, and local WSLg acceptance |
 | [`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md) | Bounded host PCM monitor, resampling, drop accounting, and local acceptance boundary |
+| [`../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json`](../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json) | Formal VRP-4 `off`/`on`/`forced-drop` registered-target evidence |
 
 ## VRP-2-e real-target closure
 
@@ -113,7 +114,9 @@ service-latency digests).  The optional `--audio-analysis` loudness/rail
 statistics are deliberately not mixed into this digest; they require a
 separate host-monitor path.  VRP-4 now provides that path for the interactive
 preview, but its PCM transport, player state, resampling, and drop counters
-remain outside the exactness digest.
+remain outside the exactness digest.  The formal registered-target
+three-condition gate for this monitor is closed locally; its evidence is
+listed below.
 
 VRP-0 intentionally did not add `winit`, `cpal`, a GUI executable, or a
 preview IPC implementation. VRP-1/2 added receipt/admission and the
@@ -142,5 +145,7 @@ without changing the emulated run.  A missing player is `timing-only`; a
 player/queue/ingress/IPC loss is `degraded`, not an emulator verdict.
 
 The implementation details, status fields, reset `stream_epoch` semantics,
-local commands, and the remaining formal three-condition gate are recorded in
-[`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md).
+local commands, and the formal three-condition gate result are recorded in
+[`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md).  The gate
+uses target `picotetris-opt1b-vrp4` revision 9 and is retained as the
+versioned record under `firmware-validation/records/`.

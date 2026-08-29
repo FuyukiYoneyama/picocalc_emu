@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "tetris-preview-audio-smoke",
+  "description": "Short deterministic preview fixture: reach the game marker and keep the machine alive long enough to emit the boot PCM blocks.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "game started",
+      "timeout_ms": 20000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[TETRIS] start"
+      }
+    },
+    {
+      "op": "wait",
+      "label": "audio preview window",
+      "ms": 500
+    }
+  ]
+}

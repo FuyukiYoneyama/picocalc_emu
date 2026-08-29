@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "roadmap_package": "R4",
+  "record_id": "vrp4-picotetris-20260829-01",
+  "title": "VRP-4 registered-target bounded host audio monitor acceptance",
+  "result": "pass",
+  "target": {
+    "id": "picotetris-opt1b-vrp4",
+    "revision": 9,
+    "contract_sha256": "ec6cdb8f8eafc86bc64da3699403c57095c9ea20af1adb93fe2ebfb26b78bb92"
+  },
+  "firmware_run": {
+    "backend_commit": "65c795e87321e79b960ac8a7495a205de6a24ec0",
+    "backend_dirty": false,
+    "target": {
+      "id": "picotetris-opt1b-vrp4",
+      "revision": 9,
+      "contract_sha256": "ec6cdb8f8eafc86bc64da3699403c57095c9ea20af1adb93fe2ebfb26b78bb92"
+    },
+    "firmware_bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "runner_sha256": "613aa318e546cea1b89934e2ee3091b640ca8cf4860abfefa7f668ec0395bf2c",
+    "scenario_sha256": "f9e6773f12085172ba95bace241d6edc0ab85bd3a0c1f4aeb1b7f68ea2acf9bc",
+    "cycles": 252528659,
+    "elapsed_us": 1015000,
+    "stop_reason": "scenario_done",
+    "verdict": "pass",
+    "normalized_report_sha256": "2749cb4eed5f14fe010cfa3f8490f640738fd2fbc2dfc4c85a2fcce811c6e3ef",
+    "timeline_sha256": "674e10fda1b7a324afec4d43385d8ae347a254710f8a41d1349d7dde7fc80bfb",
+    "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+    "framebuffer_rgb565_sha256": "9ebf46df1ad3007f7f023cc94b94c65abf523f8d203cfc09ebb8846bdc9e9c9b",
+    "audio_observation_status": "pass",
+    "audio_pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+    "audio_dma_write_count": 1000,
+    "report": {
+      "path": "firmware-validation/records/vrp4-picotetris-20260829-01/run-report.json",
+      "sha256": "daad3495e63edc8aec1d0b72934f62a455593489c89ada59be685a1084623534"
+    },
+    "audio_analysis": {
+      "path": "firmware-validation/records/vrp4-picotetris-20260829-01/audio-analysis.json",
+      "sha256": "5c2e437d0d34217f7e4aef1998e2805749a6f1f6d7ed804e1a8d7d60f2033374",
+      "schema_version": 1
+    }
+  },
+  "preview_audio_monitor": {
+    "gate": "VRP-4-registered-target-audio-monitor",
+    "status": "pass",
+    "descriptor": "firmware-validation/records/vrp4-picotetris-20260829-01/admitted-descriptor.json",
+    "evidence": "firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json",
+    "evidence_sha256": "9239bd8d57806b43b85607456ab4dab57442419905740a700bd530afaeffc49e",
+    "conditions": ["off", "on", "forced-drop"],
+    "authoritative_observation_unchanged": true,
+    "boundary": {
+      "virtual_cycle": 252528659,
+      "digest_sha256": "1cc632e5f1b4f580b671642f78cfe814377211a49ac8cc2018e324db872d696b",
+      "message_count": 145297
+    },
+    "condition_summary": {
+      "off": {
+        "state": "off",
+        "frames_received": 1000,
+        "frames_sent": 0,
+        "host_queue_drop_count": 0
+      },
+      "on": {
+        "state": "streaming",
+        "frames_received": 1000,
+        "frames_sent": 1000,
+        "host_queue_drop_count": 0
+      },
+      "forced-drop": {
+        "state": "degraded",
+        "frames_received": 1000,
+        "frames_sent": 0,
+        "host_queue_drop_count": 8
+      }
+    },
+    "comparisons": {
+      "off_on": {
+        "cycle_equal": true,
+        "digest_equal": true,
+        "projection_equal": true,
+        "message_sequence_equal": true
+      },
+      "off_forced_drop": {
+        "cycle_equal": true,
+        "digest_equal": true,
+        "projection_equal": true,
+        "message_sequence_equal": true
+      }
+    }
+  }
+}
