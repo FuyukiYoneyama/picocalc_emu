@@ -1,6 +1,6 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-3 complete locally; VRP-4 onward remains**
+Status: **Current implementation plan / VRP-0〜VRP-4 implemented locally; formal VRP-4 gate and VRP-5 onward remain**
 Date: 2026-08-28 (updated 2026-08-29)
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
@@ -50,7 +50,7 @@ targetを追加できるが、既存entryを上書きしてはならない。pre
 | pacer metric | cycle、wall、emulation、spin、behind count | rolling ratioとlagはcold pathで導出・追加する |
 | framebuffer | PicoCalc LCD modelからRGB565 snapshotを取得可能 | presentation cadenceでのみcopyする |
 | keyboard | `MachineSession`のpressed/held/released入力が存在 | OS auto-repeatだけfrontendで抑止する |
-| audio | 現在はrun終了時に全PCMを回収する診断capture | bounded streaming tapが必要。emulated sinkは止めない |
+| audio | run終了時captureに加え、VRP-4でbounded preview PCM tapを実装 | host monitorはpresentation専用。emulated sink／exactness digestは独立 |
 | validation wrapper | BIN、backend commit、reportをfail-closed検査 | 実runner bytesとreceiptの固定を追加する |
 | GUI/audio dependency | workspaceには専用GUI/audio stackなし | 最初にWSLg build/runとlicenseを小規模確認する |
 
@@ -431,16 +431,16 @@ machine APIのreport生成経路は変更していない。現在はpreviewとba
 cycleで走らせるbackend／machine／previewの三者比較を、board-backed synthetic UART fixtureの
 report-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）として追加した。
 これはregistered target admissionへ接続した完全なdigest gateとは別の、初期実装時点のsmokeである。
-PCMは`audio.state=not_streamed`として明示し、bounded host audioはVRP-4の責務と
-する。backend側の利用・制約は
+PCMは`audio.state=not_streamed`として明示し、host側のbounded monitorはVRP-4で実装済みである。
+backend側の利用・制約は
 [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md)
 を参照する。
 
 VRP-2-c／dの互換性・UART RX証拠、VRP-2-eのgate実装・fake-target検査、実targetのcomplete digest
 受入は完了した。VRP-2-eの実target記録は上記のversioned revisionと証拠ディレクトリを参照する。
-ただしこれはGUI、host audio transport、実機hardware correlation、または`realtime-1x-qualified`
-を意味しない。次はVRP-3 GUI/input、VRP-4 audio、VRP-5 qualification、VRP-6 capability/docsであり、
-VRP-7 exact optimizationはVRP-5で1倍未達を確認した場合だけ開始する。
+ただしこれはGUI、host audio qualification、実機hardware correlation、または`realtime-1x-qualified`
+を意味しない。次はVRP-5 qualification、VRP-6 capability/docsであり、VRP-7 exact optimizationは
+VRP-5で1倍未達を確認した場合だけ開始する。
 
 ### VRP-3: GUI・本体スキン・LCD・keyboard・UART・reset/reload（24〜36時間）
 
@@ -479,7 +479,8 @@ raw-hex RX入力、accepted／overrunのbackend counterを表示する。TkのOS
 Ctrl+Rはadmissionを再実行して成功時だけsticky stateをclear、変更／欠落時は
 `VALIDATION LOST — RELOAD REFUSED`を表示する。F12はpresentation screenshot、Escはpreview quitへ予約する。
 backendのerror、coverage停止、unsupported/truncated attribution、IPC読取失敗はsticky UX-invalidとして
-表示し、GUIは終了コード2を返す。`audio=not_streamed`は維持し、host PCM再生はVRP-4へ残す。
+表示し、GUIは終了コード2を返す。`audio=not_streamed`はauthoritative digestのlegacy fieldとして維持し、
+host PCM再生は別の`audio_monitor` statusでVRP-4が扱う。
 
 headlessな`tests/test_preview_gui.py`でPCRP input fixture、方向／payload fail-closed、RGB565変換、
 key down/held/up、OS repeat抑止、UART entry focus、reset／成功・拒否reload、sticky stateを検査した。
@@ -487,23 +488,39 @@ key down/held/up、OS repeat抑止、UART entry focus、reset／成功・拒否r
 smokeとして行う。WSLg実行では登録済み`picoedit-r1-vrp2f`の
 descriptorを使い、本体window・自動UART0 window・初期frame・clean child shutdownを確認した。詳細と
 実行境界は[`validated-realtime-preview/VRP3_GUI_20260829.md`](validated-realtime-preview/VRP3_GUI_20260829.md)
-に固定する。これはGUI機能の完了であり、host audio playback、hardware verdict、`realtime-1x-qualified`
-昇格を意味しない。
+に固定する。これはGUI機能の完了であり、host audio playbackの正式gate、hardware verdict、
+`realtime-1x-qualified`昇格を意味しない。
 
 ### VRP-4: bounded host audio monitor（16〜28時間）
 
-既存のrun全体`Vec<i16>` captureとは別に、preview専用のbounded PCM tapを追加する。
+既存のrun全体`Vec<i16>` captureとは別に、preview専用のbounded PCM tapとhost presentationを実装した。
+これは音声の聴感・実機speaker品質を判定するoracleではなく、emulated PWM/DMA/audio sinkを止めずに
+PCMを観測するための補助経路である。
 
-- emulated PWM/DMA/audio sinkを常に進める
-- transport ringが満杯ならhost向けblockだけをdropし、drop countを増やす
-- host underrun/overrun/drop時は`Audio: degraded`
-- unsupported streamは`timing-only`
-- mute/gainはhost monitorだけに作用
-- smoothing、EQ、compressor、enhancementを標準経路へ入れない
-- sample rate変更時はtransport resamplingを明示し、元rate/timingをstatusへ残す
+- backend tapは最大8 block、各blockは最大128 source frame。tap満杯時はhost向けblockだけをdropし、
+  authoritative sink／cycle／report digestには影響させない
+- runner出力は最大256 framed messageの非同期bounded writer、frontend ingressは512 eventのbounded queue。
+  audio／frame／statusだけをlossyとし、UART／error／hello／goodbye等はfail-closedで保持する
+- host queueは`--audio-queue-blocks`で上限を指定し、player停止・queue満杯・IPC／ingress dropを個別counterへ記録する
+- source blockは128 frame上限、source rate/channelsを保持する。frontendは22,050／48,000 Hz等を
+  bounded stateful linear resamplerで`--audio-host-rate`へ変換し、resampled blockは4096 frameを上限とする
+- `--audio off`はhost再生だけを無効化し、`audio.state=not_streamed`を含むauthoritative observationを変えない
+- playerなしは`timing-only`、player／queue／payload／transport失敗は`degraded`として表示する。gain、mute、
+  smoothing、EQ、compressor、enhancementをemulated pathへ入れない
+- F5／Ctrl+RはPCM queueとresamplerを破棄して`stream_epoch`を進める。drop／underrun等の診断counterは
+  GUI process内で累積し、epochでrun境界を区別する
 
-**完了gate:** monitor off/on/forced dropの3条件で、同じvirtual boundaryのaudio event digest、cycle、
-UART、framebufferが一致する。host failureがemulator停止やfalse PASSへ変換されない。
+実装詳細・status定義・局所的な受入境界は
+[`validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)に固定した。
+
+**実装結果（2026-08-29、local）:** backend／frontendのunit・E2E、可変rate／block、bounded resampling、
+player終了、host／ingress／IPC drop、reset epoch、authoritative tap isolationを確認した。非同期output
+writerのforced-drop testも追加し、emulation threadが遅いhost sinkを待たないことを検査した。
+
+**完了gate（正式記録待ち）:** monitor off/on/forced dropの3条件で、同じvirtual boundaryのaudio event digest、
+cycle、UART、framebufferが一致し、host failureがemulator停止やfalse PASSへ変換されないことを、同じ
+registered target／backend／BINのversioned evidenceへ固定する。実装と局所テストは完了したが、この3条件の
+registered-target evidenceが作成されるまでVRP-4をformal qualified capabilityへ昇格しない。
 
 ### VRP-5: baseline・threshold決定・qualification（10〜18時間 + 実測時間）
 
@@ -564,16 +581,16 @@ timing/audio UX判定には使わない。
 | 2 | VRP-1 receipt/admission | **完了 2026-08-28** |
 | 3 | VRP-2 shared session/preview API | **完了 2026-08-29。VRP-2-a〜d、VRP-2-eのgate実装・fake-target検査、clean backend・実BIN・fresh complete audio reportによるregistered-target四者digest受入を完了。受入targetは`picotetris-opt1b-vrp2f` r8／`picoedit-r1-vrp2f` r4** |
 | 4 | VRP-3 GUI/skin/LCD/keyboard/UART/reset/reload | **完了 2026-08-29。Tk薄型frontend、PicoCalc skin、UART0 console、入力／reset／reload／sticky gateをローカル受入** |
-| 5 | VRP-4 audio monitor | 未着手 |
+| 5 | VRP-4 bounded host audio monitor | **実装完了 2026-08-29（local unit／E2E。registered-target off/on/forced-drop evidenceとformal gateは未完了）** |
 | 6 | VRP-NES-0 NES-class target/fixture（VRP-5正式qualification前に完了） | 未着手 |
 | 7 | VRP-5 baseline/threshold/qualification | 未着手 |
 | 8 | VRP-6 capability/docs/versioning | 未着手 |
 | 9 | VRP-7 exact optimization | 条件付き。VRP-5判断前は着手しない |
 
 VRP-0〜VRP-6のpreview実装中心工数は、今回追加したregistered-target closureを含めて
-**112〜192時間 + 実測時間**である（本体スキン校正とUART RX/TXを含む）。VRP-2の初期API、
+**128〜220時間 + 実測時間**である（本体スキン校正、UART RX/TX、bounded host audio monitorを含む）。VRP-2の初期API、
 versioned target、descriptor consumer、machine API transcript、UART RX正常系、registered-target digest
-closure、VRP-3 GUI/inputは完了している。今後の工数はVRP-4以降のaudio／qualificationで見積もる。
+closure、VRP-3 GUI/input、VRP-4の実装とlocal testは完了している。今後の工数はVRP-4 formal evidence、qualificationで見積もる。
 正式な1倍qualificationまで行う場合は、これにVRP-NES-0の**10〜20時間**とその測定時間を加える。
 VRP-7は結果依存で別枠とする。
 GUIだけを先に作るとadmissionとbackend identityを後付けすることになるため、順序を入れ替えない。

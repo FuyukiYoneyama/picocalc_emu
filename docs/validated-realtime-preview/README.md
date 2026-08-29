@@ -1,9 +1,10 @@
-# Validated Realtime Preview: VRP-0〜VRP-3 contracts, evidence, and GUI
+# Validated Realtime Preview: VRP-0〜VRP-4 contracts, evidence, and GUI
 
 This directory contains the immutable, machine-readable inputs and local
-evidence produced by VRP-0 through VRP-3. The registered-target complete
+evidence produced by VRP-0 through VRP-4. The registered-target complete
 digest gate is closed for the two versioned targets recorded below. It is a
-contract, provenance, admission, and GUI implementation record.
+contract, provenance, admission, GUI, and bounded host-audio-monitor
+implementation record.
 The files are deliberately kept separate from `firmware-validation/records/`:
 the latter are existing validation evidence, while these files describe the
 preview transport, admission receipt, and thin frontend that consumes an
@@ -27,6 +28,7 @@ already validated run.
 | [`VRP2CD_MACHINE_UART_20260829.md`](VRP2CD_MACHINE_UART_20260829.md) | Machine API schema-1 golden transcript and UART RX/overrun evidence |
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
 | [`VRP3_GUI_20260829.md`](VRP3_GUI_20260829.md) | Tk GUI, PicoCalc skin/LCD composition, UART0 console, input, reset/reload, and local WSLg acceptance |
+| [`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md) | Bounded host PCM monitor, resampling, drop accounting, and local acceptance boundary |
 
 ## VRP-2-e real-target closure
 
@@ -109,11 +111,36 @@ The VRP-2 digest's audio member is the complete bounded DMA-to-PWM surface
 already present in schema-8 `audio_sink` (including due-cycle, block-gap, and
 service-latency digests).  The optional `--audio-analysis` loudness/rail
 statistics are deliberately not mixed into this digest; they require a
-separate versioned monitor contract in VRP-4.
+separate host-monitor path.  VRP-4 now provides that path for the interactive
+preview, but its PCM transport, player state, resampling, and drop counters
+remain outside the exactness digest.
 
 VRP-0 intentionally did not add `winit`, `cpal`, a GUI executable, or a
 preview IPC implementation. VRP-1/2 added receipt/admission and the
 authoritative preview backend. VRP-3 adds the standard-library Python/Tk
-frontend, but no Rust GUI/audio dependency and no emulator-core copy. The
-GUI does not promote host audio transport, hardware correlation, or
-`realtime-1x-qualified`; those remain VRP-4/5 gates.
+frontend, but no Rust GUI/audio dependency and no emulator-core copy. VRP-4
+adds a bounded, optional host PCM monitor using the existing PCRP stream and
+an external `ffplay` process when available. The GUI and monitor do not
+promote hardware correlation or `realtime-1x-qualified`; those remain VRP-5
+and later gates.
+
+## VRP-4 host audio monitor
+
+The monitor is host presentation only.  The backend's emulated PWM/DMA sink
+always advances independently, while a fixed-capacity tap and asynchronous
+PCRP writer prevent a slow GUI or player from blocking virtual time.  The
+frontend event queue and host-player queue are also bounded; audio, frame, and
+status presentation data may be dropped under pressure and each layer reports
+its own counter.  UART, error, goodbye, and other control/diagnostic frames
+remain fail-closed.
+
+PCRP audio blocks contain at most 128 source frames and retain their source
+sample rate.  The host monitor accepts variable rates such as 22,050 and
+48,000 Hz, performs bounded stateful resampling to `--audio-host-rate`, and
+guards the resampled block at 4096 frames.  `--audio off` disables playback
+without changing the emulated run.  A missing player is `timing-only`; a
+player/queue/ingress/IPC loss is `degraded`, not an emulator verdict.
+
+The implementation details, status fields, reset `stream_epoch` semantics,
+local commands, and the remaining formal three-condition gate are recorded in
+[`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md).

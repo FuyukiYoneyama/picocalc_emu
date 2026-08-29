@@ -30,6 +30,9 @@ MAGIC = b"PCRP"
 PROTOCOL_VERSION = 1
 HEADER_SIZE = 16
 MAX_PAYLOAD = 8 * 1024 * 1024
+MAX_AUDIO_BLOCK_FRAMES = 128
+MAX_RESAMPLED_BLOCK_FRAMES = 4096
+EVENT_QUEUE_CAPACITY = 512
 DEFAULT_SKIN_SHA256 = "382c5d0a33225e3771c40ab0c3b0a421a87b82bc6104a1cb2bd22d8711d467da"
 DEFAULT_SKIN_SIZE = (607, 1026)
 LCD_SIZE = (320, 320)
@@ -126,7 +129,13 @@ def _validate_binary_payload(kind: int, payload: bytes) -> None:
         channels = int.from_bytes(payload[12:14], "little")
         frames = int.from_bytes(payload[14:16], "little")
         expected = 16 + frames * channels * 2
-        if channels == 0 or len(payload) != expected:
+        if channels == 0:
+            raise PreviewProtocolError("audio_pcm_s16 channels must be non-zero")
+        if frames > MAX_AUDIO_BLOCK_FRAMES:
+            raise PreviewProtocolError(
+                "audio_pcm_s16 frames exceed per-block limit {}".format(MAX_AUDIO_BLOCK_FRAMES)
+            )
+        if len(payload) != expected:
             raise PreviewProtocolError("audio_pcm_s16 payload length is invalid")
     if kind in (KIND_HELLO, KIND_STATUS, KIND_ERROR, KIND_GOODBYE):
         try:
@@ -187,6 +196,421 @@ def parse_rgb565_payload(payload: bytes) -> Tuple[int, int, int, bytes]:
         int.from_bytes(payload[10:12], "little"),
         payload[12:],
     )
+
+
+def parse_audio_pcm_payload(payload: bytes) -> Tuple[int, int, int, int, Tuple[int, ...]]:
+    """Return ``(cycle, source_rate, channels, frames, samples)`` for PCRP audio."""
+
+    _validate_binary_payload(KIND_AUDIO_PCM_S16, payload)
+    cycle = int.from_bytes(payload[0:8], "little")
+    source_rate = int.from_bytes(payload[8:12], "little")
+    channels = int.from_bytes(payload[12:14], "little")
+    frames = int.from_bytes(payload[14:16], "little")
+    samples = tuple(
+        int.from_bytes(payload[offset:offset + 2], "little", signed=True)
+        for offset in range(16, len(payload), 2)
+    )
+    return cycle, source_rate, channels, frames, samples
+
+
+class AudioResampler:
+    """Small stateful linear resampler used only by the host monitor.
+
+    The emulated sample stream is never changed.  This class converts one
+    source block at a time to the host rate while retaining at most the tail
+    needed to interpolate the next output frame, so memory is bounded by the
+    incoming block size.
+    """
+
+    def __init__(self, host_rate_hz: int = 48_000) -> None:
+        if host_rate_hz < 1:
+            raise ValueError("host sample rate must be positive")
+        self.host_rate_hz = int(host_rate_hz)
+        self.source_rate_hz = 0
+        self.channels = 0
+        self.resampled = False
+        self.rate_changes = 0
+        self.max_buffer_frames = 0
+        self._buffer: List[Tuple[int, ...]] = []
+        self._position = 0.0
+
+    def reset(self) -> None:
+        self.source_rate_hz = 0
+        self.channels = 0
+        self._buffer.clear()
+        self._position = 0.0
+
+    @staticmethod
+    def _clip(value: int) -> int:
+        return max(-32_768, min(32_767, int(value)))
+
+    def process(self, samples: Iterable[int], source_rate_hz: int, channels: int) -> List[int]:
+        if source_rate_hz < 1:
+            return []
+        if channels < 1:
+            raise ValueError("audio channels must be positive")
+        flat = tuple(int(sample) for sample in samples)
+        if len(flat) % channels:
+            raise ValueError("audio sample count is not divisible by channels")
+        input_frames = len(flat) // channels
+        if input_frames > MAX_AUDIO_BLOCK_FRAMES:
+            raise ValueError("audio block exceeds bounded frame limit")
+        estimated_output_frames = (
+            input_frames * self.host_rate_hz + source_rate_hz - 1
+        ) // source_rate_hz + 1
+        if estimated_output_frames > MAX_RESAMPLED_BLOCK_FRAMES:
+            raise ValueError("resampled audio block exceeds bounded frame limit")
+        if self.source_rate_hz and (
+            self.source_rate_hz != source_rate_hz or self.channels != channels
+        ):
+            self._buffer.clear()
+            self._position = 0.0
+            self.rate_changes += 1
+        self.source_rate_hz = source_rate_hz
+        self.channels = channels
+        if source_rate_hz == self.host_rate_hz:
+            self.resampled = False
+            return [self._clip(sample) for sample in flat]
+
+        self.resampled = True
+        frames = [
+            tuple(flat[index:index + channels])
+            for index in range(0, len(flat), channels)
+        ]
+        self._buffer.extend(frames)
+        self.max_buffer_frames = max(self.max_buffer_frames, len(self._buffer))
+        step = float(source_rate_hz) / float(self.host_rate_hz)
+        output: List[int] = []
+        while self._position + 1.0 < len(self._buffer):
+            index = int(self._position)
+            fraction = self._position - index
+            left = self._buffer[index]
+            right = self._buffer[index + 1]
+            for channel in range(channels):
+                value = left[channel] + (right[channel] - left[channel]) * fraction
+                output.append(self._clip(value))
+            self._position += step
+        drop = int(self._position)
+        if drop:
+            del self._buffer[:drop]
+            self._position -= drop
+        return output
+
+    def flush(self) -> List[int]:
+        """Emit a bounded tail using the final source frame at shutdown."""
+
+        if not self._buffer or self.source_rate_hz == self.host_rate_hz:
+            output = []
+        else:
+            step = float(self.source_rate_hz) / float(self.host_rate_hz)
+            output = []
+            while self._position < len(self._buffer):
+                frame = self._buffer[min(int(self._position), len(self._buffer) - 1)]
+                output.extend(self._clip(sample) for sample in frame)
+                self._position += step
+        self._buffer.clear()
+        self._position = 0.0
+        return output
+
+
+class AudioMonitor:
+    """Bounded, non-authoritative host PCM monitor.
+
+    A missing or failing host player changes only this monitor's state.  The
+    runner's virtual clock and validation projection never wait for or depend
+    on this worker thread.
+    """
+
+    def __init__(
+        self,
+        enabled: bool = True,
+        host_rate_hz: int = 48_000,
+        queue_blocks: int = 8,
+        player_command: Optional[List[str]] = None,
+    ) -> None:
+        if host_rate_hz < 1:
+            raise ValueError("host sample rate must be positive")
+        if queue_blocks < 1:
+            raise ValueError("audio queue capacity must be positive")
+        self.enabled = bool(enabled)
+        self.host_rate_hz = int(host_rate_hz)
+        self.queue_capacity_blocks = int(queue_blocks)
+        self.player_command = list(player_command) if player_command is not None else None
+        self.resampler = AudioResampler(self.host_rate_hz)
+        self._queue: "queue.Queue[Tuple[bytes, int]]" = queue.Queue(maxsize=self.queue_capacity_blocks)
+        self._lock = threading.Lock()
+        self._player: Optional[subprocess.Popen[bytes]] = None
+        self._player_channels = 0
+        self._player_failed = False
+        self._writer: Optional[threading.Thread] = None
+        self._sentinel: Tuple[bytes, int] = (b"", -1)
+        self._closed = False
+        self._state = "off" if not self.enabled else "inactive"
+        self._source_rate_hz = 0
+        self._source_channels = 0
+        self._queued_frames = 0
+        self._drop_count = 0
+        self._host_queue_drop_count = 0
+        self._ingress_drop_count = 0
+        self._underrun_count = 0
+        self._overrun_count = 0
+        self._frames_received = 0
+        self._frames_sent = 0
+        self._stream_epoch = 0
+
+    def _set_state(self, state: str) -> None:
+        with self._lock:
+            if self._state != "off":
+                self._state = state
+
+    def _command(self, channels: int) -> Optional[List[str]]:
+        command = self.player_command
+        if command is None:
+            executable = shutil.which("ffplay")
+            if executable is None:
+                return None
+            command = [executable]
+        if not command:
+            return None
+        return command + [
+            "-nodisp",
+            "-autoexit",
+            "-loglevel",
+            "quiet",
+            "-f",
+            "s16le",
+            "-ar",
+            str(self.host_rate_hz),
+            "-ac",
+            str(channels),
+            "-i",
+            "pipe:0",
+        ]
+
+    def _ensure_player(self, channels: int) -> bool:
+        if not self.enabled or self._closed:
+            return False
+        with self._lock:
+            if self._player_failed:
+                self._state = "degraded"
+                return False
+            if self._player is not None:
+                if self._player_channels != channels:
+                    self._state = "degraded"
+                    self._overrun_count += 1
+                    return False
+                if self._player.poll() is not None:
+                    dead_player = self._player
+                    self._player_failed = True
+                    self._underrun_count += 1
+                    self._state = "degraded"
+                    if dead_player.stdin is not None:
+                        try:
+                            dead_player.stdin.close()
+                        except OSError:
+                            pass
+                    return False
+                return True
+        command = self._command(channels)
+        if command is None:
+            self._set_state("timing-only")
+            return False
+        try:
+            player = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+            )
+        except (OSError, ValueError):
+            self._set_state("timing-only")
+            return False
+        with self._lock:
+            self._player = player
+            self._player_channels = channels
+            self._state = "streaming"
+        self._writer = threading.Thread(target=self._writer_loop, name="picocalc-audio-monitor", daemon=True)
+        self._writer.start()
+        return True
+
+    def _discard_pending(self) -> None:
+        while True:
+            try:
+                item = self._queue.get_nowait()
+            except queue.Empty:
+                return
+            self._queue.task_done()
+            if item != self._sentinel:
+                with self._lock:
+                    self._queued_frames = max(0, self._queued_frames - item[1])
+
+    def _writer_loop(self) -> None:
+        while True:
+            item = self._queue.get()
+            if item == self._sentinel:
+                self._queue.task_done()
+                return
+            payload, frames = item
+            with self._lock:
+                self._queued_frames = max(0, self._queued_frames - frames)
+                player = self._player
+            try:
+                if player is None or player.stdin is None or player.poll() is not None:
+                    raise BrokenPipeError("host audio player exited")
+                player.stdin.write(payload)
+                player.stdin.flush()
+            except (BrokenPipeError, OSError, ValueError):
+                with self._lock:
+                    self._underrun_count += 1
+                    self._player_failed = True
+                    self._state = "degraded"
+                if player is not None and player.stdin is not None:
+                    try:
+                        player.stdin.close()
+                    except OSError:
+                        pass
+                self._queue.task_done()
+                self._discard_pending()
+                return
+            else:
+                with self._lock:
+                    self._frames_sent += frames
+                self._queue.task_done()
+
+    def consume_payload(self, payload: bytes) -> bool:
+        try:
+            _cycle, source_rate, channels, frames, samples = parse_audio_pcm_payload(payload)
+        except (PreviewProtocolError, ValueError):
+            with self._lock:
+                self._state = "degraded" if self.enabled else "off"
+            return False
+        with self._lock:
+            self._source_rate_hz = source_rate
+            self._source_channels = channels
+            self._frames_received += frames
+        if frames == 0 or source_rate == 0:
+            if self.enabled:
+                self._set_state("timing-only")
+            return True
+        try:
+            converted = self.resampler.process(samples, source_rate, channels)
+        except ValueError:
+            self._set_state("degraded")
+            return False
+        if not self.enabled or not converted:
+            return True
+        if not self._ensure_player(channels):
+            return True
+        with self._lock:
+            if self._player_channels != channels:
+                self._state = "degraded"
+                self._overrun_count += 1
+                return True
+        output_frames = len(converted) // channels
+        output = b"".join(int(sample).to_bytes(2, "little", signed=True) for sample in converted)
+        try:
+            self._queue.put_nowait((output, output_frames))
+        except queue.Full:
+            with self._lock:
+                self._drop_count += 1
+                self._host_queue_drop_count += 1
+                self._overrun_count += 1
+                self._state = "degraded"
+        else:
+            with self._lock:
+                self._queued_frames += output_frames
+        return True
+
+    def record_ingress_drop(self, count: int = 1) -> None:
+        """Record audio frames discarded before they reached this monitor.
+
+        The preview reader is also bounded.  Its drops are separate from the
+        monitor's own player queue drops, but both are host-transport loss and
+        therefore degrade the monitor without invalidating emulation.
+        """
+
+        if count < 1:
+            return
+        with self._lock:
+            self._drop_count += count
+            self._ingress_drop_count += count
+            self._overrun_count += count
+            if self.enabled:
+                self._state = "degraded"
+
+    def reset_stream(self) -> None:
+        self._discard_pending()
+        self.resampler.reset()
+        self.resampler.resampled = False
+        self.resampler.rate_changes = 0
+        self.resampler.max_buffer_frames = 0
+        with self._lock:
+            self._source_rate_hz = 0
+            self._source_channels = 0
+            self._stream_epoch += 1
+            if self._state != "off":
+                player_alive = (
+                    self._player is not None
+                    and self._player.poll() is None
+                    and not self._player_failed
+                )
+                self._state = "streaming" if player_alive else "inactive"
+
+    def status(self) -> Dict[str, Any]:
+        with self._lock:
+            state = self._state
+            return {
+                "capacity_blocks": self.queue_capacity_blocks,
+                "capacity_frames": self.queue_capacity_blocks * MAX_RESAMPLED_BLOCK_FRAMES,
+                "input_block_frames": MAX_AUDIO_BLOCK_FRAMES,
+                "max_output_block_frames": MAX_RESAMPLED_BLOCK_FRAMES,
+                "channels": self._source_channels,
+                "drop_count": self._drop_count,
+                "enabled": self.enabled,
+                "frames_received": self._frames_received,
+                "frames_sent": self._frames_sent,
+                "host_queue_drop_count": self._host_queue_drop_count,
+                "ingress_drop_count": self._ingress_drop_count,
+                "host_rate_hz": self.host_rate_hz,
+                "overrun_count": self._overrun_count,
+                "queue_frames": self._queued_frames,
+                "resampled": self.resampler.resampled,
+                "source_rate_hz": self._source_rate_hz,
+                "state": state,
+                "stream_epoch": self._stream_epoch,
+                "underrun_count": self._underrun_count,
+            }
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self._discard_pending()
+        try:
+            self._queue.put_nowait(self._sentinel)
+        except queue.Full:
+            self._discard_pending()
+            self._queue.put_nowait(self._sentinel)
+        if self._writer is not None:
+            self._writer.join(timeout=0.5)
+        player = self._player
+        if player is not None and player.stdin is not None:
+            try:
+                player.stdin.close()
+            except OSError:
+                pass
+        if player is not None and player.poll() is None:
+            try:
+                player.terminate()
+                player.wait(timeout=0.5)
+            except (OSError, subprocess.TimeoutExpired):
+                if player.poll() is None:
+                    player.kill()
+                    player.wait()
+        self._player = None
+        self._writer = None
+
 
 
 def rgb565_to_rgb888(pixel: int) -> Tuple[int, int, int]:
@@ -308,14 +732,55 @@ class PreviewProcess:
     def __init__(self, contract: Dict[str, Any]) -> None:
         self.contract = contract
         self.process: Optional[subprocess.Popen[bytes]] = None
-        self.events: "queue.Queue[PreviewEvent]" = queue.Queue()
+        self.events: "queue.Queue[PreviewEvent]" = queue.Queue(maxsize=EVENT_QUEUE_CAPACITY)
         self.stderr_lines: "queue.Queue[str]" = queue.Queue()
         self._send_lock = threading.Lock()
+        self._ingress_lock = threading.Lock()
+        self._audio_ingress_drop_count = 0
+        self._frame_ingress_drop_count = 0
+        self._status_ingress_drop_count = 0
         self._next_sequence = 0
         self._reader: Optional[threading.Thread] = None
         self._stderr_reader: Optional[threading.Thread] = None
         self._stop = threading.Event()
         self.saw_goodbye = False
+
+    def _enqueue_event(self, event: PreviewEvent) -> None:
+        """Keep the reader bounded while retaining control/diagnostic events."""
+
+        if event.kind in {KIND_AUDIO_PCM_S16, KIND_FRAME_RGB565, KIND_STATUS}:
+            try:
+                self.events.put_nowait(event)
+                return
+            except queue.Full:
+                with self._ingress_lock:
+                    if event.kind == KIND_AUDIO_PCM_S16:
+                        self._audio_ingress_drop_count += 1
+                    elif event.kind == KIND_FRAME_RGB565:
+                        self._frame_ingress_drop_count += 1
+                    else:
+                        self._status_ingress_drop_count += 1
+                return
+        while not self._stop.is_set():
+            try:
+                self.events.put(event, timeout=0.05)
+                return
+            except queue.Full:
+                continue
+
+    def take_ingress_drops(self) -> Tuple[int, int, int]:
+        """Return and clear reader-side drops (audio, frame, status)."""
+
+        with self._ingress_lock:
+            drops = (
+                self._audio_ingress_drop_count,
+                self._frame_ingress_drop_count,
+                self._status_ingress_drop_count,
+            )
+            self._audio_ingress_drop_count = 0
+            self._frame_ingress_drop_count = 0
+            self._status_ingress_drop_count = 0
+            return drops
 
     @property
     def next_sequence(self) -> int:
@@ -377,14 +842,14 @@ class PreviewProcess:
                 if len(payload) != length:
                     raise PreviewProtocolError("preview backend sent truncated payload")
                 _validate_binary_payload(kind, payload)
-                self.events.put(PreviewEvent(kind, payload))
+                self._enqueue_event(PreviewEvent(kind, payload))
                 sequence += 1
                 if kind == KIND_GOODBYE:
                     self.saw_goodbye = True
                     return
         except BaseException as error:  # reader errors must reach the UI as sticky invalid
             if not self._stop.is_set():
-                self.events.put(PreviewEvent(0, error=error))
+                self._enqueue_event(PreviewEvent(0, error=error))
 
     @staticmethod
     def _read_exact(stream: Any, length: int) -> bytes:
@@ -484,7 +949,9 @@ class PreviewState:
         self.uart_rx_count = 0
         self.uart_error_count = 0
         self.audio_frames = 0
+        self.audio_blocks = 0
         self.presentation_drop_count = 0
+        self.status_drop_count = 0
         self.diagnostics: Deque[str] = deque(maxlen=200)
         self.ux_invalid = False
         self.ux_reason = ""
@@ -540,6 +1007,7 @@ class PreviewState:
             self.diagnostics.append("TX @{}: 0x{:02x}".format(cycle, value))
         elif event.kind == KIND_AUDIO_PCM_S16:
             self.audio_frames += int.from_bytes(event.payload[14:16], "little")
+            self.audio_blocks += 1
         elif event.kind == KIND_ERROR:
             try:
                 value = json.loads(event.payload.decode("utf-8"))
@@ -553,7 +1021,11 @@ class PreviewState:
             self.goodbye = True
 
 
-def _status_text(state: PreviewState, skin_loaded: bool) -> str:
+def _status_text(
+    state: PreviewState,
+    skin_loaded: bool,
+    audio_monitor: Optional[AudioMonitor] = None,
+) -> str:
     status = state.latest_status
     pacer = status.get("pacer", {}) if isinstance(status, dict) else {}
     ratio = pacer.get("ratio_ppm")
@@ -561,6 +1033,21 @@ def _status_text(state: PreviewState, skin_loaded: bool) -> str:
     coverage = status.get("coverage", "unknown") if isinstance(status, dict) else "unknown"
     audio = status.get("audio", {}) if isinstance(status, dict) else {}
     audio_state = audio.get("state", "unknown") if isinstance(audio, dict) else "unknown"
+    monitor_status = (
+        audio_monitor.status()
+        if audio_monitor is not None
+        else status.get("audio_monitor", {})
+        if isinstance(status, dict)
+        else {}
+    )
+    backend_monitor_status = status.get("audio_monitor", {}) if isinstance(status, dict) else {}
+    if isinstance(monitor_status, dict) and monitor_status.get("state"):
+        audio_state = monitor_status["state"]
+    if (
+        isinstance(backend_monitor_status, dict)
+        and backend_monitor_status.get("state") == "degraded"
+    ):
+        audio_state = "degraded"
     uart = status.get("uart", {}) if isinstance(status, dict) else {}
     identity = "{} r{}".format(state.target_id, state.target_revision)
     receipt = state.receipt_id or "unknown"
@@ -581,7 +1068,33 @@ def _status_text(state: PreviewState, skin_loaded: bool) -> str:
         )
     )
     flags.append("coverage {}".format(coverage))
-    flags.append("audio {}".format(audio_state))
+    audio_detail = "audio {}".format(audio_state)
+    if isinstance(monitor_status, dict) and monitor_status:
+        audio_detail += " q{} drop{} underrun{}".format(
+            monitor_status.get("queue_frames", 0),
+            monitor_status.get("drop_count", 0),
+            monitor_status.get("underrun_count", 0),
+        )
+        audio_detail += " host_drop{} ingress_drop{}".format(
+            monitor_status.get("host_queue_drop_count", 0),
+            monitor_status.get("ingress_drop_count", 0),
+        )
+        audio_detail += " epoch{}".format(monitor_status.get("stream_epoch", 0))
+        if isinstance(backend_monitor_status, dict):
+            audio_detail += " backend_drop{} ipc_drop{}".format(
+                backend_monitor_status.get("dropped_blocks", 0),
+                backend_monitor_status.get("ipc_dropped_audio_blocks", 0),
+            )
+        source_rate = monitor_status.get(
+            "source_rate_hz", monitor_status.get("source_sample_rate_hz", 0)
+        )
+        host_rate = monitor_status.get("host_rate_hz", 0)
+        audio_detail += " src{}Hz host{}Hz{}".format(
+            source_rate,
+            host_rate,
+            " resampled" if monitor_status.get("resampled") else "",
+        )
+    flags.append(audio_detail)
     flags.append(
         "UART TX {} RX {} overrun {} disabled {} errors {}".format(
             uart.get("tx_bytes", state.uart_tx_count),
@@ -591,7 +1104,11 @@ def _status_text(state: PreviewState, skin_loaded: bool) -> str:
             state.uart_error_count,
         )
     )
-    flags.append("presentation drops {}".format(state.presentation_drop_count))
+    flags.append(
+        "presentation drops {} status drops {}".format(
+            state.presentation_drop_count, state.status_drop_count
+        )
+    )
     flags.append("skin {}".format("on" if skin_loaded else "unavailable"))
     if state.ux_invalid:
         flags.append("UX INVALID: {}".format(state.ux_reason))
@@ -615,6 +1132,9 @@ class PreviewApp:
         smoke_seconds: Optional[float] = None,
         skin_error: Optional[str] = None,
         backend_override: Optional[Path] = None,
+        audio_mode: str = "on",
+        audio_host_rate_hz: int = 48_000,
+        audio_queue_blocks: int = 8,
     ) -> None:
         try:
             import tkinter as tk
@@ -628,6 +1148,13 @@ class PreviewApp:
         self.screenshot_dir = screenshot_dir or Path.cwd() / "preview-screenshots"
         self.smoke_seconds = smoke_seconds
         self.backend_override = backend_override
+        if audio_mode not in {"on", "off"}:
+            raise ValueError("audio mode must be on or off")
+        self.audio_monitor = AudioMonitor(
+            enabled=audio_mode == "on",
+            host_rate_hz=audio_host_rate_hz,
+            queue_blocks=audio_queue_blocks,
+        )
         target = descriptor["target"]
         self.state = PreviewState(
             target["id"],
@@ -768,6 +1295,9 @@ class PreviewApp:
             # emitted before the reset command on the same PCRP stream.
             self.key_dispatcher.release_all()
             self.process.send_reset()
+            monitor = getattr(self, "audio_monitor", None)
+            if monitor is not None:
+                monitor.reset_stream()
             self.state.diagnostics.append("operator reset requested; sticky UX state retained")
         except (BrokenPipeError, OSError, RuntimeError, PreviewProtocolError) as error:
             self.state.mark_invalid("reset failed: {}".format(error))
@@ -815,7 +1345,12 @@ class PreviewApp:
             self.state.uart_rx_count = 0
             self.state.uart_error_count = 0
             self.state.audio_frames = 0
+            self.state.audio_blocks = 0
             self.state.presentation_drop_count = 0
+            self.state.status_drop_count = 0
+            monitor = getattr(self, "audio_monitor", None)
+            if monitor is not None:
+                monitor.reset_stream()
             self.state.goodbye = False
             self.state.diagnostics.append("admission revalidated; preview reloaded")
         except Exception as error:
@@ -863,6 +1398,13 @@ class PreviewApp:
     def _drain_events(self) -> None:
         if self._closed:
             return
+        take_ingress_drops = getattr(self.process, "take_ingress_drops", None)
+        if callable(take_ingress_drops):
+            audio_drops, frame_drops, status_drops = take_ingress_drops()
+            if audio_drops:
+                self.audio_monitor.record_ingress_drop(audio_drops)
+            self.state.presentation_drop_count += frame_drops
+            self.state.status_drop_count += status_drops
         latest_frame: Optional[PreviewEvent] = None
         while True:
             try:
@@ -874,6 +1416,8 @@ class PreviewApp:
                     self.state.presentation_drop_count += 1
                 latest_frame = event
             else:
+                if event.kind == KIND_AUDIO_PCM_S16:
+                    self.audio_monitor.consume_payload(event.payload)
                 self.state.apply(event)
                 if event.kind == KIND_UART_TX:
                     self.console.append_tx(event.payload)
@@ -906,7 +1450,9 @@ class PreviewApp:
             self.state.mark_invalid(
                 "preview backend exited before goodbye (status {})".format(child.returncode)
             )
-        self.status_var.set(_status_text(self.state, self.skin_photo is not None))
+        self.status_var.set(
+            _status_text(self.state, self.skin_photo is not None, self.audio_monitor)
+        )
         self.root.after(30, self._drain_events)
 
     def save_screenshot(self) -> Path:
@@ -948,6 +1494,9 @@ class PreviewApp:
             return
         self._closed = True
         self.key_dispatcher.release_all()
+        monitor = getattr(self, "audio_monitor", None)
+        if monitor is not None:
+            monitor.close()
         self.process.stop()
         try:
             self.console.close_window()
@@ -1028,6 +1577,9 @@ def run_gui(
     scale: int,
     screenshot_dir: Optional[Path],
     smoke_seconds: Optional[float] = None,
+    audio_mode: str = "on",
+    audio_host_rate_hz: int = 48_000,
+    audio_queue_blocks: int = 8,
 ) -> int:
     """Validate an admitted descriptor, then run the two-window preview."""
 
@@ -1070,6 +1622,9 @@ def run_gui(
             smoke_seconds,
             skin_error,
             backend_override,
+            audio_mode,
+            audio_host_rate_hz,
+            audio_queue_blocks,
         )
         app.run()
         return 0 if not app.state.ux_invalid else 2
@@ -1080,6 +1635,7 @@ def run_gui(
 
 
 __all__ = [
+    "EVENT_QUEUE_CAPACITY",
     "KIND_AUDIO_PCM_S16",
     "KIND_ERROR",
     "KIND_FRAME_RGB565",
@@ -1091,6 +1647,10 @@ __all__ = [
     "KIND_STATUS",
     "KIND_UART_RX",
     "KIND_UART_TX",
+    "MAX_AUDIO_BLOCK_FRAMES",
+    "MAX_RESAMPLED_BLOCK_FRAMES",
+    "AudioMonitor",
+    "AudioResampler",
     "KeyDispatcher",
     "PreviewEvent",
     "PreviewProcess",
@@ -1102,6 +1662,7 @@ __all__ = [
     "encode_key_event",
     "encode_uart_rx",
     "parse_rgb565_payload",
+    "parse_audio_pcm_payload",
     "rgb565_to_ppm",
     "run_gui",
 ]

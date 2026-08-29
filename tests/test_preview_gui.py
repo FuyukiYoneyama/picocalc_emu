@@ -8,6 +8,7 @@ The WSLg window/UART smoke is performed separately with ``preview-gui
 import importlib.util
 import json
 import sys
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -329,6 +330,150 @@ class PreviewGuiContractTests(unittest.TestCase):
             self.preview.encode_uart_rx(0, 256)
         with self.assertRaises(self.preview.PreviewProtocolError):
             self.preview.encode_key_event(0, "A", "repeat")
+
+    @staticmethod
+    def audio_payload(rate=22_050, channels=2, frames=32, cycle=123):
+        samples = []
+        for frame in range(frames):
+            for channel in range(channels):
+                samples.append((frame * 17 + channel * 3) % 32_768)
+        payload = (
+            cycle.to_bytes(8, "little")
+            + rate.to_bytes(4, "little")
+            + channels.to_bytes(2, "little")
+            + frames.to_bytes(2, "little")
+        )
+        return payload + b"".join(sample.to_bytes(2, "little", signed=True) for sample in samples)
+
+    def test_audio_payload_accepts_variable_rate_and_block_length(self):
+        payload = self.audio_payload(rate=22_050, frames=32)
+        cycle, rate, channels, frames, samples = self.preview.parse_audio_pcm_payload(payload)
+        self.assertEqual((cycle, rate, channels, frames), (123, 22_050, 2, 32))
+        self.assertEqual(len(samples), 64)
+        self.assertEqual(samples[:4], (0, 3, 17, 20))
+
+    def test_audio_payload_rejects_unbounded_source_block(self):
+        with self.assertRaises(self.preview.PreviewProtocolError):
+            self.preview.parse_audio_pcm_payload(self.audio_payload(frames=129))
+
+    def test_audio_resampler_is_stateful_and_bounded(self):
+        resampler = self.preview.AudioResampler(48_000)
+        first = resampler.process((0, 0) * 32, 22_050, 2)
+        second = resampler.process((1_000, -1_000) * 32, 22_050, 2)
+        tail = resampler.flush()
+        self.assertTrue(resampler.resampled)
+        self.assertGreater(len(first) + len(second) + len(tail), 0)
+        self.assertLessEqual(resampler.max_buffer_frames, 64)
+        self.assertEqual(len(first) % 2, 0)
+        self.assertEqual(len(second) % 2, 0)
+
+    def test_audio_monitor_off_never_starts_a_host_process(self):
+        monitor = self.preview.AudioMonitor(enabled=False)
+        try:
+            self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000)))
+            status = monitor.status()
+            self.assertEqual(status["state"], "off")
+            self.assertEqual(status["frames_received"], 32)
+            self.assertEqual(status["frames_sent"], 0)
+            self.assertEqual(status["drop_count"], 0)
+        finally:
+            monitor.close()
+
+    def test_audio_monitor_queue_drop_is_degraded_but_nonfatal(self):
+        monitor = self.preview.AudioMonitor(enabled=True, queue_blocks=1)
+        monitor._player_channels = 2
+        with patch.object(monitor, "_ensure_player", return_value=True):
+            self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000)))
+            self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000, cycle=456)))
+        try:
+            status = monitor.status()
+            self.assertEqual(status["state"], "degraded")
+            self.assertEqual(status["drop_count"], 1)
+            self.assertEqual(status["host_queue_drop_count"], 1)
+            self.assertEqual(status["ingress_drop_count"], 0)
+            self.assertEqual(status["overrun_count"], 1)
+            self.assertEqual(status["queue_frames"], 32)
+            self.assertEqual(status["frames_received"], 64)
+        finally:
+            monitor.close()
+
+    def test_audio_monitor_records_reader_drops_separately(self):
+        monitor = self.preview.AudioMonitor(enabled=False)
+        try:
+            monitor.record_ingress_drop(3)
+            status = monitor.status()
+            self.assertEqual(status["state"], "off")
+            self.assertEqual(status["drop_count"], 3)
+            self.assertEqual(status["ingress_drop_count"], 3)
+            self.assertEqual(status["host_queue_drop_count"], 0)
+            self.assertEqual(status["overrun_count"], 3)
+        finally:
+            monitor.close()
+
+    def test_audio_monitor_reset_advances_stream_epoch_but_keeps_diagnostics(self):
+        monitor = self.preview.AudioMonitor(enabled=False)
+        try:
+            self.assertEqual(monitor.status()["stream_epoch"], 0)
+            monitor.record_ingress_drop()
+            monitor.reset_stream()
+            status = monitor.status()
+            self.assertEqual(status["stream_epoch"], 1)
+            self.assertEqual(status["drop_count"], 1)
+            self.assertEqual(status["ingress_drop_count"], 1)
+            self.assertEqual(status["source_rate_hz"], 0)
+        finally:
+            monitor.close()
+
+    def test_preview_process_event_queue_is_bounded_and_counts_ingress_drops(self):
+        process = self.preview.PreviewProcess({})
+        self.assertEqual(process.events.maxsize, self.preview.EVENT_QUEUE_CAPACITY)
+        process.events = self.preview.queue.Queue(maxsize=1)
+        process.events.put(self.preview.PreviewEvent(self.preview.KIND_STATUS, b"{}"))
+        process._enqueue_event(
+            self.preview.PreviewEvent(
+                self.preview.KIND_AUDIO_PCM_S16,
+                self.audio_payload(rate=48_000),
+            )
+        )
+        self.assertEqual(process.take_ingress_drops(), (1, 0, 0))
+
+    def test_audio_monitor_rejects_unbounded_resample_expansion(self):
+        monitor = self.preview.AudioMonitor(enabled=True)
+        try:
+            self.assertFalse(monitor.consume_payload(self.audio_payload(rate=1)))
+            self.assertEqual(monitor.status()["state"], "degraded")
+            self.assertEqual(monitor.status()["frames_received"], 32)
+        finally:
+            monitor.close()
+
+    def test_audio_monitor_player_exit_is_degraded_not_emulation_failure(self):
+        monitor = self.preview.AudioMonitor(
+            enabled=True,
+            player_command=[sys.executable, "-c", "import sys; sys.exit(0)"],
+        )
+        try:
+            self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000)))
+            deadline = time.monotonic() + 0.5
+            while time.monotonic() < deadline and monitor.status()["state"] == "streaming":
+                time.sleep(0.01)
+            # A second block observes an already-exited player even when the
+            # first short write raced with process startup.
+            self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000, cycle=456)))
+            status = monitor.status()
+            self.assertEqual(status["state"], "degraded")
+            self.assertGreaterEqual(status["underrun_count"], 1)
+        finally:
+            monitor.close()
+
+    def test_missing_host_player_is_timing_only(self):
+        with patch.object(self.preview.shutil, "which", return_value=None):
+            monitor = self.preview.AudioMonitor(enabled=True)
+            try:
+                self.assertTrue(monitor.consume_payload(self.audio_payload(rate=48_000)))
+                self.assertEqual(monitor.status()["state"], "timing-only")
+                self.assertEqual(monitor.status()["frames_received"], 32)
+            finally:
+                monitor.close()
 
 
 if __name__ == "__main__":

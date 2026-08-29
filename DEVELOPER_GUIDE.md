@@ -93,7 +93,7 @@ cargo clippy --locked --release \
 git diff --check
 ```
 
-### Validated Realtime Preview frontend (VRP-3)
+### Validated Realtime Preview frontend and host audio monitor (VRP-3／VRP-4)
 
 `tools/picocalc_preview.py`は、admitted descriptorのlaunch contractを再検証して
 `picocalc-run --preview-api`を子process起動する薄型Tk frontendです。GUIへemulator coreを
@@ -101,12 +101,20 @@ git diff --check
 `docs/validated-realtime-preview/preview-ipc-schema-v1.json`とfixtureをversion更新し、
 backend／consumer／negative testを同じ変更単位で更新します。
 
+VRP-4のhost audio monitorはbounded PCM tap、非同期IPC writer、frontend／host queue、可変source rate resamplingを
+使うpresentation専用経路です。`--audio off`、`--audio-host-rate`、`--audio-queue-blocks`はhost monitorだけを変更し、
+emulated sink、virtual cycle、UART、framebuffer、validation digest、descriptorには影響しません。playerなしは
+`timing-only`、queue／IPC／ingress／player障害は`degraded`であり、emulatorのPASS/FAILや実機speaker品質を示しません。
+VRP-4のformal registered-target off/on/forced-drop evidenceが揃うまでcapabilityへ昇格しません。
+
 VRP-3の表示処理（skin、RGB565変換、screenshot）はpresentation専用です。古いframeの描画を
 coalesceしてpresentation dropとして数えることは許可しますが、backendが発行したdevice event、
 status、UART、cycle、error、report digestを落としたり変更したりしてはいけません。UART consoleはPicoCalc UART0の仮想TX/RX wireであり、host
 stdin/stdoutやkeyboard入力と混同しません。F5 resetはsticky UX-invalidを保持し、Ctrl+Rは
-admission成功時だけ新childを起動します。`audio=not_streamed`をhost音声再生済みと説明せず、
-音声transportはVRP-4へ分離します。
+admission成功時だけ新childを起動します。`audio=not_streamed`はauthoritative digestのlegacy fieldであり、host音声
+再生済みを意味しません。host monitorの状態は別の`audio_monitor` statusで表示します。音声monitorを変更する場合は
+[`docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)
+とbackendのqueue／protocol testsを同じ変更単位で更新します。
 
 frontend変更の最小ローカルゲートは次です。
 

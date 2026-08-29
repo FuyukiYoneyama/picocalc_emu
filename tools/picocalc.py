@@ -2078,7 +2078,11 @@ def _preview_read_frame(stream, expected_sequence: int, deadline: float) -> tupl
             raise ValueError("preview PCM frame is truncated")
         channels = int.from_bytes(payload[12:14], "little")
         frames = int.from_bytes(payload[14:16], "little")
-        if channels == 0 or len(payload) != 16 + frames * channels * 2:
+        if channels == 0:
+            raise ValueError("preview PCM channel count is zero")
+        if frames > 128:
+            raise ValueError("preview PCM frames exceed the 128-frame block limit")
+        if len(payload) != 16 + frames * channels * 2:
             raise ValueError("preview PCM frame length is invalid")
     elif kind == 8 and len(payload) != 9:
         raise ValueError("preview UART TX frame length is invalid")
@@ -3706,6 +3710,18 @@ def main() -> int:
         "--smoke-seconds", type=float,
         help="close automatically after this duration for a local WSLg smoke test",
     )
+    preview_gui_parser.add_argument(
+        "--audio", choices=("on", "off"), default="on",
+        help="host PCM monitor mode (default: on; off keeps timing and emulation unchanged)",
+    )
+    preview_gui_parser.add_argument(
+        "--audio-host-rate", type=positive_int, default=48_000,
+        help="host PCM sample rate used only by the monitor/resampler (default: 48000)",
+    )
+    preview_gui_parser.add_argument(
+        "--audio-queue-blocks", type=positive_int, default=8,
+        help="bounded host audio queue capacity in 128-frame blocks (default: 8)",
+    )
 
     preview_headless_parser = subparsers.add_parser(
         "preview-headless",
@@ -3922,6 +3938,9 @@ def main() -> int:
             args.scale,
             args.screenshot_dir,
             args.smoke_seconds,
+            args.audio,
+            args.audio_host_rate,
+            args.audio_queue_blocks,
         )
     if args.command == "preview-headless":
         return preview_headless(

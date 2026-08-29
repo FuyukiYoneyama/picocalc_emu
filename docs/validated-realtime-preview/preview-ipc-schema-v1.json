@@ -46,7 +46,7 @@
     "hello": {"required_keys": ["protocol", "role", "schema"], "protocol": "preview-ipc", "schema": 1},
     "key_event": {"required_keys": ["key", "state"], "state_values": ["down", "held", "up"], "host_time": "not encoded"},
     "frame_rgb565": {"prefix": "cycle u64_le, width u16_le, height u16_le", "pixel_bytes": "width * height * 2"},
-    "audio_pcm_s16": {"prefix": "cycle u64_le, sample_rate u32_le, channels u16_le, frames u16_le", "sample_bytes": "frames * channels * 2"},
+    "audio_pcm_s16": {"prefix": "cycle u64_le, sample_rate u32_le, channels u16_le, frames u16_le", "sample_bytes": "frames * channels * 2", "max_frames_per_block": 128},
     "uart_tx": {"length_bytes": 9, "cycle": "u64_le", "byte": "u8"},
     "uart_rx": {"length_bytes": 1, "byte": "u8"},
     "empty_commands": ["reset", "quit"]
@@ -61,7 +61,8 @@
       "truncated header or payload",
       "sequence discontinuity within one direction",
       "malformed or non-canonical JSON",
-      "binary payload length mismatch"
+      "binary payload length mismatch",
+      "audio_pcm_s16 frame count greater than 128"
     ],
     "action": "emit one diagnostic to stderr, do not reinterpret bytes as another kind, and terminate the preview session"
   }

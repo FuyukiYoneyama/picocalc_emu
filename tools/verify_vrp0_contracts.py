@@ -209,6 +209,7 @@ def check_binary_payload(kind: int, payload: bytes) -> None:
         require(len(payload) >= 16, "PCM payload lacks prefix")
         _, _rate, channels, frames = struct.unpack_from("<QIHH", payload)
         require(channels >= 1, "PCM channel count must be nonzero")
+        require(frames <= 128, "PCM frame count exceeds the 128-frame block limit")
         require(len(payload) == 16 + frames * channels * 2, "PCM payload length mismatch")
     elif kind == 8:
         require(len(payload) == 9, "UART TX payload must be 9 bytes")
