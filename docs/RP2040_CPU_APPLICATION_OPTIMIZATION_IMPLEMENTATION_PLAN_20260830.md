@@ -1,0 +1,902 @@
+# RP2040 CPU 実アプリ高速化 実装・効果測定計画
+
+- Status: Reviewed — P0-A1 implementation ready
+- Date: 2026-08-30
+- Review completed: 2026-08-30
+- Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
+- Implementation repository: `picoem-picocalc`
+- Validation and decision repository: `picocalc_emu`
+
+## 0. レビュー結果と適用した修正
+
+現行計画、登録 target、既存計測文書、`rp2040-emu`/`picocalc-harness` の実コードを照合し、Luna による二系統の読み取り専用レビューも行った。実装開始を妨げていた事項は、次のように解消した。
+
+| レビュー指摘 | この版での解決 |
+|---|---|
+| 登録 target ごとに accepted backend が異なる | 登録記録を変更せず、候補比較用の共通 baseline を P0-0 で二つの実アプリに admission する |
+| 既存 realtime benchmark は candidate backend、AB/BA、CPU専用統計を扱えない | 既存 script を変更せず、専用 `benchmark_rp2040_cpu_candidate.py` を新設する |
+| P0 が将来候補の全 counter を一度に要求していた | P0-A1/A2 の runner/schema/null batch と P0-B の最小 profiler に分割し、候補固有 counter は各 phase へ遅延する |
+| profile、A/B、decision の schema と保存名が未確定 | schema 名、record tree、必須ファイルを本書で固定した |
+| 10 pair、CI、calibration の定義が曖昧 | 20 run/workload、5 AB+5 BA、log ratio の t 区間、実アプリ pre/post calibration を固定した |
+| 正確性比較で executable identity まで一致させる矛盾があった | firmware/scenario は同一、backend/runner identity は別々に記録し、guest observation projection だけを一致させる |
+| P1-A が両 core の同時 invalidation を要求し、現行 active-core drain と衝突していた | 配送先の意味論は変更せず、active core に対する full-tag 判定を実装し、core 0/1 を個別に試験する |
+| P2 が最初から mutation-maintained summary を要求していた | まず既存状態を読む inline reject + cold arbitration の P2-A とし、summary は測定後の P2-B に分離した |
+| 一時 worktree と raw data の置き場所が運用ルールと不整合だった | 一つの `/tmp/picocalc-rp2040-cpu-opt.*` だけを使用し、共有 root 直下へ新規 directory を作らない |
+| 既存の合成 workload 測定が実アプリ採否に混ざり得た | 合成測定は仮説の方向付けだけとし、採否証拠から明示的に除外した |
+
+この版で「実装開始可能」とは、まだ存在しない runner/schema を作る最初の単位 P0-A1 について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。順序は `P0-A1 runner/tests → P0-0 admission → P0-A2 null batch → P0-B profiler` とする。P1 以降は P0 の実測 gate を通った候補だけを開始する。
+
+## 1. 目的
+
+普通の RP2040 アプリケーションを実行したときの CPU エミュレーションを、観測可能な動作を変えずに高速化する。
+
+特定の速度倍率への到達可否や合成命令列の理論上限は、この計画の判断基準にしない。実在するアプリケーションで CPU ホットパスを計測し、実装候補ごとの実効速度差を必ず A/B 測定する。
+
+周辺装置は高速化対象から外す。ただし、測定時には周辺装置を無効化せず、通常のアプリケーション実行を維持する。CPU 側の改善が現実の負荷構成で有効かを確認するためである。
+
+## 2. 完了条件
+
+本計画の完了は「最適化コードを書いたこと」ではなく、次のすべてを満たした状態とする。
+
+1. 実アプリから CPU ホットパスと無駄な処理を定量化している。
+2. 各候補を独立した feature または commit として実装している。
+3. 各候補について正確性検証と性能 A/B 測定を完了している。
+4. 効果が正、ゼロ、負のいずれでも、生データ、集計値、判断理由を保存している。
+5. 単独では小さいが独立した改善は候補バンクへ集め、組み合わせた状態も改めて測定している。
+6. 採用した変更について、代表アプリで統計的に識別できる改善と、重大な回帰がないことを確認している。重大な回帰は、各アプリの median throughput が共通 baseline より 3% を超えて低下することと定義する。
+
+## 3. 保存場所
+
+### 3.1 Git 管理するもの
+
+`picocalc_emu` には次を保存する。
+
+- 本計画、計測仕様、実行手順
+- workload、scenario、admission descriptor の固定情報
+- 全測定 run の小容量な JSON/CSV 結果
+- 集計結果、グラフ生成スクリプト、採否記録
+- backend commit、実行ファイル SHA-256、ホスト条件、コマンドを含む manifest
+- 正確性 proof と最終的な回帰テスト
+
+CPU backend のソース変更は `picoem-picocalc` の Git 管理下に置く。
+
+### 3.2 一時物と大容量 raw data
+
+一回の作業開始時に、次の形式で一つだけ一時 root を作る。
+
+```bash
+RP2040_CPU_OPT_TMP="$(mktemp -d /tmp/picocalc-rp2040-cpu-opt.XXXXXX)"
+```
+
+比較用 worktree、Cargo build directory、`perf.data`、sampling 中間物、PGO raw profile、大容量 trace、再生成可能なログはすべてこの root の下へ置く。`/home/fuyuki/pico_dvl/codex` 直下に新しい受け皿を作らず、`workspace-management` にも本計画の成果物を置かない。
+
+採否に必要な小容量 JSON と要約を Git 側へ収容してから一時 root を廃棄する。大容量 raw data の永続保存が必要になった場合だけ、既存のエミュレーター外部 workspace を使うかを人間に別途確認する。manifest には、永続保存しない raw data についても生成コマンド、生成元 commit、ファイル名、SHA-256 を記録する。
+
+### 3.3 canonical record tree
+
+候補ごとの履歴は上書きせず、次の形で保存する。
+
+```text
+firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/
+  manifest.json
+  profile/
+    picotetris-opt1b-vrp5-r10.json
+    picoedit-r1-vrp2f-r4.json
+  correctness/
+    picotetris-opt1b-vrp5-r10/
+      baseline-report.json
+      candidate-report.json
+      baseline-projection.json
+      candidate-projection.json
+      baseline-behavior.json
+      candidate-behavior.json
+      comparison.json
+    picoedit-r1-vrp2f-r4/
+      baseline-report.json
+      candidate-report.json
+      baseline-projection.json
+      candidate-projection.json
+      baseline-behavior.json
+      candidate-behavior.json
+      comparison.json
+  ab/
+    run-001.json ... run-040.json
+  summary.json
+  decision.json
+  decision.md
+  hotpath-disassembly.txt
+  SHA256SUMS
+```
+
+P0-0 で target revision が更新された場合は、上の workload filename も新 revision に置き換える。schema は次の三つを新設し、既存 schema の `schema_version: 1` と混同しないよう `schema_id` を必須にする。
+
+P0-A2 の `comparison.json` は `trace_required=false` とし、behavior artifact 四ファイルは作らない。P0-B/P1以降は `trace_required=true` とし、baseline/candidate behavior artifact を必須にする。この条件分岐を AB schema に持たせる。
+
+- `firmware-validation/rp2040-cpu-profile.schema.json`: `schema_id = "picocalc.rp2040-cpu-profile"`
+- `firmware-validation/rp2040-cpu-ab.schema.json`: `schema_id = "picocalc.rp2040-cpu-ab"`
+- `firmware-validation/rp2040-cpu-decision.schema.json`: `schema_id = "picocalc.rp2040-cpu-decision"`
+
+三 schema の初版は `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。
+
+## 4. 現時点の根拠
+
+既存の PicoTetris 実行プロファイルには、次の CPU 側の特徴が出ている。
+
+- core 0 decode cache: 172,417,748 hit、297,282 miss、hit 率 99.8279%
+- immutable XIP hit: 172,373,954
+- SRAM hit: 20,679
+- immutable XIP hit run: 平均 4.563 命令
+- block 終了の大部分: PC redirect 37,756,069 回
+- SRAM decode invalidation address: 9,243,286 回
+
+根拠は [OPT3-A XIP cursor profile](history/OPT3_A_XIP_CURSOR_PROFILE.md) と、対応する [machine-readable profile](../firmware-validation/records/opt3-a-xip-cursor-profile-20260809-01/running-event-horizon-profile.json) にある。
+
+この結果から、miss 時の decoder 自体より、次を先に測定・改善する。
+
+1. hit 済み命令を再利用するまでの処理
+2. 命令と無関係な SRAM data write による cache invalidation
+3. 命令ごとの pending exception 探索
+4. 高頻度命令の operand 再抽出と dispatch
+5. 分岐後の次命令検索
+6. host compiler が生成する hot path の品質
+
+過去の sequential cursor は、内部 hit を増やしても実アプリ全体で約 4.43% 回帰した。したがって、内部 counter の改善だけを成果とせず、必ずアプリ全体を測る。
+
+compact dispatch key は過去の PicoTetris で約 4.15% 改善したが、当時の固定 5% 閾値だけを理由に採用されなかった。現在の backend で再測定し、小さい実改善を一律に捨てない。
+
+[CPU hot-path measurement](validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md) にある `paced_bench_rp2040 --workload basic` の差分測定は、二つの PC を回る合成 loop に対する方向付け資料である。例外 poll、flags、compact dispatch に改善余地があるという仮説には使えるが、通常アプリの採否、改善率、候補順位を確定する証拠には使わない。sampling profiler はホスト権限が許す場合の補助証拠であり、P0 や候補実装の開始条件にはしない。
+
+## 5. 測定契約
+
+### 5.1 実アプリ workload
+
+最低限、次の登録済みアプリを毎候補で測る。
+
+| 役割 | 登録 target | firmware/scenario | 登録時 backend |
+|---|---|---|---|
+| 主 workload | `picotetris-opt1b-vrp5` revision 10 | BIN `0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62` / scenario `b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208` | `65c795e87321e79b960ac8a7495a205de6a24ec0` |
+| 異種 workload | `picoedit-r1-vrp2f` revision 4 | BIN `17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6` / scenario `d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718` | `c1c20d7d86a3006569375bc333cf72494e95eb46` |
+
+固定 validation は [PicoTetris r10](../firmware-validation/validations/picotetris-opt1b-vrp5-r10.json) と [PicoEdit r4](../firmware-validation/validations/picoedit-r1-vrp2f-r4.json) である。レビュー時点で両 backend object は repository に存在するが、互いに ancestor ではない。したがって登録時 backend pin を混ぜて一つの候補効果にしてはならない。
+
+候補比較の共通 baseline は、まず `65c795e87321e79b960ac8a7495a205de6a24ec0` とする。P0-0 で両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
+
+target registry は firmware、scenario、board/device 条件、停止条件を供給する workload contract として使用する。candidate commit は既存 target の accepted backend として偽装せず、CPU候補 record の manifest に独立して記録する。
+
+第三の workload を追加する場合も、固定入力と固定停止条件を持つ登録済みアプリだけを使う。NOP loop、単一命令、`paced_bench_rp2040` の synthetic workload は単体確認には使えても、採否判定には使わない。
+
+### 5.2 profile run と performance run の分離
+
+同じ実行から詳細 counter と速度を同時に評価しない。
+
+- Profile run: `cpu-application-profiler` feature を有効にし、CPU 内部 counter を採取する。
+- Correctness run: production release の guest observation を完全一致させ、P1以降は別の diagnostic behavior-trace build の domain digest も完全一致させる。sampling profiler の可用性には依存させない。
+- Performance run: profiler、trace、proof、GUI を無効にした production release で時間を測る。
+
+build command は次に固定する。baseline/candidate/profile/trace で `CARGO_TARGET_DIR` を分け、後の build が先の executable を上書きしないようにする。
+
+```bash
+# baseline production
+cd "$RP2040_CPU_OPT_TMP/backend-baseline"
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/baseline-production" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run
+
+# candidate production; P1以降は下表の feature list を必ず指定
+cd "$RP2040_CPU_OPT_TMP/backend-candidate"
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-production" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run \
+  --features <candidate-feature-list>
+
+# baseline diagnostic correctness trace; performanceには使用しない
+cd "$RP2040_CPU_OPT_TMP/backend-baseline"
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/baseline-trace" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run \
+  --features behavior-trace
+
+# candidate diagnostic correctness trace; performanceには使用しない
+cd "$RP2040_CPU_OPT_TMP/backend-candidate"
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-trace" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run \
+  --features behavior-trace,<candidate-feature-list>
+```
+
+`<candidate-feature-list>` は shell へそのまま渡す文字列ではなく、次表の値へ置換する。P0-A2/P0-B の profiler-OFF production build では `--features` 行自体を省略する。
+
+| candidate | production feature list | diagnostic trace feature list |
+|---|---|---|
+| P0-A2/P0-B compile-out check | なし | `behavior-trace` |
+| P1-A | `decode-invalidation-tag-guard` | `behavior-trace,decode-invalidation-tag-guard` |
+| P1-B | `executable-sram-invalidation-filter` | `behavior-trace,executable-sram-invalidation-filter` |
+| P1 A+B | `decode-invalidation-tag-guard,executable-sram-invalidation-filter` | `behavior-trace,decode-invalidation-tag-guard,executable-sram-invalidation-filter` |
+| P2-A | `pending-exception-fast-reject` | `behavior-trace,pending-exception-fast-reject` |
+
+P0-B profile build は後述の `build/candidate-profile` へ出す。production build に profiler/trace の field、分岐、counter update、diagnostic CLI を残さない。`cargo tree -e features` と `objdump` の hot-function 抜粋で確認する。profile/trace run の速度は採否データに使用しない。`[profile.profiling]` は fat LTO が無効なので、performance 比較には使わない。
+
+### 5.3 CPU profile counter
+
+P0-B 初版は、P1-A/P2-A の実装判断に必要な次の counter だけを core 別に記録する。将来候補のための load/store、flags、branch link、reuse-distance 全量計測を最初から hot path に入れない。
+
+- `active: bool`、`retired_instructions: uint64`、`emulated_cycles: uint64`
+- `pc_region.{boot_rom,immutable_xip,xip_sram,sram,other}: uint64`
+- `decode.{lookups,hits,misses}: uint64`
+- `decode.by_region.<region>.{lookups,hits,misses}: uint64`
+- `invalidation.{requests,examined_slots,matching_clears,unrelated_would_clear,wide_predecessor_clears}: uint64`
+- `exception.{polls,reject_primask,reject_no_candidate,reject_active_handler,entries}: uint64`
+- `exception.source.{pendsv,systick,nvic}: uint64`
+- `handler_group.{thumb16_shift_add_sub,data_processing,load_store,branch_system,thumb32,other}: uint64`
+
+profile root は `interval.start_emulated_cycle` と `interval.end_emulated_cycle`、workload identity、backend commit、runner SHA-256、feature set、core array、`overflowed`、`profile_valid` を持つ。counter は run 全区間の累積 `uint64` とし、reset でゼロに戻す。inactive core は `active=false` かつ全 counter zero とする。加算 overflow は saturate して `overflowed=true`、不変条件違反とともに `profile_valid=false` にする。
+
+初版の不変条件は次である。
+
+- `sum(pc_region) == retired_instructions`
+- `decode.hits + decode.misses == decode.lookups`
+- 各 region で `hits + misses == lookups`、かつ region 合計が decode 全体と一致
+- `reject_primask + reject_no_candidate + reject_active_handler + entries == polls`
+- `sum(exception.source) == exception.entries`
+- `matching_clears + unrelated_would_clear <= examined_slots`
+
+handler group は相互排他的にし、未知 encoding は `other` へ入れる。分類集合を変える場合は schema version を上げる。不変条件に違反した profile は破棄し、候補実装へ進まない。flags、link、cache geometry などの counter は該当 phase の事前 gate で schema extension として追加する。
+
+### 5.4 performance A/B 手順
+
+候補ごとに baseline と candidate を一つの batch として測る。
+
+1. clean detached worktree を二つ作り、backend commit を固定する。
+2. candidate は評価対象の変更だけを baseline に加える。
+3. production release、fat LTO、`codegen-units=1` を共通にする。
+4. `rustc -Vv`、`cargo -V`、linker、build command、environment、feature set を一致させる。
+5. executable、firmware BIN、runner、target contract、scenario の SHA-256 を記録する。
+6. 同一ホストの一つの logical CPU に `sched_setaffinity` で pin し、他の benchmark を並行実行しない。
+7. workload/binary の各組合せを 1 回 warm-up し、集計から除外する。
+8. 各 workload で 10 pair、すなわち 20 measured run を実行する。奇数 pair は AB、偶数 pair は BA とし、合計は 5 AB + 5 BA とする。
+9. 二 workload 合計は 40 measured run である。pair ごとに workload 順も交互にして、片方だけが常に先にならないようにする。
+10. run ごとの結果を `run-001.json` から順に上書きせず保存する。
+
+各 run で次を記録する。
+
+- `time.perf_counter_ns` で runner process 全体を囲った wall-clock time
+- emulated cycles/second
+- host user/system CPU time
+- maximum RSS
+- 取得可能なら host cycles、instructions、branches、branch misses、cache misses
+- stop reason と emulated cycle
+
+host performance counter と sampling は補助指標であり、権限がないことを batch 失敗にしない。retired guest instructions/second は profiler OFF で無償に得られる場合だけ補助指標とし、取得のために production hot path へ counter を加えない。
+
+統計手順は最初の結果を見る前に次で固定する。
+
+- run throughput: `report.cycles / wall_seconds`
+- pair effect: backend 順に関係なく `r_i = ln(candidate_throughput / baseline_throughput)`
+- workload の主効果: `exp(mean(r_i)) - 1` で表す geometric mean speedup
+- 95% CI: 分母 `n-1` の `sample_sd` を使い、`mean(r) ± 2.262157 * sample_sd(r) / sqrt(10)` を log 空間で計算し、`exp(x)-1` へ戻す
+- 記述統計: pair ごとの percent effect の median と IQR。10 値を昇順にし、下位5値/上位5値の各 median を Q1/Q3 とする
+- combined effect: 同じ pair index の二 workload の `r_i` を等重みで平均した 10 値に、同じ t 区間を適用する
+- 補助指標: wall time、guest instructions/second、host counter
+- 10 pair 終了後に run を恣意的に除外または追加しない。個別 run の再試行もしない。
+- OS update、thermal throttling、別プロセス負荷など事前定義した異常だけを batch 全体の無効理由にする。
+
+calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。warm-up 後・本測定前に 3 run、本測定後に 3 run を行い、`abs(post_median / pre_median - 1) > 0.02` なら batch を無効とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
+
+専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py ab \
+  --baseline-backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  --candidate-backend "$RP2040_CPU_OPT_TMP/backend-candidate" \
+  --baseline-runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --candidate-runner "$RP2040_CPU_OPT_TMP/build/candidate-production/release/picocalc-run" \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --pairs 10 --warmup 1 --calibration-runs 3 --cpu <logical-cpu> \
+  --batch-id rp2040-cpu-<candidate>-YYYYMMDD-NN \
+  --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN
+```
+
+runner は clean Git commit、明示された release executable、firmware/scenario/contract SHA、backend embedded commit、feature set、CPU affinity を開始前に検証する。不一致時は measured run を一つも開始しない。`--firmware` は registry の `artifacts.bin_sha256` と一致する任意の絶対 path を受け付ける。
+
+target/scenario/bootrom/board/cycles 等の raw runner argument は既存 `tools.picocalc` の target-command builder から展開するが、builder が registry の accepted commit から作る `--backend-commit` は使用しない。各 run について対象 backend worktree の clean `git rev-parse HEAD` へ `--backend-commit` を置換し、その値が runner の embedded commit と一致することを subprocess 起動前に検証する。baseline/candidate それぞれ別の commit を渡す。この override がない PicoEdit/common-baseline command は unit test で拒否する。
+
+### 5.5 正確性ゲート
+
+性能測定とは別に、同じ firmware/scenario/target contract を production release の baseline/candidate で各 1 回実行する。schema-8 report から、top-level の `backend_build` と `backend_commit` だけを削除し、Python の `json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))` を UTF-8 encode したものを `guest_observation_projection` と定義する。その baseline/candidate SHA-256 と canonical JSON を完全一致させる。
+
+この projection は stop reason、総 emulated cycle、virtual elapsed time、execution model、final PC、final exception/fault、UART、framebuffer、audio、PSRAM、SD、keyboard、PIO/PWM、scenario timeline、unsupported MMIO/access、firmware/bootrom/flash identity を保持する。これは final report の guest-visible surface の一致であり、命令単位 trace の一致を主張しない。
+
+P1 以降の CPU候補では、これに加えて baseline/candidate を `--features behavior-trace` で build し、同じ scenario を `--behavior-trace` 付きで各 1 回実行する。既存 behavior artifact の `behavior_projection`、`behavior_sha256`、domain ごとの event count/SHA-256 を完全一致させる。この diagnostic build の wall time は採否性能に使用しない。P0-0 admission と P0-A2 null batch は production final report の projection までを必須とし、P0-B/P1/P2 の correctness gate から behavior trace を必須にする。
+
+firmware、scenario、target contract は baseline/candidate で同一でなければならない。一方、backend commit と runner executable SHA-256 は候補の識別情報なので一致を要求せず、両方を manifest に保存する。Serial target で core 1 が動作しない場合は、存在しない per-core counter を捏造せず、profile では `active=false`/zero とする。
+
+専用 runner の correctness CLI は次とする。
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py correctness \
+  --baseline-backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  --candidate-backend "$RP2040_CPU_OPT_TMP/backend-candidate" \
+  --baseline-runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --candidate-runner "$RP2040_CPU_OPT_TMP/build/candidate-production/release/picocalc-run" \
+  --baseline-trace-runner "$RP2040_CPU_OPT_TMP/build/baseline-trace/release/picocalc-run" \
+  --candidate-trace-runner "$RP2040_CPU_OPT_TMP/build/candidate-trace/release/picocalc-run" \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/correctness
+```
+
+上は P1 以降の完全形である。P0-A2 null batch は trace runner 二引数を省略し、`--final-report-only` を明示する。P1 以降で trace runner が一方でも未指定なら `correctness` は run 前に拒否する。
+
+さらに各 report は registry の `report_checks` と timeline SHA を評価する。ただし admission/candidate 比較では `backend_build.commit` の check だけを manifest identity check に置換し、`backend_build.dirty == false` は必須のまま維持する。backend identity を含む full-report `normalized_report_sha256` は candidate との同一条件にせず、baseline/candidate の projection digest を正確性条件にする。新 runner は legacy validator を無変更で呼ばず、この置換規則を専用関数として unit test する。一項目でも不一致なら performance run を開始せず、その候補を不採用にする。
+
+### 5.6 P0-0 common-baseline admission
+
+P0-A1 の runner unit test が通り、baseline production runner を build した直後、performance baseline を取る前に次を行う。
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py admit \
+  --backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  --runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --output firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN/admission
+```
+
+`admit` は target registry の accepted backend を candidate に強制せず、legacy `validate_report()` の full-report hash check もそのまま呼ばない。raw command の `--backend-commit` は `--backend` の clean HEAD へ置換する。固定 firmware/scenario/contract、clean embedded commit、`report_checks`（commit check のみ置換）、timeline SHA、登録 report と current report の guest projection digest、determinism 2 run を検査する。両 workload が合格した一つの commit と runner SHA を `manifest.json` に common baseline として凍結する。片方でも不合格なら P0 baseline、P1、P2 を開始しない。P0-0 は runner 実装ではなく、P0-A1 の後に一度だけ通す workload gate である。
+
+## 6. 実装フェーズ
+
+依存順に進める。各フェーズは「profile → 実装 → correctness → performance A/B → 判断 → 記録」で閉じ、複数の未測定変更を一度に重ねない。
+
+### P0. 再現可能な実アプリ計測基盤
+
+#### P0-A1: target admission、correctness、A/B runner の実装
+
+新規ファイルを次で固定する。
+
+- `picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py`
+- `picocalc_emu/tests/test_benchmark_rp2040_cpu_candidate.py`
+- `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-ab.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-decision.schema.json`
+
+既存 `benchmark_firmware_realtime.py` は登録 backend 一つの realtime 指標を扱い、理論値や runner startup/output を含む別契約であるため変更しない。新 runner は `admit`、`correctness`、`profile`、`ab`、`summarize` subcommand を持ち、§5 の CLI と統計を実装する。`schema_id`、全 identity、実行順、全 raw run、invalid batch 理由を schema で検証する。
+
+Python unit test は最低限次を固定入力で検査する。
+
+- 10 pair が 5 AB + 5 BA、20 run/workload になる。
+- workload 順も交互になり、run ID が一意になる。
+- backend 順に依存せず log ratio が candidate/baseline になる。
+- geometric mean、sample SD、df=9 の t CI、median、IQR が既知値と一致する。
+- firmware/scenario/contract/embedded commit/runner SHA の不一致を measured run 前に拒否する。
+- target builder の登録 commit を各 backend の clean HEAD へ置換し、PicoEdit/common-baseline と baseline/candidate の双方で正しい `--backend-commit` を生成する。
+- guest projection が `backend_build`/`backend_commit` 以外の一ビット差を拒否する。
+- admission では legacy normalized report SHA を使わず、登録/current guest projection、timeline、commit以外の report check を検査する。
+- P1以降の correctness では behavior SHA、domain event count/SHA の差を拒否する。
+- 同じ batch manifest を持つ record root は subcommand 間で再利用できるが、既存 leaf artifact の上書き、record ID/identity 不一致は拒否する。
+- pre/post calibration drift が 2% 超なら batch 全体を invalid にする。
+
+P0-A1 テストコマンド:
+
+```bash
+cd /home/fuyuki/pico_dvl/codex/picocalc_emu
+python3 -m unittest tests.test_benchmark_rp2040_cpu_candidate
+python3 tools/verify_environment.py --scope target-schema
+```
+
+`verify_environment.py` には三つの新 schema と、存在する `rp2040-cpu-*` record の必須ファイル validation を追加する。record がまだ 0 件であることは正常とし、P0-A1 の schema fixture test を失敗させない。
+
+P0-A1 完了条件:
+
+1. unit test と environment verification が通る。
+2. target command builder が registry から mandatory raw runner argument を展開する unit test が通る。
+3. schema fixture、legacy normalized-report置換、projection digest、実行順、統計の unit test が通る。
+4. この時点では実 workload を走らせず、次に P0-0 admission を実行する。
+
+#### P0-A2: admitted baseline の null batch
+
+P0-0 合格後、common baseline executable を A と B の両方に指定し、§5.4 の warm-up、calibration、40 measured run をすべて実行する。順序、schema、guest digest が正しく記録されることを確認し、効果を「改善」と解釈せず測定ノイズの基準値として保存する。最後に次を実行する。
+
+```bash
+python3 tools/verify_environment.py --scope target-schema
+```
+
+P0-A 全体の完了は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件で判定する。
+
+#### P0-B: 最小 CPU application profiler
+
+backend の実装位置と公開名を次で固定する。
+
+| 内容 | ファイル/API |
+|---|---|
+| feature | `crates/rp2040-emu/Cargo.toml`: `cpu-application-profiler = []` |
+| harness forwarding | `crates/picocalc-harness/Cargo.toml`: `cpu-application-profiler = ["rp2040-emu/cpu-application-profiler"]` |
+| profile state/JSON model | 新規 `crates/rp2040-emu/src/cpu_application_profile.rs` |
+| module/API/reset/snapshot | `crates/rp2040-emu/src/lib.rs` |
+| retire/decode/region | `crates/rp2040-emu/src/core/decode.rs`、`src/core/mod.rs` |
+| invalidation outcome | `crates/rp2040-emu/src/core/mod.rs::invalidate_decode_cache_entries` |
+| exception outcome | `crates/rp2040-emu/src/core/mod.rs::step/try_take_any_pending_exception` |
+| CLI/output | `crates/picocalc-harness/src/main.rs`: `--cpu-application-profile <path>` |
+| schema | `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json` |
+
+既存 `running_profile.rs` の型や pure helper は共有してよいが、`event-horizon-profiler`/`behavior-trace` feature は連鎖させない。既存 event-horizon JSON の schema/意味も変更しない。CPU application profile は別 JSON として出力する。CLI、state、record call はすべて `cfg(feature = "cpu-application-profiler")` で compile out する。
+
+profile subcommand は registry から `--bin`、bootrom、board、LCD、cycles、quantum、scenario、snapshot/report path を展開し、最後に `--cpu-application-profile` を加える。未展開 placeholder は raw runner へ渡さない。
+
+profile 実行例:
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py profile \
+  --backend "$RP2040_CPU_OPT_TMP/backend-candidate" \
+  --runner "$RP2040_CPU_OPT_TMP/build/candidate-profile/release/picocalc-run" \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --output firmware-validation/records/rp2040-cpu-p0-profile-YYYYMMDD-NN/profile
+```
+
+P0-B テストコマンド:
+
+```bash
+cd "$RP2040_CPU_OPT_TMP/backend-candidate"
+cargo test --locked -p rp2040-emu --features cpu-application-profiler
+cargo test --locked -p picocalc-harness --features cpu-application-profiler
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-profile" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run \
+  --features cpu-application-profiler
+CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-production" \
+  cargo build --locked --release -p picocalc-harness --bin picocalc-run
+```
+
+P0-B 完了条件:
+
+1. 二 workload で §5.3 の全不変条件が成立する。
+2. reset 後の zero、inactive core、overflow invalidation を unit test する。
+3. profiler OFF build の `CortexM0Plus::step`、`decode_execute`、`invalidate_decode_cache_entries` に counter store/profile branch がないことを disassembly で確認する。
+4. profiler OFF の baseline/candidate correctness が一致する。
+5. profile から P1-A の `unrelated_would_clear / examined_slots` と P2-A の no-candidate poll 比率を算出できる。
+
+### P1. SRAM decode invalidation の不要処理除去
+
+現状は SRAM write ごとに decode invalidation address を queue し、direct-mapped slot を index で消す。full tag を確認しない slot clear は、同じ index の無関係な XIP entry まで失効させ得る。
+
+#### P1-A: full-tag invalidation guard
+
+- candidate ID/feature は `P1-A` / `decode-invalidation-tag-guard` とし、default off で実験する。
+- 変更先は `crates/rp2040-emu/src/core/mod.rs::invalidate_decode_cache_entries`、feature 宣言は backend と `picocalc-harness` の両 `Cargo.toml` とする。
+- `aligned = addr & !1` の slot は、`entry.matches_pc(aligned, slot)` のときだけ clear する。
+- `prev = aligned - 2` の slot は、`entry.matches_pc(prev, slot) && entry.is_wide()` のときだけ clear する。narrow predecessor は残す。
+- 4-byte write は現行 queue producer が渡す `{addr, addr+2}` をそのまま使い、重複 clear は許すが無関係 tag は消さない。
+- `Emulator::drain_cache_invalidations` の active-core 配送、queue producer、guest cycle、cache geometry は変更しない。core 0 と core 1 は各々が active の場合に同じ判定を行うことを試験する。
+- cross-core write が peer core の既存 entry を失効させるかという現行意味論は、P1-A の速度変更へ混ぜず、別 correctness issue として扱う。
+
+測定するもの:
+
+- invalidation request 数
+- tag match clear 数
+- 従来なら消していた unrelated slot 数
+- invalidation 後の decode miss 減少
+- 実アプリ全体の cycles/second
+
+追加 unit test:
+
+- 同じ direct-map index を持つ unrelated XIP entry が SRAM data write 後も残る。
+- tag が一致する SRAM narrow entry は消える。
+- wide instruction の後半 halfword write は `addr-2` の wide entry を消す。
+- `addr-2` の narrow entry は消さない。
+- 4-byte write の `{addr-2,addr,addr+2}` overlap を正しく処理する。
+- 同じ test vector を active core 0/core 1 の双方で通す。
+
+テストコマンド:
+
+```bash
+cargo test --locked -p rp2040-emu decode_cache
+cargo test --locked -p rp2040-emu --features decode-invalidation-tag-guard decode_cache
+cargo test --locked -p picocalc-harness --features decode-invalidation-tag-guard
+cargo test --locked --release -p rp2040-emu -p picocalc-board -p picocalc-harness
+```
+
+#### P1-B: executable SRAM page の sticky bitmap
+
+- candidate ID/feature は `P1-B` / `executable-sram-invalidation-filter` とし、`rp2040-emu/Cargo.toml` に空 feature、`picocalc-harness/Cargo.toml` に backend forwarding feature を追加する。
+- SRAM page が実際に instruction fetch された時点で executable bit を立てる。
+- page size は 256 byte、index は SRAM alias を canonicalize した `(addr & 0x00ff_ffff) >> 8` とする。264 KiB に対する 1056 bit の shared sticky bitmap を `Bus` が所有する。
+- 一度立った bit は reset または full image replacement まで下げない。`Emulator::reset` と SRAM image replacement は bitmap clear + 従来の region invalidation、通常の bulk poke は false negative を避けるため bitmap を維持して従来の bulk invalidationを行う。
+- 一度も実行されていない SRAM page への data write は decode invalidation queue を省略する。
+- core 0/core 1 の fetch は同じ bitmap へ mark し、false negative を作らない。
+- loader、bulk poke、reset、image replacement は従来どおり full invalidation する。
+- 実装位置は `bus/mod.rs` の Bus field/`invalidate_pc_range`、`core/decode.rs` の fetch mark、`lib.rs` の reset/load path とする。
+
+feature 有効 test:
+
+```bash
+cargo test --locked -p rp2040-emu --features executable-sram-invalidation-filter decode_cache
+cargo test --locked -p rp2040-emu --test multicore --features executable-sram-invalidation-filter
+cargo test --locked -p picocalc-harness --features executable-sram-invalidation-filter
+```
+
+測定するもの:
+
+- page bit により省略した invalidation 数
+- executable page への write 数
+- queue 長と drain cost
+- decode hit/miss の変化
+- 実アプリ全体の cycles/second
+
+#### 完了条件
+
+- self-modifying SRAM code、wide instruction 上書き、両 core からの実行を含む単体試験が一致する。
+- 二つの実アプリで correctness gate を通る。
+- P1-A、P1-B、A+B の三つを別々に A/B 測定する。P1-B は P1-A 採否記録が閉じ、P0-B profile で filter 可能な request が全 request の 1% 以上ある場合だけ開始する。
+- feature-gated 実験後、採用候補は feature を production default に残さず通常 path へ統合し、その統合後 binary を再度 correctness/A-B 測定する。
+
+### P2. pending exception の common-case fast reject
+
+現状の `CortexM0Plus::step` は、各命令の前に `try_take_any_pending_exception` を呼ぶ。通常命令の大半で exception が取られないなら、毎回の完全探索を避けられる。
+
+#### P2-A: 既存状態を読む inline reject
+
+- candidate ID/feature は `P2-A` / `pending-exception-fast-reject` とし、`rp2040-emu/Cargo.toml` に空 feature、`picocalc-harness/Cargo.toml` に backend forwarding feature を追加する。
+- `core/mod.rs::try_take_any_pending_exception` の先頭を `#[inline(always)]` の reject 部と `#[cold] #[inline(never)]` の arbitration 部へ分ける。
+- reject 部は順に PRIMASK、`ICSR.PENDSVSET|PENDSTSET`、`NVIC.pending_and_enabled()` を読む。三 source がすべて空なら直ちに 0 を返す。
+- candidate がある場合だけ既存の priority/tie-break、`can_dispatch_now`、pending clear、`enter_exception` を cold 部で実行する。
+- tail-chain からの既存 call も同じ helper を使う。
+- 新しい cached state は持たず、NVIC/PPB/SysTick mutation point は変更しない。guest-visible priority、entry cycle、stacking、tail behavior を変更しない。
+
+この形で、正確性リスクの大きい incremental summary を最初から導入せず、通常の no-pending path の host code を短くする。compiler が現行 code と同じものを生成した場合も失敗ではなく、A/B で効果なしとして閉じる。
+
+#### P2-B: cached pending summary
+
+P2-A 後も profiler と optional sampling の両方で exception poll/arbitration が残存 CPU cost と確認された場合だけ別 candidate として設計する。core-local summary を採る場合は、NVIC pending/enable、PendSV/SysTick、SysTick underflow、PRIMASK、exception entry/return、level reassert の mutation matrix と、完全再計算値との debug assertion を先に文書化する。P2-B は本書だけで実装開始せず、P2-A decision record から別 HLD を起票する。
+
+#### 効果測定
+
+- poll 総数、fast reject 数、slow arbitration 数
+- source 別 exception entry 数
+- `step` あたり host cycles と branch misses
+- 実アプリ全体の cycles/second
+
+#### 完了条件
+
+- PRIMASK、PendSV、SysTick、NVIC IRQ、同時 pending、priority tie-break、active handler、tail-chain、exception return の既存試験が baseline/candidate で一致する。
+- 次の通常/feature 有効 test を通す。
+
+```bash
+cargo test --locked -p rp2040-emu pending
+cargo test --locked -p rp2040-emu exception
+cargo test --locked -p rp2040-emu --features pending-exception-fast-reject pending
+cargo test --locked -p rp2040-emu --features pending-exception-fast-reject exception
+cargo test --locked -p picocalc-harness --features pending-exception-fast-reject
+```
+- P0-B の `reject_no_candidate / polls` が 90% 未満なら P2-A を開始しない。開始しなかった事実と profile 値を decision record に残す。
+- 二つの実アプリで correctness と A/B を完了する。
+
+### P3. host 向け build 最適化と PGO
+
+アルゴリズムを変えずに host compiler が CPU hot path を最適化できる余地を測る。
+
+#### 比較構成
+
+1. 現行 canonical release
+2. `target-cpu=native` または配布条件に合う固定 ISA level
+3. PGO
+4. native/fixed ISA + PGO
+
+PGO profile は PicoTetris と PicoEdit の実行比率を事前に固定して生成する。採否測定には、学習に使用した scenario と holdout scenario の両方を含める。
+
+#### 効果測定
+
+- 全構成を同じ 10-pair A/B 手順で測る。
+- binary size、hot symbol size、host IPC、branch miss、cache miss を併記する。
+- PGO raw profile と比較 build は §3.2 の一時 root、merge 済み profile の SHA-256 と生成 manifest は Git 側に保存する。
+
+#### 完了条件
+
+- 配布可能な host ISA 条件を文書化する。
+- 学習 workload だけでなく holdout でも重大な回帰がない。
+- 採用 build を再生成できるコマンドと toolchain version が固定されている。
+
+P3 の開始前に、training は登録済み二 workload の固定 scenario、holdout はそれぞれ別の登録済み scenario とし、target revision/SHA、`rustc -Vv`、LLVM profile merge command、host ISA policy を P3 decision preamble に凍結する。holdout が登録されていなければ PGO 実装を開始しない。`target-cpu=native` はローカル専用 binary と明示できる場合だけ候補にし、配布 binary と混同しない。
+
+### P4. compact dispatch key の再評価
+
+decode cache hit 率が高いため、hit 後の wide check、opcode 確認、operand 再抽出、handler dispatch の短縮を狙う。過去の正の結果を現在の backend と実アプリ二種で再検証する。
+
+#### 実装
+
+- 既存 feature `compact-dispatch-key-prototype` を candidate ID `P4` として使い、現行 baseline 上へ一変更だけ移植する。
+- decode 時に compact な handler key を生成する。
+- execute 時は key から直接 handler class を選ぶ。
+- opcode bits が必要な命令だけ元 opcode を参照する。
+- cache layout 変更とは分け、まず dispatch だけを測る。
+
+#### 効果測定
+
+- handler class 別 retired instruction
+- dispatch branch 数、branch miss、host instructions
+- binary size と I-cache 指標
+- PicoTetris/PicoEdit 全体の cycles/second
+
+#### 完了条件
+
+- 全 Thumb encoding と undefined/fault path の一致試験を通す。
+- 単独 A/B を行い、結果が正でも 5% 未満という理由だけでは棄却しない。
+- 本書 §7 の規則は、旧計画の固定 5% criterion をこの検討について置き換える。
+
+### P5. decode cache geometry と layout の探索
+
+現行 `DecodedOp` は 12 byte、8192 entry で約 96 KiB/core である。過去の単純な 8-byte packing の回帰は、適切な entry 数、associativity、alignment の探索まで否定しない。
+
+#### 実装候補
+
+- entry 数: 1024、2048、4096、8192
+- direct-mapped と 2-way
+- 16-byte aligned AoS
+- tag/metadata と decoded payload を分ける SoA
+
+全組合せを無差別に実装せず、P0 の working set、reuse distance、conflict miss から候補を絞る。
+
+#### 効果測定
+
+- cold/conflict/invalidation miss
+- set occupancy と reuse distance
+- core 別 cache footprint
+- host L1/L2 cache miss と cycles/second
+
+#### 完了条件
+
+- geometry ごとに同一 dispatch 実装で比較する。
+- 最良候補を P4 と組み合わせ、単独効果と交互作用を測る。
+
+### P6. predecoded micro-op
+
+P0/P4 の opcode histogram で高頻度 handler と operand 再抽出 cost が確認できた場合に進む。
+
+#### 実装
+
+decode entry に必要な範囲で次を保持する。
+
+- handler class
+- register index
+- sign/zero extended immediate
+- flag action
+- memory width と addressing mode
+- branch kind と target 計算情報
+
+guest の命令境界、cycle accounting、fault 順序、memory side effect は変えない。全命令を一度に変換せず、上位 handler class から feature-gated に追加する。
+
+#### 効果測定
+
+- handler ごとの host instructions と cycles
+- entry size 増加による cache miss
+- opcode 再抽出を省略した回数
+- handler class 単独および累積の実アプリ A/B
+
+#### 完了条件
+
+- handler class ごとに correctness と性能を閉じる。
+- entry 肥大化による回帰を含め、累積構成を再測定する。
+
+### P7. copy しない branch linking
+
+過去の eager sequential staging は work を増やして回帰したため再利用しない。cache entry 間の参照だけを持つ。
+
+#### 実装
+
+- fallthrough/taken target の slot、full tag、generation を source entry に保持する。
+- link hit では decode lookup の一部を省略するが、guest 命令は一命令ずつ commit する。
+- scheduler、IRQ、fault、memory side effect の観測境界を維持する。
+- generation/tag 不一致では通常 lookup へ side exit する。
+- invalidation 時に全 link を走査せず、generation で失効させる。
+
+#### 効果測定
+
+- link hit/miss
+- miss/side-exit reason
+- conditional branch taken/not-taken 別効果
+- link metadata による entry footprint と host cache miss
+- 実アプリ全体の cycles/second
+
+#### 完了条件
+
+- branch、exception、self-modifying code、cross-core invalidation の一致試験を通す。
+- P4/P5/P6 との組合せを別 batch で測る。
+
+### P8. profile 根拠がある場合だけ行う追加候補
+
+P8 は候補ごとに、変更対象の avoidable event が実アプリ dynamic instruction の 5% 以上、または利用可能な sampling で host CPU sample の 5% 以上を占めることを開始条件とする。sampling が使えない場合は内部 counter だけで判定できる候補に限る。閾値未満なら実装せず、profile と見送り判断を記録する。
+
+#### lazy flags
+
+flag write の多くが読まれる前に上書きされることが実アプリ counter で確認できた場合だけ実装する。conditional branch、ADC/SBC、MRS、exception stacking、diagnostic read の前には必ず正確に materialize する。
+
+#### inline memory fast path
+
+SRAM/XIP access が CPU host cycles の有意な割合を占める場合だけ、inline fast path と MMIO/fault cold path を分離する。alias、contention、fault ordering は維持する。blanket inline は行わず、binary size と I-cache 回帰を必ず測る。
+
+#### tiered JIT
+
+上記の interpreter 改善後も immutable XIP block の dispatch が最大の残存 cost である場合に限り、別 HLD を作って判断する。対象は hot な immutable XIP block とし、MMIO、IRQ、fault、invalidation では side exit する。cycle accounting と一命令境界を証明できない設計は実装しない。
+
+P8 の各候補も、通常フェーズと同じ correctness と 10-pair A/B を省略しない。
+
+## 7. 採否規則
+
+候補ごとに次の順で判断する。
+
+1. correctness 不一致: 即時不採用。原因を記録して feature を既定無効にする。
+2. profile mechanism 不成立: 対象 event が存在しない、または想定 counter が動かなければ実装しない/不採用とする。
+3. 二 workload の combined 95% CI 上限が 0 以下: 不採用。回帰 counter と仮説の誤りを記録する。
+4. combined CI がゼロをまたぐ: 単独では production 採用しない。ただし combined point estimate が正、各 workload median が -3% より上、変更が小さく独立なら feature-gated bank に残せる。
+5. 単独 production 候補: combined 95% CI 下限が 0 より大きく、両 workload の median が正であること。
+6. bank: 組み合わせた production binary を新 batch で直接測る。単独改善率を足し算しない。
+7. final production 採用: combined 95% CI 下限が 0 より大きく、どの代表 workload にも median 3% 超の回帰がなく、全 correctness gate が一致すること。
+8. combined effect に正の信号がない bank: production tree から除き、履歴は decision record に残す。
+
+combined は §5.4 の等 workload 重み log effect である。3% は測定開始前の「重大なアプリ回帰」判定値であり、候補の最低改善率ではない。固定 5% の改善率を採用条件にはしない。
+
+規則5は、候補一つを単独で通常 production path へ統合する条件である。規則4で bank になった候補は単独統合せず、feature-gated のまま他候補との combined build だけを規則7で再評価できる。規則7を通った組合せだけを一括して通常 path へ統合し、統合後 binary をさらに最終 batch で再確認する。
+
+採否にかかわらず、全候補に decision record を作る。
+
+## 8. decision record の必須項目
+
+- candidate ID、feature、commit
+- 仮説と変更した hot path
+- baseline/candidate executable SHA-256
+- firmware、target revision、scenario、runner、descriptor
+- host CPU、OS、kernel、compiler、linker
+- build command と environment
+- profile counter の前後差
+- workload ごと 10 pair、合計 40 measured run の全 raw measurement
+- workload 別/combined の geometric mean effect、median、IQR、95% CI
+- correctness digest の比較
+- binary size、maximum RSS
+- 採用、不採用、bank の判断と理由
+- 既知の制約と次の候補
+
+結果 JSON は、少なくとも次の identity を機械可読で持つ。
+
+```json
+{
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "candidate_id": "P1-A",
+  "baseline_backend_commit": "...",
+  "candidate_backend_commit": "...",
+  "baseline_executable_sha256": "...",
+  "candidate_executable_sha256": "...",
+  "workload": "picotetris-opt1b-vrp5-r10",
+  "firmware_sha256": "...",
+  "target_contract_sha256": "...",
+  "scenario_sha256": "...",
+  "batch_id": "...",
+  "pair_index": 1,
+  "order": "AB",
+  "run_ids": ["run-001", "run-002"],
+  "baseline": {},
+  "candidate": {},
+  "pair_log_ratio": 0.0,
+  "baseline_guest_observation_sha256": "...",
+  "candidate_guest_observation_sha256": "...",
+  "guest_observation_equal": true,
+  "baseline_projection_path": "correctness/.../baseline-projection.json",
+  "candidate_projection_path": "correctness/.../candidate-projection.json"
+}
+```
+
+## 9. 中止条件
+
+次の場合、その batch または候補の測定を止める。
+
+- baseline/candidate の backend worktree が dirty、commit 未記録、または candidate が宣言した変更以外を含む。
+- firmware、scenario、target contract、build profile、toolchain、host ISA が baseline/candidate で意図せず異なる。
+- embedded backend commit と Git HEAD が一致しない、または runner SHA/feature set が manifest と一致しない。
+- correctness digest が一致しない。
+- profiler counter の不変条件が破れる。
+- host calibration drift が 2% を超える。
+- 結果を見た後に統計手順、除外規則、停止条件を変更した。
+- historical record を上書きしなければ測定を続けられない。
+
+中止後は同じ batch ID に継ぎ足さず、原因を直して新しい batch として最初から測る。
+
+## 10. 実行順と成果物
+
+| 順序 | 実装 | 必須成果物 |
+|---:|---|---|
+| 1 | P0-A1 runner/schema implementation | Python unit test、schema fixture verification |
+| 2 | P0-0 common baseline admission | 二 workload の admission、baseline manifest |
+| 3 | P0-A2 null batch | calibration、40-run null record、environment verification |
+| 4 | P0-B minimal profiler | profile schema、二 workload profile、disassembly proof |
+| 5 | P1-A tag guard | 単独 profile、correctness、10-pair/workload A/B、decision |
+| 6 | P1-B executable page | 開始 gate、単独・P1 合成 A/B、decision |
+| 7 | P2-A exception fast reject | 開始 gate、IRQ correctness、10-pair/workload A/B、decision |
+| 8 | P3 native/PGO | build matrix、holdout A/B、配布条件 |
+| 9 | P4 compact dispatch | 現行 backend での再評価記録 |
+| 10 | P5 cache geometry | working-set 根拠、候補別 A/B |
+| 11 | P6 predecoded micro-op | handler 単位の累積 A/B |
+| 12 | P7 branch linking | link counter、correctness、合成 A/B |
+| 13 | P8 data-driven candidates | 個別 HLD、correctness、A/B |
+| 14 | production candidate | 全採用候補を組み合わせた最終 A/B |
+
+最終報告では、単独候補の改善率を足し算して総効果を推定しない。実際に組み合わせた一つの production candidate を、同じ二つの実アプリで baseline と直接比較した値だけを最終効果とする。
+
+### 10.1 phase gate
+
+| Gate | 必須入力 | pass | fail 時 |
+|---|---|---|---|
+| P0-A1 | schema/runner unit test | CLI、schema fixture、統計、projection test が通る | 実 workload を走らせず runner を修正 |
+| P0-0 | 二 target contract、共通 commit | 二 workload の guest acceptance と2回 determinism | 共通 commit 選定または新 target revision。候補実装停止 |
+| P0-A2 | admitted baseline | null batch/calibration が完全記録される | runner/host条件を修正し、新 batch ID で全体再実行 |
+| P0-B | admitted baseline | counter invariant と compile-out proof | profiler 修正。P1/P2停止 |
+| P1-A | `unrelated_would_clear > 0` | correctness pass、A/B record 完了 | event 0なら未実装、mismatchなら不採用 |
+| P1-B | filter可能 request率 1%以上、P1-A decision | correctness pass、単独/combined A/B | 未達なら見送り |
+| P2-A | no-candidate reject率 90%以上 | correctness pass、A/B record 完了 | 未達なら見送り |
+| 各 production 候補 | candidate decision | §7 final rule | productionへ統合しない |
+
+## 11. 実装ファイルと検証コマンド
+
+### 11.1 P0-A1 で変更するファイル
+
+- `picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py` — 新規 runner
+- `picocalc_emu/tests/test_benchmark_rp2040_cpu_candidate.py` — subprocess を実行しない固定 fixture unit test
+- `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-ab.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-decision.schema.json`
+- `picocalc_emu/tools/verify_environment.py` — schema/record 検証の登録
+
+P0-A1 は backend hot path を変更しない。ここが最初の実装単位である。
+
+### 11.2 P0-B/P1/P2 で変更する backend file
+
+| Phase | 主な変更ファイル |
+|---|---|
+| P0-B | `rp2040-emu/src/cpu_application_profile.rs`、`lib.rs`、`core/mod.rs`、`core/decode.rs`、両 Cargo manifest、`picocalc-harness/src/main.rs` |
+| P1-A | `rp2040-emu/src/core/mod.rs`、`src/tests.rs`、両 Cargo manifest |
+| P1-B | `rp2040-emu/src/bus/mod.rs`、`core/decode.rs`、`lib.rs`、`src/tests.rs`、`tests/multicore.rs`、両 Cargo manifest |
+| P2-A | `rp2040-emu/src/core/mod.rs`、`core/exceptions.rs` の test、`src/tests.rs`、両 Cargo manifest |
+
+backend 共通回帰 command:
+
+```bash
+cargo fmt --all -- --check
+cargo test --locked -p rp2040-emu
+cargo test --locked -p rp2040-emu --test firmware
+cargo test --locked -p rp2040-emu --test multicore
+cargo test --locked -p rp2040-emu --test dual_model --features threading
+cargo test --locked -p rp2040-emu --test execution_model --features threading,testing
+cargo test --locked --release -p rp2040-emu -p picocalc-board -p picocalc-harness
+cargo build --locked --release -p picocalc-harness --bin picocalc-run
+```
+
+実機 silicon oracle は既存正確性証拠を変更する候補で別途必要性を判断する。本計画の性能測定は USB/実機操作を含まず、P0/P1-A の開始を実機接続に依存させない。
+
+## 12. 実装開始手順
+
+現在の二 repository の通常 checkout には別作業の変更があるため、そこから性能 binary を作らない。共有 root 直下へ directory を作らず、一時 root 内の clean worktree を使う。
+
+```bash
+RP2040_CPU_OPT_TMP="$(mktemp -d /tmp/picocalc-rp2040-cpu-opt.XXXXXX)"
+
+git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
+  worktree add --detach "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  65c795e87321e79b960ac8a7495a205de6a24ec0
+
+git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
+  worktree add --detach "$RP2040_CPU_OPT_TMP/backend-candidate" \
+  65c795e87321e79b960ac8a7495a205de6a24ec0
+
+git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
+  worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
+```
+
+最初に P0-A1 の六ファイルを実装して unit test を閉じる。次に baseline production runner を build して P0-0 admission を行い、合格後に candidate production runner（P0-A2 では baseline と同一 source）を buildして null batch を行う。順序を入れ替えない。P0-B までは最適化コードを入れない。P0-B profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更として P1-A を `backend-candidate` に一変更だけ実装する。
+
+候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
+
+### 12.1 P0 implementation-start Definition of Done
+
+- 新 runner の CLI/schema/statistics unit test が通る。
+- output overwrite、dirty backend、identity mismatch を run 前に拒否する。
+- baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
+- common baseline が二 workload に admission される。
+- null batch と calibration が machine-readable record として検証される。
+- 次工程が P0-B であること、使用 commit/target revision が `manifest.json` に固定される。
+
+この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・効果測定を連続して開始できる。
