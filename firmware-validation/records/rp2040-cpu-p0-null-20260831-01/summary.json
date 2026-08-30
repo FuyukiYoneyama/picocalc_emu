@@ -1,0 +1,51 @@
+{
+  "artifact_type": "summary",
+  "calibration": {
+    "post_median": 4999788.442739572,
+    "post_values": [
+      4849263.5750774285,
+      5008328.341980273,
+      4999788.442739572
+    ],
+    "pre_median": 4822866.84990831,
+    "pre_values": [
+      4913596.436817151,
+      4822866.84990831,
+      4551573.291682626
+    ],
+    "relative_drift": 0.03668390572188951,
+    "valid": false
+  },
+  "candidate_id": "P0-A2",
+  "combined": {},
+  "host": {
+    "allowed_cpus": [
+      0
+    ],
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.35595703125,
+      0.68701171875,
+      0.7724609375
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "reported_mhz": 3693.107
+  },
+  "measured_runs": 40,
+  "measurement_policy": {
+    "inter_run_cooldown_seconds": 60.0
+  },
+  "pair_results": [],
+  "pairs": 10,
+  "record_id": "rp2040-cpu-p0-null-20260831-01",
+  "schedule": {
+    "ab": 5,
+    "ba": 5
+  },
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "status": "invalid",
+  "workloads": {}
+}
