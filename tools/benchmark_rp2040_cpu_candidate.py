@@ -1020,13 +1020,48 @@ def _write_text_once(path: Path, text: str) -> None:
 
 def _registered_report(workload: Mapping[str, Any]) -> Dict[str, Any]:
     target = workload["target"]
-    record_path = ROOT / target["validation"]["record"]
+    validation = target.get("validation")
+    if not isinstance(validation, Mapping):
+        raise ValueError("target validation attestation is missing")
+    validation_ref = validation.get("record")
+    if not isinstance(validation_ref, str) or not validation_ref:
+        raise ValueError("target validation attestation has no record path")
+    validation_path = ROOT / validation_ref
+    validation_path = validation_path.resolve()
+    try:
+        validation_path.relative_to(ROOT.resolve())
+    except ValueError as error:
+        raise ValueError("validation record path escapes repository: {}".format(validation_path)) from error
+    validation_record = _read_json(validation_path)
+    evidence = validation_record.get("evidence") if isinstance(validation_record, Mapping) else None
+    if not isinstance(evidence, Mapping):
+        raise ValueError("validation record has no evidence record path: {}".format(validation_path))
+    record_ref = evidence.get("record")
+    if not isinstance(record_ref, str) or not record_ref:
+        raise ValueError("validation evidence has no record path: {}".format(validation_path))
+    record_path = ROOT / record_ref
+    record_path = record_path.resolve()
+    try:
+        record_path.relative_to(ROOT.resolve())
+    except ValueError as error:
+        raise ValueError("validation evidence path escapes repository: {}".format(record_path)) from error
+    expected_record_sha256 = evidence.get("sha256")
+    if not isinstance(expected_record_sha256, str) or sha256_file(record_path) != expected_record_sha256:
+        raise ValueError("validation evidence record SHA-256 mismatch: {}".format(record_path))
     record = _read_json(record_path)
-    report_info = record.get("firmware_run", {}).get("report", {})
+    report_info = record.get("firmware_run", {}).get("report", {}) if isinstance(record, Mapping) else {}
     report_path = report_info.get("path")
     if not isinstance(report_path, str):
         raise ValueError("validation record has no firmware report path: {}".format(record_path))
-    report = _read_json(ROOT / report_path)
+    report_file = (ROOT / report_path).resolve()
+    try:
+        report_file.relative_to(ROOT.resolve())
+    except ValueError as error:
+        raise ValueError("firmware report path escapes repository: {}".format(report_file)) from error
+    expected_report_sha256 = report_info.get("sha256")
+    if not isinstance(expected_report_sha256, str) or sha256_file(report_file) != expected_report_sha256:
+        raise ValueError("registered firmware report SHA-256 mismatch: {}".format(report_file))
+    report = _read_json(report_file)
     if not isinstance(report, dict):
         raise ValueError("registered report is not an object: {}".format(report_path))
     return report

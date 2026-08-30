@@ -120,6 +120,55 @@ class CandidateRunnerTests(unittest.TestCase):
             self.assertIn(expected[0], command)
             self.assertEqual(command[command.index(expected[0]) + 1], expected[1])
 
+    def test_registered_report_follows_validation_evidence_record(self):
+        report = {"cycles": 123, "observable": "fixed"}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            validation_path = root / "firmware-validation" / "validations" / "fixture.json"
+            record_path = root / "firmware-validation" / "records" / "fixture" / "record.json"
+            report_path = root / "firmware-validation" / "records" / "fixture" / "run-report.json"
+            validation_path.parent.mkdir(parents=True)
+            record_path.parent.mkdir(parents=True)
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            report_sha256 = self.module.sha256_file(report_path)
+            record_path.write_text(
+                json.dumps(
+                    {
+                        "firmware_run": {
+                            "report": {
+                                "path": "firmware-validation/records/fixture/run-report.json",
+                                "sha256": report_sha256,
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            record_sha256 = self.module.sha256_file(record_path)
+            validation_path.write_text(
+                json.dumps(
+                    {
+                        "evidence": {
+                            "record": "firmware-validation/records/fixture/record.json",
+                            "sha256": record_sha256,
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            target = {
+                "validation": {
+                    "record": "firmware-validation/validations/fixture.json"
+                }
+            }
+            with mock.patch.object(self.module, "ROOT", root):
+                self.assertEqual(self.module._registered_report({"target": target}), report)
+
+            record_path.write_text(record_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+            with mock.patch.object(self.module, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "evidence record SHA-256 mismatch"):
+                    self.module._registered_report({"target": target})
+
     def test_runner_embedded_commit_mismatch_is_rejected_before_launch(self):
         with tempfile.TemporaryDirectory() as temporary:
             runner = Path(temporary) / "picocalc-run"
