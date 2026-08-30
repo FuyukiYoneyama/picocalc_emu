@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 passed — P0-A2 pending
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 first batch invalid (host drift) — P0-B pending
 - Date: 2026-08-30
 - Review completed: 2026-08-30
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -26,7 +26,7 @@
 
 この版で「実装開始可能」とは、まだ存在しない runner/schema を作る最初の単位 P0-A1 について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。順序は `P0-A1 runner/tests → P0-0 admission → P0-A2 null batch → P0-B profiler` とする。P1 以降は P0 の実測 gate を通った候補だけを開始する。
 
-P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了し、P0-A2 null batch と CPU profiler 実装は次工程である。
+P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了した。P0-A2 の最初の null batch は 40 measured run と correctness を完了したが、pre/post calibration の host throughput drift が 14.68% となり invalid として保存した。従って、これまでの runner、admission、schema、測定設計は有効なまま、安定した host 条件で新しい batch ID の null batch を取り直す段階にある。
 
 ## 1. 目的
 
@@ -454,7 +454,11 @@ P0-0 合格後、common baseline executable を A と B の両方に指定し、
 python3 tools/verify_environment.py --scope target-schema
 ```
 
-P0-A 全体の完了は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件で判定する。
+2026-08-30 の最初の実行 `rp2040-cpu-p0-null-20260830-02` は、40 measured run と production final-report correctness を完了した。しかし PicoTetris baseline calibration は pre values `[5253901.337729141, 5083548.419297449, 5034495.0317524355]`、post values `[4337170.51868368, 4168671.39552155, 4373826.086797396]`、pre median `5083548.419297449`、post median `4337170.51868368`、relative drift `0.1468222271239661`（14.68%、許容2%）となったため、効果の統計は採用せず `decision.status=invalid` とした。invalid record は `firmware-validation/records/rp2040-cpu-p0-null-20260830-02/` に保存し、40 run、correctness leaf、manifest、decision、`SHA256SUMS` を保持する。この drift は guest projection mismatch や backend identity 不一致ではない。
+
+この batch の検証で、runner が書く audio sink harness expectation を含まない guest projection と environment verifier の実装差も判明した。`tools/verify_environment.py` を runner と同じ projection（`backend_build`、`backend_commit`、`audio_sink.expected_count`、`audio_sink.expected_sha256` を除外し、実測 audio fields は保持）へ修正し、projection 固定テストを追加した。修正後は invalid record の `SHA256SUMS` と target-schema 37 checks が pass した。これは invalid 判定を pass に変えるものではなく、失敗記録を正しく検証可能にする修正である。
+
+同じ batch ID へ追記・再試行はしない。host load、thermal/frequency 状態、他の処理を確認・安定化し、CPU affinity と実行環境の記録を強化したうえで、新しい batch ID で warm-up から全体を取り直す。P0-A 全体の完了は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件で判定する。P0-A2 が pass するまで P0-B の profile 実行と P1/P2 候補の採否を開始しない。
 
 #### P0-B: 最小 CPU application profiler
 
@@ -945,7 +949,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。次に candidate production runner（P0-A2 では baseline と同一 source）を同じ clean backend から用意して null batch を行う。順序を入れ替えない。P0-B までは最適化コードを入れない。P0-B profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更として P1-A を `backend-candidate` に一変更だけ実装する。
+P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の最初の null batch は host drift gate により invalid となったが、その 40 run と correctness は証拠として保持している。次は host 条件を安定化した新しい batch ID で、candidate production runner（P0-A2 では baseline と同一 source）を同じ clean backend から用意して warm-up から null batch を取り直す。順序を入れ替えない。P0-A2 pass までは P0-B profile 実行と最適化コードの採否を開始しない。P0-B profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更として P1-A を `backend-candidate` に一変更だけ実装する。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
@@ -955,7 +959,7 @@ P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 ad
 - output overwrite、dirty backend、identity mismatch を run 前に拒否する。
 - baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
 - common baseline が二 workload に admission され、record と verifier が pass する。
-- null batch と calibration が machine-readable record として検証される。
+- null batch と calibration が machine-readable record として検証される（最初の `rp2040-cpu-p0-null-20260830-02` は drift invalid の証拠として保存済み。pass 用の新 batch が必要）。
 - 次工程が P0-B であること、使用 commit/target revision が `manifest.json` に固定される。
 
 この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・効果測定を連続して開始できる。

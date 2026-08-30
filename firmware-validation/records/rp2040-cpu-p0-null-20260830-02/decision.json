@@ -1,0 +1,102 @@
+{
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "d47660fe9807f6ab79a072423cbd147cacd5e0bc8bfaaa17ae552b04a4af37bb",
+      "commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "production",
+      "role": "baseline_production",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7"
+    },
+    "candidate_production": {
+      "build_provenance_sha256": "d47660fe9807f6ab79a072423cbd147cacd5e0bc8bfaaa17ae552b04a4af37bb",
+      "commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "production",
+      "role": "candidate_production",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7"
+    }
+  },
+  "candidate_id": "P0-A2",
+  "decision_kind": "invalid",
+  "feature_set": [
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "reported_mhz": 3693.107
+  },
+  "reasons": [
+    "calibration drift exceeded 2%",
+    "{'pre_values': [5253901.337729141, 5083548.419297449, 5034495.0317524355], 'post_values': [4337170.51868368, 4168671.39552155, 4373826.086797396], 'pre_median': 5083548.419297449, 'post_median': 4337170.51868368, 'relative_drift': 0.1468222271239661, 'valid': False}"
+  ],
+  "record_id": "rp2040-cpu-p0-null-20260830-02",
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "statistics": {
+    "artifact_type": "summary",
+    "calibration": {
+      "post_median": 4337170.51868368,
+      "post_values": [
+        4337170.51868368,
+        4168671.39552155,
+        4373826.086797396
+      ],
+      "pre_median": 5083548.419297449,
+      "pre_values": [
+        5253901.337729141,
+        5083548.419297449,
+        5034495.0317524355
+      ],
+      "relative_drift": 0.1468222271239661,
+      "valid": false
+    },
+    "candidate_id": "P0-A2",
+    "combined": {},
+    "host": {
+      "kernel": "6.18.33.2-microsoft-standard-WSL2",
+      "logical_cpus": 12,
+      "model": "AMD Ryzen 5 5600X 6-Core Processor",
+      "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+      "reported_mhz": 3693.107
+    },
+    "measured_runs": 40,
+    "pair_results": [],
+    "pairs": 10,
+    "record_id": "rp2040-cpu-p0-null-20260830-02",
+    "schedule": {
+      "ab": 5,
+      "ba": 5
+    },
+    "schema_id": "picocalc.rp2040-cpu-ab",
+    "schema_version": 1,
+    "status": "invalid",
+    "workloads": {}
+  },
+  "status": "invalid",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

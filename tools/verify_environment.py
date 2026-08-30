@@ -2093,6 +2093,34 @@ def _canonical_json_sha256(value: object) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _rp2040_guest_observation_projection(report: object) -> Dict[str, Any]:
+    """Return the projection used by the RP2040 CPU candidate runner.
+
+    Backend identity is deliberately excluded because candidate and
+    registered reports use different backend commits.  The two audio oracle
+    expectation fields are harness inputs echoed into schema-8 reports, not
+    guest observations; measured audio fields remain part of the projection.
+    Keep this definition in lockstep with
+    ``benchmark_rp2040_cpu_candidate.guest_observation_projection`` so the
+    environment verifier validates the artifacts the runner actually writes.
+    """
+    if not isinstance(report, dict):
+        return {}
+    projection: Dict[str, Any] = {
+        key: value
+        for key, value in report.items()
+        if key not in {"backend_build", "backend_commit"}
+    }
+    audio_sink = projection.get("audio_sink")
+    if isinstance(audio_sink, dict):
+        projection["audio_sink"] = {
+            key: value
+            for key, value in audio_sink.items()
+            if key not in {"expected_count", "expected_sha256"}
+        }
+    return projection
+
+
 def _expected_rp2040_cpu_schedule(workload_ids: List[str]) -> Dict[str, Dict[str, object]]:
     expected: Dict[str, Dict[str, object]] = {}
     run_number = 1
@@ -2830,11 +2858,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             if not isinstance(report, dict) or not isinstance(projection, dict):
                                 problems.append("{} {} report/projection is not an object".format(workload_dir, role))
                                 continue
-                            expected_projection = {
-                                key: value
-                                for key, value in report.items()
-                                if key not in {"backend_build", "backend_commit"}
-                            }
+                            expected_projection = _rp2040_guest_observation_projection(report)
                             if projection != expected_projection:
                                 problems.append("{} {} projection differs from report".format(workload_dir, role))
                             digest = _canonical_json_sha256(projection)

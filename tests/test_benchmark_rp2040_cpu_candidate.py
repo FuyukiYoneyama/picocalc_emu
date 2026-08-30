@@ -475,6 +475,27 @@ class CandidateRunnerTests(unittest.TestCase):
         )
         self.assertEqual(checks[1]["records"], expected_records)
 
+    def test_environment_verifier_projection_matches_runner_audio_contract(self):
+        verifier = load_verifier()
+        report = {
+            "backend_build": {"commit": "a" * 40, "dirty": False},
+            "backend_commit": "a" * 40,
+            "audio_sink": {
+                "expected_count": 49152,
+                "expected_sha256": "b" * 64,
+                "dma_write_count": 49152,
+                "pcm_sha256": "c" * 64,
+            },
+            "cycles": 123,
+        }
+        projection = verifier._rp2040_guest_observation_projection(report)
+        self.assertNotIn("backend_build", projection)
+        self.assertNotIn("backend_commit", projection)
+        self.assertNotIn("expected_count", projection["audio_sink"])
+        self.assertNotIn("expected_sha256", projection["audio_sink"])
+        self.assertEqual(projection["audio_sink"]["dma_write_count"], 49152)
+        self.assertEqual(projection["audio_sink"]["pcm_sha256"], "c" * 64)
+
     def test_admission_gate_rechecks_receipts_and_full_workload_identity(self):
         import picocalc
 

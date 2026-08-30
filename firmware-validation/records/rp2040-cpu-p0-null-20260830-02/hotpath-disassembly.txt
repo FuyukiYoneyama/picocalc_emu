@@ -1,0 +1,1 @@
+P0-A1: hot-path disassembly is not collected until P0-B.
