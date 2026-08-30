@@ -39,6 +39,10 @@ DECISION_SCHEMA_ID = "picocalc.rp2040-cpu-decision"
 RECORD_TYPE = "picocalc.rp2040-cpu-record"
 SCHEMA_VERSION = 1
 REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"))
+# The first null batch exposed a long-session host throughput drift.  Keep the
+# recovery interval fixed and part of the record identity so it cannot be
+# tuned after looking at a result.
+AB_INTER_RUN_COOLDOWN_SECONDS = 60.0
 # Cargo features accepted by the measurement contract.  The allow-list also
 # includes planned CPU-candidate features so the runner can be prepared before
 # the corresponding backend implementation lands.
@@ -405,10 +409,20 @@ def host_cpu() -> Dict[str, Any]:
                 frequencies.append(float(line.split(":", 1)[1].strip()))
     except (OSError, UnicodeError, ValueError, IndexError):
         pass
+    try:
+        loadavg: Optional[List[float]] = list(os.getloadavg())
+    except (AttributeError, OSError):
+        loadavg = None
+    try:
+        allowed_cpus: Optional[List[int]] = sorted(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        allowed_cpus = None
     return {
         "model": model,
         "logical_cpus": os.cpu_count(),
         "reported_mhz": statistics.median(frequencies) if frequencies else None,
+        "loadavg": loadavg,
+        "allowed_cpus": allowed_cpus,
         "platform": platform.platform(),
         "kernel": platform.release(),
     }
@@ -834,6 +848,22 @@ def calibration_drift(pre: Sequence[float], post: Sequence[float]) -> Dict[str, 
         "relative_drift": relative,
         "valid": relative <= 0.02,
     }
+
+
+def validate_inter_run_cooldown(value: float) -> float:
+    """Validate the fixed host-recovery interval used by performance A/B."""
+    if not math.isfinite(value) or value != AB_INTER_RUN_COOLDOWN_SECONDS:
+        raise ValueError(
+            "--inter-run-cooldown-seconds is fixed at {:.0f}".format(
+                AB_INTER_RUN_COOLDOWN_SECONDS
+            )
+        )
+    return value
+
+
+def _sleep_between_runs(seconds: float) -> None:
+    if seconds > 0:
+        time.sleep(seconds)
 
 
 def _read_json(path: Path) -> Any:
@@ -1351,6 +1381,14 @@ def _set_cpu_affinity(cpu: Optional[int]) -> Optional[List[int]]:
     if cpu not in before:
         raise ValueError("--cpu is outside the allowed affinity set")
     os.sched_setaffinity(0, {cpu})
+    effective = sorted(os.sched_getaffinity(0))
+    if effective != [cpu]:
+        os.sched_setaffinity(0, set(before))
+        raise ValueError(
+            "--cpu affinity request was not applied: requested {}, got {}".format(
+                cpu, effective
+            )
+        )
     return before
 
 
@@ -1420,13 +1458,14 @@ def _workload_manifest_entries(workloads: Sequence[Mapping[str, Any]]) -> List[D
 
 def _base_manifest(
     batch_id: str, workloads: Sequence[Mapping[str, Any]], identities: Mapping[str, Any],
-    *, candidate_id: str, cpu: Optional[int], feature_set: Sequence[str] = ()
+    *, candidate_id: str, cpu: Optional[int], feature_set: Sequence[str] = (),
+    measurement_policy: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Any]:
     all_features = set(effective_feature_set(feature_set))
     for identity in identities.values():
         if isinstance(identity, Mapping) and isinstance(identity.get("feature_set"), list):
             all_features.update(normalize_feature_set(identity["feature_set"]))
-    return {
+    manifest = {
         "record_id": batch_id,
         "candidate_id": candidate_id,
         "workloads": _workload_manifest_entries(workloads),
@@ -1435,6 +1474,9 @@ def _base_manifest(
         "host": host_cpu(),
         "measurement_cpu": cpu,
     }
+    if measurement_policy is not None:
+        manifest["measurement_policy"] = dict(measurement_policy)
+    return manifest
 
 
 def _decision_context(
@@ -1469,9 +1511,12 @@ def _manifest_decision_context(
     merged_features = manifest.get("feature_set", feature_set)
     if not isinstance(merged_identities, Mapping) or not isinstance(merged_features, list):
         raise ValueError("record manifest decision identity is malformed: {}".format(record_root))
-    return _decision_context(
+    context = _decision_context(
         workloads, merged_identities, feature_set=merged_features,
     )
+    if "measurement_policy" in manifest:
+        context["measurement_policy"] = manifest["measurement_policy"]
+    return context
 
 
 def run_admission(args: argparse.Namespace) -> int:
@@ -1725,15 +1770,16 @@ def run_correctness(args: argparse.Namespace) -> int:
 def _run_calibration(
     workload: Mapping[str, Any], backend: Path, runner: Path, count: int,
     expected_backend_identity: Optional[Mapping[str, Any]] = None,
+    inter_run_cooldown_seconds: float = 0.0,
 ) -> List[float]:
     values = []
     for _ in range(count):
-        values.append(
-            run_guest(
-                workload, backend, runner,
-                expected_backend_identity=expected_backend_identity,
-            )["measurement"]["emulated_cycles_per_wall_second"]
-        )
+        measurement = run_guest(
+            workload, backend, runner,
+            expected_backend_identity=expected_backend_identity,
+        )["measurement"]["emulated_cycles_per_wall_second"]
+        values.append(measurement)
+        _sleep_between_runs(inter_run_cooldown_seconds)
     return values
 
 
@@ -1916,6 +1962,9 @@ def run_ab(args: argparse.Namespace) -> int:
         raise ValueError("ab fixes --warmup at 1")
     if args.calibration_runs != 3:
         raise ValueError("ab fixes --calibration-runs at 3")
+    inter_run_cooldown_seconds = validate_inter_run_cooldown(
+        args.inter_run_cooldown_seconds
+    )
     if args.cpu is None:
         raise ValueError("ab requires --cpu for affinity pinning")
     if getattr(args, "final_report_only", False) and args.candidate_id != "P0-A2":
@@ -1950,6 +1999,9 @@ def run_ab(args: argparse.Namespace) -> int:
         _base_manifest(
             batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
             feature_set=getattr(args, "feature_set", []),
+            measurement_policy={
+                "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
+            },
         ),
     )
     decision_context = _manifest_decision_context(
@@ -1969,13 +2021,16 @@ def run_ab(args: argparse.Namespace) -> int:
                     workload, args.baseline_backend, args.baseline_runner,
                     expected_backend_identity=identities["baseline_production"],
                 )
+                _sleep_between_runs(inter_run_cooldown_seconds)
                 run_guest(
                     workload, args.candidate_backend, args.candidate_runner,
                     expected_backend_identity=identities["candidate_production"],
                 )
+                _sleep_between_runs(inter_run_cooldown_seconds)
         pre = _run_calibration(
             calibration_workload, args.baseline_backend, args.baseline_runner,
             args.calibration_runs, identities["baseline_production"],
+            inter_run_cooldown_seconds,
         )
         schedule = make_ab_schedule([workload["id"] for workload in workloads], args.pairs)
         by_id = {workload["id"]: workload for workload in workloads}
@@ -1998,6 +2053,7 @@ def run_ab(args: argparse.Namespace) -> int:
                 **result["measurement"],
             }
             _write_json_once(record_root / "ab" / "{}.json".format(item["run_id"]), leaf)
+            _sleep_between_runs(inter_run_cooldown_seconds)
             results[item["workload"]].setdefault(item["pair"], {})[item["role"]] = leaf
         post = _run_calibration(
             calibration_workload,
@@ -2005,6 +2061,7 @@ def run_ab(args: argparse.Namespace) -> int:
             args.baseline_runner,
             args.calibration_runs,
             identities["baseline_production"],
+            inter_run_cooldown_seconds,
         )
         calibration = calibration_drift(pre, post)
         if not calibration["valid"]:
@@ -2023,6 +2080,9 @@ def run_ab(args: argparse.Namespace) -> int:
                 "pair_results": [],
                 "combined": {},
                 "host": host_cpu(),
+                "measurement_policy": {
+                    "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
+                },
             }
             _write_json_once(record_root / "summary.json", invalid_summary)
             _write_json_replace(
@@ -2097,6 +2157,9 @@ def run_ab(args: argparse.Namespace) -> int:
             "pair_results": pair_results,
             "combined": summarize_log_effect(combined),
             "host": host_cpu(),
+            "measurement_policy": {
+                "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
+            },
         }
         mismatches = [
             result for result in pair_results if result["guest_observation_equal"] is not True
@@ -2509,6 +2572,11 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ab.add_argument("--pairs", type=int, default=10)
     ab.add_argument("--warmup", type=int, default=1)
     ab.add_argument("--calibration-runs", type=int, default=3)
+    ab.add_argument(
+        "--inter-run-cooldown-seconds", type=float,
+        default=AB_INTER_RUN_COOLDOWN_SECONDS,
+        help="fixed host-recovery interval between guest runs",
+    )
     ab.add_argument("--candidate-id", default="candidate")
     ab.add_argument(
         "--final-report-only", action="store_true",
@@ -2555,6 +2623,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             parser.error("--warmup is fixed at 1")
         if args.calibration_runs != 3:
             parser.error("--calibration-runs is fixed at 3")
+        try:
+            validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
+        except ValueError as error:
+            parser.error(str(error))
         if args.cpu is None:
             parser.error("ab requires --cpu for affinity pinning")
         if args.final_report_only and args.candidate_id != "P0-A2":

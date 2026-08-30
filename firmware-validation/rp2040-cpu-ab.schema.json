@@ -47,7 +47,15 @@
     "combined": {"type": "object"},
     "pair_results": {"type": "array"},
     "behavior": {"type": "object"},
-    "host": {"type": "object"}
+    "host": {"type": "object"},
+    "measurement_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inter_run_cooldown_seconds"],
+      "properties": {
+        "inter_run_cooldown_seconds": {"type": "number", "minimum": 0}
+      }
+    }
   },
   "allOf": [
     {

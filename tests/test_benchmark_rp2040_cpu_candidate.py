@@ -403,6 +403,47 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(valid["pre_values"], [100.0, 101.0, 99.0])
         self.assertEqual(valid["post_values"], [101.0, 100.0, 102.0])
 
+    def test_ab_inter_run_cooldown_is_fixed_before_measurement(self):
+        self.assertEqual(
+            self.module.validate_inter_run_cooldown(
+                self.module.AB_INTER_RUN_COOLDOWN_SECONDS
+            ),
+            self.module.AB_INTER_RUN_COOLDOWN_SECONDS,
+        )
+        with self.assertRaisesRegex(ValueError, "fixed at 60"):
+            self.module.validate_inter_run_cooldown(0.0)
+        with self.assertRaisesRegex(ValueError, "fixed at 60"):
+            self.module.validate_inter_run_cooldown(float("nan"))
+
+    def test_calibration_sleeps_between_guest_runs(self):
+        measurement = {
+            "measurement": {"emulated_cycles_per_wall_second": 123.0}
+        }
+        with mock.patch.object(self.module, "run_guest", return_value=measurement) as run_guest:
+            with mock.patch.object(self.module.time, "sleep") as sleep:
+                values = self.module._run_calibration(
+                    {}, Path("backend"), Path("runner"), 3,
+                    inter_run_cooldown_seconds=self.module.AB_INTER_RUN_COOLDOWN_SECONDS,
+                )
+        self.assertEqual(values, [123.0, 123.0, 123.0])
+        self.assertEqual(run_guest.call_count, 3)
+        self.assertEqual(
+            sleep.call_args_list,
+            [mock.call(self.module.AB_INTER_RUN_COOLDOWN_SECONDS)] * 3,
+        )
+
+    def test_cpu_affinity_fails_closed_when_kernel_does_not_apply_request(self):
+        with mock.patch.object(self.module.os, "sched_getaffinity", side_effect=[{0, 1}, {0}]), \
+             mock.patch.object(self.module.os, "sched_setaffinity") as set_affinity:
+            self.assertEqual(self.module._set_cpu_affinity(0), [0, 1])
+            set_affinity.assert_called_once_with(0, {0})
+
+        with mock.patch.object(self.module.os, "sched_getaffinity", side_effect=[{0, 1}, {1}]), \
+             mock.patch.object(self.module.os, "sched_setaffinity") as set_affinity:
+            with self.assertRaisesRegex(ValueError, "was not applied"):
+                self.module._set_cpu_affinity(0)
+            self.assertEqual(set_affinity.call_args_list, [mock.call(0, {0}), mock.call(0, {0, 1})])
+
     def test_record_root_must_be_a_canonical_direct_child(self):
         records_root = ROOT / "firmware-validation" / "records"
         valid = records_root / "rp2040-cpu-fixture-20260830-01"
@@ -445,6 +486,24 @@ class CandidateRunnerTests(unittest.TestCase):
                 context["feature_set"],
                 ["behavior-trace", "cpu-application-profiler", "sd-gen1-multiblock"],
             )
+
+    def test_base_manifest_records_measurement_policy(self):
+        identity = {
+            "commit": "a" * 40,
+            "dirty": False,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+            "feature_set": ["sd-gen1-multiblock"],
+        }
+        manifest = self.module._base_manifest(
+            "rp2040-cpu-fixture", [], {"baseline_production": identity},
+            candidate_id="P0-A2", cpu=0,
+            measurement_policy={"inter_run_cooldown_seconds": 60.0},
+        )
+        self.assertEqual(
+            manifest["measurement_policy"],
+            {"inter_run_cooldown_seconds": 60.0},
+        )
 
     def test_record_manifest_refuses_modified_leaf_after_checksum_index(self):
         with tempfile.TemporaryDirectory() as temporary:

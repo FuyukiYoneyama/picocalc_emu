@@ -2562,6 +2562,15 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
             manifest_features = manifest.get("feature_set")
             if isinstance(manifest_features, list) and sorted(set(manifest_features)) != sorted(identity_feature_union):
                 problems.append("{} manifest feature_set differs from role identity feature union".format(record_dir))
+        measurement_policy = manifest.get("measurement_policy")
+        if measurement_policy is not None:
+            if (
+                not isinstance(measurement_policy, dict)
+                or set(measurement_policy) != {"inter_run_cooldown_seconds"}
+                or type(measurement_policy.get("inter_run_cooldown_seconds")) not in (int, float)
+                or measurement_policy.get("inter_run_cooldown_seconds") < 0
+            ):
+                problems.append("{} manifest measurement_policy is invalid".format(record_dir))
         if not decision_path.is_file():
             problems.append("{} is missing decision.json".format(record_dir))
             decision = None
@@ -2580,6 +2589,8 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 problems.append("{} decision backend identities differ from manifest".format(record_dir))
             if decision.get("feature_set") != manifest.get("feature_set"):
                 problems.append("{} decision feature_set differs from manifest".format(record_dir))
+            if decision.get("measurement_policy") != measurement_policy:
+                problems.append("{} decision measurement_policy differs from manifest".format(record_dir))
             if decision.get("status") not in {
                 "pass", "fail", "bank", "pending", "invalid", "not_run"
             }:
@@ -2678,6 +2689,8 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                         problems.append("{} summary record_id differs from manifest".format(record_dir))
                     if summary.get("pairs") != 10 or summary.get("measured_runs") != 40:
                         problems.append("{} summary does not describe the fixed 10-pair/40-run batch".format(record_dir))
+                    if summary.get("measurement_policy") != measurement_policy:
+                        problems.append("{} summary measurement_policy differs from manifest".format(record_dir))
                     summary_is_invalid = summary.get("status") == "invalid"
                     if not isinstance(summary.get("workloads"), dict):
                         problems.append("{} summary workloads is not an object".format(record_dir))

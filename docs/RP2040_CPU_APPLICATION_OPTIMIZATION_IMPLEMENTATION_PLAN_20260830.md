@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 passed — P0-A2 first batch invalid (host drift) — P0-B pending
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 first batch invalid (host drift) — stabilization ready for new batch — P0-B pending
 - Date: 2026-08-30
 - Review completed: 2026-08-30
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -293,8 +293,9 @@ handler group は相互排他的にし、未知 encoding は `other` へ入れ�
 8. 各 workload で 10 pair、すなわち 20 measured run を実行する。奇数 pair は AB、偶数 pair は BA とし、合計は 5 AB + 5 BA とする。
 9. 二 workload 合計は 40 measured run である。pair ごとに workload 順も交互にして、片方だけが常に先にならないようにする。
 10. run ごとの結果を `run-001.json` から順に上書きせず保存する。
+11. 各 guest invocation の終了後に固定 60 秒の host-recovery cooldown を置く。cooldown は measured wall time に含めず、manifest、summary、decision の `measurement_policy` に記録する。値は結果を見て変更せず、変更時は新しい runner version と新しい batch ID を使う。
 
-各 run で次を記録する。
+各 run で次を記録する。record の `host` snapshot には model、logical CPU 数、報告周波数中央値、load average、allowed CPU 集合、platform、kernel を保存し、manifest は開始時、summary/decision は完了時の snapshot とする。選択 CPU の affinity は設定直後に実効集合を再読し、要求値と一致しなければ measured run を開始せず失敗させる。
 
 - `time.perf_counter_ns` で runner process 全体を囲った wall-clock time
 - emulated cycles/second
@@ -331,6 +332,7 @@ python3 tools/benchmark_rp2040_cpu_candidate.py ab \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
   --pairs 10 --warmup 1 --calibration-runs 3 --cpu <logical-cpu> \
+  --inter-run-cooldown-seconds 60 \
   --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --batch-id rp2040-cpu-<candidate>-YYYYMMDD-NN \
   --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN
@@ -428,6 +430,8 @@ Python unit test は最低限次を固定入力で検査する。
 - 同じ batch manifest を持つ record root は subcommand 間で再利用できるが、既存 leaf artifact の上書き、record ID/identity 不一致は拒否する。
 - 各 runner は build-provenance sidecar（binary SHA と Cargo 実効 feature 集合を含む）がなければ拒否する。
 - pre/post calibration drift が 2% 超なら batch 全体を invalid にする。
+- A/B の cooldown は 60 秒の固定値で、adaptive な変更を拒否し、manifest/summary/decision の `measurement_policy` に同じ値を保存する。
+- affinity 設定後の実効 CPU 集合が要求値と異なる場合、measured subprocess を開始せず fail-closed にする。
 
 P0-A1 テストコマンド:
 
@@ -458,7 +462,7 @@ python3 tools/verify_environment.py --scope target-schema
 
 この batch の検証で、runner が書く audio sink harness expectation を含まない guest projection と environment verifier の実装差も判明した。`tools/verify_environment.py` を runner と同じ projection（`backend_build`、`backend_commit`、`audio_sink.expected_count`、`audio_sink.expected_sha256` を除外し、実測 audio fields は保持）へ修正し、projection 固定テストを追加した。修正後は invalid record の `SHA256SUMS` と target-schema 37 checks が pass した。これは invalid 判定を pass に変えるものではなく、失敗記録を正しく検証可能にする修正である。
 
-同じ batch ID へ追記・再試行はしない。host load、thermal/frequency 状態、他の処理を確認・安定化し、CPU affinity と実行環境の記録を強化したうえで、新しい batch ID で warm-up から全体を取り直す。P0-A 全体の完了は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件で判定する。P0-A2 が pass するまで P0-B の profile 実行と P1/P2 候補の採否を開始しない。
+同じ batch ID へ追記・再試行はしない。最初の drift を受け、runner は各 guest invocation 間に固定 60 秒の cooldown を挿入し、その測定ポリシーを manifest、summary、decision へ保存する。CPU affinity は従来どおり明示 CPU へ固定し、設定後の実効集合と開始・完了時 host snapshot（load average を含む）を記録する。値を結果に合わせて変更しない。新しい batch ID で warm-up から全体を取り直す。P0-A 全体の完了は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件で判定する。P0-A2 が pass するまで P0-B の profile 実行と P1/P2 候補の採否を開始しない。
 
 #### P0-B: 最小 CPU application profiler
 

@@ -40,7 +40,15 @@
     "statistics": {"type": "object"},
     "evidence": {"type": "array"},
     "reasons": {"type": "array", "items": {"type": "string"}},
-    "artifacts": {"type": "object"}
+    "artifacts": {"type": "object"},
+    "measurement_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inter_run_cooldown_seconds"],
+      "properties": {
+        "inter_run_cooldown_seconds": {"type": "number", "minimum": 0}
+      }
+    }
   },
   "allOf": [
     {
