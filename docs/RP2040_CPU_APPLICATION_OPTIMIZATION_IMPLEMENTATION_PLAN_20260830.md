@@ -165,7 +165,7 @@ compact dispatch key は過去の PicoTetris で約 4.15% 改善したが、当�
 
 固定 validation は [PicoTetris r10](../firmware-validation/validations/picotetris-opt1b-vrp5-r10.json) と [PicoEdit r4](../firmware-validation/validations/picoedit-r1-vrp2f-r4.json) である。レビュー時点で両 backend object は repository に存在するが、互いに ancestor ではない。さらに `c1c20d7d86a3006569375bc333cf72494e95eb46` は branch/tag のどの ref からも到達不能で、将来の `git gc` で消滅し得る。したがって登録時 backend pin を混ぜて一つの候補効果にしてはならず、PicoEdit は P0-0 の common-baseline admission を必ず通す。
 
-候補比較の共通 baseline は、まず `65c795e87321e79b960ac8a7495a205de6a24ec0` とする。P0-0 で両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
+候補比較の共通 baseline は、現行 backend ソースを固定した `73784b96a1afdb34dc1a79577f947b670a138d07` とする。この commit は登録時の `65c795e87321e79b960ac8a7495a205de6a24ec0` に現行 checkout の整形差分を取り込んだものであり、P0-0 ではこの最新の clean commit を基準にする。P0-0 で両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
 
 target registry は firmware、scenario、board/device 条件、停止条件を供給する workload contract として使用する。candidate commit は既存 target の accepted backend として偽装せず、CPU候補 record の manifest に独立して記録する。
 
@@ -933,11 +933,11 @@ RP2040_CPU_OPT_TMP="$(mktemp -d /tmp/picocalc-rp2040-cpu-opt.XXXXXX)"
 
 git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
   worktree add --detach "$RP2040_CPU_OPT_TMP/backend-baseline" \
-  65c795e87321e79b960ac8a7495a205de6a24ec0
+  73784b96a1afdb34dc1a79577f947b670a138d07
 
 git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
   worktree add --detach "$RP2040_CPU_OPT_TMP/backend-candidate" \
-  65c795e87321e79b960ac8a7495a205de6a24ec0
+  73784b96a1afdb34dc1a79577f947b670a138d07
 
 git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
