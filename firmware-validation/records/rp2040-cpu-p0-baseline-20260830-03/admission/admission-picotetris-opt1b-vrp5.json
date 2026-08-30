@@ -1,0 +1,145 @@
+{
+  "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7"
+    }
+  },
+  "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+  "candidate_id": "P0-0",
+  "correctness": {
+    "status": "pass",
+    "workload": "picotetris-opt1b-vrp5"
+  },
+  "decision_kind": "admission",
+  "evidence": [
+    {
+      "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "cycles": 927528659,
+      "elapsed_us": 3715000,
+      "emulated_cycles_per_wall_second": 5195684.449166872,
+      "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+      "host_usage_delta": {
+        "max_rss_platform_units": 28376,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.03992,
+        "user_seconds": 197.785933
+      },
+      "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 178519051354,
+      "wall_seconds": 178.519051354
+    },
+    {
+      "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "cycles": 927528659,
+      "elapsed_us": 3715000,
+      "emulated_cycles_per_wall_second": 4943678.853971164,
+      "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+      "host_usage_delta": {
+        "max_rss_platform_units": 28376,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.030646999999999994,
+        "user_seconds": 205.23870300000002
+      },
+      "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 187619116532,
+      "wall_seconds": 187.619116532
+    }
+  ],
+  "feature_set": [
+    "sd-gen1-multiblock"
+  ],
+  "record_id": "rp2040-cpu-p0-baseline-20260830-03",
+  "registered_guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+  "runs": [
+    {
+      "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "cycles": 927528659,
+      "elapsed_us": 3715000,
+      "emulated_cycles_per_wall_second": 5195684.449166872,
+      "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+      "host_usage_delta": {
+        "max_rss_platform_units": 28376,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.03992,
+        "user_seconds": 197.785933
+      },
+      "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 178519051354,
+      "wall_seconds": 178.519051354
+    },
+    {
+      "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "cycles": 927528659,
+      "elapsed_us": 3715000,
+      "emulated_cycles_per_wall_second": 4943678.853971164,
+      "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+      "host_usage_delta": {
+        "max_rss_platform_units": 28376,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.030646999999999994,
+        "user_seconds": 205.23870300000002
+      },
+      "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 187619116532,
+      "wall_seconds": 187.619116532
+    }
+  ],
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "status": "pass",
+  "workload": "picotetris-opt1b-vrp5",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

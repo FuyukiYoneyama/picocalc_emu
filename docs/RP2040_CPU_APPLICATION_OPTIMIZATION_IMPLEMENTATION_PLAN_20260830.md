@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 pending
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 pending
 - Date: 2026-08-30
 - Review completed: 2026-08-30
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -26,7 +26,7 @@
 
 この版で「実装開始可能」とは、まだ存在しない runner/schema を作る最初の単位 P0-A1 について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。順序は `P0-A1 runner/tests → P0-0 admission → P0-A2 null batch → P0-B profiler` とする。P1 以降は P0 の実測 gate を通った候補だけを開始する。
 
-P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。実 workload の admission（P0-0）、null batch、CPU profiler 実装はまだ開始していない。
+P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了し、P0-A2 null batch と CPU profiler 実装は次工程である。
 
 ## 1. 目的
 
@@ -387,6 +387,8 @@ python3 tools/benchmark_rp2040_cpu_candidate.py admit \
 ```
 
 `admit` は target registry の accepted backend を candidate に強制せず、legacy `validate_report()` の full-report hash check もそのまま呼ばない。raw command の `--backend-commit` は `--backend` の clean HEAD へ置換する。固定 firmware/scenario/contract、clean embedded commit、`report_checks`（commit check のみ置換）、timeline SHA、登録 report と current report の guest projection digest、determinism 2 run を検査する。両 workload が合格した一つの commit と runner SHA を `manifest.json` に common baseline として凍結する。片方でも不合格なら P0 baseline、P1、P2 を開始しない。P0-0 は runner 実装ではなく、P0-A1 の後に一度だけ通す workload gate である。
+
+2026-08-30 の実施結果は pass である。`73784b96a1afdb34dc1a79577f947b670a138d07` の clean backend と、runner SHA-256 `921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7`（build-provenance SHA-256 `d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af`）を使用した。PicoTetris r10 は cycles `927528659`、PicoEdit r4 は cycles `827799818` で、各2回の guest observation projection が登録 report と一致し、各 workload 内の2回も一致した。検証済み record は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/`、`verify_environment.py --scope target-schema` は 37 checks pass、record の `SHA256SUMS` は全件 pass である。従って common baseline gate は閉じ、P0-A2 null batch を開始できる。
 
 `correctness` と `ab` は `--admission-record` でこの P0-0 record root を必須入力とし、manifest/decision/checksum/evidence の pass と現行 baseline identity を measured run 前に再検証する。`profile` も同じ admission record の manifest/decision/checksum/evidence と固定 workload を再検証するが、profile CLI は baseline executable を受け取らないため、別途比較する current baseline identity は持たず、candidate profile runner 自身の sidecar identity を検査する。admission record がない、別 workload、別 baseline、receipt identity の不一致、または partial checksum の場合は subprocess を一つも起動しない。
 
@@ -943,7 +945,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-最初に P0-A1 の六ファイルを実装して unit test を閉じる。次に baseline production runner を build して P0-0 admission を行い、合格後に candidate production runner（P0-A2 では baseline と同一 source）を buildして null batch を行う。順序を入れ替えない。P0-B までは最適化コードを入れない。P0-B profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更として P1-A を `backend-candidate` に一変更だけ実装する。
+P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。次に candidate production runner（P0-A2 では baseline と同一 source）を同じ clean backend から用意して null batch を行う。順序を入れ替えない。P0-B までは最適化コードを入れない。P0-B profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更として P1-A を `backend-candidate` に一変更だけ実装する。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
@@ -952,7 +954,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
 - 新 runner の CLI/schema/statistics unit test が通る。
 - output overwrite、dirty backend、identity mismatch を run 前に拒否する。
 - baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
-- common baseline が二 workload に admission される。
+- common baseline が二 workload に admission され、record と verifier が pass する。
 - null batch と calibration が machine-readable record として検証される。
 - 次工程が P0-B であること、使用 commit/target revision が `manifest.json` に固定される。
 
