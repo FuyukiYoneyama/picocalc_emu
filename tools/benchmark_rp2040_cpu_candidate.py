@@ -323,14 +323,22 @@ def write_runner_provenance(args: argparse.Namespace) -> int:
 
 
 def guest_observation_projection(report: Mapping[str, Any]) -> Dict[str, Any]:
-    """Remove only top-level backend identity from a schema-8 report."""
+    """Remove backend identity and harness-only audio oracle metadata."""
     if not isinstance(report, Mapping):
         raise ValueError("schema-8 report must be an object")
-    return {
+    projection = {
         str(key): value
         for key, value in report.items()
         if key not in ("backend_build", "backend_commit")
     }
+    audio_sink = projection.get("audio_sink")
+    if isinstance(audio_sink, Mapping):
+        projection["audio_sink"] = {
+            key: value
+            for key, value in audio_sink.items()
+            if key not in ("expected_count", "expected_sha256")
+        }
+    return projection
 
 
 def guest_observation_sha256(report: Mapping[str, Any]) -> str:

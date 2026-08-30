@@ -273,11 +273,20 @@ class CandidateRunnerTests(unittest.TestCase):
             "backend_build": {"commit": "a" * 40, "dirty": False},
             "backend_commit": "a" * 40,
             "cycles": 10,
+            "audio_sink": {
+                "dma_write_count": 1000,
+                "pcm_sha256": "b" * 64,
+                "expected_count": 1000,
+                "expected_sha256": "b" * 64,
+            },
             "nested": {"backend_commit": "guest-visible"},
         }
         projection = self.module.guest_observation_projection(report)
         self.assertNotIn("backend_build", projection)
         self.assertNotIn("backend_commit", projection)
+        self.assertNotIn("expected_count", projection["audio_sink"])
+        self.assertNotIn("expected_sha256", projection["audio_sink"])
+        self.assertEqual(projection["audio_sink"]["dma_write_count"], 1000)
         self.assertEqual(projection["nested"]["backend_commit"], "guest-visible")
         changed = dict(report)
         changed["cycles"] = 11

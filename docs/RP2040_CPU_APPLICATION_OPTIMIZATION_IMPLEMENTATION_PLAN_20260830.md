@@ -342,7 +342,7 @@ target/scenario/bootrom/board/cycles 等の raw runner argument は既存 `tools
 
 ### 5.5 正確性ゲート
 
-性能測定とは別に、同じ firmware/scenario/target contract を production release の baseline/candidate で各 1 回実行する。schema-8 report から、top-level の `backend_build` と `backend_commit` だけを削除し、Python の `json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))` を UTF-8 encode したものを `guest_observation_projection` と定義する。その baseline/candidate SHA-256 と canonical JSON を完全一致させる。
+性能測定とは別に、同じ firmware/scenario/target contract を production release の baseline/candidate で各 1 回実行する。schema-8 report から、top-level の `backend_build` と `backend_commit`、および harness が CLI の期待値を反映する `audio_sink.expected_count` / `audio_sink.expected_sha256` だけを削除し、Python の `json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))` を UTF-8 encode したものを `guest_observation_projection` と定義する。`audio_sink` の実測値（DMA write count、PCM SHA-256、status、タイミング）は保持する。その baseline/candidate SHA-256 と canonical JSON を完全一致させる。
 
 この projection は stop reason、総 emulated cycle、virtual elapsed time、execution model、final PC、final exception/fault、UART、framebuffer、audio、PSRAM、SD、keyboard、PIO/PWM、scenario timeline、unsupported MMIO/access、firmware/bootrom/flash identity を保持する。これは final report の guest-visible surface の一致であり、命令単位 trace の一致を主張しない。
 
