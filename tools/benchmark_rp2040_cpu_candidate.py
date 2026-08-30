@@ -1028,6 +1028,12 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
                 raise ValueError("record manifest backend identity mismatch: {}".format(label))
             merged_identities[label] = value
         merged["backend_identities"] = merged_identities
+        existing_policy = existing.get("measurement_policy")
+        new_policy = manifest.get("measurement_policy")
+        if new_policy is not None:
+            if existing_policy is not None and existing_policy != new_policy:
+                raise ValueError("record manifest measurement policy mismatch: {}".format(manifest_path))
+            merged["measurement_policy"] = dict(new_policy)
         if merged != existing:
             _write_json_replace(manifest_path, merged)
     else:

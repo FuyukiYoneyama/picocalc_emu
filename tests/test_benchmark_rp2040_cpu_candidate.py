@@ -505,6 +505,34 @@ class CandidateRunnerTests(unittest.TestCase):
             {"inter_run_cooldown_seconds": 60.0},
         )
 
+    def test_record_manifest_merges_measurement_policy_into_existing_root(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            record = Path(temporary) / "rp2040-cpu-fixture"
+            identity = {
+                "commit": "a" * 40,
+                "dirty": False,
+                "runner_sha256": "b" * 64,
+                "build_provenance_sha256": "c" * 64,
+                "feature_set": ["sd-gen1-multiblock"],
+            }
+            base = self.module._base_manifest(
+                record.name, [], {"baseline_production": identity},
+                candidate_id="P0-A2", cpu=0,
+            )
+            self.module._record_manifest(record, base)
+            self.module._write_sha256sums_once(record)
+            with_policy = self.module._base_manifest(
+                record.name, [], {"candidate_production": identity},
+                candidate_id="P0-A2", cpu=0,
+                measurement_policy={"inter_run_cooldown_seconds": 60.0},
+            )
+            self.module._record_manifest(record, with_policy)
+            manifest = self.module._read_json(record / "manifest.json")
+            self.assertEqual(
+                manifest["measurement_policy"],
+                {"inter_run_cooldown_seconds": 60.0},
+            )
+
     def test_record_manifest_refuses_modified_leaf_after_checksum_index(self):
         with tempfile.TemporaryDirectory() as temporary:
             record = Path(temporary) / "rp2040-cpu-fixture"
