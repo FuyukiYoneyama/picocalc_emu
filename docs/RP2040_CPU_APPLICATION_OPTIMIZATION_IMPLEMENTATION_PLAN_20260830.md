@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: Reviewed — P0-A1 implementation ready
+- Status: P0-A1 implemented — P0-0 pending
 - Date: 2026-08-30
 - Review completed: 2026-08-30
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -25,6 +25,8 @@
 | 既存の合成 workload 測定が実アプリ採否に混ざり得た | 合成測定は仮説の方向付けだけとし、採否証拠から明示的に除外した |
 
 この版で「実装開始可能」とは、まだ存在しない runner/schema を作る最初の単位 P0-A1 について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。順序は `P0-A1 runner/tests → P0-0 admission → P0-A2 null batch → P0-B profiler` とする。P1 以降は P0 の実測 gate を通った候補だけを開始する。
+
+P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。実 workload の admission（P0-0）、null batch、CPU profiler 実装はまだ開始していない。
 
 ## 1. 目的
 
@@ -79,6 +81,9 @@ RP2040_CPU_OPT_TMP="$(mktemp -d /tmp/picocalc-rp2040-cpu-opt.XXXXXX)"
 ```text
 firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/
   manifest.json
+  admission/
+    admission-picotetris-opt1b-vrp5.json
+    admission-picoedit-r1-vrp2f.json
   profile/
     picotetris-opt1b-vrp5-r10.json
     picoedit-r1-vrp2f-r4.json
@@ -108,15 +113,16 @@ firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/
   SHA256SUMS
 ```
 
-P0-0 で target revision が更新された場合は、上の workload filename も新 revision に置き換える。schema は次の三つを新設し、既存 schema の `schema_version: 1` と混同しないよう `schema_id` を必須にする。
+P0-0 で target revision が更新された場合は、上の workload filename も新 revision に置き換える。record artifact schema 三つと build provenance schema 一つを新設し、既存 schema の `schema_version: 1` と混同しないよう `schema_id` を必須にする。
 
 P0-A2 の `comparison.json` は `trace_required=false` とし、behavior artifact 四ファイルは作らない。P0-B/P1以降は `trace_required=true` とし、baseline/candidate behavior artifact を必須にする。この条件分岐を AB schema に持たせる。
 
 - `firmware-validation/rp2040-cpu-profile.schema.json`: `schema_id = "picocalc.rp2040-cpu-profile"`
 - `firmware-validation/rp2040-cpu-ab.schema.json`: `schema_id = "picocalc.rp2040-cpu-ab"`
 - `firmware-validation/rp2040-cpu-decision.schema.json`: `schema_id = "picocalc.rp2040-cpu-decision"`
+- `firmware-validation/rp2040-cpu-build-provenance.schema.json`: `schema_id = "picocalc.rp2040-build-provenance"`（runner sidecar）
 
-三 schema の初版は `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。
+三つの record artifact schema と build provenance schema の初版はすべて `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。build provenance は record tree の leaf ではなく、runner に隣接する sidecar の schema とする。
 
 ## 4. 現時点の根拠
 
@@ -157,13 +163,13 @@ compact dispatch key は過去の PicoTetris で約 4.15% 改善したが、当�
 | 主 workload | `picotetris-opt1b-vrp5` revision 10 | BIN `0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62` / scenario `b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208` | `65c795e87321e79b960ac8a7495a205de6a24ec0` |
 | 異種 workload | `picoedit-r1-vrp2f` revision 4 | BIN `17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6` / scenario `d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718` | `c1c20d7d86a3006569375bc333cf72494e95eb46` |
 
-固定 validation は [PicoTetris r10](../firmware-validation/validations/picotetris-opt1b-vrp5-r10.json) と [PicoEdit r4](../firmware-validation/validations/picoedit-r1-vrp2f-r4.json) である。レビュー時点で両 backend object は repository に存在するが、互いに ancestor ではない。したがって登録時 backend pin を混ぜて一つの候補効果にしてはならない。
+固定 validation は [PicoTetris r10](../firmware-validation/validations/picotetris-opt1b-vrp5-r10.json) と [PicoEdit r4](../firmware-validation/validations/picoedit-r1-vrp2f-r4.json) である。レビュー時点で両 backend object は repository に存在するが、互いに ancestor ではない。さらに `c1c20d7d86a3006569375bc333cf72494e95eb46` は branch/tag のどの ref からも到達不能で、将来の `git gc` で消滅し得る。したがって登録時 backend pin を混ぜて一つの候補効果にしてはならず、PicoEdit は P0-0 の common-baseline admission を必ず通す。
 
 候補比較の共通 baseline は、まず `65c795e87321e79b960ac8a7495a205de6a24ec0` とする。P0-0 で両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
 
 target registry は firmware、scenario、board/device 条件、停止条件を供給する workload contract として使用する。candidate commit は既存 target の accepted backend として偽装せず、CPU候補 record の manifest に独立して記録する。
 
-第三の workload を追加する場合も、固定入力と固定停止条件を持つ登録済みアプリだけを使う。NOP loop、単一命令、`paced_bench_rp2040` の synthetic workload は単体確認には使えても、採否判定には使わない。
+P0-A1 の runner は admission/profile/correctness/A-B の workload 集合を上記二つへ固定する。第三の workload を追加する場合は、登録・schema・固定 schedule・統計の対応を含む別の runner 拡張を先にレビューし、既存 record の workload 集合を変更しない。固定入力と固定停止条件を持つ登録済みアプリだけを使い、NOP loop、単一命令、`paced_bench_rp2040` の synthetic workload は単体確認には使えても、採否判定には使わない。
 
 ### 5.2 profile run と performance run の分離
 
@@ -180,27 +186,43 @@ build command は次に固定する。baseline/candidate/profile/trace で `CARG
 cd "$RP2040_CPU_OPT_TMP/backend-baseline"
 CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/baseline-production" \
   cargo build --locked --release -p picocalc-harness --bin picocalc-run
+cd "$RP2040_CPU_OPT_TMP/backend-baseline"
+cargo tree -e features --format '{p} {f}' --prefix none \
+  > "$RP2040_CPU_OPT_TMP/build/baseline-production-tree.txt"
 
 # candidate production; P1以降は下表の feature list を必ず指定
 cd "$RP2040_CPU_OPT_TMP/backend-candidate"
 CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-production" \
   cargo build --locked --release -p picocalc-harness --bin picocalc-run \
   --features <candidate-feature-list>
+cd "$RP2040_CPU_OPT_TMP/backend-candidate"
+cargo tree -e features --format '{p} {f}' --prefix none \
+  > "$RP2040_CPU_OPT_TMP/build/candidate-production-tree.txt"
 
 # baseline diagnostic correctness trace; performanceには使用しない
 cd "$RP2040_CPU_OPT_TMP/backend-baseline"
 CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/baseline-trace" \
   cargo build --locked --release -p picocalc-harness --bin picocalc-run \
   --features behavior-trace
+cd "$RP2040_CPU_OPT_TMP/backend-baseline"
+cargo tree -e features --format '{p} {f}' --prefix none \
+  > "$RP2040_CPU_OPT_TMP/build/baseline-trace-tree.txt"
 
 # candidate diagnostic correctness trace; performanceには使用しない
 cd "$RP2040_CPU_OPT_TMP/backend-candidate"
 CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-trace" \
   cargo build --locked --release -p picocalc-harness --bin picocalc-run \
   --features behavior-trace,<candidate-feature-list>
+cd "$RP2040_CPU_OPT_TMP/backend-candidate"
+cargo tree -e features --format '{p} {f}' --prefix none \
+  > "$RP2040_CPU_OPT_TMP/build/candidate-trace-tree.txt"
 ```
 
 `<candidate-feature-list>` は shell へそのまま渡す文字列ではなく、次表の値へ置換する。P0-A2/P0-B の profiler-OFF production build では `--features` 行自体を省略する。
+
+`feature_set` は記録だけの自己申告にしない。信頼した build wrapper が各 runner の隣に `<runner>.build.json` provenance sidecar を必ず生成し、runner は measured run 前に schema/version、role、backend commit/dirty、runner SHA-256、Cargo の実効 feature 集合、feature 集合の canonical SHA-256、lockfile SHA-256、正確な Cargo argv、`rustc -Vv`/`cargo -V` を照合する。sidecar の `runner_sha256` が binary と一致しない場合、また CLI 宣言・`cargo tree --format '{p} {f}'` の root feature・Cargo実効集合・role が一致しない場合は起動を拒否する。Cargo default の `sd-gen1-multiblock` も実効集合へ含める。sidecar は wrapper による生成証跡であり、測定 runner はその証跡がない build を受け付けない。
+
+sidecar は各 backend checkout で build 後に取得した `cargo tree -e features --format '{p} {f}'` の root feature と lockfile を対象に生成し、record manifest には sidecar の SHA-256 と role 別実効 feature 集合を保存する。CLI の `--feature-set` だけを根拠にしてはならない。sidecar の生成・検証コマンド、Cargo argv、toolchain version は再現できる形で build log に残す。baseline/candidate/trace/profile の tree は、それぞれ対応する checkout で個別に取得する。
 
 | candidate | production feature list | diagnostic trace feature list |
 |---|---|---|
@@ -210,7 +232,26 @@ CARGO_TARGET_DIR="$RP2040_CPU_OPT_TMP/build/candidate-trace" \
 | P1 A+B | `decode-invalidation-tag-guard,executable-sram-invalidation-filter` | `behavior-trace,decode-invalidation-tag-guard,executable-sram-invalidation-filter` |
 | P2-A | `pending-exception-fast-reject` | `behavior-trace,pending-exception-fast-reject` |
 
-P0-B profile build は後述の `build/candidate-profile` へ出す。production build に profiler/trace の field、分岐、counter update、diagnostic CLI を残さない。`cargo tree -e features` と `objdump` の hot-function 抜粋で確認する。profile/trace run の速度は採否データに使用しない。`[profile.profiling]` は fat LTO が無効なので、performance 比較には使わない。
+P0-B profile build は後述の `build/candidate-profile` へ出す。production build に profiler/trace の field、分岐、counter update、diagnostic CLI を残さない。`cargo tree -e features --format '{p} {f}'` と `objdump` の hot-function 抜粋で確認する。profile/trace run の速度は採否データに使用しない。`[profile.profiling]` は fat LTO が無効なので、performance 比較には使わない。
+
+各 `cargo build` の直後に、その runner と同じ build directory へ `<runner>.build.json` を生成する。sidecar の `role` と実効 feature 集合は baseline production=`[sd-gen1-multiblock]`、candidate production=`[sd-gen1-multiblock] + candidate features`、baseline trace=`[sd-gen1-multiblock,behavior-trace]`、candidate trace=`[sd-gen1-multiblock,behavior-trace] + candidate features`、candidate profile=`[sd-gen1-multiblock,cpu-application-profiler]` とする。P0-A2 null batch で同一 executable を A/B 両方へ指定する場合だけ、sidecar role=`production` を両 production role の代わりに使える。sidecar がない runner は P0-0 を含む全 phase で使用しない。
+
+sidecar は専用 subcommand で生成する。対応する backend checkout で `cargo tree -e features --format '{p} {f}' --prefix none` の出力を一時 root へ保存し、次のように runner、lockfile、tree、全 Cargo argv、toolchain version を結び付ける。
+
+```bash
+cd "$RP2040_CPU_OPT_TMP/backend-baseline"
+cargo tree -e features --format '{p} {f}' --prefix none > "$RP2040_CPU_OPT_TMP/build/baseline-tree.txt"
+python3 /home/fuyuki/pico_dvl/codex/picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py provenance \
+  --backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  --runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --role baseline_production \
+  --lockfile "$RP2040_CPU_OPT_TMP/backend-baseline/Cargo.lock" \
+  --cargo-tree "$RP2040_CPU_OPT_TMP/build/baseline-tree.txt" \
+  --cargo-argv cargo --cargo-argv build --cargo-argv=--locked --cargo-argv=--release \
+  --rustc-version "$(rustc -Vv)" --cargo-version "$(cargo -V)"
+```
+
+candidate/trace/profile は `--role` と `--feature-set` を対応する build に置き換える。`provenance` は backend clean/embedded commit と runner SHA をその場で検査し、既存 sidecar の上書きも拒否する。
 
 ### 5.3 CPU profile counter
 
@@ -258,7 +299,7 @@ handler group は相互排他的にし、未知 encoding は `other` へ入れ�
 - `time.perf_counter_ns` で runner process 全体を囲った wall-clock time
 - emulated cycles/second
 - host user/system CPU time
-- maximum RSS
+- `RUSAGE_CHILDREN` の process-lifetime high-water mark としての maximum RSS（per-run delta と誤認しないよう `max_rss_scope=children_cumulative` を記録）
 - 取得可能なら host cycles、instructions、branches、branch misses、cache misses
 - stop reason と emulated cycle
 
@@ -278,7 +319,7 @@ host performance counter と sampling は補助指標であり、権限がない
 
 calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。warm-up 後・本測定前に 3 run、本測定後に 3 run を行い、`abs(post_median / pre_median - 1) > 0.02` なら batch を無効とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
 
-専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。
+専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。候補 feature を評価するときは、実際の feature 名ごとに `--feature-set <candidate-feature>` を追加する。
 
 ```bash
 python3 tools/benchmark_rp2040_cpu_candidate.py ab \
@@ -286,9 +327,11 @@ python3 tools/benchmark_rp2040_cpu_candidate.py ab \
   --candidate-backend "$RP2040_CPU_OPT_TMP/backend-candidate" \
   --baseline-runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
   --candidate-runner "$RP2040_CPU_OPT_TMP/build/candidate-production/release/picocalc-run" \
+  --feature-set <candidate-feature-list> \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
   --pairs 10 --warmup 1 --calibration-runs 3 --cpu <logical-cpu> \
+  --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --batch-id rp2040-cpu-<candidate>-YYYYMMDD-NN \
   --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN
 ```
@@ -317,18 +360,22 @@ python3 tools/benchmark_rp2040_cpu_candidate.py correctness \
   --candidate-runner "$RP2040_CPU_OPT_TMP/build/candidate-production/release/picocalc-run" \
   --baseline-trace-runner "$RP2040_CPU_OPT_TMP/build/baseline-trace/release/picocalc-run" \
   --candidate-trace-runner "$RP2040_CPU_OPT_TMP/build/candidate-trace/release/picocalc-run" \
+  --feature-set <candidate-feature-list> \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/correctness
 ```
 
 上は P1 以降の完全形である。P0-A2 null batch は trace runner 二引数を省略し、`--final-report-only` を明示する。P1 以降で trace runner が一方でも未指定なら `correctness` は run 前に拒否する。
 
+ここで指定する `--feature-set` は production candidate の追加 feature だけであり、trace runner には runner が自動的に `behavior-trace`（および同じ candidate feature）を要求する。baseline production の実効集合は `sd-gen1-multiblock`、baseline trace はそこへ `behavior-trace` を加えた集合である。
+
 さらに各 report は registry の `report_checks` と timeline SHA を評価する。ただし admission/candidate 比較では `backend_build.commit` の check だけを manifest identity check に置換し、`backend_build.dirty == false` は必須のまま維持する。backend identity を含む full-report `normalized_report_sha256` は candidate との同一条件にせず、baseline/candidate の projection digest を正確性条件にする。新 runner は legacy validator を無変更で呼ばず、この置換規則を専用関数として unit test する。一項目でも不一致なら performance run を開始せず、その候補を不採用にする。
 
 ### 5.6 P0-0 common-baseline admission
 
-P0-A1 の runner unit test が通り、baseline production runner を build した直後、performance baseline を取る前に次を行う。
+P0-A1 の runner unit test が通り、baseline production runner とその build provenance sidecar を作成した直後、performance baseline を取る前に次を行う。
 
 ```bash
 python3 tools/benchmark_rp2040_cpu_candidate.py admit \
@@ -340,6 +387,8 @@ python3 tools/benchmark_rp2040_cpu_candidate.py admit \
 ```
 
 `admit` は target registry の accepted backend を candidate に強制せず、legacy `validate_report()` の full-report hash check もそのまま呼ばない。raw command の `--backend-commit` は `--backend` の clean HEAD へ置換する。固定 firmware/scenario/contract、clean embedded commit、`report_checks`（commit check のみ置換）、timeline SHA、登録 report と current report の guest projection digest、determinism 2 run を検査する。両 workload が合格した一つの commit と runner SHA を `manifest.json` に common baseline として凍結する。片方でも不合格なら P0 baseline、P1、P2 を開始しない。P0-0 は runner 実装ではなく、P0-A1 の後に一度だけ通す workload gate である。
+
+`correctness` と `ab` は `--admission-record` でこの P0-0 record root を必須入力とし、manifest/decision/checksum/evidence の pass と現行 baseline identity を measured run 前に再検証する。`profile` も同じ admission record の manifest/decision/checksum/evidence と固定 workload を再検証するが、profile CLI は baseline executable を受け取らないため、別途比較する current baseline identity は持たず、candidate profile runner 自身の sidecar identity を検査する。admission record がない、別 workload、別 baseline、receipt identity の不一致、または partial checksum の場合は subprocess を一つも起動しない。
 
 ## 6. 実装フェーズ
 
@@ -353,24 +402,29 @@ python3 tools/benchmark_rp2040_cpu_candidate.py admit \
 
 - `picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py`
 - `picocalc_emu/tests/test_benchmark_rp2040_cpu_candidate.py`
+- `picocalc_emu/firmware-validation/rp2040-cpu-build-provenance.schema.json`
 - `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json`
 - `picocalc_emu/firmware-validation/rp2040-cpu-ab.schema.json`
 - `picocalc_emu/firmware-validation/rp2040-cpu-decision.schema.json`
 
-既存 `benchmark_firmware_realtime.py` は登録 backend 一つの realtime 指標を扱い、理論値や runner startup/output を含む別契約であるため変更しない。新 runner は `admit`、`correctness`、`profile`、`ab`、`summarize` subcommand を持ち、§5 の CLI と統計を実装する。`schema_id`、全 identity、実行順、全 raw run、invalid batch 理由を schema で検証する。
+既存 `benchmark_firmware_realtime.py` は登録 backend 一つの realtime 指標を扱い、理論値や runner startup/output を含む別契約であるため変更しない。新 runner は `provenance`、`admit`、`correctness`、`profile`、`ab`、`summarize` subcommand を持ち、§5 の CLI と統計を実装する。`schema_id`、全 identity、実行順、全 raw run、invalid batch 理由を schema で検証する。
 
 Python unit test は最低限次を固定入力で検査する。
 
 - 10 pair が 5 AB + 5 BA、20 run/workload になる。
 - workload 順も交互になり、run ID が一意になる。
+- `--target` と `--firmware` の個数不一致、順序不一致、片方だけの指定を subprocess 起動前に拒否する。
 - backend 順に依存せず log ratio が candidate/baseline になる。
 - geometric mean、sample SD、df=9 の t CI、median、IQR が既知値と一致する。
-- firmware/scenario/contract/embedded commit/runner SHA の不一致を measured run 前に拒否する。
+- firmware/scenario/contract/embedded commit/runner SHA/build-provenance sidecar/実効 feature set の不一致を measured run 前に拒否する。
+- sidecar が binary SHA、backend commit/dirty、role、Cargo実効 feature、lockfile/tree SHA、Cargo argv、toolchain を結び付けない場合を拒否する。
 - target builder の登録 commit を各 backend の clean HEAD へ置換し、PicoEdit/common-baseline と baseline/candidate の双方で正しい `--backend-commit` を生成する。
 - guest projection が `backend_build`/`backend_commit` 以外の一ビット差を拒否する。
 - admission では legacy normalized report SHA を使わず、登録/current guest projection、timeline、commit以外の report check を検査する。
+- admission gate は二つの receipt の workload/SHA/identity/provenance と decision evidence を再検証し、partial checksum や receipt 改変では subprocess を起動しない。
 - P1以降の correctness では behavior SHA、domain event count/SHA の差を拒否する。
 - 同じ batch manifest を持つ record root は subcommand 間で再利用できるが、既存 leaf artifact の上書き、record ID/identity 不一致は拒否する。
+- 各 runner は build-provenance sidecar（binary SHA と Cargo 実効 feature 集合を含む）がなければ拒否する。
 - pre/post calibration drift が 2% 超なら batch 全体を invalid にする。
 
 P0-A1 テストコマンド:
@@ -381,7 +435,7 @@ python3 -m unittest tests.test_benchmark_rp2040_cpu_candidate
 python3 tools/verify_environment.py --scope target-schema
 ```
 
-`verify_environment.py` には三つの新 schema と、存在する `rp2040-cpu-*` record の必須ファイル validation を追加する。record がまだ 0 件であることは正常とし、P0-A1 の schema fixture test を失敗させない。
+`verify_environment.py` には四つの新 schema と、存在する `rp2040-cpu-*` record の必須ファイル validation を追加する。record がまだ 0 件であることは正常とし、P0-A1 の schema fixture test を失敗させない。
 
 P0-A1 完了条件:
 
@@ -414,6 +468,7 @@ backend の実装位置と公開名を次で固定する。
 | invalidation outcome | `crates/rp2040-emu/src/core/mod.rs::invalidate_decode_cache_entries` |
 | exception outcome | `crates/rp2040-emu/src/core/mod.rs::step/try_take_any_pending_exception` |
 | CLI/output | `crates/picocalc-harness/src/main.rs`: `--cpu-application-profile <path>` |
+| build provenance | build wrapper: `<runner>.build.json` sidecar（Cargo実効 feature graph、lockfile、argv、toolchain、binary SHA）を生成 |
 | schema | `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json` |
 
 既存 `running_profile.rs` の型や pure helper は共有してよいが、`event-horizon-profiler`/`behavior-trace` feature は連鎖させない。既存 event-horizon JSON の schema/意味も変更しない。CPU application profile は別 JSON として出力する。CLI、state、record call はすべて `cfg(feature = "cpu-application-profiler")` で compile out する。
@@ -426,8 +481,10 @@ profile 実行例:
 python3 tools/benchmark_rp2040_cpu_candidate.py profile \
   --backend "$RP2040_CPU_OPT_TMP/backend-candidate" \
   --runner "$RP2040_CPU_OPT_TMP/build/candidate-profile/release/picocalc-run" \
+  --feature-set cpu-application-profiler \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --output firmware-validation/records/rp2040-cpu-p0-profile-YYYYMMDD-NN/profile
 ```
 
@@ -841,7 +898,7 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 - `picocalc_emu/firmware-validation/rp2040-cpu-decision.schema.json`
 - `picocalc_emu/tools/verify_environment.py` — schema/record 検証の登録
 
-P0-A1 は backend hot path を変更しない。ここが最初の実装単位である。
+P0-A1 は backend hot path を変更しない。ここが最初の実装単位である。`admission/` の二つの receipt は decision schema と同じ identity context を持ち、root decision の evidence と対応させる。
 
 ### 11.2 P0-B/P1/P2 で変更する backend file
 

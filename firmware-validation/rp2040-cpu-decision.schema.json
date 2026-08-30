@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/rp2040-cpu-decision.schema.json",
+  "title": "PicoCalc RP2040 CPU candidate decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "record_id", "candidate_id", "decision_kind", "status", "workloads", "backend_identities", "feature_set"],
+  "properties": {
+    "schema_id": {"const": "picocalc.rp2040-cpu-decision"},
+    "schema_version": {"const": 1},
+    "record_id": {"type": "string", "minLength": 1},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["pass", "fail", "bank", "pending", "invalid", "not_run"]},
+    "decision_kind": {"enum": ["admission", "correctness", "performance", "profile", "invalid"]},
+    "hypothesis": {"type": "string"},
+    "candidate_backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "baseline_backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "baseline_executable_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_executable_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "firmware_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "target_contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scenario_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "host": {"type": "object"},
+    "toolchain": {"type": "object"},
+    "feature_set": {"type": "array", "items": {"type": "string"}},
+    "workloads": {"type": "array", "items": {"type": "object"}},
+    "backend_identities": {"type": "object"},
+    "workload": {"type": "string", "minLength": 1},
+    "trace_required": {"type": "boolean"},
+    "guest_observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "registered_guest_observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "baseline": {"type": "object"},
+    "candidate": {"type": "object"},
+    "runs": {"type": "array"},
+    "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "behavior": {"type": "object"},
+    "correctness": {"type": "object"},
+    "statistics": {"type": "object"},
+    "evidence": {"type": "array"},
+    "reasons": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"decision_kind": {"const": "admission"}}},
+      "then": {"required": ["evidence", "correctness"]}
+    },
+    {
+      "if": {"properties": {"decision_kind": {"const": "correctness"}}},
+      "then": {"required": ["correctness"]}
+    },
+    {
+      "if": {"properties": {"decision_kind": {"const": "performance"}}},
+      "then": {"required": ["statistics", "correctness"]}
+    },
+    {
+      "if": {"properties": {"decision_kind": {"const": "profile"}}},
+      "then": {"required": ["correctness"]}
+    },
+    {
+      "if": {"properties": {"decision_kind": {"const": "invalid"}}},
+      "then": {"required": ["reasons"]}
+    }
+  ]
+}

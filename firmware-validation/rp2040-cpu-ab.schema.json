@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/rp2040-cpu-ab.schema.json",
+  "title": "PicoCalc RP2040 CPU paired A/B measurement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "record_id", "candidate_id", "artifact_type"],
+  "properties": {
+    "schema_id": {"const": "picocalc.rp2040-cpu-ab"},
+    "schema_version": {"const": 1},
+    "record_id": {"type": "string", "minLength": 1},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "artifact_type": {"enum": ["run", "summary", "correctness"]},
+    "status": {"enum": ["pass", "invalid", "pending"]},
+    "workload": {"type": "string", "minLength": 1},
+    "baseline": {"type": "object"},
+    "candidate": {"type": "object"},
+    "trace_required": {"type": "boolean"},
+    "pair": {"type": "integer", "minimum": 1},
+    "order": {"enum": ["AB", "BA"]},
+    "role": {"enum": ["baseline", "candidate"]},
+    "run_id": {"type": "string", "pattern": "^run-[0-9]{3,}$"},
+    "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "build_provenance_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "cycles": {"type": "integer", "minimum": 1},
+    "stop_reason": {"type": "string", "minLength": 1},
+    "elapsed_us": {"type": "integer", "minimum": 0},
+    "wall_ns": {"type": "integer", "minimum": 1},
+    "wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "emulated_cycles_per_wall_second": {"type": "number", "exclusiveMinimum": 0},
+    "baseline_guest_observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_guest_observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "guest_observation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "guest_observation_equal": {"type": "boolean"},
+    "behavior_equal": {"type": "boolean"},
+    "report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uart_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "snapshot_sha256": {"type": "object"},
+    "host_usage_delta": {"type": "object"},
+    "log_ratio": {"type": "number"},
+    "pairs": {"type": "integer", "minimum": 1},
+    "measured_runs": {"type": "integer", "minimum": 1},
+    "schedule": {"type": "object"},
+    "calibration": {"type": "object"},
+    "workloads": {"type": "object"},
+    "combined": {"type": "object"},
+    "pair_results": {"type": "array"},
+    "behavior": {"type": "object"},
+    "host": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"artifact_type": {"const": "run"}}},
+      "then": {
+        "required": ["run_id", "workload", "pair", "order", "role", "backend_commit", "runner_sha256", "build_provenance_sha256", "cycles", "stop_reason", "elapsed_us", "wall_ns", "wall_seconds", "emulated_cycles_per_wall_second", "report_sha256", "guest_observation_sha256", "host_usage_delta"]
+      }
+    },
+    {
+      "if": {"properties": {"artifact_type": {"const": "summary"}}},
+      "then": {"required": ["pairs", "measured_runs", "workloads", "combined", "pair_results"]}
+    },
+    {
+      "if": {"properties": {"artifact_type": {"const": "correctness"}}},
+      "then": {
+        "required": ["workload", "trace_required", "baseline", "candidate", "baseline_guest_observation_sha256", "candidate_guest_observation_sha256", "guest_observation_equal", "behavior_equal"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "artifact_type": {"const": "correctness"},
+          "trace_required": {"const": true}
+        }
+      },
+      "then": {"required": ["behavior"]}
+    }
+  ]
+}

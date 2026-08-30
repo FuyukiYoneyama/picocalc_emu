@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 import generate_board_header
 import picocalc
@@ -2038,6 +2038,906 @@ def verify_target_schema(checks: List[Check], root: Path) -> None:
     verify_opt3a_xip_cursor_profile(checks, root)
     verify_opt3b_xip_decode_cursor(checks, root)
     verify_opt3c_compact_dispatch_key(checks, root)
+    verify_rp2040_cpu_application_records(checks, root)
+
+
+def _is_sha256_text(value: object) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{64}", value))
+
+
+def _is_git_commit_text(value: object) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{40}", value))
+
+
+def _verify_rp2040_cpu_schema_document(
+    schema: object, schema_id: str, path: Path
+) -> List[str]:
+    problems: List[str] = []
+    if not isinstance(schema, dict):
+        return ["{} is not a JSON object".format(path)]
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        problems.append("{} is not draft 2020-12".format(path))
+    if schema.get("type") != "object":
+        problems.append("{} root type is not object".format(path))
+    if schema.get("additionalProperties") is not False:
+        problems.append("{} must be closed (additionalProperties=false)".format(path))
+    required = schema.get("required")
+    if not isinstance(required, list) or "schema_id" not in required or "schema_version" not in required:
+        problems.append("{} must require schema_id and schema_version".format(path))
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        problems.append("{} properties is missing".format(path))
+        return problems
+    schema_id_property = properties.get("schema_id")
+    if not isinstance(schema_id_property, dict) or schema_id_property.get("const") != schema_id:
+        problems.append("{} schema_id const mismatch".format(path))
+    schema_version_property = properties.get("schema_version")
+    if not isinstance(schema_version_property, dict) or schema_version_property.get("const") != 1:
+        problems.append("{} schema_version const mismatch".format(path))
+    return problems
+
+
+def _record_path_within(root: Path, value: object) -> Optional[Path]:
+    if not isinstance(value, str) or not value:
+        return None
+    candidate = (root / value).resolve()
+    try:
+        candidate.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return candidate
+
+
+def _canonical_json_sha256(value: object) -> str:
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _expected_rp2040_cpu_schedule(workload_ids: List[str]) -> Dict[str, Dict[str, object]]:
+    expected: Dict[str, Dict[str, object]] = {}
+    run_number = 1
+    for pair in range(1, 11):
+        order = "AB" if pair % 2 else "BA"
+        selected = workload_ids if pair % 2 else list(reversed(workload_ids))
+        roles = ("baseline", "candidate") if order == "AB" else ("candidate", "baseline")
+        for workload in selected:
+            for role in roles:
+                expected["run-{:03d}".format(run_number)] = {
+                    "pair": pair, "order": order, "workload": workload, "role": role,
+                }
+                run_number += 1
+    return expected
+
+
+def _verify_rp2040_cpu_artifact_shape(
+    path: Path, expected_schema_id: str, problems: List[str], validators: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
+    try:
+        value = load_json(path)
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        problems.append("{} is unreadable: {}".format(path, error))
+        return None
+    if not isinstance(value, dict):
+        problems.append("{} is not an object".format(path))
+        return None
+    if value.get("schema_id") != expected_schema_id:
+        problems.append("{} schema_id mismatch".format(path))
+    if value.get("schema_version") != 1:
+        problems.append("{} schema_version mismatch".format(path))
+    if validators and expected_schema_id in validators:
+        for error in validators[expected_schema_id].iter_errors(value):
+            location = ".".join(str(part) for part in error.path)
+            suffix = " at {}".format(location) if location else ""
+            problems.append("{} schema validation failed{}: {}".format(path, suffix, error.message))
+    required = {
+            "picocalc.rp2040-cpu-profile": {
+                "schema_id", "schema_version", "record_id", "candidate_id",
+                "workload", "backend", "runner", "cpu", "interval", "cores",
+                "overflowed", "profile_valid", "counters", "invariants", "feature_set",
+        },
+        "picocalc.rp2040-cpu-ab": {
+            "schema_id", "schema_version", "record_id", "candidate_id", "artifact_type",
+        },
+        "picocalc.rp2040-cpu-decision": {
+            "schema_id", "schema_version", "record_id", "candidate_id", "decision_kind", "status",
+            "workloads", "backend_identities", "feature_set",
+        },
+    }[expected_schema_id]
+    missing = sorted(field for field in required if field not in value)
+    if missing:
+        problems.append("{} is missing required fields: {}".format(path, ", ".join(missing)))
+    if expected_schema_id == "picocalc.rp2040-cpu-ab":
+        artifact_type = value.get("artifact_type")
+        if artifact_type not in ("run", "summary", "correctness"):
+            problems.append("{} has invalid artifact_type".format(path))
+        elif artifact_type == "run":
+            run_required = {
+                "run_id", "workload", "pair", "order", "role", "backend_commit", "runner_sha256",
+                "build_provenance_sha256",
+                "cycles", "stop_reason", "elapsed_us", "wall_ns", "wall_seconds",
+                "emulated_cycles_per_wall_second", "report_sha256", "guest_observation_sha256",
+                "host_usage_delta",
+            }
+            missing_run = sorted(field for field in run_required if field not in value)
+            if missing_run:
+                problems.append("{} is missing run fields: {}".format(path, ", ".join(missing_run)))
+        elif artifact_type == "summary":
+            summary_required = {"pairs", "measured_runs", "workloads", "combined", "pair_results"}
+            missing_summary = sorted(field for field in summary_required if field not in value)
+            if missing_summary:
+                problems.append("{} is missing summary fields: {}".format(path, ", ".join(missing_summary)))
+        elif artifact_type == "correctness":
+            correctness_required = {
+                "workload", "trace_required", "baseline", "candidate",
+                "baseline_guest_observation_sha256", "candidate_guest_observation_sha256",
+                "guest_observation_equal", "behavior_equal",
+            }
+            missing_correctness = sorted(field for field in correctness_required if field not in value)
+            if missing_correctness:
+                problems.append("{} is missing correctness fields: {}".format(path, ", ".join(missing_correctness)))
+    if expected_schema_id == "picocalc.rp2040-cpu-profile":
+        if not isinstance(value.get("interval"), dict):
+            problems.append("{} profile interval is missing or invalid".format(path))
+        if not isinstance(value.get("cores"), list) or not value.get("cores"):
+            problems.append("{} profile cores are missing or empty".format(path))
+        if not isinstance(value.get("overflowed"), bool):
+            problems.append("{} profile overflowed is not boolean".format(path))
+        if not isinstance(value.get("profile_valid"), bool):
+            problems.append("{} profile_valid is not boolean".format(path))
+        if not isinstance(value.get("feature_set"), list) or not value.get("feature_set"):
+            problems.append("{} profile feature_set is missing or empty".format(path))
+        if value.get("profile_valid") is not True:
+            problems.append("{} profile_valid is not true".format(path))
+        if value.get("overflowed") is not False:
+            problems.append("{} profile overflowed".format(path))
+        invariants = value.get("invariants")
+        if not isinstance(invariants, dict) or invariants.get("valid") is not True:
+            problems.append("{} profile invariants are invalid".format(path))
+    if expected_schema_id == "picocalc.rp2040-cpu-decision":
+        decision_kind = value.get("decision_kind")
+        if decision_kind not in {"admission", "correctness", "performance", "profile", "invalid"}:
+            problems.append("{} decision_kind is invalid".format(path))
+        elif decision_kind == "invalid" and not isinstance(value.get("reasons"), list):
+            problems.append("{} invalid decision has no reasons".format(path))
+        elif decision_kind == "performance" and (
+            not isinstance(value.get("statistics"), dict)
+            or not isinstance(value.get("correctness"), dict)
+        ):
+            problems.append("{} performance decision is missing statistics/correctness".format(path))
+        elif decision_kind == "admission" and (
+            not isinstance(value.get("evidence"), list)
+            or not isinstance(value.get("correctness"), dict)
+        ):
+            problems.append("{} admission decision is missing evidence/correctness".format(path))
+        elif decision_kind in {"correctness", "profile"} and not isinstance(value.get("correctness"), dict):
+            problems.append("{} decision is missing correctness".format(path))
+    return value
+
+
+def _verify_rp2040_cpu_behavior_pair(
+    baseline_path: Path, candidate_path: Path, comparison: Mapping[str, Any], problems: List[str],
+    expected_commits: Optional[Mapping[str, str]] = None,
+) -> None:
+    artifacts = {}
+    for role, path in (("baseline", baseline_path), ("candidate", candidate_path)):
+        try:
+            artifact = load_json(path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            problems.append("{} is unreadable: {}".format(path, error))
+            continue
+        if not isinstance(artifact, dict):
+            problems.append("{} is not an object".format(path))
+            continue
+        if artifact.get("schema_version") != 1:
+            problems.append("{} behavior schema_version is invalid".format(path))
+        if artifact.get("normal_report_schema_version") != 8:
+            problems.append("{} behavior report schema version is invalid".format(path))
+        if artifact.get("mode") != "correctness_trace_on":
+            problems.append("{} behavior mode is invalid".format(path))
+        if artifact.get("valid_for_wall_time") is not False:
+            problems.append("{} behavior artifact is marked valid for wall time".format(path))
+        if artifact.get("behavior_projection_encoding") != "sorted-json-v1":
+            problems.append("{} behavior projection encoding is invalid".format(path))
+        backend = artifact.get("backend_build")
+        projection = artifact.get("behavior_projection")
+        digest = artifact.get("behavior_sha256")
+        if not isinstance(backend, dict) or backend.get("dirty") is not False:
+            problems.append("{} behavior backend is missing or dirty".format(path))
+        elif not _is_git_commit_text(backend.get("commit")):
+            problems.append("{} behavior backend commit is invalid".format(path))
+        elif expected_commits and backend.get("commit") != expected_commits.get(role):
+            problems.append("{} behavior backend commit differs from expected identity".format(path))
+        if not isinstance(projection, dict) or not _is_sha256_text(digest):
+            problems.append("{} behavior projection or digest is invalid".format(path))
+        elif _canonical_json_sha256(projection) != digest:
+            problems.append("{} behavior digest does not match projection".format(path))
+        if isinstance(projection, dict):
+            event_trace = projection.get("event_trace")
+            if not isinstance(event_trace, dict):
+                problems.append("{} behavior event trace is missing".format(path))
+                domain_summary = []
+                artifact["_verified_domain_summary"] = domain_summary
+                artifacts[role] = artifact
+                continue
+            if event_trace.get("schema_version") != 2:
+                problems.append("{} behavior event trace schema version is invalid".format(path))
+            if event_trace.get("canonical_encoding") != "PICOEM-EVENT-v1":
+                problems.append("{} behavior event trace encoding is invalid".format(path))
+            if event_trace.get("streaming") is not True or event_trace.get("retains_event_array") is not False:
+                problems.append("{} behavior event trace is not the streaming form".format(path))
+            total_events = event_trace.get("total_events")
+            if type(total_events) is not int or total_events < 0:
+                problems.append("{} behavior event total is invalid".format(path))
+            if not _is_sha256_text(event_trace.get("sha256")):
+                problems.append("{} behavior event stream SHA-256 is invalid".format(path))
+            domains = event_trace.get("domains") if isinstance(event_trace, dict) else None
+            domain_summary = []
+            if not isinstance(domains, list):
+                problems.append("{} behavior domains are missing".format(path))
+            else:
+                names = set()
+                domain_total = 0
+                for domain in domains:
+                    if (
+                        not isinstance(domain, dict)
+                        or not isinstance(domain.get("name"), str)
+                        or type(domain.get("events")) is not int
+                        or domain["events"] < 0
+                        or not _is_sha256_text(domain.get("sha256"))
+                    ):
+                        problems.append("{} behavior domain is invalid".format(path))
+                    else:
+                        if domain["name"] in names:
+                            problems.append("{} behavior domain names are duplicated".format(path))
+                        names.add(domain["name"])
+                        domain_total += domain["events"]
+                        domain_summary.append(
+                            {
+                                "name": domain["name"],
+                                "events": domain["events"],
+                                "sha256": domain["sha256"],
+                            }
+                        )
+                if type(total_events) is int and domain_total != total_events:
+                    problems.append("{} behavior event total differs from domain totals".format(path))
+        else:
+            domain_summary = []
+        artifact["_verified_domain_summary"] = domain_summary
+        artifacts[role] = artifact
+    if set(artifacts) != {"baseline", "candidate"}:
+        return
+    left = artifacts["baseline"].get("behavior_projection")
+    right = artifacts["candidate"].get("behavior_projection")
+    if left != right:
+        problems.append("behavior projections differ for {}".format(comparison.get("workload")))
+    recorded = comparison.get("behavior")
+    if not isinstance(recorded, dict):
+        problems.append("behavior summary is missing for {}".format(comparison.get("workload")))
+        return
+    for role, artifact in artifacts.items():
+        projection = artifact.get("behavior_projection")
+        digest = artifact.get("behavior_sha256")
+        summary = recorded.get(role)
+        expected_summary = {
+            "behavior_sha256": digest,
+            "projection": projection,
+            "domain_summary": artifact.get("_verified_domain_summary", []),
+        }
+        if summary != expected_summary:
+            problems.append("recorded behavior summary differs for {} {}".format(comparison.get("workload"), role))
+
+
+def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> None:
+    """Verify the optional RP2040 CPU candidate schema and record namespace.
+
+    No candidate record is required yet: P0-A1 only installs the schemas and
+    runner.  Once a record exists, this check is intentionally fail-closed on
+    identity, path escape, malformed JSON, and the phase-specific required
+    artifacts.  It does not inspect the older VRP records because those have a
+    different schema and acceptance contract.
+    """
+    base = root / "firmware-validation"
+    schema_specs = (
+        ("rp2040-cpu-build-provenance.schema.json", "picocalc.rp2040-build-provenance"),
+        ("rp2040-cpu-profile.schema.json", "picocalc.rp2040-cpu-profile"),
+        ("rp2040-cpu-ab.schema.json", "picocalc.rp2040-cpu-ab"),
+        ("rp2040-cpu-decision.schema.json", "picocalc.rp2040-cpu-decision"),
+    )
+    schema_problems: List[str] = []
+    schema_validators: Dict[str, Any] = {}
+    try:
+        from jsonschema import Draft202012Validator
+    except ImportError as error:
+        # A schema-shaped manual checker is not an equivalent substitute for
+        # the declared Draft 2020-12 contract.  The target-schema check must
+        # fail closed when the validator dependency is unavailable.
+        schema_problems.append(
+            "python jsonschema package with Draft202012Validator is required: {}".format(error)
+        )
+        Draft202012Validator = None  # type: ignore[assignment,misc]
+    for filename, schema_id in schema_specs:
+        path = base / filename
+        if not path.is_file():
+            schema_problems.append("missing {}".format(path))
+            continue
+        try:
+            schema = load_json(path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            schema_problems.append("{} is unreadable: {}".format(path, error))
+            continue
+        if Draft202012Validator is not None:
+            try:
+                Draft202012Validator.check_schema(schema)
+                schema_validators[schema_id] = Draft202012Validator(schema)
+            except Exception as error:
+                schema_problems.append("{} schema is invalid: {}".format(path, error))
+        schema_problems.extend(_verify_rp2040_cpu_schema_document(schema, schema_id, path))
+    add_check(
+        checks,
+        "firmware-validation:rp2040-cpu-schemas",
+        not schema_problems,
+        errors=schema_problems,
+    )
+
+    records_root = base / "records"
+    record_dirs = sorted(records_root.glob("rp2040-cpu-*")) if records_root.is_dir() else []
+    problems: List[str] = []
+    for record_dir in record_dirs:
+        if not record_dir.is_dir():
+            problems.append("{} is not a directory".format(record_dir))
+            continue
+        try:
+            resolved_record_dir = record_dir.resolve()
+            if resolved_record_dir.parent != records_root.resolve():
+                problems.append("{} is not a direct record directory".format(record_dir))
+        except OSError as error:
+            problems.append("{} cannot be resolved: {}".format(record_dir, error))
+        manifest_path = record_dir / "manifest.json"
+        decision_path = record_dir / "decision.json"
+        if not manifest_path.is_file():
+            problems.append("{} is missing manifest.json".format(record_dir))
+            continue
+        try:
+            manifest = load_json(manifest_path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            problems.append("{} manifest is unreadable: {}".format(record_dir, error))
+            continue
+        if not isinstance(manifest, dict):
+            problems.append("{} manifest is not an object".format(record_dir))
+            continue
+        if manifest.get("record_type") != "picocalc.rp2040-cpu-record":
+            problems.append("{} manifest record_type is invalid".format(record_dir))
+        if manifest.get("record_version") != 1:
+            problems.append("{} manifest record_version is invalid".format(record_dir))
+        if not isinstance(manifest.get("record_id"), str) or not manifest["record_id"]:
+            problems.append("{} manifest record_id is missing".format(record_dir))
+        elif manifest["record_id"] != record_dir.name:
+            problems.append("{} manifest record_id differs from directory".format(record_dir))
+        if not isinstance(manifest.get("feature_set", []), list) or not all(
+            isinstance(feature, str) and feature for feature in manifest.get("feature_set", [])
+        ):
+            problems.append("{} manifest feature_set is invalid".format(record_dir))
+        workloads = manifest.get("workloads")
+        workload_ids: List[str] = []
+        if not isinstance(workloads, list) or not workloads:
+            problems.append("{} manifest workloads is empty".format(record_dir))
+        else:
+            for workload in workloads:
+                if not isinstance(workload, dict):
+                    problems.append("{} manifest workload is not an object".format(record_dir))
+                    continue
+                if not isinstance(workload.get("id"), str) or not workload["id"]:
+                    problems.append("{} manifest workload id is missing".format(record_dir))
+                else:
+                    workload_ids.append(workload["id"])
+                    try:
+                        target = picocalc.load_firmware_target(workload["id"])
+                    except (KeyError, OSError, TypeError, ValueError):
+                        target = None
+                    if not isinstance(target, dict) or target.get("status") != "active":
+                        problems.append("{} manifest workload is not an active registered target".format(record_dir))
+                    else:
+                        artifacts = target.get("artifacts") if isinstance(target.get("artifacts"), dict) else {}
+                        if workload.get("revision") != target.get("revision"):
+                            problems.append("{} manifest workload revision differs from registry".format(record_dir))
+                        if workload.get("firmware_sha256") != artifacts.get("bin_sha256"):
+                            problems.append("{} manifest firmware SHA-256 differs from registry".format(record_dir))
+                        expected_scenario_sha = (
+                            target.get("scenario", {}).get("sha256")
+                            if isinstance(target.get("scenario"), dict)
+                            else None
+                        )
+                        if workload.get("scenario_sha256") != expected_scenario_sha:
+                            problems.append("{} manifest scenario SHA-256 differs from registry".format(record_dir))
+                        try:
+                            expected_contract_sha = picocalc.firmware_target_contract_sha256(target)
+                        except (KeyError, TypeError, ValueError):
+                            expected_contract_sha = None
+                        if workload.get("contract_sha256") != expected_contract_sha:
+                            problems.append("{} manifest contract SHA-256 differs from registry".format(record_dir))
+                if not _is_sha256_text(workload.get("firmware_sha256")):
+                    problems.append("{} manifest firmware SHA-256 is invalid".format(record_dir))
+                scenario_sha = workload.get("scenario_sha256")
+                if scenario_sha is not None and not _is_sha256_text(scenario_sha):
+                    problems.append("{} manifest scenario SHA-256 is invalid".format(record_dir))
+                if not _is_sha256_text(workload.get("contract_sha256")):
+                    problems.append("{} manifest contract SHA-256 is invalid".format(record_dir))
+            if len(set(workload_ids)) != len(workload_ids):
+                problems.append("{} manifest workload IDs are duplicated".format(record_dir))
+            if set(workload_ids) != {"picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"}:
+                problems.append(
+                    "{} manifest workload set must be the fixed PicoTetris/PicoEdit pair".format(
+                        record_dir
+                    )
+                )
+        identities = manifest.get("backend_identities")
+        if not isinstance(identities, dict) or not identities:
+            problems.append("{} manifest backend identities are missing".format(record_dir))
+        else:
+            allowed_roles = {
+                "baseline_production", "candidate_production", "baseline_trace",
+                "candidate_trace", "candidate_profile",
+            }
+            identity_feature_union = set()
+            shared_production_labels = []
+            for label, identity in identities.items():
+                if label not in allowed_roles:
+                    problems.append("{} backend identity label {} is invalid".format(record_dir, label))
+                if not isinstance(identity, dict) or not _is_git_commit_text(identity.get("commit")):
+                    problems.append("{} backend identity {} commit is invalid".format(record_dir, label))
+                if not isinstance(identity, dict) or identity.get("dirty") is not False:
+                    problems.append("{} backend identity {} is dirty".format(record_dir, label))
+                if isinstance(identity, dict) and not _is_sha256_text(identity.get("runner_sha256")):
+                    problems.append("{} backend identity {} runner SHA-256 is invalid".format(record_dir, label))
+                if isinstance(identity, dict) and not _is_sha256_text(identity.get("build_provenance_sha256")):
+                    problems.append("{} backend identity {} build provenance SHA-256 is invalid".format(record_dir, label))
+                if isinstance(identity, dict) and (
+                    not isinstance(identity.get("feature_set", []), list)
+                    or not all(
+                        isinstance(feature, str) and feature
+                        for feature in identity.get("feature_set", [])
+                    )
+                ):
+                    problems.append("{} backend identity {} feature_set is invalid".format(record_dir, label))
+                if isinstance(identity, dict):
+                    role = identity.get("role", label)
+                    if role not in allowed_roles:
+                        problems.append("{} backend identity {} role is invalid".format(record_dir, label))
+                    feature_set = identity.get("feature_set", [])
+                    if isinstance(feature_set, list):
+                        identity_feature_union.update(feature_set)
+                    provenance_role = identity.get("provenance_role")
+                    if provenance_role is None:
+                        problems.append("{} backend identity {} provenance_role is missing".format(record_dir, label))
+                    elif provenance_role == "production":
+                        shared_production_labels.append(label)
+                    elif provenance_role != role:
+                        problems.append("{} backend identity {} provenance_role differs from role".format(record_dir, label))
+                    if isinstance(feature_set, list) and "sd-gen1-multiblock" not in feature_set:
+                        problems.append("{} backend identity {} omits the harness default feature".format(record_dir, label))
+                    if role in {"baseline_trace", "candidate_trace"} and isinstance(feature_set, list) and "behavior-trace" not in feature_set:
+                        problems.append("{} backend identity {} omits behavior-trace".format(record_dir, label))
+                    if role == "candidate_profile" and isinstance(feature_set, list) and "cpu-application-profiler" not in feature_set:
+                        problems.append("{} backend identity {} omits cpu-application-profiler".format(record_dir, label))
+            if shared_production_labels:
+                if (
+                    manifest.get("candidate_id") != "P0-A2"
+                    or set(shared_production_labels) != {"baseline_production", "candidate_production"}
+                    or identities.get("baseline_production", {}).get("runner_sha256")
+                    != identities.get("candidate_production", {}).get("runner_sha256")
+                ):
+                    problems.append(
+                        "{} production provenance role is allowed only for the shared P0-A2 runner".format(
+                            record_dir
+                        )
+                    )
+            manifest_features = manifest.get("feature_set")
+            if isinstance(manifest_features, list) and sorted(set(manifest_features)) != sorted(identity_feature_union):
+                problems.append("{} manifest feature_set differs from role identity feature union".format(record_dir))
+        if not decision_path.is_file():
+            problems.append("{} is missing decision.json".format(record_dir))
+            decision = None
+        else:
+            decision = _verify_rp2040_cpu_artifact_shape(
+                decision_path, "picocalc.rp2040-cpu-decision", problems, schema_validators
+            )
+        if decision is not None:
+            if decision.get("record_id") != manifest.get("record_id"):
+                problems.append("{} decision record_id differs from manifest".format(record_dir))
+            if decision.get("candidate_id") != manifest.get("candidate_id"):
+                problems.append("{} decision candidate_id differs from manifest".format(record_dir))
+            if decision.get("workloads") != manifest.get("workloads"):
+                problems.append("{} decision workloads differ from manifest".format(record_dir))
+            if decision.get("backend_identities") != manifest.get("backend_identities"):
+                problems.append("{} decision backend identities differ from manifest".format(record_dir))
+            if decision.get("feature_set") != manifest.get("feature_set"):
+                problems.append("{} decision feature_set differs from manifest".format(record_dir))
+            if decision.get("status") not in {
+                "pass", "fail", "bank", "pending", "invalid", "not_run"
+            }:
+                problems.append("{} decision status is invalid".format(record_dir))
+
+        admission_dir = record_dir / "admission"
+        if manifest.get("candidate_id") != "P0-0" and not admission_dir.exists():
+            # Later phase roots point at the immutable P0-0 admission record
+            # through --admission-record; they do not duplicate its receipts.
+            pass
+        elif not admission_dir.is_dir():
+            problems.append("{} is missing admission receipts".format(record_dir))
+        else:
+            expected_receipts = {
+                "admission-{}.json".format(workload_id) for workload_id in workload_ids
+            }
+            receipt_paths = sorted(admission_dir.glob("*.json"))
+            if {path.name for path in receipt_paths} != expected_receipts:
+                problems.append("{} admission receipts do not cover the manifest workloads".format(record_dir))
+            decision_evidence = decision.get("evidence") if isinstance(decision, dict) else None
+            if not isinstance(decision_evidence, list) or len(decision_evidence) != len(workload_ids):
+                problems.append("{} admission decision evidence does not cover the manifest workloads".format(record_dir))
+            evidence_by_workload = {
+                item.get("workload"): item
+                for item in decision_evidence
+                if isinstance(item, dict) and isinstance(item.get("workload"), str)
+            } if isinstance(decision_evidence, list) else {}
+            if set(evidence_by_workload) != set(workload_ids):
+                problems.append("{} admission decision evidence has duplicate or unknown workloads".format(record_dir))
+            for receipt_path in receipt_paths:
+                receipt = _verify_rp2040_cpu_artifact_shape(
+                    receipt_path, "picocalc.rp2040-cpu-decision", problems, schema_validators
+                )
+                if receipt is None:
+                    continue
+                workload_id = receipt.get("workload")
+                if receipt != evidence_by_workload.get(workload_id):
+                    problems.append("{} receipt differs from decision evidence".format(receipt_path))
+                if receipt.get("record_id") != manifest.get("record_id"):
+                    problems.append("{} receipt record_id differs from manifest".format(receipt_path))
+                if receipt.get("candidate_id") != "P0-0" or receipt.get("decision_kind") != "admission":
+                    problems.append("{} receipt decision identity is invalid".format(receipt_path))
+                if receipt.get("status") != "pass":
+                    problems.append("{} receipt status is not pass".format(receipt_path))
+                if receipt.get("correctness") != {"status": "pass", "workload": workload_id}:
+                    problems.append("{} receipt correctness is not passing".format(receipt_path))
+                if receipt.get("workloads") != manifest.get("workloads"):
+                    problems.append("{} receipt workloads differ from manifest".format(receipt_path))
+                if receipt.get("backend_identities") != manifest.get("backend_identities"):
+                    problems.append("{} receipt backend identities differ from manifest".format(receipt_path))
+                if receipt.get("feature_set") != manifest.get("feature_set"):
+                    problems.append("{} receipt feature_set differs from manifest".format(receipt_path))
+                if not isinstance(workload_id, str) or workload_id not in workload_ids:
+                    problems.append("{} receipt workload is unknown".format(receipt_path))
+                runs = receipt.get("runs")
+                if not isinstance(runs, list) or len(runs) != 2 or receipt.get("evidence") != runs:
+                    problems.append("{} receipt run evidence is invalid".format(receipt_path))
+                if not _is_sha256_text(receipt.get("registered_guest_observation_sha256")):
+                    problems.append("{} receipt registered projection SHA-256 is invalid".format(receipt_path))
+                identity = (
+                    manifest.get("backend_identities", {}).get("baseline_production")
+                    if isinstance(manifest.get("backend_identities"), dict)
+                    else None
+                )
+                if isinstance(identity, dict):
+                    if receipt.get("backend_commit") != identity.get("commit"):
+                        problems.append("{} receipt backend commit differs from manifest".format(receipt_path))
+                    if receipt.get("runner_sha256") != identity.get("runner_sha256"):
+                        problems.append("{} receipt runner SHA-256 differs from manifest".format(receipt_path))
+                    if receipt.get("build_provenance_sha256") != identity.get("build_provenance_sha256"):
+                        problems.append("{} receipt build provenance SHA-256 differs from manifest".format(receipt_path))
+                    for run in runs if isinstance(runs, list) else []:
+                        if not isinstance(run, dict):
+                            continue
+                        if run.get("backend_commit") != identity.get("commit"):
+                            problems.append("{} receipt run backend commit differs from manifest".format(receipt_path))
+                        if run.get("runner_sha256") != identity.get("runner_sha256"):
+                            problems.append("{} receipt run runner SHA-256 differs from manifest".format(receipt_path))
+                        if run.get("build_provenance_sha256") != identity.get("build_provenance_sha256"):
+                            problems.append("{} receipt run build provenance SHA-256 differs from manifest".format(receipt_path))
+                        if run.get("guest_observation_sha256") != receipt.get("registered_guest_observation_sha256"):
+                            problems.append("{} receipt run projection differs from registered digest".format(receipt_path))
+
+        summary_path = record_dir / "summary.json"
+        ab_dir = record_dir / "ab"
+        if ab_dir.exists():
+            summary = None
+            if not summary_path.is_file():
+                problems.append("{} AB record is missing summary.json".format(record_dir))
+            else:
+                summary = _verify_rp2040_cpu_artifact_shape(
+                    summary_path, "picocalc.rp2040-cpu-ab", problems, schema_validators
+                )
+                if summary is not None:
+                    if summary.get("record_id") != manifest.get("record_id"):
+                        problems.append("{} summary record_id differs from manifest".format(record_dir))
+                    if summary.get("pairs") != 10 or summary.get("measured_runs") != 40:
+                        problems.append("{} summary does not describe the fixed 10-pair/40-run batch".format(record_dir))
+                    summary_is_invalid = summary.get("status") == "invalid"
+                    if not isinstance(summary.get("workloads"), dict):
+                        problems.append("{} summary workloads is not an object".format(record_dir))
+                    elif not summary_is_invalid and set(summary["workloads"]) != set(
+                        workload_ids if isinstance(workloads, list) else []
+                    ):
+                        problems.append("{} summary workload set differs from manifest".format(record_dir))
+                    if not isinstance(summary.get("pair_results"), list):
+                        problems.append("{} summary pair_results is not an array".format(record_dir))
+                    elif summary_is_invalid:
+                        calibration = summary.get("calibration")
+                        if not isinstance(calibration, dict) or calibration.get("valid") is not False:
+                            problems.append("{} invalid summary does not preserve calibration failure".format(record_dir))
+                        if len(summary["pair_results"]) not in {0, 20}:
+                            problems.append("{} invalid summary pair_results has an unexpected size".format(record_dir))
+                        if len(summary["pair_results"]) == 0 and summary.get("workloads") != {}:
+                            problems.append("{} invalid summary without pair results must have empty workloads".format(record_dir))
+                    elif len(summary["pair_results"]) != 20:
+                        problems.append("{} summary pair_results is not the fixed 20-entry set".format(record_dir))
+            run_paths = sorted(ab_dir.glob("run-*.json")) if ab_dir.is_dir() else []
+            if not run_paths:
+                problems.append("{} AB directory has no run artifacts".format(record_dir))
+            if len(run_paths) != 40:
+                problems.append("{} AB directory must contain exactly 40 run artifacts".format(record_dir))
+            expected_schedule = _expected_rp2040_cpu_schedule(workload_ids) if isinstance(workloads, list) and len(workload_ids) == 2 else {}
+            seen_run_ids = set()
+            run_by_id: Dict[str, Dict[str, Any]] = {}
+            for run_path in run_paths:
+                run = _verify_rp2040_cpu_artifact_shape(
+                    run_path, "picocalc.rp2040-cpu-ab", problems, schema_validators
+                )
+                if run is not None:
+                    if run.get("record_id") != manifest.get("record_id"):
+                        problems.append("{} run record_id differs from manifest".format(run_path))
+                    if not _is_sha256_text(run.get("guest_observation_sha256")):
+                        problems.append("{} guest projection SHA-256 is invalid".format(run_path))
+                    run_id = run.get("run_id")
+                    expected_run = expected_schedule.get(run_id) if isinstance(run_id, str) else None
+                    if expected_run is None:
+                        problems.append("{} run_id is not in the fixed schedule".format(run_path))
+                    else:
+                        if any(run.get(field) != expected_run[field] for field in ("pair", "order", "workload", "role")):
+                            problems.append("{} run fields differ from the fixed schedule".format(run_path))
+                    if isinstance(run_id, str):
+                        if run_id in seen_run_ids:
+                            problems.append("{} run_id is duplicated".format(run_path))
+                        seen_run_ids.add(run_id)
+                        run_by_id[run_id] = run
+                    role_label = "{}_production".format(run.get("role"))
+                    identity = identities.get(role_label) if isinstance(identities, dict) else None
+                    if not isinstance(identity, dict):
+                        problems.append("{} has no manifest identity for {}".format(run_path, role_label))
+                    else:
+                        if run.get("backend_commit") != identity.get("commit"):
+                            problems.append("{} backend commit differs from manifest".format(run_path))
+                        if run.get("runner_sha256") != identity.get("runner_sha256"):
+                            problems.append("{} runner SHA-256 differs from manifest".format(run_path))
+                        if run.get("build_provenance_sha256") != identity.get("build_provenance_sha256"):
+                            problems.append("{} build provenance SHA-256 differs from manifest".format(run_path))
+            if expected_schedule and seen_run_ids != set(expected_schedule):
+                problems.append("{} AB run IDs do not cover the fixed schedule".format(record_dir))
+            if isinstance(summary, dict) and isinstance(summary.get("pair_results"), list):
+                seen_pairs = set()
+                for pair_result in summary["pair_results"]:
+                    if not isinstance(pair_result, dict):
+                        problems.append("{} contains a non-object pair result".format(summary_path))
+                        continue
+                    workload_id = pair_result.get("workload")
+                    pair_index = pair_result.get("pair_index")
+                    key = (workload_id, pair_index)
+                    if key in seen_pairs:
+                        problems.append("{} contains a duplicate pair result for {}".format(summary_path, key))
+                    seen_pairs.add(key)
+                    run_ids = pair_result.get("run_ids")
+                    if not isinstance(run_ids, list) or len(run_ids) != 2 or not all(
+                        isinstance(run_id, str) for run_id in run_ids
+                    ):
+                        problems.append("{} has invalid pair run_ids".format(summary_path))
+                        continue
+                    pair_runs = [run_by_id.get(run_id) for run_id in run_ids]
+                    if any(run is None for run in pair_runs):
+                        problems.append("{} pair result references an unknown run".format(summary_path))
+                        continue
+                    baseline_run, candidate_run = pair_runs
+                    if baseline_run.get("role") != "baseline" or candidate_run.get("role") != "candidate":
+                        problems.append("{} pair result run roles are invalid".format(summary_path))
+                    if baseline_run.get("workload") != workload_id or candidate_run.get("workload") != workload_id:
+                        problems.append("{} pair result workload disagrees with run artifacts".format(summary_path))
+                    if baseline_run.get("pair") != pair_index or candidate_run.get("pair") != pair_index:
+                        problems.append("{} pair result index disagrees with run artifacts".format(summary_path))
+                    if pair_result.get("order") != baseline_run.get("order") or pair_result.get("order") != candidate_run.get("order"):
+                        problems.append("{} pair result order disagrees with run artifacts".format(summary_path))
+                    for role, run in (("baseline", baseline_run), ("candidate", candidate_run)):
+                        digest_field = role + "_guest_observation_sha256"
+                        if pair_result.get(digest_field) != run.get("guest_observation_sha256"):
+                            problems.append("{} pair result {} digest disagrees with run artifacts".format(summary_path, role))
+                    expected_equal = (
+                        baseline_run.get("guest_observation_sha256")
+                        == candidate_run.get("guest_observation_sha256")
+                    )
+                    if pair_result.get("guest_observation_equal") != expected_equal:
+                        problems.append("{} pair result guest equality disagrees with run artifacts".format(summary_path))
+
+        profile_dir = record_dir / "profile"
+        if profile_dir.exists():
+            profile_paths = (
+                sorted(
+                    path for path in profile_dir.glob("*.json")
+                    if not path.name.endswith("-measurement.json")
+                )
+                if profile_dir.is_dir()
+                else []
+            )
+            if not profile_paths:
+                problems.append("{} profile directory has no artifacts".format(record_dir))
+            for profile_path in profile_paths:
+                profile = _verify_rp2040_cpu_artifact_shape(
+                    profile_path, "picocalc.rp2040-cpu-profile", problems, schema_validators
+                )
+                if profile is not None and isinstance(identities, dict):
+                    identity = identities.get("candidate_profile")
+                    backend = profile.get("backend")
+                    runner = profile.get("runner")
+                    if isinstance(identity, dict) and isinstance(backend, dict):
+                        if backend.get("commit") != identity.get("commit"):
+                            problems.append("{} profile backend commit differs from manifest".format(profile_path))
+                    if isinstance(identity, dict) and isinstance(runner, dict):
+                        if runner.get("sha256") != identity.get("runner_sha256"):
+                            problems.append("{} profile runner SHA-256 differs from manifest".format(profile_path))
+                        if runner.get("build_provenance_sha256") != identity.get("build_provenance_sha256"):
+                            problems.append("{} profile build provenance SHA-256 differs from manifest".format(profile_path))
+                    if isinstance(identity, dict) and profile.get("feature_set") != identity.get("feature_set", []):
+                        problems.append("{} profile feature_set differs from manifest".format(profile_path))
+
+        correctness_dir = record_dir / "correctness"
+        if correctness_dir.exists():
+            workload_dirs = [path for path in correctness_dir.iterdir() if path.is_dir()] if correctness_dir.is_dir() else []
+            if not workload_dirs:
+                problems.append("{} correctness directory has no workload".format(record_dir))
+            for workload_dir in workload_dirs:
+                comparison_path = workload_dir / "comparison.json"
+                if not comparison_path.is_file():
+                    problems.append("{} is missing comparison.json".format(workload_dir))
+                else:
+                    comparison = _verify_rp2040_cpu_artifact_shape(
+                        comparison_path, "picocalc.rp2040-cpu-ab", problems, schema_validators
+                    )
+                    if comparison is not None:
+                        if comparison.get("record_id") != manifest.get("record_id"):
+                            problems.append("{} comparison record_id differs from manifest".format(workload_dir))
+                        if comparison.get("workload") != workload_dir.name:
+                            problems.append("{} comparison workload differs from directory".format(workload_dir))
+                        if comparison.get("behavior_equal") is not True:
+                            problems.append("{} correctness behavior gate is not passing".format(workload_dir))
+                        if (
+                            ab_dir.exists()
+                            and comparison.get("trace_required") is False
+                            and manifest.get("candidate_id") != "P0-A2"
+                        ):
+                            problems.append(
+                                "{} final-report-only correctness is allowed only for P0-A2".format(
+                                    workload_dir
+                                )
+                            )
+                        report_commits: Dict[str, str] = {}
+                        for role in ("baseline", "candidate"):
+                            report_path = workload_dir / "{}-report.json".format(role)
+                            projection_path = workload_dir / "{}-projection.json".format(role)
+                            if not report_path.is_file() or not projection_path.is_file():
+                                problems.append("{} is missing {} report/projection".format(workload_dir, role))
+                                continue
+                            try:
+                                report = load_json(report_path)
+                                projection = load_json(projection_path)
+                            except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+                                problems.append("{} {} report/projection is unreadable: {}".format(workload_dir, role, error))
+                                continue
+                            if not isinstance(report, dict) or not isinstance(projection, dict):
+                                problems.append("{} {} report/projection is not an object".format(workload_dir, role))
+                                continue
+                            expected_projection = {
+                                key: value
+                                for key, value in report.items()
+                                if key not in {"backend_build", "backend_commit"}
+                            }
+                            if projection != expected_projection:
+                                problems.append("{} {} projection differs from report".format(workload_dir, role))
+                            digest = _canonical_json_sha256(projection)
+                            if comparison.get("{}_guest_observation_sha256".format(role)) != digest:
+                                problems.append("{} {} correctness digest differs from projection".format(workload_dir, role))
+                            backend = report.get("backend_build")
+                            if not isinstance(backend, dict) or not _is_git_commit_text(backend.get("commit")) or backend.get("dirty") is not False:
+                                problems.append("{} {} report backend identity is invalid".format(workload_dir, role))
+                            else:
+                                report_commits[role] = backend["commit"]
+                                if isinstance(identities, dict):
+                                    identity = identities.get("{}_production".format(role))
+                                    if isinstance(identity, dict) and backend.get("commit") != identity.get("commit"):
+                                        problems.append("{} {} report backend commit differs from manifest".format(workload_dir, role))
+                            measurement = comparison.get(role)
+                            if not isinstance(measurement, dict):
+                                problems.append("{} {} correctness measurement is missing".format(workload_dir, role))
+                            elif isinstance(identities, dict):
+                                identity = identities.get("{}_production".format(role))
+                                if isinstance(identity, dict):
+                                    if measurement.get("backend_commit") != identity.get("commit"):
+                                        problems.append(
+                                            "{} {} correctness measurement backend commit differs from manifest".format(
+                                                workload_dir, role
+                                            )
+                                        )
+                                    if measurement.get("runner_sha256") != identity.get("runner_sha256"):
+                                        problems.append(
+                                            "{} {} correctness measurement runner SHA-256 differs from manifest".format(
+                                                workload_dir, role
+                                            )
+                                        )
+                                    if measurement.get("build_provenance_sha256") != identity.get("build_provenance_sha256"):
+                                        problems.append(
+                                            "{} {} correctness measurement build provenance SHA-256 differs from manifest".format(
+                                                workload_dir, role
+                                            )
+                                        )
+                        if comparison.get("trace_required") is True:
+                            if not isinstance(identities, dict) or not all(
+                                isinstance(identities.get("{}_trace".format(role)), dict)
+                                for role in ("baseline", "candidate")
+                            ):
+                                problems.append(
+                                    "{} trace-required correctness is missing trace backend identities".format(
+                                        workload_dir
+                                    )
+                                )
+                            behavior_paths = [
+                                workload_dir / "baseline-behavior.json",
+                                workload_dir / "candidate-behavior.json",
+                            ]
+                            if not all(path.is_file() for path in behavior_paths):
+                                for behavior_path in behavior_paths:
+                                    if not behavior_path.is_file():
+                                        problems.append("{} is missing {}".format(workload_dir, behavior_path.name))
+                            else:
+                                expected_behavior_commits = dict(report_commits)
+                                if isinstance(identities, dict):
+                                    for role in ("baseline", "candidate"):
+                                        trace_identity = identities.get("{}_trace".format(role))
+                                        if isinstance(trace_identity, dict) and _is_git_commit_text(
+                                            trace_identity.get("commit")
+                                        ):
+                                            expected_behavior_commits[role] = trace_identity["commit"]
+                                _verify_rp2040_cpu_behavior_pair(
+                                    behavior_paths[0], behavior_paths[1], comparison, problems,
+                                    expected_commits=expected_behavior_commits,
+                                )
+
+        sums_path = record_dir / "SHA256SUMS"
+        if not sums_path.is_file():
+            problems.append("{} is missing SHA256SUMS".format(record_dir))
+        else:
+            try:
+                listed_paths = set()
+                for line in sums_path.read_text(encoding="utf-8").splitlines():
+                    if not line.strip():
+                        continue
+                    digest, relative = line.split("  ", 1)
+                    artifact_path = _record_path_within(record_dir, relative)
+                    if not _is_sha256_text(digest) or artifact_path is None or not artifact_path.is_file():
+                        problems.append("{} contains an invalid artifact entry".format(sums_path))
+                        continue
+                    if artifact_path in listed_paths:
+                        problems.append("{} contains a duplicate artifact entry for {}".format(sums_path, relative))
+                        continue
+                    listed_paths.add(artifact_path)
+                    if sha256(artifact_path) != digest:
+                        problems.append("{} digest mismatch for {}".format(sums_path, relative))
+                for artifact_path in record_dir.rglob("*"):
+                    resolved_artifact = artifact_path.resolve()
+                    if resolved_artifact.is_file() and resolved_artifact.name != "SHA256SUMS" and resolved_artifact not in listed_paths:
+                        problems.append("{} is missing an artifact entry for {}".format(sums_path, artifact_path.relative_to(record_dir)))
+            except (OSError, UnicodeError, ValueError) as error:
+                problems.append("{} is unreadable: {}".format(sums_path, error))
+    add_check(
+        checks,
+        "firmware-validation:rp2040-cpu-records",
+        not problems,
+        records=len(record_dirs),
+        errors=problems,
+    )
 
 
 def verify_next3_negative_conformance(checks: List[Check], root: Path) -> None:
