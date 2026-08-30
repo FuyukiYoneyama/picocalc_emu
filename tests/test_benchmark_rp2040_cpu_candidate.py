@@ -295,6 +295,29 @@ class CandidateRunnerTests(unittest.TestCase):
             self.module.guest_observation_sha256(changed),
         )
 
+    def test_admission_identity_allows_only_documented_production_role_transition(self):
+        base = {
+            "commit": "a" * 40,
+            "dirty": False,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+            "feature_set": ["sd-gen1-multiblock"],
+            "role": "baseline_production",
+            "provenance_role": "baseline_production",
+        }
+        production = dict(base)
+        production.update(
+            {
+                "build_provenance_sha256": "d" * 64,
+                "provenance_role": "production",
+            }
+        )
+        self.assertTrue(self.module._admission_baseline_identity_matches(base, production))
+        changed_runner = dict(production, runner_sha256="e" * 64)
+        self.assertFalse(self.module._admission_baseline_identity_matches(base, changed_runner))
+        unrecognized_role = dict(production, provenance_role="candidate_production")
+        self.assertFalse(self.module._admission_baseline_identity_matches(base, unrecognized_role))
+
     def test_log_ratio_is_candidate_over_baseline_independent_of_order(self):
         ratio_ab = self.module.log_ratio(110.0, 100.0)
         ratio_ba = self.module.log_ratio(110.0, 100.0)
@@ -442,12 +465,15 @@ class CandidateRunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):
                 self.module._record_manifest(record, identity)
 
-    def test_environment_verifier_accepts_schema_installation_before_records_exist(self):
+    def test_environment_verifier_accepts_installed_schemas_and_records(self):
         verifier = load_verifier()
         checks = []
         verifier.verify_rp2040_cpu_application_records(checks, ROOT)
         self.assertEqual([check["status"] for check in checks], ["pass", "pass"])
-        self.assertEqual(checks[1]["records"], 0)
+        expected_records = len(
+            list((ROOT / "firmware-validation" / "records").glob("rp2040-cpu-*"))
+        )
+        self.assertEqual(checks[1]["records"], expected_records)
 
     def test_admission_gate_rechecks_receipts_and_full_workload_identity(self):
         import picocalc

@@ -1125,7 +1125,9 @@ def _require_admission_gate(
         or decision.get("feature_set") != manifest.get("feature_set")
     ):
         raise ValueError("admission record decision identity differs from manifest")
-    if baseline_identity is not None and manifest_identity != dict(baseline_identity):
+    if baseline_identity is not None and not _admission_baseline_identity_matches(
+        manifest_identity, baseline_identity
+    ):
         raise ValueError("admission record baseline identity differs from current baseline")
     correctness = decision.get("correctness")
     if not isinstance(correctness, Mapping) or correctness.get("status") != "pass":
@@ -1191,6 +1193,31 @@ def _require_admission_gate(
                 or run.get("guest_observation_sha256") != registered_digest
             ):
                 raise ValueError("admission receipt run identity differs from baseline: {}".format(workload_id))
+
+
+def _admission_baseline_identity_matches(
+    admitted: Mapping[str, Any], current: Mapping[str, Any]
+) -> bool:
+    """Compare the physical baseline execution identity across phase roles.
+
+    P0-A2 intentionally reuses one production executable for both A and B and
+    therefore gives that executable a sidecar role of ``production``.  The
+    sidecar role (and its file digest) is metadata for the phase, not a change
+    to the backend, executable, or effective feature set.  Keep the admission
+    gate strict on those physical identities while allowing this documented
+    role-only sidecar transition.
+    """
+    for key in ("commit", "dirty", "runner_sha256", "feature_set"):
+        if admitted.get(key) != current.get(key):
+            return False
+    if admitted.get("build_provenance_sha256") == current.get("build_provenance_sha256"):
+        return True
+    return (
+        admitted.get("role") == "baseline_production"
+        and current.get("role") == "baseline_production"
+        and admitted.get("provenance_role") == "baseline_production"
+        and current.get("provenance_role") == "production"
+    )
 
 
 def _resource_usage() -> Dict[str, Optional[float]]:
