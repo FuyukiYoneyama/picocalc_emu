@@ -1,0 +1,101 @@
+{
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+      "commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7"
+    },
+    "baseline_trace": {
+      "build_provenance_sha256": "7ab93c729d8119fd3d14a264c7a55a67f2a6a11f66bce55c88fb0a3c2a49355c",
+      "commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_trace",
+      "role": "baseline_trace",
+      "runner_sha256": "b85752270e1f49e8769fffb47f70e3547d1dfe9ea859ff42ffef62eb6264d9af"
+    },
+    "candidate_production": {
+      "build_provenance_sha256": "e4d3af3cccd22fcc41154c41292a7d3a83cf9b51fb8e5dd871449034413680fe",
+      "commit": "c123933423477b878a1dde8b1f80fb3d731bc8e3",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_production",
+      "role": "candidate_production",
+      "runner_sha256": "009313f88c2cdc42b78e6922b666221e80e5b47437b988837ac3231d410e09e4"
+    },
+    "candidate_trace": {
+      "build_provenance_sha256": "cf107bc581491a61f74917bf3202bbfe02b74f2e2aabb724ddce744b724beadc",
+      "commit": "c123933423477b878a1dde8b1f80fb3d731bc8e3",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_trace",
+      "role": "candidate_trace",
+      "runner_sha256": "d7d6e804cf6d80a42a865e68b14817474e4d12b9e5c72c70309db7936d82de6a"
+    }
+  },
+  "candidate_id": "P0-B-profiler-off",
+  "feature_set": [
+    "behavior-trace",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.40380859375,
+      0.59814453125,
+      0.50537109375
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "reported_mhz": 3693.107
+  },
+  "measurement_cpu": null,
+  "record_id": "rp2040-cpu-p0-b-correctness-20260831-02",
+  "record_type": "picocalc.rp2040-cpu-record",
+  "record_version": 1,
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

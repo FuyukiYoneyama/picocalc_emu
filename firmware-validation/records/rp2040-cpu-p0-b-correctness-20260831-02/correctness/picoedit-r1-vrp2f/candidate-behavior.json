@@ -1,0 +1,426 @@
+{
+  "backend_build": {
+    "commit": "c123933423477b878a1dde8b1f80fb3d731bc8e3",
+    "dirty": false
+  },
+  "behavior_projection": {
+    "board": "picocalc",
+    "boot": {
+      "mode": "direct_boot_from_flash",
+      "vtor_flash_offset": "0x0100"
+    },
+    "bootrom": {
+      "executed": false,
+      "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+    },
+    "cycle_limit": 4000000000,
+    "cycles": 827799818,
+    "elapsed_us": 3320000,
+    "error": null,
+    "event_trace": {
+      "canonical_encoding": "PICOEM-EVENT-v1",
+      "domains": [
+        {
+          "events": 8,
+          "name": "clock",
+          "sha256": "85089ed7ae5fbc573b87f040349a52eeb6780f1c803c989a54f06e58f8af4f80"
+        },
+        {
+          "events": 2795,
+          "name": "irq_exception",
+          "sha256": "4030d279524b34ca669ba70a4976dbccd9fc376ddc336c60f3c6f02c99579e0c"
+        },
+        {
+          "events": 1,
+          "name": "pio_gpio",
+          "sha256": "0d638c6046072549fd77d43c6c48f26b51ad5cb226a8a52e672df1c56164c263"
+        },
+        {
+          "events": 36049253,
+          "name": "psram",
+          "sha256": "5a4b5f36956afb722fccfd4a798b250c8b892a2bc2959a2f6dc46e5dc45ca526"
+        },
+        {
+          "events": 35937422,
+          "name": "lcd",
+          "sha256": "8726b227af593521dce76d9fda7898acddc7bf3d462c617e83fdf61c021d22da"
+        },
+        {
+          "events": 3852,
+          "name": "dma_dreq",
+          "sha256": "c5b001f6853c3a46a31086f21dc5d5906c8e1a2014d46bc2cfec1a1527ad4cd8"
+        },
+        {
+          "events": 1398,
+          "name": "timer_pwm",
+          "sha256": "2a6c3ab2cfc8c21a0d97061554cb35792dd861a26366d9ea7081bd227ce7943a"
+        },
+        {
+          "events": 52786,
+          "name": "serial_bus",
+          "sha256": "7f9a13a8cebef1699612634ad3039c3fa034b5093536c0737d2f0891892cf25f"
+        },
+        {
+          "events": 143,
+          "name": "scenario_input",
+          "sha256": "7fdb80edd4a5223a23ac017402d2a8a86de10e899d919eea7fb8dd8bea0d1868"
+        }
+      ],
+      "retains_event_array": false,
+      "schema_version": 2,
+      "sha256": "e4b20e4bd12c5a7d0cd84b7c3d4f81f55caf9006351fa58a7cd0548342715d84",
+      "streaming": true,
+      "total_events": 72047658
+    },
+    "exception": null,
+    "execution_model": "Serial",
+    "firmware": {
+      "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+    },
+    "flash": {
+      "command_counts": [
+        {
+          "command": 0,
+          "count": 1
+        },
+        {
+          "command": 255,
+          "count": 1
+        },
+        {
+          "command": 75,
+          "count": 1
+        },
+        {
+          "command": 53,
+          "count": 1
+        },
+        {
+          "command": 235,
+          "count": 1
+        }
+      ],
+      "erase_count": 0,
+      "errors": [],
+      "image_bytes": 2097152,
+      "program_bytes": 0,
+      "program_count": 0,
+      "unknown_commands": []
+    },
+    "framebuffer": {
+      "height": 320,
+      "non_black_pixels": 14389,
+      "rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+      "width": 320
+    },
+    "keyboard": {
+      "addr": "0x1f",
+      "attached": true,
+      "backlight": 0,
+      "backlight_writes": 0,
+      "battery_reads": 0,
+      "caps_lock": false,
+      "config": "0xd2",
+      "interrupt_status": "0x08",
+      "key_events_delivered": 30,
+      "key_events_dropped": 0,
+      "key_events_overwritten": 0,
+      "key_events_remaining": 0,
+      "last_unknown_reg": null,
+      "lcd_backlight": 32,
+      "num_lock": false,
+      "reg_selects": 518,
+      "unknown_reg_selects": 0,
+      "unknown_reg_writes": 0
+    },
+    "lcd": {
+      "caset": 359,
+      "colmod": "0x65",
+      "init": {
+        "dispoff": 0,
+        "dispon": 1,
+        "slpin": 0,
+        "slpout": 1,
+        "swreset": 0
+      },
+      "madctl": "0x48",
+      "orphan_data_bytes": 0,
+      "pixels_dropped": 0,
+      "pixels_written": 1480000,
+      "ramrd": 0,
+      "ramwr": 359,
+      "raset": 359,
+      "reset_pulses": 2,
+      "state": {
+        "display_on": true,
+        "inverted": true,
+        "sleeping": false
+      },
+      "unknown_commands": [
+        {
+          "code": "0x35",
+          "count": 1
+        },
+        {
+          "code": "0xb1",
+          "count": 1
+        },
+        {
+          "code": "0xb4",
+          "count": 1
+        },
+        {
+          "code": "0xb7",
+          "count": 1
+        },
+        {
+          "code": "0xb9",
+          "count": 1
+        },
+        {
+          "code": "0xc0",
+          "count": 1
+        },
+        {
+          "code": "0xc1",
+          "count": 1
+        },
+        {
+          "code": "0xc2",
+          "count": 1
+        },
+        {
+          "code": "0xc5",
+          "count": 1
+        },
+        {
+          "code": "0xe0",
+          "count": 1
+        },
+        {
+          "code": "0xe1",
+          "count": 1
+        },
+        {
+          "code": "0xe8",
+          "count": 1
+        },
+        {
+          "code": "0xf0",
+          "count": 4
+        }
+      ]
+    },
+    "lcd_variant": "pio-rgb565",
+    "pc": "0x10004c7a",
+    "pio": [
+      {
+        "block": 0,
+        "fstat": "0x0f000f00",
+        "sm_enabled": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "sm_pc": [
+          30,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "block": 1,
+        "fstat": "0x0f000f00",
+        "sm_enabled": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "sm_pc": [
+          23,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "projection_schema_version": 1,
+    "psram": {
+      "attached": true,
+      "bytes_read": 2471,
+      "bytes_written": 154,
+      "cmd_counts": {
+        "fast_read": 235,
+        "reset": 1,
+        "reset_enable": 1,
+        "unknown": 0,
+        "write": 10
+      },
+      "cs_falling_count": 250,
+      "tick_count": 158844047,
+      "verify": null
+    },
+    "pwm": {
+      "configured_slices": [
+        {
+          "cc": "0x00800080",
+          "csr": "0x00000000",
+          "slice": 5,
+          "top": 255
+        }
+      ],
+      "inte": "0x00"
+    },
+    "scenario": {
+      "description": "Frozen NEXT-1 PicoEdit workflow. Uses official controller key codes and waits for application markers between logical phases.",
+      "error": null,
+      "input_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718",
+      "name": "picoedit-blind-v1",
+      "poll_ms": 5,
+      "status": "pass",
+      "steps": [
+        {
+          "at_cycles": 140299818,
+          "at_ms": 570,
+          "detail": "1645 UART bytes seen",
+          "index": 0,
+          "label": "PicoEdit file list ready",
+          "op": "wait_until",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 165299818,
+          "at_ms": 670,
+          "detail": "sent 2 raw key event(s)",
+          "index": 1,
+          "label": "open selected INPUT.TXT",
+          "op": "key_events",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 165299818,
+          "at_ms": 670,
+          "detail": "1847 UART bytes seen",
+          "index": 2,
+          "label": "61-byte seed loaded into PSRAM",
+          "op": "wait_until",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 240299818,
+          "at_ms": 970,
+          "detail": "sent 4 raw key event(s)",
+          "index": 3,
+          "label": "Ctrl+F",
+          "op": "key_events",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 515299818,
+          "at_ms": 2070,
+          "detail": "sent 12 raw key event(s)",
+          "index": 4,
+          "label": "type draft and confirm",
+          "op": "key_events",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 515299818,
+          "at_ms": 2070,
+          "detail": "2196 UART bytes seen",
+          "index": 5,
+          "label": "draft found at frozen cursor",
+          "op": "wait_until",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 690299818,
+          "at_ms": 2770,
+          "detail": "sent 8 raw key event(s)",
+          "index": 6,
+          "label": "End then insert space-o-k",
+          "op": "key_events",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 765299818,
+          "at_ms": 3070,
+          "detail": "sent 4 raw key event(s)",
+          "index": 7,
+          "label": "Ctrl+S",
+          "op": "key_events",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 765299818,
+          "at_ms": 3070,
+          "detail": "2628 UART bytes seen",
+          "index": 8,
+          "label": "safe save readback and SHA pass",
+          "op": "wait_until",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 827799818,
+          "at_ms": 3320,
+          "detail": "waited 250 ms",
+          "index": 9,
+          "label": "drain final Ctrl release",
+          "op": "wait",
+          "status": "pass"
+        },
+        {
+          "at_cycles": 827799818,
+          "at_ms": 3320,
+          "detail": "14389 non-black pixels",
+          "index": 10,
+          "label": "PicoEdit final screen",
+          "op": "snapshot",
+          "rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+          "status": "pass"
+        }
+      ],
+      "steps_total": 11
+    },
+    "sd": {
+      "attached": true,
+      "block_count": 131072,
+      "block_size": 512,
+      "blocks_read": 12,
+      "blocks_written": 13,
+      "commands_seen": 34,
+      "format": "fat32",
+      "protocol_errors": [],
+      "unknown_commands": []
+    },
+    "step_quantum": 1,
+    "stop_pc": null,
+    "stop_reason": "scenario_done",
+    "uart": {
+      "bytes": 2628,
+      "sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33"
+    },
+    "unsupported_mmio": [],
+    "unsupported_mmio_truncated": false,
+    "verdict": {
+      "expected_stop_reason": "scenario_done",
+      "missing_uart_markers": [],
+      "reasons": [],
+      "required_uart_markers": [
+        "[PICOEDIT][STORE] type=psram address=0x00010000 capacity=65536 shadow_document=none",
+        "[PICOEDIT][LOAD] status=pass path=0:/INPUT.TXT bytes=61 sha256=4e666f9e499a64cd564915d71233b02818e567c72183dc12e1ce34e4f8ec2ea7 store=psram",
+        "[PICOEDIT][SAVE] status=pass bytes=64 sha256=5c704b1e8055cf77d3600eb4663c5b4ecf651c8b1085da2d0ada6e669ffc249e"
+      ],
+      "status": "pass"
+    }
+  },
+  "behavior_projection_encoding": "sorted-json-v1",
+  "behavior_sha256": "f2a2191921c6bafd1feb1d99940fb8a76d85ee7e7bcbc187c3631372075ecd00",
+  "mode": "correctness_trace_on",
+  "normal_report_schema_version": 8,
+  "schema_version": 1,
+  "valid_for_wall_time": false
+}

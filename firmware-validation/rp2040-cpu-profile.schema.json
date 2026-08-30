@@ -4,7 +4,153 @@
   "title": "PicoCalc RP2040 CPU application profile",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_id", "schema_version", "record_id", "candidate_id", "workload", "backend", "runner", "cpu", "interval", "cores", "overflowed", "profile_valid", "counters", "invariants", "feature_set"],
+  "required": [
+    "schema_id", "schema_version", "record_id", "candidate_id", "workload",
+    "backend", "runner", "cpu", "interval", "cores", "overflowed",
+    "profile_valid", "counters", "invariants", "feature_set"
+  ],
+  "$defs": {
+    "counter": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "regionCounters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boot_rom", "immutable_xip", "xip_sram", "sram", "other"],
+      "properties": {
+        "boot_rom": {"$ref": "#/$defs/counter"},
+        "immutable_xip": {"$ref": "#/$defs/counter"},
+        "xip_sram": {"$ref": "#/$defs/counter"},
+        "sram": {"$ref": "#/$defs/counter"},
+        "other": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "decodeRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hits", "lookups", "misses"],
+      "properties": {
+        "hits": {"$ref": "#/$defs/counter"},
+        "lookups": {"$ref": "#/$defs/counter"},
+        "misses": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "decodeByRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boot_rom", "immutable_xip", "xip_sram", "sram", "other"],
+      "properties": {
+        "boot_rom": {"$ref": "#/$defs/decodeRegion"},
+        "immutable_xip": {"$ref": "#/$defs/decodeRegion"},
+        "xip_sram": {"$ref": "#/$defs/decodeRegion"},
+        "sram": {"$ref": "#/$defs/decodeRegion"},
+        "other": {"$ref": "#/$defs/decodeRegion"}
+      }
+    },
+    "decode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lookups", "hits", "misses", "noncacheable_fetches", "by_region"],
+      "properties": {
+        "lookups": {"$ref": "#/$defs/counter"},
+        "hits": {"$ref": "#/$defs/counter"},
+        "misses": {"$ref": "#/$defs/counter"},
+        "noncacheable_fetches": {"$ref": "#/$defs/counter"},
+        "by_region": {"$ref": "#/$defs/decodeByRegion"}
+      }
+    },
+    "invalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests", "examined_slots", "matching_clears", "unrelated_would_clear", "wide_predecessor_clears"],
+      "properties": {
+        "requests": {"$ref": "#/$defs/counter"},
+        "examined_slots": {"$ref": "#/$defs/counter"},
+        "matching_clears": {"$ref": "#/$defs/counter"},
+        "unrelated_would_clear": {"$ref": "#/$defs/counter"},
+        "wide_predecessor_clears": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "exceptionSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pendsv", "systick", "nvic"],
+      "properties": {
+        "pendsv": {"$ref": "#/$defs/counter"},
+        "systick": {"$ref": "#/$defs/counter"},
+        "nvic": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["polls", "reject_primask", "reject_no_candidate", "reject_active_handler", "entries", "source"],
+      "properties": {
+        "polls": {"$ref": "#/$defs/counter"},
+        "reject_primask": {"$ref": "#/$defs/counter"},
+        "reject_no_candidate": {"$ref": "#/$defs/counter"},
+        "reject_active_handler": {"$ref": "#/$defs/counter"},
+        "entries": {"$ref": "#/$defs/counter"},
+        "source": {"$ref": "#/$defs/exceptionSource"}
+      }
+    },
+    "handlerGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["thumb16_shift_add_sub", "data_processing", "load_store", "branch_system", "thumb32", "other"],
+      "properties": {
+        "thumb16_shift_add_sub": {"$ref": "#/$defs/counter"},
+        "data_processing": {"$ref": "#/$defs/counter"},
+        "load_store": {"$ref": "#/$defs/counter"},
+        "branch_system": {"$ref": "#/$defs/counter"},
+        "thumb32": {"$ref": "#/$defs/counter"},
+        "other": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active", "retired_instructions", "emulated_cycles", "pc_region", "decode", "invalidation", "exception", "handler_group"],
+      "properties": {
+        "active": {"type": "boolean"},
+        "retired_instructions": {"$ref": "#/$defs/counter"},
+        "emulated_cycles": {"$ref": "#/$defs/counter"},
+        "pc_region": {"$ref": "#/$defs/regionCounters"},
+        "decode": {"$ref": "#/$defs/decode"},
+        "invalidation": {"$ref": "#/$defs/invalidation"},
+        "exception": {"$ref": "#/$defs/exception"},
+        "handler_group": {"$ref": "#/$defs/handlerGroup"}
+      }
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "core_id", "active", "retired_instructions", "emulated_cycles",
+        "pc_region", "decode", "invalidation", "exception", "handler_group",
+        "overflowed", "invariants"
+      ],
+      "properties": {
+        "core_id": {"type": "integer", "minimum": 0},
+        "active": {"type": "boolean"},
+        "retired_instructions": {"$ref": "#/$defs/counter"},
+        "emulated_cycles": {"$ref": "#/$defs/counter"},
+        "pc_region": {"$ref": "#/$defs/regionCounters"},
+        "decode": {"$ref": "#/$defs/decode"},
+        "invalidation": {"$ref": "#/$defs/invalidation"},
+        "exception": {"$ref": "#/$defs/exception"},
+        "handler_group": {"$ref": "#/$defs/handlerGroup"},
+        "overflowed": {"type": "boolean"},
+        "invariants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["valid"],
+          "properties": {"valid": {"type": "boolean"}}
+        }
+      }
+    }
+  },
   "properties": {
     "schema_id": {"const": "picocalc.rp2040-cpu-profile"},
     "schema_version": {"const": 1},
@@ -41,46 +187,69 @@
     },
     "cpu": {
       "type": "object",
-      "required": ["model", "logical_cpus"],
+      "additionalProperties": false,
+      "required": ["model", "logical_cpus", "reported_mhz", "platform", "kernel", "loadavg", "allowed_cpus"],
       "properties": {
         "model": {"type": "string"},
         "logical_cpus": {"type": ["integer", "null"], "minimum": 1},
         "reported_mhz": {"type": ["number", "null"], "minimum": 0},
         "platform": {"type": "string"},
-        "kernel": {"type": "string"}
+        "kernel": {"type": "string"},
+        "loadavg": {
+          "type": ["array", "null"],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {"type": "number", "minimum": 0}
+        },
+        "allowed_cpus": {
+          "type": ["array", "null"],
+          "items": {"type": "integer", "minimum": 0},
+          "uniqueItems": true
+        }
       }
     },
     "interval": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["start_emulated_cycle", "end_emulated_cycle"],
       "properties": {
-        "start_emulated_cycle": {"type": "integer", "minimum": 0},
-        "end_emulated_cycle": {"type": "integer", "minimum": 0}
+        "start_emulated_cycle": {"$ref": "#/$defs/counter"},
+        "end_emulated_cycle": {"$ref": "#/$defs/counter"}
       }
     },
-    "cores": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "cores": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/core"}
+    },
     "overflowed": {"type": "boolean"},
     "profile_valid": {"type": "boolean"},
-    "counters": {
-      "type": "object",
-      "required": ["active", "retired_instructions", "emulated_cycles", "pc_region", "decode", "invalidation", "exception", "handler_group"],
-      "properties": {
-        "active": {"type": "boolean"},
-        "retired_instructions": {"type": "integer", "minimum": 0},
-        "emulated_cycles": {"type": "integer", "minimum": 0},
-        "pc_region": {"type": "object"},
-        "decode": {"type": "object"},
-        "invalidation": {"type": "object"},
-        "exception": {"type": "object"},
-        "handler_group": {"type": "object"}
-      }
-    },
+    "counters": {"$ref": "#/$defs/counters"},
     "invariants": {
       "type": "object",
-      "required": ["valid"],
-      "properties": {"valid": {"type": "boolean"}}
+      "additionalProperties": false,
+      "required": [
+        "valid", "core_records_valid", "pc_region_conservation", "decode_lookup_conservation",
+        "decode_region_conservation", "exception_poll_conservation", "exception_source_conservation",
+        "handler_group_conservation"
+      ],
+      "properties": {
+        "valid": {"type": "boolean"},
+        "core_records_valid": {"type": "boolean"},
+        "pc_region_conservation": {"type": "boolean"},
+        "decode_lookup_conservation": {"type": "boolean"},
+        "decode_region_conservation": {"type": "boolean"},
+        "exception_poll_conservation": {"type": "boolean"},
+        "exception_source_conservation": {"type": "boolean"},
+        "handler_group_conservation": {"type": "boolean"}
+      }
     },
-    "feature_set": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "feature_set": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
     "measurement": {"type": "object"},
     "raw_profile": {"type": "object"}
   }

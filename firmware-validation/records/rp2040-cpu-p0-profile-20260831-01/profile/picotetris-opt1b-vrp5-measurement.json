@@ -1,0 +1,23 @@
+{
+  "backend_commit": "c123933423477b878a1dde8b1f80fb3d731bc8e3",
+  "build_provenance_sha256": "55340ef6d37a0ae438deff186c840386de16e8225be89a4fd75ecb19f9713b5d",
+  "cycles": 927528659,
+  "elapsed_us": 3715000,
+  "emulated_cycles_per_wall_second": 5089525.321697439,
+  "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "host_usage_delta": {
+    "max_rss_platform_units": 28796,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.004118,
+    "user_seconds": 187.634424
+  },
+  "report_sha256": "6645935515a1791f0f3385dfec9e4c96d942eae7b3fd2d9bc1c503ff8fc9a864",
+  "runner_sha256": "50bd1683eec5502c61a0c2434e3cee28c6aa8349fa0128de431ef7638216be1b",
+  "snapshot_sha256": {
+    "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+  "wall_ns": 182242665155,
+  "wall_seconds": 182.242665155
+}

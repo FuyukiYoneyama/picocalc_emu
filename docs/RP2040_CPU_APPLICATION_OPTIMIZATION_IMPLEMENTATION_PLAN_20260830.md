@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs) — P0-B implementation unblocked for counter-only instrumentation — performance acceptance pending a revised calibration protocol
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs) — P0-B profiler implementation/profile/correctness complete — P1-A and P2-A implementation gates are open — performance acceptance pending a revised valid null-control
 - Date: 2026-08-31
 - Review completed: 2026-08-31
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -26,7 +26,7 @@
 
 この版で「実装開始可能」とは、まだ存在しない runner/schema を作る単位について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。実装順は `P0-A1 runner/tests → P0-0 admission → P0-A2 null-control protocol → P0-B profiler` とする。P0-B の counter-only instrumentation は null-control の wall-time 採否とは独立に開始できるが、P1 以降の候補実装・promotion は P0 の実測 gate を通った後だけにする。
 
-P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了した。P0-A2 は同一 production runner を A/B に指定する null batch を二回完走させ、いずれも correctness、40 measured run、checksum、target-schema を満たしたが、pre/post calibration の host throughput drift がそれぞれ 14.68% と 3.668% となり invalid として保存した。従って runner、admission、schema、記録検証は有効であり、未解決なのは長時間 host 測定の安定性だけである。P0-B は wall-time の採否を主張しない counter-only instrumentation の実装を開始できるが、P0-A2 の有効な null-control と候補の性能採否は別途必要である。
+P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了した。P0-A2 は同一 production runner を A/B に指定する null batch を二回完走させ、いずれも correctness、40 measured run、checksum、target-schema を満たしたが、pre/post calibration の host throughput drift がそれぞれ 14.68% と 3.668% となり invalid として保存した。従って runner、admission、schema、記録検証は有効であり、未解決なのは長時間 host 測定の安定性だけである。P0-B は backend commit `c123933423477b878a1dde8b1f80fb3d731bc8e3` へ counter-only instrumentation を実装し、profile、compile-out、production/behavior-trace correctness を完了した。P0-B は wall-time の採否を主張しないため、P1-A/P2-A の実装開始条件は満たすが、P0-A2 の有効な null-control と候補の性能採否は別途必要である。
 
 ## 1. 目的
 
@@ -123,6 +123,11 @@ P0-A2 の `comparison.json` は `trace_required=false` とし、behavior artifac
 - `firmware-validation/rp2040-cpu-build-provenance.schema.json`: `schema_id = "picocalc.rp2040-build-provenance"`（runner sidecar）
 
 三つの record artifact schema と build provenance schema の初版はすべて `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。build provenance は record tree の leaf ではなく、runner に隣接する sidecar の schema とする。
+
+P0-B 実装時に profile schema の nested `cores`/`counters` を counter 名・型・不変条件名まで閉じた
+Draft 2020-12 定義へ強化した。既存の schema version は維持し、今回の profile record と過去 record を
+同じ validator で再検証する。schema は数値の conservation 自体を再計算しないため、実行時 invariant
+と compile-out/correctness evidence を併せて保存する。
 
 ## 4. 現時点の根拠
 
@@ -265,6 +270,11 @@ P0-B 初版は、P1-A/P2-A の実装判断に必要な次の counter だけを c
 - `exception.{polls,reject_primask,reject_no_candidate,reject_active_handler,entries}: uint64`
 - `exception.source.{pendsv,systick,nvic}: uint64`
 - `handler_group.{thumb16_shift_add_sub,data_processing,load_store,branch_system,thumb32,other}: uint64`
+
+この初版 counter は P1-A/P2-A の開始判定を満たすが、P1-B の executable-page filter 判定に必要な
+write 先 page の executable 状態は持たない。P1-B は profile-only 拡張で
+`non_executable_sram_write_requests` を追加してから測定する。これを `unrelated_would_clear` から
+推定してはならない。
 
 profile root は `interval.start_emulated_cycle` と `interval.end_emulated_cycle`、workload identity、backend commit、runner SHA-256、feature set、core array、`overflowed`、`profile_valid` を持つ。counter は run 全区間の累積 `uint64` とし、reset でゼロに戻す。inactive core は `active=false` かつ全 counter zero とする。加算 overflow は saturate して `overflowed=true`、不変条件違反とともに `profile_valid=false` にする。
 
@@ -481,7 +491,7 @@ python3 tools/verify_environment.py --scope target-schema
 
 この改訂により、長時間の周波数変動を「無かったこと」にせず、変動を観測・補正したうえで、隣接 pair の実アプリ差分が再現するかを判定できる。補正後も null-control が 0 近傍にならない場合は候補測定へ進まず、host 条件または測定設計を再修正する。
 
-P0-A 全体の性能 gate は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件のまま維持する。一方、P0-B の profile は emulated instruction/cycle/PC region counter を収集する計測実装であり、wall-time の採否を行わないため、ここから実装と compile-out/unit test を開始できる。P0-B の profile 結果はホットスポット仮説の形成に使うが、候補実装の production promotion、P1/P2 の A/B 採否、または「高速化した」という結論には使わない。これらは有効な null-control protocol と correctness/A-B 記録が揃うまで保留する。
+P0-A 全体の性能 gate は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件のまま維持する。一方、P0-B の profile は emulated instruction/cycle/PC region counter を収集する計測実装であり、wall-time の採否を行わない。P0-B の実装、compile-out、profile、correctness は完了済みで、結果はホットスポット仮説の形成と P1/P2 の実装開始判定に使うが、候補実装の production promotion、P1/P2 の A/B 採否、または「高速化した」という結論には使わない。これらは有効な null-control protocol と correctness/A-B 記録が揃うまで保留する。
 
 #### P0-B: 最小 CPU application profiler
 
@@ -534,9 +544,45 @@ P0-B 完了条件:
 
 1. 二 workload で §5.3 の全不変条件が成立する。
 2. reset 後の zero、inactive core、overflow invalidation を unit test する。
-3. profiler OFF build の `CortexM0Plus::step`、`decode_execute`、`invalidate_decode_cache_entries` に counter store/profile branch がないことを disassembly で確認する。
-4. profiler OFF の baseline/candidate correctness が一致する。
+3. profiler OFF build の `CortexM0Plus::step`、inline 化された `decode_execute`、invalidation drain path に counter store/profile branch がないことを `compile-out-evidence.md` の `nm`/`objdump` 証跡で確認する。
+4. profiler OFF の baseline/candidate correctness と behavior-trace が一致する。
 5. profile から P1-A の `unrelated_would_clear / examined_slots` と P2-A の no-candidate poll 比率を算出できる。
+
+2026-08-31 に P0-B を実施した。backend commit `c123933423477b878a1dde8b1f80fb3d731bc8e3` の
+`cpu-application-profiler` buildで、PicoTetris r10（retired `172,705,412`、decode miss
+`297,901`）と PicoEdit r4（retired `87,776,861`、decode miss `223,209`）を測定した。
+両 workload とも `overflowed=false`、`profile_valid=true`、全8 invariant が成立し、core 1 は
+inactive/zero だった。profile record は
+`firmware-validation/records/rp2040-cpu-p0-profile-20260831-01/` に保存し、profile 2件と
+測定 leaf、compile-out evidence、manifest、decision、`SHA256SUMS` を固定した。
+
+同じ commit の profiler-OFF production buildについては、PicoTetris/PicoEdit の final report
+projection と behavior-trace（各 domain count/SHA-256）を baseline commit `73784b96...` と比較し、
+両方の correctness gate を pass した record を
+`firmware-validation/records/rp2040-cpu-p0-b-correctness-20260831-02/` に保存した。OFF binary の
+`step`、`try_take_any_pending_exception`、`populate_decode_cache` を `nm`/`objdump` で確認し、
+profiler symbol/string が存在しないことを
+`rp2040-cpu-p0-profile-20260831-01/compile-out-evidence.md` に記録した。これは compile-out と
+正確性の証明であり、速度向上の主張ではない。profile の `raw_profile.valid_for_wall_time=false`
+も維持する。
+
+profile から得た次候補の開始値は次の通りである。
+
+| workload | `unrelated_would_clear / examined_slots` | `unrelated_would_clear / requests` | `reject_no_candidate / polls` |
+|---|---:|---:|---:|
+| PicoTetris r10 | 0.058399% | 0.116799% | 99.989207% |
+| PicoEdit r4 | 4.194210% | 8.388420% | 99.943097% |
+
+従って P1-A（`unrelated_would_clear > 0`）と P2-A（no-candidate reject率 90%以上）は開始可能である。
+P1-B の filter は「未実行 SRAM page への write による invalidation request」を省略する候補であり、
+`unrelated_would_clear` は full-tag guard の無関係 slot 指標なので P1-B の filter可能 request とは別物である。
+現行 P0-B profile は write 先 page の executable 判定を記録していないため、P1-B の gate はまだ判定不能とする。
+P1-B を開始する前に、production hot path を汚さない profile-only 拡張で
+`non_executable_sram_write_requests` と `invalidation_requests` を workload別に採取し、
+`filterable_request_rate = non_executable_sram_write_requests / invalidation_requests` を定義する。
+二 workload の各 ratio が欠落せず、等重み combined ratio が 1%以上、かつ各 workload の correctness
+projection が pass した場合だけ開始する。分母がゼロ、counter 欠落、または片方の workload が未測定なら
+fail-closed で P1-B を開始しない。`unrelated_would_clear / requests` や `/ examined_slots` を代用しない。
 
 ### P1. SRAM decode invalidation の不要処理除去
 
@@ -609,7 +655,7 @@ cargo test --locked -p picocalc-harness --features executable-sram-invalidation-
 
 - self-modifying SRAM code、wide instruction 上書き、両 core からの実行を含む単体試験が一致する。
 - 二つの実アプリで correctness gate を通る。
-- P1-A、P1-B、A+B の三つを別々に A/B 測定する。P1-B は P1-A 採否記録が閉じ、P0-B profile で filter 可能な request が全 request の 1% 以上ある場合だけ開始する。
+- P1-A、P1-B、A+B の三つを別々に A/B 測定する。P1-B は P1-A 採否記録が閉じ、profile-only 拡張で定義した workload別 `filterable_request_rate` と等重み combined ratio が gate を満たす場合だけ開始する。
 - feature-gated 実験後、採用候補は feature を production default に残さず通常 path へ統合し、その統合後 binary を再度 correctness/A-B 測定する。
 
 ### P2. pending exception の common-case fast reject
@@ -905,6 +951,10 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 
 ### 10.1 phase gate
 
+2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）として未完了である。
+P1-A/P2-A は入力 counter の開始条件を満たすが、性能 A/B の測定・採否はまだ実施していない。
+P1-B は executable-page filter 用 counter が未取得のため判定不能であり、下表の fail-closed 条件を維持する。
+
 | Gate | 必須入力 | pass | fail 時 |
 |---|---|---|---|
 | P0-A1 | schema/runner unit test | CLI、schema fixture、統計、projection test が通る | 実 workload を走らせず runner を修正 |
@@ -912,7 +962,7 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 | P0-A2 | admitted baseline | null batch/calibration が完全記録され、host stability gate を通る | 校正 protocol/host条件を修正し、新 batch ID で全体再実行 |
 | P0-B | admitted baseline（counter-only実装はP0-A2 pass前に開始可） | counter invariant と compile-out proof | profiler 修正。P1/P2停止 |
 | P1-A | `unrelated_would_clear > 0` | correctness pass、A/B record 完了 | event 0なら未実装、mismatchなら不採用 |
-| P1-B | filter可能 request率 1%以上、P1-A decision | correctness pass、単独/combined A/B | 未達なら見送り |
+| P1-B | profile-only `non_executable_sram_write_requests`、workload別 ratio、等重み combined ratio 1%以上、P1-A decision | correctness pass、単独/combined A/B | counter欠落・分母0・ratio未達なら見送り |
 | P2-A | no-candidate reject率 90%以上 | correctness pass、A/B record 完了 | 未達なら見送り |
 | 各 production 候補 | candidate decision | §7 final rule | productionへ統合しない |
 
@@ -972,7 +1022,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。三回目の null A/B は、校正配置と stability 判定を固定した protocol の実装・検証後にのみ開始する。P0-B は counter-only profiler の実装を開始し、profile が `unrelated_would_clear > 0` を示した時点で、最初の速度変更候補として P1-A を `backend-candidate` に一変更だけ実装する。ただし P1-A の production A/B 採否は有効な null-control と P0-B correctness gate の後で行う。
+P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。三回目の null A/B は、校正配置と stability 判定を固定した protocol の実装・検証後にのみ開始する。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。次は `backend-candidate` で P1-A と P2-A を一つずつ独立候補として実装し、各々 correctness と性能 A/B を行う。ただし production A/B の採否・統合は有効な null-control の後で行う。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
@@ -983,6 +1033,6 @@ P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 ad
 - baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
 - common baseline が二 workload に admission され、record と verifier が pass する。
 - null batch と calibration が machine-readable record として検証される（`rp2040-cpu-p0-null-20260830-02` と `rp2040-cpu-p0-null-20260831-01` は drift invalid の証拠として保存済み。2% 閾値を満たす新 batch が必要）。
-- 次工程は P0-B counter-only profiler の実装である。profile の wall-time 採否と P1/P2 promotion は、改訂 calibration protocol と有効 null-control の完了後に行う。使用 commit/target revision は各 `manifest.json` に固定する。
+- P0-B counter-only profiler、profile、compile-out、profiler-OFF correctness は完了済みである。次工程は P1-A full-tag guard と P2-A exception fast reject の候補実装で、両方の開始 gate は P0-B profile により満たす。profile の wall-time 採否と P1/P2 の production promotion は、改訂 calibration protocol と有効 null-control の完了後に行う。P1-B は executable-page filter counter の profile-only 拡張と定義済み ratio gate が先である。使用 commit/target revision は各 `manifest.json` に固定する。
 
 この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・効果測定を連続して開始できる。
