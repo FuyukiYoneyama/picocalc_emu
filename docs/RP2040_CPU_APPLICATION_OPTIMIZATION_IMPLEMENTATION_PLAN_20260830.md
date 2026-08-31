@@ -786,6 +786,8 @@ PGO profile は PicoTetris と PicoEdit の実行比率を事前に固定して�
 
 P3 の開始前に、training は登録済み二 workload の固定 scenario、holdout はそれぞれ別の登録済み scenario とし、target revision/SHA、`rustc -Vv`、LLVM profile merge command、host ISA policy を P3 decision preamble に凍結する。holdout が登録されていなければ PGO 実装を開始しない。`target-cpu=native` はローカル専用 binary と明示できる場合だけ候補にし、配布 binary と混同しない。
 
+現行の `load_workloads` は登録済みの二 workload を受け付ける契約であり、holdout scenario はまだ登録されていない。従って P3 は、holdout target/scenario の registry、schema、runner CLI、admission/correctness fixture を追加してから開始する。holdout の登録・admission が完了するまで、training workload だけで PGO の採否を決めない。
+
 ### P4. compact dispatch key の再評価
 
 decode cache hit 率が高いため、hit 後の wide check、opcode 確認、operand 再抽出、handler dispatch の短縮を狙う。過去の正の結果を現在の backend と実アプリ二種で再検証する。
@@ -997,13 +999,13 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 | 3 | P0-A2 null batch | calibration、40-run null record、environment verification |
 | 4 | P0-B minimal profiler | profile schema、二 workload profile、disassembly proof |
 | 5 | P1-A tag guard | 実装、単独 profile、correctness は完了。null-control pass 後に、A/B CPU と一致する correctness を取り直してから 10-pair/workload A/B、decision |
-| 6 | P1-B executable page | 開始 gate、単独・P1 合成 A/B、decision |
+| 6 | P1-B executable page | 開始 gate、単独・P1 combined 実アプリ A/B、decision |
 | 7 | P2-A exception fast reject | 開始 gate、IRQ correctness、feature-on diagnostic profile（poll/source conservation）を完了。null-control pass 後に A/B CPU と一致する correctness/profile を取り直し、その後 10-pair/workload A/B、decision |
 | 8 | P3 native/PGO | build matrix、holdout A/B、配布条件 |
 | 9 | P4 compact dispatch | 現行 backend での再評価記録 |
 | 10 | P5 cache geometry | working-set 根拠、候補別 A/B |
 | 11 | P6 predecoded micro-op | handler 単位の累積 A/B |
-| 12 | P7 branch linking | link counter、correctness、合成 A/B |
+| 12 | P7 branch linking | link counter、correctness、実アプリ A/B |
 | 13 | P8 data-driven candidates | 個別 HLD、correctness、A/B |
 | 14 | production candidate | 全採用候補を組み合わせた最終 A/B |
 
