@@ -735,6 +735,7 @@ python3 tools/benchmark_rp2040_cpu_candidate.py profile \
   --runner "$RP2040_CPU_OPT_TMP/build/p2-a-candidate-profile/release/picocalc-run" \
   --feature-set cpu-application-profiler \
   --feature-set pending-exception-fast-reject \
+  --cpu <logical-cpu> \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
   --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \

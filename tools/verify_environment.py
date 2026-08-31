@@ -3199,6 +3199,21 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
 
     records_root = base / "records"
     record_dirs = sorted(records_root.glob("rp2040-cpu-*")) if records_root.is_dir() else []
+    linked_profile_names = set()
+    for candidate_dir in record_dirs:
+        candidate_manifest_path = candidate_dir / "manifest.json"
+        try:
+            candidate_manifest = load_json(candidate_manifest_path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+        profile_name = (
+            candidate_manifest.get("diagnostic_profile_record")
+            if isinstance(candidate_manifest, Mapping)
+            and candidate_manifest.get("candidate_id") == "P2-A"
+            else None
+        )
+        if isinstance(profile_name, str) and profile_name.startswith("rp2040-cpu-") and Path(profile_name).name == profile_name:
+            linked_profile_names.add(profile_name)
     problems: List[str] = []
     for record_dir in record_dirs:
         if not record_dir.is_dir():
@@ -3522,6 +3537,26 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             problems.append("{} P2-A linked profile candidate_id is invalid".format(record_dir))
                         if linked_manifest.get("workloads") != manifest.get("workloads"):
                             problems.append("{} P2-A linked profile workloads differ from AB".format(record_dir))
+                        if linked_manifest.get("measurement_cpu") != manifest.get("measurement_cpu"):
+                            problems.append("{} P2-A linked profile CPU differs from AB".format(record_dir))
+                        linked_profile_features = linked_manifest.get("feature_set")
+                        if (
+                            not isinstance(linked_profile_features, list)
+                            or "cpu-application-profiler" not in linked_profile_features
+                            or "pending-exception-fast-reject" not in linked_profile_features
+                        ):
+                            problems.append("{} P2-A linked profile features are incomplete".format(record_dir))
+                        try:
+                            linked_decision = load_json(profile_record_dir / "decision.json")
+                        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+                            linked_decision = None
+                            problems.append("{} P2-A linked profile decision is unreadable: {}".format(record_dir, error))
+                        if (
+                            not isinstance(linked_decision, Mapping)
+                            or linked_decision.get("decision_kind") != "profile"
+                            or linked_decision.get("status") != "pass"
+                        ):
+                            problems.append("{} P2-A linked profile decision is not passing".format(record_dir))
                         ab_candidate = (
                             manifest.get("backend_identities", {}).get("candidate_production")
                             if isinstance(manifest.get("backend_identities"), Mapping)
@@ -3763,6 +3798,8 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     problems.append(
                         "{} P2-A profiles must cover exactly the two manifest workloads".format(record_dir)
                     )
+        elif manifest.get("candidate_id") == "P2-A" and record_dir.name in linked_profile_names:
+            problems.append("{} P2-A profile directory is missing".format(record_dir))
 
         profile_comparison_path = record_dir / "profile-comparison.json"
         if profile_comparison_path.is_file():
