@@ -492,7 +492,7 @@ python3 tools/verify_environment.py --scope target-schema
 4. anchor の線形モデル残差が 2% を超える、anchor が欠落する、または host snapshot/affinity/provenance/correctness が不成立なら batch を invalid にする。全体の pre/post 差が 2% を超えただけでは直ちに invalid にせず、anchor residual と pair-level null-control の両方を decision に明記する。
 5. `measurement_policy` に `calibration_method=interleaved-anchor-v1`、anchor run ID、補正方法、残差閾値、pair-level sensitivity の方式を保存し、実測の残差・補正値・pair-level sensitivity は `summary.calibration` に保存する。schema/verifier/unit test で個数・順序・閾値を固定する。既存の二つの invalid record は変更しない。
 
-この改訂により、長時間の周波数変動を「無かったこと」にせず、変動を観測・補正したうえで、隣接 pair の実アプリ差分が再現するかを判定できる。補正後も null-control が 0 近傍にならない場合は候補測定へ進まず、host 条件または測定設計を再修正する。
+この改訂により、長時間の周波数変動を「無かったこと」にせず、変動を観測・補正したうえで、隣接 pair の実アプリ差分が再現するかを判定できる。補正後も null-control が 0 近傍にならない場合は候補測定へ進まず、host 条件または測定設計を再修正する。改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` として correctness を先行実行中である。correctness、checksum、target-schema の完了後に同じ batch ID で interleaved-anchor A/B を実行し、結果をこの節と phase gate に追記する。
 
 P0-A 全体の性能 gate は `P0-A1 pass → P0-0 pass → P0-A2 null batch pass` の三条件のまま維持する。一方、P0-B の profile は emulated instruction/cycle/PC region counter を収集する計測実装であり、wall-time の採否を行わない。P0-B の実装、compile-out、profile、correctness は完了済みで、結果はホットスポット仮説の形成と P1/P2 の実装開始判定に使うが、候補実装の production promotion、P1/P2 の A/B 採否、または「高速化した」という結論には使わない。これらは有効な null-control protocol と correctness/A-B 記録が揃うまで保留する。
 
@@ -980,9 +980,9 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 
 ### 10.1 phase gate
 
-2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）として未完了である。
+2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）を保持し、改訂 null-control batch `rp2040-cpu-p0-null-20260831-04` を実行中である。
 P1-A は runtime 実装、profile、correctness を完了し、診断 profile signal を保存済みである。P1-A の production 性能 A/B の測定・採否はまだ実施していない。P2-A は入力 counter の開始条件を満たすが、実装・性能 A/B は未着手である。
-P1-B は executable-page filter 用 counter が未取得のため判定不能であり、下表の fail-closed 条件を維持する。
+P1-B は executable-page filter 用 counter が未取得のため判定不能であり、下表の fail-closed 条件を維持する。P0-A2 が有効になった後、P1-A の production A/B を同じ二 workload・10 pair で実行する。
 
 | Gate | 必須入力 | pass | fail 時 |
 |---|---|---|---|
@@ -1051,7 +1051,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。三回目の null A/B は、校正配置と stability 判定を固定した protocol の実装・検証後にのみ開始する。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。次は改訂 null-control を有効化し、P1-A の production 10-pair A/B を実施する。P2-A は P1-A の A/B 採否とは独立して実装できるが、production A/B の採否・統合は有効な null-control の後で行う。
+P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。校正配置と stability 判定を固定した改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` の correctness を実行中である。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。新 null-control の correctness/checksum/schema が通れば interleaved-anchor A/B を完了し、その有効判定後に P1-A の production 10-pair A/B を実施する。P2-A は P1-A の A/B 採否とは独立して実装できるが、production A/B の採否・統合は有効な null-control の後で行う。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
@@ -1061,7 +1061,7 @@ P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 ad
 - output overwrite、dirty backend、identity mismatch を run 前に拒否する。
 - baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
 - common baseline が二 workload に admission され、record と verifier が pass する。
-- null batch と calibration が machine-readable record として検証される（`rp2040-cpu-p0-null-20260830-02` と `rp2040-cpu-p0-null-20260831-01` は drift invalid の証拠として保存済み。2% 閾値を満たす新 batch が必要）。
+- null batch と calibration が machine-readable record として検証される（`rp2040-cpu-p0-null-20260830-02` と `rp2040-cpu-p0-null-20260831-01` は drift invalid の証拠として保存済み。改訂 `rp2040-cpu-p0-null-20260831-04` の correctness 完了後に interleaved-anchor A/B の 2% residual gate と pair-level null-control を判定する）。
 - P0-B counter-only profiler、profile、compile-out、profiler-OFF correctness は完了済みである。P1-A full-tag guard は runtime commit `61f8bde`（provenance 列挙の follow-up `6f8ce41`）で実装・profile・correctness を完了した。次工程は改訂 calibration protocol の有効 null-control と P1-A production 10-pair A/B であり、P2-A exception fast reject は P0-B の開始 gate を満たした状態で独立に着手できる。profile の wall-time 採否と P1/P2 の production promotion は、有効 null-control と correctness/A-B 記録の完了後に行う。P1-B は executable-page filter counter の profile-only 拡張と定義済み ratio gate が先である。使用 commit/target revision は各 `manifest.json` に固定する。
 
 この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・診断計測を閉じ、次に有効 null-control 下の production 効果測定へ進める。

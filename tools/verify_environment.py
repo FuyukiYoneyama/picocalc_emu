@@ -2461,6 +2461,181 @@ def _verify_rp2040_cpu_profile_comparison(
         problems.append("{} profile_only_delta must identify the profiled candidate commit".format(comparison_path))
 
 
+def _verify_interleaved_anchor_summary(
+    record_dir: Path,
+    manifest: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    run_by_id: Mapping[str, Mapping[str, Any]],
+    problems: List[str],
+) -> None:
+    """Validate the fixed anchor layout and host-correction fields."""
+    policy = manifest.get("measurement_policy")
+    if not isinstance(policy, Mapping) or policy.get("calibration_method") != "interleaved-anchor-v1":
+        return
+    calibration = summary.get("calibration")
+    if not isinstance(calibration, Mapping):
+        problems.append("{} interleaved-anchor calibration is missing".format(record_dir))
+        return
+    # A protocol exception may be recorded before all anchors/runs exist.  Keep
+    # that immutable failure record auditable without pretending that its
+    # incomplete calibration is a valid measurement.
+    if summary.get("status") == "invalid" and isinstance(calibration.get("error"), str):
+        if calibration.get("valid") is not False:
+            problems.append("{} failed interleaved-anchor calibration must be marked invalid".format(record_dir))
+        return
+    expected_ids = [
+        "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+        "anchor-after-010", "anchor-after-020", "anchor-after-030",
+        "anchor-post-001", "anchor-post-002", "anchor-post-003",
+    ]
+    if calibration.get("method") != "interleaved-anchor-v1":
+        problems.append("{} calibration method is invalid".format(record_dir))
+    if calibration.get("anchor_count") != len(expected_ids):
+        problems.append("{} calibration anchor count is invalid".format(record_dir))
+    anchors = calibration.get("anchors")
+    if not isinstance(anchors, list) or [anchor.get("anchor_id") for anchor in anchors if isinstance(anchor, Mapping)] != expected_ids:
+        problems.append("{} calibration anchor order is invalid".format(record_dir))
+        return
+    if calibration.get("anchor_run_ids") != expected_ids:
+        problems.append("{} calibration anchor_run_ids differ from fixed policy".format(record_dir))
+    expected_positions = [
+        ("pre", 0), ("pre", 0), ("pre", 0),
+        ("after-measured-run", 10), ("after-measured-run", 20), ("after-measured-run", 30),
+        ("post", 40), ("post", 40), ("post", 40),
+    ]
+    expected_identity = manifest.get("backend_identities", {}).get("baseline_production", {})
+    previous_elapsed = -1.0
+    throughputs: List[float] = []
+    for anchor, (expected_position, expected_run_index) in zip(anchors, expected_positions):
+        if not isinstance(anchor, Mapping):
+            problems.append("{} calibration anchor is not an object".format(record_dir))
+            continue
+        if anchor.get("position") != expected_position or anchor.get("after_measured_run") != expected_run_index:
+            problems.append("{} calibration anchor position is invalid".format(record_dir))
+        if anchor.get("workload") != "picotetris-opt1b-vrp5" or anchor.get("role") != "baseline":
+            problems.append("{} calibration anchor workload/role is invalid".format(record_dir))
+        elapsed = anchor.get("elapsed_seconds")
+        throughput = anchor.get("throughput")
+        if (
+            not isinstance(elapsed, (int, float))
+            or isinstance(elapsed, bool)
+            or not math.isfinite(float(elapsed))
+            or float(elapsed) <= previous_elapsed
+            or not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or not math.isfinite(float(throughput))
+            or float(throughput) <= 0
+        ):
+            problems.append("{} calibration anchor timing/throughput is invalid".format(record_dir))
+        else:
+            previous_elapsed = float(elapsed)
+            throughputs.append(float(throughput))
+        for field in ("guest_observation_sha256", "runner_sha256", "build_provenance_sha256"):
+            if not _is_sha256_text(anchor.get(field)):
+                problems.append("{} calibration anchor {} is invalid".format(record_dir, field))
+        if isinstance(expected_identity, Mapping):
+            for field in ("backend_commit", "runner_sha256", "build_provenance_sha256"):
+                expected_field = "commit" if field == "backend_commit" else field
+                if anchor.get(field) != expected_identity.get(expected_field):
+                    problems.append("{} calibration anchor {} differs from baseline identity".format(record_dir, field))
+    model = calibration.get("anchor_model")
+    if not isinstance(model, Mapping):
+        problems.append("{} calibration anchor model is missing".format(record_dir))
+    else:
+        max_residual = model.get("max_relative_residual")
+        model_valid = model.get("valid")
+        if (
+            not isinstance(max_residual, (int, float))
+            or isinstance(max_residual, bool)
+            or not math.isfinite(float(max_residual))
+            or model_valid is not (float(max_residual) <= 0.02)
+        ):
+            problems.append("{} calibration anchor residual gate is invalid".format(record_dir))
+        reference = model.get("reference_throughput")
+        if not isinstance(reference, (int, float)) or isinstance(reference, bool) or not math.isfinite(float(reference)) or float(reference) <= 0:
+            problems.append("{} calibration reference throughput is invalid".format(record_dir))
+            reference = None
+    if calibration.get("pre_post_drift_gate_used") is not False:
+        problems.append("{} pre/post drift was incorrectly used as the anchor gate".format(record_dir))
+    affinity = calibration.get("cpu_affinity")
+    measurement_cpu = manifest.get("measurement_cpu")
+    if (
+        not isinstance(affinity, Mapping)
+        or affinity.get("requested") != measurement_cpu
+        or affinity.get("effective_start") != [measurement_cpu]
+        or affinity.get("effective_end") != [measurement_cpu]
+    ):
+        problems.append("{} calibration CPU affinity is invalid".format(record_dir))
+    for snapshot_name in ("host_snapshot_start", "host_snapshot_end"):
+        snapshot = calibration.get(snapshot_name)
+        if not isinstance(snapshot, Mapping) or snapshot.get("allowed_cpus") != [measurement_cpu]:
+            problems.append("{} calibration {} is invalid".format(record_dir, snapshot_name))
+    if calibration.get("correctness_gate") != "pass":
+        problems.append("{} calibration correctness gate is not passing".format(record_dir))
+    if len(throughputs) == len(expected_ids) and isinstance(model, Mapping) and isinstance(reference, (int, float)):
+        anchor_points = [
+            (float(anchor["elapsed_seconds"]), math.log(float(anchor["throughput"])))
+            for anchor in anchors
+            if isinstance(anchor, Mapping)
+            and isinstance(anchor.get("elapsed_seconds"), (int, float))
+            and isinstance(anchor.get("throughput"), (int, float))
+            and not isinstance(anchor.get("elapsed_seconds"), bool)
+            and not isinstance(anchor.get("throughput"), bool)
+            and float(anchor.get("throughput")) > 0
+        ]
+        if len(anchor_points) == len(expected_ids):
+            for run_id, run in run_by_id.items():
+                elapsed = run.get("protocol_elapsed_seconds")
+                predicted = run.get("predicted_anchor_throughput")
+                correction = run.get("host_speed_correction")
+                corrected = run.get("corrected_emulated_cycles_per_wall_second")
+                if (
+                    not isinstance(elapsed, (int, float))
+                    or isinstance(elapsed, bool)
+                    or not math.isfinite(float(elapsed))
+                    or float(elapsed) < anchor_points[0][0]
+                    or float(elapsed) > anchor_points[-1][0]
+                    or not isinstance(predicted, (int, float))
+                    or isinstance(predicted, bool)
+                    or not math.isfinite(float(predicted))
+                    or float(predicted) <= 0
+                    or not isinstance(correction, (int, float))
+                    or isinstance(correction, bool)
+                    or not math.isfinite(float(correction))
+                    or float(correction) <= 0
+                    or not isinstance(corrected, (int, float))
+                    or isinstance(corrected, bool)
+                    or not math.isfinite(float(corrected))
+                    or float(corrected) <= 0
+                ):
+                    problems.append("{} run {} host correction fields are invalid".format(record_dir, run_id))
+                    continue
+                for (left_x, left_y), (right_x, right_y) in zip(anchor_points, anchor_points[1:]):
+                    if float(elapsed) <= right_x:
+                        fraction = (float(elapsed) - left_x) / (right_x - left_x)
+                        expected_predicted = math.exp(left_y + fraction * (right_y - left_y))
+                        break
+                else:
+                    expected_predicted = math.exp(anchor_points[-1][1])
+                if not math.isclose(float(predicted), expected_predicted, rel_tol=1e-12, abs_tol=1e-9):
+                    problems.append("{} run {} predicted anchor throughput is not interpolated".format(record_dir, run_id))
+                expected_correction = float(reference) / expected_predicted
+                if not math.isclose(float(correction), expected_correction, rel_tol=1e-12, abs_tol=1e-12):
+                    problems.append("{} run {} host correction is not derived from anchors".format(record_dir, run_id))
+                raw_value = run.get("emulated_cycles_per_wall_second")
+                if isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool) and not math.isclose(
+                    float(corrected), float(raw_value) * float(correction), rel_tol=1e-12, abs_tol=1e-9
+                ):
+                    problems.append("{} run {} corrected throughput is not derived from raw throughput".format(record_dir, run_id))
+    sensitivity = calibration.get("pair_level_sensitivity")
+    if (
+        not isinstance(sensitivity, Mapping)
+        or sensitivity.get("method") != "raw-vs-host-corrected-log-ratio-v1"
+        or sensitivity.get("n") != 20
+    ):
+        problems.append("{} pair-level sensitivity is invalid".format(record_dir))
+
+
 def _verify_rp2040_cpu_behavior_pair(
     baseline_path: Path, candidate_path: Path, comparison: Mapping[str, Any], problems: List[str],
     expected_commits: Optional[Mapping[str, str]] = None,
@@ -2919,6 +3094,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
 
         summary_path = record_dir / "summary.json"
         ab_dir = record_dir / "ab"
+        run_by_id: Dict[str, Dict[str, Any]] = {}
         if ab_dir.exists():
             summary = None
             if not summary_path.is_file():
@@ -2960,7 +3136,6 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 problems.append("{} AB directory must contain exactly 40 run artifacts".format(record_dir))
             expected_schedule = _expected_rp2040_cpu_schedule(workload_ids) if isinstance(workloads, list) and len(workload_ids) == 2 else {}
             seen_run_ids = set()
-            run_by_id: Dict[str, Dict[str, Any]] = {}
             for run_path in run_paths:
                 run = _verify_rp2040_cpu_artifact_shape(
                     run_path, "picocalc.rp2040-cpu-ab", problems, schema_validators
@@ -3036,6 +3211,9 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     )
                     if pair_result.get("guest_observation_equal") != expected_equal:
                         problems.append("{} pair result guest equality disagrees with run artifacts".format(summary_path))
+
+            if isinstance(summary, Mapping):
+                _verify_interleaved_anchor_summary(record_dir, manifest, summary, run_by_id, problems)
 
         profile_dir = record_dir / "profile"
         candidate_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}
