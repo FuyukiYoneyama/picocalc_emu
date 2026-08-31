@@ -765,6 +765,10 @@ class CandidateRunnerTests(unittest.TestCase):
             list((ROOT / "firmware-validation" / "records").glob("rp2040-cpu-*"))
         )
         self.assertEqual(checks[1]["records"], expected_records)
+        revised_null = ROOT / "firmware-validation" / "records" / "rp2040-cpu-p0-null-20260831-04"
+        summary = json.loads((revised_null / "summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(summary["status"], "invalid")
+        self.assertTrue(summary["null_control"]["pass"])
 
     def test_environment_verifier_projection_matches_runner_audio_contract(self):
         verifier = load_verifier()

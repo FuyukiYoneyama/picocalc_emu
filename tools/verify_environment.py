@@ -3732,11 +3732,19 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                                         record_dir
                                     )
                                 )
-                        elif null_pass:
-                            if summary.get("status") != "pass" or not decision_is_passing_null:
+                        elif summary.get("status") == "pass":
+                            if not null_pass or not decision_is_passing_null:
                                 problems.append("{} passing P0-A2 null-control must have a passing null-control summary and decision".format(record_dir))
-                        elif summary.get("status") != "invalid" or not decision_is_invalid:
-                            problems.append("{} failing P0-A2 null-control must have invalid summary and decision".format(record_dir))
+                        elif summary.get("status") == "invalid":
+                            # A null-control's individual effect checks may pass while
+                            # the interleaved-anchor stability gate invalidates the
+                            # batch.  In that case the record remains invalid and
+                            # must carry an invalid decision; do not misclassify it
+                            # as a passing null-control solely from null_control.pass.
+                            if not decision_is_invalid:
+                                problems.append("{} invalid P0-A2 record must have an invalid decision".format(record_dir))
+                        else:
+                            problems.append("{} P0-A2 summary has an unsupported status".format(record_dir))
 
         profile_dir = record_dir / "profile"
         candidate_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}
