@@ -2269,13 +2269,11 @@ def _run_interleaved_anchor_ab(
             result for result in pair_results if result["guest_observation_equal"] is not True
         ]
         summary_status = "pending"
-        if not model["valid"]:
+        if not model["valid"] or mismatches or (
+            null_control is not None and not null_control["pass"]
+        ):
             summary_status = "invalid"
-        if mismatches:
-            summary_status = "invalid"
-        if null_control is not None and not null_control["pass"]:
-            summary_status = "invalid"
-        if null_control is not None and null_control["pass"]:
+        elif null_control is not None and null_control["pass"]:
             summary_status = "pass"
         summary = {
             "schema_id": AB_SCHEMA_ID,

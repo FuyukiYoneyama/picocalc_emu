@@ -3552,8 +3552,15 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     null_control = summary.get("null_control")
                     if isinstance(null_control, Mapping):
                         null_pass = null_control.get("pass") is True
+                        has_projection_mismatch = any(
+                            isinstance(item, Mapping)
+                            and item.get("guest_observation_equal") is not True
+                            for item in summary.get("pair_results", [])
+                        )
+                        if has_projection_mismatch and summary.get("status") != "invalid":
+                            problems.append("{} guest projection mismatch must invalidate P0-A2 null-control".format(record_dir))
                         if null_pass:
-                            if summary.get("status") != "pass":
+                            if has_projection_mismatch or summary.get("status") != "pass":
                                 problems.append("{} passing P0-A2 null-control must have summary status pass".format(record_dir))
                             if isinstance(decision, Mapping) and (
                                 decision.get("decision_kind") != "null-control"
