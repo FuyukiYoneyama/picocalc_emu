@@ -1,0 +1,61 @@
+{
+  "artifact_type": "correctness",
+  "baseline": {
+    "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+    "build_provenance_sha256": "d47660fe9807f6ab79a072423cbd147cacd5e0bc8bfaaa17ae552b04a4af37bb",
+    "cycles": 827799818,
+    "elapsed_us": 3320000,
+    "emulated_cycles_per_wall_second": 5291871.805599709,
+    "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+    "host_usage_delta": {
+      "max_rss_platform_units": 30444,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.0,
+      "user_seconds": 171.04883800000005
+    },
+    "report_sha256": "0f96b79c20c50f8563ffb6aed639c85187593a89eec6c36e8c79b52fe6fc931b",
+    "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+    "snapshot_sha256": {
+      "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "wall_ns": 156428547102,
+    "wall_seconds": 156.428547102
+  },
+  "baseline_guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "behavior_equal": true,
+  "candidate": {
+    "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+    "build_provenance_sha256": "d47660fe9807f6ab79a072423cbd147cacd5e0bc8bfaaa17ae552b04a4af37bb",
+    "cycles": 827799818,
+    "elapsed_us": 3320000,
+    "emulated_cycles_per_wall_second": 5341115.782429913,
+    "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+    "host_usage_delta": {
+      "max_rss_platform_units": 30444,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.0,
+      "user_seconds": 169.79050999999993
+    },
+    "report_sha256": "0f96b79c20c50f8563ffb6aed639c85187593a89eec6c36e8c79b52fe6fc931b",
+    "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+    "snapshot_sha256": {
+      "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "wall_ns": 154986308427,
+    "wall_seconds": 154.986308427
+  },
+  "candidate_guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "candidate_id": "P0-A2",
+  "guest_observation_equal": true,
+  "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "record_id": "rp2040-cpu-p0-null-v2-20260831-02",
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "status": "pass",
+  "trace_required": false,
+  "workload": "picoedit-r1-vrp2f"
+}
