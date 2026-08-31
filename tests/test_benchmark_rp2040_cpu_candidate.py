@@ -622,6 +622,41 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(policy["anchor_group_dispersion_threshold"], 0.02)
         self.assertTrue(policy["anchor_group_dispersion_gate_used"])
 
+    def test_replicated_anchor_v3_policy_is_fixed(self):
+        policy = self.module.interleaved_anchor_measurement_policy_v3()
+        self.assertEqual(policy["calibration_method"], "interleaved-anchor-v3")
+        self.assertEqual(policy["anchor_layout"], {
+            "pre_count": 3,
+            "after_measured_runs": [5, 10, 15, 20, 25, 30, 35],
+            "post_count": 3,
+            "replicates_per_group": 3,
+        })
+        self.assertEqual(
+            policy["anchor_group_ids"],
+            ["pre", "after-005", "after-010", "after-015", "after-020", "after-025", "after-030", "after-035", "post"],
+        )
+        self.assertEqual(len(policy["anchor_run_ids"]), 27)
+        self.assertEqual(policy["anchor_local_residual_method"], "leave-one-group-out-log-linear-v1")
+        self.assertEqual(policy["anchor_local_residual_threshold"], 0.02)
+        self.assertTrue(policy["global_residual_diagnostic_only"])
+
+    def test_v3_piecewise_model_has_fixed_local_residual_gate(self):
+        groups = [
+            {"group_id": "g{}".format(index), "elapsed_seconds": index * 10.0, "throughput": 100.0 + index}
+            for index in range(9)
+        ]
+        model = self.module._anchor_piecewise_local_residual_model(groups)
+        self.assertEqual(model["model"], "piecewise-log-linear-v3")
+        self.assertEqual(model["knot_ids"], ["g{}".format(index) for index in range(9)])
+        self.assertTrue(model["valid"])
+        self.assertEqual(model["local_residual_method"], "leave-one-group-out-log-linear-v1")
+        self.assertIn("global_diagnostic", model)
+        curved = [dict(group) for group in groups]
+        curved[4]["throughput"] = 130.0
+        curved_model = self.module._anchor_piecewise_local_residual_model(curved)
+        self.assertFalse(curved_model["valid"])
+        self.assertGreater(curved_model["max_relative_residual"], 0.02)
+
     def test_replicated_anchor_group_aggregation_uses_log_median_and_mad(self):
         anchors = []
         for group_index, spec in enumerate(self.module._interleaved_anchor_v2_group_specs()):

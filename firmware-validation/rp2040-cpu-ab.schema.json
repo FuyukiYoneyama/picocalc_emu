@@ -96,6 +96,61 @@
             "inter_run_cooldown_seconds", "calibration_method", "anchor_layout",
             "anchor_group_ids", "anchor_run_ids", "correction_method",
             "anchor_aggregation_method", "anchor_residual_threshold",
+            "anchor_local_residual_method", "anchor_local_residual_threshold",
+            "anchor_group_dispersion_gate_used", "anchor_group_dispersion_threshold",
+            "pair_level_sensitivity_method", "pair_level_sensitivity_gate_used",
+            "pair_level_sensitivity_threshold", "global_residual_diagnostic_only"
+          ],
+          "properties": {
+            "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "calibration_method": {"const": "interleaved-anchor-v3"},
+            "anchor_layout": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pre_count", "after_measured_runs", "post_count", "replicates_per_group"],
+              "properties": {
+                "pre_count": {"const": 3},
+                "after_measured_runs": {"const": [5, 10, 15, 20, 25, 30, 35]},
+                "post_count": {"const": 3},
+                "replicates_per_group": {"const": 3}
+              }
+            },
+            "anchor_group_ids": {
+              "const": ["pre", "after-005", "after-010", "after-015", "after-020", "after-025", "after-030", "after-035", "post"]
+            },
+            "anchor_run_ids": {
+              "const": [
+                "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+                "anchor-after-005-001", "anchor-after-005-002", "anchor-after-005-003",
+                "anchor-after-010-001", "anchor-after-010-002", "anchor-after-010-003",
+                "anchor-after-015-001", "anchor-after-015-002", "anchor-after-015-003",
+                "anchor-after-020-001", "anchor-after-020-002", "anchor-after-020-003",
+                "anchor-after-025-001", "anchor-after-025-002", "anchor-after-025-003",
+                "anchor-after-030-001", "anchor-after-030-002", "anchor-after-030-003",
+                "anchor-after-035-001", "anchor-after-035-002", "anchor-after-035-003",
+                "anchor-post-001", "anchor-post-002", "anchor-post-003"
+              ]
+            },
+            "correction_method": {"const": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v3"},
+            "anchor_aggregation_method": {"const": "median-of-replicate-log-throughput-v1"},
+            "anchor_residual_threshold": {"const": 0.02},
+            "anchor_local_residual_method": {"const": "leave-one-group-out-log-linear-v1"},
+            "anchor_local_residual_threshold": {"const": 0.02},
+            "anchor_group_dispersion_gate_used": {"const": true},
+            "anchor_group_dispersion_threshold": {"const": 0.02},
+            "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"},
+            "pair_level_sensitivity_gate_used": {"const": true},
+            "pair_level_sensitivity_threshold": {"const": 0.02},
+            "global_residual_diagnostic_only": {"const": true}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inter_run_cooldown_seconds", "calibration_method", "anchor_layout",
+            "anchor_group_ids", "anchor_run_ids", "correction_method",
+            "anchor_aggregation_method", "anchor_residual_threshold",
             "anchor_group_dispersion_gate_used", "anchor_group_dispersion_threshold",
             "pair_level_sensitivity_method"
           ],

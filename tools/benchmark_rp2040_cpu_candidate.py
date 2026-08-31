@@ -45,10 +45,15 @@ REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f")
 AB_INTER_RUN_COOLDOWN_SECONDS = 60.0
 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1 = "interleaved-anchor-v1"
 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2 = "interleaved-anchor-v2"
+CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3 = "interleaved-anchor-v3"
 CALIBRATION_ANCHOR_RESIDUAL_LIMIT = 0.02
 INTERLEAVED_ANCHOR_AFTER_RUNS = (10, 20, 30)
 INTERLEAVED_ANCHOR_V2_REPLICATES = 3
+INTERLEAVED_ANCHOR_V3_AFTER_RUNS = (5, 10, 15, 20, 25, 30, 35)
+INTERLEAVED_ANCHOR_V3_REPLICATES = 3
 CALIBRATION_ANCHOR_GROUP_MAD_LIMIT = 0.02
+CALIBRATION_ANCHOR_LOCAL_RESIDUAL_LIMIT = 0.02
+CALIBRATION_PAIR_SENSITIVITY_LIMIT = 0.02
 # P0-A2 uses the same production executable for A and B.  These thresholds
 # are fixed before looking at a batch: the raw pair effect is primary, while
 # the host-corrected effect is retained as a sensitivity check.
@@ -976,15 +981,61 @@ def interleaved_anchor_measurement_policy_v2() -> Dict[str, Any]:
     }
 
 
+def interleaved_anchor_measurement_policy_v3() -> Dict[str, Any]:
+    """Return the fixed high-resolution replicated-anchor policy.
+
+    v2 exposed a non-linear host trajectory between five boundaries.  v3
+    keeps every threshold unchanged, but samples the same 40-run protocol at
+    nine boundaries so the correction knots follow the observed trajectory.
+    The leave-one-group-out residual is deterministic and is an explicit
+    anti-overfit gate rather than a post-hoc model choice.
+    """
+    group_ids = ["pre"] + [
+        "after-{:03d}".format(after_run)
+        for after_run in INTERLEAVED_ANCHOR_V3_AFTER_RUNS
+    ] + ["post"]
+    anchor_run_ids = []
+    for group_id in group_ids:
+        anchor_run_ids.extend(
+            "anchor-{}-{:03d}".format(group_id, index)
+            for index in range(1, INTERLEAVED_ANCHOR_V3_REPLICATES + 1)
+        )
+    return {
+        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+        "calibration_method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
+        "anchor_layout": {
+            "pre_count": INTERLEAVED_ANCHOR_V3_REPLICATES,
+            "after_measured_runs": list(INTERLEAVED_ANCHOR_V3_AFTER_RUNS),
+            "post_count": INTERLEAVED_ANCHOR_V3_REPLICATES,
+            "replicates_per_group": INTERLEAVED_ANCHOR_V3_REPLICATES,
+        },
+        "anchor_group_ids": group_ids,
+        "anchor_run_ids": anchor_run_ids,
+        "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v3",
+        "anchor_aggregation_method": "median-of-replicate-log-throughput-v1",
+        "anchor_residual_threshold": CALIBRATION_ANCHOR_RESIDUAL_LIMIT,
+        "anchor_local_residual_method": "leave-one-group-out-log-linear-v1",
+        "anchor_local_residual_threshold": CALIBRATION_ANCHOR_LOCAL_RESIDUAL_LIMIT,
+        "anchor_group_dispersion_gate_used": True,
+        "anchor_group_dispersion_threshold": CALIBRATION_ANCHOR_GROUP_MAD_LIMIT,
+        "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+        "pair_level_sensitivity_gate_used": True,
+        "pair_level_sensitivity_threshold": CALIBRATION_PAIR_SENSITIVITY_LIMIT,
+        "global_residual_diagnostic_only": True,
+    }
+
+
 def validate_calibration_method(value: str) -> str:
     if value not in (
         CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
         CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+        CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
     ):
         raise ValueError(
-            "--calibration-method must be one of {} or {}".format(
+            "--calibration-method must be one of {}, {}, or {}".format(
                 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
                 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+                CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
             )
         )
     return value
@@ -1137,6 +1188,111 @@ def _interleaved_anchor_v2_group_specs() -> List[Dict[str, Any]]:
             "replicate_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
         },
     ]
+
+
+def _interleaved_anchor_v3_group_specs() -> List[Dict[str, Any]]:
+    return [
+        {
+            "group_id": "pre",
+            "position": "pre",
+            "after_measured_run": 0,
+            "replicate_count": INTERLEAVED_ANCHOR_V3_REPLICATES,
+        },
+        *[
+            {
+                "group_id": "after-{:03d}".format(after_run),
+                "position": "after-measured-run",
+                "after_measured_run": after_run,
+                "replicate_count": INTERLEAVED_ANCHOR_V3_REPLICATES,
+            }
+            for after_run in INTERLEAVED_ANCHOR_V3_AFTER_RUNS
+        ],
+        {
+            "group_id": "post",
+            "position": "post",
+            "after_measured_run": 40,
+            "replicate_count": INTERLEAVED_ANCHOR_V3_REPLICATES,
+        },
+    ]
+
+
+def _anchor_piecewise_local_residual_model(
+    groups: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    """Validate piecewise knots with a fixed leave-one-group-out check.
+
+    Interior groups are predicted from their immediate retained neighbours in
+    log-throughput space.  The first and last groups use one-sided linear
+    extrapolation from the first/last two retained knots.  This is fixed by
+    protocol and cannot be selected after seeing a batch result.
+    """
+    if len(groups) < 3:
+        raise ValueError("at least three anchor groups are required")
+    points: List[Tuple[str, float, float]] = []
+    for group in groups:
+        group_id = group.get("group_id")
+        elapsed = group.get("elapsed_seconds")
+        throughput = group.get("throughput")
+        if (
+            not isinstance(group_id, str)
+            or not isinstance(elapsed, (int, float))
+            or isinstance(elapsed, bool)
+            or not math.isfinite(float(elapsed))
+            or not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or not math.isfinite(float(throughput))
+            or float(throughput) <= 0
+        ):
+            raise ValueError("piecewise anchor knot is invalid")
+        points.append((group_id, float(elapsed), math.log(float(throughput))))
+    if any(left[1] >= right[1] for left, right in zip(points, points[1:])):
+        raise ValueError("piecewise anchor knots are not strictly time ordered")
+    residuals: List[Dict[str, Any]] = []
+    for index, (group_id, x, observed_log) in enumerate(points):
+        if index == 0:
+            left = points[1]
+            right = points[2]
+        elif index == len(points) - 1:
+            left = points[-3]
+            right = points[-2]
+        else:
+            left = points[index - 1]
+            right = points[index + 1]
+        if right[1] <= left[1]:
+            raise ValueError("piecewise leave-one-out knots are degenerate")
+        fraction = (x - left[1]) / (right[1] - left[1])
+        predicted_log = left[2] + fraction * (right[2] - left[2])
+        residuals.append(
+            {
+                "anchor_id": group_id,
+                "observed_log_throughput": observed_log,
+                "predicted_log_throughput": predicted_log,
+                "relative_residual": math.exp(abs(observed_log - predicted_log)) - 1.0,
+                "left_knot_id": left[0],
+                "right_knot_id": right[0],
+            }
+        )
+    max_residual = max(item["relative_residual"] for item in residuals)
+    rms_residual = math.sqrt(
+        statistics.mean(item["relative_residual"] ** 2 for item in residuals)
+    )
+    global_diagnostic = _anchor_log_linear_model(
+        groups, model_name="global-log-linear-v3-diagnostic"
+    )
+    return {
+        "model": "piecewise-log-linear-v3",
+        "knot_ids": [point[0] for point in points],
+        "reference_throughput": geometric_mean(
+            [math.exp(point[2]) for point in points]
+        ),
+        "local_residual_method": "leave-one-group-out-log-linear-v1",
+        "local_residual_threshold": CALIBRATION_ANCHOR_LOCAL_RESIDUAL_LIMIT,
+        "residuals": residuals,
+        "max_relative_residual": max_residual,
+        "rms_relative_residual": rms_residual,
+        "valid": max_residual <= CALIBRATION_ANCHOR_LOCAL_RESIDUAL_LIMIT,
+        "global_diagnostic": global_diagnostic,
+    }
 
 
 def interpolate_anchor_throughput(
@@ -2224,7 +2380,21 @@ def _run_interleaved_anchor_ab(
 ) -> int:
     """Run the fixed 10-pair A/B with interleaved host-speed anchors."""
     calibration_method = measurement_policy.get("calibration_method")
-    use_replicated_anchors = calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
+    use_replicated_anchors = calibration_method in (
+        CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+        CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
+    )
+    is_v3 = calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3
+    anchor_after_runs = (
+        INTERLEAVED_ANCHOR_V3_AFTER_RUNS
+        if is_v3
+        else INTERLEAVED_ANCHOR_AFTER_RUNS
+    )
+    group_specs = (
+        _interleaved_anchor_v3_group_specs()
+        if is_v3
+        else _interleaved_anchor_v2_group_specs()
+    )
     calibration_workload = next(
         (workload for workload in workloads if workload["id"].startswith("picotetris-")),
         None,
@@ -2343,7 +2513,7 @@ def _run_interleaved_anchor_ab(
                 )
         for measured_index, item in enumerate(schedule, 1):
             run_measured(item)
-            if measured_index in INTERLEAVED_ANCHOR_AFTER_RUNS:
+            if measured_index in anchor_after_runs:
                 if use_replicated_anchors:
                     group_id = "after-{:03d}".format(measured_index)
                     for index in range(1, args.calibration_runs + 1):
@@ -2393,18 +2563,19 @@ def _run_interleaved_anchor_ab(
         model_anchors = anchors
         anchor_groups: List[Dict[str, Any]] = []
         if use_replicated_anchors:
-            anchor_groups = _aggregate_anchor_groups(
-                anchors, _interleaved_anchor_v2_group_specs()
-            )
+            anchor_groups = _aggregate_anchor_groups(anchors, group_specs)
             model_anchors = anchor_groups
-        model = _anchor_log_linear_model(
-            model_anchors,
-            model_name=(
-                "global-log-linear-v2"
-                if use_replicated_anchors
-                else "global-log-linear-v1"
-            ),
-        )
+        if is_v3:
+            model = _anchor_piecewise_local_residual_model(model_anchors)
+        else:
+            model = _anchor_log_linear_model(
+                model_anchors,
+                model_name=(
+                    "global-log-linear-v2"
+                    if use_replicated_anchors
+                    else "global-log-linear-v1"
+                ),
+            )
         reference_throughput = model["reference_throughput"]
         leaves: List[Dict[str, Any]] = []
         for item in measured:
@@ -2467,6 +2638,10 @@ def _run_interleaved_anchor_ab(
                 )
             summaries[workload_id] = summarize_log_effect(ratios)
         pair_sensitivity = _pair_level_sensitivity(pair_results)
+        pair_sensitivity_valid = (
+            pair_sensitivity["max_abs_delta_log_ratio"]
+            <= CALIBRATION_PAIR_SENSITIVITY_LIMIT
+        )
         # Combined effect is the equal-weight mean of the two workloads at
         # each pair index (10 values), not the 20 workload-specific ratios.
         combined_raw = [
@@ -2523,6 +2698,16 @@ def _run_interleaved_anchor_ab(
             calibration["valid"] = bool(
                 model["valid"] and calibration["anchor_group_dispersion_valid"]
             )
+        if is_v3:
+            calibration["anchor_local_residual_gate_used"] = True
+            calibration["anchor_local_residual_threshold"] = CALIBRATION_ANCHOR_LOCAL_RESIDUAL_LIMIT
+            calibration["anchor_local_residual_valid"] = model["valid"]
+            calibration["pair_level_sensitivity_gate_used"] = True
+            calibration["pair_level_sensitivity_threshold"] = CALIBRATION_PAIR_SENSITIVITY_LIMIT
+            calibration["pair_level_sensitivity_valid"] = pair_sensitivity_valid
+            calibration["valid"] = bool(
+                calibration["valid"] and pair_sensitivity_valid
+            )
         mismatches = [
             result for result in pair_results if result["guest_observation_equal"] is not True
         ]
@@ -2557,9 +2742,15 @@ def _run_interleaved_anchor_ab(
         if summary_status == "invalid":
             reasons = []
             if not model["valid"]:
-                reasons.append("interleaved anchor residual exceeded 2%")
+                reasons.append(
+                    "interleaved anchor local residual exceeded 2%"
+                    if is_v3
+                    else "interleaved anchor residual exceeded 2%"
+                )
             if use_replicated_anchors and not calibration["anchor_group_dispersion_valid"]:
                 reasons.append("replicated anchor dispersion exceeded 2%")
+            if is_v3 and not calibration["pair_level_sensitivity_valid"]:
+                reasons.append("pair-level raw-vs-host-corrected sensitivity exceeded 2%")
             if mismatches:
                 reasons.append("guest observation projection mismatch during A/B")
             if null_control is not None and not null_control["pass"]:
@@ -2926,7 +3117,10 @@ def run_ab(args: argparse.Namespace) -> int:
     validate_calibration_method(calibration_method)
     expected_calibration_runs = (
         INTERLEAVED_ANCHOR_V2_REPLICATES
-        if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
+        if calibration_method in (
+            CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+            CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
+        )
         else 3
     )
     if args.calibration_runs != expected_calibration_runs:
@@ -2975,9 +3169,13 @@ def run_ab(args: argparse.Namespace) -> int:
     for aggregate in (record_root / "summary.json", record_root / "decision.md", record_root / "hotpath-disassembly.txt"):
         _refuse_existing(aggregate)
     measurement_policy = (
-        interleaved_anchor_measurement_policy_v2()
-        if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
-        else interleaved_anchor_measurement_policy()
+        interleaved_anchor_measurement_policy_v3()
+        if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3
+        else (
+            interleaved_anchor_measurement_policy_v2()
+            if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
+            else interleaved_anchor_measurement_policy()
+        )
     )
     manifest_identity = _base_manifest(
         batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
@@ -3367,8 +3565,9 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         choices=(
             CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
             CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+            CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
         ),
-        help="fixed host-stability protocol; v2 uses five replicated anchors per boundary",
+        help="fixed host-stability protocol; v2 uses five groups and v3 uses nine groups of three anchors",
     )
     ab.add_argument(
         "--inter-run-cooldown-seconds", type=float,
