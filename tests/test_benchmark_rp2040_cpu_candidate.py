@@ -417,6 +417,18 @@ class CandidateRunnerTests(unittest.TestCase):
         )
         self.assertTrue(any("core-0 exception entries" in item for item in problems))
 
+        bad_profile = {
+            "counters": {"exception": exception()},
+            "cores": [{"exception": exception()}],
+            "invariants": {
+                "exception_poll_conservation": True,
+                "exception_source_conservation": True,
+            },
+        }
+        bad_profile["counters"]["exception"]["source"]["nvic"] = 2
+        with self.assertRaisesRegex(ValueError, "source conservation"):
+            self.module.validate_pending_exception_profile(bad_profile)
+
     def test_guest_projection_pair_rejects_one_bit_difference(self):
         baseline = {"cycles": 10, "framebuffer": {"rgb565_sha256": "a"}}
         candidate = {"cycles": 10, "framebuffer": {"rgb565_sha256": "b"}}

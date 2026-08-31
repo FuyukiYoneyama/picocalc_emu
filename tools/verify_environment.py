@@ -2300,7 +2300,7 @@ def _verify_pending_exception_poll_equation(
                     profile_path, scope
                 )
             )
-        if len(source_values) == 3 and len(values) >= 1 and values.get("entries") != sum(source_values.values()):
+        if len(source_values) == 3 and "entries" in values and values["entries"] != sum(source_values.values()):
             problems.append(
                 "{} P2-A profile {} exception entries != source.pendsv + source.systick + source.nvic".format(
                     profile_path, scope
