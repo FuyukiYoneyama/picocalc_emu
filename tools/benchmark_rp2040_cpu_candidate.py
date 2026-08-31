@@ -1312,7 +1312,7 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
             raise ValueError("record manifest is not an object: {}".format(manifest_path))
         for field in (
             "record_type", "record_version", "record_id", "candidate_id", "workloads",
-            "measurement_cpu",
+            "measurement_cpu", "diagnostic_profile_record",
         ):
             if existing.get(field) != manifest.get(field):
                 raise ValueError("record manifest identity mismatch: {}".format(manifest_path))
@@ -2763,14 +2763,17 @@ def run_ab(args: argparse.Namespace) -> int:
     _refuse_existing_files(record_root / "ab")
     for aggregate in (record_root / "summary.json", record_root / "decision.md", record_root / "hotpath-disassembly.txt"):
         _refuse_existing(aggregate)
-    _record_manifest(
-        record_root,
-        _base_manifest(
-            batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
-            feature_set=getattr(args, "feature_set", []),
-            measurement_policy=interleaved_anchor_measurement_policy(),
-        ),
+    manifest_identity = _base_manifest(
+        batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
+        feature_set=getattr(args, "feature_set", []),
+        measurement_policy=interleaved_anchor_measurement_policy(),
     )
+    if args.candidate_id == "P2-A":
+        profile_record = getattr(args, "profile_record", None)
+        if profile_record is None:
+            raise ValueError("P2-A A/B requires --profile-record diagnostic profile")
+        manifest_identity["diagnostic_profile_record"] = profile_record.resolve().name
+    _record_manifest(record_root, manifest_identity)
     decision_context = _manifest_decision_context(
         record_root, workloads, identities, feature_set=getattr(args, "feature_set", []),
     )

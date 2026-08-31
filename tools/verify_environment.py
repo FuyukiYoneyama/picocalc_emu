@@ -3499,6 +3499,41 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
         ab_dir = record_dir / "ab"
         run_by_id: Dict[str, Dict[str, Any]] = {}
         if ab_dir.exists():
+            if manifest.get("candidate_id") == "P2-A":
+                profile_name = manifest.get("diagnostic_profile_record")
+                profile_record_dir = (
+                    records_root / profile_name
+                    if isinstance(profile_name, str)
+                    and profile_name.startswith("rp2040-cpu-")
+                    and Path(profile_name).name == profile_name
+                    else None
+                )
+                if profile_record_dir is None or profile_record_dir == record_dir or not profile_record_dir.is_dir():
+                    problems.append("{} P2-A AB diagnostic_profile_record is missing or invalid".format(record_dir))
+                else:
+                    linked_manifest_path = profile_record_dir / "manifest.json"
+                    try:
+                        linked_manifest = load_json(linked_manifest_path)
+                    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+                        linked_manifest = None
+                        problems.append("{} P2-A linked profile manifest is unreadable: {}".format(record_dir, error))
+                    if isinstance(linked_manifest, Mapping):
+                        if linked_manifest.get("candidate_id") != "P2-A":
+                            problems.append("{} P2-A linked profile candidate_id is invalid".format(record_dir))
+                        if linked_manifest.get("workloads") != manifest.get("workloads"):
+                            problems.append("{} P2-A linked profile workloads differ from AB".format(record_dir))
+                        ab_candidate = (
+                            manifest.get("backend_identities", {}).get("candidate_production")
+                            if isinstance(manifest.get("backend_identities"), Mapping)
+                            else None
+                        )
+                        profile_candidate = (
+                            linked_manifest.get("backend_identities", {}).get("candidate_profile")
+                            if isinstance(linked_manifest.get("backend_identities"), Mapping)
+                            else None
+                        )
+                        if not isinstance(ab_candidate, Mapping) or not isinstance(profile_candidate, Mapping) or ab_candidate.get("commit") != profile_candidate.get("commit"):
+                            problems.append("{} P2-A linked profile backend commit differs from AB candidate".format(record_dir))
             summary = None
             if not summary_path.is_file():
                 problems.append("{} AB record is missing summary.json".format(record_dir))
