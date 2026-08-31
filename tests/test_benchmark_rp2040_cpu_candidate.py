@@ -379,6 +379,89 @@ class CandidateRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "--profile-record"):
             self.module._require_profile_gate(None, [], {"commit": "a" * 40}, 0)
 
+    def test_p2_profile_gate_checks_cpu_and_passing_decision(self):
+        workloads = [
+            {
+                "id": workload_id,
+                "revision": revision,
+                "firmware_sha256": "f" * 64,
+                "scenario_sha256": "s" * 64,
+                "contract_sha256": "c" * 64,
+            }
+            for workload_id, revision in (
+                ("picotetris-opt1b-vrp5", 10),
+                ("picoedit-r1-vrp2f", 4),
+            )
+        ]
+        features = [
+            "cpu-application-profiler",
+            "pending-exception-fast-reject",
+            "sd-gen1-multiblock",
+        ]
+        identity = {
+            "commit": "a" * 40,
+            "feature_set": features,
+        }
+
+        def exception():
+            return {
+                "polls": 10,
+                "reject_no_candidate": 6,
+                "reject_primask": 1,
+                "reject_active_handler": 1,
+                "entries": 2,
+                "source": {"pendsv": 1, "systick": 0, "nvic": 1},
+            }
+
+        with tempfile.TemporaryDirectory() as temporary:
+            record = Path(temporary) / "rp2040-cpu-p2-a-profile-fixture"
+            profile_dir = record / "profile"
+            profile_dir.mkdir(parents=True)
+            manifest = {
+                "record_type": self.module.RECORD_TYPE,
+                "record_version": self.module.SCHEMA_VERSION,
+                "record_id": record.name,
+                "candidate_id": "P2-A",
+                "workloads": workloads,
+                "measurement_cpu": 0,
+                "backend_identities": {"candidate_profile": identity},
+                "feature_set": features,
+            }
+            decision = {
+                "decision_kind": "profile",
+                "status": "pass",
+            }
+            (record / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            (record / "decision.json").write_text(json.dumps(decision), encoding="utf-8")
+            (record / "SHA256SUMS").write_text("", encoding="utf-8")
+            for workload in workloads:
+                profile = {
+                    "candidate_id": "P2-A",
+                    "workload": {
+                        key: workload[key]
+                        for key in ("id", "revision", "firmware_sha256", "scenario_sha256")
+                    },
+                    "feature_set": features,
+                    "counters": {"exception": exception()},
+                    "cores": [{"exception": exception()}],
+                    "invariants": {
+                        "exception_poll_conservation": True,
+                        "exception_source_conservation": True,
+                    },
+                }
+                path = profile_dir / "{}-r{}.json".format(workload["id"], workload["revision"])
+                path.write_text(json.dumps(profile), encoding="utf-8")
+            with mock.patch.object(self.module, "_validate_record_root"), \
+                 mock.patch.object(self.module, "_verify_existing_sha256sums"):
+                self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 0)
+                with self.assertRaisesRegex(ValueError, "CPU differs"):
+                    self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 1)
+                manifest["measurement_cpu"] = 0
+                decision["status"] = "invalid"
+                (record / "decision.json").write_text(json.dumps(decision), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "decision is not passing"):
+                    self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 0)
+
     def test_p2_profile_verifies_aggregate_and_core_exception_conservation(self):
         verifier = load_verifier()
 

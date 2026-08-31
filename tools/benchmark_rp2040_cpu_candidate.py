@@ -2661,9 +2661,10 @@ def _require_profile_gate(
         or manifest.get("record_id") != record.name
         or manifest.get("candidate_id") != "P2-A"
         or manifest.get("workloads") != expected_workloads
-        or manifest.get("measurement_cpu") != measurement_cpu
     ):
         raise ValueError("P2-A profile record identity/workloads do not match A/B")
+    if manifest.get("measurement_cpu") != measurement_cpu:
+        raise ValueError("P2-A profile record CPU differs from A/B")
     identities = manifest.get("backend_identities")
     profile_identity = identities.get("candidate_profile") if isinstance(identities, Mapping) else None
     if not isinstance(profile_identity, Mapping):
