@@ -726,6 +726,21 @@ P2-A 後も profiler と optional sampling の両方で exception poll/arbitrati
 - 実アプリ全体の cycles/second
 - production A/B の `ab` には、その診断 profile record を `--profile-record` で渡す。runner/verifier は aggregate と各 core について `polls = reject_no_candidate + reject_primask + reject_active_handler + entries`、`entries = source.pendsv + source.systick + source.nvic` を再計算する。profileのwall timeは採否に使わない。
 
+P2-A diagnostic profile の実行例は次のとおりである。
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py profile \
+  --candidate-id P2-A \
+  --backend "$RP2040_CPU_OPT_TMP/backend-p2-a" \
+  --runner "$RP2040_CPU_OPT_TMP/build/p2-a-candidate-profile/release/picocalc-run" \
+  --feature-set cpu-application-profiler \
+  --feature-set pending-exception-fast-reject \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
+  --output firmware-validation/records/rp2040-cpu-p2-a-profile-YYYYMMDD-NN/profile
+```
+
 #### 完了条件
 
 - PRIMASK、PendSV、SysTick、NVIC IRQ、同時 pending、priority tie-break、active handler、tail-chain、exception return の既存試験が baseline/candidate で一致する。
