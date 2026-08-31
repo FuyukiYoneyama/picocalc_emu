@@ -363,6 +363,60 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertFalse(failed["pass"])
         self.assertIn("tetris raw effect/CI", failed["reasons"])
 
+    def test_p2_profile_requires_pending_exception_instrumentation(self):
+        with self.assertRaisesRegex(ValueError, "pending-exception-fast-reject"):
+            self.module.validate_profile_feature_set(
+                "P2-A", ["cpu-application-profiler"]
+            )
+        self.assertEqual(
+            self.module.validate_profile_feature_set(
+                "P2-A", ["cpu-application-profiler", "pending-exception-fast-reject"]
+            ),
+            ["cpu-application-profiler", "pending-exception-fast-reject"],
+        )
+
+    def test_p2_profile_verifies_aggregate_and_core_exception_conservation(self):
+        verifier = load_verifier()
+
+        def exception():
+            return {
+                "polls": 10,
+                "reject_no_candidate": 6,
+                "reject_primask": 1,
+                "reject_active_handler": 1,
+                "entries": 2,
+                "source": {"pendsv": 1, "systick": 0, "nvic": 1},
+            }
+
+        profile = {
+            "counters": {"exception": exception()},
+            "cores": [{"exception": exception()}, {"exception": exception()}],
+            "invariants": {
+                "exception_poll_conservation": True,
+                "exception_source_conservation": True,
+            },
+        }
+        problems = []
+        verifier._verify_pending_exception_poll_equation(
+            Path("profile.json"), profile, problems
+        )
+        self.assertEqual(problems, [])
+
+        profile["counters"]["exception"]["polls"] = 11
+        problems = []
+        verifier._verify_pending_exception_poll_equation(
+            Path("profile.json"), profile, problems
+        )
+        self.assertTrue(any("aggregate exception polls" in item for item in problems))
+
+        profile["counters"]["exception"] = exception()
+        profile["cores"][0]["exception"]["source"]["nvic"] = 2
+        problems = []
+        verifier._verify_pending_exception_poll_equation(
+            Path("profile.json"), profile, problems
+        )
+        self.assertTrue(any("core-0 exception entries" in item for item in problems))
+
     def test_guest_projection_pair_rejects_one_bit_difference(self):
         baseline = {"cycles": 10, "framebuffer": {"rgb565_sha256": "a"}}
         candidate = {"cycles": 10, "framebuffer": {"rgb565_sha256": "b"}}

@@ -2257,6 +2257,64 @@ def _profile_counter(profile: Mapping[str, Any], *path: str) -> Optional[int]:
     return value if type(value) is int and value >= 0 else None
 
 
+def _verify_pending_exception_poll_equation(
+    profile_path: Path, profile: Mapping[str, Any], problems: List[str]
+) -> None:
+    """Require P2-A aggregate/core exception counter conservation."""
+    counters = profile.get("counters")
+    scopes: List[Tuple[str, Any]] = [("aggregate", counters)]
+    cores = profile.get("cores")
+    if not isinstance(cores, list):
+        problems.append("{} P2-A profile cores are invalid".format(profile_path))
+    else:
+        scopes.extend(("core-{}".format(index), core) for index, core in enumerate(cores))
+    for scope, source in scopes:
+        exception = source.get("exception") if isinstance(source, Mapping) else None
+        if not isinstance(exception, Mapping):
+            problems.append("{} P2-A profile {} exception counters are missing".format(profile_path, scope))
+            continue
+        values = {}
+        for field in ("polls", "reject_no_candidate", "reject_primask", "reject_active_handler", "entries"):
+            value = exception.get(field)
+            if type(value) is not int or value < 0:
+                problems.append("{} P2-A profile {} exception {} is invalid".format(profile_path, scope, field))
+            else:
+                values[field] = value
+        exception_source = exception.get("source")
+        source_values = {}
+        if not isinstance(exception_source, Mapping):
+            problems.append("{} P2-A profile {} exception source is missing".format(profile_path, scope))
+        else:
+            for field in ("pendsv", "systick", "nvic"):
+                value = exception_source.get(field)
+                if type(value) is not int or value < 0:
+                    problems.append("{} P2-A profile {} exception source {} is invalid".format(profile_path, scope, field))
+                else:
+                    source_values[field] = value
+        if len(values) == 5 and values["polls"] != sum(
+            values[field]
+            for field in ("reject_no_candidate", "reject_primask", "reject_active_handler", "entries")
+        ):
+            problems.append(
+                "{} P2-A profile {} exception polls != reject_no_candidate + reject_primask + reject_active_handler + entries".format(
+                    profile_path, scope
+                )
+            )
+        if len(source_values) == 3 and len(values) >= 1 and values.get("entries") != sum(source_values.values()):
+            problems.append(
+                "{} P2-A profile {} exception entries != source.pendsv + source.systick + source.nvic".format(
+                    profile_path, scope
+                )
+            )
+    invariants = profile.get("invariants")
+    if (
+        not isinstance(invariants, Mapping)
+        or invariants.get("exception_poll_conservation") is not True
+        or invariants.get("exception_source_conservation") is not True
+    ):
+        problems.append("{} P2-A profile exception invariants are invalid".format(profile_path))
+
+
 def _profile_ratio_matches(actual: object, numerator: int, denominator: int) -> bool:
     if denominator <= 0 or not isinstance(actual, (int, float)) or isinstance(actual, bool):
         return False
@@ -3279,6 +3337,17 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                         problems.append("{} backend identity {} omits behavior-trace".format(record_dir, label))
                     if role == "candidate_profile" and isinstance(feature_set, list) and "cpu-application-profiler" not in feature_set:
                         problems.append("{} backend identity {} omits cpu-application-profiler".format(record_dir, label))
+                    if (
+                        role == "candidate_profile"
+                        and manifest.get("candidate_id") == "P2-A"
+                        and isinstance(feature_set, list)
+                        and "pending-exception-fast-reject" not in feature_set
+                    ):
+                        problems.append(
+                            "{} backend identity {} omits pending-exception-fast-reject for P2-A".format(
+                                record_dir, label
+                            )
+                        )
             if shared_production_labels:
                 if (
                     manifest.get("candidate_id") != "P0-A2"
@@ -3455,8 +3524,27 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                         problems.append("{} summary pair_results is not an array".format(record_dir))
                     elif summary_is_invalid:
                         calibration = summary.get("calibration")
-                        if not isinstance(calibration, dict) or calibration.get("valid") is not False:
-                            problems.append("{} invalid summary does not preserve calibration failure".format(record_dir))
+                        calibration_failed = (
+                            isinstance(calibration, Mapping)
+                            and calibration.get("valid") is False
+                        )
+                        has_projection_mismatch = any(
+                            isinstance(item, Mapping)
+                            and item.get("guest_observation_equal") is not True
+                            for item in summary["pair_results"]
+                        )
+                        null_control = summary.get("null_control")
+                        null_failed = (
+                            manifest.get("candidate_id") == "P0-A2"
+                            and isinstance(null_control, Mapping)
+                            and null_control.get("pass") is False
+                        )
+                        if not (calibration_failed or has_projection_mismatch or null_failed):
+                            problems.append(
+                                "{} invalid summary does not preserve a calibration, projection, or null-control failure".format(
+                                    record_dir
+                                )
+                            )
                         if len(summary["pair_results"]) not in {0, 20}:
                             problems.append("{} invalid summary pair_results has an unexpected size".format(record_dir))
                         if len(summary["pair_results"]) == 0 and summary.get("workloads") != {}:
@@ -3557,18 +3645,28 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             and item.get("guest_observation_equal") is not True
                             for item in summary.get("pair_results", [])
                         )
-                        if has_projection_mismatch and summary.get("status") != "invalid":
-                            problems.append("{} guest projection mismatch must invalidate P0-A2 null-control".format(record_dir))
-                        if null_pass:
-                            if has_projection_mismatch or summary.get("status") != "pass":
-                                problems.append("{} passing P0-A2 null-control must have summary status pass".format(record_dir))
-                            if isinstance(decision, Mapping) and (
-                                decision.get("decision_kind") != "null-control"
-                                or decision.get("status") != "pass"
-                            ):
-                                problems.append("{} passing P0-A2 null-control must have a passing null-control decision".format(record_dir))
-                        elif summary.get("status") != "invalid":
-                            problems.append("{} failing P0-A2 null-control must have summary status invalid".format(record_dir))
+                        decision_is_invalid = (
+                            isinstance(decision, Mapping)
+                            and decision.get("decision_kind") == "invalid"
+                            and decision.get("status") == "invalid"
+                        )
+                        decision_is_passing_null = (
+                            isinstance(decision, Mapping)
+                            and decision.get("decision_kind") == "null-control"
+                            and decision.get("status") == "pass"
+                        )
+                        if has_projection_mismatch:
+                            if summary.get("status") != "invalid" or not decision_is_invalid:
+                                problems.append(
+                                    "{} guest projection mismatch must fail closed with invalid P0-A2 summary and decision".format(
+                                        record_dir
+                                    )
+                                )
+                        elif null_pass:
+                            if summary.get("status") != "pass" or not decision_is_passing_null:
+                                problems.append("{} passing P0-A2 null-control must have a passing null-control summary and decision".format(record_dir))
+                        elif summary.get("status") != "invalid" or not decision_is_invalid:
+                            problems.append("{} failing P0-A2 null-control must have invalid summary and decision".format(record_dir))
 
         profile_dir = record_dir / "profile"
         candidate_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}
@@ -3588,6 +3686,8 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     profile_path, "picocalc.rp2040-cpu-profile", problems, schema_validators
                 )
                 if profile is not None and isinstance(identities, dict):
+                    if profile.get("candidate_id") != manifest.get("candidate_id"):
+                        problems.append("{} profile candidate_id differs from manifest".format(profile_path))
                     workload = profile.get("workload")
                     workload_id = workload.get("id") if isinstance(workload, Mapping) else None
                     if isinstance(workload_id, str):
@@ -3608,6 +3708,26 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             problems.append("{} profile build provenance SHA-256 differs from manifest".format(profile_path))
                     if isinstance(identity, dict) and profile.get("feature_set") != identity.get("feature_set", []):
                         problems.append("{} profile feature_set differs from manifest".format(profile_path))
+                    if manifest.get("candidate_id") == "P2-A":
+                        profile_features = profile.get("feature_set")
+                        if (
+                            not isinstance(profile_features, list)
+                            or "cpu-application-profiler" not in profile_features
+                            or "pending-exception-fast-reject" not in profile_features
+                        ):
+                            problems.append(
+                                "{} P2-A profile feature_set must include cpu-application-profiler and pending-exception-fast-reject".format(
+                                    profile_path
+                                )
+                            )
+                        _verify_pending_exception_poll_equation(profile_path, profile, problems)
+
+            if manifest.get("candidate_id") == "P2-A":
+                expected_profile_workloads = set(workload_ids)
+                if set(candidate_profiles) != expected_profile_workloads:
+                    problems.append(
+                        "{} P2-A profiles must cover exactly the two manifest workloads".format(record_dir)
+                    )
 
         profile_comparison_path = record_dir / "profile-comparison.json"
         if profile_comparison_path.is_file():

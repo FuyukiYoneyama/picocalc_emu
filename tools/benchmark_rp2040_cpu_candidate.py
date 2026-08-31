@@ -162,6 +162,65 @@ def effective_feature_set(features: Sequence[str]) -> List[str]:
     return sorted(set(DEFAULT_EFFECTIVE_FEATURES).union(requested))
 
 
+def validate_profile_feature_set(candidate_id: str, features: Sequence[str]) -> List[str]:
+    """Validate profile instrumentation required by the candidate phase."""
+    declared = normalize_feature_set(features)
+    required = ["cpu-application-profiler"]
+    if candidate_id == "P2-A":
+        required.append("pending-exception-fast-reject")
+    missing = [feature for feature in required if feature not in declared]
+    if missing:
+        raise ValueError(
+            "profile candidate {} requires --feature-set {}".format(
+                candidate_id, ",".join(missing)
+            )
+        )
+    return declared
+
+
+def validate_pending_exception_profile(profile: Mapping[str, Any]) -> None:
+    """Validate P2-A aggregate/core exception counter conservation."""
+    counters = profile.get("counters")
+    scopes: List[Tuple[str, Any]] = [("aggregate", counters)]
+    cores = profile.get("cores")
+    if not isinstance(cores, list):
+        raise ValueError("P2-A profile cores are invalid")
+    scopes.extend(("core-{}".format(index), core) for index, core in enumerate(cores))
+    for scope, source in scopes:
+        exception = source.get("exception") if isinstance(source, Mapping) else None
+        if not isinstance(exception, Mapping):
+            raise ValueError("P2-A profile {} exception counters are missing".format(scope))
+        values: Dict[str, int] = {}
+        for field in ("polls", "reject_no_candidate", "reject_primask", "reject_active_handler", "entries"):
+            value = exception.get(field)
+            if type(value) is not int or value < 0:
+                raise ValueError("P2-A profile {} exception {} is invalid".format(scope, field))
+            values[field] = value
+        exception_source = exception.get("source")
+        if not isinstance(exception_source, Mapping):
+            raise ValueError("P2-A profile {} exception source is missing".format(scope))
+        source_values: Dict[str, int] = {}
+        for field in ("pendsv", "systick", "nvic"):
+            value = exception_source.get(field)
+            if type(value) is not int or value < 0:
+                raise ValueError("P2-A profile {} exception source {} is invalid".format(scope, field))
+            source_values[field] = value
+        if values["polls"] != sum(
+            values[field]
+            for field in ("reject_no_candidate", "reject_primask", "reject_active_handler", "entries")
+        ):
+            raise ValueError("P2-A profile {} exception poll conservation is invalid".format(scope))
+        if values["entries"] != sum(source_values.values()):
+            raise ValueError("P2-A profile {} exception source conservation is invalid".format(scope))
+    invariants = profile.get("invariants")
+    if (
+        not isinstance(invariants, Mapping)
+        or invariants.get("exception_poll_conservation") is not True
+        or invariants.get("exception_source_conservation") is not True
+    ):
+        raise ValueError("P2-A profile exception invariants are invalid")
+
+
 def runner_provenance_path(runner: Path) -> Path:
     return runner.with_name(runner.name + ".build.json")
 
@@ -2652,9 +2711,9 @@ def run_profile(args: argparse.Namespace) -> int:
     if not args.runner.is_file():
         raise ValueError("runner is missing: {}".format(args.runner))
     validate_runner_embedded_commit(args.runner, identity["commit"])
-    declared_features = normalize_feature_set(getattr(args, "feature_set", []))
-    if "cpu-application-profiler" not in declared_features:
-        raise ValueError("profile requires --feature-set cpu-application-profiler")
+    declared_features = validate_profile_feature_set(
+        args.candidate_id, getattr(args, "feature_set", [])
+    )
     provenance = validate_runner_provenance(
         args.runner, identity["commit"], declared_features,
         expected_role="candidate_profile",
@@ -2746,6 +2805,8 @@ def run_profile(args: argparse.Namespace) -> int:
                 raise ValueError("CPU profile has no core records for {}".format(workload["id"]))
             if not isinstance(normalized_profile["counters"], Mapping):
                 raise ValueError("CPU profile counters are invalid for {}".format(workload["id"]))
+            if args.candidate_id == "P2-A":
+                validate_pending_exception_profile(normalized_profile)
             _write_json_once(profile_path, normalized_profile)
             _write_json_once(phase_dir / "{}-measurement.json".format(workload["id"]), result["measurement"])
     finally:
