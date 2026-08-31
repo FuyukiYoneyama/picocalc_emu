@@ -723,6 +723,7 @@ P2-A 後も profiler と optional sampling の両方で exception poll/arbitrati
 - source 別 exception entry 数
 - `step` あたり host cycles と branch misses
 - 実アプリ全体の cycles/second
+- production A/B の前に、`cpu-application-profiler,pending-exception-fast-reject` buildで二 workloadの診断 profileを取り、`polls = reject_no_candidate + reject_primask + reject_active_handler + entries` の保存値と candidate feature provenance を検証する。profileのwall timeは採否に使わない。
 
 #### 完了条件
 
@@ -737,7 +738,7 @@ cargo test --locked -p rp2040-emu --features pending-exception-fast-reject excep
 cargo test --locked -p picocalc-harness --features pending-exception-fast-reject
 ```
 - P0-B の `reject_no_candidate / polls` が 90% 未満なら P2-A を開始しない。開始しなかった事実と profile 値を decision record に残す。
-- 二つの実アプリで correctness と A/B を完了する。
+- feature-on diagnostic profileで `reject_no_candidate` と `polls` が正しく記録され、二つの実アプリで correctness と production A/B を完了する。
 
 ### P3. host 向け build 最適化と PGO
 
