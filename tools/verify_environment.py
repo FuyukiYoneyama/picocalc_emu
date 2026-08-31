@@ -2597,6 +2597,275 @@ def _verify_rp2040_cpu_profile_comparison(
         problems.append("{} profile_only_delta must identify the profiled candidate commit".format(comparison_path))
 
 
+def _verify_replicated_anchor_summary(
+    record_dir: Path,
+    manifest: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    run_by_id: Mapping[str, Mapping[str, Any]],
+    problems: List[str],
+) -> None:
+    """Validate the v2 replicated-anchor layout and derived aggregates."""
+    del run_by_id
+    calibration = summary.get("calibration")
+    if not isinstance(calibration, Mapping):
+        problems.append("{} replicated-anchor calibration is missing".format(record_dir))
+        return
+    if summary.get("status") == "invalid" and isinstance(calibration.get("error"), str):
+        if calibration.get("valid") is not False:
+            problems.append("{} failed replicated-anchor calibration must be marked invalid".format(record_dir))
+        return
+    expected_groups = [
+        ("pre", "pre", 0),
+        ("after-010", "after-measured-run", 10),
+        ("after-020", "after-measured-run", 20),
+        ("after-030", "after-measured-run", 30),
+        ("post", "post", 40),
+    ]
+    expected_ids = []
+    for group_id, _, _ in expected_groups:
+        expected_ids.extend(
+            "anchor-{}-{:03d}".format(group_id, index) for index in range(1, 4)
+        )
+    if calibration.get("method") != "interleaved-anchor-v2":
+        problems.append("{} calibration method is invalid".format(record_dir))
+    if calibration.get("anchor_count") != len(expected_ids):
+        problems.append("{} calibration anchor count is invalid".format(record_dir))
+    anchors = calibration.get("anchors")
+    if not isinstance(anchors, list) or [
+        anchor.get("anchor_id") for anchor in anchors if isinstance(anchor, Mapping)
+    ] != expected_ids:
+        problems.append("{} calibration anchor order is invalid".format(record_dir))
+        return
+    if calibration.get("anchor_run_ids") != expected_ids:
+        problems.append("{} calibration anchor_run_ids differ from fixed policy".format(record_dir))
+    expected_identity = manifest.get("backend_identities", {}).get("baseline_production", {})
+    previous_elapsed = -1.0
+    raw_anchor_values_valid = True
+    anchor_observations = set()
+    for anchor_index, (anchor, (group_id, position, after_run)) in enumerate(zip(
+        anchors,
+        [
+            item
+            for item in expected_groups
+            for _ in range(3)
+        ],
+    )):
+        if not isinstance(anchor, Mapping):
+            problems.append("{} calibration anchor is not an object".format(record_dir))
+            continue
+        expected_index = anchor_index % 3 + 1
+        if (
+            anchor.get("group_id") != group_id
+            or anchor.get("replicate_index") != expected_index
+            or anchor.get("position") != position
+            or anchor.get("after_measured_run") != after_run
+        ):
+            problems.append("{} replicated calibration anchor identity/order is invalid".format(record_dir))
+        elapsed = anchor.get("elapsed_seconds")
+        throughput = anchor.get("throughput")
+        if (
+            not isinstance(elapsed, (int, float))
+            or isinstance(elapsed, bool)
+            or not math.isfinite(float(elapsed))
+            or float(elapsed) <= previous_elapsed
+            or not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or not math.isfinite(float(throughput))
+            or float(throughput) <= 0
+        ):
+            problems.append("{} calibration anchor timing/throughput is invalid".format(record_dir))
+            raw_anchor_values_valid = False
+        else:
+            previous_elapsed = float(elapsed)
+        if anchor.get("workload") != "picotetris-opt1b-vrp5" or anchor.get("role") != "baseline":
+            problems.append("{} calibration anchor workload/role is invalid".format(record_dir))
+        for field in ("guest_observation_sha256", "runner_sha256", "build_provenance_sha256"):
+            if not _is_sha256_text(anchor.get(field)):
+                problems.append("{} calibration anchor {} is invalid".format(record_dir, field))
+        if _is_sha256_text(anchor.get("guest_observation_sha256")):
+            anchor_observations.add(anchor["guest_observation_sha256"])
+        if isinstance(expected_identity, Mapping):
+            for field in ("backend_commit", "runner_sha256", "build_provenance_sha256"):
+                expected_field = "commit" if field == "backend_commit" else field
+                if anchor.get(field) != expected_identity.get(expected_field):
+                    problems.append("{} calibration anchor {} differs from baseline identity".format(record_dir, field))
+    if len(anchor_observations) != 1:
+        problems.append("{} replicated calibration anchors disagree on guest observation".format(record_dir))
+
+    groups = calibration.get("anchor_groups")
+    expected_group_ids = [item[0] for item in expected_groups]
+    if (
+        not isinstance(groups, list)
+        or [group.get("group_id") for group in groups if isinstance(group, Mapping)] != expected_group_ids
+        or calibration.get("anchor_group_ids") != expected_group_ids
+        or calibration.get("anchor_group_count") != len(expected_groups)
+    ):
+        problems.append("{} replicated calibration groups are invalid".format(record_dir))
+        return
+    expected_group_values: List[Tuple[float, float]] = []
+    for group, (group_id, position, after_run) in zip(groups, expected_groups):
+        if not isinstance(group, Mapping):
+            problems.append("{} calibration group is not an object".format(record_dir))
+            continue
+        raw = [anchor for anchor in anchors if isinstance(anchor, Mapping) and anchor.get("group_id") == group_id]
+        if (
+            len(raw) != 3
+            or any(
+                not isinstance(anchor.get("elapsed_seconds"), (int, float))
+                or isinstance(anchor.get("elapsed_seconds"), bool)
+                or not math.isfinite(float(anchor.get("elapsed_seconds")))
+                or not isinstance(anchor.get("throughput"), (int, float))
+                or isinstance(anchor.get("throughput"), bool)
+                or not math.isfinite(float(anchor.get("throughput")))
+                or float(anchor.get("throughput")) <= 0
+                for anchor in raw
+            )
+        ):
+            problems.append("{} calibration group raw values are invalid".format(record_dir))
+            raw_anchor_values_valid = False
+            continue
+        log_values = [math.log(float(anchor["throughput"])) for anchor in raw]
+        elapsed_values = [float(anchor["elapsed_seconds"]) for anchor in raw]
+        median_log = statistics.median(log_values)
+        expected_throughput = math.exp(median_log)
+        deviations = [math.exp(abs(value - median_log)) - 1.0 for value in log_values]
+        mad_log = statistics.median([abs(value - median_log) for value in log_values])
+        scaled_mad_log = 1.4826 * mad_log
+        expected_relative_mad = math.exp(scaled_mad_log) - 1.0
+        expected_anchor_ids = [anchor["anchor_id"] for anchor in raw]
+        if (
+            group.get("position") != position
+            or group.get("after_measured_run") != after_run
+            or group.get("anchor_count") != 3
+            or group.get("anchor_ids") != expected_anchor_ids
+            or group.get("replicate_throughputs") != [anchor["throughput"] for anchor in raw]
+        ):
+            problems.append("{} calibration group identity/members are invalid".format(record_dir))
+        for field, expected in (
+            ("elapsed_seconds", statistics.median(elapsed_values)),
+            ("throughput", expected_throughput),
+            ("mad_log_throughput", mad_log),
+            ("scaled_mad_log_throughput", scaled_mad_log),
+            ("relative_mad", expected_relative_mad),
+        ):
+            actual = group.get(field)
+            if (
+                not isinstance(actual, (int, float))
+                or isinstance(actual, bool)
+                or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-12)
+            ):
+                problems.append("{} calibration group {} is not derived from replicates".format(record_dir, field))
+        recorded_deviations = group.get("relative_deviations")
+        if (
+            not isinstance(recorded_deviations, list)
+            or len(recorded_deviations) != 3
+            or any(
+                not isinstance(actual, (int, float))
+                or isinstance(actual, bool)
+                or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-12)
+                for actual, expected in zip(recorded_deviations, deviations)
+            )
+        ):
+            problems.append("{} calibration group relative deviations are invalid".format(record_dir))
+        dispersion_valid = expected_relative_mad <= 0.02
+        if group.get("dispersion_valid") is not dispersion_valid:
+            problems.append("{} calibration group dispersion gate is invalid".format(record_dir))
+        expected_group_values.append((statistics.median(elapsed_values), median_log))
+
+    model = calibration.get("anchor_model")
+    if not isinstance(model, Mapping):
+        problems.append("{} calibration anchor model is missing".format(record_dir))
+    elif raw_anchor_values_valid and len(expected_group_values) == len(expected_groups):
+        mean_x = statistics.mean(point[0] for point in expected_group_values)
+        mean_y = statistics.mean(point[1] for point in expected_group_values)
+        denominator = sum((x - mean_x) ** 2 for x, _ in expected_group_values)
+        if denominator <= 0:
+            problems.append("{} calibration anchor model times are degenerate".format(record_dir))
+        else:
+            expected_slope = sum((x - mean_x) * (y - mean_y) for x, y in expected_group_values) / denominator
+            expected_intercept = mean_y - expected_slope * mean_x
+            expected_residuals = []
+            for (group_id, _, _), (x, y) in zip(expected_groups, expected_group_values):
+                predicted_log = expected_intercept + expected_slope * x
+                expected_residuals.append(
+                    {
+                        "anchor_id": group_id,
+                        "observed_log_throughput": y,
+                        "predicted_log_throughput": predicted_log,
+                        "relative_residual": math.exp(abs(y - predicted_log)) - 1.0,
+                    }
+                )
+            expected_max = max(item["relative_residual"] for item in expected_residuals)
+            expected_rms = math.sqrt(statistics.mean(item["relative_residual"] ** 2 for item in expected_residuals))
+            for field, expected in (
+                ("slope", expected_slope),
+                ("intercept", expected_intercept),
+                ("reference_throughput", math.exp(mean_y)),
+                ("max_relative_residual", expected_max),
+                ("rms_relative_residual", expected_rms),
+            ):
+                actual = model.get(field)
+                if (
+                    not isinstance(actual, (int, float))
+                    or isinstance(actual, bool)
+                    or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-12)
+                ):
+                    problems.append("{} calibration anchor model {} is not derived from groups".format(record_dir, field))
+            if model.get("model") != "global-log-linear-v2":
+                problems.append("{} calibration anchor model name is invalid".format(record_dir))
+            if model.get("valid") is not (expected_max <= 0.02):
+                problems.append("{} calibration anchor residual gate is invalid".format(record_dir))
+            recorded_residuals = model.get("residuals")
+            if (
+                not isinstance(recorded_residuals, list)
+                or len(recorded_residuals) != len(expected_residuals)
+                or any(
+                    not isinstance(recorded, Mapping)
+                    or any(
+                        not math.isclose(float(recorded.get(field)), expected[field], rel_tol=1e-12, abs_tol=1e-12)
+                        if isinstance(recorded.get(field), (int, float)) and not isinstance(recorded.get(field), bool)
+                        else True
+                        for field in ("observed_log_throughput", "predicted_log_throughput", "relative_residual")
+                    )
+                    or recorded.get("anchor_id") != expected["anchor_id"]
+                    for recorded, expected in zip(recorded_residuals or [], expected_residuals)
+                )
+            ):
+                problems.append("{} calibration anchor residual list is invalid".format(record_dir))
+    if calibration.get("anchor_group_dispersion_gate_used") is not True:
+        problems.append("{} replicated anchor dispersion gate must be enabled".format(record_dir))
+    if calibration.get("anchor_group_dispersion_threshold") != 0.02:
+        problems.append("{} replicated anchor dispersion threshold is invalid".format(record_dir))
+    expected_dispersion_valid = all(
+        isinstance(group, Mapping) and group.get("dispersion_valid") is True for group in groups
+    )
+    if calibration.get("anchor_group_dispersion_valid") is not expected_dispersion_valid:
+        problems.append("{} replicated anchor dispersion result is invalid".format(record_dir))
+    if calibration.get("valid") is not (
+        isinstance(model, Mapping)
+        and model.get("valid") is True
+        and expected_dispersion_valid
+    ):
+        problems.append("{} replicated anchor validity is invalid".format(record_dir))
+    if calibration.get("pre_post_drift_gate_used") is not False:
+        problems.append("{} pre/post drift was incorrectly used as the anchor gate".format(record_dir))
+    affinity = calibration.get("cpu_affinity")
+    measurement_cpu = manifest.get("measurement_cpu")
+    if (
+        not isinstance(affinity, Mapping)
+        or affinity.get("requested") != measurement_cpu
+        or affinity.get("effective_start") != [measurement_cpu]
+        or affinity.get("effective_end") != [measurement_cpu]
+    ):
+        problems.append("{} calibration CPU affinity is invalid".format(record_dir))
+    for snapshot_name in ("host_snapshot_start", "host_snapshot_end"):
+        snapshot = calibration.get(snapshot_name)
+        if not isinstance(snapshot, Mapping) or snapshot.get("allowed_cpus") != [measurement_cpu]:
+            problems.append("{} calibration {} is invalid".format(record_dir, snapshot_name))
+    if calibration.get("correctness_gate") != "pass":
+        problems.append("{} calibration correctness gate is not passing".format(record_dir))
+
+
 def _verify_interleaved_anchor_summary(
     record_dir: Path,
     manifest: Mapping[str, Any],
@@ -2606,7 +2875,12 @@ def _verify_interleaved_anchor_summary(
 ) -> None:
     """Validate the fixed anchor layout and host-correction fields."""
     policy = manifest.get("measurement_policy")
-    if not isinstance(policy, Mapping) or policy.get("calibration_method") != "interleaved-anchor-v1":
+    if not isinstance(policy, Mapping):
+        return
+    if policy.get("calibration_method") == "interleaved-anchor-v2":
+        _verify_replicated_anchor_summary(record_dir, manifest, summary, run_by_id, problems)
+        return
+    if policy.get("calibration_method") != "interleaved-anchor-v1":
         return
     calibration = summary.get("calibration")
     if not isinstance(calibration, Mapping):
@@ -3386,7 +3660,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 and measurement_policy.get("inter_run_cooldown_seconds") >= 0
             )
             if policy_valid and "calibration_method" in measurement_policy:
-                policy_valid = policy_valid and measurement_policy == {
+                expected_v1_policy = {
                     "inter_run_cooldown_seconds": 60.0,
                     "calibration_method": "interleaved-anchor-v1",
                     "anchor_layout": {
@@ -3403,6 +3677,31 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     "anchor_residual_threshold": 0.02,
                     "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
                 }
+                expected_v2_ids = []
+                for group_id in ("pre", "after-010", "after-020", "after-030", "post"):
+                    expected_v2_ids.extend(
+                        "anchor-{}-{:03d}".format(group_id, index)
+                        for index in range(1, 4)
+                    )
+                expected_v2_policy = {
+                    "inter_run_cooldown_seconds": 60.0,
+                    "calibration_method": "interleaved-anchor-v2",
+                    "anchor_layout": {
+                        "pre_count": 3,
+                        "after_measured_runs": [10, 20, 30],
+                        "post_count": 3,
+                        "replicates_per_group": 3,
+                    },
+                    "anchor_group_ids": ["pre", "after-010", "after-020", "after-030", "post"],
+                    "anchor_run_ids": expected_v2_ids,
+                    "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v2",
+                    "anchor_aggregation_method": "median-of-replicate-log-throughput-v1",
+                    "anchor_residual_threshold": 0.02,
+                    "anchor_group_dispersion_gate_used": True,
+                    "anchor_group_dispersion_threshold": 0.02,
+                    "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+                }
+                policy_valid = measurement_policy in (expected_v1_policy, expected_v2_policy)
             elif policy_valid and set(measurement_policy) != {"inter_run_cooldown_seconds"}:
                 policy_valid = False
             if not policy_valid:

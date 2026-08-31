@@ -44,8 +44,11 @@ REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f")
 # tuned after looking at a result.
 AB_INTER_RUN_COOLDOWN_SECONDS = 60.0
 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1 = "interleaved-anchor-v1"
+CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2 = "interleaved-anchor-v2"
 CALIBRATION_ANCHOR_RESIDUAL_LIMIT = 0.02
 INTERLEAVED_ANCHOR_AFTER_RUNS = (10, 20, 30)
+INTERLEAVED_ANCHOR_V2_REPLICATES = 3
+CALIBRATION_ANCHOR_GROUP_MAD_LIMIT = 0.02
 # P0-A2 uses the same production executable for A and B.  These thresholds
 # are fixed before looking at a batch: the raw pair effect is primary, while
 # the host-corrected effect is retained as a sensitivity check.
@@ -940,11 +943,48 @@ def interleaved_anchor_measurement_policy() -> Dict[str, Any]:
     }
 
 
+def interleaved_anchor_measurement_policy_v2() -> Dict[str, Any]:
+    """Return the fixed replicated-anchor policy for long-session stability.
+
+    Each of the five calibration boundaries is measured three times.  The
+    median log-throughput at each boundary is used for interpolation; the
+    fixed scaled-MAD dispersion gate is recorded alongside the model gate.
+    """
+    anchor_run_ids = []
+    for prefix in ("pre", "after-010", "after-020", "after-030", "post"):
+        anchor_run_ids.extend(
+            "anchor-{}-{:03d}".format(prefix, index)
+            for index in range(1, INTERLEAVED_ANCHOR_V2_REPLICATES + 1)
+        )
+    return {
+        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+        "calibration_method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+        "anchor_layout": {
+            "pre_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
+            "after_measured_runs": list(INTERLEAVED_ANCHOR_AFTER_RUNS),
+            "post_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
+            "replicates_per_group": INTERLEAVED_ANCHOR_V2_REPLICATES,
+        },
+        "anchor_group_ids": ["pre", "after-010", "after-020", "after-030", "post"],
+        "anchor_run_ids": anchor_run_ids,
+        "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v2",
+        "anchor_aggregation_method": "median-of-replicate-log-throughput-v1",
+        "anchor_residual_threshold": CALIBRATION_ANCHOR_RESIDUAL_LIMIT,
+        "anchor_group_dispersion_gate_used": True,
+        "anchor_group_dispersion_threshold": CALIBRATION_ANCHOR_GROUP_MAD_LIMIT,
+        "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+    }
+
+
 def validate_calibration_method(value: str) -> str:
-    if value != CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1:
+    if value not in (
+        CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+        CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+    ):
         raise ValueError(
-            "--calibration-method is fixed at {}".format(
-                CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1
+            "--calibration-method must be one of {} or {}".format(
+                CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+                CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
             )
         )
     return value
@@ -960,7 +1000,10 @@ def _anchor_elapsed_seconds(start_ns: int, end_ns: int, protocol_start_ns: int) 
     return elapsed
 
 
-def _anchor_log_linear_model(anchors: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+def _anchor_log_linear_model(
+    anchors: Sequence[Mapping[str, Any]],
+    model_name: str = "global-log-linear-v1",
+) -> Dict[str, Any]:
     """Fit a global line for residual diagnostics in log-throughput space."""
     if len(anchors) < 2:
         raise ValueError("at least two calibration anchors are required")
@@ -1005,7 +1048,7 @@ def _anchor_log_linear_model(anchors: Sequence[Mapping[str, Any]]) -> Dict[str, 
         statistics.mean(item["relative_residual"] ** 2 for item in residuals)
     )
     return {
-        "model": "global-log-linear-v1",
+        "model": model_name,
         "slope": slope,
         "intercept": intercept,
         "reference_throughput": geometric_mean([math.exp(point[1]) for point in points]),
@@ -1014,6 +1057,86 @@ def _anchor_log_linear_model(anchors: Sequence[Mapping[str, Any]]) -> Dict[str, 
         "rms_relative_residual": rms_residual,
         "valid": max_residual <= CALIBRATION_ANCHOR_RESIDUAL_LIMIT,
     }
+
+
+def _aggregate_anchor_groups(
+    anchors: Sequence[Mapping[str, Any]],
+    group_specs: Sequence[Mapping[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Aggregate replicated anchors by boundary using median log throughput."""
+    by_group: Dict[str, List[Mapping[str, Any]]] = {}
+    for anchor in anchors:
+        group_id = anchor.get("group_id")
+        if not isinstance(group_id, str):
+            raise ValueError("replicated calibration anchor has no group_id")
+        by_group.setdefault(group_id, []).append(anchor)
+    groups: List[Dict[str, Any]] = []
+    for spec in group_specs:
+        group_id = str(spec["group_id"])
+        replicates = by_group.get(group_id, [])
+        expected_count = int(spec["replicate_count"])
+        if len(replicates) != expected_count:
+            raise ValueError(
+                "calibration anchor group {} has {} replicates, expected {}".format(
+                    group_id, len(replicates), expected_count
+                )
+            )
+        elapsed_values = [float(anchor["elapsed_seconds"]) for anchor in replicates]
+        throughput_values = [float(anchor["throughput"]) for anchor in replicates]
+        if any(value <= 0 or not math.isfinite(value) for value in throughput_values):
+            raise ValueError("calibration anchor group throughput is invalid")
+        log_values = [math.log(value) for value in throughput_values]
+        median_log = _median(log_values)
+        median_throughput = math.exp(median_log)
+        deviations = [math.exp(abs(value - median_log)) - 1.0 for value in log_values]
+        mad_log = _median([abs(value - median_log) for value in log_values])
+        scaled_mad_log = 1.4826 * mad_log
+        relative_mad = math.exp(scaled_mad_log) - 1.0
+        groups.append(
+            {
+                "anchor_id": group_id,
+                "group_id": group_id,
+                "position": spec["position"],
+                "after_measured_run": int(spec["after_measured_run"]),
+                "anchor_count": expected_count,
+                "anchor_ids": [anchor.get("anchor_id") for anchor in replicates],
+                "elapsed_seconds": _median(elapsed_values),
+                "throughput": median_throughput,
+                "replicate_throughputs": throughput_values,
+                "relative_deviations": deviations,
+                "mad_log_throughput": mad_log,
+                "scaled_mad_log_throughput": scaled_mad_log,
+                "relative_mad": relative_mad,
+                "dispersion_valid": relative_mad <= CALIBRATION_ANCHOR_GROUP_MAD_LIMIT,
+            }
+        )
+    return groups
+
+
+def _interleaved_anchor_v2_group_specs() -> List[Dict[str, Any]]:
+    return [
+        {
+            "group_id": "pre",
+            "position": "pre",
+            "after_measured_run": 0,
+            "replicate_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
+        },
+        *[
+            {
+                "group_id": "after-{:03d}".format(after_run),
+                "position": "after-measured-run",
+                "after_measured_run": after_run,
+                "replicate_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
+            }
+            for after_run in INTERLEAVED_ANCHOR_AFTER_RUNS
+        ],
+        {
+            "group_id": "post",
+            "position": "post",
+            "after_measured_run": 40,
+            "replicate_count": INTERLEAVED_ANCHOR_V2_REPLICATES,
+        },
+    ]
 
 
 def interpolate_anchor_throughput(
@@ -2100,6 +2223,8 @@ def _run_interleaved_anchor_ab(
     measurement_policy: Mapping[str, Any],
 ) -> int:
     """Run the fixed 10-pair A/B with interleaved host-speed anchors."""
+    calibration_method = measurement_policy.get("calibration_method")
+    use_replicated_anchors = calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
     calibration_workload = next(
         (workload for workload in workloads if workload["id"].startswith("picotetris-")),
         None,
@@ -2137,7 +2262,13 @@ def _run_interleaved_anchor_ab(
         if host_snapshot_start.get("allowed_cpus") != [args.cpu]:
             raise ValueError("interleaved-anchor protocol did not retain requested CPU affinity")
 
-        def run_anchor(anchor_id: str, position: str, after_measured_run: int) -> None:
+        def run_anchor(
+            anchor_id: str,
+            position: str,
+            after_measured_run: int,
+            group_id: Optional[str] = None,
+            replicate_index: Optional[int] = None,
+        ) -> None:
             started_ns = time.perf_counter_ns()
             result = run_guest(
                 calibration_workload,
@@ -2147,25 +2278,28 @@ def _run_interleaved_anchor_ab(
             )
             ended_ns = time.perf_counter_ns()
             measurement = result["measurement"]
-            anchors.append(
-                {
-                    "anchor_id": anchor_id,
-                    "position": position,
-                    "after_measured_run": after_measured_run,
-                    "workload": calibration_workload["id"],
-                    "role": "baseline",
-                    "elapsed_seconds": _anchor_elapsed_seconds(
-                        started_ns, ended_ns, protocol_start_ns
-                    ),
-                    "throughput": measurement["emulated_cycles_per_wall_second"],
-                    "cycles": measurement["cycles"],
-                    "wall_seconds": measurement["wall_seconds"],
-                    "guest_observation_sha256": measurement["guest_observation_sha256"],
-                    "backend_commit": measurement["backend_commit"],
-                    "runner_sha256": measurement["runner_sha256"],
-                    "build_provenance_sha256": measurement["build_provenance_sha256"],
-                }
-            )
+            anchor = {
+                "anchor_id": anchor_id,
+                "position": position,
+                "after_measured_run": after_measured_run,
+                "workload": calibration_workload["id"],
+                "role": "baseline",
+                "elapsed_seconds": _anchor_elapsed_seconds(
+                    started_ns, ended_ns, protocol_start_ns
+                ),
+                "throughput": measurement["emulated_cycles_per_wall_second"],
+                "cycles": measurement["cycles"],
+                "wall_seconds": measurement["wall_seconds"],
+                "guest_observation_sha256": measurement["guest_observation_sha256"],
+                "backend_commit": measurement["backend_commit"],
+                "runner_sha256": measurement["runner_sha256"],
+                "build_provenance_sha256": measurement["build_provenance_sha256"],
+            }
+            if group_id is not None:
+                anchor["group_id"] = group_id
+            if replicate_index is not None:
+                anchor["replicate_index"] = replicate_index
+            anchors.append(anchor)
             _sleep_between_runs(args.inter_run_cooldown_seconds)
 
         def run_measured(item: Mapping[str, Any]) -> None:
@@ -2191,26 +2325,57 @@ def _run_interleaved_anchor_ab(
             )
             _sleep_between_runs(args.inter_run_cooldown_seconds)
 
-        for index in range(1, args.calibration_runs + 1):
-            run_anchor(
-                "anchor-pre-{:03d}".format(index),
-                "pre",
-                0,
-            )
+        if use_replicated_anchors:
+            for index in range(1, args.calibration_runs + 1):
+                run_anchor(
+                    "anchor-pre-{:03d}".format(index),
+                    "pre",
+                    0,
+                    group_id="pre",
+                    replicate_index=index,
+                )
+        else:
+            for index in range(1, args.calibration_runs + 1):
+                run_anchor(
+                    "anchor-pre-{:03d}".format(index),
+                    "pre",
+                    0,
+                )
         for measured_index, item in enumerate(schedule, 1):
             run_measured(item)
             if measured_index in INTERLEAVED_ANCHOR_AFTER_RUNS:
+                if use_replicated_anchors:
+                    group_id = "after-{:03d}".format(measured_index)
+                    for index in range(1, args.calibration_runs + 1):
+                        run_anchor(
+                            "anchor-{}-{:03d}".format(group_id, index),
+                            "after-measured-run",
+                            measured_index,
+                            group_id=group_id,
+                            replicate_index=index,
+                        )
+                else:
+                    run_anchor(
+                        "anchor-after-{:03d}".format(measured_index),
+                        "after-measured-run",
+                        measured_index,
+                    )
+        if use_replicated_anchors:
+            for index in range(1, args.calibration_runs + 1):
                 run_anchor(
-                    "anchor-after-{:03d}".format(measured_index),
-                    "after-measured-run",
-                    measured_index,
+                    "anchor-post-{:03d}".format(index),
+                    "post",
+                    len(schedule),
+                    group_id="post",
+                    replicate_index=index,
                 )
-        for index in range(1, args.calibration_runs + 1):
-            run_anchor(
-                "anchor-post-{:03d}".format(index),
-                "post",
-                len(schedule),
-            )
+        else:
+            for index in range(1, args.calibration_runs + 1):
+                run_anchor(
+                    "anchor-post-{:03d}".format(index),
+                    "post",
+                    len(schedule),
+                )
         host_snapshot_end = host_cpu()
 
         expected_anchor_ids = measurement_policy["anchor_run_ids"]
@@ -2221,14 +2386,30 @@ def _run_interleaved_anchor_ab(
                     actual_anchor_ids, expected_anchor_ids
                 )
             )
+        if use_replicated_anchors and len({anchor["guest_observation_sha256"] for anchor in anchors}) != 1:
+            raise ValueError("replicated calibration anchors disagree on guest observation")
         if len(measured) != len(schedule):
             raise ValueError("interleaved-anchor protocol did not collect all measured runs")
-        model = _anchor_log_linear_model(anchors)
+        model_anchors = anchors
+        anchor_groups: List[Dict[str, Any]] = []
+        if use_replicated_anchors:
+            anchor_groups = _aggregate_anchor_groups(
+                anchors, _interleaved_anchor_v2_group_specs()
+            )
+            model_anchors = anchor_groups
+        model = _anchor_log_linear_model(
+            model_anchors,
+            model_name=(
+                "global-log-linear-v2"
+                if use_replicated_anchors
+                else "global-log-linear-v1"
+            ),
+        )
         reference_throughput = model["reference_throughput"]
         leaves: List[Dict[str, Any]] = []
         for item in measured:
             measurement = dict(item["measurement"])
-            predicted = interpolate_anchor_throughput(anchors, item["elapsed_seconds"])
+            predicted = interpolate_anchor_throughput(model_anchors, item["elapsed_seconds"])
             correction = reference_throughput / predicted
             raw_throughput = measurement["emulated_cycles_per_wall_second"]
             leaf = {
@@ -2296,17 +2477,23 @@ def _run_interleaved_anchor_ab(
             )
             for pair in range(1, args.pairs + 1)
         ]
-        anchor_drift = calibration_drift(
-            [anchor["throughput"] for anchor in anchors[: args.calibration_runs]],
-            [anchor["throughput"] for anchor in anchors[-args.calibration_runs :]],
-        )
+        if use_replicated_anchors:
+            anchor_drift = calibration_drift(
+                [anchor_groups[0]["throughput"]],
+                [anchor_groups[-1]["throughput"]],
+            )
+        else:
+            anchor_drift = calibration_drift(
+                [anchor["throughput"] for anchor in anchors[: args.calibration_runs]],
+                [anchor["throughput"] for anchor in anchors[-args.calibration_runs :]],
+            )
         null_control: Optional[Dict[str, Any]] = None
         if args.candidate_id == "P0-A2":
             null_control = evaluate_null_control(
                 pair_results, [workload["id"] for workload in workloads]
             )
         calibration = {
-            "method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+            "method": calibration_method,
             "anchor_count": len(anchors),
             "anchor_run_ids": actual_anchor_ids,
             "anchors": anchors,
@@ -2324,11 +2511,23 @@ def _run_interleaved_anchor_ab(
             "pair_level_sensitivity": pair_sensitivity,
             "valid": model["valid"],
         }
+        if use_replicated_anchors:
+            calibration["anchor_group_count"] = len(anchor_groups)
+            calibration["anchor_group_ids"] = [group["group_id"] for group in anchor_groups]
+            calibration["anchor_groups"] = anchor_groups
+            calibration["anchor_group_dispersion_gate_used"] = True
+            calibration["anchor_group_dispersion_threshold"] = CALIBRATION_ANCHOR_GROUP_MAD_LIMIT
+            calibration["anchor_group_dispersion_valid"] = all(
+                group["dispersion_valid"] for group in anchor_groups
+            )
+            calibration["valid"] = bool(
+                model["valid"] and calibration["anchor_group_dispersion_valid"]
+            )
         mismatches = [
             result for result in pair_results if result["guest_observation_equal"] is not True
         ]
         summary_status = "pending"
-        if not model["valid"] or mismatches or (
+        if not calibration["valid"] or mismatches or (
             null_control is not None and not null_control["pass"]
         ):
             summary_status = "invalid"
@@ -2359,6 +2558,8 @@ def _run_interleaved_anchor_ab(
             reasons = []
             if not model["valid"]:
                 reasons.append("interleaved anchor residual exceeded 2%")
+            if use_replicated_anchors and not calibration["anchor_group_dispersion_valid"]:
+                reasons.append("replicated anchor dispersion exceeded 2%")
             if mismatches:
                 reasons.append("guest observation projection mismatch during A/B")
             if null_control is not None and not null_control["pass"]:
@@ -2425,7 +2626,7 @@ def _run_interleaved_anchor_ab(
                 "measured_runs": len(measured),
                 "schedule": {"ab": args.pairs // 2, "ba": args.pairs // 2},
                 "calibration": {
-                    "method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+                    "method": calibration_method,
                     "anchor_count": len(anchors),
                     "anchor_run_ids": [anchor.get("anchor_id") for anchor in anchors],
                     "valid": False,
@@ -2719,12 +2920,21 @@ def run_ab(args: argparse.Namespace) -> int:
         raise ValueError("ab fixes --pairs at 10 (5 AB + 5 BA)")
     if args.warmup != 1:
         raise ValueError("ab fixes --warmup at 1")
-    if args.calibration_runs != 3:
-        raise ValueError("ab fixes --calibration-runs at 3")
     calibration_method = getattr(
         args, "calibration_method", CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1
     )
     validate_calibration_method(calibration_method)
+    expected_calibration_runs = (
+        INTERLEAVED_ANCHOR_V2_REPLICATES
+        if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
+        else 3
+    )
+    if args.calibration_runs != expected_calibration_runs:
+        raise ValueError(
+            "ab fixes --calibration-runs at {} for {}".format(
+                expected_calibration_runs, calibration_method
+            )
+        )
     inter_run_cooldown_seconds = validate_inter_run_cooldown(
         args.inter_run_cooldown_seconds
     )
@@ -2764,10 +2974,15 @@ def run_ab(args: argparse.Namespace) -> int:
     _refuse_existing_files(record_root / "ab")
     for aggregate in (record_root / "summary.json", record_root / "decision.md", record_root / "hotpath-disassembly.txt"):
         _refuse_existing(aggregate)
+    measurement_policy = (
+        interleaved_anchor_measurement_policy_v2()
+        if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2
+        else interleaved_anchor_measurement_policy()
+    )
     manifest_identity = _base_manifest(
         batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
         feature_set=getattr(args, "feature_set", []),
-        measurement_policy=interleaved_anchor_measurement_policy(),
+        measurement_policy=measurement_policy,
     )
     if args.candidate_id == "P2-A":
         profile_record = getattr(args, "profile_record", None)
@@ -2784,7 +2999,7 @@ def run_ab(args: argparse.Namespace) -> int:
         identities,
         record_root,
         decision_context,
-        interleaved_anchor_measurement_policy(),
+        measurement_policy,
     )
 
 
@@ -3149,8 +3364,11 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ab.add_argument(
         "--calibration-method",
         default=CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
-        choices=(CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,),
-        help="fixed host-stability protocol",
+        choices=(
+            CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+            CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
+        ),
+        help="fixed host-stability protocol; v2 uses five replicated anchors per boundary",
     )
     ab.add_argument(
         "--inter-run-cooldown-seconds", type=float,

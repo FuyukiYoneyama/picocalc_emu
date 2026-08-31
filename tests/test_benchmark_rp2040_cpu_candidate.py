@@ -607,6 +607,57 @@ class CandidateRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "outside"):
             self.module.interpolate_anchor_throughput(anchors, 21.0)
 
+    def test_replicated_anchor_policy_is_fixed(self):
+        policy = self.module.interleaved_anchor_measurement_policy_v2()
+        self.assertEqual(policy["calibration_method"], "interleaved-anchor-v2")
+        self.assertEqual(policy["anchor_layout"], {
+            "pre_count": 3,
+            "after_measured_runs": [10, 20, 30],
+            "post_count": 3,
+            "replicates_per_group": 3,
+        })
+        self.assertEqual(policy["anchor_group_ids"], ["pre", "after-010", "after-020", "after-030", "post"])
+        self.assertEqual(len(policy["anchor_run_ids"]), 15)
+        self.assertEqual(policy["anchor_residual_threshold"], 0.02)
+        self.assertEqual(policy["anchor_group_dispersion_threshold"], 0.02)
+        self.assertTrue(policy["anchor_group_dispersion_gate_used"])
+
+    def test_replicated_anchor_group_aggregation_uses_log_median_and_mad(self):
+        anchors = []
+        for group_index, spec in enumerate(self.module._interleaved_anchor_v2_group_specs()):
+            for index in range(1, 4):
+                anchors.append({
+                    "anchor_id": "anchor-{}-{:03d}".format(spec["group_id"], index),
+                    "group_id": spec["group_id"],
+                    "elapsed_seconds": group_index * 10.0 + index,
+                    "throughput": 100.0 + group_index * 10.0 + (index - 2) * 0.1,
+                })
+        groups = self.module._aggregate_anchor_groups(
+            anchors, self.module._interleaved_anchor_v2_group_specs()
+        )
+        self.assertEqual([group["group_id"] for group in groups], ["pre", "after-010", "after-020", "after-030", "post"])
+        self.assertEqual([group["anchor_count"] for group in groups], [3] * 5)
+        self.assertAlmostEqual(groups[0]["throughput"], 100.0)
+        self.assertGreater(groups[0]["relative_mad"], 0.0)
+        self.assertTrue(all(group["dispersion_valid"] for group in groups))
+        model = self.module._anchor_log_linear_model(groups, model_name="global-log-linear-v2")
+        self.assertEqual(model["model"], "global-log-linear-v2")
+        self.assertTrue(model["valid"])
+        unstable = [dict(anchor) for anchor in anchors]
+        for anchor in unstable:
+            if anchor["group_id"] == "after-020" and anchor["anchor_id"].endswith("002"):
+                anchor["throughput"] *= 1.10
+            elif anchor["group_id"] == "after-020" and anchor["anchor_id"].endswith("003"):
+                anchor["throughput"] *= 0.90
+        unstable_group = self.module._aggregate_anchor_groups(
+            unstable, self.module._interleaved_anchor_v2_group_specs()
+        )
+        self.assertFalse(unstable_group[2]["dispersion_valid"])
+        with self.assertRaisesRegex(ValueError, "replicates"):
+            self.module._aggregate_anchor_groups(
+                anchors[:-1], self.module._interleaved_anchor_v2_group_specs()
+            )
+
     def test_ab_inter_run_cooldown_is_fixed_before_measurement(self):
         self.assertEqual(
             self.module.validate_inter_run_cooldown(

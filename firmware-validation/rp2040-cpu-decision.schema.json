@@ -47,34 +47,93 @@
     "reasons": {"type": "array", "items": {"type": "string"}},
     "artifacts": {"type": "object"},
     "measurement_policy": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["inter_run_cooldown_seconds"],
-      "properties": {
-        "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
-        "calibration_method": {"const": "interleaved-anchor-v1"},
-        "anchor_layout": {
+      "oneOf": [
+        {
           "type": "object",
           "additionalProperties": false,
-          "required": ["pre_count", "after_measured_runs", "post_count"],
+          "required": [
+            "inter_run_cooldown_seconds", "calibration_method", "anchor_layout",
+            "anchor_run_ids", "correction_method", "anchor_residual_threshold",
+            "pair_level_sensitivity_method"
+          ],
           "properties": {
-            "pre_count": {"const": 3},
-            "after_measured_runs": {"const": [10, 20, 30]},
-            "post_count": {"const": 3}
+            "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "calibration_method": {"const": "interleaved-anchor-v1"},
+            "anchor_layout": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pre_count", "after_measured_runs", "post_count"],
+              "properties": {
+                "pre_count": {"const": 3},
+                "after_measured_runs": {"const": [10, 20, 30]},
+                "post_count": {"const": 3}
+              }
+            },
+            "anchor_run_ids": {
+              "const": [
+                "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+                "anchor-after-010", "anchor-after-020", "anchor-after-030",
+                "anchor-post-001", "anchor-post-002", "anchor-post-003"
+              ]
+            },
+            "correction_method": {"const": "piecewise-linear-interpolation-of-log-baseline-anchor-throughput-v1"},
+            "anchor_residual_threshold": {"const": 0.02},
+            "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"}
           }
         },
-        "anchor_run_ids": {
-          "type": "array",
-          "const": [
-            "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
-            "anchor-after-010", "anchor-after-020", "anchor-after-030",
-            "anchor-post-001", "anchor-post-002", "anchor-post-003"
-          ]
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inter_run_cooldown_seconds", "calibration_method", "anchor_layout",
+            "anchor_group_ids", "anchor_run_ids", "correction_method",
+            "anchor_aggregation_method", "anchor_residual_threshold",
+            "anchor_group_dispersion_gate_used", "anchor_group_dispersion_threshold",
+            "pair_level_sensitivity_method"
+          ],
+          "properties": {
+            "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "calibration_method": {"const": "interleaved-anchor-v2"},
+            "anchor_layout": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pre_count", "after_measured_runs", "post_count", "replicates_per_group"],
+              "properties": {
+                "pre_count": {"const": 3},
+                "after_measured_runs": {"const": [10, 20, 30]},
+                "post_count": {"const": 3},
+                "replicates_per_group": {"const": 3}
+              }
+            },
+            "anchor_group_ids": {
+              "const": ["pre", "after-010", "after-020", "after-030", "post"]
+            },
+            "anchor_run_ids": {
+              "const": [
+                "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+                "anchor-after-010-001", "anchor-after-010-002", "anchor-after-010-003",
+                "anchor-after-020-001", "anchor-after-020-002", "anchor-after-020-003",
+                "anchor-after-030-001", "anchor-after-030-002", "anchor-after-030-003",
+                "anchor-post-001", "anchor-post-002", "anchor-post-003"
+              ]
+            },
+            "correction_method": {"const": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v2"},
+            "anchor_aggregation_method": {"const": "median-of-replicate-log-throughput-v1"},
+            "anchor_residual_threshold": {"const": 0.02},
+            "anchor_group_dispersion_gate_used": {"const": true},
+            "anchor_group_dispersion_threshold": {"const": 0.02},
+            "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"}
+          }
         },
-        "correction_method": {"const": "piecewise-linear-interpolation-of-log-baseline-anchor-throughput-v1"},
-        "anchor_residual_threshold": {"const": 0.02},
-        "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"}
-      }
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inter_run_cooldown_seconds"],
+          "properties": {
+            "inter_run_cooldown_seconds": {"type": "number", "minimum": 0}
+          }
+        }
+      ]
     }
   },
   "allOf": [
