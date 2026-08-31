@@ -11,7 +11,7 @@
     "record_id": {"type": "string", "minLength": 1},
     "candidate_id": {"type": "string", "minLength": 1},
     "status": {"enum": ["pass", "fail", "bank", "pending", "invalid", "not_run"]},
-    "decision_kind": {"enum": ["admission", "correctness", "performance", "profile", "invalid"]},
+    "decision_kind": {"enum": ["admission", "correctness", "performance", "profile", "null-control", "invalid"]},
     "hypothesis": {"type": "string"},
     "candidate_backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "baseline_backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
@@ -88,6 +88,10 @@
     },
     {
       "if": {"properties": {"decision_kind": {"const": "performance"}}},
+      "then": {"required": ["statistics", "correctness"]}
+    },
+    {
+      "if": {"properties": {"decision_kind": {"const": "null-control"}}},
       "then": {"required": ["statistics", "correctness"]}
     },
     {

@@ -339,6 +339,30 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertAlmostEqual(summary["percent_effect"]["iqr"], 0.05)
         self.assertEqual(len(summary["ci95_log_ratio"]), 2)
 
+    def test_null_control_uses_ten_pair_means_and_fixed_effect_ci_gates(self):
+        workloads = ["tetris", "edit"]
+        pair_results = [
+            {
+                "workload": workload,
+                "pair_index": pair,
+                "pair_log_ratio": 0.0,
+                "corrected_pair_log_ratio": 0.0,
+            }
+            for pair in range(1, 11)
+            for workload in workloads
+        ]
+        result = self.module.evaluate_null_control(pair_results, workloads)
+        self.assertTrue(result["pass"])
+        self.assertEqual(result["workloads"]["tetris"]["raw"]["n"], 10)
+        self.assertEqual(result["combined"]["raw"]["n"], 10)
+        self.assertEqual(result["checks"][-1]["max_abs_effect"], 0.01)
+        for item in pair_results:
+            if item["workload"] == "tetris":
+                item["pair_log_ratio"] = math.log(1.03)
+        failed = self.module.evaluate_null_control(pair_results, workloads)
+        self.assertFalse(failed["pass"])
+        self.assertIn("tetris raw effect/CI", failed["reasons"])
+
     def test_guest_projection_pair_rejects_one_bit_difference(self):
         baseline = {"cycles": 10, "framebuffer": {"rgb565_sha256": "a"}}
         candidate = {"cycles": 10, "framebuffer": {"rgb565_sha256": "b"}}

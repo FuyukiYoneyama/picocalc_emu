@@ -2229,11 +2229,11 @@ def _verify_rp2040_cpu_artifact_shape(
             problems.append("{} profile invariants are invalid".format(path))
     if expected_schema_id == "picocalc.rp2040-cpu-decision":
         decision_kind = value.get("decision_kind")
-        if decision_kind not in {"admission", "correctness", "performance", "profile", "invalid"}:
+        if decision_kind not in {"admission", "correctness", "performance", "profile", "null-control", "invalid"}:
             problems.append("{} decision_kind is invalid".format(path))
         elif decision_kind == "invalid" and not isinstance(value.get("reasons"), list):
             problems.append("{} invalid decision has no reasons".format(path))
-        elif decision_kind == "performance" and (
+        elif decision_kind in {"performance", "null-control"} and (
             not isinstance(value.get("statistics"), dict)
             or not isinstance(value.get("correctness"), dict)
         ):
@@ -2261,6 +2261,84 @@ def _profile_ratio_matches(actual: object, numerator: int, denominator: int) -> 
     if denominator <= 0 or not isinstance(actual, (int, float)) or isinstance(actual, bool):
         return False
     return math.isclose(float(actual), numerator / denominator, rel_tol=1e-12, abs_tol=1e-15)
+
+
+def _effect_summary_matches(recorded: object, log_ratios: List[float]) -> bool:
+    """Recompute the fixed log-ratio summary used by CPU A/B records."""
+    if not isinstance(recorded, Mapping) or not log_ratios:
+        return False
+    count = len(log_ratios)
+    mean = statistics.mean(log_ratios)
+    effects = [math.exp(value) - 1.0 for value in log_ratios]
+    ordered = sorted(effects)
+    midpoint = count // 2
+    lower = ordered[:midpoint]
+    upper = ordered[-midpoint:] if midpoint else ordered
+    expected = {
+        "n": count,
+        "mean_log_ratio": mean,
+        "geometric_mean_effect": math.exp(mean) - 1.0,
+        "percent_effect": {
+            "median": statistics.median(ordered),
+            "q1": statistics.median(lower) if lower else ordered[0],
+            "q3": statistics.median(upper) if upper else ordered[-1],
+            "iqr": (
+                (statistics.median(upper) if upper else ordered[-1])
+                - (statistics.median(lower) if lower else ordered[0])
+            ),
+        },
+    }
+    for field in ("mean_log_ratio", "geometric_mean_effect"):
+        value = recorded.get(field)
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isclose(float(value), expected[field], rel_tol=1e-12, abs_tol=1e-15)
+        ):
+            return False
+    if recorded.get("n") != count:
+        return False
+    percent = recorded.get("percent_effect")
+    if not isinstance(percent, Mapping):
+        return False
+    for field, value in expected["percent_effect"].items():
+        actual = percent.get(field)
+        if (
+            not isinstance(actual, (int, float))
+            or isinstance(actual, bool)
+            or not math.isclose(float(actual), value, rel_tol=1e-12, abs_tol=1e-15)
+        ):
+            return False
+    if count > 1:
+        deviation = statistics.stdev(log_ratios)
+        critical = {10: 2.262157, 20: 2.093}.get(count, 1.96)
+        half_width = critical * deviation / math.sqrt(count)
+        expected_ci_log = [mean - half_width, mean + half_width]
+        expected_ci_effect = [math.exp(value) - 1.0 for value in expected_ci_log]
+        for field, values in (
+            ("ci95_log_ratio", expected_ci_log),
+            ("ci95_effect", expected_ci_effect),
+        ):
+            actual = recorded.get(field)
+            if (
+                not isinstance(actual, list)
+                or len(actual) != 2
+                or any(
+                    not isinstance(item, (int, float))
+                    or isinstance(item, bool)
+                    or not math.isclose(float(item), expected, rel_tol=1e-12, abs_tol=1e-15)
+                    for item, expected in zip(actual, values)
+                )
+            ):
+                return False
+        sample_sd = recorded.get("sample_sd_log_ratio")
+        if (
+            not isinstance(sample_sd, (int, float))
+            or isinstance(sample_sd, bool)
+            or not math.isclose(float(sample_sd), deviation, rel_tol=1e-12, abs_tol=1e-15)
+        ):
+            return False
+    return True
 
 
 def _verify_rp2040_cpu_profile_comparison(
@@ -2539,9 +2617,12 @@ def _verify_interleaved_anchor_summary(
                 if anchor.get(field) != expected_identity.get(expected_field):
                     problems.append("{} calibration anchor {} differs from baseline identity".format(record_dir, field))
     model = calibration.get("anchor_model")
+    reference: Optional[float] = None
     if not isinstance(model, Mapping):
         problems.append("{} calibration anchor model is missing".format(record_dir))
     else:
+        if model.get("model") != "global-log-linear-v1":
+            problems.append("{} calibration anchor model name is invalid".format(record_dir))
         max_residual = model.get("max_relative_residual")
         model_valid = model.get("valid")
         if (
@@ -2555,6 +2636,78 @@ def _verify_interleaved_anchor_summary(
         if not isinstance(reference, (int, float)) or isinstance(reference, bool) or not math.isfinite(float(reference)) or float(reference) <= 0:
             problems.append("{} calibration reference throughput is invalid".format(record_dir))
             reference = None
+    anchor_points: List[Tuple[float, float]] = []
+    if len(throughputs) == len(expected_ids):
+        anchor_points = [
+            (float(anchor["elapsed_seconds"]), math.log(float(anchor["throughput"])))
+            for anchor in anchors
+            if isinstance(anchor, Mapping)
+            and isinstance(anchor.get("elapsed_seconds"), (int, float))
+            and isinstance(anchor.get("throughput"), (int, float))
+            and not isinstance(anchor.get("elapsed_seconds"), bool)
+            and not isinstance(anchor.get("throughput"), bool)
+            and math.isfinite(float(anchor.get("elapsed_seconds")))
+            and math.isfinite(float(anchor.get("throughput")))
+            and float(anchor.get("throughput")) > 0
+        ]
+    if isinstance(model, Mapping) and len(anchor_points) == len(expected_ids):
+        mean_x = statistics.mean(point[0] for point in anchor_points)
+        mean_y = statistics.mean(point[1] for point in anchor_points)
+        denominator = sum((x - mean_x) ** 2 for x, _ in anchor_points)
+        if denominator > 0:
+            expected_slope = sum((x - mean_x) * (y - mean_y) for x, y in anchor_points) / denominator
+            expected_intercept = mean_y - expected_slope * mean_x
+            expected_residuals = []
+            for anchor, (x, y) in zip(anchors, anchor_points):
+                predicted_log = expected_intercept + expected_slope * x
+                expected_residuals.append(
+                    {
+                        "anchor_id": anchor.get("anchor_id"),
+                        "observed_log_throughput": y,
+                        "predicted_log_throughput": predicted_log,
+                        "relative_residual": math.exp(abs(y - predicted_log)) - 1.0,
+                    }
+                )
+            expected_max = max(item["relative_residual"] for item in expected_residuals)
+            expected_rms = math.sqrt(
+                statistics.mean(item["relative_residual"] ** 2 for item in expected_residuals)
+            )
+            expected_reference = math.exp(mean_y)
+            for field, expected in (
+                ("slope", expected_slope),
+                ("intercept", expected_intercept),
+                ("reference_throughput", expected_reference),
+                ("max_relative_residual", expected_max),
+                ("rms_relative_residual", expected_rms),
+            ):
+                actual = model.get(field)
+                if (
+                    not isinstance(actual, (int, float))
+                    or isinstance(actual, bool)
+                    or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-12)
+                ):
+                    problems.append("{} calibration anchor model {} is not derived from anchors".format(record_dir, field))
+            recorded_residuals = model.get("residuals")
+            if (
+                not isinstance(recorded_residuals, list)
+                or len(recorded_residuals) != len(expected_residuals)
+            ):
+                problems.append("{} calibration anchor residual list is invalid".format(record_dir))
+            else:
+                for recorded, expected in zip(recorded_residuals, expected_residuals):
+                    if not isinstance(recorded, Mapping) or recorded.get("anchor_id") != expected["anchor_id"]:
+                        problems.append("{} calibration anchor residual identity is invalid".format(record_dir))
+                        continue
+                    for field in ("observed_log_throughput", "predicted_log_throughput", "relative_residual"):
+                        actual = recorded.get(field)
+                        if (
+                            not isinstance(actual, (int, float))
+                            or isinstance(actual, bool)
+                            or not math.isclose(float(actual), expected[field], rel_tol=1e-12, abs_tol=1e-12)
+                        ):
+                            problems.append("{} calibration anchor residual {} is not derived from anchors".format(record_dir, field))
+        else:
+            problems.append("{} calibration anchor model times are degenerate".format(record_dir))
     if calibration.get("pre_post_drift_gate_used") is not False:
         problems.append("{} pre/post drift was incorrectly used as the anchor gate".format(record_dir))
     affinity = calibration.get("cpu_affinity")
@@ -2572,61 +2725,50 @@ def _verify_interleaved_anchor_summary(
             problems.append("{} calibration {} is invalid".format(record_dir, snapshot_name))
     if calibration.get("correctness_gate") != "pass":
         problems.append("{} calibration correctness gate is not passing".format(record_dir))
-    if len(throughputs) == len(expected_ids) and isinstance(model, Mapping) and isinstance(reference, (int, float)):
-        anchor_points = [
-            (float(anchor["elapsed_seconds"]), math.log(float(anchor["throughput"])))
-            for anchor in anchors
-            if isinstance(anchor, Mapping)
-            and isinstance(anchor.get("elapsed_seconds"), (int, float))
-            and isinstance(anchor.get("throughput"), (int, float))
-            and not isinstance(anchor.get("elapsed_seconds"), bool)
-            and not isinstance(anchor.get("throughput"), bool)
-            and float(anchor.get("throughput")) > 0
-        ]
-        if len(anchor_points) == len(expected_ids):
-            for run_id, run in run_by_id.items():
-                elapsed = run.get("protocol_elapsed_seconds")
-                predicted = run.get("predicted_anchor_throughput")
-                correction = run.get("host_speed_correction")
-                corrected = run.get("corrected_emulated_cycles_per_wall_second")
-                if (
-                    not isinstance(elapsed, (int, float))
-                    or isinstance(elapsed, bool)
-                    or not math.isfinite(float(elapsed))
-                    or float(elapsed) < anchor_points[0][0]
-                    or float(elapsed) > anchor_points[-1][0]
-                    or not isinstance(predicted, (int, float))
-                    or isinstance(predicted, bool)
-                    or not math.isfinite(float(predicted))
-                    or float(predicted) <= 0
-                    or not isinstance(correction, (int, float))
-                    or isinstance(correction, bool)
-                    or not math.isfinite(float(correction))
-                    or float(correction) <= 0
-                    or not isinstance(corrected, (int, float))
-                    or isinstance(corrected, bool)
-                    or not math.isfinite(float(corrected))
-                    or float(corrected) <= 0
-                ):
-                    problems.append("{} run {} host correction fields are invalid".format(record_dir, run_id))
-                    continue
-                for (left_x, left_y), (right_x, right_y) in zip(anchor_points, anchor_points[1:]):
-                    if float(elapsed) <= right_x:
-                        fraction = (float(elapsed) - left_x) / (right_x - left_x)
-                        expected_predicted = math.exp(left_y + fraction * (right_y - left_y))
-                        break
-                else:
-                    expected_predicted = math.exp(anchor_points[-1][1])
-                if not math.isclose(float(predicted), expected_predicted, rel_tol=1e-12, abs_tol=1e-9):
-                    problems.append("{} run {} predicted anchor throughput is not interpolated".format(record_dir, run_id))
-                expected_correction = float(reference) / expected_predicted
-                if not math.isclose(float(correction), expected_correction, rel_tol=1e-12, abs_tol=1e-12):
-                    problems.append("{} run {} host correction is not derived from anchors".format(record_dir, run_id))
-                raw_value = run.get("emulated_cycles_per_wall_second")
-                if isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool) and not math.isclose(
-                    float(corrected), float(raw_value) * float(correction), rel_tol=1e-12, abs_tol=1e-9
-                ):
-                    problems.append("{} run {} corrected throughput is not derived from raw throughput".format(record_dir, run_id))
+    if len(anchor_points) == len(expected_ids) and isinstance(model, Mapping) and isinstance(reference, (int, float)):
+        for run_id, run in run_by_id.items():
+            elapsed = run.get("protocol_elapsed_seconds")
+            predicted = run.get("predicted_anchor_throughput")
+            correction = run.get("host_speed_correction")
+            corrected = run.get("corrected_emulated_cycles_per_wall_second")
+            if (
+                not isinstance(elapsed, (int, float))
+                or isinstance(elapsed, bool)
+                or not math.isfinite(float(elapsed))
+                or float(elapsed) < anchor_points[0][0]
+                or float(elapsed) > anchor_points[-1][0]
+                or not isinstance(predicted, (int, float))
+                or isinstance(predicted, bool)
+                or not math.isfinite(float(predicted))
+                or float(predicted) <= 0
+                or not isinstance(correction, (int, float))
+                or isinstance(correction, bool)
+                or not math.isfinite(float(correction))
+                or float(correction) <= 0
+                or not isinstance(corrected, (int, float))
+                or isinstance(corrected, bool)
+                or not math.isfinite(float(corrected))
+                or float(corrected) <= 0
+            ):
+                problems.append("{} run {} host correction fields are invalid".format(record_dir, run_id))
+                continue
+            for (left_x, left_y), (right_x, right_y) in zip(anchor_points, anchor_points[1:]):
+                if float(elapsed) <= right_x:
+                    fraction = (float(elapsed) - left_x) / (right_x - left_x)
+                    expected_predicted = math.exp(left_y + fraction * (right_y - left_y))
+                    break
+            else:
+                expected_predicted = math.exp(anchor_points[-1][1])
+            if not math.isclose(float(predicted), expected_predicted, rel_tol=1e-12, abs_tol=1e-9):
+                problems.append("{} run {} predicted anchor throughput is not interpolated".format(record_dir, run_id))
+            expected_correction = float(reference) / expected_predicted
+            if not math.isclose(float(correction), expected_correction, rel_tol=1e-12, abs_tol=1e-12):
+                problems.append("{} run {} host correction is not derived from anchors".format(record_dir, run_id))
+            raw_value = run.get("emulated_cycles_per_wall_second")
+            if isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool) and not math.isclose(
+                float(corrected), float(raw_value) * float(correction), rel_tol=1e-12, abs_tol=1e-9
+            ):
+                problems.append("{} run {} corrected throughput is not derived from raw throughput".format(record_dir, run_id))
     sensitivity = calibration.get("pair_level_sensitivity")
     if (
         not isinstance(sensitivity, Mapping)
@@ -2634,6 +2776,198 @@ def _verify_interleaved_anchor_summary(
         or sensitivity.get("n") != 20
     ):
         problems.append("{} pair-level sensitivity is invalid".format(record_dir))
+    else:
+        deltas = []
+        raw_values = []
+        corrected_values = []
+        for pair_result in summary.get("pair_results", []) if isinstance(summary.get("pair_results"), list) else []:
+            raw = pair_result.get("pair_log_ratio") if isinstance(pair_result, Mapping) else None
+            corrected = pair_result.get("corrected_pair_log_ratio") if isinstance(pair_result, Mapping) else None
+            if (
+                not isinstance(raw, (int, float))
+                or isinstance(raw, bool)
+                or not isinstance(corrected, (int, float))
+                or isinstance(corrected, bool)
+            ):
+                continue
+            raw_values.append(float(raw))
+            corrected_values.append(float(corrected))
+            deltas.append(float(corrected) - float(raw))
+        if len(deltas) == 20:
+            expected_sensitivity = {
+                "mean_delta_log_ratio": statistics.mean(deltas),
+                "max_abs_delta_log_ratio": max(abs(value) for value in deltas),
+                "raw_combined_mean_log_ratio": statistics.mean(raw_values),
+                "corrected_combined_mean_log_ratio": statistics.mean(corrected_values),
+            }
+            for field, expected in expected_sensitivity.items():
+                actual = sensitivity.get(field)
+                if (
+                    not isinstance(actual, (int, float))
+                    or isinstance(actual, bool)
+                    or not math.isclose(float(actual), expected, rel_tol=1e-12, abs_tol=1e-15)
+                ):
+                    problems.append("{} pair-level sensitivity {} is not derived from pair results".format(record_dir, field))
+
+    pair_results = summary.get("pair_results")
+    if isinstance(pair_results, list) and len(pair_results) == 20:
+        manifest_workloads = manifest.get("workloads")
+        workload_ids = [
+            item.get("id") for item in manifest_workloads
+            if isinstance(item, Mapping) and isinstance(item.get("id"), str)
+        ] if isinstance(manifest_workloads, list) else []
+        if len(workload_ids) == 2:
+            entries_by_workload = {
+                workload_id: [
+                    item for item in pair_results
+                    if isinstance(item, Mapping) and item.get("workload") == workload_id
+                ]
+                for workload_id in workload_ids
+            }
+            for workload_id in workload_ids:
+                entries = entries_by_workload[workload_id]
+                raw_logs = [item.get("pair_log_ratio") for item in entries]
+                corrected_logs = [item.get("corrected_pair_log_ratio") for item in entries]
+                if (
+                    len(entries) != 10
+                    or any(not isinstance(value, (int, float)) or isinstance(value, bool) for value in raw_logs)
+                    or any(not isinstance(value, (int, float)) or isinstance(value, bool) for value in corrected_logs)
+                ):
+                    problems.append("{} pair results are malformed for {}".format(record_dir, workload_id))
+                    continue
+                workload_summary = summary.get("workloads", {}).get(workload_id) if isinstance(summary.get("workloads"), Mapping) else None
+                if not _effect_summary_matches(workload_summary, [float(value) for value in raw_logs]):
+                    problems.append("{} workload effect summary is not derived for {}".format(record_dir, workload_id))
+            by_pair = {
+                pair: [
+                    item for item in pair_results
+                    if isinstance(item, Mapping) and item.get("pair_index") == pair
+                ]
+                for pair in range(1, 11)
+            }
+            if all(len(items) == len(workload_ids) for items in by_pair.values()):
+                combined_logs = [
+                    statistics.mean(float(item["pair_log_ratio"]) for item in by_pair[pair])
+                    for pair in range(1, 11)
+                ]
+                if not _effect_summary_matches(summary.get("combined"), combined_logs):
+                    problems.append("{} combined effect summary is not derived from pair results".format(record_dir))
+
+            if manifest.get("candidate_id") == "P0-A2":
+                null_control = summary.get("null_control")
+                if not isinstance(null_control, Mapping):
+                    problems.append("{} P0-A2 null-control summary is missing".format(record_dir))
+                else:
+                    if (
+                        null_control.get("method") != "same-executable-null-v1"
+                        or null_control.get("primary_mode") != "raw"
+                        or null_control.get("workload_max_abs_effect") != 0.02
+                        or null_control.get("combined_max_abs_effect") != 0.01
+                    ):
+                        problems.append("{} P0-A2 null-control policy is invalid".format(record_dir))
+                    null_workloads = null_control.get("workloads")
+                    null_combined = null_control.get("combined")
+                    if not isinstance(null_workloads, Mapping) or set(null_workloads) != set(workload_ids):
+                        problems.append("{} P0-A2 null-control workload set is invalid".format(record_dir))
+                    else:
+                        for workload_id in workload_ids:
+                            entries = entries_by_workload[workload_id]
+                            if len(entries) == 10:
+                                raw_logs = [float(item["pair_log_ratio"]) for item in entries]
+                                corrected_logs = [float(item["corrected_pair_log_ratio"]) for item in entries]
+                                recorded_modes = null_workloads.get(workload_id)
+                                if (
+                                    not isinstance(recorded_modes, Mapping)
+                                    or not _effect_summary_matches(recorded_modes.get("raw"), raw_logs)
+                                    or not _effect_summary_matches(recorded_modes.get("host_corrected"), corrected_logs)
+                                ):
+                                    problems.append("{} P0-A2 null-control effects are not derived for {}".format(record_dir, workload_id))
+                    if all(len(items) == len(workload_ids) for items in by_pair.values()) and isinstance(null_combined, Mapping):
+                        combined_raw = [
+                            statistics.mean(float(item["pair_log_ratio"]) for item in by_pair[pair])
+                            for pair in range(1, 11)
+                        ]
+                        combined_corrected = [
+                            statistics.mean(float(item["corrected_pair_log_ratio"]) for item in by_pair[pair])
+                            for pair in range(1, 11)
+                        ]
+                        if (
+                            not _effect_summary_matches(null_combined.get("raw"), combined_raw)
+                            or not _effect_summary_matches(null_combined.get("host_corrected"), combined_corrected)
+                        ):
+                            problems.append("{} P0-A2 null-control combined effects are not derived".format(record_dir))
+                    expected_checks = []
+                    for workload_id in workload_ids:
+                        entries = entries_by_workload[workload_id]
+                        for mode, field in (("raw", "pair_log_ratio"), ("host_corrected", "corrected_pair_log_ratio")):
+                            recorded_modes = null_workloads.get(workload_id)
+                            values = [
+                                float(item[field]) for item in entries
+                                if isinstance(item.get(field), (int, float)) and not isinstance(item.get(field), bool)
+                            ]
+                            recorded_effect = (
+                                recorded_modes.get(mode)
+                                if isinstance(recorded_modes, Mapping)
+                                else {}
+                            )
+                            recorded_effect_map = recorded_effect if isinstance(recorded_effect, Mapping) else {}
+                            effect = (
+                                len(values) == 10
+                                and _effect_summary_matches(recorded_effect_map, values)
+                            )
+                            expected_checks.append(
+                                {
+                                    "scope": workload_id,
+                                    "mode": mode,
+                                    "max_abs_effect": 0.02,
+                                    "absolute_effect_pass": effect and abs(float(recorded_effect_map.get("geometric_mean_effect", math.inf))) <= 0.02,
+                                    "ci95_contains_zero": effect and isinstance(recorded_effect_map.get("ci95_effect"), list) and len(recorded_effect_map["ci95_effect"]) == 2 and float(recorded_effect_map["ci95_effect"][0]) <= 0 <= float(recorded_effect_map["ci95_effect"][1]),
+                                }
+                            )
+                    for mode in ("raw", "host_corrected"):
+                        recorded_effect = null_combined.get(mode) if isinstance(null_combined, Mapping) else {}
+                        recorded_effect_map = recorded_effect if isinstance(recorded_effect, Mapping) else {}
+                        effect_values = []
+                        if all(len(items) == len(workload_ids) for items in by_pair.values()):
+                            source_field = "pair_log_ratio" if mode == "raw" else "corrected_pair_log_ratio"
+                            if all(
+                                all(
+                                    isinstance(item.get(source_field), (int, float))
+                                    and not isinstance(item.get(source_field), bool)
+                                    for item in by_pair[pair]
+                                )
+                                for pair in range(1, 11)
+                            ):
+                                effect_values = [
+                                    statistics.mean(float(item[source_field]) for item in by_pair[pair])
+                                    for pair in range(1, 11)
+                                ]
+                        effect = (
+                            bool(effect_values)
+                            and _effect_summary_matches(recorded_effect_map, effect_values)
+                        )
+                        expected_checks.append(
+                            {
+                                "scope": "combined",
+                                "mode": mode,
+                                "max_abs_effect": 0.01,
+                                "absolute_effect_pass": effect and abs(float(recorded_effect_map.get("geometric_mean_effect", math.inf))) <= 0.01,
+                                "ci95_contains_zero": effect and isinstance(recorded_effect_map.get("ci95_effect"), list) and len(recorded_effect_map["ci95_effect"]) == 2 and float(recorded_effect_map["ci95_effect"][0]) <= 0 <= float(recorded_effect_map["ci95_effect"][1]),
+                            }
+                        )
+                    recorded_checks = null_control.get("checks")
+                    if recorded_checks != expected_checks:
+                        problems.append("{} P0-A2 null-control checks are not derived from effects".format(record_dir))
+                    expected_pass = all(item["absolute_effect_pass"] and item["ci95_contains_zero"] for item in expected_checks)
+                    if null_control.get("pass") is not expected_pass:
+                        problems.append("{} P0-A2 null-control pass flag is invalid".format(record_dir))
+                    expected_reasons = [
+                        "{} {} effect/CI".format(item["scope"], item["mode"])
+                        for item in expected_checks
+                        if not item["absolute_effect_pass"] or not item["ci95_contains_zero"]
+                    ]
+                    if null_control.get("reasons") != expected_reasons:
+                        problems.append("{} P0-A2 null-control reasons are not derived from checks".format(record_dir))
 
 
 def _verify_rp2040_cpu_behavior_pair(
@@ -3214,6 +3548,20 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
 
             if isinstance(summary, Mapping):
                 _verify_interleaved_anchor_summary(record_dir, manifest, summary, run_by_id, problems)
+                if manifest.get("candidate_id") == "P0-A2":
+                    null_control = summary.get("null_control")
+                    if isinstance(null_control, Mapping):
+                        null_pass = null_control.get("pass") is True
+                        if null_pass:
+                            if summary.get("status") != "pass":
+                                problems.append("{} passing P0-A2 null-control must have summary status pass".format(record_dir))
+                            if isinstance(decision, Mapping) and (
+                                decision.get("decision_kind") != "null-control"
+                                or decision.get("status") != "pass"
+                            ):
+                                problems.append("{} passing P0-A2 null-control must have a passing null-control decision".format(record_dir))
+                        elif summary.get("status") != "invalid":
+                            problems.append("{} failing P0-A2 null-control must have summary status invalid".format(record_dir))
 
         profile_dir = record_dir / "profile"
         candidate_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}

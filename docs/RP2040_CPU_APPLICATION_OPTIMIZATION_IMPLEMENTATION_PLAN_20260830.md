@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs) — P0-B profiler implementation/profile/correctness complete — P1-A implementation/profile/correctness complete — P2-A implementation gate open — P1-A production A/B and performance acceptance pending a revised valid null-control
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs) — P0-B profiler implementation/profile/correctness complete — P1-A implementation/profile/correctness complete — P2-A implementation (`ba93c1f`) and feature tests complete, correctness in progress — P1-A/P2-A production A/B and performance acceptance pending a revised valid null-control
 - Date: 2026-08-31
 - Review completed: 2026-08-31
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -113,16 +113,17 @@ firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN/
   SHA256SUMS
 ```
 
-P0-0 で target revision が更新された場合は、上の workload filename も新 revision に置き換える。record artifact schema 三つと build provenance schema 一つを新設し、既存 schema の `schema_version: 1` と混同しないよう `schema_id` を必須にする。
+P0-0 で target revision が更新された場合は、上の workload filename も新 revision に置き換える。record artifact schema 四つ（profile、profile-comparison、A/B、decision）と build provenance schema 一つを新設し、既存 schema の `schema_version: 1` と混同しないよう `schema_id` を必須にする。
 
 P0-A2 の `comparison.json` は `trace_required=false` とし、behavior artifact 四ファイルは作らない。P0-B/P1以降は `trace_required=true` とし、baseline/candidate behavior artifact を必須にする。この条件分岐を AB schema に持たせる。
 
 - `firmware-validation/rp2040-cpu-profile.schema.json`: `schema_id = "picocalc.rp2040-cpu-profile"`
+- `firmware-validation/rp2040-cpu-profile-comparison.schema.json`: `schema_id = "picocalc.rp2040-cpu-profile-comparison"`
 - `firmware-validation/rp2040-cpu-ab.schema.json`: `schema_id = "picocalc.rp2040-cpu-ab"`
 - `firmware-validation/rp2040-cpu-decision.schema.json`: `schema_id = "picocalc.rp2040-cpu-decision"`
 - `firmware-validation/rp2040-cpu-build-provenance.schema.json`: `schema_id = "picocalc.rp2040-build-provenance"`（runner sidecar）
 
-三つの record artifact schema と build provenance schema の初版はすべて `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。build provenance は record tree の leaf ではなく、runner に隣接する sidecar の schema とする。
+四つの record artifact schema と build provenance schema の初版はすべて `schema_version = 1` とする。互換性を壊す変更では version を上げ、historical record は変換・上書きしない。build provenance は record tree の leaf ではなく、runner に隣接する sidecar の schema とする。
 
 P0-B 実装時に profile schema の nested `cores`/`counters` を counter 名・型・不変条件名まで閉じた
 Draft 2020-12 定義へ強化した。既存の schema version は維持し、今回の profile record と過去 record を
@@ -332,7 +333,7 @@ host performance counter と sampling は補助指標であり、権限がない
 
 calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。改訂 protocol では warm-up 後の pre window（3 run）、測定途中の固定 anchor（run 10、20、30 の直後に各1 run）、本測定後の post window（3 run）を行い、anchor の log throughput を経過時間へ線形補間する。pre/post の全体差だけでは batch を無効にせず、anchor の線形モデル残差が 2% を超える、anchor 欠落、host snapshot/affinity/provenance/correctness 不成立を batch 無効条件とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
 
-専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。候補 feature を評価するときは、実際の feature 名ごとに `--feature-set <candidate-feature>` を追加する。
+専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。候補 feature を評価するときは、実際の feature 名ごとに `--feature-set <candidate-feature>` を追加する。P0-A2 null-control だけは `--candidate-id P0-A2 --final-report-only` を必須とし、同一の production runner path を baseline/candidate の両方へ渡す。
 
 ```bash
 python3 tools/benchmark_rp2040_cpu_candidate.py ab \
@@ -349,6 +350,14 @@ python3 tools/benchmark_rp2040_cpu_candidate.py ab \
   --batch-id rp2040-cpu-<candidate>-YYYYMMDD-NN \
   --output firmware-validation/records/rp2040-cpu-<candidate>-YYYYMMDD-NN
 ```
+
+P0-A2 の null-control では `<candidate-feature-list>` を省略し、上の例へ次の二つを追加する。
+
+```bash
+--candidate-id P0-A2 --final-report-only
+```
+
+このモードは correctness を final-report projection までに限定するため、behavior-trace runner を指定せず、同じ production executable の sidecar role=`production` を A/B 両方で使用する。
 
 runner は clean Git commit、明示された release executable、firmware/scenario/contract SHA、backend embedded commit、feature set、CPU affinity を開始前に検証する。不一致時は measured run を一つも開始しない。`--firmware` は registry の `artifacts.bin_sha256` と一致する任意の絶対 path を受け付ける。
 
@@ -454,7 +463,7 @@ python3 -m unittest tests.test_benchmark_rp2040_cpu_candidate
 python3 tools/verify_environment.py --scope target-schema
 ```
 
-`verify_environment.py` には四つの新 schema と、存在する `rp2040-cpu-*` record の必須ファイル validation を追加する。record がまだ 0 件であることは正常とし、P0-A1 の schema fixture test を失敗させない。
+`verify_environment.py` には五つの新 schema と、存在する `rp2040-cpu-*` record の必須ファイル validation を追加する。record がまだ 0 件であることは正常とし、P0-A1 の schema fixture test を失敗させない。
 
 P0-A1 完了条件:
 
@@ -491,6 +500,8 @@ python3 tools/verify_environment.py --scope target-schema
 3. anchor の log throughput を経過時間へ線形補間し、各 measured run の host-speed 補正値を記録する。候補効果の主統計は従来どおり同一 pair の candidate/baseline log ratio とし、補正は host drift の診断・感度分析に限定する。
 4. anchor の線形モデル残差が 2% を超える、anchor が欠落する、または host snapshot/affinity/provenance/correctness が不成立なら batch を invalid にする。全体の pre/post 差が 2% を超えただけでは直ちに invalid にせず、anchor residual と pair-level null-control の両方を decision に明記する。
 5. `measurement_policy` に `calibration_method=interleaved-anchor-v1`、anchor run ID、補正方法、残差閾値、pair-level sensitivity の方式を保存し、実測の残差・補正値・pair-level sensitivity は `summary.calibration` に保存する。schema/verifier/unit test で個数・順序・閾値を固定する。既存の二つの invalid record は変更しない。
+
+P0-A2 の null-control 採否も結果を見る前に固定する。同一 executable の raw pair log ratio を主指標とし、各 workload は geometric mean effect の絶対値 2% 以下かつ 95% CI が 0 を含むこと、二 workload の等重み combined は絶対値 1% 以下かつ 95% CI が 0 を含むことを要求する。anchor 補正後の同じ二組は host-drift sensitivity として同じ閾値で併記する。いずれかの workload、combined、raw、corrected の条件を満たさない場合は `summary.status=invalid` とし、P1-A の production A/B を開始しない。全条件を満たした場合だけ `summary.status=pass`、`decision_kind=null-control`、`decision.status=pass` として P0-A2 を閉じる。
 
 この改訂により、長時間の周波数変動を「無かったこと」にせず、変動を観測・補正したうえで、隣接 pair の実アプリ差分が再現するかを判定できる。補正後も null-control が 0 近傍にならない場合は候補測定へ進まず、host 条件または測定設計を再修正する。改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` として correctness を先行実行中である。correctness、checksum、target-schema の完了後に同じ batch ID で interleaved-anchor A/B を実行し、結果をこの節と phase gate に追記する。
 
@@ -980,8 +991,8 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 
 ### 10.1 phase gate
 
-2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）を保持し、改訂 null-control batch `rp2040-cpu-p0-null-20260831-04` を実行中である。
-P1-A は runtime 実装、profile、correctness を完了し、診断 profile signal を保存済みである。P1-A の production 性能 A/B の測定・採否はまだ実施していない。P2-A は入力 counter の開始条件を満たすが、実装・性能 A/B は未着手である。
+2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）を保持している。改訂 null-control batch `rp2040-cpu-p0-null-20260831-04` は correctness を pass し、status修正後の interleaved-anchor A/B を再実行中である。
+P1-A は runtime 実装、profile、correctness を完了し、診断 profile signal を保存済みである。P1-A の production 性能 A/B の測定・採否は有効な null-control 完了後まで保留している。P2-A は `ba93c1f` で fast-reject実装とfeature testを完了し、correctness recordを作成中であり、性能A/Bはnull-control完了後に行う。
 P1-B は executable-page filter 用 counter が未取得のため判定不能であり、下表の fail-closed 条件を維持する。P0-A2 が有効になった後、P1-A の production A/B を同じ二 workload・10 pair で実行する。
 
 | Gate | 必須入力 | pass | fail 時 |
@@ -1004,6 +1015,8 @@ P1-B は executable-page filter 用 counter が未取得のため判定不能で
 - `picocalc_emu/firmware-validation/rp2040-cpu-profile.schema.json`
 - `picocalc_emu/firmware-validation/rp2040-cpu-ab.schema.json`
 - `picocalc_emu/firmware-validation/rp2040-cpu-decision.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-profile-comparison.schema.json`
+- `picocalc_emu/firmware-validation/rp2040-cpu-build-provenance.schema.json`
 - `picocalc_emu/tools/verify_environment.py` — schema/record/profile-comparison 検証の登録
 
 P0-A1 は backend hot path を変更しない。ここが最初の実装単位である。`admission/` の二つの receipt は decision schema と同じ identity context を持ち、root decision の evidence と対応させる。
@@ -1015,7 +1028,7 @@ P0-A1 は backend hot path を変更しない。ここが最初の実装単位�
 | P0-B | `rp2040-emu/src/cpu_application_profile.rs`、`lib.rs`、`core/mod.rs`、`core/decode.rs`、両 Cargo manifest、`picocalc-harness/src/main.rs` |
 | P1-A | `rp2040-emu/src/core/mod.rs`、`src/tests.rs`、両 Cargo manifest |
 | P1-B | `rp2040-emu/src/bus/mod.rs`、`core/decode.rs`、`lib.rs`、`src/tests.rs`、`tests/multicore.rs`、両 Cargo manifest |
-| P2-A | `rp2040-emu/src/core/mod.rs`、`core/exceptions.rs` の test、`src/tests.rs`、両 Cargo manifest |
+| P2-A | `rp2040-emu/src/core/mod.rs`、`core/exceptions.rs` の test、`src/tests.rs`、両 Cargo manifest、`picocalc-harness/build.rs` |
 
 backend 共通回帰 command:
 
@@ -1051,7 +1064,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の六ファイル実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。校正配置と stability 判定を固定した改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` の correctness を実行中である。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。新 null-control の correctness/checksum/schema が通れば interleaved-anchor A/B を完了し、その有効判定後に P1-A の production 10-pair A/B を実施する。P2-A は P1-A の A/B 採否とは独立して実装できるが、production A/B の採否・統合は有効な null-control の後で行う。
+P0-A1 の runner/schema/provenance 実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。校正配置と stability 判定を固定した改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` は correctness pass後、status修正済みrunnerで interleaved-anchor A/B を再実行中である。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。null-control の残差、pair-level null-control、checksum、schema が pass なら、P1-A の production 10-pair A/B を実施する。P2-A は `ba93c1f` で実装・feature testを完了し、correctness測定を進行中である。P2-A production A/B の採否・統合は有効な null-control の後で行う。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 

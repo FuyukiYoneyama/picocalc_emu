@@ -46,6 +46,11 @@ AB_INTER_RUN_COOLDOWN_SECONDS = 60.0
 CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1 = "interleaved-anchor-v1"
 CALIBRATION_ANCHOR_RESIDUAL_LIMIT = 0.02
 INTERLEAVED_ANCHOR_AFTER_RUNS = (10, 20, 30)
+# P0-A2 uses the same production executable for A and B.  These thresholds
+# are fixed before looking at a batch: the raw pair effect is primary, while
+# the host-corrected effect is retained as a sensitivity check.
+NULL_CONTROL_COMBINED_MAX_ABS_EFFECT = 0.01
+NULL_CONTROL_WORKLOAD_MAX_ABS_EFFECT = 0.02
 # Cargo features accepted by the measurement contract.  The allow-list also
 # includes planned CPU-candidate features so the runner can be prepared before
 # the corresponding backend implementation lands.
@@ -993,6 +998,98 @@ def _pair_level_sensitivity(
         "max_abs_delta_log_ratio": max(abs(delta) for delta in deltas),
         "raw_combined_mean_log_ratio": statistics.mean(float(item["pair_log_ratio"]) for item in pair_results),
         "corrected_combined_mean_log_ratio": statistics.mean(float(item["corrected_pair_log_ratio"]) for item in pair_results),
+    }
+
+
+def _ci_contains_zero(summary: Mapping[str, Any]) -> bool:
+    interval = summary.get("ci95_effect")
+    return (
+        isinstance(interval, list)
+        and len(interval) == 2
+        and all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in interval)
+        and float(interval[0]) <= 0.0 <= float(interval[1])
+    )
+
+
+def evaluate_null_control(
+    pair_results: Sequence[Mapping[str, Any]],
+    workload_ids: Sequence[str],
+) -> Dict[str, Any]:
+    """Apply the pre-registered same-executable P0-A2 null-control gate."""
+    if not pair_results or len(pair_results) != len(workload_ids) * 10:
+        raise ValueError("null-control requires ten pairs for each workload")
+    workload_effects: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    by_pair: Dict[int, List[Mapping[str, Any]]] = {}
+    for workload_id in workload_ids:
+        entries = [item for item in pair_results if item.get("workload") == workload_id]
+        if len(entries) != 10:
+            raise ValueError("null-control workload does not contain ten pairs: {}".format(workload_id))
+        workload_effects[workload_id] = {
+            "raw": summarize_log_effect([float(item["pair_log_ratio"]) for item in entries]),
+            "host_corrected": summarize_log_effect(
+                [float(item["corrected_pair_log_ratio"]) for item in entries]
+            ),
+        }
+        for item in entries:
+            pair_index = item.get("pair_index")
+            if type(pair_index) is not int:
+                raise ValueError("null-control pair index is invalid")
+            by_pair.setdefault(pair_index, []).append(item)
+    if set(by_pair) != set(range(1, 11)) or any(len(items) != len(workload_ids) for items in by_pair.values()):
+        raise ValueError("null-control pair indexes do not cover both workloads")
+    combined_raw = [
+        statistics.mean(float(item["pair_log_ratio"]) for item in by_pair[pair])
+        for pair in range(1, 11)
+    ]
+    combined_corrected = [
+        statistics.mean(float(item["corrected_pair_log_ratio"]) for item in by_pair[pair])
+        for pair in range(1, 11)
+    ]
+    combined = {
+        "raw": summarize_log_effect(combined_raw),
+        "host_corrected": summarize_log_effect(combined_corrected),
+    }
+    checks: List[Dict[str, Any]] = []
+    for workload_id in workload_ids:
+        for mode in ("raw", "host_corrected"):
+            effect = workload_effects[workload_id][mode]
+            checks.append(
+                {
+                    "scope": workload_id,
+                    "mode": mode,
+                    "max_abs_effect": NULL_CONTROL_WORKLOAD_MAX_ABS_EFFECT,
+                    "absolute_effect_pass": abs(float(effect["geometric_mean_effect"]))
+                    <= NULL_CONTROL_WORKLOAD_MAX_ABS_EFFECT,
+                    "ci95_contains_zero": _ci_contains_zero(effect),
+                }
+            )
+    for mode in ("raw", "host_corrected"):
+        effect = combined[mode]
+        checks.append(
+            {
+                "scope": "combined",
+                "mode": mode,
+                "max_abs_effect": NULL_CONTROL_COMBINED_MAX_ABS_EFFECT,
+                "absolute_effect_pass": abs(float(effect["geometric_mean_effect"]))
+                <= NULL_CONTROL_COMBINED_MAX_ABS_EFFECT,
+                "ci95_contains_zero": _ci_contains_zero(effect),
+            }
+        )
+    failed = [
+        "{} {} effect/CI".format(item["scope"], item["mode"])
+        for item in checks
+        if not item["absolute_effect_pass"] or not item["ci95_contains_zero"]
+    ]
+    return {
+        "method": "same-executable-null-v1",
+        "primary_mode": "raw",
+        "workload_max_abs_effect": NULL_CONTROL_WORKLOAD_MAX_ABS_EFFECT,
+        "combined_max_abs_effect": NULL_CONTROL_COMBINED_MAX_ABS_EFFECT,
+        "workloads": workload_effects,
+        "combined": combined,
+        "checks": checks,
+        "pass": not failed,
+        "reasons": failed,
     }
 
 
@@ -2112,7 +2209,6 @@ def _run_interleaved_anchor_ab(
                     values["baseline"]["corrected_emulated_cycles_per_wall_second"],
                 )
                 ratios.append(raw_ratio)
-                combined_raw.append(raw_ratio)
                 pair_results.append(
                     {
                         "workload": workload_id,
@@ -2131,10 +2227,25 @@ def _run_interleaved_anchor_ab(
                 )
             summaries[workload_id] = summarize_log_effect(ratios)
         pair_sensitivity = _pair_level_sensitivity(pair_results)
+        # Combined effect is the equal-weight mean of the two workloads at
+        # each pair index (10 values), not the 20 workload-specific ratios.
+        combined_raw = [
+            statistics.mean(
+                float(item["pair_log_ratio"])
+                for item in pair_results
+                if item["pair_index"] == pair
+            )
+            for pair in range(1, args.pairs + 1)
+        ]
         anchor_drift = calibration_drift(
             [anchor["throughput"] for anchor in anchors[: args.calibration_runs]],
             [anchor["throughput"] for anchor in anchors[-args.calibration_runs :]],
         )
+        null_control: Optional[Dict[str, Any]] = None
+        if args.candidate_id == "P0-A2":
+            null_control = evaluate_null_control(
+                pair_results, [workload["id"] for workload in workloads]
+            )
         calibration = {
             "method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
             "anchor_count": len(anchors),
@@ -2162,6 +2273,10 @@ def _run_interleaved_anchor_ab(
             summary_status = "invalid"
         if mismatches:
             summary_status = "invalid"
+        if null_control is not None and not null_control["pass"]:
+            summary_status = "invalid"
+        if null_control is not None and null_control["pass"]:
+            summary_status = "pass"
         summary = {
             "schema_id": AB_SCHEMA_ID,
             "schema_version": SCHEMA_VERSION,
@@ -2179,6 +2294,8 @@ def _run_interleaved_anchor_ab(
             "host": host_snapshot_end,
             "measurement_policy": dict(measurement_policy),
         }
+        if null_control is not None:
+            summary["null_control"] = null_control
         _write_json_once(record_root / "summary.json", summary)
         summary_written = True
         if summary_status == "invalid":
@@ -2187,6 +2304,8 @@ def _run_interleaved_anchor_ab(
                 reasons.append("interleaved anchor residual exceeded 2%")
             if mismatches:
                 reasons.append("guest observation projection mismatch during A/B")
+            if null_control is not None and not null_control["pass"]:
+                reasons.extend("null-control: {}".format(reason) for reason in null_control["reasons"])
             decision = {
                 "schema_id": DECISION_SCHEMA_ID,
                 "schema_version": SCHEMA_VERSION,
@@ -2201,6 +2320,19 @@ def _run_interleaved_anchor_ab(
             decision_text = "# RP2040 CPU candidate decision\n\nBatch invalid: {}.\n".format(
                 "; ".join(reasons)
             )
+        elif args.candidate_id == "P0-A2":
+            decision = {
+                "schema_id": DECISION_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "decision_kind": "null-control",
+                "status": "pass",
+                "statistics": summary,
+                "correctness": {"status": "pass", "source": "correctness/comparison.json"},
+                **dict(decision_context),
+            }
+            decision_text = "# RP2040 CPU candidate decision\n\nP0-A2 null-control passed; candidate A/B admission is open.\n"
         else:
             decision = {
                 "schema_id": DECISION_SCHEMA_ID,
@@ -2512,217 +2644,6 @@ def run_ab(args: argparse.Namespace) -> int:
         decision_context,
         interleaved_anchor_measurement_policy(),
     )
-    before = _set_cpu_affinity(args.cpu)
-    try:
-        calibration_workload = next(
-            (workload for workload in workloads if workload["id"].startswith("picotetris-")),
-            None,
-        )
-        if calibration_workload is None:
-            raise ValueError("ab requires a registered PicoTetris workload for calibration")
-        for _ in range(args.warmup):
-            for workload in workloads:
-                run_guest(
-                    workload, args.baseline_backend, args.baseline_runner,
-                    expected_backend_identity=identities["baseline_production"],
-                )
-                _sleep_between_runs(inter_run_cooldown_seconds)
-                run_guest(
-                    workload, args.candidate_backend, args.candidate_runner,
-                    expected_backend_identity=identities["candidate_production"],
-                )
-                _sleep_between_runs(inter_run_cooldown_seconds)
-        pre = _run_calibration(
-            calibration_workload, args.baseline_backend, args.baseline_runner,
-            args.calibration_runs, identities["baseline_production"],
-            inter_run_cooldown_seconds,
-        )
-        schedule = make_ab_schedule([workload["id"] for workload in workloads], args.pairs)
-        by_id = {workload["id"]: workload for workload in workloads}
-        results: Dict[str, Dict[int, Dict[str, Any]]] = {workload["id"]: {} for workload in workloads}
-        for item in schedule:
-            workload = by_id[item["workload"]]
-            backend = args.baseline_backend if item["role"] == "baseline" else args.candidate_backend
-            runner = args.baseline_runner if item["role"] == "baseline" else args.candidate_runner
-            result = run_guest(
-                workload, backend, runner,
-                expected_backend_identity=identities["{}_production".format(item["role"])],
-            )
-            leaf = {
-                "schema_id": AB_SCHEMA_ID,
-                "schema_version": SCHEMA_VERSION,
-                "record_id": batch_id,
-                "candidate_id": args.candidate_id,
-                "artifact_type": "run",
-                **item,
-                **result["measurement"],
-            }
-            _write_json_once(record_root / "ab" / "{}.json".format(item["run_id"]), leaf)
-            _sleep_between_runs(inter_run_cooldown_seconds)
-            results[item["workload"]].setdefault(item["pair"], {})[item["role"]] = leaf
-        post = _run_calibration(
-            calibration_workload,
-            args.baseline_backend,
-            args.baseline_runner,
-            args.calibration_runs,
-            identities["baseline_production"],
-            inter_run_cooldown_seconds,
-        )
-        calibration = calibration_drift(pre, post)
-        if not calibration["valid"]:
-            invalid_summary = {
-                "schema_id": AB_SCHEMA_ID,
-                "schema_version": SCHEMA_VERSION,
-                "record_id": batch_id,
-                "candidate_id": args.candidate_id,
-                "artifact_type": "summary",
-                "status": "invalid",
-                "pairs": args.pairs,
-                "measured_runs": len(schedule),
-                "schedule": {"ab": args.pairs // 2, "ba": args.pairs // 2},
-                "calibration": calibration,
-                "workloads": {},
-                "pair_results": [],
-                "combined": {},
-                "host": host_cpu(),
-                "measurement_policy": {
-                    "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
-                },
-            }
-            _write_json_once(record_root / "summary.json", invalid_summary)
-            _write_json_replace(
-                record_root / "decision.json",
-                {
-                    "schema_id": DECISION_SCHEMA_ID,
-                    "schema_version": SCHEMA_VERSION,
-                    "record_id": batch_id,
-                    "candidate_id": args.candidate_id,
-                    "decision_kind": "invalid",
-                    "status": "invalid",
-                    "reasons": ["calibration drift exceeded 2%", str(calibration)],
-                    "statistics": invalid_summary,
-                    **decision_context,
-                },
-            )
-            _write_text_once(
-                record_root / "decision.md",
-                "# RP2040 CPU candidate decision\n\nBatch invalid: calibration drift exceeded 2%.\n",
-            )
-            _write_text_once(
-                record_root / "hotpath-disassembly.txt",
-                "P0-A1: hot-path disassembly is not collected until P0-B.\n",
-            )
-            _write_sha256sums_once(record_root)
-            raise ValueError("calibration drift exceeded 2%: {}".format(calibration))
-        summaries: Dict[str, Any] = {}
-        combined_values: List[List[float]] = []
-        pair_results: List[Dict[str, Any]] = []
-        for workload in workloads:
-            ratios = []
-            for pair in range(1, args.pairs + 1):
-                pair_result = results[workload["id"]][pair]
-                ratio = log_ratio(
-                    pair_result["candidate"]["emulated_cycles_per_wall_second"],
-                    pair_result["baseline"]["emulated_cycles_per_wall_second"],
-                )
-                ratios.append(ratio)
-                pair_results.append(
-                    {
-                        "workload": workload["id"],
-                        "pair_index": pair,
-                        "order": pair_result["baseline"]["order"],
-                        "run_ids": [
-                            pair_result["baseline"]["run_id"],
-                            pair_result["candidate"]["run_id"],
-                        ],
-                        "pair_log_ratio": ratio,
-                        "baseline_guest_observation_sha256": pair_result["baseline"]["guest_observation_sha256"],
-                        "candidate_guest_observation_sha256": pair_result["candidate"]["guest_observation_sha256"],
-                        "guest_observation_equal": (
-                            pair_result["baseline"]["guest_observation_sha256"]
-                            == pair_result["candidate"]["guest_observation_sha256"]
-                        ),
-                    }
-                )
-            summaries[workload["id"]] = summarize_log_effect(ratios)
-            combined_values.append(ratios)
-        combined = [statistics.mean(values) for values in zip(*combined_values)]
-        summary = {
-            "schema_id": AB_SCHEMA_ID,
-            "schema_version": SCHEMA_VERSION,
-            "record_id": batch_id,
-            "candidate_id": args.candidate_id,
-            "artifact_type": "summary",
-            "status": "pending",
-            "pairs": args.pairs,
-            "measured_runs": len(schedule),
-            "schedule": {"ab": args.pairs // 2, "ba": args.pairs // 2},
-            "calibration": calibration,
-            "workloads": summaries,
-            "pair_results": pair_results,
-            "combined": summarize_log_effect(combined),
-            "host": host_cpu(),
-            "measurement_policy": {
-                "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
-            },
-        }
-        mismatches = [
-            result for result in pair_results if result["guest_observation_equal"] is not True
-        ]
-        if mismatches:
-            summary["status"] = "invalid"
-            _write_json_once(record_root / "summary.json", summary)
-            _write_json_replace(
-                record_root / "decision.json",
-                {
-                    "schema_id": DECISION_SCHEMA_ID,
-                    "schema_version": SCHEMA_VERSION,
-                    "record_id": batch_id,
-                    "candidate_id": args.candidate_id,
-                    "decision_kind": "invalid",
-                    "status": "invalid",
-                    "reasons": ["guest observation projection mismatch during A/B"],
-                    "statistics": summary,
-                    **decision_context,
-                },
-            )
-            _write_text_once(
-                record_root / "decision.md",
-                "# RP2040 CPU candidate decision\n\nBatch invalid: guest observation projection mismatch.\n",
-            )
-            _write_text_once(
-                record_root / "hotpath-disassembly.txt",
-                "P0-A1: hot-path disassembly is not collected until P0-B.\n",
-            )
-            _write_sha256sums_once(record_root)
-            raise ValueError("guest observation projection mismatch during A/B")
-        _write_json_once(record_root / "summary.json", summary)
-        _write_json_replace(
-            record_root / "decision.json",
-            {
-                "schema_id": DECISION_SCHEMA_ID,
-                "schema_version": SCHEMA_VERSION,
-                "record_id": batch_id,
-                "candidate_id": args.candidate_id,
-                "decision_kind": "performance",
-                "status": "pending",
-                "statistics": summary,
-                "correctness": {"status": "pass", "source": "correctness/comparison.json"},
-                **decision_context,
-            },
-        )
-        _write_text_once(
-            record_root / "decision.md",
-            "# RP2040 CPU candidate decision\n\nPerformance A/B is pending correctness and review.\n",
-        )
-        _write_text_once(
-            record_root / "hotpath-disassembly.txt",
-            "P0-A1: hot-path disassembly is not collected until P0-B.\n",
-        )
-        _write_sha256sums_once(record_root)
-    finally:
-        _restore_cpu_affinity(before)
-    return 0
 
 
 def run_profile(args: argparse.Namespace) -> int:

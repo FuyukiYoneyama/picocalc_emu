@@ -47,6 +47,7 @@
     "measured_runs": {"type": "integer", "minimum": 1},
     "schedule": {"type": "object"},
     "calibration": {"type": "object"},
+    "null_control": {"type": "object"},
     "workloads": {"type": "object"},
     "combined": {"type": "object"},
     "pair_results": {"type": "array"},
