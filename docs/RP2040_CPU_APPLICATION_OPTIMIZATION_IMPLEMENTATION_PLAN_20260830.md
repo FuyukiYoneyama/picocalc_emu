@@ -32,7 +32,7 @@ P2-A の feature-on diagnostic profile `rp2040-cpu-p2-a-profile-20260831-01` は
 
 `rp2040-cpu-p0-null-v2-20260831-02` は 2026-09-01 に CPU 11 で完了した。40 measured run、15 anchor、replicate identity、checksum、correctness、target-schema は passし、各 anchor group の relative MAD は 0.628〜1.818% で固定2% gate内、workload別/combined の raw・host-corrected null effect と95% CIも全条件を満たした。一方、5 group medianを一本の global log-linear modelへ当てた残差は最大5.1743%、RMS 3.1993%、pre/post driftは4.6312%となり、固定2% model gateで `summary.status=invalid` とした。group中央値は 5.243M → 4.938M → 4.712M → 4.898M → 5.000M cycles/s相当で谷形に変動しており、同一 executable の隣接 pair 差分ではなく、非線形な host trajectory が原因である。これは v2 の invalid evidence として保持し、結果を再解釈しない。
 
-v2 の `measurement_policy` は correction method を piecewise interpolation と宣言していたのに、model gateだけを global line として実装していた。この契約不一致を閾値緩和で解決しない。次の v3 は `calibration_method=interleaved-anchor-v3` として別 batch IDで固定し、同じ40 run、5境界×3 replicate、60秒 cooldown、CPU11、同一 workload/identityを維持する。各 group median を実際の piecewise log-linear knotsとして measured runを補正し、global line residualは診断値として保存するが採否gateにはしない。採否gateは (a) 全group relative MAD ≤2%、(b) replicate数・順序・guest projection/backend/runner/CPU/affinity/correctnessが一致、(c) 隣接 pair の raw-vs-corrected log-ratio差の最大絶対値 ≤2%、(d) 既存の workload別2%・combined1%の raw/corrected null effect絶対値と95% CI条件、の四つに固定する。piecewise knotsが有限・正値で時間順、全 measured midpointが隣接 knot内にあることも必須とする。v2のglobal residual 5.1743%をpassへ読み替えず、v3実装・schema・verifier・unit testを先に完了してから新 batchを測定する。
+v2 の `measurement_policy` は correction method を piecewise interpolation と宣言していたのに、model gateだけを global line として実装していた。この契約不一致を閾値緩和で解決しない。次の v3 は `calibration_method=interleaved-anchor-v3` として別 batch IDで固定し、同じ40 run、9境界×3 replicate（27 anchor）、60秒 cooldown、CPU11、同一 workload/identityを維持する。境界は `pre, after-005, after-010, after-015, after-020, after-025, after-030, after-035, post` とし、各 group median を実際の piecewise log-linear knotsとして measured runを補正する。`anchor_residual_threshold=0.02` は旧互換のglobal residual診断値にのみ適用し、採否は `anchor_local_residual_threshold=0.02` の deterministic leave-one-group-out local residualで判定する。採否gateは (a) 全group relative MAD ≤2%、(b) replicate数・順序・guest projection/backend/runner/CPU/affinity/correctnessが一致、(c) 9 group の local residual 最大値 ≤2%、(d) 隣接 pair の raw-vs-corrected log-ratio差の最大絶対値 ≤2%、(e) 既存の workload別2%・combined1%の raw/corrected null effect絶対値と95% CI条件、の五つに固定する。piecewise knotsが有限・正値で時間順、全 measured midpointが隣接 knot内にあることも必須とする。v2のglobal residual 5.1743%をpassへ読み替えず、v3実装・schema・verifier・unit testを先に完了してから新 batchを測定する。
 
 ## 1. 目的
 
@@ -337,7 +337,7 @@ host performance counter と sampling は補助指標であり、権限がない
 - 10 pair 終了後に run を恣意的に除外または追加しない。個別 run の再試行もしない。
 - OS update、thermal throttling、別プロセス負荷など事前定義した異常だけを batch 全体の無効理由にする。
 
-calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。既存記録は v1（pre×3、run 10/20/30直後×1、post×3）として固定保存し、新規 null-control は v2 を使う。v2 は warm-up 後の pre、測定途中の run 10/20/30直後、測定後の post の5境界を各3回（計15 anchor）測定する。各境界で `median(log(throughput))` を集約値とし、elapsed も中央値とする。さらに `MAD = median(abs(log_i - median_log))`、`scaled_MAD = 1.4826 × MAD`、`relative_MAD = exp(scaled_MAD)-1` を保存し、各境界の relative MAD が2%以下であることを固定 gate とする。集約5点の log-throughput を経過時間へ線形補間し、モデル最大残差も2%以下でなければならない。単発外れ値は中央値で吸収するが、replicate欠落・重複、identity/provenance/correctness不一致、MAD超過、モデル残差超過、host snapshot/affinity不成立は batch 全体を invalid とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
+calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。既存記録は v1（pre×3、run 10/20/30直後×1、post×3）と v2（5境界×3、15 anchor）として固定保存する。現行 null-control は v3を使い、warm-up 後の pre、測定途中の run 5/10/15/20/25/30/35直後、測定後の post の9境界を各3回（計27 anchor）測定する。各境界で `median(log(throughput))` を集約値とし、elapsed も中央値とする。さらに `MAD = median(abs(log_i - median_log))`、`scaled_MAD = 1.4826 × MAD`、`relative_MAD = exp(scaled_MAD)-1` を保存し、各境界の relative MAD が2%以下であることを固定 gate とする。v3 は集約9点の log-throughput を隣接区間ごとに piecewise 線形補間し、global line は診断値として保存する。v3の local leave-one-group-out residual 最大値、pair raw-vs-corrected sensitivity、replicate欠落・重複、identity/provenance/correctness不一致、MAD超過、host snapshot/affinity不成立は batch 全体を invalid とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
 
 専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。候補 feature を評価するときは、実際の feature 名ごとに `--feature-set <candidate-feature>` を追加する。P0-A2 null-control だけは `--candidate-id P0-A2 --final-report-only` を必須とし、同一の production runner path を baseline/candidate の両方へ渡す。
 
@@ -990,7 +990,7 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 - embedded backend commit と Git HEAD が一致しない、または runner SHA/feature set が manifest と一致しない。
 - correctness digest が一致しない。
 - profiler counter の不変条件が破れる。
-- calibration anchor residual が 2% を超える、anchor が欠落する、または host stability の事前定義違反がある。
+- v1/v2 の calibration anchor model residual、または v3 の local leave-one-group-out residual・anchor group relative MAD・pair sensitivity がそれぞれ固定2% gateを超える、anchorが欠落する、または host stability の事前定義違反がある。
 - 結果を見た後に統計手順、除外規則、停止条件を変更した。
 - historical record を上書きしなければ測定を続けられない。
 
