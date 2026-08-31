@@ -588,7 +588,7 @@ profile から得た次候補の開始値は次の通りである。
 | PicoTetris r10 | 0.058399% | 0.116799% | 99.989207% |
 | PicoEdit r4 | 4.194210% | 8.388420% | 99.943097% |
 
-従って P1-A（`unrelated_would_clear > 0`）と P2-A（no-candidate reject率 90%以上）は開始可能である。
+従って P1-A（`unrelated_would_clear > 0`）と P2-A（no-candidate reject率 90%以上）は実装開始可能である。P2-A の production A/B は、別途 feature-on diagnostic profile と保存 counter 式の検証を完了するまで開始しない。
 P1-B の filter は「未実行 SRAM page への write による invalidation request」を省略する候補であり、
 `unrelated_would_clear` は full-tag guard の無関係 slot 指標なので P1-B の filter可能 request とは別物である。
 現行 P0-B profile は write 先 page の executable 判定を記録していないため、P1-B の gate はまだ判定不能とする。
