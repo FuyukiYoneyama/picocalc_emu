@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 import generate_board_header
 import picocalc
@@ -2163,6 +2163,12 @@ def _verify_rp2040_cpu_artifact_shape(
                 "workload", "backend", "runner", "cpu", "interval", "cores",
                 "overflowed", "profile_valid", "counters", "invariants", "feature_set",
         },
+        "picocalc.rp2040-cpu-profile-comparison": {
+            "schema_id", "schema_version", "candidate_id", "baseline_record", "candidate_record",
+            "baseline_backend_commit", "candidate_backend_commit", "profile_runtime_parent",
+            "profile_only_delta", "delta_files", "runtime_semantics_changed", "correctness_record",
+            "profile_wall_time_is_acceptance_evidence", "method", "workloads", "combined", "decision",
+        },
         "picocalc.rp2040-cpu-ab": {
             "schema_id", "schema_version", "record_id", "candidate_id", "artifact_type",
         },
@@ -2240,6 +2246,219 @@ def _verify_rp2040_cpu_artifact_shape(
         elif decision_kind in {"correctness", "profile"} and not isinstance(value.get("correctness"), dict):
             problems.append("{} decision is missing correctness".format(path))
     return value
+
+
+def _profile_counter(profile: Mapping[str, Any], *path: str) -> Optional[int]:
+    value: Any = profile
+    for component in path:
+        if not isinstance(value, Mapping):
+            return None
+        value = value.get(component)
+    return value if type(value) is int and value >= 0 else None
+
+
+def _profile_ratio_matches(actual: object, numerator: int, denominator: int) -> bool:
+    if denominator <= 0 or not isinstance(actual, (int, float)) or isinstance(actual, bool):
+        return False
+    return math.isclose(float(actual), numerator / denominator, rel_tol=1e-12, abs_tol=1e-15)
+
+
+def _verify_rp2040_cpu_profile_comparison(
+    comparison_path: Path,
+    comparison: Mapping[str, Any],
+    record_dir: Path,
+    records_root: Path,
+    manifest: Mapping[str, Any],
+    candidate_profiles: Mapping[str, Tuple[Path, Mapping[str, Any]]],
+    schema_validators: Optional[Dict[str, Any]],
+    problems: List[str],
+) -> None:
+    """Validate the derived profile comparison against both profile records.
+
+    The JSON schema closes the shape; this check closes the references and the
+    arithmetic so a hand-edited summary cannot silently become a performance
+    input.  Profile comparisons remain diagnostic and never become wall-time
+    acceptance evidence here.
+    """
+    if comparison.get("candidate_record") != record_dir.name:
+        problems.append("{} candidate_record differs from containing record".format(comparison_path))
+    if comparison.get("candidate_id") != manifest.get("candidate_id"):
+        problems.append("{} candidate_id differs from manifest".format(comparison_path))
+    if comparison.get("profile_wall_time_is_acceptance_evidence") is not False:
+        problems.append("{} profile comparison is marked as wall-time evidence".format(comparison_path))
+    identities = manifest.get("backend_identities")
+    candidate_identity = identities.get("candidate_profile") if isinstance(identities, Mapping) else None
+    if isinstance(candidate_identity, Mapping):
+        if comparison.get("candidate_backend_commit") != candidate_identity.get("commit"):
+            problems.append("{} candidate backend commit differs from manifest".format(comparison_path))
+    baseline_record_name = comparison.get("baseline_record")
+    baseline_record = _record_path_within(records_root, baseline_record_name)
+    if baseline_record is None or baseline_record.parent != records_root.resolve() or not baseline_record.is_dir():
+        problems.append("{} baseline_record is not a direct existing record".format(comparison_path))
+        baseline_record = None
+    baseline_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}
+    if baseline_record is not None:
+        baseline_manifest_path = baseline_record / "manifest.json"
+        try:
+            baseline_manifest = load_json(baseline_manifest_path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            problems.append("{} baseline manifest is unreadable: {}".format(comparison_path, error))
+            baseline_manifest = None
+        if isinstance(baseline_manifest, Mapping):
+            baseline_identity = baseline_manifest.get("backend_identities", {})
+            baseline_profile_identity = (
+                baseline_identity.get("candidate_profile")
+                if isinstance(baseline_identity, Mapping)
+                else None
+            )
+            if isinstance(baseline_profile_identity, Mapping) and (
+                comparison.get("baseline_backend_commit") != baseline_profile_identity.get("commit")
+            ):
+                problems.append("{} baseline backend commit differs from referenced record".format(comparison_path))
+        baseline_profile_dir = baseline_record / "profile"
+        for profile_path in sorted(baseline_profile_dir.glob("*.json")) if baseline_profile_dir.is_dir() else []:
+            if profile_path.name.endswith("-measurement.json"):
+                continue
+            profile = _verify_rp2040_cpu_artifact_shape(
+                profile_path, "picocalc.rp2040-cpu-profile", problems, schema_validators
+            )
+            workload = profile.get("workload") if isinstance(profile, Mapping) else None
+            workload_id = workload.get("id") if isinstance(workload, Mapping) else None
+            if isinstance(workload_id, str):
+                if workload_id in baseline_profiles:
+                    problems.append("{} contains duplicate baseline profile workload {}".format(comparison_path, workload_id))
+                else:
+                    baseline_profiles[workload_id] = (profile_path, profile)
+
+    comparison_workloads = comparison.get("workloads")
+    expected_workload_ids = {"picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"}
+    if not isinstance(comparison_workloads, Mapping) or set(comparison_workloads) != expected_workload_ids:
+        problems.append("{} workload keys do not match the fixed profile pair".format(comparison_path))
+        return
+
+    def require_counter(profile: Mapping[str, Any], label: str, *path: str) -> Optional[int]:
+        value = _profile_counter(profile, *path)
+        if value is None:
+            problems.append("{} {} is missing or invalid".format(comparison_path, label))
+        return value
+
+    derived: Dict[str, Dict[str, int]] = {}
+    for workload_id in sorted(expected_workload_ids):
+        summary = comparison_workloads.get(workload_id)
+        if not isinstance(summary, Mapping):
+            problems.append("{} workload {} comparison is missing".format(comparison_path, workload_id))
+            continue
+        baseline_entry = baseline_profiles.get(workload_id)
+        candidate_entry = candidate_profiles.get(workload_id)
+        if baseline_entry is None or candidate_entry is None:
+            problems.append("{} workload {} baseline/candidate profile is missing".format(comparison_path, workload_id))
+            continue
+        baseline_path, baseline_profile = baseline_entry
+        candidate_path, candidate_profile = candidate_entry
+        baseline_digest = sha256(baseline_path)
+        candidate_digest = sha256(candidate_path)
+        if summary.get("baseline_profile_sha256") != baseline_digest:
+            problems.append("{} workload {} baseline profile SHA-256 differs".format(comparison_path, workload_id))
+        if summary.get("candidate_profile_sha256") != candidate_digest:
+            problems.append("{} workload {} candidate profile SHA-256 differs".format(comparison_path, workload_id))
+        for profile_label, profile in (("baseline", baseline_profile), ("candidate", candidate_profile)):
+            profile_workload = profile.get("workload") if isinstance(profile, Mapping) else None
+            if not isinstance(profile_workload, Mapping) or profile_workload.get("id") != workload_id:
+                problems.append("{} workload {} {} profile identity differs".format(comparison_path, workload_id, profile_label))
+        baseline_misses = require_counter(baseline_profile, workload_id + " baseline decode misses", "counters", "decode", "misses")
+        candidate_misses = require_counter(candidate_profile, workload_id + " candidate decode misses", "counters", "decode", "misses")
+        retired = require_counter(candidate_profile, workload_id + " retired instructions", "counters", "retired_instructions")
+        cycles = require_counter(candidate_profile, workload_id + " emulated cycles", "counters", "emulated_cycles")
+        requests = require_counter(candidate_profile, workload_id + " invalidation requests", "counters", "invalidation", "requests")
+        examined = require_counter(candidate_profile, workload_id + " examined slots", "counters", "invalidation", "examined_slots")
+        unrelated = require_counter(candidate_profile, workload_id + " unrelated clears", "counters", "invalidation", "unrelated_would_clear")
+        matching = require_counter(candidate_profile, workload_id + " matching clears", "counters", "invalidation", "matching_clears")
+        wide = require_counter(candidate_profile, workload_id + " wide predecessor clears", "counters", "invalidation", "wide_predecessor_clears")
+        if None in (baseline_misses, candidate_misses, retired, cycles, requests, examined, unrelated, matching, wide):
+            continue
+        assert baseline_misses is not None and candidate_misses is not None
+        assert retired is not None and cycles is not None and requests is not None and examined is not None
+        assert unrelated is not None and matching is not None and wide is not None
+        expected_reduction = baseline_misses - candidate_misses
+        expected_values = {
+            "retired_instructions": retired,
+            "emulated_cycles": cycles,
+            "invalidation_requests": requests,
+            "examined_slots": examined,
+            "baseline_decode_misses": baseline_misses,
+            "candidate_decode_misses": candidate_misses,
+            "decode_miss_reduction": expected_reduction,
+            "candidate_unrelated_would_clear": unrelated,
+            "candidate_matching_clears": matching,
+            "candidate_wide_predecessor_clears": wide,
+        }
+        for field, expected in expected_values.items():
+            if summary.get(field) != expected:
+                problems.append("{} workload {} {} differs from profile counters".format(comparison_path, workload_id, field))
+        if not _profile_ratio_matches(summary.get("decode_miss_reduction_ratio"), expected_reduction, baseline_misses):
+            problems.append("{} workload {} decode miss ratio is not derived from counters".format(comparison_path, workload_id))
+        if not _profile_ratio_matches(summary.get("candidate_unrelated_would_clear_ratio"), unrelated, examined):
+            problems.append("{} workload {} unrelated ratio is not derived from counters".format(comparison_path, workload_id))
+        if summary.get("profile_valid") is not True or summary.get("core1_active") is not False:
+            problems.append("{} workload {} profile validity/core1 state is invalid".format(comparison_path, workload_id))
+        derived[workload_id] = {
+            "baseline_decode_misses": baseline_misses,
+            "candidate_decode_misses": candidate_misses,
+            "decode_miss_reduction": expected_reduction,
+            "candidate_unrelated_would_clear": unrelated,
+            "candidate_examined_slots": examined,
+            "candidate_invalidation_requests": requests,
+        }
+
+    combined = comparison.get("combined")
+    if not isinstance(combined, Mapping) or set(derived) != expected_workload_ids:
+        return
+    combined_expected = {
+        "baseline_decode_misses": sum(item["baseline_decode_misses"] for item in derived.values()),
+        "candidate_decode_misses": sum(item["candidate_decode_misses"] for item in derived.values()),
+        "decode_miss_reduction": sum(item["decode_miss_reduction"] for item in derived.values()),
+        "candidate_unrelated_would_clear": sum(item["candidate_unrelated_would_clear"] for item in derived.values()),
+        "candidate_examined_slots": sum(item["candidate_examined_slots"] for item in derived.values()),
+        "candidate_invalidation_requests": sum(item["candidate_invalidation_requests"] for item in derived.values()),
+    }
+    for field, expected in combined_expected.items():
+        if combined.get(field) != expected:
+            problems.append("{} combined {} differs from workload sums".format(comparison_path, field))
+    if not _profile_ratio_matches(
+        combined.get("decode_miss_reduction_ratio"),
+        combined_expected["decode_miss_reduction"],
+        combined_expected["baseline_decode_misses"],
+    ):
+        problems.append("{} combined decode miss ratio is not derived from counters".format(comparison_path))
+    if not _profile_ratio_matches(
+        combined.get("candidate_unrelated_would_clear_ratio"),
+        combined_expected["candidate_unrelated_would_clear"],
+        combined_expected["candidate_examined_slots"],
+    ):
+        problems.append("{} combined unrelated ratio is not derived from counters".format(comparison_path))
+
+    correctness_record_name = comparison.get("correctness_record")
+    correctness_record = _record_path_within(records_root, correctness_record_name)
+    if correctness_record is None or correctness_record.parent != records_root.resolve() or not correctness_record.is_dir():
+        problems.append("{} correctness_record is not a direct existing record".format(comparison_path))
+    else:
+        try:
+            correctness_manifest = load_json(correctness_record / "manifest.json")
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            problems.append("{} correctness manifest is unreadable: {}".format(comparison_path, error))
+        else:
+            correctness_identities = correctness_manifest.get("backend_identities", {})
+            correctness_candidate = (
+                correctness_identities.get("candidate_production")
+                if isinstance(correctness_identities, Mapping)
+                else None
+            )
+            if isinstance(correctness_candidate, Mapping) and (
+                comparison.get("profile_runtime_parent") != correctness_candidate.get("commit")
+            ):
+                problems.append("{} profile_runtime_parent differs from correctness candidate".format(comparison_path))
+    if comparison.get("profile_only_delta") != comparison.get("candidate_backend_commit"):
+        problems.append("{} profile_only_delta must identify the profiled candidate commit".format(comparison_path))
 
 
 def _verify_rp2040_cpu_behavior_pair(
@@ -2358,8 +2577,8 @@ def _verify_rp2040_cpu_behavior_pair(
 def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> None:
     """Verify the optional RP2040 CPU candidate schema and record namespace.
 
-    No candidate record is required yet: P0-A1 only installs the schemas and
-    runner.  Once a record exists, this check is intentionally fail-closed on
+    No particular candidate phase is assumed.  Once a record exists, this
+    check is intentionally fail-closed on
     identity, path escape, malformed JSON, and the phase-specific required
     artifacts.  It does not inspect the older VRP records because those have a
     different schema and acceptance contract.
@@ -2368,6 +2587,10 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
     schema_specs = (
         ("rp2040-cpu-build-provenance.schema.json", "picocalc.rp2040-build-provenance"),
         ("rp2040-cpu-profile.schema.json", "picocalc.rp2040-cpu-profile"),
+        (
+            "rp2040-cpu-profile-comparison.schema.json",
+            "picocalc.rp2040-cpu-profile-comparison",
+        ),
         ("rp2040-cpu-ab.schema.json", "picocalc.rp2040-cpu-ab"),
         ("rp2040-cpu-decision.schema.json", "picocalc.rp2040-cpu-decision"),
     )
@@ -2795,6 +3018,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                         problems.append("{} pair result guest equality disagrees with run artifacts".format(summary_path))
 
         profile_dir = record_dir / "profile"
+        candidate_profiles: Dict[str, Tuple[Path, Mapping[str, Any]]] = {}
         if profile_dir.exists():
             profile_paths = (
                 sorted(
@@ -2811,6 +3035,13 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     profile_path, "picocalc.rp2040-cpu-profile", problems, schema_validators
                 )
                 if profile is not None and isinstance(identities, dict):
+                    workload = profile.get("workload")
+                    workload_id = workload.get("id") if isinstance(workload, Mapping) else None
+                    if isinstance(workload_id, str):
+                        if workload_id in candidate_profiles:
+                            problems.append("{} contains duplicate profile workload {}".format(record_dir, workload_id))
+                        else:
+                            candidate_profiles[workload_id] = (profile_path, profile)
                     identity = identities.get("candidate_profile")
                     backend = profile.get("backend")
                     runner = profile.get("runner")
@@ -2824,6 +3055,28 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             problems.append("{} profile build provenance SHA-256 differs from manifest".format(profile_path))
                     if isinstance(identity, dict) and profile.get("feature_set") != identity.get("feature_set", []):
                         problems.append("{} profile feature_set differs from manifest".format(profile_path))
+
+        profile_comparison_path = record_dir / "profile-comparison.json"
+        if profile_comparison_path.is_file():
+            profile_comparison = _verify_rp2040_cpu_artifact_shape(
+                profile_comparison_path,
+                "picocalc.rp2040-cpu-profile-comparison",
+                problems,
+                schema_validators,
+            )
+            if profile_comparison is not None:
+                _verify_rp2040_cpu_profile_comparison(
+                    profile_comparison_path,
+                    profile_comparison,
+                    record_dir,
+                    records_root,
+                    manifest,
+                    candidate_profiles,
+                    schema_validators,
+                    problems,
+                )
+        elif manifest.get("candidate_id") == "P1-A" and profile_dir.is_dir():
+            problems.append("{} P1-A profile is missing profile-comparison.json".format(record_dir))
 
         correctness_dir = record_dir / "correctness"
         if correctness_dir.exists():

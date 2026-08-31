@@ -1,0 +1,2324 @@
+{
+  "artifact_type": "correctness",
+  "baseline": {
+    "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+    "build_provenance_sha256": "d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af",
+    "cycles": 927528659,
+    "elapsed_us": 3715000,
+    "emulated_cycles_per_wall_second": 5131943.434287943,
+    "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+    "host_usage_delta": {
+      "max_rss_platform_units": 28724,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.008358,
+      "user_seconds": 188.805619
+    },
+    "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+    "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+    "snapshot_sha256": {
+      "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "wall_ns": 180736337194,
+    "wall_seconds": 180.736337194
+  },
+  "baseline_guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "behavior": {
+    "baseline": {
+      "behavior_sha256": "cf6be2ee38e9f2ec35e8c540a90438e177364c8fbe6f4a416c6e06bd43a6185d",
+      "domain_summary": [
+        {
+          "events": 8,
+          "name": "clock",
+          "sha256": "f5b112683b02fc0856a314d6ec0811ebbb193d2c721324c290a291ac63d03b9c"
+        },
+        {
+          "events": 854,
+          "name": "irq_exception",
+          "sha256": "ac23c1e451e1b7daddd0754be479a4e0fa667b51838a2c2b298b510ecb022e1d"
+        },
+        {
+          "events": 1,
+          "name": "pio_gpio",
+          "sha256": "0d638c6046072549fd77d43c6c48f26b51ad5cb226a8a52e672df1c56164c263"
+        },
+        {
+          "events": 85619491,
+          "name": "psram",
+          "sha256": "96465a2cc7bc27141715f2735ddd1f94718ea6a56d5abba4696bde927ab7cc4d"
+        },
+        {
+          "events": 84706384,
+          "name": "lcd",
+          "sha256": "ce2799874f94c901df7c62cdcf305560c2eed398bf1eca159451d607919dd6cd"
+        },
+        {
+          "events": 1075,
+          "name": "dma_dreq",
+          "sha256": "3fdfd107a5c11ea718bf3495412befa114c437279ced255ebf6e1cb6297a6496"
+        },
+        {
+          "events": 3154379,
+          "name": "timer_pwm",
+          "sha256": "c2f67a58818a877064c7bee3bf67e3fe90489957b622e47303ef428dbfa6d1ca"
+        },
+        {
+          "events": 13275,
+          "name": "serial_bus",
+          "sha256": "5ec6ac74bb9ff074f3bb5a6b95b6f799623fe033409a9096df148aaa7ddce95b"
+        },
+        {
+          "events": 146,
+          "name": "scenario_input",
+          "sha256": "8bd8f9cda5ede78a5233d376c0029952ac3f0736202788a47a8125081960c023"
+        }
+      ],
+      "projection": {
+        "board": "picocalc",
+        "boot": {
+          "mode": "direct_boot_from_flash",
+          "vtor_flash_offset": "0x0100"
+        },
+        "bootrom": {
+          "executed": false,
+          "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+        },
+        "cycle_limit": 8000000000,
+        "cycles": 927528659,
+        "elapsed_us": 3715000,
+        "error": null,
+        "event_trace": {
+          "canonical_encoding": "PICOEM-EVENT-v1",
+          "domains": [
+            {
+              "events": 8,
+              "name": "clock",
+              "sha256": "f5b112683b02fc0856a314d6ec0811ebbb193d2c721324c290a291ac63d03b9c"
+            },
+            {
+              "events": 854,
+              "name": "irq_exception",
+              "sha256": "ac23c1e451e1b7daddd0754be479a4e0fa667b51838a2c2b298b510ecb022e1d"
+            },
+            {
+              "events": 1,
+              "name": "pio_gpio",
+              "sha256": "0d638c6046072549fd77d43c6c48f26b51ad5cb226a8a52e672df1c56164c263"
+            },
+            {
+              "events": 85619491,
+              "name": "psram",
+              "sha256": "96465a2cc7bc27141715f2735ddd1f94718ea6a56d5abba4696bde927ab7cc4d"
+            },
+            {
+              "events": 84706384,
+              "name": "lcd",
+              "sha256": "ce2799874f94c901df7c62cdcf305560c2eed398bf1eca159451d607919dd6cd"
+            },
+            {
+              "events": 1075,
+              "name": "dma_dreq",
+              "sha256": "3fdfd107a5c11ea718bf3495412befa114c437279ced255ebf6e1cb6297a6496"
+            },
+            {
+              "events": 3154379,
+              "name": "timer_pwm",
+              "sha256": "c2f67a58818a877064c7bee3bf67e3fe90489957b622e47303ef428dbfa6d1ca"
+            },
+            {
+              "events": 13275,
+              "name": "serial_bus",
+              "sha256": "5ec6ac74bb9ff074f3bb5a6b95b6f799623fe033409a9096df148aaa7ddce95b"
+            },
+            {
+              "events": 146,
+              "name": "scenario_input",
+              "sha256": "8bd8f9cda5ede78a5233d376c0029952ac3f0736202788a47a8125081960c023"
+            }
+          ],
+          "retains_event_array": false,
+          "schema_version": 2,
+          "sha256": "6098769780f381aa341730ca69effa9a19d680bdd47f6719e7074acfd7eb28fa",
+          "streaming": true,
+          "total_events": 173495613
+        },
+        "exception": null,
+        "execution_model": "Serial",
+        "firmware": {
+          "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+        },
+        "flash": {
+          "command_counts": [
+            {
+              "command": 0,
+              "count": 1
+            },
+            {
+              "command": 255,
+              "count": 1
+            },
+            {
+              "command": 75,
+              "count": 1
+            },
+            {
+              "command": 53,
+              "count": 1
+            },
+            {
+              "command": 235,
+              "count": 1
+            }
+          ],
+          "erase_count": 0,
+          "errors": [],
+          "image_bytes": 2097152,
+          "program_bytes": 0,
+          "program_count": 0,
+          "unknown_commands": []
+        },
+        "framebuffer": {
+          "height": 320,
+          "non_black_pixels": 18804,
+          "rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+          "width": 320
+        },
+        "keyboard": {
+          "addr": "0x1f",
+          "attached": true,
+          "backlight": 0,
+          "backlight_writes": 0,
+          "battery_reads": 0,
+          "caps_lock": false,
+          "config": "0xd2",
+          "interrupt_status": "0x08",
+          "key_events_delivered": 362,
+          "key_events_dropped": 0,
+          "key_events_overwritten": 0,
+          "key_events_remaining": 0,
+          "last_unknown_reg": null,
+          "lcd_backlight": 32,
+          "num_lock": false,
+          "reg_selects": 857,
+          "unknown_reg_selects": 0,
+          "unknown_reg_writes": 0
+        },
+        "lcd": {
+          "caset": 24635,
+          "colmod": "0x65",
+          "init": {
+            "dispoff": 0,
+            "dispon": 1,
+            "slpin": 0,
+            "slpout": 1,
+            "swreset": 0
+          },
+          "madctl": "0x48",
+          "orphan_data_bytes": 0,
+          "pixels_dropped": 0,
+          "pixels_written": 3254524,
+          "ramrd": 0,
+          "ramwr": 24635,
+          "raset": 24635,
+          "reset_pulses": 2,
+          "state": {
+            "display_on": true,
+            "inverted": true,
+            "sleeping": false
+          },
+          "unknown_commands": [
+            {
+              "code": "0x35",
+              "count": 1
+            },
+            {
+              "code": "0xb1",
+              "count": 1
+            },
+            {
+              "code": "0xb4",
+              "count": 1
+            },
+            {
+              "code": "0xb7",
+              "count": 1
+            },
+            {
+              "code": "0xb9",
+              "count": 1
+            },
+            {
+              "code": "0xc0",
+              "count": 1
+            },
+            {
+              "code": "0xc1",
+              "count": 1
+            },
+            {
+              "code": "0xc2",
+              "count": 1
+            },
+            {
+              "code": "0xc5",
+              "count": 1
+            },
+            {
+              "code": "0xe0",
+              "count": 1
+            },
+            {
+              "code": "0xe1",
+              "count": 1
+            },
+            {
+              "code": "0xe8",
+              "count": 1
+            },
+            {
+              "code": "0xf0",
+              "count": 4
+            }
+          ]
+        },
+        "lcd_variant": "pio-rgb565",
+        "pc": "0x100029be",
+        "pio": [
+          {
+            "block": 0,
+            "fstat": "0x0f000f00",
+            "sm_enabled": [
+              true,
+              false,
+              false,
+              false
+            ],
+            "sm_pc": [
+              30,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "block": 1,
+            "fstat": "0x0f000f00",
+            "sm_enabled": [
+              true,
+              false,
+              false,
+              false
+            ],
+            "sm_pc": [
+              23,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "projection_schema_version": 1,
+        "psram": {
+          "attached": true,
+          "bytes_read": 34,
+          "bytes_written": 24,
+          "cmd_counts": {
+            "fast_read": 1,
+            "reset": 1,
+            "reset_enable": 1,
+            "unknown": 0,
+            "write": 1
+          },
+          "cs_falling_count": 7,
+          "tick_count": 305719534,
+          "verify": null
+        },
+        "pwm": {
+          "configured_slices": [
+            {
+              "cc": "0x00800080",
+              "csr": "0x00000001",
+              "slice": 5,
+              "top": 255
+            }
+          ],
+          "inte": "0x00"
+        },
+        "scenario": {
+          "description": "Placements computed offline from the game's seeded xorshift, which makes the piece sequence known in advance. The final score and line count are asserted against what the plan predicts, so the emulator has to agree with the rules the planner used, not merely reach some clear.",
+          "error": null,
+          "input_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+          "name": "tetris-line-clear",
+          "poll_ms": 5,
+          "status": "pass",
+          "steps": [
+            {
+              "at_cycles": 127528659,
+              "at_ms": 515,
+              "detail": "1387 UART bytes seen",
+              "index": 0,
+              "label": "game started",
+              "op": "wait_until",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 127528659,
+              "at_ms": 515,
+              "detail": "sent 4 key event(s)",
+              "index": 1,
+              "label": "drop 0",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 147528659,
+              "at_ms": 595,
+              "detail": "waited 80 ms",
+              "index": 2,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 147528659,
+              "at_ms": 595,
+              "detail": "sent 2 key event(s)",
+              "index": 3,
+              "label": "drop 1",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 167528659,
+              "at_ms": 675,
+              "detail": "waited 80 ms",
+              "index": 4,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 167528659,
+              "at_ms": 675,
+              "detail": "sent 2 key event(s)",
+              "index": 5,
+              "label": "drop 2",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 187528659,
+              "at_ms": 755,
+              "detail": "waited 80 ms",
+              "index": 6,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 187528659,
+              "at_ms": 755,
+              "detail": "sent 4 key event(s)",
+              "index": 7,
+              "label": "drop 3",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 207528659,
+              "at_ms": 835,
+              "detail": "waited 80 ms",
+              "index": 8,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 207528659,
+              "at_ms": 835,
+              "detail": "sent 2 key event(s)",
+              "index": 9,
+              "label": "drop 4",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 227528659,
+              "at_ms": 915,
+              "detail": "waited 80 ms",
+              "index": 10,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 227528659,
+              "at_ms": 915,
+              "detail": "sent 1 key event(s)",
+              "index": 11,
+              "label": "drop 5",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 247528659,
+              "at_ms": 995,
+              "detail": "waited 80 ms",
+              "index": 12,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 247528659,
+              "at_ms": 995,
+              "detail": "sent 4 key event(s)",
+              "index": 13,
+              "label": "drop 6",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 267528659,
+              "at_ms": 1075,
+              "detail": "waited 80 ms",
+              "index": 14,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 267528659,
+              "at_ms": 1075,
+              "detail": "sent 7 key event(s)",
+              "index": 15,
+              "label": "drop 7 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 287528659,
+              "at_ms": 1155,
+              "detail": "waited 80 ms",
+              "index": 16,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 287528659,
+              "at_ms": 1155,
+              "detail": "sent 9 key event(s)",
+              "index": 17,
+              "label": "drop 8",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 307528659,
+              "at_ms": 1235,
+              "detail": "waited 80 ms",
+              "index": 18,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 307528659,
+              "at_ms": 1235,
+              "detail": "sent 6 key event(s)",
+              "index": 19,
+              "label": "drop 9 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 327528659,
+              "at_ms": 1315,
+              "detail": "waited 80 ms",
+              "index": 20,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 327528659,
+              "at_ms": 1315,
+              "detail": "sent 5 key event(s)",
+              "index": 21,
+              "label": "drop 10 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 347528659,
+              "at_ms": 1395,
+              "detail": "waited 80 ms",
+              "index": 22,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 347528659,
+              "at_ms": 1395,
+              "detail": "sent 1 key event(s)",
+              "index": 23,
+              "label": "drop 11",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 367528659,
+              "at_ms": 1475,
+              "detail": "waited 80 ms",
+              "index": 24,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 367528659,
+              "at_ms": 1475,
+              "detail": "sent 4 key event(s)",
+              "index": 25,
+              "label": "drop 12",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 387528659,
+              "at_ms": 1555,
+              "detail": "waited 80 ms",
+              "index": 26,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 387528659,
+              "at_ms": 1555,
+              "detail": "sent 3 key event(s)",
+              "index": 27,
+              "label": "drop 13",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 407528659,
+              "at_ms": 1635,
+              "detail": "waited 80 ms",
+              "index": 28,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 407528659,
+              "at_ms": 1635,
+              "detail": "sent 4 key event(s)",
+              "index": 29,
+              "label": "drop 14",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 427528659,
+              "at_ms": 1715,
+              "detail": "waited 80 ms",
+              "index": 30,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 427528659,
+              "at_ms": 1715,
+              "detail": "sent 9 key event(s)",
+              "index": 31,
+              "label": "drop 15 (clears 2)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 447528659,
+              "at_ms": 1795,
+              "detail": "waited 80 ms",
+              "index": 32,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 447528659,
+              "at_ms": 1795,
+              "detail": "sent 5 key event(s)",
+              "index": 33,
+              "label": "drop 16",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 467528659,
+              "at_ms": 1875,
+              "detail": "waited 80 ms",
+              "index": 34,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 467528659,
+              "at_ms": 1875,
+              "detail": "sent 4 key event(s)",
+              "index": 35,
+              "label": "drop 17",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 487528659,
+              "at_ms": 1955,
+              "detail": "waited 80 ms",
+              "index": 36,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 487528659,
+              "at_ms": 1955,
+              "detail": "sent 7 key event(s)",
+              "index": 37,
+              "label": "drop 18",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 507528659,
+              "at_ms": 2035,
+              "detail": "waited 80 ms",
+              "index": 38,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 507528659,
+              "at_ms": 2035,
+              "detail": "sent 2 key event(s)",
+              "index": 39,
+              "label": "drop 19 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 527528659,
+              "at_ms": 2115,
+              "detail": "waited 80 ms",
+              "index": 40,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 527528659,
+              "at_ms": 2115,
+              "detail": "sent 6 key event(s)",
+              "index": 41,
+              "label": "drop 20",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 547528659,
+              "at_ms": 2195,
+              "detail": "waited 80 ms",
+              "index": 42,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 547528659,
+              "at_ms": 2195,
+              "detail": "sent 2 key event(s)",
+              "index": 43,
+              "label": "drop 21",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 567528659,
+              "at_ms": 2275,
+              "detail": "waited 80 ms",
+              "index": 44,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 567528659,
+              "at_ms": 2275,
+              "detail": "sent 3 key event(s)",
+              "index": 45,
+              "label": "drop 22",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 587528659,
+              "at_ms": 2355,
+              "detail": "waited 80 ms",
+              "index": 46,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 587528659,
+              "at_ms": 2355,
+              "detail": "sent 9 key event(s)",
+              "index": 47,
+              "label": "drop 23 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 607528659,
+              "at_ms": 2435,
+              "detail": "waited 80 ms",
+              "index": 48,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 607528659,
+              "at_ms": 2435,
+              "detail": "sent 2 key event(s)",
+              "index": 49,
+              "label": "drop 24 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 627528659,
+              "at_ms": 2515,
+              "detail": "waited 80 ms",
+              "index": 50,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 627528659,
+              "at_ms": 2515,
+              "detail": "sent 2 key event(s)",
+              "index": 51,
+              "label": "drop 25 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 647528659,
+              "at_ms": 2595,
+              "detail": "waited 80 ms",
+              "index": 52,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 647528659,
+              "at_ms": 2595,
+              "detail": "sent 8 key event(s)",
+              "index": 53,
+              "label": "drop 26 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 667528659,
+              "at_ms": 2675,
+              "detail": "waited 80 ms",
+              "index": 54,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 667528659,
+              "at_ms": 2675,
+              "detail": "sent 4 key event(s)",
+              "index": 55,
+              "label": "drop 27",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 687528659,
+              "at_ms": 2755,
+              "detail": "waited 80 ms",
+              "index": 56,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 687528659,
+              "at_ms": 2755,
+              "detail": "sent 2 key event(s)",
+              "index": 57,
+              "label": "drop 28",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 707528659,
+              "at_ms": 2835,
+              "detail": "waited 80 ms",
+              "index": 58,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 707528659,
+              "at_ms": 2835,
+              "detail": "sent 6 key event(s)",
+              "index": 59,
+              "label": "drop 29",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 727528659,
+              "at_ms": 2915,
+              "detail": "waited 80 ms",
+              "index": 60,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 727528659,
+              "at_ms": 2915,
+              "detail": "sent 6 key event(s)",
+              "index": 61,
+              "label": "drop 30",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 747528659,
+              "at_ms": 2995,
+              "detail": "waited 80 ms",
+              "index": 62,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 747528659,
+              "at_ms": 2995,
+              "detail": "sent 3 key event(s)",
+              "index": 63,
+              "label": "drop 31",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 767528659,
+              "at_ms": 3075,
+              "detail": "waited 80 ms",
+              "index": 64,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 767528659,
+              "at_ms": 3075,
+              "detail": "sent 9 key event(s)",
+              "index": 65,
+              "label": "drop 32",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 787528659,
+              "at_ms": 3155,
+              "detail": "waited 80 ms",
+              "index": 66,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 787528659,
+              "at_ms": 3155,
+              "detail": "sent 6 key event(s)",
+              "index": 67,
+              "label": "drop 33 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 807528659,
+              "at_ms": 3235,
+              "detail": "waited 80 ms",
+              "index": 68,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 807528659,
+              "at_ms": 3235,
+              "detail": "sent 5 key event(s)",
+              "index": 69,
+              "label": "drop 34 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 827528659,
+              "at_ms": 3315,
+              "detail": "waited 80 ms",
+              "index": 70,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 827528659,
+              "at_ms": 3315,
+              "detail": "sent 4 key event(s)",
+              "index": 71,
+              "label": "drop 35",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 847528659,
+              "at_ms": 3395,
+              "detail": "waited 80 ms",
+              "index": 72,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 847528659,
+              "at_ms": 3395,
+              "detail": "sent 2 key event(s)",
+              "index": 73,
+              "label": "drop 36",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 867528659,
+              "at_ms": 3475,
+              "detail": "waited 80 ms",
+              "index": 74,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 867528659,
+              "at_ms": 3475,
+              "detail": "sent 9 key event(s)",
+              "index": 75,
+              "label": "drop 37 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 887528659,
+              "at_ms": 3555,
+              "detail": "waited 80 ms",
+              "index": 76,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 887528659,
+              "at_ms": 3555,
+              "detail": "sent 2 key event(s)",
+              "index": 77,
+              "label": "drop 38",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 907528659,
+              "at_ms": 3635,
+              "detail": "waited 80 ms",
+              "index": 78,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 907528659,
+              "at_ms": 3635,
+              "detail": "sent 6 key event(s)",
+              "index": 79,
+              "label": "drop 39",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "waited 80 ms",
+              "index": 80,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "18804 non-black pixels",
+              "index": 81,
+              "label": "well at the end of the plan",
+              "op": "snapshot",
+              "rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "1852 UART bytes seen",
+              "index": 82,
+              "label": "the line-clearing path ran",
+              "op": "assert",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "1852 UART bytes seen",
+              "index": 83,
+              "label": "the score the plan predicts",
+              "op": "assert",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "4160 non-black pixels in (8,104) 140x112 (want ..4160)",
+              "index": 84,
+              "label": "the stack stayed low (planned max height 4)",
+              "op": "assert",
+              "status": "pass"
+            }
+          ],
+          "steps_total": 85
+        },
+        "sd": {
+          "attached": true,
+          "block_count": 131072,
+          "block_size": 512,
+          "blocks_read": 0,
+          "blocks_written": 0,
+          "commands_seen": 0,
+          "format": "fat32",
+          "protocol_errors": [],
+          "unknown_commands": []
+        },
+        "step_quantum": 1,
+        "stop_pc": null,
+        "stop_reason": "scenario_done",
+        "uart": {
+          "bytes": 1852,
+          "sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+        },
+        "unsupported_mmio": [],
+        "unsupported_mmio_truncated": false,
+        "verdict": {
+          "expected_stop_reason": "scenario_done",
+          "missing_uart_markers": [],
+          "reasons": [],
+          "required_uart_markers": [
+            "[TETRIS] start",
+            "[TETRIS] cleared=",
+            "score=1400 lines=13"
+          ],
+          "status": "pass"
+        }
+      }
+    },
+    "candidate": {
+      "behavior_sha256": "cf6be2ee38e9f2ec35e8c540a90438e177364c8fbe6f4a416c6e06bd43a6185d",
+      "domain_summary": [
+        {
+          "events": 8,
+          "name": "clock",
+          "sha256": "f5b112683b02fc0856a314d6ec0811ebbb193d2c721324c290a291ac63d03b9c"
+        },
+        {
+          "events": 854,
+          "name": "irq_exception",
+          "sha256": "ac23c1e451e1b7daddd0754be479a4e0fa667b51838a2c2b298b510ecb022e1d"
+        },
+        {
+          "events": 1,
+          "name": "pio_gpio",
+          "sha256": "0d638c6046072549fd77d43c6c48f26b51ad5cb226a8a52e672df1c56164c263"
+        },
+        {
+          "events": 85619491,
+          "name": "psram",
+          "sha256": "96465a2cc7bc27141715f2735ddd1f94718ea6a56d5abba4696bde927ab7cc4d"
+        },
+        {
+          "events": 84706384,
+          "name": "lcd",
+          "sha256": "ce2799874f94c901df7c62cdcf305560c2eed398bf1eca159451d607919dd6cd"
+        },
+        {
+          "events": 1075,
+          "name": "dma_dreq",
+          "sha256": "3fdfd107a5c11ea718bf3495412befa114c437279ced255ebf6e1cb6297a6496"
+        },
+        {
+          "events": 3154379,
+          "name": "timer_pwm",
+          "sha256": "c2f67a58818a877064c7bee3bf67e3fe90489957b622e47303ef428dbfa6d1ca"
+        },
+        {
+          "events": 13275,
+          "name": "serial_bus",
+          "sha256": "5ec6ac74bb9ff074f3bb5a6b95b6f799623fe033409a9096df148aaa7ddce95b"
+        },
+        {
+          "events": 146,
+          "name": "scenario_input",
+          "sha256": "8bd8f9cda5ede78a5233d376c0029952ac3f0736202788a47a8125081960c023"
+        }
+      ],
+      "projection": {
+        "board": "picocalc",
+        "boot": {
+          "mode": "direct_boot_from_flash",
+          "vtor_flash_offset": "0x0100"
+        },
+        "bootrom": {
+          "executed": false,
+          "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+        },
+        "cycle_limit": 8000000000,
+        "cycles": 927528659,
+        "elapsed_us": 3715000,
+        "error": null,
+        "event_trace": {
+          "canonical_encoding": "PICOEM-EVENT-v1",
+          "domains": [
+            {
+              "events": 8,
+              "name": "clock",
+              "sha256": "f5b112683b02fc0856a314d6ec0811ebbb193d2c721324c290a291ac63d03b9c"
+            },
+            {
+              "events": 854,
+              "name": "irq_exception",
+              "sha256": "ac23c1e451e1b7daddd0754be479a4e0fa667b51838a2c2b298b510ecb022e1d"
+            },
+            {
+              "events": 1,
+              "name": "pio_gpio",
+              "sha256": "0d638c6046072549fd77d43c6c48f26b51ad5cb226a8a52e672df1c56164c263"
+            },
+            {
+              "events": 85619491,
+              "name": "psram",
+              "sha256": "96465a2cc7bc27141715f2735ddd1f94718ea6a56d5abba4696bde927ab7cc4d"
+            },
+            {
+              "events": 84706384,
+              "name": "lcd",
+              "sha256": "ce2799874f94c901df7c62cdcf305560c2eed398bf1eca159451d607919dd6cd"
+            },
+            {
+              "events": 1075,
+              "name": "dma_dreq",
+              "sha256": "3fdfd107a5c11ea718bf3495412befa114c437279ced255ebf6e1cb6297a6496"
+            },
+            {
+              "events": 3154379,
+              "name": "timer_pwm",
+              "sha256": "c2f67a58818a877064c7bee3bf67e3fe90489957b622e47303ef428dbfa6d1ca"
+            },
+            {
+              "events": 13275,
+              "name": "serial_bus",
+              "sha256": "5ec6ac74bb9ff074f3bb5a6b95b6f799623fe033409a9096df148aaa7ddce95b"
+            },
+            {
+              "events": 146,
+              "name": "scenario_input",
+              "sha256": "8bd8f9cda5ede78a5233d376c0029952ac3f0736202788a47a8125081960c023"
+            }
+          ],
+          "retains_event_array": false,
+          "schema_version": 2,
+          "sha256": "6098769780f381aa341730ca69effa9a19d680bdd47f6719e7074acfd7eb28fa",
+          "streaming": true,
+          "total_events": 173495613
+        },
+        "exception": null,
+        "execution_model": "Serial",
+        "firmware": {
+          "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+        },
+        "flash": {
+          "command_counts": [
+            {
+              "command": 0,
+              "count": 1
+            },
+            {
+              "command": 255,
+              "count": 1
+            },
+            {
+              "command": 75,
+              "count": 1
+            },
+            {
+              "command": 53,
+              "count": 1
+            },
+            {
+              "command": 235,
+              "count": 1
+            }
+          ],
+          "erase_count": 0,
+          "errors": [],
+          "image_bytes": 2097152,
+          "program_bytes": 0,
+          "program_count": 0,
+          "unknown_commands": []
+        },
+        "framebuffer": {
+          "height": 320,
+          "non_black_pixels": 18804,
+          "rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+          "width": 320
+        },
+        "keyboard": {
+          "addr": "0x1f",
+          "attached": true,
+          "backlight": 0,
+          "backlight_writes": 0,
+          "battery_reads": 0,
+          "caps_lock": false,
+          "config": "0xd2",
+          "interrupt_status": "0x08",
+          "key_events_delivered": 362,
+          "key_events_dropped": 0,
+          "key_events_overwritten": 0,
+          "key_events_remaining": 0,
+          "last_unknown_reg": null,
+          "lcd_backlight": 32,
+          "num_lock": false,
+          "reg_selects": 857,
+          "unknown_reg_selects": 0,
+          "unknown_reg_writes": 0
+        },
+        "lcd": {
+          "caset": 24635,
+          "colmod": "0x65",
+          "init": {
+            "dispoff": 0,
+            "dispon": 1,
+            "slpin": 0,
+            "slpout": 1,
+            "swreset": 0
+          },
+          "madctl": "0x48",
+          "orphan_data_bytes": 0,
+          "pixels_dropped": 0,
+          "pixels_written": 3254524,
+          "ramrd": 0,
+          "ramwr": 24635,
+          "raset": 24635,
+          "reset_pulses": 2,
+          "state": {
+            "display_on": true,
+            "inverted": true,
+            "sleeping": false
+          },
+          "unknown_commands": [
+            {
+              "code": "0x35",
+              "count": 1
+            },
+            {
+              "code": "0xb1",
+              "count": 1
+            },
+            {
+              "code": "0xb4",
+              "count": 1
+            },
+            {
+              "code": "0xb7",
+              "count": 1
+            },
+            {
+              "code": "0xb9",
+              "count": 1
+            },
+            {
+              "code": "0xc0",
+              "count": 1
+            },
+            {
+              "code": "0xc1",
+              "count": 1
+            },
+            {
+              "code": "0xc2",
+              "count": 1
+            },
+            {
+              "code": "0xc5",
+              "count": 1
+            },
+            {
+              "code": "0xe0",
+              "count": 1
+            },
+            {
+              "code": "0xe1",
+              "count": 1
+            },
+            {
+              "code": "0xe8",
+              "count": 1
+            },
+            {
+              "code": "0xf0",
+              "count": 4
+            }
+          ]
+        },
+        "lcd_variant": "pio-rgb565",
+        "pc": "0x100029be",
+        "pio": [
+          {
+            "block": 0,
+            "fstat": "0x0f000f00",
+            "sm_enabled": [
+              true,
+              false,
+              false,
+              false
+            ],
+            "sm_pc": [
+              30,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "block": 1,
+            "fstat": "0x0f000f00",
+            "sm_enabled": [
+              true,
+              false,
+              false,
+              false
+            ],
+            "sm_pc": [
+              23,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "projection_schema_version": 1,
+        "psram": {
+          "attached": true,
+          "bytes_read": 34,
+          "bytes_written": 24,
+          "cmd_counts": {
+            "fast_read": 1,
+            "reset": 1,
+            "reset_enable": 1,
+            "unknown": 0,
+            "write": 1
+          },
+          "cs_falling_count": 7,
+          "tick_count": 305719534,
+          "verify": null
+        },
+        "pwm": {
+          "configured_slices": [
+            {
+              "cc": "0x00800080",
+              "csr": "0x00000001",
+              "slice": 5,
+              "top": 255
+            }
+          ],
+          "inte": "0x00"
+        },
+        "scenario": {
+          "description": "Placements computed offline from the game's seeded xorshift, which makes the piece sequence known in advance. The final score and line count are asserted against what the plan predicts, so the emulator has to agree with the rules the planner used, not merely reach some clear.",
+          "error": null,
+          "input_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+          "name": "tetris-line-clear",
+          "poll_ms": 5,
+          "status": "pass",
+          "steps": [
+            {
+              "at_cycles": 127528659,
+              "at_ms": 515,
+              "detail": "1387 UART bytes seen",
+              "index": 0,
+              "label": "game started",
+              "op": "wait_until",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 127528659,
+              "at_ms": 515,
+              "detail": "sent 4 key event(s)",
+              "index": 1,
+              "label": "drop 0",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 147528659,
+              "at_ms": 595,
+              "detail": "waited 80 ms",
+              "index": 2,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 147528659,
+              "at_ms": 595,
+              "detail": "sent 2 key event(s)",
+              "index": 3,
+              "label": "drop 1",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 167528659,
+              "at_ms": 675,
+              "detail": "waited 80 ms",
+              "index": 4,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 167528659,
+              "at_ms": 675,
+              "detail": "sent 2 key event(s)",
+              "index": 5,
+              "label": "drop 2",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 187528659,
+              "at_ms": 755,
+              "detail": "waited 80 ms",
+              "index": 6,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 187528659,
+              "at_ms": 755,
+              "detail": "sent 4 key event(s)",
+              "index": 7,
+              "label": "drop 3",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 207528659,
+              "at_ms": 835,
+              "detail": "waited 80 ms",
+              "index": 8,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 207528659,
+              "at_ms": 835,
+              "detail": "sent 2 key event(s)",
+              "index": 9,
+              "label": "drop 4",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 227528659,
+              "at_ms": 915,
+              "detail": "waited 80 ms",
+              "index": 10,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 227528659,
+              "at_ms": 915,
+              "detail": "sent 1 key event(s)",
+              "index": 11,
+              "label": "drop 5",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 247528659,
+              "at_ms": 995,
+              "detail": "waited 80 ms",
+              "index": 12,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 247528659,
+              "at_ms": 995,
+              "detail": "sent 4 key event(s)",
+              "index": 13,
+              "label": "drop 6",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 267528659,
+              "at_ms": 1075,
+              "detail": "waited 80 ms",
+              "index": 14,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 267528659,
+              "at_ms": 1075,
+              "detail": "sent 7 key event(s)",
+              "index": 15,
+              "label": "drop 7 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 287528659,
+              "at_ms": 1155,
+              "detail": "waited 80 ms",
+              "index": 16,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 287528659,
+              "at_ms": 1155,
+              "detail": "sent 9 key event(s)",
+              "index": 17,
+              "label": "drop 8",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 307528659,
+              "at_ms": 1235,
+              "detail": "waited 80 ms",
+              "index": 18,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 307528659,
+              "at_ms": 1235,
+              "detail": "sent 6 key event(s)",
+              "index": 19,
+              "label": "drop 9 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 327528659,
+              "at_ms": 1315,
+              "detail": "waited 80 ms",
+              "index": 20,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 327528659,
+              "at_ms": 1315,
+              "detail": "sent 5 key event(s)",
+              "index": 21,
+              "label": "drop 10 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 347528659,
+              "at_ms": 1395,
+              "detail": "waited 80 ms",
+              "index": 22,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 347528659,
+              "at_ms": 1395,
+              "detail": "sent 1 key event(s)",
+              "index": 23,
+              "label": "drop 11",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 367528659,
+              "at_ms": 1475,
+              "detail": "waited 80 ms",
+              "index": 24,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 367528659,
+              "at_ms": 1475,
+              "detail": "sent 4 key event(s)",
+              "index": 25,
+              "label": "drop 12",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 387528659,
+              "at_ms": 1555,
+              "detail": "waited 80 ms",
+              "index": 26,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 387528659,
+              "at_ms": 1555,
+              "detail": "sent 3 key event(s)",
+              "index": 27,
+              "label": "drop 13",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 407528659,
+              "at_ms": 1635,
+              "detail": "waited 80 ms",
+              "index": 28,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 407528659,
+              "at_ms": 1635,
+              "detail": "sent 4 key event(s)",
+              "index": 29,
+              "label": "drop 14",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 427528659,
+              "at_ms": 1715,
+              "detail": "waited 80 ms",
+              "index": 30,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 427528659,
+              "at_ms": 1715,
+              "detail": "sent 9 key event(s)",
+              "index": 31,
+              "label": "drop 15 (clears 2)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 447528659,
+              "at_ms": 1795,
+              "detail": "waited 80 ms",
+              "index": 32,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 447528659,
+              "at_ms": 1795,
+              "detail": "sent 5 key event(s)",
+              "index": 33,
+              "label": "drop 16",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 467528659,
+              "at_ms": 1875,
+              "detail": "waited 80 ms",
+              "index": 34,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 467528659,
+              "at_ms": 1875,
+              "detail": "sent 4 key event(s)",
+              "index": 35,
+              "label": "drop 17",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 487528659,
+              "at_ms": 1955,
+              "detail": "waited 80 ms",
+              "index": 36,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 487528659,
+              "at_ms": 1955,
+              "detail": "sent 7 key event(s)",
+              "index": 37,
+              "label": "drop 18",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 507528659,
+              "at_ms": 2035,
+              "detail": "waited 80 ms",
+              "index": 38,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 507528659,
+              "at_ms": 2035,
+              "detail": "sent 2 key event(s)",
+              "index": 39,
+              "label": "drop 19 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 527528659,
+              "at_ms": 2115,
+              "detail": "waited 80 ms",
+              "index": 40,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 527528659,
+              "at_ms": 2115,
+              "detail": "sent 6 key event(s)",
+              "index": 41,
+              "label": "drop 20",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 547528659,
+              "at_ms": 2195,
+              "detail": "waited 80 ms",
+              "index": 42,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 547528659,
+              "at_ms": 2195,
+              "detail": "sent 2 key event(s)",
+              "index": 43,
+              "label": "drop 21",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 567528659,
+              "at_ms": 2275,
+              "detail": "waited 80 ms",
+              "index": 44,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 567528659,
+              "at_ms": 2275,
+              "detail": "sent 3 key event(s)",
+              "index": 45,
+              "label": "drop 22",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 587528659,
+              "at_ms": 2355,
+              "detail": "waited 80 ms",
+              "index": 46,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 587528659,
+              "at_ms": 2355,
+              "detail": "sent 9 key event(s)",
+              "index": 47,
+              "label": "drop 23 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 607528659,
+              "at_ms": 2435,
+              "detail": "waited 80 ms",
+              "index": 48,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 607528659,
+              "at_ms": 2435,
+              "detail": "sent 2 key event(s)",
+              "index": 49,
+              "label": "drop 24 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 627528659,
+              "at_ms": 2515,
+              "detail": "waited 80 ms",
+              "index": 50,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 627528659,
+              "at_ms": 2515,
+              "detail": "sent 2 key event(s)",
+              "index": 51,
+              "label": "drop 25 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 647528659,
+              "at_ms": 2595,
+              "detail": "waited 80 ms",
+              "index": 52,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 647528659,
+              "at_ms": 2595,
+              "detail": "sent 8 key event(s)",
+              "index": 53,
+              "label": "drop 26 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 667528659,
+              "at_ms": 2675,
+              "detail": "waited 80 ms",
+              "index": 54,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 667528659,
+              "at_ms": 2675,
+              "detail": "sent 4 key event(s)",
+              "index": 55,
+              "label": "drop 27",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 687528659,
+              "at_ms": 2755,
+              "detail": "waited 80 ms",
+              "index": 56,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 687528659,
+              "at_ms": 2755,
+              "detail": "sent 2 key event(s)",
+              "index": 57,
+              "label": "drop 28",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 707528659,
+              "at_ms": 2835,
+              "detail": "waited 80 ms",
+              "index": 58,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 707528659,
+              "at_ms": 2835,
+              "detail": "sent 6 key event(s)",
+              "index": 59,
+              "label": "drop 29",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 727528659,
+              "at_ms": 2915,
+              "detail": "waited 80 ms",
+              "index": 60,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 727528659,
+              "at_ms": 2915,
+              "detail": "sent 6 key event(s)",
+              "index": 61,
+              "label": "drop 30",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 747528659,
+              "at_ms": 2995,
+              "detail": "waited 80 ms",
+              "index": 62,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 747528659,
+              "at_ms": 2995,
+              "detail": "sent 3 key event(s)",
+              "index": 63,
+              "label": "drop 31",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 767528659,
+              "at_ms": 3075,
+              "detail": "waited 80 ms",
+              "index": 64,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 767528659,
+              "at_ms": 3075,
+              "detail": "sent 9 key event(s)",
+              "index": 65,
+              "label": "drop 32",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 787528659,
+              "at_ms": 3155,
+              "detail": "waited 80 ms",
+              "index": 66,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 787528659,
+              "at_ms": 3155,
+              "detail": "sent 6 key event(s)",
+              "index": 67,
+              "label": "drop 33 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 807528659,
+              "at_ms": 3235,
+              "detail": "waited 80 ms",
+              "index": 68,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 807528659,
+              "at_ms": 3235,
+              "detail": "sent 5 key event(s)",
+              "index": 69,
+              "label": "drop 34 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 827528659,
+              "at_ms": 3315,
+              "detail": "waited 80 ms",
+              "index": 70,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 827528659,
+              "at_ms": 3315,
+              "detail": "sent 4 key event(s)",
+              "index": 71,
+              "label": "drop 35",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 847528659,
+              "at_ms": 3395,
+              "detail": "waited 80 ms",
+              "index": 72,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 847528659,
+              "at_ms": 3395,
+              "detail": "sent 2 key event(s)",
+              "index": 73,
+              "label": "drop 36",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 867528659,
+              "at_ms": 3475,
+              "detail": "waited 80 ms",
+              "index": 74,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 867528659,
+              "at_ms": 3475,
+              "detail": "sent 9 key event(s)",
+              "index": 75,
+              "label": "drop 37 (clears 1)",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 887528659,
+              "at_ms": 3555,
+              "detail": "waited 80 ms",
+              "index": 76,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 887528659,
+              "at_ms": 3555,
+              "detail": "sent 2 key event(s)",
+              "index": 77,
+              "label": "drop 38",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 907528659,
+              "at_ms": 3635,
+              "detail": "waited 80 ms",
+              "index": 78,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 907528659,
+              "at_ms": 3635,
+              "detail": "sent 6 key event(s)",
+              "index": 79,
+              "label": "drop 39",
+              "op": "key",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "waited 80 ms",
+              "index": 80,
+              "label": null,
+              "op": "wait",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "18804 non-black pixels",
+              "index": 81,
+              "label": "well at the end of the plan",
+              "op": "snapshot",
+              "rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "1852 UART bytes seen",
+              "index": 82,
+              "label": "the line-clearing path ran",
+              "op": "assert",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "1852 UART bytes seen",
+              "index": 83,
+              "label": "the score the plan predicts",
+              "op": "assert",
+              "status": "pass"
+            },
+            {
+              "at_cycles": 927528659,
+              "at_ms": 3715,
+              "detail": "4160 non-black pixels in (8,104) 140x112 (want ..4160)",
+              "index": 84,
+              "label": "the stack stayed low (planned max height 4)",
+              "op": "assert",
+              "status": "pass"
+            }
+          ],
+          "steps_total": 85
+        },
+        "sd": {
+          "attached": true,
+          "block_count": 131072,
+          "block_size": 512,
+          "blocks_read": 0,
+          "blocks_written": 0,
+          "commands_seen": 0,
+          "format": "fat32",
+          "protocol_errors": [],
+          "unknown_commands": []
+        },
+        "step_quantum": 1,
+        "stop_pc": null,
+        "stop_reason": "scenario_done",
+        "uart": {
+          "bytes": 1852,
+          "sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+        },
+        "unsupported_mmio": [],
+        "unsupported_mmio_truncated": false,
+        "verdict": {
+          "expected_stop_reason": "scenario_done",
+          "missing_uart_markers": [],
+          "reasons": [],
+          "required_uart_markers": [
+            "[TETRIS] start",
+            "[TETRIS] cleared=",
+            "score=1400 lines=13"
+          ],
+          "status": "pass"
+        }
+      }
+    },
+    "status": "pass"
+  },
+  "behavior_equal": true,
+  "candidate": {
+    "backend_commit": "2a9e8cf1f5c2eb0b62099c9361e3d5b5b3b22bce",
+    "build_provenance_sha256": "98b24dccaae70c61af0ce17d2acf7c44cf9837ce2848f0c57418a29a3e140be9",
+    "cycles": 927528659,
+    "elapsed_us": 3715000,
+    "emulated_cycles_per_wall_second": 5338527.631537714,
+    "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+    "host_usage_delta": {
+      "max_rss_platform_units": 28724,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.016693,
+      "user_seconds": 181.23661600000003
+    },
+    "report_sha256": "2db7cc772972ba36a62939e40a4abf66092589adaf4c05642a5f740968182fdc",
+    "runner_sha256": "16314dc35682ac3b70d5e2b4a3c2295dc74e8600f6543419814a8906eb2a48f8",
+    "snapshot_sha256": {
+      "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+    "wall_ns": 173742410458,
+    "wall_seconds": 173.742410458
+  },
+  "candidate_guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "candidate_id": "P1-A",
+  "guest_observation_equal": true,
+  "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "record_id": "rp2040-cpu-p1-a-correctness-20260831-01",
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "status": "pass",
+  "trace_required": true,
+  "workload": "picotetris-opt1b-vrp5"
+}

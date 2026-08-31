@@ -1,0 +1,23 @@
+{
+  "backend_commit": "6f8ce41f1d3660fd6b4255337d629c74c10c08c4",
+  "build_provenance_sha256": "0641bc878f1e24a8f3cdba79858e194a44ffbbf3c3903ca916499aec38d0adcd",
+  "cycles": 827799818,
+  "elapsed_us": 3320000,
+  "emulated_cycles_per_wall_second": 5030785.801573294,
+  "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "host_usage_delta": {
+    "max_rss_platform_units": 28824,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.008369999999999999,
+    "user_seconds": 172.14873299999996
+  },
+  "report_sha256": "8e40f9937c71c4c9c59aeb3f2d7d0263063a69c9e865d53ca05e16527464a0c8",
+  "runner_sha256": "7e026604c7571613d1452c937a5741f6ffb56058dd5c69e70e39a23c2a25b98e",
+  "snapshot_sha256": {
+    "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+  "wall_ns": 164546822435,
+  "wall_seconds": 164.546822435
+}

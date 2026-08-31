@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/rp2040-cpu-profile-comparison.schema.json",
+  "title": "PicoCalc RP2040 CPU diagnostic profile comparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "candidate_id", "baseline_record", "candidate_record",
+    "baseline_backend_commit", "candidate_backend_commit", "profile_runtime_parent",
+    "profile_only_delta", "delta_files", "runtime_semantics_changed", "correctness_record",
+    "profile_wall_time_is_acceptance_evidence", "method", "workloads", "combined", "decision"
+  ],
+  "$defs": {
+    "counter": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "ratio": {"type": "number", "minimum": 0},
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_profile_sha256", "candidate_profile_sha256", "retired_instructions",
+        "emulated_cycles", "invalidation_requests", "examined_slots", "baseline_decode_misses",
+        "candidate_decode_misses", "decode_miss_reduction", "decode_miss_reduction_ratio",
+        "candidate_unrelated_would_clear", "candidate_unrelated_would_clear_ratio",
+        "candidate_matching_clears", "candidate_wide_predecessor_clears", "profile_valid", "core1_active"
+      ],
+      "properties": {
+        "baseline_profile_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_profile_sha256": {"$ref": "#/$defs/sha256"},
+        "retired_instructions": {"$ref": "#/$defs/counter"},
+        "emulated_cycles": {"$ref": "#/$defs/counter"},
+        "invalidation_requests": {"$ref": "#/$defs/counter"},
+        "examined_slots": {"$ref": "#/$defs/counter"},
+        "baseline_decode_misses": {"$ref": "#/$defs/counter"},
+        "candidate_decode_misses": {"$ref": "#/$defs/counter"},
+        "decode_miss_reduction": {"type": "integer"},
+        "decode_miss_reduction_ratio": {"type": "number"},
+        "candidate_unrelated_would_clear": {"$ref": "#/$defs/counter"},
+        "candidate_unrelated_would_clear_ratio": {"$ref": "#/$defs/ratio"},
+        "candidate_matching_clears": {"$ref": "#/$defs/counter"},
+        "candidate_wide_predecessor_clears": {"$ref": "#/$defs/counter"},
+        "profile_valid": {"const": true},
+        "core1_active": {"const": false}
+      }
+    }
+  },
+  "properties": {
+    "schema_id": {"const": "picocalc.rp2040-cpu-profile-comparison"},
+    "schema_version": {"const": 1},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "baseline_record": {"type": "string", "minLength": 1},
+    "candidate_record": {"type": "string", "minLength": 1},
+    "baseline_backend_commit": {"$ref": "#/$defs/commit"},
+    "candidate_backend_commit": {"$ref": "#/$defs/commit"},
+    "profile_runtime_parent": {"$ref": "#/$defs/commit"},
+    "profile_only_delta": {"$ref": "#/$defs/commit"},
+    "delta_files": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "runtime_semantics_changed": {"const": false},
+    "correctness_record": {"type": "string", "minLength": 1},
+    "profile_wall_time_is_acceptance_evidence": {"const": false},
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comparison", "decode_miss_reduction", "unrelated_would_clear"],
+      "properties": {
+        "comparison": {"type": "string", "minLength": 1},
+        "decode_miss_reduction": {"type": "string", "minLength": 1},
+        "unrelated_would_clear": {"type": "string", "minLength": 1}
+      }
+    },
+    "workloads": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"],
+      "properties": {
+        "picotetris-opt1b-vrp5": {"$ref": "#/$defs/workload"},
+        "picoedit-r1-vrp2f": {"$ref": "#/$defs/workload"}
+      }
+    },
+    "combined": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_decode_misses", "candidate_decode_misses", "decode_miss_reduction",
+        "decode_miss_reduction_ratio", "candidate_unrelated_would_clear", "candidate_examined_slots",
+        "candidate_unrelated_would_clear_ratio", "candidate_invalidation_requests"
+      ],
+      "properties": {
+        "baseline_decode_misses": {"$ref": "#/$defs/counter"},
+        "candidate_decode_misses": {"$ref": "#/$defs/counter"},
+        "decode_miss_reduction": {"type": "integer"},
+        "decode_miss_reduction_ratio": {"type": "number"},
+        "candidate_unrelated_would_clear": {"$ref": "#/$defs/counter"},
+        "candidate_examined_slots": {"$ref": "#/$defs/counter"},
+        "candidate_unrelated_would_clear_ratio": {"$ref": "#/$defs/ratio"},
+        "candidate_invalidation_requests": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "interpretation"],
+      "properties": {
+        "status": {"const": "profile_signal_positive_performance_pending"},
+        "interpretation": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
