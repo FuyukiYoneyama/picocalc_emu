@@ -2636,6 +2636,80 @@ def _require_correctness_gate(
         raise ValueError("correctness gate required before A/B run: {}".format("; ".join(failures)))
 
 
+def _require_profile_gate(
+    profile_record: Optional[Path],
+    workloads: Sequence[Mapping[str, Any]],
+    candidate_identity: Mapping[str, Any],
+    measurement_cpu: Optional[int],
+) -> None:
+    """Require the P2-A feature-on diagnostic profile before production A/B."""
+    if profile_record is None:
+        raise ValueError("P2-A A/B requires --profile-record diagnostic profile")
+    record = profile_record.resolve()
+    _validate_record_root(record)
+    if not (record / "SHA256SUMS").is_file():
+        raise ValueError("P2-A profile record is missing SHA256SUMS")
+    _verify_existing_sha256sums(record)
+    manifest = _read_json(record / "manifest.json")
+    decision = _read_json(record / "decision.json")
+    if not isinstance(manifest, Mapping) or not isinstance(decision, Mapping):
+        raise ValueError("P2-A profile record manifest/decision must be objects")
+    expected_workloads = _workload_manifest_entries(workloads)
+    if (
+        manifest.get("record_type") != RECORD_TYPE
+        or manifest.get("record_version") != SCHEMA_VERSION
+        or manifest.get("record_id") != record.name
+        or manifest.get("candidate_id") != "P2-A"
+        or manifest.get("workloads") != expected_workloads
+        or manifest.get("measurement_cpu") != measurement_cpu
+    ):
+        raise ValueError("P2-A profile record identity/workloads do not match A/B")
+    identities = manifest.get("backend_identities")
+    profile_identity = identities.get("candidate_profile") if isinstance(identities, Mapping) else None
+    if not isinstance(profile_identity, Mapping):
+        raise ValueError("P2-A profile record candidate_profile identity is missing")
+    if profile_identity.get("commit") != candidate_identity.get("commit"):
+        raise ValueError("P2-A profile backend commit differs from A/B candidate")
+    profile_features = profile_identity.get("feature_set")
+    required_features = {"cpu-application-profiler", "pending-exception-fast-reject", "sd-gen1-multiblock"}
+    if not isinstance(profile_features, list) or not required_features.issubset(profile_features):
+        raise ValueError("P2-A profile record lacks required profiler features")
+    if manifest.get("feature_set") != profile_features:
+        raise ValueError("P2-A profile record feature_set differs from candidate_profile identity")
+    if decision.get("decision_kind") != "profile" or decision.get("status") != "pass":
+        raise ValueError("P2-A profile record decision is not passing")
+    profile_dir = record / "profile"
+    if not profile_dir.is_dir():
+        raise ValueError("P2-A profile record directory is missing")
+    expected_paths = {
+        profile_dir / "{}-r{}.json".format(workload["id"], workload["revision"])
+        for workload in workloads
+    }
+    actual_paths = {
+        path
+        for path in profile_dir.glob("*.json")
+        if not path.name.endswith("-measurement.json")
+    }
+    if actual_paths != expected_paths:
+        raise ValueError("P2-A profile record does not cover exactly both workloads")
+    for workload in workloads:
+        profile_path = profile_dir / "{}-r{}.json".format(workload["id"], workload["revision"])
+        profile = _read_json(profile_path)
+        if not isinstance(profile, Mapping):
+            raise ValueError("P2-A profile is not an object: {}".format(profile_path))
+        expected_profile_workload = {
+            key: workload[key]
+            for key in ("id", "revision", "firmware_sha256", "scenario_sha256")
+        }
+        if (
+            profile.get("candidate_id") != "P2-A"
+            or profile.get("workload") != expected_profile_workload
+            or profile.get("feature_set") != profile_features
+        ):
+            raise ValueError("P2-A profile identity/workload/features are invalid: {}".format(profile_path))
+        validate_pending_exception_profile(profile)
+
+
 def run_ab(args: argparse.Namespace) -> int:
     workloads = load_workloads(args.target, args.firmware)
     if len(workloads) != 2:
@@ -2668,6 +2742,13 @@ def run_ab(args: argparse.Namespace) -> int:
             and args.baseline_runner.resolve() == args.candidate_runner.resolve()
         ),
     )
+    if args.candidate_id == "P2-A":
+        _require_profile_gate(
+            getattr(args, "profile_record", None),
+            workloads,
+            identities["candidate_production"],
+            args.cpu,
+        )
     _require_admission_gate(args.admission_record, workloads, identities["baseline_production"])
     batch_id = args.batch_id
     if not batch_id:
@@ -3054,6 +3135,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ab.add_argument("--candidate-backend", type=Path, required=True)
     ab.add_argument("--baseline-runner", type=Path, required=True)
     ab.add_argument("--candidate-runner", type=Path, required=True)
+    ab.add_argument(
+        "--profile-record", type=Path,
+        help="P2-A feature-on diagnostic profile record required before production A/B",
+    )
     ab.add_argument("--pairs", type=int, default=10)
     ab.add_argument("--warmup", type=int, default=1)
     ab.add_argument("--calibration-runs", type=int, default=3)

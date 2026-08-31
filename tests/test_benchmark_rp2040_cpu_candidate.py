@@ -375,6 +375,10 @@ class CandidateRunnerTests(unittest.TestCase):
             ["cpu-application-profiler", "pending-exception-fast-reject"],
         )
 
+    def test_p2_ab_requires_diagnostic_profile_record(self):
+        with self.assertRaisesRegex(ValueError, "--profile-record"):
+            self.module._require_profile_gate(None, [], {"commit": "a" * 40}, 0)
+
     def test_p2_profile_verifies_aggregate_and_core_exception_conservation(self):
         verifier = load_verifier()
 

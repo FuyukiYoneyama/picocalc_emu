@@ -414,6 +414,7 @@ python3 tools/benchmark_rp2040_cpu_candidate.py admit \
 2026-08-30 の実施結果は pass である。`73784b96a1afdb34dc1a79577f947b670a138d07` の clean backend と、runner SHA-256 `921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7`（build-provenance SHA-256 `d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af`）を使用した。PicoTetris r10 は cycles `927528659`、PicoEdit r4 は cycles `827799818` で、各2回の guest observation projection が登録 report と一致し、各 workload 内の2回も一致した。検証済み record は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/`、`verify_environment.py --scope target-schema` は 37 checks pass、record の `SHA256SUMS` は全件 pass である。従って common baseline gate は閉じ、P0-A2 null batch を開始できる。
 
 `correctness` と `ab` は `--admission-record` でこの P0-0 record root を必須入力とし、manifest/decision/checksum/evidence の pass と現行 baseline identity を measured run 前に再検証する。P0-A2 のみ、同一 runner binaryを A/B 両方へ渡すため sidecar `provenance_role=production` への移行を許すが、backend commit/dirty、runner SHA、実効 feature set は必ず一致させる。`profile` も同じ admission record の manifest/decision/checksum/evidence と固定 workload を再検証するが、profile CLI は baseline executable を受け取らないため、別途比較する current baseline identity は持たず、candidate profile runner 自身の sidecar identity を検査する。admission record がない、別 workload、別 baseline、receipt identity の不一致、または partial checksum の場合は subprocess を一つも起動しない。
+P2-A の production `ab` だけは `--profile-record` で feature-on diagnostic profile record を追加指定する。runner は profile record の checksum、P2-A candidate ID、二 workload、candidate backend commit、`cpu-application-profiler,pending-exception-fast-reject` feature、aggregate/core counter conservation、passing profile decision を measured run 前に再検証する。profile record がない・不一致なら P2-A A/B subprocess を一つも起動しない。
 
 ## 6. 実装フェーズ
 
@@ -723,7 +724,7 @@ P2-A 後も profiler と optional sampling の両方で exception poll/arbitrati
 - source 別 exception entry 数
 - `step` あたり host cycles と branch misses
 - 実アプリ全体の cycles/second
-- production A/B の前に、`cpu-application-profiler,pending-exception-fast-reject` buildで二 workloadの診断 profileを取り、`polls = reject_no_candidate + reject_primask + reject_active_handler + entries` の保存値と candidate feature provenance を検証する。profileのwall timeは採否に使わない。
+- production A/B の `ab` には、その診断 profile record を `--profile-record` で渡す。runner/verifier は aggregate と各 core について `polls = reject_no_candidate + reject_primask + reject_active_handler + entries`、`entries = source.pendsv + source.systick + source.nvic` を再計算する。profileのwall timeは採否に使わない。
 
 #### 完了条件
 
