@@ -403,6 +403,33 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(valid["pre_values"], [100.0, 101.0, 99.0])
         self.assertEqual(valid["post_values"], [101.0, 100.0, 102.0])
 
+    def test_interleaved_anchor_policy_is_fixed(self):
+        policy = self.module.interleaved_anchor_measurement_policy()
+        self.assertEqual(policy["calibration_method"], "interleaved-anchor-v1")
+        self.assertEqual(policy["anchor_layout"], {
+            "pre_count": 3,
+            "after_measured_runs": [10, 20, 30],
+            "post_count": 3,
+        })
+        self.assertEqual(len(policy["anchor_run_ids"]), 9)
+        self.assertEqual(policy["anchor_residual_threshold"], 0.02)
+
+    def test_interleaved_anchor_model_and_interpolation_are_deterministic(self):
+        anchors = [
+            {"anchor_id": "a0", "elapsed_seconds": 0.0, "throughput": 100.0},
+            {"anchor_id": "a1", "elapsed_seconds": 10.0, "throughput": 110.0},
+            {"anchor_id": "a2", "elapsed_seconds": 20.0, "throughput": 120.0},
+        ]
+        model = self.module._anchor_log_linear_model(anchors)
+        self.assertTrue(model["valid"])
+        self.assertEqual(model["model"], "global-log-linear-v1")
+        self.assertAlmostEqual(
+            self.module.interpolate_anchor_throughput(anchors, 5.0),
+            math.sqrt(100.0 * 110.0),
+        )
+        with self.assertRaisesRegex(ValueError, "outside"):
+            self.module.interpolate_anchor_throughput(anchors, 21.0)
+
     def test_ab_inter_run_cooldown_is_fixed_before_measurement(self):
         self.assertEqual(
             self.module.validate_inter_run_cooldown(

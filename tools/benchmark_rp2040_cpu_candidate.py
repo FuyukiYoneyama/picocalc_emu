@@ -43,6 +43,9 @@ REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f")
 # recovery interval fixed and part of the record identity so it cannot be
 # tuned after looking at a result.
 AB_INTER_RUN_COOLDOWN_SECONDS = 60.0
+CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1 = "interleaved-anchor-v1"
+CALIBRATION_ANCHOR_RESIDUAL_LIMIT = 0.02
+INTERLEAVED_ANCHOR_AFTER_RUNS = (10, 20, 30)
 # Cargo features accepted by the measurement contract.  The allow-list also
 # includes planned CPU-candidate features so the runner can be prepared before
 # the corresponding backend implementation lands.
@@ -847,6 +850,149 @@ def calibration_drift(pre: Sequence[float], post: Sequence[float]) -> Dict[str, 
         "post_median": post_median,
         "relative_drift": relative,
         "valid": relative <= 0.02,
+    }
+
+
+def interleaved_anchor_measurement_policy() -> Dict[str, Any]:
+    """Return the immutable policy fields for the revised null-control."""
+    return {
+        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+        "calibration_method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+        "anchor_layout": {
+            "pre_count": 3,
+            "after_measured_runs": list(INTERLEAVED_ANCHOR_AFTER_RUNS),
+            "post_count": 3,
+        },
+        "anchor_run_ids": [
+            "anchor-pre-{:03d}".format(index) for index in range(1, 4)
+        ] + [
+            "anchor-after-{:03d}".format(index) for index in INTERLEAVED_ANCHOR_AFTER_RUNS
+        ] + [
+            "anchor-post-{:03d}".format(index) for index in range(1, 4)
+        ],
+        "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-throughput-v1",
+        "anchor_residual_threshold": CALIBRATION_ANCHOR_RESIDUAL_LIMIT,
+        "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+    }
+
+
+def validate_calibration_method(value: str) -> str:
+    if value != CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1:
+        raise ValueError(
+            "--calibration-method is fixed at {}".format(
+                CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1
+            )
+        )
+    return value
+
+
+def _anchor_elapsed_seconds(start_ns: int, end_ns: int, protocol_start_ns: int) -> float:
+    if end_ns <= start_ns or protocol_start_ns > start_ns:
+        raise ValueError("anchor timing coordinates are invalid")
+    midpoint_ns = start_ns + (end_ns - start_ns) // 2
+    elapsed = (midpoint_ns - protocol_start_ns) / 1_000_000_000.0
+    if not math.isfinite(elapsed) or elapsed < 0:
+        raise ValueError("anchor elapsed coordinate is invalid")
+    return elapsed
+
+
+def _anchor_log_linear_model(anchors: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    """Fit a global line for residual diagnostics in log-throughput space."""
+    if len(anchors) < 2:
+        raise ValueError("at least two calibration anchors are required")
+    points: List[Tuple[float, float]] = []
+    for anchor in anchors:
+        elapsed = anchor.get("elapsed_seconds")
+        throughput = anchor.get("throughput")
+        if (
+            not isinstance(elapsed, (int, float))
+            or isinstance(elapsed, bool)
+            or not math.isfinite(float(elapsed))
+            or not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or not math.isfinite(float(throughput))
+            or float(throughput) <= 0
+        ):
+            raise ValueError("calibration anchor timing/throughput is invalid")
+        points.append((float(elapsed), math.log(float(throughput))))
+    if any(left[0] >= right[0] for left, right in zip(points, points[1:])):
+        raise ValueError("calibration anchors are not strictly time ordered")
+    mean_x = statistics.mean(point[0] for point in points)
+    mean_y = statistics.mean(point[1] for point in points)
+    denominator = sum((x - mean_x) ** 2 for x, _ in points)
+    if denominator <= 0:
+        raise ValueError("calibration anchor times are degenerate")
+    slope = sum((x - mean_x) * (y - mean_y) for x, y in points) / denominator
+    intercept = mean_y - slope * mean_x
+    residuals = []
+    for anchor, (x, y) in zip(anchors, points):
+        predicted_log = intercept + slope * x
+        residual = math.exp(abs(y - predicted_log)) - 1.0
+        residuals.append(
+            {
+                "anchor_id": anchor.get("anchor_id"),
+                "observed_log_throughput": y,
+                "predicted_log_throughput": predicted_log,
+                "relative_residual": residual,
+            }
+        )
+    max_residual = max(item["relative_residual"] for item in residuals)
+    rms_residual = math.sqrt(
+        statistics.mean(item["relative_residual"] ** 2 for item in residuals)
+    )
+    return {
+        "model": "global-log-linear-v1",
+        "slope": slope,
+        "intercept": intercept,
+        "reference_throughput": geometric_mean([math.exp(point[1]) for point in points]),
+        "residuals": residuals,
+        "max_relative_residual": max_residual,
+        "rms_relative_residual": rms_residual,
+        "valid": max_residual <= CALIBRATION_ANCHOR_RESIDUAL_LIMIT,
+    }
+
+
+def interpolate_anchor_throughput(
+    anchors: Sequence[Mapping[str, Any]], elapsed_seconds: float
+) -> float:
+    """Interpolate adjacent anchor log-throughputs at a measured-run midpoint."""
+    if not math.isfinite(elapsed_seconds) or len(anchors) < 2:
+        raise ValueError("invalid interpolation coordinate or anchor set")
+    points = []
+    for anchor in anchors:
+        elapsed = anchor.get("elapsed_seconds")
+        throughput = anchor.get("throughput")
+        if (
+            not isinstance(elapsed, (int, float))
+            or isinstance(elapsed, bool)
+            or not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or float(throughput) <= 0
+        ):
+            raise ValueError("invalid interpolation anchor")
+        points.append((float(elapsed), math.log(float(throughput))))
+    if elapsed_seconds < points[0][0] or elapsed_seconds > points[-1][0]:
+        raise ValueError("measured run lies outside calibration anchor range")
+    for (left_x, left_y), (right_x, right_y) in zip(points, points[1:]):
+        if elapsed_seconds <= right_x:
+            fraction = (elapsed_seconds - left_x) / (right_x - left_x)
+            return math.exp(left_y + fraction * (right_y - left_y))
+    return math.exp(points[-1][1])
+
+
+def _pair_level_sensitivity(
+    pair_results: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    deltas = [float(item["corrected_pair_log_ratio"]) - float(item["pair_log_ratio"]) for item in pair_results]
+    if not deltas:
+        raise ValueError("pair-level sensitivity requires pair results")
+    return {
+        "method": "raw-vs-host-corrected-log-ratio-v1",
+        "n": len(deltas),
+        "mean_delta_log_ratio": statistics.mean(deltas),
+        "max_abs_delta_log_ratio": max(abs(delta) for delta in deltas),
+        "raw_combined_mean_log_ratio": statistics.mean(float(item["pair_log_ratio"]) for item in pair_results),
+        "corrected_combined_mean_log_ratio": statistics.mean(float(item["corrected_pair_log_ratio"]) for item in pair_results),
     }
 
 
@@ -1789,6 +1935,349 @@ def _run_calibration(
     return values
 
 
+def _run_interleaved_anchor_ab(
+    args: argparse.Namespace,
+    workloads: Sequence[Mapping[str, Any]],
+    identities: Mapping[str, Mapping[str, Any]],
+    record_root: Path,
+    decision_context: Mapping[str, Any],
+    measurement_policy: Mapping[str, Any],
+) -> int:
+    """Run the fixed 10-pair A/B with interleaved host-speed anchors."""
+    calibration_workload = next(
+        (workload for workload in workloads if workload["id"].startswith("picotetris-")),
+        None,
+    )
+    if calibration_workload is None:
+        raise ValueError("ab requires a registered PicoTetris workload for calibration")
+    by_id = {workload["id"]: workload for workload in workloads}
+    schedule = make_ab_schedule([workload["id"] for workload in workloads], args.pairs)
+    anchors: List[Dict[str, Any]] = []
+    measured: List[Dict[str, Any]] = []
+    summary_written = False
+    before = _set_cpu_affinity(args.cpu)
+    try:
+        for _ in range(args.warmup):
+            for workload in workloads:
+                warmup_backend = args.baseline_backend
+                warmup_runner = args.baseline_runner
+                warmup_identity = identities["baseline_production"]
+                run_guest(
+                    workload,
+                    warmup_backend,
+                    warmup_runner,
+                    expected_backend_identity=warmup_identity,
+                )
+                _sleep_between_runs(args.inter_run_cooldown_seconds)
+                run_guest(
+                    workload,
+                    args.candidate_backend,
+                    args.candidate_runner,
+                    expected_backend_identity=identities["candidate_production"],
+                )
+                _sleep_between_runs(args.inter_run_cooldown_seconds)
+        host_snapshot_start = host_cpu()
+        protocol_start_ns = time.perf_counter_ns()
+        if host_snapshot_start.get("allowed_cpus") != [args.cpu]:
+            raise ValueError("interleaved-anchor protocol did not retain requested CPU affinity")
+
+        def run_anchor(anchor_id: str, position: str, after_measured_run: int) -> None:
+            started_ns = time.perf_counter_ns()
+            result = run_guest(
+                calibration_workload,
+                args.baseline_backend,
+                args.baseline_runner,
+                expected_backend_identity=identities["baseline_production"],
+            )
+            ended_ns = time.perf_counter_ns()
+            measurement = result["measurement"]
+            anchors.append(
+                {
+                    "anchor_id": anchor_id,
+                    "position": position,
+                    "after_measured_run": after_measured_run,
+                    "workload": calibration_workload["id"],
+                    "role": "baseline",
+                    "elapsed_seconds": _anchor_elapsed_seconds(
+                        started_ns, ended_ns, protocol_start_ns
+                    ),
+                    "throughput": measurement["emulated_cycles_per_wall_second"],
+                    "cycles": measurement["cycles"],
+                    "wall_seconds": measurement["wall_seconds"],
+                    "guest_observation_sha256": measurement["guest_observation_sha256"],
+                    "backend_commit": measurement["backend_commit"],
+                    "runner_sha256": measurement["runner_sha256"],
+                    "build_provenance_sha256": measurement["build_provenance_sha256"],
+                }
+            )
+            _sleep_between_runs(args.inter_run_cooldown_seconds)
+
+        def run_measured(item: Mapping[str, Any]) -> None:
+            workload = by_id[item["workload"]]
+            backend = args.baseline_backend if item["role"] == "baseline" else args.candidate_backend
+            runner = args.baseline_runner if item["role"] == "baseline" else args.candidate_runner
+            started_ns = time.perf_counter_ns()
+            result = run_guest(
+                workload,
+                backend,
+                runner,
+                expected_backend_identity=identities["{}_production".format(item["role"])],
+            )
+            ended_ns = time.perf_counter_ns()
+            measured.append(
+                {
+                    "item": dict(item),
+                    "measurement": result["measurement"],
+                    "elapsed_seconds": _anchor_elapsed_seconds(
+                        started_ns, ended_ns, protocol_start_ns
+                    ),
+                }
+            )
+            _sleep_between_runs(args.inter_run_cooldown_seconds)
+
+        for index in range(1, args.calibration_runs + 1):
+            run_anchor(
+                "anchor-pre-{:03d}".format(index),
+                "pre",
+                0,
+            )
+        for measured_index, item in enumerate(schedule, 1):
+            run_measured(item)
+            if measured_index in INTERLEAVED_ANCHOR_AFTER_RUNS:
+                run_anchor(
+                    "anchor-after-{:03d}".format(measured_index),
+                    "after-measured-run",
+                    measured_index,
+                )
+        for index in range(1, args.calibration_runs + 1):
+            run_anchor(
+                "anchor-post-{:03d}".format(index),
+                "post",
+                len(schedule),
+            )
+        host_snapshot_end = host_cpu()
+
+        expected_anchor_ids = measurement_policy["anchor_run_ids"]
+        actual_anchor_ids = [anchor["anchor_id"] for anchor in anchors]
+        if actual_anchor_ids != expected_anchor_ids:
+            raise ValueError(
+                "interleaved-anchor protocol produced unexpected anchor IDs: {} != {}".format(
+                    actual_anchor_ids, expected_anchor_ids
+                )
+            )
+        if len(measured) != len(schedule):
+            raise ValueError("interleaved-anchor protocol did not collect all measured runs")
+        model = _anchor_log_linear_model(anchors)
+        reference_throughput = model["reference_throughput"]
+        leaves: List[Dict[str, Any]] = []
+        for item in measured:
+            measurement = dict(item["measurement"])
+            predicted = interpolate_anchor_throughput(anchors, item["elapsed_seconds"])
+            correction = reference_throughput / predicted
+            raw_throughput = measurement["emulated_cycles_per_wall_second"]
+            leaf = {
+                "schema_id": AB_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "artifact_type": "run",
+                **item["item"],
+                **measurement,
+                "protocol_elapsed_seconds": item["elapsed_seconds"],
+                "predicted_anchor_throughput": predicted,
+                "host_speed_correction": correction,
+                "corrected_emulated_cycles_per_wall_second": raw_throughput * correction,
+            }
+            leaves.append(leaf)
+        for leaf in leaves:
+            _write_json_once(record_root / "ab" / "{}.json".format(leaf["run_id"]), leaf)
+
+        grouped: Dict[str, Dict[int, Dict[str, Mapping[str, Any]]]] = {}
+        for leaf in leaves:
+            grouped.setdefault(leaf["workload"], {}).setdefault(leaf["pair"], {})[leaf["role"]] = leaf
+        summaries: Dict[str, Any] = {}
+        combined_raw: List[float] = []
+        pair_results: List[Dict[str, Any]] = []
+        for workload in workloads:
+            workload_id = workload["id"]
+            ratios: List[float] = []
+            for pair in range(1, args.pairs + 1):
+                values = grouped[workload_id][pair]
+                raw_ratio = log_ratio(
+                    values["candidate"]["emulated_cycles_per_wall_second"],
+                    values["baseline"]["emulated_cycles_per_wall_second"],
+                )
+                corrected_ratio = log_ratio(
+                    values["candidate"]["corrected_emulated_cycles_per_wall_second"],
+                    values["baseline"]["corrected_emulated_cycles_per_wall_second"],
+                )
+                ratios.append(raw_ratio)
+                combined_raw.append(raw_ratio)
+                pair_results.append(
+                    {
+                        "workload": workload_id,
+                        "pair_index": pair,
+                        "order": values["baseline"]["order"],
+                        "run_ids": [values["baseline"]["run_id"], values["candidate"]["run_id"]],
+                        "pair_log_ratio": raw_ratio,
+                        "corrected_pair_log_ratio": corrected_ratio,
+                        "baseline_guest_observation_sha256": values["baseline"]["guest_observation_sha256"],
+                        "candidate_guest_observation_sha256": values["candidate"]["guest_observation_sha256"],
+                        "guest_observation_equal": (
+                            values["baseline"]["guest_observation_sha256"]
+                            == values["candidate"]["guest_observation_sha256"]
+                        ),
+                    }
+                )
+            summaries[workload_id] = summarize_log_effect(ratios)
+        pair_sensitivity = _pair_level_sensitivity(pair_results)
+        anchor_drift = calibration_drift(
+            [anchor["throughput"] for anchor in anchors[: args.calibration_runs]],
+            [anchor["throughput"] for anchor in anchors[-args.calibration_runs :]],
+        )
+        calibration = {
+            "method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+            "anchor_count": len(anchors),
+            "anchor_run_ids": actual_anchor_ids,
+            "anchors": anchors,
+            "anchor_model": model,
+            "pre_post_relative_drift": anchor_drift["relative_drift"],
+            "pre_post_drift_gate_used": False,
+            "host_snapshot_start": host_snapshot_start,
+            "host_snapshot_end": host_snapshot_end,
+            "cpu_affinity": {
+                "requested": args.cpu,
+                "effective_start": host_snapshot_start.get("allowed_cpus"),
+                "effective_end": host_snapshot_end.get("allowed_cpus"),
+            },
+            "correctness_gate": "pass",
+            "pair_level_sensitivity": pair_sensitivity,
+            "valid": model["valid"],
+        }
+        mismatches = [
+            result for result in pair_results if result["guest_observation_equal"] is not True
+        ]
+        summary_status = "pending"
+        if not model["valid"]:
+            summary_status = "invalid"
+        if mismatches:
+            summary_status = "invalid"
+        summary = {
+            "schema_id": AB_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "record_id": args.batch_id,
+            "candidate_id": args.candidate_id,
+            "artifact_type": "summary",
+            "status": summary_status,
+            "pairs": args.pairs,
+            "measured_runs": len(schedule),
+            "schedule": {"ab": args.pairs // 2, "ba": args.pairs // 2},
+            "calibration": calibration,
+            "workloads": summaries,
+            "pair_results": pair_results,
+            "combined": summarize_log_effect(combined_raw),
+            "host": host_snapshot_end,
+            "measurement_policy": dict(measurement_policy),
+        }
+        _write_json_once(record_root / "summary.json", summary)
+        summary_written = True
+        if summary_status == "invalid":
+            reasons = []
+            if not model["valid"]:
+                reasons.append("interleaved anchor residual exceeded 2%")
+            if mismatches:
+                reasons.append("guest observation projection mismatch during A/B")
+            decision = {
+                "schema_id": DECISION_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "decision_kind": "invalid",
+                "status": "invalid",
+                "reasons": reasons,
+                "statistics": summary,
+                **dict(decision_context),
+            }
+            decision_text = "# RP2040 CPU candidate decision\n\nBatch invalid: {}.\n".format(
+                "; ".join(reasons)
+            )
+        else:
+            decision = {
+                "schema_id": DECISION_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "decision_kind": "performance",
+                "status": "pending",
+                "statistics": summary,
+                "correctness": {"status": "pass", "source": "correctness/comparison.json"},
+                **dict(decision_context),
+            }
+            decision_text = "# RP2040 CPU candidate decision\n\nPerformance A/B is pending review and null-control sensitivity.\n"
+        _write_json_replace(record_root / "decision.json", decision)
+        _write_text_once(record_root / "decision.md", decision_text)
+        _write_text_once(
+            record_root / "hotpath-disassembly.txt",
+            "P0-B profile provides CPU hot-path evidence; candidate A/B disassembly is recorded separately.\n",
+        )
+        _write_sha256sums_once(record_root)
+        if summary_status == "invalid":
+            raise ValueError("interleaved-anchor A/B batch is invalid; see decision.json")
+    except Exception as error:
+        if not summary_written:
+            failure_summary = {
+                "schema_id": AB_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "artifact_type": "summary",
+                "status": "invalid",
+                "pairs": args.pairs,
+                "measured_runs": len(measured),
+                "schedule": {"ab": args.pairs // 2, "ba": args.pairs // 2},
+                "calibration": {
+                    "method": CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+                    "anchor_count": len(anchors),
+                    "anchor_run_ids": [anchor.get("anchor_id") for anchor in anchors],
+                    "valid": False,
+                    "error": str(error),
+                },
+                "workloads": {},
+                "pair_results": [],
+                "combined": {},
+                "host": host_cpu(),
+                "measurement_policy": dict(measurement_policy),
+            }
+            _write_json_once(record_root / "summary.json", failure_summary)
+            _write_json_replace(
+                record_root / "decision.json",
+                {
+                    "schema_id": DECISION_SCHEMA_ID,
+                    "schema_version": SCHEMA_VERSION,
+                    "record_id": args.batch_id,
+                    "candidate_id": args.candidate_id,
+                    "decision_kind": "invalid",
+                    "status": "invalid",
+                    "reasons": ["interleaved-anchor protocol failed", str(error)],
+                    "statistics": failure_summary,
+                    **dict(decision_context),
+                },
+            )
+            _write_text_once(
+                record_root / "decision.md",
+                "# RP2040 CPU candidate decision\n\nBatch invalid: interleaved-anchor protocol failed.\n",
+            )
+            _write_text_once(
+                record_root / "hotpath-disassembly.txt",
+                "P0-B profile provides CPU hot-path evidence; candidate A/B disassembly is recorded separately.\n",
+            )
+            _write_sha256sums_once(record_root)
+        raise
+    finally:
+        _restore_cpu_affinity(before)
+    return 0
+
+
 def _require_correctness_gate(
     record_root: Path,
     workloads: Sequence[Mapping[str, Any]],
@@ -1968,6 +2457,10 @@ def run_ab(args: argparse.Namespace) -> int:
         raise ValueError("ab fixes --warmup at 1")
     if args.calibration_runs != 3:
         raise ValueError("ab fixes --calibration-runs at 3")
+    calibration_method = getattr(
+        args, "calibration_method", CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1
+    )
+    validate_calibration_method(calibration_method)
     inter_run_cooldown_seconds = validate_inter_run_cooldown(
         args.inter_run_cooldown_seconds
     )
@@ -2005,13 +2498,19 @@ def run_ab(args: argparse.Namespace) -> int:
         _base_manifest(
             batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
             feature_set=getattr(args, "feature_set", []),
-            measurement_policy={
-                "inter_run_cooldown_seconds": inter_run_cooldown_seconds,
-            },
+            measurement_policy=interleaved_anchor_measurement_policy(),
         ),
     )
     decision_context = _manifest_decision_context(
         record_root, workloads, identities, feature_set=getattr(args, "feature_set", []),
+    )
+    return _run_interleaved_anchor_ab(
+        args,
+        workloads,
+        identities,
+        record_root,
+        decision_context,
+        interleaved_anchor_measurement_policy(),
     )
     before = _set_cpu_affinity(args.cpu)
     try:
@@ -2579,6 +3078,12 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ab.add_argument("--warmup", type=int, default=1)
     ab.add_argument("--calibration-runs", type=int, default=3)
     ab.add_argument(
+        "--calibration-method",
+        default=CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,
+        choices=(CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V1,),
+        help="fixed host-stability protocol",
+    )
+    ab.add_argument(
         "--inter-run-cooldown-seconds", type=float,
         default=AB_INTER_RUN_COOLDOWN_SECONDS,
         help="fixed host-recovery interval between guest runs",
@@ -2629,6 +3134,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             parser.error("--warmup is fixed at 1")
         if args.calibration_runs != 3:
             parser.error("--calibration-runs is fixed at 3")
+        try:
+            validate_calibration_method(args.calibration_method)
+        except ValueError as error:
+            parser.error(str(error))
         try:
             validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
         except ValueError as error:

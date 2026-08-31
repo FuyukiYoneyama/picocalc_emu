@@ -343,7 +343,7 @@ python3 tools/benchmark_rp2040_cpu_candidate.py ab \
   --feature-set <candidate-feature-list> \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
-  --pairs 10 --warmup 1 --calibration-runs 3 --cpu <logical-cpu> \
+  --pairs 10 --warmup 1 --calibration-runs 3 --calibration-method interleaved-anchor-v1 --cpu <logical-cpu> \
   --inter-run-cooldown-seconds 60 \
   --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --batch-id rp2040-cpu-<candidate>-YYYYMMDD-NN \
@@ -482,7 +482,7 @@ python3 tools/verify_environment.py --scope target-schema
 | `rp2040-cpu-p0-null-20260830-02` | 5,083,548.419 | 4,337,170.519 | 14.682% | 40 | pass / pass / pass |
 | `rp2040-cpu-p0-null-20260831-01` | 4,822,866.850 | 4,999,788.443 | 3.668% | 40 | pass / pass / pass |
 
-二回目の全40 runについては、同一 executable の null A/B ペア差分中央値が PicoTetris `+0.057%`、PicoEdit `+0.792%`、combined `+0.393%` だった。この値は候補改善の証拠には使わないが、今回の無効理由が backend identity や guest correctness ではなく、約3時間の host throughput 変動であることを示す補助資料として保存する。2% の calibration 閾値は緩和しない。三回目の A/B を開始する前に、長時間測定を前提にした校正配置・host stability 判定を固定した改訂 protocol と runner/schema/test を実装し、既存二 batch を再利用せず新しい batch ID で warm-up から取り直す。
+二回目の全40 runについては、同一 executable の null A/B ペア差分中央値が PicoTetris `+0.057%`、PicoEdit `+0.792%`、combined `+0.393%` だった。この値は候補改善の証拠には使わないが、今回の無効理由が backend identity や guest correctness ではなく、約3時間の host throughput 変動であることを示す補助資料として保存する。2% の calibration 閾値は緩和しない。三回目以降の A/B に備え、長時間測定を前提にした校正配置・host stability 判定を固定した改訂 protocol を runner/schema/test へ実装した。既存二 batch は再利用せず、新しい batch ID で warm-up から取り直す。
 
 改訂 calibration protocol は、結果を見て閾値を動かすためのものではなく、次の固定仕様として実装する。
 
@@ -490,7 +490,7 @@ python3 tools/verify_environment.py --scope target-schema
 2. PicoTetris baseline の calibration anchor を、pre window（3 run）、測定途中の固定境界（run 10、20、30 の直後に各1 run）、post window（3 run）へ配置する。anchor の workload、backend、runner、CPU、cooldown は本測定と同一にする。
 3. anchor の log throughput を経過時間へ線形補間し、各 measured run の host-speed 補正値を記録する。候補効果の主統計は従来どおり同一 pair の candidate/baseline log ratio とし、補正は host drift の診断・感度分析に限定する。
 4. anchor の線形モデル残差が 2% を超える、anchor が欠落する、または host snapshot/affinity/provenance/correctness が不成立なら batch を invalid にする。全体の pre/post 差が 2% を超えただけでは直ちに invalid にせず、anchor residual と pair-level null-control の両方を decision に明記する。
-5. `measurement_policy` に `calibration_method=interleaved-anchor-v1`、anchor run ID、補正方法、残差、pair-level sensitivity を保存し、schema/verifier/unit test で個数・順序・閾値を固定する。既存の二つの invalid record は変更しない。
+5. `measurement_policy` に `calibration_method=interleaved-anchor-v1`、anchor run ID、補正方法、残差閾値、pair-level sensitivity の方式を保存し、実測の残差・補正値・pair-level sensitivity は `summary.calibration` に保存する。schema/verifier/unit test で個数・順序・閾値を固定する。既存の二つの invalid record は変更しない。
 
 この改訂により、長時間の周波数変動を「無かったこと」にせず、変動を観測・補正したうえで、隣接 pair の実アプリ差分が再現するかを判定できる。補正後も null-control が 0 近傍にならない場合は候補測定へ進まず、host 条件または測定設計を再修正する。
 

@@ -23,6 +23,10 @@
     "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "build_provenance_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "protocol_elapsed_seconds": {"type": "number", "minimum": 0},
+    "predicted_anchor_throughput": {"type": "number", "exclusiveMinimum": 0},
+    "host_speed_correction": {"type": "number", "exclusiveMinimum": 0},
+    "corrected_emulated_cycles_per_wall_second": {"type": "number", "exclusiveMinimum": 0},
     "cycles": {"type": "integer", "minimum": 1},
     "stop_reason": {"type": "string", "minLength": 1},
     "elapsed_us": {"type": "integer", "minimum": 0},
@@ -53,7 +57,29 @@
       "additionalProperties": false,
       "required": ["inter_run_cooldown_seconds"],
       "properties": {
-        "inter_run_cooldown_seconds": {"type": "number", "minimum": 0}
+        "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+        "calibration_method": {"const": "interleaved-anchor-v1"},
+        "anchor_layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pre_count", "after_measured_runs", "post_count"],
+          "properties": {
+            "pre_count": {"const": 3},
+            "after_measured_runs": {"const": [10, 20, 30]},
+            "post_count": {"const": 3}
+          }
+        },
+        "anchor_run_ids": {
+          "type": "array",
+          "const": [
+            "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+            "anchor-after-010", "anchor-after-020", "anchor-after-030",
+            "anchor-post-001", "anchor-post-002", "anchor-post-003"
+          ]
+        },
+        "correction_method": {"const": "piecewise-linear-interpolation-of-log-baseline-anchor-throughput-v1"},
+        "anchor_residual_threshold": {"const": 0.02},
+        "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"}
       }
     }
   },

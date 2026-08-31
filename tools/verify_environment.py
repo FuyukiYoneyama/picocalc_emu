@@ -2787,12 +2787,32 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 problems.append("{} manifest feature_set differs from role identity feature union".format(record_dir))
         measurement_policy = manifest.get("measurement_policy")
         if measurement_policy is not None:
-            if (
-                not isinstance(measurement_policy, dict)
-                or set(measurement_policy) != {"inter_run_cooldown_seconds"}
-                or type(measurement_policy.get("inter_run_cooldown_seconds")) not in (int, float)
-                or measurement_policy.get("inter_run_cooldown_seconds") < 0
-            ):
+            policy_valid = (
+                isinstance(measurement_policy, dict)
+                and type(measurement_policy.get("inter_run_cooldown_seconds")) in (int, float)
+                and measurement_policy.get("inter_run_cooldown_seconds") >= 0
+            )
+            if policy_valid and "calibration_method" in measurement_policy:
+                policy_valid = policy_valid and measurement_policy == {
+                    "inter_run_cooldown_seconds": 60.0,
+                    "calibration_method": "interleaved-anchor-v1",
+                    "anchor_layout": {
+                        "pre_count": 3,
+                        "after_measured_runs": [10, 20, 30],
+                        "post_count": 3,
+                    },
+                    "anchor_run_ids": [
+                        "anchor-pre-001", "anchor-pre-002", "anchor-pre-003",
+                        "anchor-after-010", "anchor-after-020", "anchor-after-030",
+                        "anchor-post-001", "anchor-post-002", "anchor-post-003",
+                    ],
+                    "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-throughput-v1",
+                    "anchor_residual_threshold": 0.02,
+                    "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+                }
+            elif policy_valid and set(measurement_policy) != {"inter_run_cooldown_seconds"}:
+                policy_valid = False
+            if not policy_valid:
                 problems.append("{} manifest measurement_policy is invalid".format(record_dir))
         if not decision_path.is_file():
             problems.append("{} is missing decision.json".format(record_dir))
