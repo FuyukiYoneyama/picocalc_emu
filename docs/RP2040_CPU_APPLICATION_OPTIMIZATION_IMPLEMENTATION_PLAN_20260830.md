@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs) — P0-B profiler implementation/profile/correctness complete — P1-A implementation/profile/correctness complete — P2-A implementation (`ba93c1f`) and feature tests complete, correctness in progress — P1-A/P2-A production A/B and performance acceptance pending a revised valid null-control
+- Status: P0-A1 implemented — P0-0 passed — P0-A2 null batches invalid (host drift, two independent runs), revised null-control A/B in progress — P0-B profiler implementation/profile/correctness complete — P1-A implementation/profile/correctness complete — P2-A implementation (`ba93c1f`), feature tests, and correctness record `rp2040-cpu-p2-a-correctness-20260831-01` complete — P1-A/P2-A production A/B and performance acceptance pending a revised valid null-control
 - Date: 2026-08-31
 - Review completed: 2026-08-31
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -992,7 +992,7 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 ### 10.1 phase gate
 
 2026-08-31 時点では P0-A1、P0-0、P0-B は pass、P0-A2 は二つの invalid batch（host drift）を保持している。改訂 null-control batch `rp2040-cpu-p0-null-20260831-04` は correctness を pass し、status修正後の interleaved-anchor A/B を再実行中である。
-P1-A は runtime 実装、profile、correctness を完了し、診断 profile signal を保存済みである。P1-A の production 性能 A/B の測定・採否は有効な null-control 完了後まで保留している。P2-A は `ba93c1f` で fast-reject実装とfeature testを完了し、correctness recordを作成中であり、性能A/Bはnull-control完了後に行う。
+P1-A は runtime 実装、profile、correctness を完了し、診断 profile signal を保存済みである。P1-A の production 性能 A/B の測定・採否は有効な null-control 完了後まで保留している。P2-A は `ba93c1f` で fast-reject実装とfeature testを完了し、`rp2040-cpu-p2-a-correctness-20260831-01` の両 workload correctness、behavior trace、checksumを完了した。性能A/Bはnull-control完了後に行う。
 P1-B は executable-page filter 用 counter が未取得のため判定不能であり、下表の fail-closed 条件を維持する。P0-A2 が有効になった後、P1-A の production A/B を同じ二 workload・10 pair で実行する。
 
 | Gate | 必須入力 | pass | fail 時 |
@@ -1064,7 +1064,7 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の runner/schema/provenance 実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。校正配置と stability 判定を固定した改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` は correctness pass後、status修正済みrunnerで interleaved-anchor A/B を再実行中である。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。null-control の残差、pair-level null-control、checksum、schema が pass なら、P1-A の production 10-pair A/B を実施する。P2-A は `ba93c1f` で実装・feature testを完了し、correctness測定を進行中である。P2-A production A/B の採否・統合は有効な null-control の後で行う。
+P0-A1 の runner/schema/provenance 実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の二つの null batch は host drift gate により invalid となったが、各40 run と correctness は証拠として保持している。校正配置と stability 判定を固定した改訂 protocol は実装済みで、`rp2040-cpu-p0-null-20260831-04` は correctness pass後、status修正済みrunnerで interleaved-anchor A/B を実行中である。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了している。null-control の残差、pair-level null-control、checksum、schema が pass なら、P1-A の production 10-pair A/B を実施する。P2-A は `ba93c1f` で実装・feature test・両 workload correctness（`rp2040-cpu-p2-a-correctness-20260831-01`）を完了した。P2-A production A/B の採否・統合は有効な null-control の後で行う。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
