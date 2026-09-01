@@ -1,0 +1,29 @@
+{
+  "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "build_provenance_sha256": "7d26c62922d4baaf9f7c5cbb57194ac70b6bff90a326c108b099f2ea1704b58b",
+  "cycles": 827799818,
+  "cycles_per_emulation_cpu_second": 4676637.356957725,
+  "cycles_per_emulation_wall_second": 5086585.722152432,
+  "elapsed_us": 3320000,
+  "emulated_cycles_per_wall_second": 5086416.146496929,
+  "emulation_cpu_ns": 177007485254,
+  "emulation_cpu_seconds": 177.007485254,
+  "emulation_wall_ns": 162741741360,
+  "emulation_wall_seconds": 162.74174136,
+  "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "host_usage_delta": {
+    "max_rss_platform_units": 34660,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.008702000000000001,
+    "user_seconds": 177.00452299999998
+  },
+  "report_sha256": "ec2b06c34ecbd820f0175ce9a771189a5247ca26f57760f177bb5a408222d147",
+  "runner_sha256": "2519b13a37a9b9c03abc73f0aabe2d7d559888ea7fd2949ec6ed2ddc765c634a",
+  "snapshot_sha256": {
+    "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+  "wall_ns": 162747166995,
+  "wall_seconds": 162.747166995
+}

@@ -27,6 +27,17 @@
     "predicted_anchor_throughput": {"type": "number", "exclusiveMinimum": 0},
     "host_speed_correction": {"type": "number", "exclusiveMinimum": 0},
     "corrected_emulated_cycles_per_wall_second": {"type": "number", "exclusiveMinimum": 0},
+    "emulation_wall_ns": {"type": "integer", "minimum": 1},
+    "emulation_wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "emulation_cpu_ns": {"type": "integer", "minimum": 1},
+    "emulation_cpu_seconds": {"type": "number", "exclusiveMinimum": 0},
+    "cycles_per_emulation_cpu_second": {"type": "number", "exclusiveMinimum": 0},
+    "cycles_per_emulation_wall_second": {"type": "number", "exclusiveMinimum": 0},
+    "predicted_anchor_cpu_throughput": {"type": "number", "exclusiveMinimum": 0},
+    "corrected_emulated_cycles_per_cpu_second": {"type": "number", "exclusiveMinimum": 0},
+    "primary_metric": {"enum": ["cpu-time", "wall-time"]},
+    "primary_throughput": {"type": "number", "exclusiveMinimum": 0},
+    "corrected_primary_throughput": {"type": "number", "exclusiveMinimum": 0},
     "cycles": {"type": "integer", "minimum": 1},
     "stop_reason": {"type": "string", "minLength": 1},
     "elapsed_us": {"type": "integer", "minimum": 0},
@@ -65,6 +76,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v1"},
             "anchor_layout": {
               "type": "object",
@@ -103,6 +115,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v3"},
             "anchor_layout": {
               "type": "object",
@@ -156,6 +169,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v2"},
             "anchor_layout": {
               "type": "object",

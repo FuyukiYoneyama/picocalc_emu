@@ -1,0 +1,73 @@
+{
+  "artifact_type": "correctness",
+  "baseline": {
+    "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+    "build_provenance_sha256": "a2fcdc1ee3d1e6245a9b2655c54ed8123611a5348bcb01472095ddfea431459a",
+    "cycles": 827799818,
+    "cycles_per_emulation_cpu_second": 4786735.305350591,
+    "cycles_per_emulation_wall_second": 5239198.063614092,
+    "elapsed_us": 3320000,
+    "emulated_cycles_per_wall_second": 5239037.015061778,
+    "emulation_cpu_ns": 172936200812,
+    "emulation_cpu_seconds": 172.936200812,
+    "emulation_wall_ns": 158001245219,
+    "emulation_wall_seconds": 158.001245219,
+    "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+    "host_usage_delta": {
+      "max_rss_platform_units": 35460,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.004378,
+      "user_seconds": 172.93697600000007
+    },
+    "report_sha256": "ec2b06c34ecbd820f0175ce9a771189a5247ca26f57760f177bb5a408222d147",
+    "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+    "snapshot_sha256": {
+      "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "wall_ns": 158006102194,
+    "wall_seconds": 158.006102194
+  },
+  "baseline_guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "behavior_equal": true,
+  "candidate": {
+    "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+    "build_provenance_sha256": "a2fcdc1ee3d1e6245a9b2655c54ed8123611a5348bcb01472095ddfea431459a",
+    "cycles": 827799818,
+    "cycles_per_emulation_cpu_second": 4588440.751074235,
+    "cycles_per_emulation_wall_second": 5034721.27747686,
+    "elapsed_us": 3320000,
+    "emulated_cycles_per_wall_second": 5034561.240583156,
+    "emulation_cpu_ns": 180409830465,
+    "emulation_cpu_seconds": 180.409830465,
+    "emulation_wall_ns": 164418201600,
+    "emulation_wall_seconds": 164.4182016,
+    "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+    "host_usage_delta": {
+      "max_rss_platform_units": 35460,
+      "max_rss_scope": "children_cumulative",
+      "system_seconds": 0.004389000000000004,
+      "user_seconds": 180.41099599999995
+    },
+    "report_sha256": "ec2b06c34ecbd820f0175ce9a771189a5247ca26f57760f177bb5a408222d147",
+    "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+    "snapshot_sha256": {
+      "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+    },
+    "stop_reason": "scenario_done",
+    "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+    "wall_ns": 164423428069,
+    "wall_seconds": 164.423428069
+  },
+  "candidate_guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "candidate_id": "P0-A2",
+  "guest_observation_equal": true,
+  "guest_observation_sha256": "9bbbb92bd48a854b3b5824de0f2bf1dc0c760c8a74d1dee7533b409bea12debc",
+  "record_id": "rp2040-cpu-p0-null-cpu-20260901-02",
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "status": "pass",
+  "trace_required": false,
+  "workload": "picoedit-r1-vrp2f"
+}

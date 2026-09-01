@@ -1,0 +1,29 @@
+{
+  "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "build_provenance_sha256": "868f63b50fd60145f53a6b47e68bcae19c6b74ced599f6f78b049c182138fd3d",
+  "cycles": 927528659,
+  "cycles_per_emulation_cpu_second": 4934718.241925542,
+  "cycles_per_emulation_wall_second": 5378349.856514501,
+  "elapsed_us": 3715000,
+  "emulated_cycles_per_wall_second": 5378187.87910741,
+  "emulation_cpu_ns": 187959801052,
+  "emulation_cpu_seconds": 187.959801052,
+  "emulation_wall_ns": 172455991846,
+  "emulation_wall_seconds": 172.455991846,
+  "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "host_usage_delta": {
+    "max_rss_platform_units": 34588,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.0,
+    "user_seconds": 187.9653
+  },
+  "report_sha256": "46ac96250f671d543d01e8a7254e0296bdc66b00a66656718216afb7a466a5a2",
+  "runner_sha256": "2b2adab591670960a35bfb2c56f12406b5da652d1b1321e0721dfc47db7f0cbe",
+  "snapshot_sha256": {
+    "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+  "wall_ns": 172461185784,
+  "wall_seconds": 172.461185784
+}

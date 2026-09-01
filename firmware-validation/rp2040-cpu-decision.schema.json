@@ -58,6 +58,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v1"},
             "anchor_layout": {
               "type": "object",
@@ -95,6 +96,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v3"},
             "anchor_layout": {
               "type": "object",
@@ -148,6 +150,7 @@
           ],
           "properties": {
             "inter_run_cooldown_seconds": {"type": "number", "minimum": 0},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "calibration_method": {"const": "interleaved-anchor-v2"},
             "anchor_layout": {
               "type": "object",

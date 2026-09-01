@@ -83,6 +83,24 @@ class CandidateRunnerTests(unittest.TestCase):
             ["edit", "edit", "tetris", "tetris"],
         )
 
+    def test_short_block_schedule_covers_fixed_pairs_and_anchor_ids(self):
+        blocks = self.module.make_short_block_schedule(["tetris", "edit"])
+        self.assertEqual(len(blocks), self.module.SHORT_BLOCK_COUNT)
+        self.assertEqual(
+            [block["pair_indices"] for block in blocks],
+            [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]],
+        )
+        self.assertEqual(sum(len(block["runs"]) for block in blocks), 40)
+        self.assertEqual(
+            blocks[0]["pre_anchor_ids"],
+            ["block-01-anchor-pre-001", "block-01-anchor-pre-002", "block-01-anchor-pre-003"],
+        )
+        self.assertEqual(
+            blocks[-1]["post_anchor_ids"][-1], "block-05-anchor-post-003"
+        )
+        with self.assertRaisesRegex(ValueError, "fixes pairs"):
+            self.module.make_short_block_schedule(["tetris", "edit"], 8)
+
     def test_option_pairing_rejects_one_sided_or_unequal_options(self):
         with self.assertRaisesRegex(ValueError, "same number"):
             self.module.validate_target_firmware_pairs(["x"], [])
@@ -135,6 +153,76 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(command[command.index("--expect-stop") + 1], "cycle_limit")
         self.assertIn("--host-timing", command)
         self.assertNotIn("--scenario", command)
+
+    def test_pilot_dispersion_uses_scaled_mad(self):
+        summary = self.module._pilot_dispersion([10.0, 11.0, 12.0])
+        self.assertEqual(summary["median"], 11.0)
+        self.assertAlmostEqual(summary["mad"], 1.0)
+        self.assertAlmostEqual(summary["scaled_mad"], 1.4826)
+        self.assertAlmostEqual(summary["relative_mad"], math.exp(1.4826 / 11.0) - 1.0)
+
+    def test_pilot_cli_fixes_cpu_and_replicate_contracts(self):
+        affinity = self.module.parse_arguments(
+            [
+                "affinity-pilot", "--cpu", "0", "--backend", "/tmp/backend",
+                "--runner", "/tmp/runner", "--output", "/tmp/affinity.json",
+            ]
+        )
+        self.assertEqual(affinity.replicates, self.module.AFFINITY_PILOT_REPLICATES)
+        cooldown = self.module.parse_arguments(
+            [
+                "cooldown-pilot", "--cpu", "0", "--backend", "/tmp/backend",
+                "--runner", "/tmp/runner", "--output", "/tmp/cooldown.json",
+            ]
+        )
+        self.assertEqual(cooldown.replicates, self.module.COOLDOWN_PILOT_REPLICATES)
+
+    def test_short_block_cli_fixes_cpu_replicates_and_cooldown(self):
+        args = self.module.parse_arguments(
+            [
+                "short-block", "--cpu", "0",
+                "--baseline-backend", "/tmp/baseline",
+                "--candidate-backend", "/tmp/candidate",
+                "--baseline-runner", "/tmp/baseline-runner",
+                "--candidate-runner", "/tmp/candidate-runner",
+                "--admission-record", "/tmp/admission",
+                "--output", "/tmp/short-block",
+            ]
+        )
+        self.assertEqual(args.cycles, self.module.SHORT_BLOCK_DEFAULT_CYCLES)
+        self.assertEqual(args.replicates, self.module.SHORT_BLOCK_ANCHOR_REPLICATES)
+        self.assertEqual(args.inter_run_cooldown_seconds, 0.0)
+
+    def test_primary_metric_fields_select_cpu_or_wall_clock(self):
+        self.assertEqual(
+            self.module.primary_metric_fields("cpu-time"),
+            {
+                "raw": "cycles_per_emulation_cpu_second",
+                "corrected": "corrected_emulated_cycles_per_cpu_second",
+                "predicted": "predicted_anchor_cpu_throughput",
+            },
+        )
+        self.assertEqual(
+            self.module.primary_metric_fields("wall-time")["raw"],
+            "emulated_cycles_per_wall_second",
+        )
+        with self.assertRaisesRegex(ValueError, "unknown primary metric"):
+            self.module.primary_metric_fields("process-time")
+
+    def test_ab_cli_defaults_to_cpu_time_primary_metric(self):
+        args = self.module.parse_arguments(
+            [
+                "ab", "--cpu", "0",
+                "--baseline-backend", "/tmp/baseline",
+                "--candidate-backend", "/tmp/candidate",
+                "--baseline-runner", "/tmp/baseline-runner",
+                "--candidate-runner", "/tmp/candidate-runner",
+                "--admission-record", "/tmp/admission",
+                "--batch-id", "fixture-ab",
+                "--output", "/tmp/ab",
+            ]
+        )
+        self.assertEqual(args.primary_metric, "cpu-time")
 
     def test_registered_report_follows_validation_evidence_record(self):
         report = {"cycles": 123, "observable": "fixed"}

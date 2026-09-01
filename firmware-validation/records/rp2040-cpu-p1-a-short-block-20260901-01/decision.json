@@ -1,0 +1,192 @@
+{
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154"
+    },
+    "candidate_production": {
+      "build_provenance_sha256": "30877e13e20db353396997fb6202ef86a83da0273bf4b990cbc9670362fd975f",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "decode-invalidation-tag-guard",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_production",
+      "role": "candidate_production",
+      "runner_sha256": "cb1134159dcea4e348d25044770c8d15ba6c5b51153b2a8a83ac76e26065793e"
+    }
+  },
+  "candidate_id": "P1-A",
+  "correctness": {
+    "source": "rp2040-cpu-p1-a-correctness-20260901-01",
+    "status": "pass"
+  },
+  "decision_kind": "invalid",
+  "feature_set": [
+    "decode-invalidation-tag-guard",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 65228000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 5913148000,
+      "throttled_usec": 0,
+      "usage_usec": 139527344000,
+      "user_usec": 133614196000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 6677700114.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.005859375,
+      0.21826171875,
+      0.564453125
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 290580765,
+      "iowait": 70620,
+      "irq": 0,
+      "nice": 6522,
+      "softirq": 209108,
+      "steal": 0,
+      "system": 382206,
+      "user": 13354896
+    },
+    "reported_mhz": 3693.107,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "reasons": [
+    "one or more block anchor/projection gates failed"
+  ],
+  "record_id": "rp2040-cpu-p1-a-short-block-20260901-01",
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "statistics": {
+    "combined": {
+      "ci95_effect": [
+        -0.08530110322931606,
+        -0.04820552944585943
+      ],
+      "ci95_log_ratio": [
+        -0.08916034243109124,
+        -0.04940615977392614
+      ],
+      "geometric_mean_effect": -0.06693764829551208,
+      "mean_log_ratio": -0.06928325110250869,
+      "n": 10,
+      "percent_effect": {
+        "iqr": 0.049413397330708264,
+        "median": -0.06729579090264515,
+        "q1": -0.08999115371514033,
+        "q3": -0.04057775638443206
+      },
+      "sample_sd_log_ratio": 0.0277862596882105
+    },
+    "workloads": {
+      "picoedit-r1-vrp2f": {
+        "ci95_effect": [
+          -0.16235724238488058,
+          -0.023411816922033535
+        ],
+        "ci95_log_ratio": [
+          -0.17716357295516044,
+          -0.023690227491303395
+        ],
+        "geometric_mean_effect": -0.09554877482101509,
+        "mean_log_ratio": -0.10042690022323192,
+        "n": 10,
+        "percent_effect": {
+          "iqr": 0.10719834674878803,
+          "median": -0.0679339613016865,
+          "q1": -0.1423245286203879,
+          "q3": -0.03512618187159988
+        },
+        "sample_sd_log_ratio": 0.10727047941227315
+      },
+      "picotetris-opt1b-vrp5": {
+        "ci95_effect": [
+          -0.09660273363677374,
+          0.02563678950741899
+        ],
+        "ci95_log_ratio": [
+          -0.10159288170906483,
+          0.025313677745493944
+        ],
+        "geometric_mean_effect": -0.03742144636265765,
+        "mean_log_ratio": -0.03813960198178545,
+        "n": 10,
+        "percent_effect": {
+          "iqr": 0.035643035002905,
+          "median": -0.03859394537504962,
+          "q1": -0.05085335281202685,
+          "q3": -0.015210317809121854
+        },
+        "sample_sd_log_ratio": 0.08870157506574068
+      }
+    }
+  },
+  "status": "invalid",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

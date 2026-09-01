@@ -37,6 +37,7 @@ PROFILE_SCHEMA_ID = "picocalc.rp2040-cpu-profile"
 AB_SCHEMA_ID = "picocalc.rp2040-cpu-ab"
 DECISION_SCHEMA_ID = "picocalc.rp2040-cpu-decision"
 HOST_STABILITY_SCHEMA_ID = "picocalc.rp2040-cpu-host-stability"
+SHORT_BLOCK_SCHEMA_ID = "picocalc.rp2040-cpu-short-block"
 RECORD_TYPE = "picocalc.rp2040-cpu-record"
 SCHEMA_VERSION = 1
 HOST_STABILITY_WARMUP_RUNS = 2
@@ -51,6 +52,20 @@ CPU_TIME_DIAGNOSTIC_WARMUP_RUNS = 1
 CPU_TIME_DIAGNOSTIC_MEASURED_RUNS = 4
 LOAD_SHAPE_INSTANCE_COUNTS = (1, 2, 4, 8)
 LOAD_SHAPE_DEFAULT_CYCLES = 10_000_000
+AFFINITY_PILOT_MODES = ("pinned-vcpu", "inherited-set")
+AFFINITY_PILOT_REPLICATES = 3
+COOLDOWN_PILOT_VALUES = (0.0, 5.0, 15.0, 60.0)
+COOLDOWN_PILOT_REPLICATES = 3
+COOLDOWN_PILOT_CPU_RELATIVE_MAD_LIMIT = 0.02
+COOLDOWN_PILOT_CPU_WALL_RATIO_LIMIT = 0.02
+SHORT_BLOCK_COUNT = 5
+SHORT_BLOCK_PAIRS = 2
+SHORT_BLOCK_ANCHOR_REPLICATES = 3
+SHORT_BLOCK_DEFAULT_CYCLES = 10_000_000
+SHORT_BLOCK_COOLDOWN_SECONDS = 0.0
+SHORT_BLOCK_ANCHOR_MAD_LIMIT = 0.02
+SHORT_BLOCK_ANCHOR_DRIFT_LIMIT = 0.02
+AB_PRIMARY_METRICS = ("cpu-time", "wall-time")
 REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"))
 # The first null batch exposed a long-session host throughput drift.  Keep the
 # recovery interval fixed and part of the record identity so it cannot be
@@ -978,6 +993,52 @@ def make_ab_schedule(workload_ids: Sequence[str], pairs: int = 10) -> List[Dict[
     return schedule
 
 
+def make_short_block_schedule(
+    workload_ids: Sequence[str],
+    pairs: int = SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS,
+) -> List[Dict[str, Any]]:
+    """Partition the fixed A/B schedule into five independently observable blocks."""
+    if pairs != SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS:
+        raise ValueError(
+            "short block schedule fixes pairs at {}".format(
+                SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS
+            )
+        )
+    schedule = make_ab_schedule(workload_ids, pairs)
+    blocks: List[Dict[str, Any]] = []
+    for block_index in range(SHORT_BLOCK_COUNT):
+        first_pair = block_index * SHORT_BLOCK_PAIRS + 1
+        last_pair = first_pair + SHORT_BLOCK_PAIRS - 1
+        items = [
+            dict(item, block_index=block_index + 1)
+            for item in schedule
+            if first_pair <= item["pair"] <= last_pair
+        ]
+        blocks.append(
+            {
+                "block_index": block_index + 1,
+                "block_id": "block-{:02d}".format(block_index + 1),
+                "pair_indices": list(range(first_pair, last_pair + 1)),
+                "pre_anchor_ids": [
+                    "block-{:02d}-anchor-pre-{:03d}".format(
+                        block_index + 1, replicate
+                    )
+                    for replicate in range(1, SHORT_BLOCK_ANCHOR_REPLICATES + 1)
+                ],
+                "post_anchor_ids": [
+                    "block-{:02d}-anchor-post-{:03d}".format(
+                        block_index + 1, replicate
+                    )
+                    for replicate in range(1, SHORT_BLOCK_ANCHOR_REPLICATES + 1)
+                ],
+                "runs": items,
+            }
+        )
+    if sum(len(block["runs"]) for block in blocks) != len(schedule):
+        raise ValueError("short block schedule does not cover the A/B schedule")
+    return blocks
+
+
 def log_ratio(candidate_throughput: float, baseline_throughput: float) -> float:
     if candidate_throughput <= 0 or baseline_throughput <= 0:
         raise ValueError("throughput must be positive")
@@ -1575,6 +1636,23 @@ def validate_inter_run_cooldown(value: float) -> float:
             )
         )
     return value
+
+
+def primary_metric_fields(primary_metric: str) -> Dict[str, str]:
+    """Return the immutable throughput fields for a production A/B metric."""
+    if primary_metric == "cpu-time":
+        return {
+            "raw": "cycles_per_emulation_cpu_second",
+            "corrected": "corrected_emulated_cycles_per_cpu_second",
+            "predicted": "predicted_anchor_cpu_throughput",
+        }
+    if primary_metric == "wall-time":
+        return {
+            "raw": "emulated_cycles_per_wall_second",
+            "corrected": "corrected_emulated_cycles_per_wall_second",
+            "predicted": "predicted_anchor_throughput",
+        }
+    raise ValueError("unknown primary metric: {}".format(primary_metric))
 
 
 def _sleep_between_runs(seconds: float) -> None:
@@ -2916,6 +2994,758 @@ def _load_shape_run_record(
     }
 
 
+def _pilot_dispersion(values: Sequence[float]) -> Dict[str, Any]:
+    """Summarize a fixed-size pilot group without choosing a winner post hoc."""
+    if not values or any(value <= 0 or not math.isfinite(value) for value in values):
+        raise ValueError("pilot metric values must be finite and positive")
+    median = statistics.median(values)
+    mad = statistics.median([abs(value - median) for value in values])
+    scaled_mad = 1.4826 * mad
+    return {
+        "median": median,
+        "mad": mad,
+        "scaled_mad": scaled_mad,
+        "relative_mad": math.exp(scaled_mad / median) - 1.0,
+    }
+
+
+def _run_short_pilot_guest(
+    workload: Mapping[str, Any],
+    backend: Path,
+    runner: Path,
+    identity: Mapping[str, Any],
+    cycles: int,
+    *,
+    affinity_mode: str,
+    cpu: int,
+) -> Dict[str, Any]:
+    """Run one short, cycle-limited registered application for a pilot.
+
+    The parent process owns the mode transition.  ``pinned-vcpu`` also applies
+    a child pre-exec pin as a fail-closed check, while ``inherited-set``
+    intentionally leaves the child affinity untouched so it inherits the
+    parent's full allowed set.
+    """
+    if affinity_mode not in AFFINITY_PILOT_MODES:
+        raise ValueError("unknown affinity pilot mode: {}".format(affinity_mode))
+    with tempfile.TemporaryDirectory(prefix="picocalc-rp2040-pilot-") as temporary:
+        root = Path(temporary)
+        report_path = root / "report.json"
+        uart_path = root / "uart.bin"
+        timing_path = root / "host-timing.json"
+        command = load_shape_command(
+            workload["target"], workload["firmware"], runner,
+            report_path, uart_path, timing_path, cycles,
+            backend_commit=identity["commit"],
+        )
+        host_start = host_cpu()
+        started_ns = time.perf_counter_ns()
+        result = subprocess.run(
+            command,
+            cwd=str(backend),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+            preexec_fn=(
+                _child_affinity_setter(cpu)
+                if affinity_mode == "pinned-vcpu"
+                else None
+            ),
+        )
+        process_wall_seconds = (time.perf_counter_ns() - started_ns) / 1_000_000_000
+        host_end = host_cpu()
+        if result.returncode != 0:
+            stderr = (result.stderr or "").strip()
+            raise ValueError(
+                "pilot guest exited {} for {}{}".format(
+                    result.returncode,
+                    workload["id"],
+                    ": " + stderr[-500:] if stderr else "",
+                )
+            )
+        short = _load_shape_run_record(
+            result, report_path, timing_path, cpu, cycles
+        )
+        short.update(
+            {
+                "workload": workload["id"],
+                "workload_revision": workload["revision"],
+                "affinity_mode": affinity_mode,
+                "expected_cpu": cpu,
+                "parent_allowed_cpus": host_start.get("allowed_cpus"),
+                "process_wall_seconds": process_wall_seconds,
+                "host_snapshot_start": host_start,
+                "host_snapshot_end": host_end,
+            }
+        )
+        return short
+
+
+def run_affinity_pilot(args: argparse.Namespace) -> int:
+    """Compare pinned-vCPU and inherited-set execution on both workloads."""
+    workloads = load_workloads(args.target, args.firmware)
+    if args.cpu is None:
+        raise ValueError("affinity-pilot requires --cpu")
+    if args.replicates != AFFINITY_PILOT_REPLICATES:
+        raise ValueError(
+            "affinity-pilot fixes --replicates at {}".format(
+                AFFINITY_PILOT_REPLICATES
+            )
+        )
+    if type(args.cycles) is not int or args.cycles <= 0:
+        raise ValueError("affinity-pilot requires positive --cycles")
+    identity = clean_backend_identity(args.backend)
+    validate_runner_embedded_commit(args.runner, identity["commit"])
+    output = args.output.resolve()
+    _refuse_existing(output)
+    if not hasattr(os, "sched_getaffinity") or not hasattr(os, "sched_setaffinity"):
+        raise ValueError("affinity-pilot needs Linux sched_getaffinity/sched_setaffinity")
+    original = sorted(os.sched_getaffinity(0))
+    if args.cpu not in original:
+        raise ValueError("affinity-pilot CPU is outside the allowed affinity set")
+    rows: List[Dict[str, Any]] = []
+    error_text: Optional[str] = None
+    try:
+        for mode in AFFINITY_PILOT_MODES:
+            if mode == "pinned-vcpu":
+                _set_cpu_affinity(args.cpu)
+            else:
+                os.sched_setaffinity(0, set(original))
+            for workload in workloads:
+                for replicate in range(1, args.replicates + 1):
+                    row = _run_short_pilot_guest(
+                        workload, args.backend, args.runner, identity, args.cycles,
+                        affinity_mode=mode, cpu=args.cpu,
+                    )
+                    row["replicate"] = replicate
+                    rows.append(row)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+        error_text = str(error)
+    finally:
+        os.sched_setaffinity(0, set(original))
+    expected_rows = len(AFFINITY_PILOT_MODES) * len(workloads) * args.replicates
+    summaries: Dict[str, Any] = {}
+    all_projection_equal = True
+    for workload in workloads:
+        by_mode = {}
+        observations = set()
+        for mode in AFFINITY_PILOT_MODES:
+            group = [
+                row for row in rows
+                if row.get("workload") == workload["id"]
+                and row.get("affinity_mode") == mode
+            ]
+            observations.update(row.get("guest_observation_sha256") for row in group)
+            if len(group) != args.replicates:
+                by_mode[mode] = {"replicates": len(group), "valid": False}
+                continue
+            by_mode[mode] = {
+                "replicates": len(group),
+                "cpu_throughput": _pilot_dispersion(
+                    [row["cycles_per_emulation_cpu_second"] for row in group]
+                ),
+                "wall_throughput": _pilot_dispersion(
+                    [row["cycles_per_emulation_wall_second"] for row in group]
+                ),
+                "cpu_wall_ratio": _pilot_dispersion(
+                    [
+                        row["emulation_cpu_seconds"]
+                        / row["emulation_wall_seconds"]
+                        for row in group
+                    ]
+                ),
+                "observations": sorted(
+                    {row["guest_observation_sha256"] for row in group}
+                ),
+            }
+            by_mode[mode]["valid"] = (
+                len(by_mode[mode]["observations"]) == 1
+            )
+        all_projection_equal = all_projection_equal and len(observations) == 1
+        effect: Optional[float] = None
+        if all(
+            by_mode.get(mode, {}).get("valid") is True
+            for mode in AFFINITY_PILOT_MODES
+        ):
+            effect = log_ratio(
+                by_mode["inherited-set"]["cpu_throughput"]["median"],
+                by_mode["pinned-vcpu"]["cpu_throughput"]["median"],
+            )
+        summaries[workload["id"]] = {
+            "modes": by_mode,
+            "guest_observation_equal_across_modes": len(observations) == 1,
+            "inherited_over_pinned_cpu_log_ratio": effect,
+        }
+    valid = (
+        error_text is None
+        and len(rows) == expected_rows
+        and all_projection_equal
+        and all(
+            summary["guest_observation_equal_across_modes"]
+            and all(mode.get("valid") is True for mode in summary["modes"].values())
+            for summary in summaries.values()
+        )
+    )
+    record = {
+        "schema_id": "picocalc.rp2040-cpu-affinity-pilot",
+        "schema_version": 1,
+        "artifact_type": "affinity-pilot",
+        "record_id": args.batch_id or output.stem,
+        "status": "pass" if valid else "invalid",
+        "measurement_policy": {
+            "method": "short-fixed-cycle-affinity-pilot-v1",
+            "cycles_per_run": args.cycles,
+            "modes": list(AFFINITY_PILOT_MODES),
+            "replicates_per_mode_workload": args.replicates,
+            "cpu_time_metric": "cycles_per_emulation_cpu_second",
+            "diagnostic_only": True,
+        },
+        "measurement_cpu": args.cpu,
+        "original_allowed_cpus": original,
+        "backend_identity": identity,
+        "runner_sha256": sha256_file(args.runner),
+        "workloads": [
+            {
+                key: workload[key]
+                for key in (
+                    "id", "revision", "firmware_sha256", "scenario_sha256",
+                    "contract_sha256",
+                )
+            }
+            for workload in workloads
+        ],
+        "rows": rows,
+        "summary": summaries,
+        "reasons": [] if error_text is None else [error_text],
+    }
+    if len(rows) != expected_rows:
+        record["reasons"].append(
+            "expected {} rows, got {}".format(expected_rows, len(rows))
+        )
+    if not all_projection_equal:
+        record["reasons"].append("guest observation differs across affinity modes")
+    _write_json_once(output, record)
+    if not valid:
+        raise ValueError("affinity pilot is invalid; see {}".format(output))
+    print("affinity pilot: PASS ({})".format(output))
+    return 0
+
+
+def run_cooldown_pilot(args: argparse.Namespace) -> int:
+    """Select the smallest cooldown using a predeclared short-run gate."""
+    workloads = load_workloads(args.target, args.firmware)
+    if args.cpu is None:
+        raise ValueError("cooldown-pilot requires --cpu")
+    if args.replicates != COOLDOWN_PILOT_REPLICATES:
+        raise ValueError(
+            "cooldown-pilot fixes --replicates at {}".format(
+                COOLDOWN_PILOT_REPLICATES
+            )
+        )
+    if type(args.cycles) is not int or args.cycles <= 0:
+        raise ValueError("cooldown-pilot requires positive --cycles")
+    calibration_workload = next(
+        (workload for workload in workloads if workload["id"].startswith("picotetris-")),
+        None,
+    )
+    if calibration_workload is None:
+        raise ValueError("cooldown-pilot requires the registered PicoTetris workload")
+    identity = clean_backend_identity(args.backend)
+    validate_runner_embedded_commit(args.runner, identity["commit"])
+    output = args.output.resolve()
+    _refuse_existing(output)
+    original = _set_cpu_affinity(args.cpu)
+    rows: List[Dict[str, Any]] = []
+    error_text: Optional[str] = None
+    try:
+        for cooldown in COOLDOWN_PILOT_VALUES:
+            for replicate in range(1, args.replicates + 1):
+                row = _run_short_pilot_guest(
+                    calibration_workload, args.backend, args.runner, identity,
+                    args.cycles, affinity_mode="pinned-vcpu", cpu=args.cpu,
+                )
+                row["cooldown_seconds"] = cooldown
+                row["replicate"] = replicate
+                rows.append(row)
+                if cooldown > 0.0 and replicate < args.replicates:
+                    _sleep_between_runs(cooldown)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+        error_text = str(error)
+    finally:
+        _restore_cpu_affinity(original)
+    groups: Dict[str, Any] = {}
+    for cooldown in COOLDOWN_PILOT_VALUES:
+        group = [
+            row for row in rows
+            if row.get("cooldown_seconds") == cooldown
+        ]
+        cpu_values = [row["cycles_per_emulation_cpu_second"] for row in group]
+        ratio_values = [
+            row["emulation_cpu_seconds"] / row["emulation_wall_seconds"]
+            for row in group
+        ]
+        groups[str(int(cooldown))] = {
+            "replicates": len(group),
+            "cpu_throughput": (
+                _pilot_dispersion(cpu_values) if cpu_values else None
+            ),
+            "cpu_wall_ratio": (
+                _pilot_dispersion(ratio_values) if ratio_values else None
+            ),
+            "observations": sorted(
+                {row.get("guest_observation_sha256") for row in group}
+            ),
+        }
+    zero = groups["0"].get("cpu_wall_ratio")
+    zero_median = zero.get("median") if isinstance(zero, Mapping) else None
+    for key, summary in groups.items():
+        ratio = summary.get("cpu_wall_ratio")
+        throughput = summary.get("cpu_throughput")
+        gates = {
+            "replicate_count": summary["replicates"] == args.replicates,
+            "cpu_relative_mad_le_2pct": (
+                isinstance(throughput, Mapping)
+                and throughput.get("relative_mad") is not None
+                and throughput["relative_mad"] <= COOLDOWN_PILOT_CPU_RELATIVE_MAD_LIMIT
+            ),
+            "cpu_wall_ratio_vs_zero_le_2pct": (
+                isinstance(ratio, Mapping)
+                and zero_median is not None
+                and abs(ratio["median"] / zero_median - 1.0)
+                <= COOLDOWN_PILOT_CPU_WALL_RATIO_LIMIT
+            ),
+            "projection_equal": len(summary["observations"]) == 1,
+        }
+        summary["gates"] = gates
+        summary["valid"] = all(gates.values())
+    selected_key = next(
+        (key for key in ("0", "5", "15", "60") if groups[key]["valid"]),
+        None,
+    )
+    valid = error_text is None and selected_key is not None
+    record = {
+        "schema_id": "picocalc.rp2040-cpu-cooldown-pilot",
+        "schema_version": 1,
+        "artifact_type": "cooldown-pilot",
+        "record_id": args.batch_id or output.stem,
+        "status": "pass" if valid else "invalid",
+        "measurement_policy": {
+            "method": "short-fixed-cycle-cooldown-pilot-v1",
+            "cycles_per_run": args.cycles,
+            "cooldowns_seconds": list(COOLDOWN_PILOT_VALUES),
+            "replicates_per_cooldown": args.replicates,
+            "affinity": "pinned-vcpu",
+            "measurement_cpu": args.cpu,
+            "selection_rule": (
+                "smallest cooldown satisfying replicate count, CPU relative MAD "
+                "<=2%, CPU/wall ratio within 2% of zero-cooldown, and projection "
+                "equality; fixed before observation"
+            ),
+            "cpu_relative_mad_limit": COOLDOWN_PILOT_CPU_RELATIVE_MAD_LIMIT,
+            "cpu_wall_ratio_limit": COOLDOWN_PILOT_CPU_WALL_RATIO_LIMIT,
+        },
+        "backend_identity": identity,
+        "runner_sha256": sha256_file(args.runner),
+        "workload": {
+            key: calibration_workload[key]
+            for key in (
+                "id", "revision", "firmware_sha256", "scenario_sha256",
+                "contract_sha256",
+            )
+        },
+        "rows": rows,
+        "summary": groups,
+        "selected_cooldown_seconds": (
+            float(selected_key) if selected_key is not None else None
+        ),
+        "reasons": [] if error_text is None else [error_text],
+    }
+    _write_json_once(output, record)
+    if not valid:
+        raise ValueError("cooldown pilot is invalid; see {}".format(output))
+    print(
+        "cooldown pilot: PASS (selected {}s; {})".format(
+            record["selected_cooldown_seconds"], output
+        )
+    )
+    return 0
+
+
+def _short_block_pair_results(
+    rows: Sequence[Mapping[str, Any]],
+    pair_indices: Sequence[int],
+    workloads: Sequence[Mapping[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Derive CPU-primary and wall-secondary ratios for one fixed block."""
+    result: List[Dict[str, Any]] = []
+    for pair in pair_indices:
+        for workload in workloads:
+            selected = [
+                row for row in rows
+                if row.get("kind") == "run"
+                and row.get("pair") == pair
+                and row.get("workload") == workload["id"]
+            ]
+            by_role = {row.get("role"): row for row in selected}
+            if set(by_role) != {"baseline", "candidate"}:
+                raise ValueError(
+                    "short block pair is missing baseline/candidate for {} pair {}".format(
+                        workload["id"], pair
+                    )
+                )
+            baseline = by_role["baseline"]
+            candidate = by_role["candidate"]
+            baseline_cpu = baseline.get("cycles_per_emulation_cpu_second")
+            candidate_cpu = candidate.get("cycles_per_emulation_cpu_second")
+            baseline_wall = baseline.get("cycles_per_emulation_wall_second")
+            candidate_wall = candidate.get("cycles_per_emulation_wall_second")
+            if any(
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(float(value))
+                or float(value) <= 0
+                for value in (baseline_cpu, candidate_cpu, baseline_wall, candidate_wall)
+            ):
+                raise ValueError("short block throughput is invalid")
+            result.append(
+                {
+                    "workload": workload["id"],
+                    "pair_index": pair,
+                    "order": baseline.get("order"),
+                    "run_ids": [baseline.get("run_id"), candidate.get("run_id")],
+                    "cpu_primary_log_ratio": log_ratio(float(candidate_cpu), float(baseline_cpu)),
+                    "wall_secondary_log_ratio": log_ratio(float(candidate_wall), float(baseline_wall)),
+                    "pair_log_ratio": log_ratio(float(candidate_cpu), float(baseline_cpu)),
+                    "baseline_guest_observation_sha256": baseline.get("guest_observation_sha256"),
+                    "candidate_guest_observation_sha256": candidate.get("guest_observation_sha256"),
+                    "guest_observation_equal": (
+                        baseline.get("guest_observation_sha256")
+                        == candidate.get("guest_observation_sha256")
+                    ),
+                }
+            )
+    return result
+
+
+def run_short_block(args: argparse.Namespace) -> int:
+    """Run the fixed five-block short CPU-time A/B screening protocol.
+
+    Each run is a real registered application firmware execution with a short
+    cycle limit.  It is intentionally a screening/diagnostic record: the
+    CPU-time effect is measured and retained, while promotion still requires
+    the full registered production A/B protocol.
+    """
+    workloads = load_workloads(args.target, args.firmware)
+    if len(workloads) != 2:
+        raise ValueError("short-block requires exactly the two registered workloads")
+    if args.cpu is None:
+        raise ValueError("short-block requires --cpu")
+    if args.replicates != SHORT_BLOCK_ANCHOR_REPLICATES:
+        raise ValueError(
+            "short-block fixes --replicates at {}".format(SHORT_BLOCK_ANCHOR_REPLICATES)
+        )
+    if type(args.cycles) is not int or args.cycles <= 0:
+        raise ValueError("short-block requires positive --cycles")
+    cooldown = float(args.inter_run_cooldown_seconds)
+    if not math.isfinite(cooldown) or cooldown != SHORT_BLOCK_COOLDOWN_SECONDS:
+        raise ValueError(
+            "short-block fixes --inter-run-cooldown-seconds at {}".format(
+                SHORT_BLOCK_COOLDOWN_SECONDS
+            )
+        )
+    if args.final_report_only and args.candidate_id != "P0-A2":
+        raise ValueError("--final-report-only is reserved for candidate_id P0-A2")
+
+    identities = preflight_backends(
+        [args.baseline_backend, args.candidate_backend],
+        [args.baseline_runner, args.candidate_runner],
+        labels=("baseline_production", "candidate_production"),
+        feature_sets=((), getattr(args, "feature_set", [])),
+        allow_production_role=(
+            args.candidate_id == "P0-A2"
+            and args.baseline_runner.resolve() == args.candidate_runner.resolve()
+        ),
+    )
+    _require_admission_gate(args.admission_record, workloads, identities["baseline_production"])
+    correctness_record = getattr(args, "correctness_record", None)
+    if correctness_record is not None:
+        _require_correctness_gate(
+            correctness_record,
+            workloads,
+            identities,
+            required_trace=not args.final_report_only,
+        )
+
+    record_root = args.output.resolve()
+    _validate_record_root(record_root)
+    batch_id = args.batch_id or record_root.name
+    _validate_batch_id(record_root, batch_id)
+    short_dir = record_root / "short-block"
+    _refuse_existing_files(short_dir)
+    for aggregate in (record_root / "summary.json", record_root / "decision.md", record_root / "short-block" / "record.json"):
+        _refuse_existing(aggregate)
+    policy = {
+        "method": "short-fixed-cycle-five-block-cpu-time-v1",
+        "cycles_per_run": args.cycles,
+        "block_count": SHORT_BLOCK_COUNT,
+        "pairs_per_block": SHORT_BLOCK_PAIRS,
+        "pairs": SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS,
+        "anchor_replicates_per_boundary": SHORT_BLOCK_ANCHOR_REPLICATES,
+        "anchor_boundaries_per_block": ["pre", "post"],
+        "inter_run_cooldown_seconds": SHORT_BLOCK_COOLDOWN_SECONDS,
+        "primary_metric": "cycles_per_emulation_cpu_second",
+        "secondary_metric": "cycles_per_emulation_wall_second",
+        "anchor_relative_mad_limit": SHORT_BLOCK_ANCHOR_MAD_LIMIT,
+        "anchor_pre_post_drift_limit": SHORT_BLOCK_ANCHOR_DRIFT_LIMIT,
+        "diagnostic_only": True,
+        "promotion_requires_full_production_ab": True,
+    }
+    manifest_identity = _base_manifest(
+        batch_id,
+        workloads,
+        identities,
+        candidate_id=args.candidate_id,
+        cpu=args.cpu,
+        feature_set=getattr(args, "feature_set", []),
+    )
+    manifest_identity["short_block_policy"] = policy
+    if correctness_record is not None:
+        manifest_identity["correctness_record"] = correctness_record.resolve().name
+    _record_manifest(record_root, manifest_identity)
+    decision_context = _manifest_decision_context(
+        record_root, workloads, identities,
+        feature_set=getattr(args, "feature_set", []),
+    )
+    blocks = make_short_block_schedule([workload["id"] for workload in workloads])
+    calibration_workload = next(
+        workload for workload in workloads if workload["id"].startswith("picotetris-")
+    )
+    by_id = {workload["id"]: workload for workload in workloads}
+    rows: List[Dict[str, Any]] = []
+    error_text: Optional[str] = None
+    before = _set_cpu_affinity(args.cpu)
+    try:
+        for block in blocks:
+            for anchor_id in block["pre_anchor_ids"]:
+                row = _run_short_pilot_guest(
+                    calibration_workload,
+                    args.baseline_backend,
+                    args.baseline_runner,
+                    identities["baseline_production"],
+                    args.cycles,
+                    affinity_mode="pinned-vcpu",
+                    cpu=args.cpu,
+                )
+                row.update(
+                    {
+                        "kind": "anchor",
+                        "anchor_id": anchor_id,
+                        "anchor_position": "pre",
+                        "block_index": block["block_index"],
+                        "workload": calibration_workload["id"],
+                        "role": "baseline",
+                    }
+                )
+                rows.append(row)
+                _sleep_between_runs(cooldown)
+            for item in block["runs"]:
+                role = item["role"]
+                identity = identities["{}_production".format(role)]
+                row = _run_short_pilot_guest(
+                    by_id[item["workload"]],
+                    args.baseline_backend if role == "baseline" else args.candidate_backend,
+                    args.baseline_runner if role == "baseline" else args.candidate_runner,
+                    identity,
+                    args.cycles,
+                    affinity_mode="pinned-vcpu",
+                    cpu=args.cpu,
+                )
+                row.update({"kind": "run", **item})
+                rows.append(row)
+                _sleep_between_runs(cooldown)
+            for anchor_id in block["post_anchor_ids"]:
+                row = _run_short_pilot_guest(
+                    calibration_workload,
+                    args.baseline_backend,
+                    args.baseline_runner,
+                    identities["baseline_production"],
+                    args.cycles,
+                    affinity_mode="pinned-vcpu",
+                    cpu=args.cpu,
+                )
+                row.update(
+                    {
+                        "kind": "anchor",
+                        "anchor_id": anchor_id,
+                        "anchor_position": "post",
+                        "block_index": block["block_index"],
+                        "workload": calibration_workload["id"],
+                        "role": "baseline",
+                    }
+                )
+                rows.append(row)
+                _sleep_between_runs(cooldown)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+        error_text = str(error)
+    finally:
+        _restore_cpu_affinity(before)
+
+    run_rows = [row for row in rows if row.get("kind") == "run"]
+    anchor_rows = [row for row in rows if row.get("kind") == "anchor"]
+    block_summaries: List[Dict[str, Any]] = []
+    pair_results: List[Dict[str, Any]] = []
+    for block in blocks:
+        block_rows = [row for row in rows if row.get("block_index") == block["block_index"]]
+        pre = [row for row in block_rows if row.get("anchor_position") == "pre"]
+        post = [row for row in block_rows if row.get("anchor_position") == "post"]
+        try:
+            pre_cpu = _pilot_dispersion([row["cycles_per_emulation_cpu_second"] for row in pre])
+            post_cpu = _pilot_dispersion([row["cycles_per_emulation_cpu_second"] for row in post])
+            pre_wall = _pilot_dispersion([row["cycles_per_emulation_wall_second"] for row in pre])
+            post_wall = _pilot_dispersion([row["cycles_per_emulation_wall_second"] for row in post])
+            block_pairs = _short_block_pair_results(block_rows, block["pair_indices"], workloads)
+            pair_results.extend(block_pairs)
+            drift = abs(post_cpu["median"] / pre_cpu["median"] - 1.0)
+            observations = {row.get("guest_observation_sha256") for row in block_rows}
+            block_valid = (
+                len(pre) == args.replicates
+                and len(post) == args.replicates
+                and pre_cpu["relative_mad"] <= SHORT_BLOCK_ANCHOR_MAD_LIMIT
+                and post_cpu["relative_mad"] <= SHORT_BLOCK_ANCHOR_MAD_LIMIT
+                and drift <= SHORT_BLOCK_ANCHOR_DRIFT_LIMIT
+                and all(item["guest_observation_equal"] is True for item in block_pairs)
+            )
+            block_summaries.append(
+                {
+                    "block_id": block["block_id"],
+                    "block_index": block["block_index"],
+                    "pair_indices": block["pair_indices"],
+                    "pre_anchor_cpu": pre_cpu,
+                    "post_anchor_cpu": post_cpu,
+                    "pre_anchor_wall": pre_wall,
+                    "post_anchor_wall": post_wall,
+                    "pre_post_cpu_relative_drift": drift,
+                    "guest_observation_count": len(observations),
+                    "pair_results": block_pairs,
+                    "valid": block_valid,
+                }
+            )
+        except (ValueError, KeyError, TypeError, ZeroDivisionError) as error:
+            block_summaries.append(
+                {
+                    "block_id": block["block_id"],
+                    "block_index": block["block_index"],
+                    "pair_indices": block["pair_indices"],
+                    "valid": False,
+                    "error": str(error),
+                }
+            )
+    workload_effects: Dict[str, Any] = {}
+    for workload in workloads:
+        values = [
+            float(item["cpu_primary_log_ratio"])
+            for item in pair_results
+            if item.get("workload") == workload["id"]
+        ]
+        workload_effects[workload["id"]] = (
+            summarize_log_effect(values) if len(values) == SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS else {"n": len(values)}
+        )
+    by_pair: Dict[int, List[float]] = {}
+    for item in pair_results:
+        by_pair.setdefault(int(item["pair_index"]), []).append(float(item["cpu_primary_log_ratio"]))
+    combined_values = [statistics.mean(by_pair[pair]) for pair in sorted(by_pair) if len(by_pair[pair]) == len(workloads)]
+    combined = (
+        summarize_log_effect(combined_values)
+        if len(combined_values) == SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS
+        else {"n": len(combined_values)}
+    )
+    expected_rows = SHORT_BLOCK_COUNT * SHORT_BLOCK_PAIRS * len(workloads) * 2
+    expected_anchors = SHORT_BLOCK_COUNT * 2 * SHORT_BLOCK_ANCHOR_REPLICATES
+    protocol_valid = (
+        error_text is None
+        and len(run_rows) == expected_rows
+        and len(anchor_rows) == expected_anchors
+        and len(block_summaries) == SHORT_BLOCK_COUNT
+        and all(block.get("valid") is True for block in block_summaries)
+        and all(item.get("guest_observation_equal") is True for item in pair_results)
+    )
+    reasons = [] if error_text is None else [error_text]
+    if len(run_rows) != expected_rows:
+        reasons.append("expected {} measured rows, got {}".format(expected_rows, len(run_rows)))
+    if len(anchor_rows) != expected_anchors:
+        reasons.append("expected {} anchor rows, got {}".format(expected_anchors, len(anchor_rows)))
+    if any(block.get("valid") is not True for block in block_summaries):
+        reasons.append("one or more block anchor/projection gates failed")
+    result_record = {
+        "schema_id": SHORT_BLOCK_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "artifact_type": "short-block-ab",
+        "record_id": batch_id,
+        "candidate_id": args.candidate_id,
+        "status": "pass" if protocol_valid else "invalid",
+        "measurement_policy": policy,
+        "measurement_cpu": args.cpu,
+        "backend_identities": identities,
+        "workloads": _workload_manifest_entries(workloads),
+        "correctness_record": correctness_record.resolve().name if correctness_record is not None else None,
+        "rows": rows,
+        "blocks": block_summaries,
+        "summary": {"workloads": workload_effects, "combined": combined},
+        "pair_results": pair_results,
+        "reasons": reasons,
+    }
+    short_dir.mkdir(parents=True, exist_ok=True)
+    _write_json_once(short_dir / "record.json", result_record)
+    _write_json_once(
+        record_root / "summary.json",
+        {
+            "schema_id": SHORT_BLOCK_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "artifact_type": "short-block-summary",
+            "record_id": batch_id,
+            "candidate_id": args.candidate_id,
+            "status": result_record["status"],
+            "measurement_policy": policy,
+            "blocks": block_summaries,
+            "workloads": workload_effects,
+            "combined": combined,
+            "pair_results": pair_results,
+            "reasons": reasons,
+        },
+    )
+    _write_json_replace(
+        record_root / "decision.json",
+        {
+            "schema_id": DECISION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "record_id": batch_id,
+            "candidate_id": args.candidate_id,
+            "decision_kind": "performance" if protocol_valid else "invalid",
+            "status": "pending" if protocol_valid else "invalid",
+            "correctness": (
+                {"status": "pass", "source": correctness_record.resolve().name}
+                if correctness_record is not None
+                else {"status": "not_run"}
+            ),
+            "statistics": result_record["summary"],
+            "reasons": reasons,
+            **decision_context,
+        },
+    )
+    _write_text_once(
+        record_root / "decision.md",
+        "# RP2040 CPU short-block decision\n\n"
+        + ("Protocol gates passed; full production A/B remains required for promotion.\n"
+           if protocol_valid else "Short-block protocol was invalid; see summary.json.\n"),
+    )
+    _write_sha256sums_once(record_root)
+    if not protocol_valid:
+        raise ValueError("short-block protocol is invalid; see {}".format(record_root))
+    print("short-block CPU-time diagnostic: PASS ({})".format(record_root))
+    return 0
+
+
 def run_load_shape(args: argparse.Namespace) -> int:
     """Measure independent guest scaling without making an A/B decision."""
     workloads = load_workloads(args.target, args.firmware)
@@ -3553,6 +4383,8 @@ def _run_interleaved_anchor_ab(
 ) -> int:
     """Run the fixed 10-pair A/B with interleaved host-speed anchors."""
     calibration_method = measurement_policy.get("calibration_method")
+    primary_metric = measurement_policy.get("primary_metric", "wall-time")
+    metric_fields = primary_metric_fields(primary_metric)
     use_replicated_anchors = calibration_method in (
         CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V2,
         CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
@@ -3630,7 +4462,12 @@ def _run_interleaved_anchor_ab(
                 "elapsed_seconds": _anchor_elapsed_seconds(
                     started_ns, ended_ns, protocol_start_ns
                 ),
-                "throughput": measurement["emulated_cycles_per_wall_second"],
+                # ``throughput`` is the metric used by the fixed calibration
+                # model.  Keep both clocks in every anchor so a CPU-primary
+                # result remains auditable against wall-time diagnostics.
+                "throughput": measurement[metric_fields["raw"]],
+                "cpu_throughput": measurement["cycles_per_emulation_cpu_second"],
+                "wall_throughput": measurement["emulated_cycles_per_wall_second"],
                 "cycles": measurement["cycles"],
                 "wall_seconds": measurement["wall_seconds"],
                 "guest_observation_sha256": measurement["guest_observation_sha256"],
@@ -3755,7 +4592,8 @@ def _run_interleaved_anchor_ab(
             measurement = dict(item["measurement"])
             predicted = interpolate_anchor_throughput(model_anchors, item["elapsed_seconds"])
             correction = reference_throughput / predicted
-            raw_throughput = measurement["emulated_cycles_per_wall_second"]
+            raw_throughput = measurement[metric_fields["raw"]]
+            corrected_throughput = raw_throughput * correction
             leaf = {
                 "schema_id": AB_SCHEMA_ID,
                 "schema_version": SCHEMA_VERSION,
@@ -3765,9 +4603,17 @@ def _run_interleaved_anchor_ab(
                 **item["item"],
                 **measurement,
                 "protocol_elapsed_seconds": item["elapsed_seconds"],
-                "predicted_anchor_throughput": predicted,
+                metric_fields["predicted"]: predicted,
                 "host_speed_correction": correction,
-                "corrected_emulated_cycles_per_wall_second": raw_throughput * correction,
+                "corrected_emulated_cycles_per_wall_second": (
+                    measurement["emulated_cycles_per_wall_second"] * correction
+                ),
+                "corrected_emulated_cycles_per_cpu_second": (
+                    measurement["cycles_per_emulation_cpu_second"] * correction
+                ),
+                "primary_metric": primary_metric,
+                "primary_throughput": raw_throughput,
+                "corrected_primary_throughput": corrected_throughput,
             }
             leaves.append(leaf)
         for leaf in leaves:
@@ -3785,12 +4631,28 @@ def _run_interleaved_anchor_ab(
             for pair in range(1, args.pairs + 1):
                 values = grouped[workload_id][pair]
                 raw_ratio = log_ratio(
+                    values["candidate"]["primary_throughput"],
+                    values["baseline"]["primary_throughput"],
+                )
+                corrected_ratio = log_ratio(
+                    values["candidate"]["corrected_primary_throughput"],
+                    values["baseline"]["corrected_primary_throughput"],
+                )
+                wall_raw_ratio = log_ratio(
                     values["candidate"]["emulated_cycles_per_wall_second"],
                     values["baseline"]["emulated_cycles_per_wall_second"],
                 )
-                corrected_ratio = log_ratio(
+                cpu_raw_ratio = log_ratio(
+                    values["candidate"]["cycles_per_emulation_cpu_second"],
+                    values["baseline"]["cycles_per_emulation_cpu_second"],
+                )
+                wall_corrected_ratio = log_ratio(
                     values["candidate"]["corrected_emulated_cycles_per_wall_second"],
                     values["baseline"]["corrected_emulated_cycles_per_wall_second"],
+                )
+                cpu_corrected_ratio = log_ratio(
+                    values["candidate"]["corrected_emulated_cycles_per_cpu_second"],
+                    values["baseline"]["corrected_emulated_cycles_per_cpu_second"],
                 )
                 ratios.append(raw_ratio)
                 pair_results.append(
@@ -3801,6 +4663,11 @@ def _run_interleaved_anchor_ab(
                         "run_ids": [values["baseline"]["run_id"], values["candidate"]["run_id"]],
                         "pair_log_ratio": raw_ratio,
                         "corrected_pair_log_ratio": corrected_ratio,
+                        "primary_metric": primary_metric,
+                        "wall_pair_log_ratio": wall_raw_ratio,
+                        "cpu_pair_log_ratio": cpu_raw_ratio,
+                        "wall_corrected_pair_log_ratio": wall_corrected_ratio,
+                        "cpu_corrected_pair_log_ratio": cpu_corrected_ratio,
                         "baseline_guest_observation_sha256": values["baseline"]["guest_observation_sha256"],
                         "candidate_guest_observation_sha256": values["candidate"]["guest_observation_sha256"],
                         "guest_observation_equal": (
@@ -4360,6 +5227,10 @@ def run_ab(args: argparse.Namespace) -> int:
             else interleaved_anchor_measurement_policy()
         )
     )
+    primary_metric = getattr(args, "primary_metric", "cpu-time")
+    primary_metric_fields(primary_metric)
+    measurement_policy = dict(measurement_policy)
+    measurement_policy["primary_metric"] = primary_metric
     manifest_identity = _base_manifest(
         batch_id, workloads, identities, candidate_id=args.candidate_id, cpu=args.cpu,
         feature_set=getattr(args, "feature_set", []),
@@ -4781,6 +5652,57 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     load_shape.add_argument("--output", type=Path, required=True)
     load_shape.set_defaults(handler=run_load_shape)
 
+    affinity_pilot = subparsers.add_parser(
+        "affinity-pilot",
+        help="compare pinned-vCPU and inherited-set short guest execution",
+    )
+    _add_workloads(affinity_pilot)
+    affinity_pilot.add_argument("--backend", type=Path, required=True)
+    affinity_pilot.add_argument("--runner", type=Path, required=True)
+    affinity_pilot.add_argument("--cycles", type=int, default=LOAD_SHAPE_DEFAULT_CYCLES)
+    affinity_pilot.add_argument("--replicates", type=int, default=AFFINITY_PILOT_REPLICATES)
+    affinity_pilot.add_argument("--batch-id")
+    affinity_pilot.add_argument("--output", type=Path, required=True)
+    affinity_pilot.set_defaults(handler=run_affinity_pilot)
+
+    cooldown_pilot = subparsers.add_parser(
+        "cooldown-pilot",
+        help="select the smallest fixed cooldown using short guest runs",
+    )
+    _add_workloads(cooldown_pilot)
+    cooldown_pilot.add_argument("--backend", type=Path, required=True)
+    cooldown_pilot.add_argument("--runner", type=Path, required=True)
+    cooldown_pilot.add_argument("--cycles", type=int, default=LOAD_SHAPE_DEFAULT_CYCLES)
+    cooldown_pilot.add_argument("--replicates", type=int, default=COOLDOWN_PILOT_REPLICATES)
+    cooldown_pilot.add_argument("--batch-id")
+    cooldown_pilot.add_argument("--output", type=Path, required=True)
+    cooldown_pilot.set_defaults(handler=run_cooldown_pilot)
+
+    short_block = subparsers.add_parser(
+        "short-block",
+        help="run the fixed five-block CPU-time A/B screening protocol",
+    )
+    _add_workloads(short_block)
+    short_block.add_argument("--baseline-backend", type=Path, required=True)
+    short_block.add_argument("--candidate-backend", type=Path, required=True)
+    short_block.add_argument("--baseline-runner", type=Path, required=True)
+    short_block.add_argument("--candidate-runner", type=Path, required=True)
+    short_block.add_argument("--candidate-id", default="candidate")
+    short_block.add_argument("--correctness-record", type=Path)
+    short_block.add_argument("--admission-record", type=Path, required=True)
+    short_block.add_argument("--cycles", type=int, default=SHORT_BLOCK_DEFAULT_CYCLES)
+    short_block.add_argument(
+        "--replicates", type=int, default=SHORT_BLOCK_ANCHOR_REPLICATES,
+    )
+    short_block.add_argument(
+        "--inter-run-cooldown-seconds", type=float,
+        default=SHORT_BLOCK_COOLDOWN_SECONDS,
+    )
+    short_block.add_argument("--batch-id")
+    short_block.add_argument("--final-report-only", action="store_true")
+    short_block.add_argument("--output", type=Path, required=True)
+    short_block.set_defaults(handler=run_short_block)
+
     ab = subparsers.add_parser("ab")
     _add_workloads(ab)
     ab.add_argument("--baseline-backend", type=Path, required=True)
@@ -4807,6 +5729,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3,
         ),
         help="fixed host-stability protocol; v2 uses five groups and v3 uses nine groups of three anchors",
+    )
+    ab.add_argument(
+        "--primary-metric", choices=AB_PRIMARY_METRICS, default="cpu-time",
+        help="production A/B primary throughput clock; CPU time is the default",
     )
     ab.add_argument(
         "--inter-run-cooldown-seconds", type=float,
@@ -4896,6 +5822,47 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             parser.error("cpu-time-diagnostic requires --cpu for affinity pinning")
     if args.command == "load-shape" and args.cycles <= 0:
         parser.error("load-shape requires positive --cycles")
+    if args.command == "affinity-pilot":
+        if args.cycles <= 0:
+            parser.error("affinity-pilot requires positive --cycles")
+        if args.replicates != AFFINITY_PILOT_REPLICATES:
+            parser.error(
+                "affinity-pilot fixes --replicates at {}".format(
+                    AFFINITY_PILOT_REPLICATES
+                )
+            )
+        if args.cpu is None:
+            parser.error("affinity-pilot requires --cpu")
+    if args.command == "cooldown-pilot":
+        if args.cycles <= 0:
+            parser.error("cooldown-pilot requires positive --cycles")
+        if args.replicates != COOLDOWN_PILOT_REPLICATES:
+            parser.error(
+                "cooldown-pilot fixes --replicates at {}".format(
+                    COOLDOWN_PILOT_REPLICATES
+                )
+            )
+        if args.cpu is None:
+            parser.error("cooldown-pilot requires --cpu")
+    if args.command == "short-block":
+        if args.cycles <= 0:
+            parser.error("short-block requires positive --cycles")
+        if args.replicates != SHORT_BLOCK_ANCHOR_REPLICATES:
+            parser.error(
+                "short-block fixes --replicates at {}".format(
+                    SHORT_BLOCK_ANCHOR_REPLICATES
+                )
+            )
+        if args.inter_run_cooldown_seconds != SHORT_BLOCK_COOLDOWN_SECONDS:
+            parser.error(
+                "short-block fixes --inter-run-cooldown-seconds at {}".format(
+                    SHORT_BLOCK_COOLDOWN_SECONDS
+                )
+            )
+        if args.cpu is None:
+            parser.error("short-block requires --cpu")
+        if args.final_report_only and args.candidate_id != "P0-A2":
+            parser.error("--final-report-only is reserved for candidate_id P0-A2")
     if args.command == "correctness" and args.final_report_only and args.candidate_id != "P0-A2":
         parser.error("--final-report-only is reserved for candidate_id P0-A2")
     return args

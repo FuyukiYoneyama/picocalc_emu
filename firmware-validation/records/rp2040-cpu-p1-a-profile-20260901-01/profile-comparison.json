@@ -1,0 +1,74 @@
+{
+  "schema_id": "picocalc.rp2040-cpu-profile-comparison",
+  "schema_version": 1,
+  "candidate_id": "P1-A",
+  "baseline_record": "rp2040-cpu-p0-b-profile-20260901-01",
+  "candidate_record": "rp2040-cpu-p1-a-profile-20260901-01",
+  "baseline_backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "candidate_backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "profile_runtime_parent": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "profile_only_delta": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+  "delta_files": [
+    "Cargo feature: decode-invalidation-tag-guard"
+  ],
+  "runtime_semantics_changed": false,
+  "correctness_record": "rp2040-cpu-p1-a-correctness-20260901-01",
+  "profile_wall_time_is_acceptance_evidence": false,
+  "method": {
+    "comparison": "same registered firmware/scenario and deterministic guest counter run; profile instrumentation is diagnostic",
+    "decode_miss_reduction": "baseline_misses - candidate_misses, divided by baseline_misses",
+    "unrelated_would_clear": "candidate profile counts non-empty slots that the historical index-only path would clear; it is not a P1-B filterable-request denominator"
+  },
+  "workloads": {
+    "picotetris-opt1b-vrp5": {
+      "baseline_profile_sha256": "c250a79dbc1307b28127d36b81fde37cd1646dca81af2e762b24420ab3af0641",
+      "candidate_profile_sha256": "f712a40a0f95b88c0b5b1fdfde15fca4a01bfa3feb75fac65b5a3f5894cc3da8",
+      "retired_instructions": 172705412,
+      "emulated_cycles": 308905155,
+      "invalidation_requests": 9247516,
+      "examined_slots": 18495032,
+      "baseline_decode_misses": 297901,
+      "candidate_decode_misses": 288704,
+      "decode_miss_reduction": 9197,
+      "decode_miss_reduction_ratio": 0.030872672465013545,
+      "candidate_unrelated_would_clear": 14048390,
+      "candidate_unrelated_would_clear_ratio": 0.7595764094920192,
+      "candidate_matching_clears": 0,
+      "candidate_wide_predecessor_clears": 0,
+      "profile_valid": true,
+      "core1_active": false
+    },
+    "picoedit-r1-vrp2f": {
+      "baseline_profile_sha256": "a4dcd900f1e2f10fc0c6e141d261ae7d5b2ad436aaa3808744ec274f6b8fb159",
+      "candidate_profile_sha256": "1eceab87678ee98df2d363a5a8c3cfd1028689ee9cf1d608541985d78b134a9f",
+      "retired_instructions": 87776861,
+      "emulated_cycles": 162105095,
+      "invalidation_requests": 2089416,
+      "examined_slots": 4178832,
+      "baseline_decode_misses": 223209,
+      "candidate_decode_misses": 66316,
+      "decode_miss_reduction": 156893,
+      "decode_miss_reduction_ratio": 0.7028972846076995,
+      "candidate_unrelated_would_clear": 3617198,
+      "candidate_unrelated_would_clear_ratio": 0.8656002442787841,
+      "candidate_matching_clears": 0,
+      "candidate_wide_predecessor_clears": 0,
+      "profile_valid": true,
+      "core1_active": false
+    }
+  },
+  "combined": {
+    "baseline_decode_misses": 521110,
+    "candidate_decode_misses": 355020,
+    "decode_miss_reduction": 166090,
+    "decode_miss_reduction_ratio": 0.3187234940799447,
+    "candidate_unrelated_would_clear": 17665588,
+    "candidate_examined_slots": 22673864,
+    "candidate_unrelated_would_clear_ratio": 0.7791167839764762,
+    "candidate_invalidation_requests": 11336932
+  },
+  "decision": {
+    "status": "profile_signal_positive_performance_pending",
+    "interpretation": "P1-A preserves cache entries that the historical index-only path would evict and lowers diagnostic decode misses. No CPU-time speedup is claimed until the fixed short-block diagnostic and registered production A/B measurements pass."
+  }
+}

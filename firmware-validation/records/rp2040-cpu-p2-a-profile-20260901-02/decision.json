@@ -1,0 +1,116 @@
+{
+  "backend_identities": {
+    "candidate_profile": {
+      "build_provenance_sha256": "868f63b50fd60145f53a6b47e68bcae19c6b74ced599f6f78b049c182138fd3d",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "cpu-application-profiler",
+        "pending-exception-fast-reject",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_profile",
+      "role": "candidate_profile",
+      "runner_sha256": "2b2adab591670960a35bfb2c56f12406b5da652d1b1321e0721dfc47db7f0cbe"
+    }
+  },
+  "candidate_id": "P2-A",
+  "correctness": {
+    "profile": "written",
+    "status": "not_run"
+  },
+  "decision_kind": "profile",
+  "feature_set": [
+    "cpu-application-profiler",
+    "pending-exception-fast-reject",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 65076000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 5903328000,
+      "throttled_usec": 0,
+      "usage_usec": 139180444000,
+      "user_usec": 133277116000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 6677477275.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.80078125,
+      0.95263671875,
+      0.904296875
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 289652170,
+      "iowait": 70568,
+      "irq": 0,
+      "nice": 6507,
+      "softirq": 208855,
+      "steal": 0,
+      "system": 381477,
+      "user": 13321204
+    },
+    "reported_mhz": 3693.107,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "record_id": "rp2040-cpu-p2-a-profile-20260901-02",
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "status": "pass",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

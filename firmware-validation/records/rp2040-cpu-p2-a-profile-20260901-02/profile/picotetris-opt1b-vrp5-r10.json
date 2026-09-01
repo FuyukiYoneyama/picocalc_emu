@@ -1,0 +1,592 @@
+{
+  "backend": {
+    "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+    "dirty": false
+  },
+  "candidate_id": "P2-A",
+  "cores": [
+    {
+      "active": true,
+      "core_id": 0,
+      "decode": {
+        "by_region": {
+          "boot_rom": {
+            "hits": 23115,
+            "lookups": 23902,
+            "misses": 787
+          },
+          "immutable_xip": {
+            "hits": 172312492,
+            "lookups": 172608591,
+            "misses": 296099
+          },
+          "other": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "sram": {
+            "hits": 71904,
+            "lookups": 72919,
+            "misses": 1015
+          },
+          "xip_sram": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          }
+        },
+        "hits": 172407511,
+        "lookups": 172705412,
+        "misses": 297901,
+        "noncacheable_fetches": 0
+      },
+      "emulated_cycles": 308905155,
+      "exception": {
+        "entries": 284,
+        "polls": 172705980,
+        "reject_active_handler": 0,
+        "reject_no_candidate": 172687340,
+        "reject_primask": 18356,
+        "source": {
+          "nvic": 284,
+          "pendsv": 0,
+          "systick": 0
+        }
+      },
+      "handler_group": {
+        "branch_system": 50227915,
+        "data_processing": 50281954,
+        "load_store": 53399842,
+        "other": 9441752,
+        "thumb16_shift_add_sub": 8951033,
+        "thumb32": 402916
+      },
+      "invalidation": {
+        "examined_slots": 18495032,
+        "matching_clears": 0,
+        "requests": 9247516,
+        "unrelated_would_clear": 10801,
+        "wide_predecessor_clears": 0
+      },
+      "invariants": {
+        "valid": true
+      },
+      "overflowed": false,
+      "pc_region": {
+        "boot_rom": 23902,
+        "immutable_xip": 172608591,
+        "other": 0,
+        "sram": 72919,
+        "xip_sram": 0
+      },
+      "retired_instructions": 172705412
+    },
+    {
+      "active": false,
+      "core_id": 1,
+      "decode": {
+        "by_region": {
+          "boot_rom": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "immutable_xip": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "other": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "sram": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "xip_sram": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          }
+        },
+        "hits": 0,
+        "lookups": 0,
+        "misses": 0,
+        "noncacheable_fetches": 0
+      },
+      "emulated_cycles": 0,
+      "exception": {
+        "entries": 0,
+        "polls": 0,
+        "reject_active_handler": 0,
+        "reject_no_candidate": 0,
+        "reject_primask": 0,
+        "source": {
+          "nvic": 0,
+          "pendsv": 0,
+          "systick": 0
+        }
+      },
+      "handler_group": {
+        "branch_system": 0,
+        "data_processing": 0,
+        "load_store": 0,
+        "other": 0,
+        "thumb16_shift_add_sub": 0,
+        "thumb32": 0
+      },
+      "invalidation": {
+        "examined_slots": 0,
+        "matching_clears": 0,
+        "requests": 0,
+        "unrelated_would_clear": 0,
+        "wide_predecessor_clears": 0
+      },
+      "invariants": {
+        "valid": true
+      },
+      "overflowed": false,
+      "pc_region": {
+        "boot_rom": 0,
+        "immutable_xip": 0,
+        "other": 0,
+        "sram": 0,
+        "xip_sram": 0
+      },
+      "retired_instructions": 0
+    }
+  ],
+  "counters": {
+    "active": true,
+    "decode": {
+      "by_region": {
+        "boot_rom": {
+          "hits": 23115,
+          "lookups": 23902,
+          "misses": 787
+        },
+        "immutable_xip": {
+          "hits": 172312492,
+          "lookups": 172608591,
+          "misses": 296099
+        },
+        "other": {
+          "hits": 0,
+          "lookups": 0,
+          "misses": 0
+        },
+        "sram": {
+          "hits": 71904,
+          "lookups": 72919,
+          "misses": 1015
+        },
+        "xip_sram": {
+          "hits": 0,
+          "lookups": 0,
+          "misses": 0
+        }
+      },
+      "hits": 172407511,
+      "lookups": 172705412,
+      "misses": 297901,
+      "noncacheable_fetches": 0
+    },
+    "emulated_cycles": 308905155,
+    "exception": {
+      "entries": 284,
+      "polls": 172705980,
+      "reject_active_handler": 0,
+      "reject_no_candidate": 172687340,
+      "reject_primask": 18356,
+      "source": {
+        "nvic": 284,
+        "pendsv": 0,
+        "systick": 0
+      }
+    },
+    "handler_group": {
+      "branch_system": 50227915,
+      "data_processing": 50281954,
+      "load_store": 53399842,
+      "other": 9441752,
+      "thumb16_shift_add_sub": 8951033,
+      "thumb32": 402916
+    },
+    "invalidation": {
+      "examined_slots": 18495032,
+      "matching_clears": 0,
+      "requests": 9247516,
+      "unrelated_would_clear": 10801,
+      "wide_predecessor_clears": 0
+    },
+    "pc_region": {
+      "boot_rom": 23902,
+      "immutable_xip": 172608591,
+      "other": 0,
+      "sram": 72919,
+      "xip_sram": 0
+    },
+    "retired_instructions": 172705412
+  },
+  "cpu": {
+    "allowed_cpus": [
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 65104000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 5904736000,
+      "throttled_usec": 0,
+      "usage_usec": 139354980000,
+      "user_usec": 133450244000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 6677524610.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      1.0712890625,
+      0.9951171875,
+      0.9287109375
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 289841668,
+      "iowait": 70577,
+      "irq": 0,
+      "nice": 6510,
+      "softirq": 208908,
+      "steal": 0,
+      "system": 381565,
+      "user": 13338514
+    },
+    "reported_mhz": 3693.107,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "feature_set": [
+    "cpu-application-profiler",
+    "pending-exception-fast-reject",
+    "sd-gen1-multiblock"
+  ],
+  "interval": {
+    "end_emulated_cycle": 927528659,
+    "start_emulated_cycle": 0
+  },
+  "invariants": {
+    "core_records_valid": true,
+    "decode_lookup_conservation": true,
+    "decode_region_conservation": true,
+    "exception_poll_conservation": true,
+    "exception_source_conservation": true,
+    "handler_group_conservation": true,
+    "pc_region_conservation": true,
+    "valid": true
+  },
+  "overflowed": false,
+  "profile_valid": true,
+  "raw_profile": {
+    "backend_build": {
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false
+    },
+    "cores": [
+      {
+        "active": true,
+        "core_id": 0,
+        "decode": {
+          "by_region": {
+            "boot_rom": {
+              "hits": 23115,
+              "lookups": 23902,
+              "misses": 787
+            },
+            "immutable_xip": {
+              "hits": 172312492,
+              "lookups": 172608591,
+              "misses": 296099
+            },
+            "other": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            },
+            "sram": {
+              "hits": 71904,
+              "lookups": 72919,
+              "misses": 1015
+            },
+            "xip_sram": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            }
+          },
+          "hits": 172407511,
+          "lookups": 172705412,
+          "misses": 297901,
+          "noncacheable_fetches": 0
+        },
+        "emulated_cycles": 308905155,
+        "exception": {
+          "entries": 284,
+          "polls": 172705980,
+          "reject_active_handler": 0,
+          "reject_no_candidate": 172687340,
+          "reject_primask": 18356,
+          "source": {
+            "nvic": 284,
+            "pendsv": 0,
+            "systick": 0
+          }
+        },
+        "handler_group": {
+          "branch_system": 50227915,
+          "data_processing": 50281954,
+          "load_store": 53399842,
+          "other": 9441752,
+          "thumb16_shift_add_sub": 8951033,
+          "thumb32": 402916
+        },
+        "invalidation": {
+          "examined_slots": 18495032,
+          "matching_clears": 0,
+          "requests": 9247516,
+          "unrelated_would_clear": 10801,
+          "wide_predecessor_clears": 0
+        },
+        "invariants": {
+          "valid": true
+        },
+        "overflowed": false,
+        "pc_region": {
+          "boot_rom": 23902,
+          "immutable_xip": 172608591,
+          "other": 0,
+          "sram": 72919,
+          "xip_sram": 0
+        },
+        "retired_instructions": 172705412
+      },
+      {
+        "active": false,
+        "core_id": 1,
+        "decode": {
+          "by_region": {
+            "boot_rom": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            },
+            "immutable_xip": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            },
+            "other": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            },
+            "sram": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            },
+            "xip_sram": {
+              "hits": 0,
+              "lookups": 0,
+              "misses": 0
+            }
+          },
+          "hits": 0,
+          "lookups": 0,
+          "misses": 0,
+          "noncacheable_fetches": 0
+        },
+        "emulated_cycles": 0,
+        "exception": {
+          "entries": 0,
+          "polls": 0,
+          "reject_active_handler": 0,
+          "reject_no_candidate": 0,
+          "reject_primask": 0,
+          "source": {
+            "nvic": 0,
+            "pendsv": 0,
+            "systick": 0
+          }
+        },
+        "handler_group": {
+          "branch_system": 0,
+          "data_processing": 0,
+          "load_store": 0,
+          "other": 0,
+          "thumb16_shift_add_sub": 0,
+          "thumb32": 0
+        },
+        "invalidation": {
+          "examined_slots": 0,
+          "matching_clears": 0,
+          "requests": 0,
+          "unrelated_would_clear": 0,
+          "wide_predecessor_clears": 0
+        },
+        "invariants": {
+          "valid": true
+        },
+        "overflowed": false,
+        "pc_region": {
+          "boot_rom": 0,
+          "immutable_xip": 0,
+          "other": 0,
+          "sram": 0,
+          "xip_sram": 0
+        },
+        "retired_instructions": 0
+      }
+    ],
+    "counters": {
+      "active": true,
+      "decode": {
+        "by_region": {
+          "boot_rom": {
+            "hits": 23115,
+            "lookups": 23902,
+            "misses": 787
+          },
+          "immutable_xip": {
+            "hits": 172312492,
+            "lookups": 172608591,
+            "misses": 296099
+          },
+          "other": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          },
+          "sram": {
+            "hits": 71904,
+            "lookups": 72919,
+            "misses": 1015
+          },
+          "xip_sram": {
+            "hits": 0,
+            "lookups": 0,
+            "misses": 0
+          }
+        },
+        "hits": 172407511,
+        "lookups": 172705412,
+        "misses": 297901,
+        "noncacheable_fetches": 0
+      },
+      "emulated_cycles": 308905155,
+      "exception": {
+        "entries": 284,
+        "polls": 172705980,
+        "reject_active_handler": 0,
+        "reject_no_candidate": 172687340,
+        "reject_primask": 18356,
+        "source": {
+          "nvic": 284,
+          "pendsv": 0,
+          "systick": 0
+        }
+      },
+      "handler_group": {
+        "branch_system": 50227915,
+        "data_processing": 50281954,
+        "load_store": 53399842,
+        "other": 9441752,
+        "thumb16_shift_add_sub": 8951033,
+        "thumb32": 402916
+      },
+      "invalidation": {
+        "examined_slots": 18495032,
+        "matching_clears": 0,
+        "requests": 9247516,
+        "unrelated_would_clear": 10801,
+        "wide_predecessor_clears": 0
+      },
+      "pc_region": {
+        "boot_rom": 23902,
+        "immutable_xip": 172608591,
+        "other": 0,
+        "sram": 72919,
+        "xip_sram": 0
+      },
+      "retired_instructions": 172705412
+    },
+    "execution_model": "serial",
+    "feature_set": [
+      "cpu-application-profiler",
+      "pending-exception-fast-reject",
+      "sd-gen1-multiblock"
+    ],
+    "firmware": {
+      "basename": "PicoTetris.bin",
+      "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+    },
+    "instrumented": true,
+    "interval": {
+      "end_emulated_cycle": 927528659,
+      "start_emulated_cycle": 0
+    },
+    "invariants": {
+      "core_records_valid": true,
+      "decode_lookup_conservation": true,
+      "decode_region_conservation": true,
+      "exception_poll_conservation": true,
+      "exception_source_conservation": true,
+      "handler_group_conservation": true,
+      "pc_region_conservation": true,
+      "valid": true
+    },
+    "overflowed": false,
+    "profile_valid": true,
+    "schema_id": "picocalc.rp2040-cpu-profile",
+    "schema_version": 1,
+    "step_quantum": 1,
+    "stop_reason": "scenario_done",
+    "valid_for_wall_time": false
+  },
+  "record_id": "rp2040-cpu-p2-a-profile-20260901-02",
+  "runner": {
+    "build_provenance_sha256": "868f63b50fd60145f53a6b47e68bcae19c6b74ced599f6f78b049c182138fd3d",
+    "sha256": "2b2adab591670960a35bfb2c56f12406b5da652d1b1321e0721dfc47db7f0cbe"
+  },
+  "schema_id": "picocalc.rp2040-cpu-profile",
+  "schema_version": 1,
+  "workload": {
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "id": "picotetris-opt1b-vrp5",
+    "revision": 10,
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  }
+}

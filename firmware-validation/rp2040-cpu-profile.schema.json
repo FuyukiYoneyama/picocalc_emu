@@ -14,6 +14,42 @@
       "type": "integer",
       "minimum": 0
     },
+    "nonNegativeIntegerMap": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/counter"
+      }
+    },
+    "pressureLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["avg10", "avg60", "avg300", "total"],
+      "properties": {
+        "avg10": {"type": "number", "minimum": 0},
+        "avg60": {"type": "number", "minimum": 0},
+        "avg300": {"type": "number", "minimum": 0},
+        "total": {"type": "number", "minimum": 0}
+      }
+    },
+    "cpuPressure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["some", "full"],
+      "properties": {
+        "some": {"$ref": "#/$defs/pressureLine"},
+        "full": {"$ref": "#/$defs/pressureLine"}
+      }
+    },
+    "scheduler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "priority", "nice"],
+      "properties": {
+        "policy": {"type": "integer"},
+        "priority": {"type": "integer"},
+        "nice": {"type": "integer"}
+      }
+    },
     "regionCounters": {
       "type": "object",
       "additionalProperties": false,
@@ -205,6 +241,30 @@
           "type": ["array", "null"],
           "items": {"type": "integer", "minimum": 0},
           "uniqueItems": true
+        },
+        "cpu_pressure": {
+          "anyOf": [
+            {"$ref": "#/$defs/cpuPressure"},
+            {"type": "null"}
+          ]
+        },
+        "proc_cpu_stat": {
+          "anyOf": [
+            {"$ref": "#/$defs/nonNegativeIntegerMap"},
+            {"type": "null"}
+          ]
+        },
+        "cgroup_cpu_stat": {
+          "anyOf": [
+            {"$ref": "#/$defs/nonNegativeIntegerMap"},
+            {"type": "null"}
+          ]
+        },
+        "scheduler": {
+          "anyOf": [
+            {"$ref": "#/$defs/scheduler"},
+            {"type": "null"}
+          ]
         }
       }
     },

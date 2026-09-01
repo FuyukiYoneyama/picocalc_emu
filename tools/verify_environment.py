@@ -4213,9 +4213,19 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     "pair_level_sensitivity_threshold": 0.02,
                     "global_residual_diagnostic_only": True,
                 }
-                policy_valid = measurement_policy in (
+                expected_policies = (
                     expected_v1_policy, expected_v2_policy, expected_v3_policy
                 )
+                if "primary_metric" in measurement_policy:
+                    primary_metric = measurement_policy.get("primary_metric")
+                    if primary_metric not in ("cpu-time", "wall-time"):
+                        expected_policies = ()
+                    else:
+                        expected_policies = tuple(
+                            {**policy, "primary_metric": primary_metric}
+                            for policy in expected_policies
+                        )
+                policy_valid = measurement_policy in expected_policies
             elif policy_valid and set(measurement_policy) != {"inter_run_cooldown_seconds"}:
                 policy_valid = False
             if not policy_valid:
