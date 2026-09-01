@@ -938,6 +938,43 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(len(summary["cpu_throughputs"]), 4)
         self.assertIn("cpu_to_wall_ratio", summary)
 
+    def test_cpu_time_attribution_prefers_in_process_run_loop_clock(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = [
+            {
+                "cycles": 1000,
+                "wall_seconds": 10.0,
+                "emulation_wall_seconds": 2.0,
+                "emulation_cpu_seconds": 1.0,
+                "user_seconds": 0.01,
+                "system_seconds": 0.01,
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for _ in range(4)
+        ]
+        summary = self.module.summarize_cpu_time_attribution(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertEqual(summary["primary_cpu_time_scope"], "in_process_run_loop")
+        self.assertAlmostEqual(summary["cpu_throughput"]["median"], 1000.0)
+
     def test_host_stability_gate_requires_passing_pointer_record(self):
         snapshot = {
             "model": "test-host",

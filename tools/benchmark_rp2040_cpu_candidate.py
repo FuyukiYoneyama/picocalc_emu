@@ -655,6 +655,7 @@ def target_command(
     backend_commit: Optional[str],
     behavior_trace: Optional[Path] = None,
     cpu_application_profile: Optional[Path] = None,
+    host_timing: Optional[Path] = None,
 ) -> List[str]:
     """Build a target command and require an explicit backend identity override."""
     if not backend_commit:
@@ -715,6 +716,8 @@ def target_command(
         command.extend(["--behavior-trace", str(behavior_trace)])
     if cpu_application_profile is not None:
         command.extend(["--cpu-application-profile", str(cpu_application_profile)])
+    if host_timing is not None:
+        command.extend(["--host-timing", str(host_timing)])
     return command
 
 
@@ -1897,12 +1900,15 @@ def summarize_cpu_time_attribution(
         )
     wall_values: List[float] = []
     cpu_values: List[float] = []
+    cpu_time_sources: List[str] = []
     snapshot_valid = True
     affinity_valid = True
     identity_values = []
     for sample in samples:
         cycles = sample.get("cycles")
         wall_seconds = sample.get("wall_seconds")
+        emulation_wall_seconds = sample.get("emulation_wall_seconds")
+        emulation_cpu_seconds = sample.get("emulation_cpu_seconds")
         user_seconds = sample.get("user_seconds")
         system_seconds = sample.get("system_seconds")
         if (
@@ -1924,7 +1930,23 @@ def summarize_cpu_time_attribution(
         ):
             raise ValueError("CPU-time diagnostic sample timing is invalid")
         wall_values.append(float(cycles) / float(wall_seconds))
-        cpu_values.append(float(cycles) / (float(user_seconds) + float(system_seconds)))
+        if (
+            isinstance(emulation_cpu_seconds, (int, float))
+            and not isinstance(emulation_cpu_seconds, bool)
+            and math.isfinite(float(emulation_cpu_seconds))
+            and float(emulation_cpu_seconds) > 0
+            and isinstance(emulation_wall_seconds, (int, float))
+            and not isinstance(emulation_wall_seconds, bool)
+            and math.isfinite(float(emulation_wall_seconds))
+            and float(emulation_wall_seconds) > 0
+        ):
+            cpu_values.append(float(cycles) / float(emulation_cpu_seconds))
+            cpu_time_sources.append("in_process_run_loop")
+        else:
+            # Keep the historical diagnostic record readable, but never let
+            # this child-level fallback masquerade as the new primary metric.
+            cpu_values.append(float(cycles) / (float(user_seconds) + float(system_seconds)))
+            cpu_time_sources.append("child_rusage")
         snapshot_valid = snapshot_valid and _host_snapshot_is_complete(
             sample.get("host_snapshot_start"), expected_cpu
         ) and _host_snapshot_is_complete(sample.get("host_snapshot_end"), expected_cpu)
@@ -1992,6 +2014,14 @@ def summarize_cpu_time_attribution(
         "cpu_to_wall_ratio": ratio_stats,
         "wall_throughputs": wall_values,
         "cpu_throughputs": cpu_values,
+        "cpu_time_sources": sorted(set(cpu_time_sources)),
+        "primary_cpu_time_scope": (
+            "in_process_run_loop"
+            if set(cpu_time_sources) == {"in_process_run_loop"}
+            else "child_rusage"
+            if set(cpu_time_sources) == {"child_rusage"}
+            else "mixed"
+        ),
         "gates": gates,
         "valid": all(gates.values()),
     }
@@ -2435,6 +2465,7 @@ def run_guest(
         snapshots.mkdir()
         report_path = directory / "report.json"
         uart_path = directory / "uart.bin"
+        host_timing_path = directory / "host-timing.json"
         trace_path = behavior_trace or (directory / "behavior-trace.json")
         profile_path = cpu_application_profile
         if behavior_trace is not None:
@@ -2446,6 +2477,7 @@ def run_guest(
             backend_commit=backend_identity["commit"],
             behavior_trace=trace_path if behavior_trace is not None else None,
             cpu_application_profile=profile_path,
+            host_timing=host_timing_path,
         )
         started = time.perf_counter_ns()
         before_usage = _resource_usage()
@@ -2469,6 +2501,28 @@ def run_guest(
             raise ValueError("runner did not write behavior trace: {}".format(behavior_trace))
         if cpu_application_profile is not None and not cpu_application_profile.is_file():
             raise ValueError("runner did not write CPU profile: {}".format(cpu_application_profile))
+        if not host_timing_path.is_file():
+            raise ValueError("runner did not write in-process host timing: {}".format(host_timing_path))
+        host_timing = json.loads(host_timing_path.read_bytes())
+        if not isinstance(host_timing, Mapping):
+            raise ValueError("runner host timing is not an object")
+        if host_timing.get("schema_version") != 1:
+            raise ValueError("runner host timing schema_version is not 1")
+        if host_timing.get("artifact_type") != "in-process-host-timing":
+            raise ValueError("runner host timing artifact_type is invalid")
+        if host_timing.get("timing_scope") != "picocalc-harness::run_loop":
+            raise ValueError("runner host timing scope is invalid")
+        timing_cycles = host_timing.get("cycles")
+        if timing_cycles != report.get("cycles"):
+            raise ValueError("runner host timing cycles differ from report")
+        if host_timing.get("stop_reason") != report.get("stop_reason"):
+            raise ValueError("runner host timing stop_reason differs from report")
+        emulation_wall_ns = host_timing.get("emulation_wall_ns")
+        emulation_cpu_ns = host_timing.get("emulation_cpu_ns")
+        if type(emulation_wall_ns) is not int or emulation_wall_ns <= 0:
+            raise ValueError("runner host timing has invalid emulation_wall_ns")
+        if type(emulation_cpu_ns) is not int or emulation_cpu_ns <= 0:
+            raise ValueError("runner host timing has invalid emulation_cpu_ns")
         wall_seconds = wall_ns / 1_000_000_000
         cycles = report["cycles"]
         if type(cycles) is not int or cycles <= 0 or wall_ns <= 0:
@@ -2477,6 +2531,15 @@ def run_guest(
             "wall_ns": wall_ns,
             "wall_seconds": wall_seconds,
             "cycles": cycles,
+            # This interval is measured inside the runner, around only the
+            # authoritative run_loop. It excludes subprocess startup/wait,
+            # report serialization, and the benchmark cooldown.
+            "emulation_wall_ns": emulation_wall_ns,
+            "emulation_wall_seconds": emulation_wall_ns / 1_000_000_000,
+            "emulation_cpu_ns": emulation_cpu_ns,
+            "emulation_cpu_seconds": emulation_cpu_ns / 1_000_000_000,
+            "cycles_per_emulation_cpu_second": cycles / (emulation_cpu_ns / 1_000_000_000),
+            "cycles_per_emulation_wall_second": cycles / (emulation_wall_ns / 1_000_000_000),
             "stop_reason": report.get("stop_reason"),
             "elapsed_us": report["elapsed_us"],
             "emulated_cycles_per_wall_second": cycles / wall_seconds,
@@ -2675,6 +2738,14 @@ def run_cpu_time_diagnostic(args: argparse.Namespace) -> int:
                     "sample_id": "cpu-time-{:03d}".format(index),
                     "cycles": measurement["cycles"],
                     "wall_seconds": measurement["wall_seconds"],
+                    "emulation_wall_seconds": measurement["emulation_wall_seconds"],
+                    "emulation_cpu_seconds": measurement["emulation_cpu_seconds"],
+                    "cycles_per_emulation_cpu_second": measurement[
+                        "cycles_per_emulation_cpu_second"
+                    ],
+                    "cycles_per_emulation_wall_second": measurement[
+                        "cycles_per_emulation_wall_second"
+                    ],
                     "user_seconds": usage.get("user_seconds"),
                     "system_seconds": usage.get("system_seconds"),
                     "backend_commit": measurement["backend_commit"],
