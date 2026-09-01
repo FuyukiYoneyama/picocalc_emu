@@ -767,6 +767,177 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertFalse(summary["gates"]["adjacent_log_throughput_valid"])
         self.assertFalse(summary["gates"]["relative_mad_valid"])
 
+    def test_host_stability_v2_groups_three_replicates_and_keeps_raw_diagnostic(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        group_medians = [100.0, 100.8, 101.5, 101.2]
+        samples = []
+        for group_index, median in enumerate(group_medians):
+            for replicate in range(3):
+                samples.append(
+                    {
+                        "sample_id": "sentinel-{:03d}".format(len(samples) + 1),
+                        "throughput": median * (1.0 + (replicate - 1) * 0.0005),
+                        "backend_commit": identity["commit"],
+                        "runner_sha256": identity["runner_sha256"],
+                        "build_provenance_sha256": identity["build_provenance_sha256"],
+                        "host_snapshot_start": snapshot,
+                        "host_snapshot_end": snapshot,
+                    }
+                )
+        summary = self.module.summarize_host_stability_v2(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertTrue(summary["valid"])
+        self.assertEqual(summary["sample_count"], 12)
+        self.assertEqual(len(summary["group_medians"]), 4)
+        self.assertEqual(len(summary["group_relative_mads"]), 4)
+        self.assertEqual(len(summary["adjacent_abs_log_deltas"]), 11)
+        self.assertTrue(summary["gates"]["group_adjacent_log_throughput_valid"])
+        self.assertTrue(summary["gates"]["group_relative_mad_valid"])
+
+    def test_host_stability_v2_rejects_group_dispersion_even_when_group_medians_are_stable(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = []
+        for group_index in range(4):
+            values = [100.0, 100.5, 101.0]
+            if group_index == 1:
+                values = [96.0, 100.0, 104.0]
+            for value in values:
+                samples.append(
+                    {
+                        "sample_id": "sentinel-{:03d}".format(len(samples) + 1),
+                        "throughput": value,
+                        "backend_commit": identity["commit"],
+                        "runner_sha256": identity["runner_sha256"],
+                        "build_provenance_sha256": identity["build_provenance_sha256"],
+                        "host_snapshot_start": snapshot,
+                        "host_snapshot_end": snapshot,
+                    }
+                )
+        summary = self.module.summarize_host_stability_v2(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertFalse(summary["valid"])
+        self.assertFalse(summary["gates"]["group_relative_mad_valid"])
+        self.assertTrue(summary["gates"]["group_adjacent_log_throughput_valid"])
+
+    def test_host_stability_v3_requires_cpu_pressure_and_scheduler_snapshots(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+            "cpu_pressure": {
+                "some": {"avg10": 0.0, "avg60": 0.0, "avg300": 0.0, "total": 1.0},
+                "full": {"avg10": 0.0, "avg60": 0.0, "avg300": 0.0, "total": 0.0},
+            },
+            "proc_cpu_stat": {
+                "user": 100, "nice": 0, "system": 50, "idle": 1000, "iowait": 0,
+                "irq": 0, "softirq": 0, "steal": 2, "guest": 0, "guest_nice": 0,
+            },
+            "cgroup_cpu_stat": {
+                "usage_usec": 1000, "user_usec": 900, "system_usec": 100,
+                "nice_usec": 0, "nr_periods": 1, "nr_throttled": 0, "throttled_usec": 0,
+            },
+            "scheduler": {"policy": 0, "priority": 0, "nice": 0},
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = [
+            {
+                "sample_id": "sentinel-{:03d}".format(index),
+                "throughput": 100.0 + (index // 4) * 0.2,
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for index in range(1, 13)
+        ]
+        summary = self.module.summarize_host_stability_v3(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertTrue(summary["valid"])
+        self.assertTrue(summary["gates"]["diagnostics_valid"])
+        missing = [dict(sample) for sample in samples]
+        missing[0]["host_snapshot_start"] = dict(snapshot)
+        missing[0]["host_snapshot_start"].pop("scheduler")
+        missing_summary = self.module.summarize_host_stability_v3(
+            missing, expected_cpu=11, expected_identity=identity
+        )
+        self.assertFalse(missing_summary["valid"])
+        self.assertFalse(missing_summary["gates"]["diagnostics_valid"])
+
+    def test_cpu_time_attribution_reports_wall_and_cpu_metrics_without_promotion(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = [
+            {
+                "cycles": 1000,
+                "wall_seconds": 10.0 + index * 0.1,
+                "user_seconds": 8.0,
+                "system_seconds": 1.0,
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for index in range(4)
+        ]
+        summary = self.module.summarize_cpu_time_attribution(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertTrue(summary["valid"])
+        self.assertGreater(summary["cpu_throughput"]["median"], summary["wall_throughput"]["median"])
+        self.assertEqual(len(summary["cpu_throughputs"]), 4)
+        self.assertIn("cpu_to_wall_ratio", summary)
+
     def test_host_stability_gate_requires_passing_pointer_record(self):
         snapshot = {
             "model": "test-host",
@@ -846,6 +1017,78 @@ class CandidateRunnerTests(unittest.TestCase):
                     11,
                     60.0,
                 )
+
+    def test_host_stability_gate_accepts_v2_grouped_record(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "dirty": False,
+            "runner_sha256": "b" * 64,
+            "feature_set": ["sd-gen1-multiblock"],
+            "build_provenance_sha256": "c" * 64,
+            "role": "baseline_production",
+            "provenance_role": "baseline_production",
+        }
+        samples = []
+        for index in range(12):
+            samples.append(
+                {
+                    "sample_id": "sentinel-{:03d}".format(index + 1),
+                    "protocol_elapsed_seconds": 1.0,
+                    "throughput": 100.0 + (index // 3) * 0.5,
+                    "cycles": 123,
+                    "wall_seconds": 1.23,
+                    "backend_commit": identity["commit"],
+                    "runner_sha256": identity["runner_sha256"],
+                    "build_provenance_sha256": identity["build_provenance_sha256"],
+                    "host_snapshot_start": snapshot,
+                    "host_snapshot_end": snapshot,
+                }
+            )
+        workload = {
+            "id": "picotetris-opt1b-vrp5",
+            "revision": 10,
+            "firmware_sha256": "d" * 64,
+            "scenario_sha256": "e" * 64,
+            "contract_sha256": "f" * 64,
+        }
+        record = {
+            "schema_id": self.module.HOST_STABILITY_SCHEMA_ID,
+            "schema_version": 1,
+            "artifact_type": "host-stability",
+            "record_id": "rp2040-cpu-host-stability-v2-fixture",
+            "status": "pass",
+            "measurement_policy": self.module.host_stability_measurement_policy_v2(),
+            "measurement_cpu": 11,
+            "cpu_affinity": {"requested": 11, "effective": [11]},
+            "inter_run_cooldown_seconds": 60.0,
+            "workload": workload,
+            "backend_identity": identity,
+            "samples": samples,
+            "summary": self.module.summarize_host_stability_v2(
+                samples, expected_cpu=11, expected_identity=identity
+            ),
+            "reasons": [],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            record_path = Path(temporary) / "host-stability-v2.json"
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            accepted = self.module._require_host_stability_gate(
+                record_path,
+                [workload],
+                identity,
+                11,
+                60.0,
+            )
+            self.assertEqual(accepted["record_id"], record["record_id"])
 
     def test_replicated_anchor_group_aggregation_uses_log_median_and_mad(self):
         anchors = []

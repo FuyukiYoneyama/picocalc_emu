@@ -4,6 +4,29 @@
   "title": "PicoCalc RP2040 CPU host-stability sentinel",
   "type": "object",
   "additionalProperties": false,
+  "$defs": {
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_id", "protocol_elapsed_seconds", "throughput", "cycles", "wall_seconds",
+        "backend_commit", "runner_sha256", "build_provenance_sha256",
+        "host_snapshot_start", "host_snapshot_end"
+      ],
+      "properties": {
+        "sample_id": {"type": "string", "pattern": "^sentinel-[0-9]{3}$"},
+        "protocol_elapsed_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "throughput": {"type": "number", "exclusiveMinimum": 0},
+        "cycles": {"type": "integer", "minimum": 1},
+        "wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "host_snapshot_start": {"type": "object"},
+        "host_snapshot_end": {"type": "object"}
+      }
+    }
+  },
   "required": [
     "schema_id", "schema_version", "artifact_type", "record_id", "status",
     "measurement_policy", "measurement_cpu", "cpu_affinity",
@@ -17,20 +40,67 @@
     "record_id": {"type": "string", "minLength": 1},
     "status": {"enum": ["pass", "invalid"]},
     "measurement_policy": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "method", "warmup_runs", "measured_runs", "inter_run_cooldown_seconds",
-        "adjacent_log_throughput_threshold", "relative_mad_threshold"
-      ],
-      "properties": {
-        "method": {"const": "host-stability-sentinel-v1"},
-        "warmup_runs": {"const": 2},
-        "measured_runs": {"const": 10},
-        "inter_run_cooldown_seconds": {"const": 60.0},
-        "adjacent_log_throughput_threshold": {"const": 0.02},
-        "relative_mad_threshold": {"const": 0.02}
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method", "warmup_runs", "measured_runs", "inter_run_cooldown_seconds",
+            "adjacent_log_throughput_threshold", "relative_mad_threshold"
+          ],
+          "properties": {
+            "method": {"const": "host-stability-sentinel-v1"},
+            "warmup_runs": {"const": 2},
+            "measured_runs": {"const": 10},
+            "inter_run_cooldown_seconds": {"const": 60.0},
+            "adjacent_log_throughput_threshold": {"const": 0.02},
+            "relative_mad_threshold": {"const": 0.02}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method", "warmup_runs", "measured_runs", "replicates_per_group",
+            "group_count", "inter_run_cooldown_seconds",
+            "group_adjacent_log_throughput_threshold", "relative_mad_threshold"
+          ],
+          "properties": {
+            "method": {"const": "host-stability-sentinel-v2"},
+            "warmup_runs": {"const": 2},
+            "measured_runs": {"const": 12},
+            "replicates_per_group": {"const": 3},
+            "group_count": {"const": 4},
+            "inter_run_cooldown_seconds": {"const": 60.0},
+            "group_adjacent_log_throughput_threshold": {"const": 0.02},
+            "relative_mad_threshold": {"const": 0.02}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method", "warmup_runs", "measured_runs", "replicates_per_group",
+            "group_count", "inter_run_cooldown_seconds",
+            "group_adjacent_log_throughput_threshold", "relative_mad_threshold",
+            "diagnostics"
+          ],
+          "properties": {
+            "method": {"const": "host-stability-sentinel-v3"},
+            "warmup_runs": {"const": 2},
+            "measured_runs": {"const": 12},
+            "replicates_per_group": {"const": 3},
+            "group_count": {"const": 4},
+            "inter_run_cooldown_seconds": {"const": 60.0},
+            "group_adjacent_log_throughput_threshold": {"const": 0.02},
+            "relative_mad_threshold": {"const": 0.02},
+            "diagnostics": {
+              "type": "array",
+              "const": ["cpu_pressure", "proc_cpu_stat_steal", "cgroup_cpu_stat", "scheduler"]
+            }
+          }
+        }
+      ]
     },
     "measurement_cpu": {"type": "integer", "minimum": 0},
     "cpu_affinity": {
@@ -73,63 +143,140 @@
       }
     },
     "samples": {
-      "type": "array",
-      "minItems": 10,
-      "maxItems": 10,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "sample_id", "protocol_elapsed_seconds", "throughput", "cycles", "wall_seconds",
-          "backend_commit", "runner_sha256", "build_provenance_sha256",
-          "host_snapshot_start", "host_snapshot_end"
-        ],
-        "properties": {
-          "sample_id": {"type": "string", "pattern": "^sentinel-[0-9]{3}$"},
-          "protocol_elapsed_seconds": {"type": "number", "exclusiveMinimum": 0},
-          "throughput": {"type": "number", "exclusiveMinimum": 0},
-          "cycles": {"type": "integer", "minimum": 1},
-          "wall_seconds": {"type": "number", "exclusiveMinimum": 0},
-          "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-          "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-          "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-          "host_snapshot_start": {"type": "object"},
-          "host_snapshot_end": {"type": "object"}
-        }
-      }
-    },
-    "summary": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "sample_count", "throughput_median", "median_log_throughput", "mad_log_throughput",
-        "scaled_mad", "relative_mad", "adjacent_abs_log_deltas",
-        "max_adjacent_abs_log_delta", "gates", "valid"
-      ],
-      "properties": {
-        "sample_count": {"const": 10},
-        "throughput_median": {"type": "number", "exclusiveMinimum": 0},
-        "median_log_throughput": {"type": "number"},
-        "mad_log_throughput": {"type": "number", "minimum": 0},
-        "scaled_mad": {"type": "number", "minimum": 0},
-        "relative_mad": {"type": "number", "minimum": 0},
-        "adjacent_abs_log_deltas": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"type": "number", "minimum": 0}},
-        "max_adjacent_abs_log_delta": {"type": "number", "minimum": 0},
-        "gates": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["sample_count_valid", "relative_mad_valid", "adjacent_log_throughput_valid", "host_snapshot_valid", "identity_valid", "cpu_affinity_valid"],
-          "properties": {
-            "sample_count_valid": {"type": "boolean"},
-            "relative_mad_valid": {"type": "boolean"},
-            "adjacent_log_throughput_valid": {"type": "boolean"},
-            "host_snapshot_valid": {"type": "boolean"},
-            "identity_valid": {"type": "boolean"},
-            "cpu_affinity_valid": {"type": "boolean"}
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/sample"
           }
         },
-        "valid": {"type": "boolean"}
-      }
+        {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/sample"
+          }
+        }
+      ]
+    },
+    "summary": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sample_count", "throughput_median", "median_log_throughput", "mad_log_throughput",
+            "scaled_mad", "relative_mad", "adjacent_abs_log_deltas",
+            "max_adjacent_abs_log_delta", "gates", "valid"
+          ],
+          "properties": {
+            "sample_count": {"const": 10},
+            "throughput_median": {"type": "number", "exclusiveMinimum": 0},
+            "median_log_throughput": {"type": "number"},
+            "mad_log_throughput": {"type": "number", "minimum": 0},
+            "scaled_mad": {"type": "number", "minimum": 0},
+            "relative_mad": {"type": "number", "minimum": 0},
+            "adjacent_abs_log_deltas": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"type": "number", "minimum": 0}},
+            "max_adjacent_abs_log_delta": {"type": "number", "minimum": 0},
+            "gates": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["sample_count_valid", "relative_mad_valid", "adjacent_log_throughput_valid", "host_snapshot_valid", "identity_valid", "cpu_affinity_valid"],
+              "properties": {
+                "sample_count_valid": {"type": "boolean"},
+                "relative_mad_valid": {"type": "boolean"},
+                "adjacent_log_throughput_valid": {"type": "boolean"},
+                "host_snapshot_valid": {"type": "boolean"},
+                "identity_valid": {"type": "boolean"},
+                "cpu_affinity_valid": {"type": "boolean"}
+              }
+            },
+            "valid": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sample_count", "throughput_median", "median_log_throughput", "mad_log_throughput",
+            "scaled_mad", "relative_mad", "adjacent_abs_log_deltas",
+            "max_adjacent_abs_log_delta", "group_medians", "group_relative_mads",
+            "group_median_abs_log_deltas", "max_group_median_abs_log_delta", "gates", "valid"
+          ],
+          "properties": {
+            "sample_count": {"const": 12},
+            "throughput_median": {"type": "number", "exclusiveMinimum": 0},
+            "median_log_throughput": {"type": "number"},
+            "mad_log_throughput": {"type": "number", "minimum": 0},
+            "scaled_mad": {"type": "number", "minimum": 0},
+            "relative_mad": {"type": "number", "minimum": 0},
+            "adjacent_abs_log_deltas": {"type": "array", "minItems": 11, "maxItems": 11, "items": {"type": "number", "minimum": 0}},
+            "max_adjacent_abs_log_delta": {"type": "number", "minimum": 0},
+            "group_medians": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "exclusiveMinimum": 0}},
+            "group_relative_mads": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "minimum": 0}},
+            "group_median_abs_log_deltas": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": 0}},
+            "max_group_median_abs_log_delta": {"type": "number", "minimum": 0},
+            "gates": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["sample_count_valid", "relative_mad_valid", "group_relative_mad_valid", "group_adjacent_log_throughput_valid", "host_snapshot_valid", "identity_valid", "cpu_affinity_valid"],
+              "properties": {
+                "sample_count_valid": {"type": "boolean"},
+                "relative_mad_valid": {"type": "boolean"},
+                "group_relative_mad_valid": {"type": "boolean"},
+                "group_adjacent_log_throughput_valid": {"type": "boolean"},
+                "host_snapshot_valid": {"type": "boolean"},
+                "identity_valid": {"type": "boolean"},
+                "cpu_affinity_valid": {"type": "boolean"}
+              }
+            },
+            "valid": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sample_count", "throughput_median", "median_log_throughput", "mad_log_throughput",
+            "scaled_mad", "relative_mad", "adjacent_abs_log_deltas",
+            "max_adjacent_abs_log_delta", "group_medians", "group_relative_mads",
+            "group_median_abs_log_deltas", "max_group_median_abs_log_delta", "gates", "valid"
+          ],
+          "properties": {
+            "sample_count": {"const": 12},
+            "throughput_median": {"type": "number", "exclusiveMinimum": 0},
+            "median_log_throughput": {"type": "number"},
+            "mad_log_throughput": {"type": "number", "minimum": 0},
+            "scaled_mad": {"type": "number", "minimum": 0},
+            "relative_mad": {"type": "number", "minimum": 0},
+            "adjacent_abs_log_deltas": {"type": "array", "minItems": 11, "maxItems": 11, "items": {"type": "number", "minimum": 0}},
+            "max_adjacent_abs_log_delta": {"type": "number", "minimum": 0},
+            "group_medians": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "exclusiveMinimum": 0}},
+            "group_relative_mads": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number", "minimum": 0}},
+            "group_median_abs_log_deltas": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": 0}},
+            "max_group_median_abs_log_delta": {"type": "number", "minimum": 0},
+            "gates": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["sample_count_valid", "relative_mad_valid", "group_relative_mad_valid", "group_adjacent_log_throughput_valid", "host_snapshot_valid", "identity_valid", "cpu_affinity_valid", "diagnostics_valid"],
+              "properties": {
+                "sample_count_valid": {"type": "boolean"},
+                "relative_mad_valid": {"type": "boolean"},
+                "group_relative_mad_valid": {"type": "boolean"},
+                "group_adjacent_log_throughput_valid": {"type": "boolean"},
+                "host_snapshot_valid": {"type": "boolean"},
+                "identity_valid": {"type": "boolean"},
+                "cpu_affinity_valid": {"type": "boolean"},
+                "diagnostics_valid": {"type": "boolean"}
+              }
+            },
+            "valid": {"type": "boolean"}
+          }
+        }
+      ]
     },
     "reasons": {"type": "array", "items": {"type": "string"}}
   }

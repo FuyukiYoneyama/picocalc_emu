@@ -43,6 +43,12 @@ HOST_STABILITY_WARMUP_RUNS = 2
 HOST_STABILITY_MEASURED_RUNS = 10
 HOST_STABILITY_ADJACENT_LOG_LIMIT = 0.02
 HOST_STABILITY_MAD_LIMIT = 0.02
+HOST_STABILITY_V2_MEASURED_RUNS = 12
+HOST_STABILITY_V2_GROUP_SIZE = 3
+HOST_STABILITY_V2_GROUP_COUNT = HOST_STABILITY_V2_MEASURED_RUNS // HOST_STABILITY_V2_GROUP_SIZE
+HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT = 0.02
+CPU_TIME_DIAGNOSTIC_WARMUP_RUNS = 1
+CPU_TIME_DIAGNOSTIC_MEASURED_RUNS = 4
 REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"))
 # The first null batch exposed a long-session host throughput drift.  Keep the
 # recovery interval fixed and part of the record identity so it cannot be
@@ -478,6 +484,70 @@ def validate_runner_embedded_commit(runner: Path, backend_commit: str) -> None:
         )
 
 
+def _read_cpu_pressure() -> Optional[Dict[str, Dict[str, float]]]:
+    try:
+        lines = Path("/proc/pressure/cpu").read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return None
+    pressure: Dict[str, Dict[str, float]] = {}
+    try:
+        for line in lines:
+            label, values = line.split(" ", 1)
+            parsed: Dict[str, float] = {}
+            for item in values.split():
+                key, value = item.split("=", 1)
+                parsed[key] = float(value)
+            pressure[label] = parsed
+    except (ValueError, TypeError):
+        return None
+    return pressure or None
+
+
+def _read_proc_cpu_stat() -> Optional[Dict[str, int]]:
+    try:
+        lines = Path("/proc/stat").read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return None
+    names = (
+        "user", "nice", "system", "idle", "iowait", "irq", "softirq",
+        "steal", "guest", "guest_nice",
+    )
+    try:
+        line = next(line for line in lines if line.startswith("cpu "))
+        values = [int(value) for value in line.split()[1 : 1 + len(names)]]
+    except (StopIteration, ValueError):
+        return None
+    if len(values) != len(names) or any(value < 0 for value in values):
+        return None
+    return dict(zip(names, values))
+
+
+def _read_cgroup_cpu_stat() -> Optional[Dict[str, int]]:
+    try:
+        lines = Path("/sys/fs/cgroup/cpu.stat").read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return None
+    try:
+        values = {}
+        for line in lines:
+            key, value = line.split()
+            values[key] = int(value)
+    except (ValueError, TypeError):
+        return None
+    return values or None
+
+
+def _read_scheduler_state() -> Optional[Dict[str, int]]:
+    try:
+        return {
+            "policy": int(os.sched_getscheduler(0)),
+            "priority": int(os.sched_getparam(0).sched_priority),
+            "nice": int(os.getpriority(os.PRIO_PROCESS, 0)),
+        }
+    except (AttributeError, OSError, PermissionError, ValueError):
+        return None
+
+
 def host_cpu() -> Dict[str, Any]:
     model = "unknown"
     frequencies: List[float] = []
@@ -505,6 +575,10 @@ def host_cpu() -> Dict[str, Any]:
         "allowed_cpus": allowed_cpus,
         "platform": platform.platform(),
         "kernel": platform.release(),
+        "cpu_pressure": _read_cpu_pressure(),
+        "proc_cpu_stat": _read_proc_cpu_stat(),
+        "cgroup_cpu_stat": _read_cgroup_cpu_stat(),
+        "scheduler": _read_scheduler_state(),
     }
 
 
@@ -1464,6 +1538,54 @@ def host_stability_measurement_policy() -> Dict[str, Any]:
     }
 
 
+def host_stability_measurement_policy_v2() -> Dict[str, Any]:
+    """Return the fixed grouped sentinel protocol used after v1 rejection."""
+    return {
+        "method": "host-stability-sentinel-v2",
+        "warmup_runs": HOST_STABILITY_WARMUP_RUNS,
+        "measured_runs": HOST_STABILITY_V2_MEASURED_RUNS,
+        "replicates_per_group": HOST_STABILITY_V2_GROUP_SIZE,
+        "group_count": HOST_STABILITY_V2_GROUP_COUNT,
+        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+        "group_adjacent_log_throughput_threshold": HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT,
+        "relative_mad_threshold": HOST_STABILITY_MAD_LIMIT,
+    }
+
+
+def host_stability_measurement_policy_v3() -> Dict[str, Any]:
+    """Return the grouped sentinel protocol with host attribution counters."""
+    policy = host_stability_measurement_policy_v2()
+    policy["method"] = "host-stability-sentinel-v3"
+    policy["diagnostics"] = [
+        "cpu_pressure",
+        "proc_cpu_stat_steal",
+        "cgroup_cpu_stat",
+        "scheduler",
+    ]
+    return policy
+
+
+def host_stability_measurement_policy_for_version(version: int) -> Dict[str, Any]:
+    if version == 1:
+        return host_stability_measurement_policy()
+    if version == 2:
+        return host_stability_measurement_policy_v2()
+    if version == 3:
+        return host_stability_measurement_policy_v3()
+    raise ValueError("unsupported host stability protocol version: {}".format(version))
+
+
+def cpu_time_diagnostic_measurement_policy() -> Dict[str, Any]:
+    return {
+        "method": "cpu-time-attribution-v1",
+        "warmup_runs": CPU_TIME_DIAGNOSTIC_WARMUP_RUNS,
+        "measured_runs": CPU_TIME_DIAGNOSTIC_MEASURED_RUNS,
+        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+        "primary_metric": "cycles_per_cpu_second",
+        "secondary_metric": "cycles_per_wall_second",
+    }
+
+
 def _host_snapshot_is_complete(snapshot: object, expected_cpu: Optional[int]) -> bool:
     if not isinstance(snapshot, Mapping):
         return False
@@ -1491,6 +1613,48 @@ def _host_snapshot_is_complete(snapshot: object, expected_cpu: Optional[int]) ->
     if expected_cpu is not None and allowed_cpus != [expected_cpu]:
         return False
     return isinstance(snapshot.get("platform"), str) and isinstance(snapshot.get("kernel"), str)
+
+
+def _host_snapshot_diagnostics_complete(snapshot: object) -> bool:
+    """Validate the additional host counters used for drift attribution."""
+    if not isinstance(snapshot, Mapping):
+        return False
+    pressure = snapshot.get("cpu_pressure")
+    if not isinstance(pressure, Mapping) or set(pressure) != {"some", "full"}:
+        return False
+    for values in pressure.values():
+        if not isinstance(values, Mapping) or not {"avg10", "avg60", "avg300", "total"}.issubset(values):
+            return False
+        if any(
+            not isinstance(values[key], (int, float))
+            or isinstance(values[key], bool)
+            or not math.isfinite(float(values[key]))
+            or float(values[key]) < 0
+            for key in ("avg10", "avg60", "avg300", "total")
+        ):
+            return False
+    proc_cpu = snapshot.get("proc_cpu_stat")
+    proc_keys = {
+        "user", "nice", "system", "idle", "iowait", "irq", "softirq",
+        "steal", "guest", "guest_nice",
+    }
+    if not isinstance(proc_cpu, Mapping) or set(proc_cpu) != proc_keys:
+        return False
+    if any(type(proc_cpu[key]) is not int or proc_cpu[key] < 0 for key in proc_keys):
+        return False
+    cgroup_cpu = snapshot.get("cgroup_cpu_stat")
+    cgroup_keys = {"usage_usec", "user_usec", "system_usec", "nice_usec", "nr_periods", "nr_throttled", "throttled_usec"}
+    if not isinstance(cgroup_cpu, Mapping) or not cgroup_keys.issubset(cgroup_cpu):
+        return False
+    if any(
+        type(cgroup_cpu[key]) is not int or cgroup_cpu[key] < 0
+        for key in cgroup_keys
+    ):
+        return False
+    scheduler = snapshot.get("scheduler")
+    if not isinstance(scheduler, Mapping) or set(scheduler) != {"policy", "priority", "nice"}:
+        return False
+    return all(type(scheduler[key]) is int for key in ("policy", "priority", "nice"))
 
 
 def summarize_host_stability(
@@ -1568,6 +1732,266 @@ def summarize_host_stability(
         "relative_mad": relative_mad,
         "adjacent_abs_log_deltas": adjacent_deltas,
         "max_adjacent_abs_log_delta": max_adjacent_delta,
+        "gates": gates,
+        "valid": all(gates.values()),
+    }
+
+
+def summarize_host_stability_v2(
+    samples: Sequence[Mapping[str, Any]],
+    *,
+    expected_cpu: Optional[int] = None,
+    expected_identity: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Recompute the grouped v2 sentinel gates from immutable samples.
+
+    The raw adjacent deltas remain diagnostic.  The fixed acceptance gates use
+    three-sample log medians and require both each group's relative MAD and
+    each adjacent group-median delta to be at most 2%.
+    """
+    if len(samples) != HOST_STABILITY_V2_MEASURED_RUNS:
+        raise ValueError(
+            "host stability v2 preflight requires exactly {} measured samples".format(
+                HOST_STABILITY_V2_MEASURED_RUNS
+            )
+        )
+    throughputs: List[float] = []
+    snapshot_valid = True
+    identity_values = []
+    affinity_valid = True
+    for sample in samples:
+        throughput = sample.get("throughput")
+        if (
+            not isinstance(throughput, (int, float))
+            or isinstance(throughput, bool)
+            or not math.isfinite(float(throughput))
+            or float(throughput) <= 0
+        ):
+            raise ValueError("host stability v2 sample throughput is invalid")
+        throughputs.append(float(throughput))
+        snapshot_valid = snapshot_valid and _host_snapshot_is_complete(
+            sample.get("host_snapshot_start"), expected_cpu
+        ) and _host_snapshot_is_complete(sample.get("host_snapshot_end"), expected_cpu)
+        start_affinity = (
+            sample.get("host_snapshot_start", {}).get("allowed_cpus")
+            if isinstance(sample.get("host_snapshot_start"), Mapping)
+            else None
+        )
+        end_affinity = (
+            sample.get("host_snapshot_end", {}).get("allowed_cpus")
+            if isinstance(sample.get("host_snapshot_end"), Mapping)
+            else None
+        )
+        affinity_valid = affinity_valid and start_affinity == end_affinity and (
+            expected_cpu is None or start_affinity == [expected_cpu]
+        )
+        identity_values.append(
+            (
+                sample.get("backend_commit"),
+                sample.get("runner_sha256"),
+                sample.get("build_provenance_sha256"),
+            )
+        )
+    if expected_identity is None:
+        identity_valid = len(set(identity_values)) == 1 and all(
+            isinstance(value, str) and value
+            for identity in identity_values
+            for value in identity
+        )
+    else:
+        expected_tuple = (
+            expected_identity.get("commit"),
+            expected_identity.get("runner_sha256"),
+            expected_identity.get("build_provenance_sha256"),
+        )
+        identity_valid = all(identity == expected_tuple for identity in identity_values)
+    log_values = [math.log(value) for value in throughputs]
+    median_log = _median(log_values)
+    mad = _median([abs(value - median_log) for value in log_values])
+    scaled_mad = 1.4826 * mad
+    relative_mad = math.exp(scaled_mad) - 1.0
+    adjacent_deltas = [
+        abs(log_values[index] - log_values[index - 1])
+        for index in range(1, len(log_values))
+    ]
+    group_median_logs = []
+    group_relative_mads = []
+    for start in range(0, len(log_values), HOST_STABILITY_V2_GROUP_SIZE):
+        group_logs = log_values[start : start + HOST_STABILITY_V2_GROUP_SIZE]
+        group_median = _median(group_logs)
+        group_mad = _median([abs(value - group_median) for value in group_logs])
+        group_median_logs.append(group_median)
+        group_relative_mads.append(math.exp(1.4826 * group_mad) - 1.0)
+    group_median_deltas = [
+        abs(group_median_logs[index] - group_median_logs[index - 1])
+        for index in range(1, len(group_median_logs))
+    ]
+    max_adjacent_delta = max(adjacent_deltas, default=0.0)
+    max_group_median_delta = max(group_median_deltas, default=0.0)
+    gates = {
+        "sample_count_valid": len(samples) == HOST_STABILITY_V2_MEASURED_RUNS,
+        "relative_mad_valid": relative_mad <= HOST_STABILITY_MAD_LIMIT,
+        "group_relative_mad_valid": all(
+            value <= HOST_STABILITY_MAD_LIMIT for value in group_relative_mads
+        ),
+        "group_adjacent_log_throughput_valid": max_group_median_delta
+        <= HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT,
+        "host_snapshot_valid": snapshot_valid,
+        "identity_valid": identity_valid,
+        "cpu_affinity_valid": affinity_valid,
+    }
+    return {
+        "sample_count": len(samples),
+        "throughput_median": math.exp(median_log),
+        "median_log_throughput": median_log,
+        "mad_log_throughput": mad,
+        "scaled_mad": scaled_mad,
+        "relative_mad": relative_mad,
+        "adjacent_abs_log_deltas": adjacent_deltas,
+        "max_adjacent_abs_log_delta": max_adjacent_delta,
+        "group_medians": [math.exp(value) for value in group_median_logs],
+        "group_relative_mads": group_relative_mads,
+        "group_median_abs_log_deltas": group_median_deltas,
+        "max_group_median_abs_log_delta": max_group_median_delta,
+        "gates": gates,
+        "valid": all(gates.values()),
+    }
+
+
+def summarize_host_stability_v3(
+    samples: Sequence[Mapping[str, Any]],
+    *,
+    expected_cpu: Optional[int] = None,
+    expected_identity: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Apply the v2 grouped gates and require attribution snapshots."""
+    summary = summarize_host_stability_v2(
+        samples,
+        expected_cpu=expected_cpu,
+        expected_identity=expected_identity,
+    )
+    diagnostics_valid = all(
+        _host_snapshot_diagnostics_complete(sample.get("host_snapshot_start"))
+        and _host_snapshot_diagnostics_complete(sample.get("host_snapshot_end"))
+        for sample in samples
+    )
+    gates = dict(summary["gates"])
+    gates["diagnostics_valid"] = diagnostics_valid
+    summary["gates"] = gates
+    summary["valid"] = all(gates.values())
+    return summary
+
+
+def summarize_cpu_time_attribution(
+    samples: Sequence[Mapping[str, Any]],
+    *,
+    expected_cpu: Optional[int] = None,
+    expected_identity: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Summarize CPU-time versus wall-time without making a speed claim."""
+    if len(samples) != CPU_TIME_DIAGNOSTIC_MEASURED_RUNS:
+        raise ValueError(
+            "CPU-time diagnostic requires exactly {} measured samples".format(
+                CPU_TIME_DIAGNOSTIC_MEASURED_RUNS
+            )
+        )
+    wall_values: List[float] = []
+    cpu_values: List[float] = []
+    snapshot_valid = True
+    affinity_valid = True
+    identity_values = []
+    for sample in samples:
+        cycles = sample.get("cycles")
+        wall_seconds = sample.get("wall_seconds")
+        user_seconds = sample.get("user_seconds")
+        system_seconds = sample.get("system_seconds")
+        if (
+            type(cycles) is not int
+            or cycles <= 0
+            or not isinstance(wall_seconds, (int, float))
+            or isinstance(wall_seconds, bool)
+            or not math.isfinite(float(wall_seconds))
+            or float(wall_seconds) <= 0
+            or not isinstance(user_seconds, (int, float))
+            or isinstance(user_seconds, bool)
+            or not math.isfinite(float(user_seconds))
+            or float(user_seconds) < 0
+            or not isinstance(system_seconds, (int, float))
+            or isinstance(system_seconds, bool)
+            or not math.isfinite(float(system_seconds))
+            or float(system_seconds) < 0
+            or float(user_seconds) + float(system_seconds) <= 0
+        ):
+            raise ValueError("CPU-time diagnostic sample timing is invalid")
+        wall_values.append(float(cycles) / float(wall_seconds))
+        cpu_values.append(float(cycles) / (float(user_seconds) + float(system_seconds)))
+        snapshot_valid = snapshot_valid and _host_snapshot_is_complete(
+            sample.get("host_snapshot_start"), expected_cpu
+        ) and _host_snapshot_is_complete(sample.get("host_snapshot_end"), expected_cpu)
+        start_affinity = (
+            sample.get("host_snapshot_start", {}).get("allowed_cpus")
+            if isinstance(sample.get("host_snapshot_start"), Mapping)
+            else None
+        )
+        end_affinity = (
+            sample.get("host_snapshot_end", {}).get("allowed_cpus")
+            if isinstance(sample.get("host_snapshot_end"), Mapping)
+            else None
+        )
+        affinity_valid = affinity_valid and start_affinity == end_affinity and (
+            expected_cpu is None or start_affinity == [expected_cpu]
+        )
+        identity_values.append(
+            (
+                sample.get("backend_commit"),
+                sample.get("runner_sha256"),
+                sample.get("build_provenance_sha256"),
+            )
+        )
+    if expected_identity is None:
+        identity_valid = len(set(identity_values)) == 1 and all(
+            isinstance(value, str) and value
+            for identity in identity_values
+            for value in identity
+        )
+    else:
+        expected_tuple = (
+            expected_identity.get("commit"),
+            expected_identity.get("runner_sha256"),
+            expected_identity.get("build_provenance_sha256"),
+        )
+        identity_valid = all(identity == expected_tuple for identity in identity_values)
+
+    def stats(values: Sequence[float]) -> Dict[str, Any]:
+        logs = [math.log(value) for value in values]
+        median_log = _median(logs)
+        mad = _median([abs(value - median_log) for value in logs])
+        scaled = 1.4826 * mad
+        return {
+            "median": math.exp(median_log),
+            "mad_log": mad,
+            "relative_mad": math.exp(scaled) - 1.0,
+        }
+
+    wall_stats = stats(wall_values)
+    cpu_stats = stats(cpu_values)
+    ratio_values = [cpu / wall for cpu, wall in zip(cpu_values, wall_values)]
+    ratio_stats = stats(ratio_values)
+    gates = {
+        "sample_count_valid": len(samples) == CPU_TIME_DIAGNOSTIC_MEASURED_RUNS,
+        "cpu_time_valid": all(value > 0 for value in cpu_values),
+        "wall_time_valid": all(value > 0 for value in wall_values),
+        "host_snapshot_valid": snapshot_valid,
+        "identity_valid": identity_valid,
+        "cpu_affinity_valid": affinity_valid,
+    }
+    return {
+        "sample_count": len(samples),
+        "wall_throughput": wall_stats,
+        "cpu_throughput": cpu_stats,
+        "cpu_to_wall_ratio": ratio_stats,
+        "wall_throughputs": wall_values,
+        "cpu_throughputs": cpu_values,
         "gates": gates,
         "valid": all(gates.values()),
     }
@@ -2159,7 +2583,14 @@ def _require_host_stability_gate(
         or record.get("status") != "pass"
     ):
         raise ValueError("host stability record is not passing: {}".format(path))
-    if record.get("measurement_policy") != host_stability_measurement_policy():
+    measurement_policy = record.get("measurement_policy")
+    if measurement_policy == host_stability_measurement_policy():
+        summarize = summarize_host_stability
+    elif measurement_policy == host_stability_measurement_policy_v2():
+        summarize = summarize_host_stability_v2
+    elif measurement_policy == host_stability_measurement_policy_v3():
+        summarize = summarize_host_stability_v3
+    else:
         raise ValueError("host stability measurement policy differs from the fixed protocol")
     if record.get("measurement_cpu") != measurement_cpu:
         raise ValueError("host stability record CPU differs from A/B")
@@ -2185,7 +2616,7 @@ def _require_host_stability_gate(
     samples = record.get("samples")
     if not isinstance(samples, list) or any(not isinstance(sample, Mapping) for sample in samples):
         raise ValueError("host stability record samples are invalid")
-    expected_summary = summarize_host_stability(
+    expected_summary = summarize(
         samples,
         expected_cpu=measurement_cpu,
         expected_identity=baseline_identity,
@@ -2195,16 +2626,129 @@ def _require_host_stability_gate(
     return dict(record)
 
 
+def run_cpu_time_diagnostic(args: argparse.Namespace) -> int:
+    workloads = load_workloads(args.target, args.firmware)
+    if args.cpu is None:
+        raise ValueError("cpu-time-diagnostic requires --cpu for affinity pinning")
+    warmup = CPU_TIME_DIAGNOSTIC_WARMUP_RUNS if args.warmup is None else args.warmup
+    runs = CPU_TIME_DIAGNOSTIC_MEASURED_RUNS if args.runs is None else args.runs
+    if warmup != CPU_TIME_DIAGNOSTIC_WARMUP_RUNS:
+        raise ValueError("cpu-time-diagnostic fixes --warmup at {}".format(CPU_TIME_DIAGNOSTIC_WARMUP_RUNS))
+    if runs != CPU_TIME_DIAGNOSTIC_MEASURED_RUNS:
+        raise ValueError("cpu-time-diagnostic fixes --runs at {}".format(CPU_TIME_DIAGNOSTIC_MEASURED_RUNS))
+    cooldown = validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
+    calibration_workload = next(
+        (workload for workload in workloads if workload["id"].startswith("picotetris-")),
+        None,
+    )
+    if calibration_workload is None:
+        raise ValueError("cpu-time-diagnostic requires the registered PicoTetris workload")
+    identity = _host_stability_identity(args.backend, args.runner, getattr(args, "feature_set", []))
+    _require_admission_gate(args.admission_record, workloads, identity)
+    output = args.output.resolve()
+    _refuse_existing(output)
+    before = _set_cpu_affinity(args.cpu)
+    samples: List[Dict[str, Any]] = []
+    error_text: Optional[str] = None
+    try:
+        for _ in range(warmup):
+            run_guest(
+                calibration_workload,
+                args.backend,
+                args.runner,
+                expected_backend_identity=identity,
+            )
+            _sleep_between_runs(cooldown)
+        for index in range(1, runs + 1):
+            host_start = host_cpu()
+            result = run_guest(
+                calibration_workload,
+                args.backend,
+                args.runner,
+                expected_backend_identity=identity,
+            )
+            host_end = host_cpu()
+            measurement = result["measurement"]
+            usage = measurement.get("host_usage_delta", {})
+            samples.append(
+                {
+                    "sample_id": "cpu-time-{:03d}".format(index),
+                    "cycles": measurement["cycles"],
+                    "wall_seconds": measurement["wall_seconds"],
+                    "user_seconds": usage.get("user_seconds"),
+                    "system_seconds": usage.get("system_seconds"),
+                    "backend_commit": measurement["backend_commit"],
+                    "runner_sha256": measurement["runner_sha256"],
+                    "build_provenance_sha256": measurement["build_provenance_sha256"],
+                    "host_snapshot_start": host_start,
+                    "host_snapshot_end": host_end,
+                }
+            )
+            _sleep_between_runs(cooldown)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+        error_text = str(error)
+    finally:
+        _restore_cpu_affinity(before)
+    if len(samples) == runs:
+        summary = summarize_cpu_time_attribution(
+            samples,
+            expected_cpu=args.cpu,
+            expected_identity=identity,
+        )
+    else:
+        summary = {
+            "sample_count": len(samples),
+            "gates": {"sample_count_valid": False},
+            "valid": False,
+        }
+    record = {
+        "schema_id": "picocalc.rp2040-cpu-time-attribution",
+        "schema_version": 1,
+        "artifact_type": "cpu-time-attribution",
+        "record_id": args.batch_id or output.stem,
+        "status": "pass" if error_text is None and summary.get("valid") is True else "invalid",
+        "measurement_policy": cpu_time_diagnostic_measurement_policy(),
+        "measurement_cpu": args.cpu,
+        "cpu_affinity": {"requested": args.cpu, "effective": [args.cpu]},
+        "inter_run_cooldown_seconds": cooldown,
+        "workload": {
+            key: calibration_workload[key]
+            for key in ("id", "revision", "firmware_sha256", "scenario_sha256", "contract_sha256")
+        },
+        "backend_identity": identity,
+        "samples": samples,
+        "summary": summary,
+        "reasons": (
+            [
+                "gate:{}".format(name)
+                for name, passed in summary.get("gates", {}).items()
+                if passed is not True
+            ]
+            if error_text is None
+            else [error_text]
+        ),
+    }
+    _write_json_once(output, record)
+    if record["status"] != "pass":
+        raise ValueError("CPU-time diagnostic is invalid; see {}".format(output))
+    print("CPU-time diagnostic: PASS ({})".format(output))
+    return 0
+
+
 def run_host_stability_preflight(args: argparse.Namespace) -> int:
     workloads = load_workloads(args.target, args.firmware)
     if len(workloads) != 2:
         raise ValueError("stability-preflight requires exactly the two registered workloads")
     if args.cpu is None:
         raise ValueError("stability-preflight requires --cpu for affinity pinning")
-    if args.warmup != HOST_STABILITY_WARMUP_RUNS:
-        raise ValueError("stability-preflight fixes --warmup at {}".format(HOST_STABILITY_WARMUP_RUNS))
-    if args.runs != HOST_STABILITY_MEASURED_RUNS:
-        raise ValueError("stability-preflight fixes --runs at {}".format(HOST_STABILITY_MEASURED_RUNS))
+    protocol_version = getattr(args, "protocol_version", 2)
+    policy = host_stability_measurement_policy_for_version(protocol_version)
+    warmup = HOST_STABILITY_WARMUP_RUNS if args.warmup is None else args.warmup
+    runs = int(policy["measured_runs"]) if args.runs is None else args.runs
+    if warmup != int(policy["warmup_runs"]):
+        raise ValueError("stability-preflight fixes --warmup at {}".format(policy["warmup_runs"]))
+    if runs != int(policy["measured_runs"]):
+        raise ValueError("stability-preflight fixes --runs at {}".format(policy["measured_runs"]))
     cooldown = validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
     calibration_workload = next(
         (workload for workload in workloads if workload["id"].startswith("picotetris-")),
@@ -2220,7 +2764,7 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
     samples: List[Dict[str, Any]] = []
     error_text: Optional[str] = None
     try:
-        for _ in range(args.warmup):
+        for _ in range(warmup):
             run_guest(
                 calibration_workload,
                 args.backend,
@@ -2228,7 +2772,7 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
                 expected_backend_identity=identity,
             )
             _sleep_between_runs(cooldown)
-        for index in range(1, args.runs + 1):
+        for index in range(1, runs + 1):
             host_start = host_cpu()
             started_ns = time.perf_counter_ns()
             result = run_guest(
@@ -2259,8 +2803,15 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
         error_text = str(error)
     finally:
         _restore_cpu_affinity(before)
-    if len(samples) == HOST_STABILITY_MEASURED_RUNS:
-        summary = summarize_host_stability(
+    if len(samples) == runs:
+        summarize = (
+            summarize_host_stability
+            if protocol_version == 1
+            else summarize_host_stability_v2
+            if protocol_version == 2
+            else summarize_host_stability_v3
+        )
+        summary = summarize(
             samples,
             expected_cpu=args.cpu,
             expected_identity=identity,
@@ -2277,7 +2828,7 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
         "artifact_type": "host-stability",
         "record_id": args.batch_id or output.stem,
         "status": "pass" if error_text is None and summary.get("valid") is True else "invalid",
-        "measurement_policy": host_stability_measurement_policy(),
+        "measurement_policy": policy,
         "measurement_cpu": args.cpu,
         "cpu_affinity": {"requested": args.cpu, "effective": [args.cpu]},
         "inter_run_cooldown_seconds": cooldown,
@@ -2288,7 +2839,15 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
         "backend_identity": identity,
         "samples": samples,
         "summary": summary,
-        "reasons": ([] if error_text is None else [error_text]),
+        "reasons": (
+            [
+                "gate:{}".format(name)
+                for name, passed in summary.get("gates", {}).items()
+                if passed is not True
+            ]
+            if error_text is None
+            else [error_text]
+        ),
     }
     _write_json_once(output, record)
     if record["status"] != "pass":
@@ -3879,8 +4438,9 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     _add_workloads(stability)
     stability.add_argument("--backend", type=Path, required=True)
     stability.add_argument("--runner", type=Path, required=True)
-    stability.add_argument("--warmup", type=int, default=HOST_STABILITY_WARMUP_RUNS)
-    stability.add_argument("--runs", type=int, default=HOST_STABILITY_MEASURED_RUNS)
+    stability.add_argument("--protocol-version", type=int, choices=(1, 2, 3), default=3)
+    stability.add_argument("--warmup", type=int)
+    stability.add_argument("--runs", type=int)
     stability.add_argument(
         "--inter-run-cooldown-seconds", type=float,
         default=AB_INTER_RUN_COOLDOWN_SECONDS,
@@ -3889,6 +4449,24 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     stability.add_argument("--batch-id", required=True)
     stability.add_argument("--output", type=Path, required=True)
     stability.set_defaults(handler=run_host_stability_preflight)
+
+    cpu_time = subparsers.add_parser(
+        "cpu-time-diagnostic",
+        help="compare runner CPU time with wall time without an A/B decision",
+    )
+    _add_workloads(cpu_time)
+    cpu_time.add_argument("--backend", type=Path, required=True)
+    cpu_time.add_argument("--runner", type=Path, required=True)
+    cpu_time.add_argument("--warmup", type=int)
+    cpu_time.add_argument("--runs", type=int)
+    cpu_time.add_argument(
+        "--inter-run-cooldown-seconds", type=float,
+        default=AB_INTER_RUN_COOLDOWN_SECONDS,
+    )
+    cpu_time.add_argument("--admission-record", type=Path, required=True)
+    cpu_time.add_argument("--batch-id", required=True)
+    cpu_time.add_argument("--output", type=Path, required=True)
+    cpu_time.set_defaults(handler=run_cpu_time_diagnostic)
 
     ab = subparsers.add_parser("ab")
     _add_workloads(ab)
@@ -3981,16 +4559,28 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         if args.final_report_only and args.candidate_id != "P0-A2":
             parser.error("--final-report-only is reserved for candidate_id P0-A2")
     if args.command == "stability-preflight":
-        if args.warmup != HOST_STABILITY_WARMUP_RUNS:
-            parser.error("--warmup is fixed at {}".format(HOST_STABILITY_WARMUP_RUNS))
-        if args.runs != HOST_STABILITY_MEASURED_RUNS:
-            parser.error("--runs is fixed at {}".format(HOST_STABILITY_MEASURED_RUNS))
+        policy = host_stability_measurement_policy_for_version(args.protocol_version)
+        if args.warmup is not None and args.warmup != policy["warmup_runs"]:
+            parser.error("--warmup is fixed at {}".format(policy["warmup_runs"]))
+        if args.runs is not None and args.runs != policy["measured_runs"]:
+            parser.error("--runs is fixed at {}".format(policy["measured_runs"]))
         try:
             validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
         except ValueError as error:
             parser.error(str(error))
         if args.cpu is None:
             parser.error("stability-preflight requires --cpu for affinity pinning")
+    if args.command == "cpu-time-diagnostic":
+        if args.warmup is not None and args.warmup != CPU_TIME_DIAGNOSTIC_WARMUP_RUNS:
+            parser.error("--warmup is fixed at {}".format(CPU_TIME_DIAGNOSTIC_WARMUP_RUNS))
+        if args.runs is not None and args.runs != CPU_TIME_DIAGNOSTIC_MEASURED_RUNS:
+            parser.error("--runs is fixed at {}".format(CPU_TIME_DIAGNOSTIC_MEASURED_RUNS))
+        try:
+            validate_inter_run_cooldown(args.inter_run_cooldown_seconds)
+        except ValueError as error:
+            parser.error(str(error))
+        if args.cpu is None:
+            parser.error("cpu-time-diagnostic requires --cpu for affinity pinning")
     if args.command == "correctness" and args.final_report_only and args.candidate_id != "P0-A2":
         parser.error("--final-report-only is reserved for candidate_id P0-A2")
     return args
