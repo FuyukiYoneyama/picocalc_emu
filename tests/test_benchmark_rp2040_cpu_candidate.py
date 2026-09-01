@@ -120,6 +120,22 @@ class CandidateRunnerTests(unittest.TestCase):
             self.assertIn(expected[0], command)
             self.assertEqual(command[command.index(expected[0]) + 1], expected[1])
 
+    def test_load_shape_command_uses_short_cycle_limit_and_host_timing(self):
+        command = self.module.load_shape_command(
+            self.fixture_target(),
+            Path("firmware.bin"),
+            Path("runner"),
+            Path("report.json"),
+            Path("uart.bin"),
+            Path("host-timing.json"),
+            10_000_000,
+            backend_commit="b" * 40,
+        )
+        self.assertEqual(command[command.index("--cycles") + 1], "10000000")
+        self.assertEqual(command[command.index("--expect-stop") + 1], "cycle_limit")
+        self.assertIn("--host-timing", command)
+        self.assertNotIn("--scenario", command)
+
     def test_registered_report_follows_validation_evidence_record(self):
         report = {"cycles": 123, "observable": "fixed"}
         with tempfile.TemporaryDirectory() as temporary:

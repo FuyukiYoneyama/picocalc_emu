@@ -49,6 +49,8 @@ HOST_STABILITY_V2_GROUP_COUNT = HOST_STABILITY_V2_MEASURED_RUNS // HOST_STABILIT
 HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT = 0.02
 CPU_TIME_DIAGNOSTIC_WARMUP_RUNS = 1
 CPU_TIME_DIAGNOSTIC_MEASURED_RUNS = 4
+LOAD_SHAPE_INSTANCE_COUNTS = (1, 2, 4, 8)
+LOAD_SHAPE_DEFAULT_CYCLES = 10_000_000
 REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"))
 # The first null batch exposed a long-session host throughput drift.  Keep the
 # recovery interval fixed and part of the record identity so it cannot be
@@ -718,6 +720,57 @@ def target_command(
         command.extend(["--cpu-application-profile", str(cpu_application_profile)])
     if host_timing is not None:
         command.extend(["--host-timing", str(host_timing)])
+    return command
+
+
+def load_shape_command(
+    target: Mapping[str, Any],
+    firmware: Path,
+    runner: Path,
+    report: Path,
+    uart: Path,
+    host_timing: Path,
+    cycles: int,
+    *,
+    backend_commit: Optional[str],
+) -> List[str]:
+    """Build a short cycle-limit command for independent guest scaling.
+
+    This deliberately omits the registered scenario and acceptance markers:
+    the load-shape probe measures host occupancy, not a workload verdict. The
+    same registered firmware/device contract is retained, while the cycle
+    limit is shortened and made the explicit successful stop.
+    """
+    if not backend_commit:
+        raise ValueError("backend_commit override is required; never use the registry accepted pin")
+    if type(cycles) is not int or cycles <= 0:
+        raise ValueError("load-shape cycles must be a positive integer")
+    contract = target["runner"]
+    command = [
+        str(runner),
+        "--bin", str(firmware),
+        "--board", contract["board"],
+        "--lcd-variant", contract["lcd_variant"],
+        "--quantum", str(contract["quantum"]),
+        "--cycles", str(cycles),
+        "--json", str(report),
+        "--uart", str(uart),
+        "--host-timing", str(host_timing),
+        "--backend-commit", backend_commit,
+        "--expect-stop", "cycle_limit",
+    ]
+    if contract.get("psram", False):
+        command.append("--psram")
+    if contract.get("keyboard", False):
+        command.append("--keyboard")
+    sd = contract["sd"]
+    if sd["attached"]:
+        command.extend(["--sd", "--sd-format", sd["format"]])
+    bootrom = contract.get("bootrom") or target.get("bootrom")
+    if bootrom:
+        bootrom_path = bootrom.get("path") if isinstance(bootrom, Mapping) else bootrom
+        if bootrom_path:
+            command.extend(["--bootrom", str(ROOT / bootrom_path)])
     return command
 
 
@@ -2806,6 +2859,183 @@ def run_cpu_time_diagnostic(args: argparse.Namespace) -> int:
     return 0
 
 
+def _child_affinity_setter(cpu: int):
+    """Return a POSIX pre-exec hook that pins one independent guest."""
+    if not hasattr(os, "sched_setaffinity"):
+        raise ValueError("load-shape needs Linux sched_setaffinity")
+
+    def apply() -> None:
+        os.sched_setaffinity(0, {cpu})
+        if sorted(os.sched_getaffinity(0)) != [cpu]:
+            raise OSError("child affinity was not applied for CPU {}".format(cpu))
+
+    return apply
+
+
+def _load_shape_run_record(
+    process: subprocess.Popen[bytes],
+    report_path: Path,
+    host_timing_path: Path,
+    assigned_cpu: int,
+    cycles: int,
+) -> Dict[str, Any]:
+    returncode = process.returncode
+    if returncode != 0:
+        raise ValueError("load-shape guest exited {}".format(returncode))
+    if not report_path.is_file() or not host_timing_path.is_file():
+        raise ValueError("load-shape guest did not produce report and host timing")
+    report = _read_json(report_path)
+    timing = _read_json(host_timing_path)
+    if not isinstance(report, Mapping) or not isinstance(timing, Mapping):
+        raise ValueError("load-shape report or host timing is not an object")
+    if report.get("verdict", {}).get("status") != "pass":
+        raise ValueError("load-shape guest verdict is not pass")
+    if report.get("cycles") != cycles or timing.get("cycles") != cycles:
+        raise ValueError("load-shape guest cycles differ from requested limit")
+    if report.get("stop_reason") != "cycle_limit" or timing.get("stop_reason") != "cycle_limit":
+        raise ValueError("load-shape guest did not stop at cycle_limit")
+    if timing.get("artifact_type") != "in-process-host-timing":
+        raise ValueError("load-shape host timing artifact type is invalid")
+    cpu_ns = timing.get("emulation_cpu_ns")
+    wall_ns = timing.get("emulation_wall_ns")
+    if type(cpu_ns) is not int or cpu_ns <= 0 or type(wall_ns) is not int or wall_ns <= 0:
+        raise ValueError("load-shape host timing values are invalid")
+    cpu_seconds = cpu_ns / 1_000_000_000
+    wall_seconds = wall_ns / 1_000_000_000
+    return {
+        "assigned_cpu": assigned_cpu,
+        "cycles": cycles,
+        "emulation_cpu_ns": cpu_ns,
+        "emulation_cpu_seconds": cpu_seconds,
+        "emulation_wall_ns": wall_ns,
+        "emulation_wall_seconds": wall_seconds,
+        "cycles_per_emulation_cpu_second": cycles / cpu_seconds,
+        "cycles_per_emulation_wall_second": cycles / wall_seconds,
+        "guest_observation_sha256": guest_observation_sha256(report),
+        "report_sha256": sha256_file(report_path),
+    }
+
+
+def run_load_shape(args: argparse.Namespace) -> int:
+    """Measure independent guest scaling without making an A/B decision."""
+    workloads = load_workloads(args.target, args.firmware)
+    calibration_workload = next(
+        (workload for workload in workloads if workload["id"].startswith("picotetris-")),
+        None,
+    )
+    if calibration_workload is None:
+        raise ValueError("load-shape requires the registered PicoTetris workload")
+    if type(args.cycles) is not int or args.cycles <= 0:
+        raise ValueError("load-shape requires positive --cycles")
+    identity = clean_backend_identity(args.backend)
+    validate_runner_embedded_commit(args.runner, identity["commit"])
+    output = args.output.resolve()
+    _refuse_existing(output)
+    if not hasattr(os, "sched_getaffinity") or not hasattr(os, "sched_setaffinity"):
+        raise ValueError("load-shape needs Linux sched_getaffinity/sched_setaffinity")
+    available_cpus = sorted(os.sched_getaffinity(0))
+    counts = tuple(count for count in LOAD_SHAPE_INSTANCE_COUNTS if count <= len(available_cpus))
+    if not counts:
+        raise ValueError("load-shape has no usable instance count for the allowed CPU set")
+    host_start = host_cpu()
+    results: List[Dict[str, Any]] = []
+    with tempfile.TemporaryDirectory(prefix="picocalc-rp2040-load-shape-") as temporary:
+        root = Path(temporary)
+        for count in counts:
+            processes: List[Tuple[subprocess.Popen[bytes], Path, Path, int]] = []
+            batch_started_ns = time.perf_counter_ns()
+            try:
+                for index, cpu in enumerate(available_cpus[:count], 1):
+                    report_path = root / "k{}-{:02d}-report.json".format(count, index)
+                    uart_path = root / "k{}-{:02d}-uart.bin".format(count, index)
+                    timing_path = root / "k{}-{:02d}-host-timing.json".format(count, index)
+                    command = load_shape_command(
+                        calibration_workload["target"],
+                        calibration_workload["firmware"],
+                        args.runner,
+                        report_path,
+                        uart_path,
+                        timing_path,
+                        args.cycles,
+                        backend_commit=identity["commit"],
+                    )
+                    process = subprocess.Popen(
+                        command,
+                        cwd=str(args.backend),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        preexec_fn=_child_affinity_setter(cpu),
+                    )
+                    processes.append((process, report_path, timing_path, cpu))
+                instance_records = []
+                for process, report_path, timing_path, cpu in processes:
+                    process.wait()
+                    instance_records.append(
+                        _load_shape_run_record(
+                            process, report_path, timing_path, cpu, args.cycles
+                        )
+                    )
+            except BaseException:
+                for process, _, _, _ in processes:
+                    if process.poll() is None:
+                        process.kill()
+                for process, _, _, _ in processes:
+                    process.wait()
+                raise
+            batch_wall_ns = time.perf_counter_ns() - batch_started_ns
+            total_cpu_seconds = sum(item["emulation_cpu_seconds"] for item in instance_records)
+            total_cycles = sum(item["cycles"] for item in instance_records)
+            batch_wall_seconds = batch_wall_ns / 1_000_000_000
+            observations = {item["guest_observation_sha256"] for item in instance_records}
+            if len(observations) != 1:
+                raise ValueError("load-shape guest observations differ at K={}".format(count))
+            results.append(
+                {
+                    "instance_count": count,
+                    "assigned_cpus": available_cpus[:count],
+                    "instances": instance_records,
+                    "batch_wall_ns": batch_wall_ns,
+                    "batch_wall_seconds": batch_wall_seconds,
+                    "aggregate_cycles": total_cycles,
+                    "aggregate_emulation_cpu_seconds": total_cpu_seconds,
+                    "aggregate_cycles_per_cpu_second": total_cycles / total_cpu_seconds,
+                    "aggregate_cycles_per_batch_wall_second": total_cycles / batch_wall_seconds,
+                    "normalized_host_cpu_fraction": (
+                        total_cpu_seconds / batch_wall_seconds / len(available_cpus)
+                    ),
+                    "guest_observation_sha256": next(iter(observations)),
+                }
+            )
+    host_end = host_cpu()
+    record = {
+        "schema_id": "picocalc.rp2040-cpu-load-shape",
+        "schema_version": 1,
+        "artifact_type": "load-shape",
+        "record_id": args.batch_id or output.stem,
+        "status": "pass",
+        "measurement_policy": {
+            "method": "independent-guest-load-shape-v1",
+            "instance_counts": list(LOAD_SHAPE_INSTANCE_COUNTS),
+            "cycles_per_instance": args.cycles,
+            "single_guest_promotion_metric": "cycles_per_emulation_cpu_second",
+            "scaling_is_diagnostic_only": True,
+        },
+        "measurement_cpus": available_cpus,
+        "workload": {
+            key: calibration_workload[key]
+            for key in ("id", "revision", "firmware_sha256", "scenario_sha256", "contract_sha256")
+        },
+        "backend_identity": identity,
+        "runner_sha256": sha256_file(args.runner),
+        "host_snapshot_start": host_start,
+        "host_snapshot_end": host_end,
+        "results": results,
+    }
+    _write_json_once(output, record)
+    print("load-shape diagnostic: PASS ({})".format(output))
+    return 0
+
+
 def run_host_stability_preflight(args: argparse.Namespace) -> int:
     workloads = load_workloads(args.target, args.firmware)
     if len(workloads) != 2:
@@ -4539,6 +4769,18 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     cpu_time.add_argument("--output", type=Path, required=True)
     cpu_time.set_defaults(handler=run_cpu_time_diagnostic)
 
+    load_shape = subparsers.add_parser(
+        "load-shape",
+        help="measure independent guest host scaling without an A/B decision",
+    )
+    _add_workloads(load_shape)
+    load_shape.add_argument("--backend", type=Path, required=True)
+    load_shape.add_argument("--runner", type=Path, required=True)
+    load_shape.add_argument("--cycles", type=int, default=LOAD_SHAPE_DEFAULT_CYCLES)
+    load_shape.add_argument("--batch-id")
+    load_shape.add_argument("--output", type=Path, required=True)
+    load_shape.set_defaults(handler=run_load_shape)
+
     ab = subparsers.add_parser("ab")
     _add_workloads(ab)
     ab.add_argument("--baseline-backend", type=Path, required=True)
@@ -4652,6 +4894,8 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
             parser.error(str(error))
         if args.cpu is None:
             parser.error("cpu-time-diagnostic requires --cpu for affinity pinning")
+    if args.command == "load-shape" and args.cycles <= 0:
+        parser.error("load-shape requires positive --cycles")
     if args.command == "correctness" and args.final_report_only and args.candidate_id != "P0-A2":
         parser.error("--final-report-only is reserved for candidate_id P0-A2")
     return args

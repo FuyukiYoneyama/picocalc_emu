@@ -49,7 +49,7 @@ WSL2 は Linux kernel を軽量な utility VM 内で動かし、distribution 間
 
 従来の v1/v2/v3 null-control と CPU-time attribution は、この測定経路の診断証拠として immutable に保持する。これらの wall drift を host 全体の不安定性へ一律に帰属せず、次の `P0-A2-M` で in-process CPU accounting、affinity mode、並列負荷、短い block protocol を固定してから新 batch ID の null-control/A-B を開始する。
 
-`d8f5bb2` の `--host-timing` sidecar は、通常の schema-8 report を変更せず、`CLOCK_PROCESS_CPUTIME_ID` と monotonic wall clock を `run_loop` の直前・直後だけで取得する。benchmark runner は sidecar の schema、cycles、stop reason、正の CPU/wall 値を検査し、`cycles_per_emulation_cpu_second` を単一ゲスト CPU速度の主指標として取り込む。sidecarのない古い runner は新しい測定経路では使用しない。
+`d8f5bb2` の `--host-timing` sidecar は、通常の schema-8 report を変更せず、`CLOCK_PROCESS_CPUTIME_ID` と monotonic wall clock を `run_loop` の直前・直後だけで取得する。benchmark runner は sidecar の schema、cycles、stop reason、正の CPU/wall 値を検査し、`cycles_per_emulation_cpu_second` を単一ゲスト CPU速度の主指標として取り込む。sidecarのない古い runner は新しい測定経路では使用しない。続く `load-shape` は同じ登録 firmware/device contractから scenario/acceptance markerだけを外し、明示した短い cycle limitで K=`1,2,4,8` の childへ重複しない vCPU affinityを割り当てる。各 K の aggregate CPU throughput、batch wall throughput、normalized host CPU fraction、guest projection一致を別の診断 recordへ保存する。
 
 P2-A の feature-on diagnostic profile `rp2040-cpu-p2-a-profile-20260831-01` は、両 workloadで `profile_valid=true`、overflowなし、aggregate/core/source conservation pass、no-candidate reject率 99.989%（PicoTetris）/99.943%（PicoEdit）を確認した。従って P2-A の診断内容自体は pass である。ただしこの profile の `measurement_cpu=0`、P2-A correctness の CPU は 1、P1-A correctness は CPU 未記録であり、P2-A の profile/correctness と P1-A の correctness が `ab --cpu` の CPU identity gate を満たさない。P1-A profile は診断専用で A/B admission には使わない。batch 05 は anchor stability gateでinvalidだったため、v3 null-controlがpassした場合にA/B採用CPU 11へ P1-A correctness、P2-A correctness、P2-A profileを揃えて取り直してから production A/Bを開始する。
 
@@ -577,6 +577,9 @@ v3 実測は `stability-preflight --protocol-version 3` を使い、v2と同じ 
 `cpu-time-diagnostic` を追加した。warm-up 1＋測定4、CPU 11、同一 baseline、60秒 cooldownで `host_usage_delta.user_seconds/system_seconds`、wall時間、cyclesから `cycles_per_cpu_second`（主診断）と `cycles_per_wall_second`（副診断）を同一 recordへ保存する。これは candidate promotionやA/B採否の gateではなく、wall driftがCPU実行時間に現れるかを一回だけ確認するための診断である。対象 runner unit test 49/49 と全体テスト更新後に実測する。なお、この履歴 recordのCPU時間は子プロセス終了後の `RUSAGE_CHILDREN` であり、run_loop内のCPU時間ではない。
 
 更新（2026-09-01 15:00 JST）: backend `d8f5bb2` で in-process timing sidecar を実装し、debug runnerによる100,019-cycle短時間実行で `emulation_cpu_ns`、`emulation_wall_ns`、両throughputの生成とschema-8 report非変更を確認した。Python runnerは全guest invocationへsidecarを要求し、CPU-time diagnostic summaryはsidecarの `in_process_run_loop` 値を優先する。次はこの runner を clean release buildし、登録二 workloadの warm-up 1＋短い measured runでCPU/wall比とcorrectness/checksumを確認する。これは pilot であり、full null-control/A-B の38時間ループではない。
+更新（2026-09-01 15:00 JST）: backend `d8f5bb2` で in-process timing sidecar を実装し、debug runnerによる100,019-cycle短時間実行で `emulation_cpu_ns`、`emulation_wall_ns`、両throughputの生成とschema-8 report非変更を確認した。Python runnerは全guest invocationへsidecarを要求し、CPU-time diagnostic summaryはsidecarの `in_process_run_loop` 値を優先する。登録二 workloadを同じ実行条件で10M cyclesだけ走らせたところ、PicoTetrisはCPU 0.570秒/wall 0.522秒、PicoEditはCPU 0.560秒/wall 0.515秒で、cycles/stop reason/report schemaが一致した。これは pilot であり、full null-control/A-B の38時間ループではない。
+
+更新（2026-09-01 16:00 JST）: `load-shape` の独立ゲスト scaling 診断と unit test を実装した。10M cyclesのPicoTetrisを K=1/2/4/8 で実行し、K=1/2/4/8 の batch wall throughput はそれぞれ 19.063/37.768/62.837/99.924 Mcycles/s、normalized host CPU fraction は 0.090/0.178/0.326/0.680、全 instanceの guest projectionは一致した。K=8で全体CPUが約68%になることを確認でき、単一ゲストCPU速度とホスト負荷形状を分離できた。この recordは scaling診断だけであり、候補promotionの採否には使わない。残る P0-A2-M は pinned/inherited比較、cooldown pilot、5 block orchestrationである。
 更新（2026-09-01 13:00 JST、旧経路の暫定解釈）: `rp2040-cpu-time-attribution-20260901-01` は4測定を完走し、record completeness/identity/affinityは passした。wall throughput relative MAD は5.4821%、CPU-time throughput relative MAD は4.5002%、CPU/wall比 relative MAD は0.3602%だった。CPU時間側も4.5%変動しており、公開host counterの変化なしと合わせて、当時は現WSL hostでは実行速度の安定性を説明できないと解釈した。`chrt -f 1` は権限不足で使用できなかった。この解釈は in-process CPU timingを取得していなかったため、現在の計画では superseded とする。WSL2を原因と断定せず、正しい測定経路で再評価する。
 現行方針（2026-09-01 15:00 JST）: 上記 v1/v2/v3 の host-stability preflight と CPU-time attribution は、旧来の単一ゲスト・CPU 11固定・wall中心経路の診断として完了した。いずれも固定 gateを満たさなかった記録は immutable に保持するが、それだけで現 WSL hostを production A/B 不可と断定しない。`d8f5bb2` の in-process timing sidecar と Python取り込みを先に短時間 pilot で検証し、次に pinned/inherited affinity、K=`1,2,4,8` の独立ゲスト scaling、cooldown pilot、5 block scheduleを順に閉じる。新しい null-control は CPU-time主指標、wall副指標で実行し、その結果を見て初めて host条件と候補効果を帰属する。P1-A/P2-A production A/B は測定経路修正と CPU identityを揃えた correctness/profile が完了するまで開始しない。38時間の旧ループを再実行しない。
 
@@ -1181,26 +1184,23 @@ cargo build --locked --release -p picocalc-harness --bin picocalc-run
 
 実機 silicon oracle は既存正確性証拠を変更する候補で別途必要性を判断する。本計画の性能測定は USB/実機操作を含まず、P0/P1-A の開始を実機接続に依存させない。
 
-P0-A2-M の短時間 verification command は次のとおりとする。`--load-shape` は実装時に固定する
-diagnostic subcommandであり、通常の `ab` の採否統計へ追加しない。
+P0-A2-M の短時間 verification command は次のとおりとする。`load-shape` は通常の `ab` の採否統計へ追加しない。
 
 ```bash
 python3 tools/benchmark_rp2040_cpu_candidate.py load-shape \
   --backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
   --runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --cycles 10000000 \
   --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
   --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
-  --affinity-mode both --cpu 11 --instances 1,2,4,8 \
-  --cooldown-pilot 0,5,15,60 --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
   --batch-id rp2040-cpu-load-shape-YYYYMMDD-NN \
-  --output firmware-validation/records/rp2040-cpu-load-shape-YYYYMMDD-NN
+  --output /tmp/picocalc-rp2040-cpu-load-shape-YYYYMMDD-NN.json
 ```
 
-`load-shape` の `both` は、K=1を `pinned-vcpu`（`--cpu 11`）と `inherited-set` の両方で測り、
-K>1を `inherited-set`（または各 childへ重複しない vCPU setを割り当てる mode）で測る固定展開とする。
-実装前は上記 command を起動しない。まず in-process report field、個数不一致・affinity mode・
-独立 output directory の unit test と schema verifierを通し、短時間の K=1/2/4/8 probeを一回の
-recordへ保存する。full null-control/A-B の開始条件はこの recordの存在ではなく、`P0-A2-M` の全完了条件である。
+現実装の `load-shape` は各 childへ重複しない vCPUを割り当てる scaling probeである。K=1の
+pinned-vcpu/inherited-set比較、cooldown pilot、独立 output directoryのschema/verifierは残る
+P0-A2-M作業として別途固定する。full null-control/A-B の開始条件はこの recordの存在ではなく、
+`P0-A2-M` の全完了条件である。
 
 ## 12. 実装開始手順
 
