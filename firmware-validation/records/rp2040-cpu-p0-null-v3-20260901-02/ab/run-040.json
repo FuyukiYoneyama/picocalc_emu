@@ -1,0 +1,37 @@
+{
+  "artifact_type": "run",
+  "backend_commit": "73784b96a1afdb34dc1a79577f947b670a138d07",
+  "build_provenance_sha256": "d47660fe9807f6ab79a072423cbd147cacd5e0bc8bfaaa17ae552b04a4af37bb",
+  "candidate_id": "P0-A2",
+  "corrected_emulated_cycles_per_wall_second": 4434549.35858159,
+  "cycles": 927528659,
+  "elapsed_us": 3715000,
+  "emulated_cycles_per_wall_second": 5304186.957301816,
+  "guest_observation_sha256": "4f5709fbec051cdd1dd181679c71154e04c84e5734327671399057f4035dd616",
+  "host_speed_correction": 0.83604695578781,
+  "host_usage_delta": {
+    "max_rss_platform_units": 30748,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.004225999999999841,
+    "user_seconds": 184.71963700000015
+  },
+  "order": "BA",
+  "pair": 10,
+  "predicted_anchor_throughput": 5250974.879504192,
+  "protocol_elapsed_seconds": 17052.152515689,
+  "record_id": "rp2040-cpu-p0-null-v3-20260901-02",
+  "report_sha256": "52731c8cc7cf98eca6146e2613dc26c044f22f5eadd34b46343571ffbe89a47b",
+  "role": "baseline",
+  "run_id": "run-040",
+  "runner_sha256": "921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7",
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "snapshot_sha256": {
+    "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+  "wall_ns": 174867263629,
+  "wall_seconds": 174.867263629,
+  "workload": "picotetris-opt1b-vrp5"
+}

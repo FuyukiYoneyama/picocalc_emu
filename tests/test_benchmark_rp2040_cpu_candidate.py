@@ -657,6 +657,196 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertFalse(curved_model["valid"])
         self.assertGreater(curved_model["max_relative_residual"], 0.02)
 
+    def test_v3_pair_sensitivity_gate_rejects_large_correction_delta(self):
+        pair_results = [
+            {
+                "pair_log_ratio": 0.0,
+                "corrected_pair_log_ratio": math.log(1.03),
+            }
+        ]
+        sensitivity = self.module._pair_level_sensitivity(pair_results)
+        self.assertEqual(sensitivity["n"], 1)
+        self.assertGreater(
+            sensitivity["max_abs_delta_log_ratio"],
+            self.module.CALIBRATION_PAIR_SENSITIVITY_LIMIT,
+        )
+        self.assertFalse(
+            sensitivity["max_abs_delta_log_ratio"]
+            <= self.module.CALIBRATION_PAIR_SENSITIVITY_LIMIT
+        )
+
+    def test_v3_complete_27_anchor_fixture_aggregates_and_models(self):
+        specs = self.module._interleaved_anchor_v3_group_specs()
+        anchors = []
+        for group_index, spec in enumerate(specs):
+            for replicate in range(1, 4):
+                anchors.append(
+                    {
+                        "anchor_id": "anchor-{}-{:03d}".format(spec["group_id"], replicate),
+                        "group_id": spec["group_id"],
+                        "elapsed_seconds": group_index * 10.0 + replicate / 100.0,
+                        "throughput": 100.0 * math.exp(0.01 * group_index),
+                    }
+                )
+        self.assertEqual(len(anchors), 27)
+        groups = self.module._aggregate_anchor_groups(anchors, specs)
+        self.assertEqual(len(groups), 9)
+        self.assertEqual([group["anchor_count"] for group in groups], [3] * 9)
+        self.assertTrue(all(group["dispersion_valid"] for group in groups))
+        model = self.module._anchor_piecewise_local_residual_model(groups)
+        self.assertTrue(model["valid"])
+        self.assertEqual(model["knot_ids"], [spec["group_id"] for spec in specs])
+        self.assertEqual(len(model["residuals"]), 9)
+
+    def test_host_stability_summary_has_fixed_mad_and_adjacent_gates(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = [
+            {
+                "sample_id": "sentinel-{:03d}".format(index),
+                "throughput": 100.0 * (1.0 + (index - 5) * 0.0005),
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for index in range(1, 11)
+        ]
+        summary = self.module.summarize_host_stability(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertTrue(summary["valid"])
+        self.assertTrue(summary["gates"]["relative_mad_valid"])
+        self.assertTrue(summary["gates"]["adjacent_log_throughput_valid"])
+        self.assertEqual(summary["sample_count"], 10)
+
+    def test_host_stability_summary_rejects_regime_step(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "runner_sha256": "b" * 64,
+            "build_provenance_sha256": "c" * 64,
+        }
+        samples = [
+            {
+                "sample_id": "sentinel-{:03d}".format(index),
+                "throughput": 100.0 if index <= 5 else 130.0,
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for index in range(1, 11)
+        ]
+        summary = self.module.summarize_host_stability(
+            samples, expected_cpu=11, expected_identity=identity
+        )
+        self.assertFalse(summary["valid"])
+        self.assertFalse(summary["gates"]["adjacent_log_throughput_valid"])
+        self.assertFalse(summary["gates"]["relative_mad_valid"])
+
+    def test_host_stability_gate_requires_passing_pointer_record(self):
+        snapshot = {
+            "model": "test-host",
+            "logical_cpus": 12,
+            "reported_mhz": 3693.107,
+            "loadavg": [0.1, 0.2, 0.3],
+            "allowed_cpus": [11],
+            "platform": "test-platform",
+            "kernel": "test-kernel",
+        }
+        identity = {
+            "commit": "a" * 40,
+            "dirty": False,
+            "runner_sha256": "b" * 64,
+            "feature_set": ["sd-gen1-multiblock"],
+            "build_provenance_sha256": "c" * 64,
+            "role": "baseline_production",
+            "provenance_role": "baseline_production",
+        }
+        samples = [
+            {
+                "sample_id": "sentinel-{:03d}".format(index),
+                "protocol_elapsed_seconds": 1.0,
+                "throughput": 100.0,
+                "cycles": 123,
+                "wall_seconds": 1.23,
+                "backend_commit": identity["commit"],
+                "runner_sha256": identity["runner_sha256"],
+                "build_provenance_sha256": identity["build_provenance_sha256"],
+                "host_snapshot_start": snapshot,
+                "host_snapshot_end": snapshot,
+            }
+            for index in range(1, 11)
+        ]
+        workload = {
+            "id": "picotetris-opt1b-vrp5",
+            "revision": 10,
+            "firmware_sha256": "d" * 64,
+            "scenario_sha256": "e" * 64,
+            "contract_sha256": "f" * 64,
+        }
+        record = {
+            "schema_id": self.module.HOST_STABILITY_SCHEMA_ID,
+            "schema_version": 1,
+            "artifact_type": "host-stability",
+            "record_id": "rp2040-cpu-host-stability-fixture",
+            "status": "pass",
+            "measurement_policy": self.module.host_stability_measurement_policy(),
+            "measurement_cpu": 11,
+            "cpu_affinity": {"requested": 11, "effective": [11]},
+            "inter_run_cooldown_seconds": 60.0,
+            "workload": workload,
+            "backend_identity": identity,
+            "samples": samples,
+            "summary": self.module.summarize_host_stability(
+                samples, expected_cpu=11, expected_identity=identity
+            ),
+            "reasons": [],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            record_path = Path(temporary) / "host-stability.json"
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            self.module._require_host_stability_gate(
+                record_path,
+                [workload],
+                identity,
+                11,
+                60.0,
+            )
+            record["status"] = "invalid"
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "not passing"):
+                self.module._require_host_stability_gate(
+                    record_path,
+                    [workload],
+                    identity,
+                    11,
+                    60.0,
+                )
+
     def test_replicated_anchor_group_aggregation_uses_log_median_and_mad(self):
         anchors = []
         for group_index, spec in enumerate(self.module._interleaved_anchor_v2_group_specs()):

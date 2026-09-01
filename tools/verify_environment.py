@@ -3180,7 +3180,10 @@ def _verify_replicated_anchor_v3_summary(
             for field in ("model", "slope", "intercept", "reference_throughput", "max_relative_residual", "rms_relative_residual", "valid"):
                 actual = recorded_global.get(field)
                 expected = global_model.get(field)
-                if isinstance(expected, (int, float)):
+                if isinstance(expected, bool):
+                    if actual is not expected:
+                        problems.append("{} v3 global diagnostic {} is invalid".format(record_dir, field))
+                elif isinstance(expected, (int, float)):
                     if (
                         not isinstance(actual, (int, float))
                         or isinstance(actual, bool)
@@ -3909,6 +3912,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
         ),
         ("rp2040-cpu-ab.schema.json", "picocalc.rp2040-cpu-ab"),
         ("rp2040-cpu-decision.schema.json", "picocalc.rp2040-cpu-decision"),
+        ("rp2040-cpu-host-stability.schema.json", "picocalc.rp2040-cpu-host-stability"),
     )
     schema_problems: List[str] = []
     schema_validators: Dict[str, Any] = {}

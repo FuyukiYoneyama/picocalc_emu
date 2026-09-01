@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/picocalc/rp2040-cpu-host-stability.schema.json",
+  "title": "PicoCalc RP2040 CPU host-stability sentinel",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "artifact_type", "record_id", "status",
+    "measurement_policy", "measurement_cpu", "cpu_affinity",
+    "inter_run_cooldown_seconds", "workload", "backend_identity", "samples",
+    "summary", "reasons"
+  ],
+  "properties": {
+    "schema_id": {"const": "picocalc.rp2040-cpu-host-stability"},
+    "schema_version": {"const": 1},
+    "artifact_type": {"const": "host-stability"},
+    "record_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["pass", "invalid"]},
+    "measurement_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method", "warmup_runs", "measured_runs", "inter_run_cooldown_seconds",
+        "adjacent_log_throughput_threshold", "relative_mad_threshold"
+      ],
+      "properties": {
+        "method": {"const": "host-stability-sentinel-v1"},
+        "warmup_runs": {"const": 2},
+        "measured_runs": {"const": 10},
+        "inter_run_cooldown_seconds": {"const": 60.0},
+        "adjacent_log_throughput_threshold": {"const": 0.02},
+        "relative_mad_threshold": {"const": 0.02}
+      }
+    },
+    "measurement_cpu": {"type": "integer", "minimum": 0},
+    "cpu_affinity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "effective"],
+      "properties": {
+        "requested": {"type": "integer", "minimum": 0},
+        "effective": {"type": "array", "const": [11]}
+      }
+    },
+    "inter_run_cooldown_seconds": {"const": 60.0},
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "firmware_sha256", "scenario_sha256", "contract_sha256"],
+      "properties": {
+        "id": {"const": "picotetris-opt1b-vrp5"},
+        "revision": {"type": "integer", "minimum": 1},
+        "firmware_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "scenario_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "backend_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit", "dirty", "runner_sha256", "feature_set", "build_provenance_sha256",
+        "role", "provenance_role"
+      ],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "dirty": {"const": false},
+        "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "feature_set": {"type": "array", "items": {"type": "string"}},
+        "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "role": {"const": "baseline_production"},
+        "provenance_role": {"const": "baseline_production"}
+      }
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sample_id", "protocol_elapsed_seconds", "throughput", "cycles", "wall_seconds",
+          "backend_commit", "runner_sha256", "build_provenance_sha256",
+          "host_snapshot_start", "host_snapshot_end"
+        ],
+        "properties": {
+          "sample_id": {"type": "string", "pattern": "^sentinel-[0-9]{3}$"},
+          "protocol_elapsed_seconds": {"type": "number", "exclusiveMinimum": 0},
+          "throughput": {"type": "number", "exclusiveMinimum": 0},
+          "cycles": {"type": "integer", "minimum": 1},
+          "wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+          "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "host_snapshot_start": {"type": "object"},
+          "host_snapshot_end": {"type": "object"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_count", "throughput_median", "median_log_throughput", "mad_log_throughput",
+        "scaled_mad", "relative_mad", "adjacent_abs_log_deltas",
+        "max_adjacent_abs_log_delta", "gates", "valid"
+      ],
+      "properties": {
+        "sample_count": {"const": 10},
+        "throughput_median": {"type": "number", "exclusiveMinimum": 0},
+        "median_log_throughput": {"type": "number"},
+        "mad_log_throughput": {"type": "number", "minimum": 0},
+        "scaled_mad": {"type": "number", "minimum": 0},
+        "relative_mad": {"type": "number", "minimum": 0},
+        "adjacent_abs_log_deltas": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"type": "number", "minimum": 0}},
+        "max_adjacent_abs_log_delta": {"type": "number", "minimum": 0},
+        "gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sample_count_valid", "relative_mad_valid", "adjacent_log_throughput_valid", "host_snapshot_valid", "identity_valid", "cpu_affinity_valid"],
+          "properties": {
+            "sample_count_valid": {"type": "boolean"},
+            "relative_mad_valid": {"type": "boolean"},
+            "adjacent_log_throughput_valid": {"type": "boolean"},
+            "host_snapshot_valid": {"type": "boolean"},
+            "identity_valid": {"type": "boolean"},
+            "cpu_affinity_valid": {"type": "boolean"}
+          }
+        },
+        "valid": {"type": "boolean"}
+      }
+    },
+    "reasons": {"type": "array", "items": {"type": "string"}}
+  }
+}
