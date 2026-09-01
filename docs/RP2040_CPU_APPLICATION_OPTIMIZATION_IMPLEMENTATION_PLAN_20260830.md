@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status (updated 2026-09-01 13:00 JST): P0-A1、P0-0、P0-B は完了。P0-A2 null-control は invalid のままで、host-stability v1/v2/v3 と CPU-time attribution の診断も完了したが、現 WSL host の実行速度安定性は不成立。P1-A/P2-A は実装・correctness・diagnostic profile を完了しているが、P1-A correctness は CPU 未記録、P2-A correctness/profile は CPU 1/0 のため、CPU 11 の production A/B 前に再取得が必要である。production A/B と性能採否は未開始であり、次の前提は安定 host または承認済みの実機相当環境である。同じ host での無目的な preflight 反復や A/B 起動は行わない。
+- Status (updated 2026-09-01 14:00 JST): P0-A1、P0-0、P0-B は完了。P0-A2 null-control、host-stability v1/v2/v3、CPU-time attribution は、既存の単一ゲスト・CPU 11固定・wall中心の測定経路を評価した記録として完了しているが、production A/B の採否証拠にはまだ使わない。`-jN` 型の並列負荷と混同していたため、現行 wall測定の解釈を修正し、CPU時間を主指標とする単一ゲスト測定、独立ゲスト並列のホストスケーリング診断、短い固定ブロック測定を追加する。P1-A/P2-A の実装・correctness・diagnostic profile は完了しているが、CPU identityを揃えた再取得と新測定契約での性能 A/B は未開始である。現 WSL の速度が不安定と断定して同じ長時間ループを繰り返さず、先に測定経路修正と短時間診断を閉じる。
 - Date: 2026-09-01
 - Review completed: 2026-08-31
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -23,10 +23,31 @@
 | P2 が最初から mutation-maintained summary を要求していた | まず既存状態を読む inline reject + cold arbitration の P2-A とし、summary は測定後の P2-B に分離した |
 | 一時 worktree と raw data の置き場所が運用ルールと不整合だった | 一つの `/tmp/picocalc-rp2040-cpu-opt.*` だけを使用し、共有 root 直下へ新規 directory を作らない |
 | 既存の合成 workload 測定が実アプリ採否に混ざり得た | 合成測定は仮説の方向付けだけとし、採否証拠から明示的に除外した |
+| `cargo -jN` と単一ゲスト A/B の CPU 使用率を同じものとして扱っていた | `-jN` は独立したコンパイル仕事を並列化する。単一ゲストの CPU 時間・wall 時間と、独立ゲストを複数同時実行する host-scaling を別契約に分離する |
+| WSL2 の論理 CPU affinity を物理コア占有と解釈していた | `--cpu 11` は Linux namespace 内の一つの vCPU へ絞る再現性指定であり、物理コア分離の証明ではない。WSL2 の vCPU/VM 条件を記録し、CPU11固定を単独の安定性根拠にしない |
+| wall-clock の子プロセス起動・待ちを CPU backend の速度と混同していた | harness 内の emulation interval CPU time を記録し、CPU-time throughput を主指標、wall throughput をエンドツーエンド副指標へ分ける。現行 `RUSAGE_CHILDREN` は補助診断として残す |
 
 この版で「実装開始可能」とは、まだ存在しない runner/schema を作る単位について、ファイル、CLI、schema、統計、テスト、完了条件が固定され、実装者が追加設計判断なしに着手できることを指す。実装順は `P0-A1 runner/tests → P0-0 admission → P0-A2 null-control protocol → P0-B profiler` とする。P0-B の counter-only instrumentation は null-control の wall-time 採否とは独立に開始できるが、P1 以降の候補実装・promotion は P0 の実測 gate を通った後だけにする。
 
 P0-A1 の runner、record/build-provenance schema、environment verifier、固定 fixture test は実装済みで、単体テストと target-schema 検証を通過した。runner は phase 間で同一 record root を再利用しつつ leaf を上書きせず、manifest の identity merge、既存 checksum の再検証と aggregate `SHA256SUMS`、role 別の実効 Cargo feature と build sidecar、decision の実行 identity、correctness gate、固定 40-run 条件、calibration invalid 記録を実装している。behavior trace は trace-only metadata と domain digest を fail-closed で検査する。P0-0 の実 workload admission は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/` として完了した。P0-A2 は同一 production runner を A/B に指定する null batch を四回完走させ、いずれも correctness、40 measured run、checksum、target-schema を満たした。最初の二 batch は pre/post host throughput drift が 14.68% と 3.668% で invalid、改訂 batch `rp2040-cpu-p0-null-20260831-04` は null-control の raw/host-corrected 効果と CI はすべて固定閾値内だったが、anchor-after-020 を含む anchor 最大残差が 4.3027% となり invalid、CPU 11 の batch `rp2040-cpu-p0-null-20260831-05` も null-control の raw/host-corrected 効果と CI はすべて固定閾値内だったが、anchor-post-003 の局所外れにより最大残差 4.5046% となり invalid である。第四 batch の `pre_post_relative_drift` は 1.5724% と2%未満だったため、pre/post差だけでは検出できない局所外れ値であることも確認した。従って runner、admission、schema、記録検証、null-effect計算は有効であり、未解決なのは長時間 host stability の単発 anchor 外れ値である。target-schema verifier は、このように個別 null-effect が pass でも calibration gate で invalid になった recordを正しく受け入れるよう修正し、37 checks と regression test が pass した。P0-A2 v2 は、5境界（pre、run 10/20/30直後、post）を各3回測定し、各境界の log-throughput median と scaled MAD（`1.4826 × MAD`）を保存する実装へ更新した。単発外れ値は中央値で吸収するが、各境界の relative MAD が2%を超える、集約5点の anchor residual が2%を超える、または anchor/identity/correctness/host条件が不成立なら新しい batch 全体を invalid とする。P0-B は backend commit `c123933423477b878a1dde8b1f80fb3d731bc8e3` へ counter-only instrumentation を実装し、profile、compile-out、production/behavior-trace correctness を完了した。さらに P1-A は runtime 実装を `2a9e8cf`、SRAM alias を含む正確性修正を `61f8bde`、provenance の feature 列挙を `6f8ce41` として完了した。P1-A の correctness record `rp2040-cpu-p1-a-correctness-20260831-02` は runtime が変わらない `61f8bde` の runner で guest projection/behavior trace を pass し、profile record `rp2040-cpu-p1-a-profile-20260831-02` は provenance 修正後の `6f8ce41` で有効な profile を保存している。`6f8ce41` は build.rs の feature-set 列挙だけを変更し、CPU runtime semantics は `61f8bde` と同一である。この identity 差を記録上明示し、速度向上の採否には profile を使わない。P0-B/P1-A は wall-time の採否を主張しないため、P2-A の実装開始条件は満たすが、P0-A2 の有効な v3 null-control と P1-A/P2-A の性能採否は別途必要である。
+
+### 0.1 測定経路の是正（2026-09-01）
+
+今回の診断で、従来の `ab` は `picocalc-run` を一つずつ `subprocess` 起動し、親側で `time.perf_counter_ns` を囲み、さらに `--cpu 11` で親と子を一つの Linux 可視 CPU へ固定していることを確認した。これは `cargo -jN` とは異なる。`-jN` は N 個の独立した compiler job を同時に走らせるため、ホスト全体の CPU 使用率が上がる。一方、通常の RP2040 guest は一つの決定的な実行列を逐次実行するので、同じ guest に `-jN` を指定して命令を並列化することはできない。
+
+従ってタスクマネージャーの全体 CPU 使用率が低いことだけから「CPU backend が空いている」「高速化余地がない」とは判断しない。12 論理 CPUの環境で一つの guest process を一つの CPUへ固定すれば、当該 CPU が飽和していても全体表示はおよそ 1/12 になり得る。逆に、同じ guest を複数プロセスで動かすと `-jN` に近いホストスケーリング測定になるが、それは一つのアプリの応答時間とは別の指標である。
+
+WSL2 は Linux kernel を軽量な utility VM 内で動かし、distribution 間で VM の CPU・memory・swap を共有する構成である（Microsoft の [WSL 概要](https://learn.microsoft.com/en-us/windows/wsl/about)）。`.wslconfig` の `processors` は VM に公開する vCPU 数を制御するが、設定変更後は `wsl --shutdown` が必要であり、作業中に自動変更しない（[WSL 設定](https://learn.microsoft.com/en-us/windows/wsl/wsl-config)）。Linux の `sched_setaffinity` で指定した CPU は vCPU identity として記録するだけで、物理コア・SMT sibling からの隔離を仮定しない。
+
+このため次の三つを同一 batch に混ぜない。
+
+1. **single-guest CPU speed**: 一つの実アプリ guest を serial path で実行し、harness の emulation interval CPU time と guest cycles の比を主指標にする。wall time は起動・I/O・スケジューリングを含む副指標として併記する。
+2. **single-guest end-to-end latency**: 同じ guest の wall time を UX/応答性の資料として保存する。CPU time と wall time の比が block 間で変わる場合、wall の候補効果を採用しない。
+3. **host throughput scaling**: 同じ固定 firmware/scenario を独立した K 個の `picocalc-run`（K=`1,2,4,8`、利用可能 vCPU 数を上限）として同時起動し、aggregate cycles/s、instance cycles/s、CPU time、wall time、実効 affinity を記録する。これは `-jN` に対応する診断であり、単一 guest の性能採否には使わない。
+
+既存 backend には `ExecutionModel::Threaded`（core0、core1、coordinator の worker runtime）があるが、現在の `picocalc-harness` は `Serial` 固定で `threading` feature を有効化していない。これは N 個の guest を起動する方式とは別の、RP2040 の二つの CPU core を正しく同期しながら host worker に分ける候補である。実アプリで guest projection/behavior trace を serial と完全一致させ、CPU-time と wall-time の両方で直接 A/B を行う専用 phase として扱う。threaded path が core1 を使わない workloadで利益を示さないことも有効な結果として保存する。
+
+従来の v1/v2/v3 null-control と CPU-time attribution は、この測定経路の診断証拠として immutable に保持する。これらの wall drift を host 全体の不安定性へ一律に帰属せず、次の `P0-A2-M` で in-process CPU accounting、affinity mode、並列負荷、短い block protocol を固定してから新 batch ID の null-control/A-B を開始する。
 
 P2-A の feature-on diagnostic profile `rp2040-cpu-p2-a-profile-20260831-01` は、両 workloadで `profile_valid=true`、overflowなし、aggregate/core/source conservation pass、no-candidate reject率 99.989%（PicoTetris）/99.943%（PicoEdit）を確認した。従って P2-A の診断内容自体は pass である。ただしこの profile の `measurement_cpu=0`、P2-A correctness の CPU は 1、P1-A correctness は CPU 未記録であり、P2-A の profile/correctness と P1-A の correctness が `ab --cpu` の CPU identity gate を満たさない。P1-A profile は診断専用で A/B admission には使わない。batch 05 は anchor stability gateでinvalidだったため、v3 null-controlがpassした場合にA/B採用CPU 11へ P1-A correctness、P2-A correctness、P2-A profileを揃えて取り直してから production A/Bを開始する。
 
@@ -157,8 +178,11 @@ Draft 2020-12 定義へ強化した。既存の schema version は維持し、�
 4. 高頻度命令の operand 再抽出と dispatch
 5. 分岐後の次命令検索
 6. host compiler が生成する hot path の品質
+7. Serial 固定では使っていない `ExecutionModel::Threaded` の core0/core1 並列実行
 
 過去の sequential cursor は、内部 hit を増やしても実アプリ全体で約 4.43% 回帰した。したがって、内部 counter の改善だけを成果とせず、必ずアプリ全体を測る。
+
+7 の threaded runtime は、独立 guest を複数起動する host throughput scaling とは異なり、一つの RP2040 guest の二つの CPU core を同期実行する候補である。core1 が halted の普通のアプリでは並列化余地がない可能性も含め、core0/core1 の実行割合を profile で記録し、serial correctness を満たす場合だけ CPU-time/wall-time A/B へ進む。
 
 compact dispatch key は過去の PicoTetris で約 4.15% 改善したが、当時の固定 5% 閾値だけを理由に採用されなかった。現在の backend で再測定し、小さい実改善を一律に捨てない。
 
@@ -307,18 +331,19 @@ handler group は相互排他的にし、未知 encoding は `other` へ入れ�
 3. production release、fat LTO、`codegen-units=1` を共通にする。
 4. `rustc -Vv`、`cargo -V`、linker、build command、environment、feature set を一致させる。
 5. executable、firmware BIN、runner、target contract、scenario の SHA-256 を記録する。
-6. 同一ホストの一つの logical CPU に `sched_setaffinity` で pin し、他の benchmark を並行実行しない。
+6. single-guest CPU-speed/latency の基準測定では、同一ホストの一つの Linux 可視 logical CPU に `sched_setaffinity` で pin し、他の benchmark を並行実行しない。これは vCPU identity の固定であり、物理コア占有を意味しない。host-throughput scaling はこの pin を使わず、K 個の独立 guest へ disjoint な affinity を割り当てるか、affinity なしで実効集合を記録する。
 7. workload/binary の各組合せを 1 回 warm-up し、集計から除外する。
 8. 各 workload で 10 pair、すなわち 20 measured run を実行する。奇数 pair は AB、偶数 pair は BA とし、合計は 5 AB + 5 BA とする。
 9. 二 workload 合計は 40 measured run である。pair ごとに workload 順も交互にして、片方だけが常に先にならないようにする。
 10. run ごとの結果を `run-001.json` から順に上書きせず保存する。
-11. 各 guest invocation の終了後に固定 60 秒の host-recovery cooldown を置く。cooldown は measured wall time に含めず、manifest、summary、decision の `measurement_policy` に記録する。値は結果を見て変更せず、変更時は新しい runner version と新しい batch ID を使う。
+11. 各 guest invocation の終了後に protocol で固定した cooldown を置く。cooldown は measured wall time に含めず、manifest、summary、decision の `measurement_policy` に記録する。現行の 60 秒は履歴値として保持し、`P0-A2-M` の短時間 pilot（0/5/15/60 秒）で process cleanup、CPU/wall 比、host snapshot の条件を先に比較してから、採用値を新しい runner version と新しい batch IDへ固定する。full A/B の結果を見て cooldown を変更しない。
 
 各 run で次を記録する。record の `host` snapshot には model、logical CPU 数、報告周波数中央値、load average、allowed CPU 集合、platform、kernel を保存し、manifest は開始時、summary/decision は完了時の snapshot とする。選択 CPU の affinity は設定直後に実効集合を再読し、要求値と一致しなければ measured run を開始せず失敗させる。
 
-- `time.perf_counter_ns` で runner process 全体を囲った wall-clock time
+- `time.perf_counter_ns` で runner process 全体を囲った wall-clock time（起動・初期化・終了・待ちを含むため副指標）
 - emulated cycles/second
-- host user/system CPU time
+- harness の emulation interval を `clock_gettime(CLOCK_PROCESS_CPUTIME_ID)` 相当で囲った process CPU time と `cycles / emulation_cpu_seconds`（single-guest CPU speed の主指標）
+- `RUSAGE_CHILDREN` の host user/system CPU time（上記 interval と突合する補助診断）
 - `RUSAGE_CHILDREN` の process-lifetime high-water mark としての maximum RSS（per-run delta と誤認しないよう `max_rss_scope=children_cumulative` を記録）
 - 取得可能なら host cycles、instructions、branches、branch misses、cache misses
 - stop reason と emulated cycle
@@ -327,17 +352,30 @@ host performance counter と sampling は補助指標であり、権限がない
 
 統計手順は最初の結果を見る前に次で固定する。
 
-- run throughput: `report.cycles / wall_seconds`
+- single-guest CPU throughput (主指標): `report.cycles / emulation_cpu_seconds`
+- single-guest end-to-end throughput (副指標): `report.cycles / wall_seconds`
 - pair effect: backend 順に関係なく `r_i = ln(candidate_throughput / baseline_throughput)`
 - workload の主効果: `exp(mean(r_i)) - 1` で表す geometric mean speedup
 - 95% CI: 分母 `n-1` の `sample_sd` を使い、`mean(r) ± 2.262157 * sample_sd(r) / sqrt(10)` を log 空間で計算し、`exp(x)-1` へ戻す
 - 記述統計: pair ごとの percent effect の median と IQR。10 値を昇順にし、下位5値/上位5値の各 median を Q1/Q3 とする
 - combined effect: 同じ pair index の二 workload の `r_i` を等重みで平均した 10 値に、同じ t 区間を適用する
-- 補助指標: wall time、guest instructions/second、host counter
+- 補助指標: CPU/wall 比、guest instructions/second、host counter。CPU/wall 比が block 間で2%を超えて変化する場合、wall の候補効果を採用せず host-wait regime として記録する。
 - 10 pair 終了後に run を恣意的に除外または追加しない。個別 run の再試行もしない。
 - OS update、thermal throttling、別プロセス負荷など事前定義した異常だけを batch 全体の無効理由にする。
 
-calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。既存記録は v1（pre×3、run 10/20/30直後×1、post×3）と v2（5境界×3、15 anchor）として固定保存する。現行 null-control は v3を使い、warm-up 後の pre、測定途中の run 5/10/15/20/25/30/35直後、測定後の post の9境界を各3回（計27 anchor）測定する。各境界で `median(log(throughput))` を集約値とし、elapsed も中央値とする。さらに `MAD = median(abs(log_i - median_log))`、`scaled_MAD = 1.4826 × MAD`、`relative_MAD = exp(scaled_MAD)-1` を保存し、各境界の relative MAD が2%以下であることを固定 gate とする。v3 は集約9点の log-throughput を隣接区間ごとに piecewise 線形補間し、global line は診断値として保存する。v3の local leave-one-group-out residual 最大値、pair raw-vs-corrected sensitivity、replicate欠落・重複、identity/provenance/correctness不一致、MAD超過、host snapshot/affinity不成立は batch 全体を invalid とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。
+### 5.4.1 P0-A2-M: CPU負荷形状・時間帰属・短時間ブロックの固定
+
+現行 v3 の 40 measured run + 27 anchor + 60秒 cooldown は、同じ guest を一つずつ起動する単一ゲスト測定としては長すぎ、`-jN` 型のホスト負荷も生成していない。次の順序で短い診断を実施し、full A/B の前に protocol を固定する。
+
+1. **in-process CPU accounting**: `picocalc-harness` の `run_loop` の開始直前・終了直後で process CPU clock を読み、report に `emulation_cpu_ns`、`emulation_wall_ns`、`cycles_per_emulation_cpu_second` を追加する。report generation、ファイル出力、subprocess 起動待ち、cooldown はこの区間へ含めない。既存 schema の互換性を壊す場合は schema version を上げ、旧 record は変換・上書きしない。
+2. **affinity mode diagnostic**: 同じ production executable/scenario を `pinned-vcpu`（現行 `--cpu 11`）と `inherited-set`（親の全許可 vCPU、子へ affinity を設定しない）の各3回で実行する。cycles、emulation CPU time、wall time、CPU/wall 比、`Cpus_allowed_list`、thread sibling、WSL/VM snapshot を保存する。これは採否でなく、CPU pin が見かけの低負荷・待ち時間を生んでいないかを分離する診断である。
+3. **parallel-instance scaling diagnostic**: 同じ固定 firmware/scenario を K=`1,2,4,8`（上限は実効 vCPU 数）個の独立 process として同時起動する。各 process は別の report/UART/snapshot directory を持ち、全 K が同じ guest projection/checksum になることを確認する。aggregate cycles/s、per-instance cycles/s、sum CPU seconds、batch wall seconds、実効 affinity、context switch/I/O counters を保存する。Kを増やして CPU 使用率が上がることは確認するが、この値を single-guest A/B の speedup として採用しない。
+4. **cooldown pilot**: cooldown 0/5/15/60秒を各3回、K=1 の短い同一 workload で比較する。選択規則は測定開始前に固定し、process cleanup（子の終了、temporary output、FD/RSS）、CPU/wall 比の群差、host snapshot の変化がすべて事前閾値内である最小値を採用する。該当値がない場合は cooldown を増やして隠さず、process isolation または host 条件を是正して新 protocol version にする。
+5. **block protocol**: 採用した cooldown と CPU accounting を用い、10 pair（5 AB + 5 BA、各 workload 20 measured run）は減らさず、pair index `(1,2) ... (9,10)` を5 block（各2 pair）へ固定分割する。各 block は pre/post PicoTetris anchor を各3回（計6）置き、block recordを独立保存する。block内で結果を選別せず、5 block の全10 pair log ratioを事前に定めた順序で結合し、df=9 の同じ t 区間を適用する。block境界の未観測期間を補間・外挿して候補効果を作らない。
+
+`P0-A2-M` の完了条件は、(a) single-guest report が emulation CPU time と wall time を別々に記録する、(b) pinned/inherited の両 modeで guest correctness/checksum が一致する、(c) K scaling が Kごとの独立出力と集計式を検証する、(d) cooldown値と5 block scheduleが結果を見る前に manifestへ固定される、の四つである。CPU-time null-control は single-guest 主指標に対して workload別絶対2%・combined絶対1%・95% CIが0を含む条件を維持する。host throughput scaling は別 record として保存し、候補 promotion の gateへ混ぜない。
+
+calibration は synthetic command ではなく、共通 baseline の PicoTetris scenario を使う。既存記録は v1（pre×3、run 10/20/30直後×1、post×3）と v2（5境界×3、15 anchor）として固定保存する。現行 null-control は v3を使い、warm-up 後の pre、測定途中の run 5/10/15/20/25/30/35直後、測定後の post の9境界を各3回（計27 anchor）測定する。各境界で `median(log(throughput))` を集約値とし、elapsed も中央値とする。さらに `MAD = median(abs(log_i - median_log))`、`scaled_MAD = 1.4826 × MAD`、`relative_MAD = exp(scaled_MAD)-1` を保存し、各境界の relative MAD が2%以下であることを固定 gate とする。v3 は集約9点の log-throughput を隣接区間ごとに piecewise 線形補間し、global line は診断値として保存する。v3の local leave-one-group-out residual 最大値、pair raw-vs-corrected sensitivity、replicate欠落・重複、identity/provenance/correctness不一致、MAD超過、host snapshot/affinity不成立は batch 全体を invalid とする。calibration run は候補効果へ含めない。無効 batch に run を継ぎ足さず、新 batch ID で warm-up から全体を取り直す。`P0-A2-M` 後の新 protocol は、v3の27 anchor固定をそのまま再利用せず、5 block の pre/post anchor（計30）と採用cooldownを新しい calibration method/version として記録する。
 
 専用 runner の固定 CLI は次とする。`--target` と `--firmware` は同じ順で二回指定する。候補 feature を評価するときは、実際の feature 名ごとに `--feature-set <candidate-feature>` を追加する。P0-A2 null-control だけは `--candidate-id P0-A2 --final-report-only` を必須とし、同一の production runner path を baseline/candidate の両方へ渡す。
 
@@ -532,10 +570,10 @@ v1の単発隣接差分を結果後に緩和しないため、次の `P0-A2-HS-v
 この段階の v3 host diagnostics は、追加 snapshot の完全性と fail-closed 動作を検証済みである。実測結果は次の更新段落に固定する。
 
 v3 実測は `stability-preflight --protocol-version 3` を使い、v2と同じ baseline runner、CPU 11、workload、admission record、60秒 cooldownを渡す。出力は `/tmp/picocalc-rp2040-cpu-host-stability-YYYYMMDD-NN.json` に保存し、passしない場合は新しい protocol versionまたは host条件是正なしに v3/v4本測定を起動しない。
-更新（2026-09-01 12:00 JST）: `rp2040-cpu-host-stability-20260901-04` は v3 の12測定を完走した。diagnostics/snapshot/identity/CPU affinity は passしたが、全体 relative MAD 2.0868%、group 1→2 の隣接群中央値差分2.2910%で固定2% gateにより invalid となった。CPU pressure、`/proc/stat` steal、cgroup `nr_throttled`、scheduler policyは全sampleで変化せず、公開host countersでは throughput drift を説明できなかった。次の一回限りの短時間診断では run_guest の user/system CPU時間を保存し、wall-time driftがCPU実行時間にも現れるかを確認する。結果を見て閾値を変えず、CPU時間も不安定ならこのhostではA/Bを採用せず、安定host/実機へ切り替える。
+更新（2026-09-01 12:00 JST、履歴）: `rp2040-cpu-host-stability-20260901-04` は v3 の12測定を完走した。diagnostics/snapshot/identity/CPU affinity は passしたが、全体 relative MAD 2.0868%、group 1→2 の隣接群中央値差分2.2910%で固定2% gateにより invalid となった。CPU pressure、`/proc/stat` steal、cgroup `nr_throttled`、scheduler policyは全sampleで変化せず、公開host countersでは throughput drift を説明できなかった。続く CPU-time attribution も CPU-time relative MAD 4.5002%、wall relative MAD 5.4821%となったが、これは単一ゲスト・子プロセス全体の診断であり、emulation interval の主指標ではない。従来 protocol の invalid record は保存し、新しい測定経路で再取得する。
 `cpu-time-diagnostic` を追加した。warm-up 1＋測定4、CPU 11、同一 baseline、60秒 cooldownで `host_usage_delta.user_seconds/system_seconds`、wall時間、cyclesから `cycles_per_cpu_second`（主診断）と `cycles_per_wall_second`（副診断）を同一 recordへ保存する。これは candidate promotionやA/B採否の gateではなく、wall driftがCPU実行時間に現れるかを一回だけ確認するための診断である。対象 runner unit test 49/49 と全体テスト更新後に実測する。
 更新（2026-09-01 13:00 JST）: `rp2040-cpu-time-attribution-20260901-01` は4測定を完走し、record completeness/identity/affinityは passした。wall throughput relative MAD は5.4821%、CPU-time throughput relative MAD は4.5002%、CPU/wall比 relative MAD は0.3602%だった。CPU時間側も4.5%変動しており、公開host counterの変化なしと合わせて、現WSL hostでは実行速度の安定性を説明できない。`chrt -f 1` は権限不足で使用できなかった。この host で production A/B を起動せず、安定hostまたは実機相当の承認済み環境を外部前提とする。
-現行方針（2026-09-01 13:00 JST）: 上記 v1/v2/v3 の host-stability preflight と CPU-time attribution は、現 WSL host が production A/B を受け入れられるかを判定する診断として完了した。いずれも固定 gate を満たさなかったため、同じ host 条件での追加 preflight、P0-A2 null-control、P1-A/P2-A production A/B は開始しない。次に必要なのは、CPU 11 affinity、同一 baseline、同一 runner identity、診断 snapshot を記録できる安定 host または承認済み実機相当環境を確保し、新しい batch ID で最初から測定することである。これは P1-A/P2-A の実装欠陥を示すものではなく、速度差を帰属できる測定環境が未成立という意味である。
+現行方針（2026-09-01 14:00 JST）: 上記 v1/v2/v3 の host-stability preflight と CPU-time attribution は、旧来の単一ゲスト・CPU 11固定・wall中心経路の診断として完了した。いずれも固定 gateを満たさなかった記録は immutable に保持するが、それだけで現 WSL hostを production A/B 不可と断定しない。まず `P0-A2-M` で in-process emulation CPU time、pinned/inherited affinity、K=`1,2,4,8` の独立ゲスト scaling、cooldown pilot、5 block scheduleを実装・短時間検証する。新しい null-control は CPU-time主指標、wall副指標で実行し、その結果を見て初めて host条件と候補効果を帰属する。P1-A/P2-A production A/B は測定経路修正と CPU identityを揃えた correctness/profile が完了するまで開始しない。
 
 #### P0-B: 最小 CPU application profiler
 
@@ -786,6 +824,32 @@ cargo test --locked -p picocalc-harness --features pending-exception-fast-reject
 - P0-B の `reject_no_candidate / polls` が 90% 未満なら P2-A を開始しない。開始しなかった事実と profile 値を decision record に残す。
 - feature-on diagnostic profileで `reject_no_candidate` と `polls` が正しく記録され、二つの実アプリで correctness と production A/B を完了する。
 
+### P2-T. RP2040 dual-core threaded execution の実アプリ評価
+
+`rp2040-emu` には `ExecutionModel::Threaded` の worker runtime があるが、現行 `picocalc-harness` は
+`ExecutionModel::Serial` 固定で、`threading` feature を production runnerへ転送していない。これは
+`-jN` のように同じ guest を複製する測定ではなく、一つの RP2040 guest の core0/core1 を同期境界で
+別 host workerへ分ける CPU 実行候補である。
+
+#### 実装・検証
+
+- harness に `--execution-model serial|threaded` を追加し、production/trace/profile の manifest、report、build provenance に実効値を記録する。既定値は `serial` のままにする。
+- `threading` feature がない build、非対応 host、worker 数不足、barrier timeout、worker panic は起動時または run 中に fail-closed とする。既存 Serial path の report bytes と guest semantics を変更しない。
+- serial を correctness oracle とし、PicoTetris r10、PicoEdit r4 の guest observation projection、behavior trace、UART/framebuffer/audio digest、stop reason、cycles を一致させる。core1 を明示的に wake する既存 multicore fixture も追加し、core1 halted の普通のアプリだけで安全性を判断しない。
+- threaded が core1 を使わない普通のアプリでは、並列化の効果がゼロまたは負になる結果もそのまま記録する。効果を出すために guest instruction の順序・clock semantics・peripheral ordering を緩めない。
+
+#### 効果測定
+
+- `P0-A2-M` の single-guest CPU-time throughput を主指標とし、serial/threaded を同じ workload、firmware、scenario、pair schedule、cooldown、host snapshot で比較する。
+- CPU-time の workload別絶対2%・combined絶対1%・95% CI gate、wall-time の二次表示、CPU/wall 比、workerごとの CPU time/待ち時間を保存する。threaded の barrier待ちが多い場合は「高速化なし」として閉じ、serial結果を捨てない。
+- host-throughput scaling の K=`1,2,4,8` は P2-T A/B と別 record にし、threaded single-guest の採否へ混ぜない。
+
+#### 完了条件
+
+- Serial oracle と Threaded の二 workload + core1-active fixture correctness が pass する。
+- `--execution-model`、feature provenance、worker failure、CPU-time/wall-time attribution の unit/integration test が通る。
+- 新しい null-control と固定5-block scheduleの下で、Threaded の CPU-time A/B、wall-time A/B、scaling診断を完了し、改善・同等・回帰のいずれでも decision record を閉じる。
+
 ### P3. host 向け build 最適化と PGO
 
 アルゴリズムを変えずに host compiler が CPU hot path を最適化できる余地を測る。
@@ -939,6 +1003,8 @@ P8 の各候補も、通常フェーズと同じ correctness と 10-pair A/B を
 
 ## 7. 採否規則
 
+通常の single-guest CPU backend 候補は、`emulation_cpu_seconds` に基づく throughput を主指標として以下を適用する。`wall_seconds` は end-to-end latency の副指標であり、CPU/wall 比が block 間で変動した場合は wall の改善だけで採用しない。K 個の独立 guest による host-throughput scaling は別診断であり、single-guest の combined effect や promotion gateへ混ぜない。
+
 候補ごとに次の順で判断する。
 
 1. correctness 不一致: 即時不採用。原因を記録して feature を既定無効にする。
@@ -965,8 +1031,9 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 - host CPU、OS、kernel、compiler、linker
 - build command と environment
 - profile counter の前後差
-- workload ごと 10 pair、合計 40 measured run の全 raw measurement
+- workload ごと 10 pair、合計 40 measured run の全 raw measurement（emulation CPU time、wall time、CPU/wall 比、affinity を含む）
 - workload 別/combined の geometric mean effect、median、IQR、95% CI
+- host-throughput scaling を実施した場合は K 別 aggregate/per-instance throughput と single-guest A/B から分離した decision
 - correctness digest の比較
 - binary size、maximum RSS
 - 採用、不採用、bank の判断と理由
@@ -1023,21 +1090,23 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 |---:|---|---|
 | 1 | P0-A1 runner/schema implementation | Python unit test、schema fixture verification |
 | 2 | P0-0 common baseline admission | 二 workload の admission、baseline manifest |
-| 3 | P0-A2-HS host-stability preflight | common-baseline v2 sentinel 12回（3回×4群）、各回の throughput/raw差分/host snapshot/identity、2% stability gate、失敗時は本番A/Bを起動しない診断 record |
-| 3a | P0-A2-HS-v3 host diagnostics | v2 invalid後の CPU pressure/steal/scheduler snapshot、固定2% grouped gate、host drift帰属 record |
-| 3b | CPU-time attribution diagnostic | run_guest user/system CPU時間、wall時間、cyclesを同一sampleへ保存し、wall driftと実行時間 driftを分離した record |
-| 4 | P0-A2 null batch | v3 replicated calibration（9境界×3=27、median/MAD、piecewise log knot、local residual）、40-run null record、environment verification |
+| 3 | P0-A2-M measurement-path correction | in-process emulation CPU time、pinned/inherited affinity比較、K=`1,2,4,8` host-scaling診断、cooldown pilot、5 block scheduleをunit/schemaへ固定 |
+| 3a | P0-A2-HS host-stability preflight | 新 protocol の短時間 sentinel、CPU-time/wall-time/CPU-wait帰属、各回の host snapshot/identity、固定 gate、失敗時は本番A/Bを起動しない診断 record |
+| 3b | P0-A2-HS-v3 historical diagnostics | 既存 v3 invalid後の CPU pressure/steal/scheduler snapshot と host drift帰属 record（再利用・再解釈はしない） |
+| 3c | CPU-time attribution historical diagnostic | 既存 run_guest user/system CPU時間、wall時間、cyclesを同一sampleへ保存した immutable record（新主指標とは別） |
+| 4 | P0-A2 null batch | 新しい短時間 block protocol の replicated calibration、10 pair/2 workload の全40 run、CPU-time主統計、wall副統計、environment verification |
 | 5 | P0-B minimal profiler | profile schema、二 workload profile、disassembly proof |
 | 6 | P1-A tag guard | 実装、単独 profile、correctness は完了。null-control pass 後に、A/B CPU と一致する correctness を取り直してから 10-pair/workload A/B、decision |
 | 7 | P1-B executable page | 開始 gate、単独・P1 combined 実アプリ A/B、decision |
 | 8 | P2-A exception fast reject | 開始 gate、IRQ correctness、feature-on diagnostic profile（poll/source conservation）を完了。null-control pass 後に A/B CPU と一致する correctness/profile を取り直し、その後 10-pair/workload A/B、decision |
-| 9 | P3 native/PGO | build matrix、holdout A/B、配布条件 |
-| 10 | P4 compact dispatch | 現行 backend での再評価記録 |
-| 11 | P5 cache geometry | working-set 根拠、候補別 A/B |
-| 12 | P6 predecoded micro-op | handler 単位の累積 A/B |
-| 13 | P7 branch linking | link counter、correctness、実アプリ A/B |
-| 14 | P8 data-driven candidates | 個別 HLD、correctness、A/B |
-| 15 | production candidate | 全採用候補を組み合わせた最終 A/B |
+| 9 | P2-T threaded execution | `ExecutionModel::Threaded` の実アプリ correctness、CPU-time/wall-time A/B、core1-active fixture、scaling診断 |
+| 10 | P3 native/PGO | build matrix、holdout A/B、配布条件 |
+| 11 | P4 compact dispatch | 現行 backend での再評価記録 |
+| 12 | P5 cache geometry | working-set 根拠、候補別 A/B |
+| 13 | P6 predecoded micro-op | handler 単位の累積 A/B |
+| 14 | P7 branch linking | link counter、correctness、実アプリ A/B |
+| 15 | P8 data-driven candidates | 個別 HLD、correctness、A/B |
+| 16 | production candidate | 全採用候補を組み合わせた最終 A/B |
 
 最終報告では、単独候補の改善率を足し算して総効果を推定しない。実際に組み合わせた一つの production candidate を、同じ二つの実アプリで baseline と直接比較した値だけを最終効果とする。
 
@@ -1055,13 +1124,15 @@ P1-B は executable-page filter 用 counter が未取得のため判定不能で
 |---|---|---|---|
 | P0-A1 | schema/runner unit test | CLI、schema fixture、統計、projection test が通る | 実 workload を走らせず runner を修正 |
 | P0-0 | 二 target contract、共通 commit | 二 workload の guest acceptance と2回 determinism | 共通 commit 選定または新 target revision。候補実装停止 |
-| P0-A2-HS | common-baseline runner、CPU 11、production sidecar | v2 sentinel 12回を3回×4群で集約し、全体/各群 relative MAD と隣接群中央値 log差分が各2%以下、raw差分・host snapshot/identity/affinityを保存 | 本番40-runを起動せず raw sentinel を保存し、host条件を是正して新 protocol version |
-| P0-A2-HS-v3 | v2 invalid record、CPU 11、同一 baseline | CPU pressure/steal/scheduler snapshotを追加し、v2 grouped MAD・群中央値差分の固定2% gateと観測値の帰属を再計算 | 本番40-runを起動せず raw diagnosticsを保存し、host条件または実行経路を是正 |
-| P0-A2 | admitted baseline | v3 null batch/calibration が完全記録され、9境界×3 replicate の relative MAD、leave-one-group-out local residual、pair sensitivity が各2%以下で、raw/corrected null effect/CI gateも通る | 閾値を緩和せず、replicate外れ値/局所host軌跡/host条件を切り分けて新 batch ID で全体再実行 |
+| P0-A2-M | admitted baseline、既存 runner/harness | in-process CPU time、pinned/inherited mode、K=`1,2,4,8` scaling、cooldown選択規則、5 block scheduleの schema/unit test と短時間実測を完了 | full A/Bを起動せず、測定経路または実行モデルを修正し、新 protocol versionへ |
+| P0-A2-HS | common-baseline runner、選択した affinity mode/cooldown | 新 protocol の短時間 sentinelで CPU-time/wall-time/CPU-wait帰属、host snapshot/identity/affinity と固定 gateを保存 | 本番40-runを起動せず raw sentinelを保存し、測定経路またはhost条件を是正 |
+| P0-A2-HS-v3 | 既存 invalid record、CPU 11、同一 baseline | CPU pressure/steal/scheduler snapshotを追加した historical diagnostics（新 A/B gateへ接続しない） | raw diagnosticsを保存し、観測値の帰属を保留 |
+| P0-A2 | admitted baseline | 新しい短時間 block protocolで CPU-time主統計、wall副統計、全10 pair/2 workload、anchor dispersion/local residual、raw/corrected null effect/CI gateが通る | 閾値を緩和せず、block単位で原因を保存し、新 batch IDで全体再実行 |
 | P0-B | admitted baseline（counter-only実装はP0-A2 pass前に開始可） | counter invariant と compile-out proof | profiler 修正。P1/P2停止 |
 | P1-A | `unrelated_would_clear > 0` | runtime implementation、profile、correctness pass は完了。valid null-control 後に A/B record 完了 | event 0なら未実装、mismatchなら不採用 |
 | P1-B | profile-only `non_executable_sram_write_requests`、workload別 ratio、等重み combined ratio 1%以上、P1-A decision | correctness pass、単独/combined A/B | counter欠落・分母0・ratio未達なら見送り |
 | P2-A | no-candidate reject率 90%以上、`cpu-application-profiler,pending-exception-fast-reject` profile、aggregate/core poll/source conservation | correctness pass、diagnostic profile検証、A/B record 完了 | 未達・式不一致なら見送り |
+| P2-T | `threading` runtime、serial oracle、core1-active fixture | serial/threaded correctness pass、CPU-time/wall-time A/B と worker diagnostics を完了 | worker failure、semantics mismatch、CPU-time回帰なら既定 Serialを維持 |
 | 各 production 候補 | candidate decision | §7 final rule | productionへ統合しない |
 
 ## 11. 実装ファイルと検証コマンド
@@ -1087,6 +1158,8 @@ P0-A1 は backend hot path を変更しない。ここが最初の実装単位�
 | P1-A | `rp2040-emu/src/core/mod.rs`、`src/tests.rs`、両 Cargo manifest |
 | P1-B | `rp2040-emu/src/bus/mod.rs`、`core/decode.rs`、`lib.rs`、`src/tests.rs`、`tests/multicore.rs`、両 Cargo manifest |
 | P2-A | `rp2040-emu/src/core/mod.rs`、`core/exceptions.rs` の test、`src/tests.rs`、両 Cargo manifest、`picocalc-harness/build.rs` |
+| P0-A2-M | `picocalc-harness/src/main.rs`（emulation CPU clock/report、`--execution-model`）、`picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py`（affinity mode、parallel-instance scaling、5 block orchestration）、両 record schema、`tests/test_benchmark_rp2040_cpu_candidate.py` |
+| P2-T | `rp2040-emu/src/lib.rs`/`threaded/*` の既存 runtime wiring、`picocalc-harness/src/main.rs`、両 Cargo manifest、serial/threaded correctness fixture |
 
 backend 共通回帰 command:
 
@@ -1102,6 +1175,27 @@ cargo build --locked --release -p picocalc-harness --bin picocalc-run
 ```
 
 実機 silicon oracle は既存正確性証拠を変更する候補で別途必要性を判断する。本計画の性能測定は USB/実機操作を含まず、P0/P1-A の開始を実機接続に依存させない。
+
+P0-A2-M の短時間 verification command は次のとおりとする。`--load-shape` は実装時に固定する
+diagnostic subcommandであり、通常の `ab` の採否統計へ追加しない。
+
+```bash
+python3 tools/benchmark_rp2040_cpu_candidate.py load-shape \
+  --backend "$RP2040_CPU_OPT_TMP/backend-baseline" \
+  --runner "$RP2040_CPU_OPT_TMP/build/baseline-production/release/picocalc-run" \
+  --target picotetris-opt1b-vrp5 --firmware /absolute/path/PicoTetris.bin \
+  --target picoedit-r1-vrp2f --firmware /absolute/path/picocalc_app.bin \
+  --affinity-mode both --cpu 11 --instances 1,2,4,8 \
+  --cooldown-pilot 0,5,15,60 --admission-record firmware-validation/records/rp2040-cpu-p0-baseline-YYYYMMDD-NN \
+  --batch-id rp2040-cpu-load-shape-YYYYMMDD-NN \
+  --output firmware-validation/records/rp2040-cpu-load-shape-YYYYMMDD-NN
+```
+
+`load-shape` の `both` は、K=1を `pinned-vcpu`（`--cpu 11`）と `inherited-set` の両方で測り、
+K>1を `inherited-set`（または各 childへ重複しない vCPU setを割り当てる mode）で測る固定展開とする。
+実装前は上記 command を起動しない。まず in-process report field、個数不一致・affinity mode・
+独立 output directory の unit test と schema verifierを通し、短時間の K=1/2/4/8 probeを一回の
+recordへ保存する。full null-control/A-B の開始条件はこの recordの存在ではなく、`P0-A2-M` の全完了条件である。
 
 ## 12. 実装開始手順
 
@@ -1122,8 +1216,8 @@ git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
 ```
 
-P0-A1 の runner/schema/provenance 実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の旧 null batchは各40 run、correctness、checksum、target-schemaを完了し、host driftまたは anchor residualにより invalid となった。`rp2040-cpu-p0-null-v3-20260901-02` も40 run、27 anchor、correctness、checksum、target-schemaを完了したが、host regime shiftにより local residual 34.0891%、group dispersion、pair sensitivity 12.3076%、PicoTetris corrected null-effect 2.5523%で invalidとなった。v3 calibration protocol（9境界×3 replicate、27 anchor、piecewise log knot、local residual、各2% gate）は runner/schema/verifier/unit test へ実装済みであり、次は `P0-A2-HS` preflightを追加してから新 batch IDで同条件を再実行する。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了しているが、既存 correctness record は CPU 未記録であり、CPU 11 の production A/B 前に correctness を取り直す必要がある。既存 P1-A profile は診断専用で A/B admission には使わない。P2-A は `ba93c1f` で実装・feature test・両 workload correctness（`rp2040-cpu-p2-a-correctness-20260831-01`）と feature-on diagnostic profile（`rp2040-cpu-p2-a-profile-20260831-01`）を完了した。profile の feature provenance、aggregate/core の poll/source conservation 式、no-candidate reject率 99.989%/99.943% は pass であるが、既存 correctness/profile record の CPU は 1/0 であり、CPU 11 の production A/B 前に両方を取り直す必要がある。新しい null-control が passした場合は、CPU 11 で P1-A correctness、P2-A correctness、P2-A profile を揃え、その pass record を pointer gate で検証してから P1-A/P2-A の production 10-pair A/B を実施する。
-P0-A2-HS は v1の10測定 sentinelを完了し、raw隣接差分3.9720%でinvalidとなったため、既存結果を再利用せず protocol v2へ更新した。v2は12測定を3回×4群で集約し、grouped MADと隣接群中央値を固定2% gateで再計算する。v2 preflight recordがpassするまで、v3/v4のnull-control A/Bは実行しない。
+P0-A1 の runner/schema/provenance 実装、unit test、baseline production build、P0-0 admission は完了済みである。P0-A2 の旧 null batchは各40 run、correctness、checksum、target-schemaを完了し、host driftまたは anchor residualにより invalid となった。`rp2040-cpu-p0-null-v3-20260901-02` も40 run、27 anchor、correctness、checksum、target-schemaを完了したが、単一ゲスト・CPU 11固定・wall中心の旧測定経路で local residual 34.0891%、group dispersion、pair sensitivity 12.3076%、PicoTetris corrected null-effect 2.5523%となったため invalidである。これらは immutable な診断証拠であり、新しい主指標へ再解釈しない。P0-B counter-only profiler は実装・profile・compile-out・correctness まで完了し、profile の `unrelated_would_clear > 0` と no-candidate reject率 90%以上により P1-A/P2-A の実装開始条件を満たした。P1-A は runtime 実装、SRAM alias を含む correctness、diagnostic profile、profile-comparison schema/verifier まで完了しているが、既存 correctness record は CPU 未記録であり、CPU identityを揃えた correctnessを取り直す必要がある。既存 P1-A profile は診断専用で A/B admission には使わない。P2-A は `ba93c1f` で実装・feature test・両 workload correctness（`rp2040-cpu-p2-a-correctness-20260831-01`）と feature-on diagnostic profile（`rp2040-cpu-p2-a-profile-20260831-01`）を完了した。profile の feature provenance、aggregate/core の poll/source conservation 式、no-candidate reject率 99.989%/99.943% は pass であるが、既存 correctness/profile record の CPU は 1/0 であり、次の性能測定契約へ接続する前に再取得する必要がある。新しい null-control が passした場合は、選択した affinity modeで P1-A correctness、P2-A correctness、P2-A profile を揃え、その pass record を pointer gate で検証してから production A/B を実施する。
+P0-A2-HS は v1/v2/v3 sentinelを完了し、すべて固定2% gateでinvalidとなった。CPU pressure/steal/scheduler snapshotは変化しなかったが、これは旧 wall経路の帰属が不成立だったことを示すだけで、WSL host全体を一律に不可と断定する根拠にはしない。次工程は `P0-A2-M` の in-process CPU accounting、pinned/inherited affinity比較、K=`1,2,4,8` scaling診断、cooldown pilot、5 block scheduleの実装・短時間検証である。
 
 候補 worktree で commit を作る場合は commit hash を即座に manifest/decision 下書きへ記録し、一時 directory の削除で参照を失わない branch または tag へ保持する。実装成果を既存 checkout へ統合する操作、commit、push は本計画の作成作業には含めない。
 
@@ -1133,12 +1227,11 @@ P0-A2-HS は v1の10測定 sentinelを完了し、raw隣接差分3.9720%でinval
 - output overwrite、dirty backend、identity mismatch を run 前に拒否する。
 - baseline production runner を明示した `CARGO_TARGET_DIR` に build 済みである。
 - common baseline が二 workload に admission され、record と verifier が pass する。
-- null batch と calibration が machine-readable record として検証される（旧 batchは host driftまたは anchor residualによる invalid の証拠として保存済み。v2 `rp2040-cpu-p0-null-v2-20260831-02` は global residual 5.1743%で invalid、v3 `rp2040-cpu-p0-null-v3-20260901-02` は40 run/27 anchor、local residual 34.0891%、group dispersion、pair sensitivity 12.3076%、PicoTetris corrected null-effect 2.5523%で invalid）。v3 record の correctness/checksum/target-schema と verifier 37/37 checks、全体 unit test 220/220 は完了している。次工程は閾値を変えない `P0-A2-HS` host-stability preflight と、新 batch IDでのv3再測定である。
-- `P0-A2-HS` の v1 sentinelは10測定を完走したが固定2% raw隣接差分gateでinvalid。v2 grouped sentinel（12測定、3回×4群、全体/群内MAD・隣接群中央値gate）の実装、schema、v1/v2 pointer dispatch、gate理由、fixture testは完了し、対象 unit test 47/47 と target-schema 37/37 を通過している。次工程は新v2 preflight実測であり、pass後にだけ新batchのv3 null-controlを起動する。
-- v3 host diagnostics 追加後の全体 unit test は 221/221、対象 runner unit test は 48/48、target-schema は 37/37 で passしている。v2 sentinel `rp2040-cpu-host-stability-20260901-03` は group 3→4 drift 3.4183%で invalid のまま保持し、次は `P0-A2-HS-v3` の新 batch 実測である。
+- null batch と calibration が machine-readable record として検証される（旧 batchは host driftまたは anchor residualによる invalid の証拠として保存済み。v2 `rp2040-cpu-p0-null-v2-20260831-02` は global residual 5.1743%で invalid、v3 `rp2040-cpu-p0-null-v3-20260901-02` は40 run/27 anchor、local residual 34.0891%、group dispersion、pair sensitivity 12.3076%、PicoTetris corrected null-effect 2.5523%で invalid）。旧 record の correctness/checksum/target-schema と verifier は完了している。次工程は、旧結果を再利用せず `P0-A2-M` の測定経路を実装・検証することである。
+- `P0-A2-HS` の v1/v2/v3 sentinel は、旧 wall中心経路の診断として保存済みである。新しい preflight は in-process CPU time、CPU/wall比、affinity mode、WSL snapshot、短い固定blockを対象にし、同じ5時間 protocolを再実行しない。
 - P0-B counter-only profiler、profile、compile-out、profiler-OFF correctness は完了済みである。P1-A full-tag guard は runtime commit `61f8bde`（provenance 列挙の follow-up `6f8ce41`）で実装・profile・correctness を完了したが、既存 correctness record の CPU は未記録であり、production A/B の CPU 11 と一致する correctness を取り直す必要がある。既存 P1-A profile は診断専用で A/B admission には使わない。P2-A exception fast reject は `ba93c1f` で実装・feature test・correctness・feature-on diagnostic profile（`rp2040-cpu-p2-a-profile-20260831-01`、aggregate/core/source conservation、no-candidate reject率 99.989%/99.943%）を完了したが、既存 correctness/profile の CPU は 1/0 である。次工程は anchor stability 原因を切り分けた有効 null-control、その後 CPU 11 で P1-A correctness、P2-A correctness、P2-A profile を取り直し、各 pass record の CPU identity を pointer gate で検証してから P1-A/P2-A production 10-pair A/B の順で進める。profile の wall-time 採否と P1/P2 の production promotion は、有効 null-control と correctness/A-B 記録の完了後に行う。P1-B は executable-page filter counter の profile-only 拡張と定義済み ratio gate が先である。使用 commit/target revision は各 `manifest.json` に固定する。
 
 - 現行の検証件数は対象 runner unit test 49/49、全体 unit test 222/222、target-schema 37/37 である。DoD の旧行に残る 47/47、48/48、220/220、221/221 は実装途中の履歴値であり、現行判定には使わない。
-- host-stability v1/v2/v3 と CPU-time attribution の raw record は、現 WSL host が production A/B の安定性 gate を満たさないことの診断証拠として保存済みである。P0-A2、P1-A/P2-A production A/B、performance acceptance は未完了であり、安定 host または承認済み実機相当環境が確保されるまで同じ host で再実行しない。
+- host-stability v1/v2/v3 と CPU-time attribution の raw record は、旧単一ゲスト wall経路の診断証拠として保存済みである。P0-A2、P1-A/P2-A production A/B、performance acceptance は未完了であり、`P0-A2-M` と新CPU-time主指標の null-controlを完了するまで production A/Bを開始しない。外部hostやWSL設定を変更する場合は、設定変更・`wsl --shutdown`を人間の承認を得て別手順で行う。
 
 この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・診断計測を閉じ、次に有効 null-control 下の production 効果測定へ進める。
