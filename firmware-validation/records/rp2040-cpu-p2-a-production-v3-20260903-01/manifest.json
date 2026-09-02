@@ -1,0 +1,219 @@
+{
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154"
+    },
+    "baseline_trace": {
+      "build_provenance_sha256": "c96f59da790bfabcd4be6fc15d84310b69cdc7a1d55421982bd3d01767f70194",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_trace",
+      "role": "baseline_trace",
+      "runner_sha256": "3b0db78069d20f63618417fc1b0aaf219f92c669293a25eae8a0c41c9580f65a"
+    },
+    "candidate_production": {
+      "build_provenance_sha256": "0acfebc0a986d7c538ab9dfb6a290bc4ab13f0feccec4c50cff0ab4fcb9bfc5c",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "pending-exception-fast-reject",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_production",
+      "role": "candidate_production",
+      "runner_sha256": "61d95d7b61b0342df02de0f4b8678dae7cd5e62d9868c747ee5c4d12c43f93e5"
+    },
+    "candidate_trace": {
+      "build_provenance_sha256": "7c9959607d05daf92d36d49593bc13221d1a75c98e360ae4a392f9a809935c7e",
+      "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "pending-exception-fast-reject",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_trace",
+      "role": "candidate_trace",
+      "runner_sha256": "748ca90c7150b8a294518041090a731666a2c2f6e9aba8c66ced701c4f95d59a"
+    }
+  },
+  "candidate_id": "P2-A",
+  "diagnostic_profile_record": "rp2040-cpu-p2-a-profile-20260901-02",
+  "feature_set": [
+    "behavior-trace",
+    "pending-exception-fast-reject",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 94480000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 7988996000,
+      "throttled_usec": 0,
+      "usage_usec": 228185424000,
+      "user_usec": 220196428000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 19267734536.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.154296875,
+      0.236328125,
+      0.51904296875
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 414074297,
+      "iowait": 86379,
+      "irq": 0,
+      "nice": 9448,
+      "softirq": 323078,
+      "steal": 0,
+      "system": 475821,
+      "user": 22010194
+    },
+    "reported_mhz": 3693.107,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "host_stability_record": "/tmp/picocalc-rp2040-cpu-opt.PoEwYE/diagnostics/host-stability-cpu-v3-20260902-01.json",
+  "host_stability_record_sha256": "2fc93238c008aa482335582b4df0937e2f8161cf159d9bec8f899305c7657ddc",
+  "measurement_cpu": 11,
+  "measurement_policy": {
+    "anchor_aggregation_method": "median-of-replicate-log-throughput-v1",
+    "anchor_group_dispersion_gate_used": true,
+    "anchor_group_dispersion_threshold": 0.02,
+    "anchor_group_ids": [
+      "pre",
+      "after-005",
+      "after-010",
+      "after-015",
+      "after-020",
+      "after-025",
+      "after-030",
+      "after-035",
+      "post"
+    ],
+    "anchor_layout": {
+      "after_measured_runs": [
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35
+      ],
+      "post_count": 3,
+      "pre_count": 3,
+      "replicates_per_group": 3
+    },
+    "anchor_local_residual_method": "leave-one-group-out-log-linear-v1",
+    "anchor_local_residual_threshold": 0.02,
+    "anchor_residual_threshold": 0.02,
+    "anchor_run_ids": [
+      "anchor-pre-001",
+      "anchor-pre-002",
+      "anchor-pre-003",
+      "anchor-after-005-001",
+      "anchor-after-005-002",
+      "anchor-after-005-003",
+      "anchor-after-010-001",
+      "anchor-after-010-002",
+      "anchor-after-010-003",
+      "anchor-after-015-001",
+      "anchor-after-015-002",
+      "anchor-after-015-003",
+      "anchor-after-020-001",
+      "anchor-after-020-002",
+      "anchor-after-020-003",
+      "anchor-after-025-001",
+      "anchor-after-025-002",
+      "anchor-after-025-003",
+      "anchor-after-030-001",
+      "anchor-after-030-002",
+      "anchor-after-030-003",
+      "anchor-after-035-001",
+      "anchor-after-035-002",
+      "anchor-after-035-003",
+      "anchor-post-001",
+      "anchor-post-002",
+      "anchor-post-003"
+    ],
+    "calibration_method": "interleaved-anchor-v3",
+    "correction_method": "piecewise-linear-interpolation-of-log-baseline-anchor-group-median-throughput-v3",
+    "global_residual_diagnostic_only": true,
+    "inter_run_cooldown_seconds": 60.0,
+    "pair_level_sensitivity_gate_used": true,
+    "pair_level_sensitivity_method": "raw-vs-host-corrected-log-ratio-v1",
+    "pair_level_sensitivity_threshold": 0.02,
+    "primary_metric": "cpu-time"
+  },
+  "record_id": "rp2040-cpu-p2-a-production-v3-20260903-01",
+  "record_type": "picocalc.rp2040-cpu-record",
+  "record_version": 1,
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+P0-B profile provides CPU hot-path evidence; candidate A/B disassembly is recorded separately.

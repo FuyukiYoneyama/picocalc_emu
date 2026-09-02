@@ -2422,15 +2422,20 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
             raise ValueError("record manifest is not an object: {}".format(manifest_path))
         for field in (
             "record_type", "record_version", "record_id", "candidate_id", "workloads",
-            "measurement_cpu", "diagnostic_profile_record",
+            "measurement_cpu", "diagnostic_profile_record", "host_stability_record",
+            "host_stability_record_sha256",
         ):
             # A profile is produced after correctness for P1-B/P2-A.  The
             # correctness phase therefore cannot know its record name yet;
-            # allow that optional identity field to transition from absent to
-            # its fixed pointer exactly once.  Any later change remains an
+            # allow optional phase metadata to transition from absent to its
+            # fixed pointer exactly once.  Any later change remains an
             # identity mismatch and is rejected.
             if (
-                field == "diagnostic_profile_record"
+                field in {
+                    "diagnostic_profile_record",
+                    "host_stability_record",
+                    "host_stability_record_sha256",
+                }
                 and existing.get(field) is None
                 and manifest.get(field) is not None
             ):
@@ -2456,6 +2461,9 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
             and manifest.get("diagnostic_profile_record") is not None
         ):
             merged["diagnostic_profile_record"] = manifest["diagnostic_profile_record"]
+        for field in ("host_stability_record", "host_stability_record_sha256"):
+            if merged.get(field) is None and manifest.get(field) is not None:
+                merged[field] = manifest[field]
         existing_policy = existing.get("measurement_policy")
         new_policy = manifest.get("measurement_policy")
         if new_policy is not None:

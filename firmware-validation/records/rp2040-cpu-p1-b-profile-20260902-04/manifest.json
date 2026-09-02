@@ -1,0 +1,111 @@
+{
+  "backend_identities": {
+    "candidate_profile": {
+      "build_provenance_sha256": "392a70627ac3ae479705e5965d3c16cd0cc839fd62b62d2e610af781807e8905",
+      "commit": "c507fa1a5704273f6ab4ff713ecf6f7443ef7d90",
+      "dirty": false,
+      "feature_set": [
+        "cpu-application-profiler",
+        "executable-sram-invalidation-filter",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_profile",
+      "role": "candidate_profile",
+      "runner_sha256": "9217f345970b1aea2130a89db72a6f2be7676596bbed8468dc4adfb582aa9bad"
+    }
+  },
+  "candidate_id": "P1-B",
+  "feature_set": [
+    "cpu-application-profiler",
+    "executable-sram-invalidation-filter",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 89688000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 7711620000,
+      "throttled_usec": 0,
+      "usage_usec": 212583892000,
+      "user_usec": 204872272000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 19262452312.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      0.1943359375,
+      0.2373046875,
+      0.49462890625
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 391347132,
+      "iowait": 82408,
+      "irq": 0,
+      "nice": 8968,
+      "softirq": 311411,
+      "steal": 0,
+      "system": 459750,
+      "user": 20478258
+    },
+    "reported_mhz": 3693.107,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "measurement_cpu": 11,
+  "record_id": "rp2040-cpu-p1-b-profile-20260902-04",
+  "record_type": "picocalc.rp2040-cpu-record",
+  "record_version": 1,
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

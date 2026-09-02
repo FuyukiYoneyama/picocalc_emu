@@ -1582,6 +1582,41 @@ class CandidateRunnerTests(unittest.TestCase):
                 changed["diagnostic_profile_record"] = "rp2040-cpu-p1-b-profile-other"
                 self.module._record_manifest(record, changed)
 
+    def test_record_manifest_adds_host_stability_pointer_after_correctness_phase(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            record = Path(temporary) / "rp2040-cpu-fixture"
+            identity = {
+                "record_id": record.name,
+                "candidate_id": "P2-A",
+                "workloads": [],
+                "backend_identities": {
+                    "baseline_production": {
+                        "commit": "a" * 40,
+                        "dirty": False,
+                        "runner_sha256": "b" * 64,
+                    }
+                },
+                "feature_set": ["pending-exception-fast-reject"],
+                "measurement_cpu": 11,
+            }
+            self.module._record_manifest(record, identity)
+            self.module._write_sha256sums_once(record)
+            with_stability = dict(identity)
+            with_stability["host_stability_record"] = "/tmp/host-stability.json"
+            with_stability["host_stability_record_sha256"] = "c" * 64
+            self.module._record_manifest(record, with_stability)
+            manifest = self.module._read_json(record / "manifest.json")
+            self.assertEqual(
+                manifest["host_stability_record"],
+                "/tmp/host-stability.json",
+            )
+            self.assertEqual(manifest["host_stability_record_sha256"], "c" * 64)
+            self.module._write_sha256sums_once(record)
+            with self.assertRaisesRegex(ValueError, "record manifest identity mismatch"):
+                changed = dict(with_stability)
+                changed["host_stability_record_sha256"] = "d" * 64
+                self.module._record_manifest(record, changed)
+
     def test_record_manifest_refuses_modified_leaf_after_checksum_index(self):
         with tempfile.TemporaryDirectory() as temporary:
             record = Path(temporary) / "rp2040-cpu-fixture"
