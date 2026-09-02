@@ -1,6 +1,6 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-- Status (updated 2026-09-01 23:53 JST): P0-A1、P0-0、P0-B は完了。P0-A2-M（affinity、load-shape、cooldown、固定 block 診断）も完了し、10M/100M の短 block は anchor 非定常性を検出した診断記録として invalid のまま保持する。in-process CPU timing を主指標にした P0-A2 null-control は `rp2040-cpu-p0-null-cpu-20260901-02` として CPU 11、40 measured run、15 anchor を完走し、calibration、correctness、checksum、target-schema、workload別/combined null-effect gate をすべて pass した。P1-A/P2-A の実装、CPU 11 correctness、diagnostic profile は完了している。現在、実行中の長時間計測はなく、P1-A/P2-A production A/B、最終検証、計画更新、コミットが未着手である。`-jN` 型の並列負荷と単一 guest の CPU speed は別契約として扱い、CPU-time を主指標、wall-time を副指標として候補効果を測定する。測定経路の第一段は backend commit `d8f5bb2` の `picocalc-run --host-timing <path>` であり、旧来の38時間ループは再利用しない。
+- Status (updated 2026-09-02 05:03 JST): P0-A1、P0-0、P0-B は完了。P0-A2-M（affinity、load-shape、cooldown、固定 block 診断）も完了し、10M/100M の短 block は anchor 非定常性を検出した診断記録として invalid のまま保持する。in-process CPU timing を主指標にした P0-A2 null-control は `rp2040-cpu-p0-null-cpu-20260901-02` として CPU 11、40 measured run、15 anchor を完走し、calibration、correctness、checksum、target-schema、workload別/combined null-effect gate をすべて pass した。P1-A/P2-A の実装、CPU 11 correctness、diagnostic profile は完了している。P1-A correctness は `rp2040-cpu-p1-a-production-20260902-01` で両 workload pass したが、同記録の CPU-time production A/B（session 20733、00:33 JST開始）は `after-030` anchor group の relative MAD 2.2342%により protocol invalid（終了コード2）となった。続く baseline-only CPU-time diagnostic（warm-up 1＋測定4、CPU 11）は `/tmp/picocalc-rp2040-cpu-opt.PoEwYE/diagnostics/cpu-time-diagnostic-p1-a-20260902-01.json` として status=pass、in-process CPU-time relative MAD 0.5169%、wall-time relative MAD 0.8749%、CPU/wall比 relative MAD 0.3174%を記録した。これは短時間の原因帰属診断であり、P1-Aの効果値を有効化するものではない。P1-Aは診断結果を計画へ反映し、新しい anchor protocolを固定してから別 batchで再測定する。P2-A production A/B、最終検証、計画更新、コミットは保留中である。`-jN` 型の並列負荷と単一 guest の CPU speed は別契約として扱い、CPU-time を主指標、wall-time を副指標として候補効果を測定する。測定経路の第一段は backend commit `d8f5bb2` の `picocalc-run --host-timing <path>` であり、旧来の38時間ループは再利用しない。
 - Date: 2026-09-01
 - Review completed: 2026-08-31
 - Scope: `picocalc_emu` が使用する RP2040 CPU エミュレーションの正確性を維持した高速化
@@ -301,15 +301,16 @@ P0-B 初版は、P1-A/P2-A の実装判断に必要な次の counter だけを c
 - `pc_region.{boot_rom,immutable_xip,xip_sram,sram,other}: uint64`
 - `decode.{lookups,hits,misses}: uint64`
 - `decode.by_region.<region>.{lookups,hits,misses}: uint64`
-- `invalidation.{requests,examined_slots,matching_clears,unrelated_would_clear,wide_predecessor_clears}: uint64`
+- `invalidation.{requests,sram_write_requests,non_executable_sram_write_requests,examined_slots,matching_clears,unrelated_would_clear,wide_predecessor_clears}: uint64`
 - `exception.{polls,reject_primask,reject_no_candidate,reject_active_handler,entries}: uint64`
 - `exception.source.{pendsv,systick,nvic}: uint64`
 - `handler_group.{thumb16_shift_add_sub,data_processing,load_store,branch_system,thumb32,other}: uint64`
 
 この初版 counter は P1-A/P2-A の開始判定を満たすが、P1-B の executable-page filter 判定に必要な
 write 先 page の executable 状態は持たない。P1-B は profile-only 拡張で
-`non_executable_sram_write_requests` を追加してから測定する。これを `unrelated_would_clear` から
-推定してはならない。
+`non_executable_sram_write_requests` と、その分母となる `sram_write_requests` を追加してから測定する。
+`filterable_request_rate = non_executable_sram_write_requests / sram_write_requests` とし、既存の
+`invalidation.requests`（実際にキューへ入った要求数）や `unrelated_would_clear` から推定してはならない。
 
 profile root は `interval.start_emulated_cycle` と `interval.end_emulated_cycle`、workload identity、backend commit、runner SHA-256、feature set、core array、`overflowed`、`profile_valid` を持つ。counter は run 全区間の累積 `uint64` とし、reset でゼロに戻す。inactive core は `active=false` かつ全 counter zero とする。加算 overflow は saturate して `overflowed=true`、不変条件違反とともに `profile_valid=false` にする。
 
@@ -317,6 +318,7 @@ profile root は `interval.start_emulated_cycle` と `interval.end_emulated_cycl
 
 - `sum(pc_region) == retired_instructions`
 - `decode.hits + decode.misses == decode.lookups`
+- `non_executable_sram_write_requests <= sram_write_requests` (P1-B profile extension)
 - 各 region で `hits + misses == lookups`、かつ region 合計が decode 全体と一致
 - `reject_primask + reject_no_candidate + reject_active_handler + entries == polls`
 - `sum(exception.source) == exception.entries`
@@ -583,6 +585,8 @@ v3 実測は `stability-preflight --protocol-version 3` を使い、v2と同じ 
 更新（2026-09-01 18:16 JST）: `affinity-pilot` は CPU 11・2 workload・pinned-vCPU/inherited-set 各3 replicateを完走し、projection一致と群内 relative MAD 0.8%未満を確認した。`cooldown-pilot` は 0/5/15/60秒を各3 replicateで比較し、CPU/wall比 gateを満たした最小値として 0秒を固定した（5/60秒は比率gate不成立、15秒は成立）。5-block schedule helper と deterministic pre/post anchor IDも実装・unit test済みである。従って P0-A2-M の affinity/cooldown/load-shape pilot は完了し、残るのは固定blockの実測記録とCPU-time主 null-controlである。
 更新（2026-09-01 23:53 JST）: CPU 11へ揃えた P1-A correctness `rp2040-cpu-p1-a-correctness-20260901-01`、P1-A profile `rp2040-cpu-p1-a-profile-20260901-01`、同一 d8f5 baseline profile `rp2040-cpu-p0-b-profile-20260901-01`、P2-A correctness `rp2040-cpu-p2-a-correctness-20260901-02`、P2-A profile `rp2040-cpu-p2-a-profile-20260901-02` はすべて生成済みである。両 workloadで correctness projection/behavior digest、profile counter/invariants、profile-comparison、checksum、target-schemaを passした。P2-A profile の no-candidate reject 比率は PicoTetris 99.989%、PicoEdit 99.943%で、source conservationも passした。P2-Aを実行中とする旧記述は superseded であり、現時点で実行中の計測はない。
 更新（2026-09-01 23:53 JST）: `rp2040-cpu-p0-null-cpu-20260901-02` の CPU-primary A/B は 23:33:36 JST頃に正常終了した。プロセスとtmuxセッションは消滅し、`summary.json`/`decision.json` はともに `status=pass`、`primary_metric=cpu-time`、anchor group/model gate は有効、null-control は workload別2%・combined1%の効果上限と95% CI条件を満たした。これは candidate の性能向上を示す記録ではなく、同一 executable の null-control として P1-A/P2-A production A/B を開始できる測定経路の成立を示す。次工程は production A/B の新規 record、最終 verifier、計画書の完了状態反映、変更のレビュー後コミットである。
+更新（2026-09-02 04:35 JST）: P1-A CPU-time production A/B `rp2040-cpu-p1-a-production-20260902-01` は40 measured run、15 anchor、両 workload correctness、checksumまで完走したが、`after-030` replicated anchor groupの relative MAD 2.2342%が固定2% gateを超え、`summary/decision.status=invalid`、終了コード2となった。pre/post drift 1.3648%、pair-level sensitivity 0.1964%は gate内だったが、PicoTetris/PicoEdit/combinedの効果値は protocol invalid のため採否根拠にしない。失敗台帳へ記録し、同一条件の再実行と閾値緩和は禁止する。まず baseline-only diagnostic または v3 anchor protocolで非定常性を確認し、新しい batchで P1-Aを再測定するまでP2-A production A/Bは保留する。
+更新（2026-09-02 05:03 JST）: P1-A invalid A/B後の baseline-only CPU-time diagnostic は新しい `/tmp` JSON として完了し、status=pass、CPU-time relative MAD 0.5169%、wall-time relative MAD 0.8749%、CPU/wall比 relative MAD 0.3174%、CPU affinity/identity/snapshot gate passとなった。CPU時間側の短時間再現性は確認できたが、40-run A/Bの `after-030` anchor dispersionを直接置換する証拠ではないため、invalid A/Bの効果値は採否に使わない。診断JSONをGit records直下へ誤配置した初回 invocationは失敗台帳へ記録し、JSONを `/tmp/picocalc-rp2040-cpu-opt.PoEwYE/diagnostics/cpu-time-diagnostic-p1-a-20260902-01.json` へ退避した後、target-schema 37/37を再確認した。同じ診断条件の再実行はしない。次工程は v3/新anchor protocolの固定と、その別batchによるP1-A再測定であり、P2-A production A/Bは引き続き保留する。
 更新（2026-09-01 13:00 JST、旧経路の暫定解釈）: `rp2040-cpu-time-attribution-20260901-01` は4測定を完走し、record completeness/identity/affinityは passした。wall throughput relative MAD は5.4821%、CPU-time throughput relative MAD は4.5002%、CPU/wall比 relative MAD は0.3602%だった。CPU時間側も4.5%変動しており、公開host counterの変化なしと合わせて、当時は現WSL hostでは実行速度の安定性を説明できないと解釈した。`chrt -f 1` は権限不足で使用できなかった。この解釈は in-process CPU timingを取得していなかったため、現在の計画では superseded とする。WSL2を原因と断定せず、正しい測定経路で再評価する。
 現行方針（2026-09-01 15:00 JST）: 上記 v1/v2/v3 の host-stability preflight と CPU-time attribution は、旧来の単一ゲスト・CPU 11固定・wall中心経路の診断として完了した。いずれも固定 gateを満たさなかった記録は immutable に保持するが、それだけで現 WSL hostを production A/B 不可と断定しない。`d8f5bb2` の in-process timing sidecar と Python取り込みを先に短時間 pilot で検証し、次に pinned/inherited affinity、K=`1,2,4,8` の独立ゲスト scaling、cooldown pilot、5 block scheduleを順に閉じる。新しい null-control は CPU-time主指標、wall副指標で実行し、その結果を見て初めて host条件と候補効果を帰属する。P1-A/P2-A production A/B は測定経路修正と CPU identityを揃えた correctness/profile が完了するまで開始しない。38時間の旧ループを再実行しない。
 
@@ -671,8 +675,9 @@ P1-B の filter は「未実行 SRAM page への write による invalidation re
 `unrelated_would_clear` は full-tag guard の無関係 slot 指標なので P1-B の filter可能 request とは別物である。
 現行 P0-B profile は write 先 page の executable 判定を記録していないため、P1-B の gate はまだ判定不能とする。
 P1-B を開始する前に、production hot path を汚さない profile-only 拡張で
-`non_executable_sram_write_requests` と `invalidation_requests` を workload別に採取し、
-`filterable_request_rate = non_executable_sram_write_requests / invalidation_requests` を定義する。
+`non_executable_sram_write_requests` と `sram_write_requests` を workload別に採取し、
+`filterable_request_rate = non_executable_sram_write_requests / sram_write_requests` を定義する。
+既存 `invalidation.requests` は後方互換のため「実際にキューへ入った要求数」の意味を維持し、P1-Bの比率の分母へ流用しない。
 二 workload の各 ratio が欠落せず、等重み combined ratio が 1%以上、かつ各 workload の correctness
 projection が pass した場合だけ開始する。分母がゼロ、counter 欠落、または片方の workload が未測定なら
 fail-closed で P1-B を開始しない。`unrelated_would_clear / requests` や `/ examined_slots` を代用しない。
@@ -772,7 +777,7 @@ cargo test --locked -p picocalc-harness --features executable-sram-invalidation-
 
 #### 完了条件
 
-- self-modifying SRAM code、wide instruction 上書き、両 core からの実行を含む単体試験が一致する。
+- self-modifying SRAM code、wide instruction 上書き、両 Serial core の fetch による共有 bitmap 更新を含む単体試験が一致する。P1-B は Serial-only とし、threading の cross-core self-modifying-code eviction は P2-T の別契約で扱う。
 - 二つの実アプリで correctness gate を通る。
 - P1-A、P1-B、A+B の三つを別々に A/B 測定する。P1-B は P1-A 採否記録が閉じ、profile-only 拡張で定義した workload別 `filterable_request_rate` と等重み combined ratio が gate を満たす場合だけ開始する。
 - feature-gated 実験後、採用候補は feature を production default に残さず通常 path へ統合し、その統合後 binary を再度 correctness/A-B 測定する。
@@ -1126,7 +1131,7 @@ combined は §5.4 の等 workload 重み log effect である。3% は測定開
 現在の P0-A2 実測（2026-09-01 23:53 JST）: `rp2040-cpu-p0-null-cpu-20260901-02` は CPU 11、同一 executable の CPU-time主 null-control、40 measured run、15 anchor、60秒 cooldownの固定条件で完走した。correctness、checksum、target-schema、anchor group/model、workload別2%・combined1%のnull-effect/95% CI gateをすべて passし、P0-A2の有効null-control条件を閉じた。過去の v1/v2/v3 と短blockの invalid record は host/窓の診断証拠として immutable に保持し、今回の passへ再解釈しない。
 
 P0-A2-HS v1/v2/v3 sentinel と旧 CPU-time attribution は、旧 wall中心経路の診断として保存済みである。公開host counterが安定していても旧経路の帰属が成立しなかった事実を記録するが、現 WSL host全体を production A/B 不可とは断定しない。新しい in-process CPU-time経路で null-controlを passしたため、CPU 11を共通条件として候補A/Bへ進める。
-P1-A は CPU 11 correctness `rp2040-cpu-p1-a-correctness-20260901-01`、diagnostic profile `rp2040-cpu-p1-a-profile-20260901-01`、P2-Aは CPU 11 correctness `rp2040-cpu-p2-a-correctness-20260901-02`、diagnostic profile `rp2040-cpu-p2-a-profile-20260901-02` を完了した。profileの作用点値は診断根拠であり、性能向上率そのものではない。P1-A/P2-A production A/B と promotion decision は未完了で、次に同じ二 workload・10 pairをCPU-time主指標（wall-time副指標）で測定する。
+P1-A は CPU 11 correctness `rp2040-cpu-p1-a-correctness-20260901-01`、diagnostic profile `rp2040-cpu-p1-a-profile-20260901-01`、P2-Aは CPU 11 correctness `rp2040-cpu-p2-a-correctness-20260901-02`、diagnostic profile `rp2040-cpu-p2-a-profile-20260901-02` を完了した。profileの作用点値は診断根拠であり、性能向上率そのものではない。P1-A production A/B `rp2040-cpu-p1-a-production-20260902-01` は40 run/15 anchorを完走したが、`after-030` anchor groupのrelative MAD 2.2342%により protocol invalid となったため、効果値と promotion decision は未確定である。P1-Aは新しいanchor protocolを固定した別batchで再測定し、P2-A production A/Bはそのdecisionまで保留する。
 P1-B は executable-page filter用counterが未取得のため判定不能であり、下表のfail-closed条件を維持する。P1-A/P2-Aのproduction A/B結果と独立した候補として扱う。
 
 | Gate | 必須入力 | pass | fail 時 |
@@ -1139,7 +1144,7 @@ P1-B は executable-page filter用counterが未取得のため判定不能であ
 | P0-A2 | admitted baseline | 新しい短時間 block protocolで CPU-time主統計、wall副統計、全10 pair/2 workload、anchor dispersion/local residual、raw/corrected null effect/CI gateが通る | 閾値を緩和せず、block単位で原因を保存し、新 batch IDで全体再実行 |
 | P0-B | admitted baseline（counter-only実装はP0-A2 pass前に開始可） | counter invariant と compile-out proof | profiler 修正。P1/P2停止 |
 | P1-A | `unrelated_would_clear > 0` | runtime implementation、profile、correctness pass は完了。valid null-control 後に A/B record 完了 | event 0なら未実装、mismatchなら不採用 |
-| P1-B | profile-only `non_executable_sram_write_requests`、workload別 ratio、等重み combined ratio 1%以上、P1-A decision | correctness pass、単独/combined A/B | counter欠落・分母0・ratio未達なら見送り |
+| P1-B | profile-only `non_executable_sram_write_requests`/`sram_write_requests`、workload別 ratio、等重み combined ratio 1%以上、P1-A decision | correctness pass、単独/combined A/B | counter欠落・分母0・ratio未達なら見送り |
 | P2-A | no-candidate reject率 90%以上、`cpu-application-profiler,pending-exception-fast-reject` profile、aggregate/core poll/source conservation | correctness pass、diagnostic profile検証、A/B record 完了 | 未達・式不一致なら見送り |
 | P2-T | `threading` runtime、serial oracle、core1-active fixture | serial/threaded correctness pass、CPU-time/wall-time A/B と worker diagnostics を完了 | worker failure、semantics mismatch、CPU-time回帰なら既定 Serialを維持 |
 | 各 production 候補 | candidate decision | §7 final rule | productionへ統合しない |
@@ -1165,7 +1170,7 @@ P0-A1 は backend hot path を変更しない。ここが最初の実装単位�
 |---|---|
 | P0-B | `rp2040-emu/src/cpu_application_profile.rs`、`lib.rs`、`core/mod.rs`、`core/decode.rs`、両 Cargo manifest、`picocalc-harness/src/main.rs` |
 | P1-A | `rp2040-emu/src/core/mod.rs`、`src/tests.rs`、両 Cargo manifest |
-| P1-B | `rp2040-emu/src/bus/mod.rs`、`core/decode.rs`、`lib.rs`、`src/tests.rs`、`tests/multicore.rs`、両 Cargo manifest |
+| P1-B | `rp2040-emu/src/bus/mod.rs`、`core/decode.rs`、`core/mod.rs`、`cpu_application_profile.rs`、`lib.rs`、`src/tests.rs`、`tests/multicore.rs`、`picocalc-harness/src/main.rs`、`build.rs`、profile schema/verifier/tests、両 Cargo manifest |
 | P2-A | `rp2040-emu/src/core/mod.rs`、`core/exceptions.rs` の test、`src/tests.rs`、両 Cargo manifest、`picocalc-harness/build.rs` |
 | P0-A2-M | `picocalc-harness/src/main.rs`（emulation CPU clock/report、`--execution-model`）、`picocalc_emu/tools/benchmark_rp2040_cpu_candidate.py`（affinity mode、parallel-instance scaling、5 block orchestration）、両 record schema、`tests/test_benchmark_rp2040_cpu_candidate.py` |
 | P2-T | `rp2040-emu/src/lib.rs`/`threaded/*` の既存 runtime wiring、`picocalc-harness/src/main.rs`、両 Cargo manifest、serial/threaded correctness fixture |
@@ -1246,3 +1251,21 @@ P0-A2-HS は v1/v2/v3 sentinelを完了し、すべて固定2% gateでinvalidと
 - host-stability v1/v2/v3 と CPU-time attribution の raw record は、旧単一ゲスト wall経路の診断証拠として保存済みである。CPU-time主 null-controlは `rp2040-cpu-p0-null-cpu-20260901-02` でpassしたため、P1-A/P2-A production A/Bとperformance acceptanceへ進める状態である。短blockのinvalid recordは安定性診断として再解釈せず保持する。外部hostやWSL設定を変更する場合は、設定変更・`wsl --shutdown`を人間の承認を得て別手順で行う。
 
 この Definition of Done が満たされれば、計測条件を後から都合よく変更せず、P0-B と最初の CPU 速度候補 P1-A の実装・診断計測を閉じ、次に有効 null-control 下の production 効果測定へ進める。
+
+更新（2026-09-02 10:36 JST）: P1-A v3 の最初の長時間 A/B session `15216` は会話セッション終了に伴って成果物なしで終了したため、性能結果として扱わない。次の batch `rp2040-cpu-p1-a-production-v3-20260902-02` は correctness phaseを detached `tmux` で開始中であり、correctness pass後に同一rootへ CPU-time production A/Bを自動遷移する orchestrator と、PID/log/heartbeatを持つ detached monitor を配置した。入口ゲート失敗で A/B runを0件起動した試行は失敗台帳へ記録済みで、旧 batchへ追記・同一 invocationの再実行はしない。P1-A v3の効果値は A/B完了まで未確定であり、P2-A production A/Bも引き続き保留する。
+
+更新（2026-09-02 11:03 JST）: 新 batch `rp2040-cpu-p1-a-production-v3-20260902-02` の CPU 11 correctness は pass し、detached orchestrator が `codex-p1-a-v3-run-02` の CPU-time production A/Bを起動した。A/B monitor `codex-p1-a-v3-monitor-02` は PID、record `ab/` 件数、summary/decision、pane状態、log byte数を60秒ごとに記録する。開始直後は `runs=0`、summary未生成、child aliveであり、性能効果値は未確定である。correctness/A-Bの両段階を会話ターンから分離したため、ターン終了後も同じ batchを監視できる。P2-A production A/BはP1-Aのperformance decisionまで保留する。
+
+更新（2026-09-02 12:08 JST）: P1-A v3 batch `rp2040-cpu-p1-a-production-v3-20260902-02` は引き続き実行中である。`codex-p1-a-v3-run-02` の Python runner と `codex-p1-a-v3-monitor-02` の heartbeat は生存しており、直近の process snapshot では PicoEdit baseline runner が CPU 11 上で約108% CPUを使用している。`ab/` leaf は runner の測定スケジュール完了後に確定する契約のため、現時点の `runs=0`、summary未生成は停止や性能判定ではない。終了・異常・完了のいずれも monitor state と record artifactで確認してから次工程へ進む。P1-A の CPU-time効果と promotion decision は未確定、P2-A production A/Bは引き続き保留する。
+
+同日、P1-B executable-SRAM-page filter の実装 branch `codex/p1b-executable-sram-filter` を static audit と feature matrix で検証した。profilerなしの filter-only buildで profiler専用 counterを式位置から参照する不備を検出し、失敗を `OPERATION_FAILURE_LOG.md` に記録したうえで cfg blockへ修正した。修正 commit は `b5f6152`（親 `a358fb4`）で、filter-only `rp2040-emu` test は 1262 passed、profiler+filter test は 1267 passed（multicore 11 passed）である。P1-B の実アプリ profile/counter gate（workload別分母、等重み combined 1%以上）はまだ未取得なので、P1-A decision後に profile runnerをビルドして判定する。修正 branchは main checkoutへ混ぜず、候補 provenanceとして参照可能な branch refを保持する。
+
+更新（2026-09-02 12:29 JST）: P1-B の static audit 指摘を反映し、branch `codex/p1b-executable-sram-filter` を commit `da6e57805d1fb986071194c625561225b166f616` へ更新した。Thumb-32 fetch が 256-byte SRAM page 境界を跨ぐ場合に `pc+2` の page も executable と記録する境界テスト、DMA発行 writeを CPU application profile denominator へ混入させず filter/invalidation は維持する DMA fixture、P1-B と `threading` の併用を測定 runner/verifierで拒否する Serial-only 契約を追加した。修正後の filter-only `rp2040-emu` は 1263 tests、profiler+filter は 1269 tests、DMA量子不変性10、multicore11をすべて passし、Python runner unit test 63、target-schema 37/37も passした。candidate production/profile/trace runner と provenance sidecarは `/tmp/picocalc-rp2040-cpu-opt.PoEwYE/build/p1b-{production,profile,trace}/release/` に commit/feature/tree SHAを固定済みだが、実アプリ profile gateとP1-B A/BはP1-A performance decision後まで開始しない。
+
+同時点で P1-A v3 batch `rp2040-cpu-p1-a-production-v3-20260902-02` は detached runner/monitor とも生存中で、最新 heartbeat は `child=alive`、`runs=0`、`summary=absent` である。これはスケジュール完了前の正常な未集計状態であり、停止・判定とは扱わない。P1-A の correctness は pass済み、CPU-time A/B効果値は未確定のままなので、P2-A production A/BおよびP1-B profile/A-Bは保留を継続する。
+
+更新（2026-09-02 12:49 JST）: P1-B static audit の追加指摘（DMA skip counter、DMA無効化の誤配送、reset/load_image/poke境界）を反映し、branch `codex/p1b-executable-sram-filter` を commit `6a95ba8e74c3432e80ee0d56862290f4f59aa4ee` へ更新した。DMA write は CPU 共通 invalidation queue と分離した専用 queueへ入り、Serial の peripheral tick直後に両coreへ drainする。DMA中は filter-only 構成でも識別でき、CPU application denominator と non-executable skip counterへ混入しない。reset、load_image、poke は pending queueをクリアし、load_imageは profile pending counterも setup boundaryとしてクリアする。実行ページ／未実行ページ宛先の DMA fixture、filter-only 1263 tests、profiler+filter 1269 tests、DMA量子不変性10、multicore11は pass済みである。commit `6a95ba8` の candidate production/profile/trace runner と provenance sidecarは、旧 `p1b-*` artifactを上書きせず `/tmp/picocalc-rp2040-cpu-opt.PoEwYE/build/p1b-dmafix-{production,profile,trace}/release/` に固定し、backend commit・binary SHA・effective feature/tree SHAを read-only validatorで確認した。P1-A performance decision前のため、P1-B 実アプリ profile/A-Bはまだ開始しない。
+
+更新（2026-09-02 13:08 JST）: P1-B の profiler境界とDMA帰属を修正した最終 backend commit は `c507fa1a5704273f6ab4ff713ecf6f7443ef7d90` で、`codex/p1b-executable-sram-filter` refへ反映済みである。profiler enable時に通常/DMA pending queueを消去し、`load_image` はCPU profile区間外のsetup-only操作と明記した。DMA cache drainは両coreのdecode cacheへ配送するが、CPU application/event-horizon profilerの invalidation counterへは加算しない。境界テスト2件を追加し、filter-only `rp2040-emu` 1263 tests、`cpu-application-profiler,executable-sram-invalidation-filter` 1271 tests、DMA量子不変性10、multicore11、Python runner unit test 63、`cargo fmt --all -- --check`を通過した。最終 default-feature buildは旧artifactを上書きせず、production/profile/traceをそれぞれ `/tmp/picocalc-rp2040-cpu-opt.PoEwYE/build/p1b-final-20260902-04-{production,profile,trace}/release/picocalc-run` に生成し、sidecarのbackend commit、runner SHA、effective Cargo feature/tree SHAをread-only validatorで確認した。P1-A v3 `rp2040-cpu-p1-a-production-v3-20260902-02` は13:07 JST時点で detached runner/monitorが生存、`runs=0`、`summary=absent`、`child=alive`であり、完了前の未集計状態である。P1-A decisionが閉じるまでP1-B実アプリ profile/A-BとP2-A production A/Bは開始しない。
+
+更新（2026-09-02 13:22 JST）: 既存 P2-A correctness/profile `rp2040-cpu-p2-a-{correctness,profile}-20260901-02` を再監査したところ、両 manifest の `cpu` が `null` であり、CPU 11 に揃った入力ではないことを確認した。これらは immutable な correctness/profile 証拠として保持するが、CPU-time A/B の admission には使用しない。P1-A v3 完了後、current d8f5 backend の final-p2 production/profile/trace runnerを用いて `--cpu 11` の correctness と diagnostic profileを一意な新 recordへ再取得し、その pass recordを pointer gateで検証してから P2-A A/Bへ進む。
