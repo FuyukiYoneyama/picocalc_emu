@@ -203,7 +203,7 @@ compact dispatch key は過去の PicoTetris で約 4.15% 改善したが、当�
 
 固定 validation は [PicoTetris r10](../firmware-validation/validations/picotetris-opt1b-vrp5-r10.json) と [PicoEdit r4](../firmware-validation/validations/picoedit-r1-vrp2f-r4.json) である。レビュー時点で両 backend object は repository に存在するが、互いに ancestor ではない。さらに `c1c20d7d86a3006569375bc333cf72494e95eb46` は branch/tag のどの ref からも到達不能で、将来の `git gc` で消滅し得る。したがって登録時 backend pin を混ぜて一つの候補効果にしてはならず、PicoEdit は P0-0 の common-baseline admission を必ず通す。
 
-候補比較の共通 baseline は、現行 backend ソースを固定した `73784b96a1afdb34dc1a79577f947b670a138d07` とする。この commit は登録時の `65c795e87321e79b960ac8a7495a205de6a24ec0` に現行 checkout の整形差分を取り込んだものであり、P0-0 ではこの最新の clean commit を基準にする。P0-0 で両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
+候補比較の共通 baseline は、現行 backend ソースを固定した `d8f5bb22fae221a7a31ae45c953b64b375eeb316` とする。旧 `73784b96a1afdb34dc1a79577f947b670a138d07` の P0-0 record `rp2040-cpu-p0-baseline-20260830-03` は immutable な履歴証拠として保持するが、in-process host timing sidecarを含む現行測定では使用しない。現行 P0-0 record は `firmware-validation/records/rp2040-cpu-p0-baseline-20260901-01/` であり、baseline runner としてこの commit の clean release buildを使用する。P0-0 では両 firmware/scenario をこの commit 上で実行し、target の `report_checks` から `backend_build.commit` だけを除いた全条件、登録 timeline SHA、登録 report から作った guest observation projection を満たすことを確認する。`backend_build.dirty == false` は必須である。backend identity を含む登録 `normalized_report_sha256` は candidate report へ直接適用せず、代わりに §5.5 の projection digest を使う。PicoEdit が通らない場合は測定を開始せず、両 workload が通る一つの共通 commit を選ぶか、新 revision を通常の validation 手順で登録する。既存 revision と record は変更しない。
 
 target registry は firmware、scenario、board/device 条件、停止条件を供給する workload contract として使用する。candidate commit は既存 target の accepted backend として偽装せず、CPU候補 record の manifest に独立して記録する。
 
@@ -459,7 +459,7 @@ python3 tools/benchmark_rp2040_cpu_candidate.py admit \
 
 `admit` は target registry の accepted backend を candidate に強制せず、legacy `validate_report()` の full-report hash check もそのまま呼ばない。raw command の `--backend-commit` は `--backend` の clean HEAD へ置換する。固定 firmware/scenario/contract、clean embedded commit、`report_checks`（commit check のみ置換）、timeline SHA、登録 report と current report の guest projection digest、determinism 2 run を検査する。両 workload が合格した一つの commit と runner SHA を `manifest.json` に common baseline として凍結する。片方でも不合格なら P0 baseline、P1、P2 を開始しない。P0-0 は runner 実装ではなく、P0-A1 の後に一度だけ通す workload gate である。
 
-2026-08-30 の実施結果は pass である。`73784b96a1afdb34dc1a79577f947b670a138d07` の clean backend と、runner SHA-256 `921c923df12d88e0fa8edda470ffff252f62d3047f1836c3080ada824fae25c7`（build-provenance SHA-256 `d32ebab9a7b7f125f7a5087f21feff5aff5ab1817da0a5cd8cc978182aaea7af`）を使用した。PicoTetris r10 は cycles `927528659`、PicoEdit r4 は cycles `827799818` で、各2回の guest observation projection が登録 report と一致し、各 workload 内の2回も一致した。検証済み record は `firmware-validation/records/rp2040-cpu-p0-baseline-20260830-03/`、`verify_environment.py --scope target-schema` は 37 checks pass、record の `SHA256SUMS` は全件 pass である。従って common baseline gate は閉じ、P0-A2 null batch を開始できる。
+2026-08-30 の `73784b96...` 実施結果は履歴として pass である。現行測定の common-baseline admission は `d8f5bb22fae221a7a31ae45c953b64b375eeb316` と runner SHA-256 `bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154`（build-provenance SHA-256 `7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2`）を使用した `firmware-validation/records/rp2040-cpu-p0-baseline-20260901-01/` で pass している。PicoTetris r10 と PicoEdit r4 の guest observation projection、各 workload 内の2回 determinism、target-schema 37 checks、record `SHA256SUMS` は pass である。以後の P1/P2 測定はこの d8f5 baseline admission と in-process timing sidecarを基準にする。
 
 `correctness` と `ab` は `--admission-record` でこの P0-0 record root を必須入力とし、manifest/decision/checksum/evidence の pass と現行 baseline identity を measured run 前に再検証する。P0-A2 のみ、同一 runner binaryを A/B 両方へ渡すため sidecar `provenance_role=production` への移行を許すが、backend commit/dirty、runner SHA、実効 feature set は必ず一致させる。`profile` も同じ admission record の manifest/decision/checksum/evidence と固定 workload を再検証するが、profile CLI は baseline executable を受け取らないため、別途比較する current baseline identity は持たず、candidate profile runner 自身の sidecar identity を検査する。admission record がない、別 workload、別 baseline、receipt identity の不一致、または partial checksum の場合は subprocess を一つも起動しない。
 P2-A の production `ab` だけは `--profile-record` で feature-on diagnostic profile record を追加指定する。runner は profile record の checksum、P2-A candidate ID、二 workload、candidate backend commit、`cpu-application-profiler,pending-exception-fast-reject` feature、aggregate/core counter conservation、passing profile decision を measured run 前に再検証する。profile record がない・不一致なら P2-A A/B subprocess を一つも起動しない。
@@ -1220,11 +1220,11 @@ RP2040_CPU_OPT_TMP="$(mktemp -d /tmp/picocalc-rp2040-cpu-opt.XXXXXX)"
 
 git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
   worktree add --detach "$RP2040_CPU_OPT_TMP/backend-baseline" \
-  73784b96a1afdb34dc1a79577f947b670a138d07
+  d8f5bb22fae221a7a31ae45c953b64b375eeb316
 
 git -C /home/fuyuki/pico_dvl/codex/picoem-picocalc \
   worktree add --detach "$RP2040_CPU_OPT_TMP/backend-candidate" \
-  73784b96a1afdb34dc1a79577f947b670a138d07
+  d8f5bb22fae221a7a31ae45c953b64b375eeb316
 
 git -C /home/fuyuki/pico_dvl/codex/picocalc_emu \
   worktree add --detach "$RP2040_CPU_OPT_TMP/control" HEAD
