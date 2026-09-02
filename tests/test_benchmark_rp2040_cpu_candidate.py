@@ -224,6 +224,28 @@ class CandidateRunnerTests(unittest.TestCase):
         )
         self.assertEqual(args.primary_metric, "cpu-time")
 
+    def test_stability_preflight_can_select_cpu_time_clock(self):
+        args = self.module.parse_arguments(
+            [
+                "stability-preflight", "--cpu", "11",
+                "--backend", "/tmp/backend", "--runner", "/tmp/runner",
+                "--primary-metric", "cpu-time",
+                "--admission-record", "/tmp/admission",
+                "--batch-id", "sentinel-fixture",
+                "--output", "/tmp/sentinel.json",
+            ]
+        )
+        self.assertEqual(args.primary_metric, "cpu-time")
+
+    def test_host_stability_policy_can_declare_cpu_time_without_changing_history(self):
+        historical = self.module.host_stability_measurement_policy_v3()
+        self.assertNotIn("primary_metric", historical)
+        cpu_policy = self.module.host_stability_measurement_policy_v3(
+            primary_metric="cpu-time"
+        )
+        self.assertEqual(cpu_policy["primary_metric"], "cpu-time")
+        self.assertEqual(cpu_policy["method"], "host-stability-sentinel-v3")
+
     def test_registered_report_follows_validation_evidence_record(self):
         report = {"cycles": 123, "observable": "fixed"}
         with tempfile.TemporaryDirectory() as temporary:
@@ -479,6 +501,80 @@ class CandidateRunnerTests(unittest.TestCase):
             ["cpu-application-profiler", "pending-exception-fast-reject"],
         )
 
+    def test_p1b_profile_requires_executable_sram_instrumentation(self):
+        with self.assertRaisesRegex(ValueError, "executable-sram-invalidation-filter"):
+            self.module.validate_profile_feature_set(
+                "P1-B", ["cpu-application-profiler"]
+            )
+        with self.assertRaisesRegex(ValueError, "Serial-only"):
+            self.module.validate_profile_feature_set(
+                "P1-B",
+                [
+                    "cpu-application-profiler",
+                    "executable-sram-invalidation-filter",
+                    "threading",
+                ],
+            )
+        self.assertEqual(
+            self.module.validate_profile_feature_set(
+                "P1-B",
+                ["cpu-application-profiler", "executable-sram-invalidation-filter"],
+            ),
+            ["cpu-application-profiler", "executable-sram-invalidation-filter"],
+        )
+
+    def test_p1b_profile_requires_explicit_write_denominator_and_conservation(self):
+        def invalidation(total=10, skipped=3):
+            return {
+                "sram_write_requests": total,
+                "non_executable_sram_write_requests": skipped,
+            }
+
+        profile = {
+            "counters": {"invalidation": invalidation()},
+            "cores": [{"invalidation": invalidation()}, {"invalidation": invalidation()}],
+            "invariants": {"valid": True},
+        }
+        self.module.validate_executable_sram_filter_profile(profile)
+        profile["counters"]["invalidation"]["non_executable_sram_write_requests"] = 11
+        with self.assertRaisesRegex(ValueError, "exceed"):
+            self.module.validate_executable_sram_filter_profile(profile)
+        profile["counters"]["invalidation"] = {
+            "sram_write_requests": 1,
+            "non_executable_sram_write_requests": 0,
+        }
+        del profile["cores"][0]["invalidation"]["sram_write_requests"]
+        with self.assertRaisesRegex(ValueError, "sram_write_requests"):
+            self.module.validate_executable_sram_filter_profile(profile)
+
+    def test_p1b_filterability_summary_uses_equal_workload_weight(self):
+        profiles = [
+            {
+                "workload": {"id": "picoedit-r1-vrp2f"},
+                "counters": {
+                    "invalidation": {
+                        "sram_write_requests": 100,
+                        "non_executable_sram_write_requests": 10,
+                    }
+                },
+            },
+            {
+                "workload": {"id": "picotetris-opt1b-vrp5"},
+                "counters": {
+                    "invalidation": {
+                        "sram_write_requests": 10,
+                        "non_executable_sram_write_requests": 0,
+                    }
+                },
+            },
+        ]
+        summary = self.module.summarize_executable_sram_filter_profiles(profiles)
+        self.assertEqual([row["workload"] for row in summary["workloads"]], [
+            "picoedit-r1-vrp2f", "picotetris-opt1b-vrp5"
+        ])
+        self.assertAlmostEqual(summary["combined_ratio"], 0.05)
+        self.assertTrue(summary["pass"])
+
     def test_p2_ab_requires_diagnostic_profile_record(self):
         with self.assertRaisesRegex(ValueError, "--profile-record"):
             self.module._require_profile_gate(None, [], {"commit": "a" * 40}, 0)
@@ -557,14 +653,14 @@ class CandidateRunnerTests(unittest.TestCase):
                 path.write_text(json.dumps(profile), encoding="utf-8")
             with mock.patch.object(self.module, "_validate_record_root"), \
                  mock.patch.object(self.module, "_verify_existing_sha256sums"):
-                self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 0)
+                self.module._require_profile_gate(record, workloads, identity, 0)
                 with self.assertRaisesRegex(ValueError, "CPU differs"):
-                    self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 1)
+                    self.module._require_profile_gate(record, workloads, identity, 1)
                 manifest["measurement_cpu"] = 0
                 decision["status"] = "invalid"
                 (record / "decision.json").write_text(json.dumps(decision), encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, "decision is not passing"):
-                    self.module._require_profile_gate(record, workloads, {"commit": "a" * 40}, 0)
+                    self.module._require_profile_gate(record, workloads, identity, 0)
 
     def test_p2_profile_verifies_aggregate_and_core_exception_conservation(self):
         verifier = load_verifier()
@@ -619,6 +715,40 @@ class CandidateRunnerTests(unittest.TestCase):
         bad_profile["counters"]["exception"]["source"]["nvic"] = 2
         with self.assertRaisesRegex(ValueError, "source conservation"):
             self.module.validate_pending_exception_profile(bad_profile)
+
+    def test_p1b_profile_verifier_requires_explicit_write_counters(self):
+        verifier = load_verifier()
+
+        def invalidation(total=12, skipped=5):
+            return {
+                "sram_write_requests": total,
+                "non_executable_sram_write_requests": skipped,
+            }
+
+        profile = {
+            "counters": {"invalidation": invalidation()},
+            "cores": [{"invalidation": invalidation()}, {"invalidation": invalidation()}],
+            "invariants": {"valid": True},
+        }
+        problems = []
+        verifier._verify_executable_sram_filter_profile(
+            Path("profile.json"), profile, problems
+        )
+        self.assertEqual(problems, [])
+
+        profile["counters"]["invalidation"]["non_executable_sram_write_requests"] = 13
+        problems = []
+        verifier._verify_executable_sram_filter_profile(
+            Path("profile.json"), profile, problems
+        )
+        self.assertTrue(any("exceed" in item for item in problems))
+
+        del profile["cores"][0]["invalidation"]["sram_write_requests"]
+        problems = []
+        verifier._verify_executable_sram_filter_profile(
+            Path("profile.json"), profile, problems
+        )
+        self.assertTrue(any("sram_write_requests" in item for item in problems))
 
     def test_guest_projection_pair_rejects_one_bit_difference(self):
         baseline = {"cycles": 10, "framebuffer": {"rgb565_sha256": "a"}}
@@ -1148,6 +1278,15 @@ class CandidateRunnerTests(unittest.TestCase):
                 11,
                 60.0,
             )
+            with self.assertRaisesRegex(ValueError, "primary metric differs"):
+                self.module._require_host_stability_gate(
+                    record_path,
+                    [workload],
+                    identity,
+                    11,
+                    60.0,
+                    primary_metric="cpu-time",
+                )
             record["status"] = "invalid"
             record_path.write_text(json.dumps(record), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "not passing"):
@@ -1230,6 +1369,19 @@ class CandidateRunnerTests(unittest.TestCase):
                 60.0,
             )
             self.assertEqual(accepted["record_id"], record["record_id"])
+            record["measurement_policy"] = self.module.host_stability_measurement_policy_v2(
+                primary_metric="cpu-time"
+            )
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            accepted_cpu = self.module._require_host_stability_gate(
+                record_path,
+                [workload],
+                identity,
+                11,
+                60.0,
+                primary_metric="cpu-time",
+            )
+            self.assertEqual(accepted_cpu["measurement_policy"]["primary_metric"], "cpu-time")
 
     def test_replicated_anchor_group_aggregation_uses_log_median_and_mad(self):
         anchors = []
@@ -1396,6 +1548,39 @@ class CandidateRunnerTests(unittest.TestCase):
                 manifest["measurement_policy"],
                 {"inter_run_cooldown_seconds": 60.0},
             )
+
+    def test_record_manifest_adds_profile_pointer_after_correctness_phase(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            record = Path(temporary) / "rp2040-cpu-fixture"
+            identity = {
+                "record_id": record.name,
+                "candidate_id": "P1-B",
+                "workloads": [],
+                "backend_identities": {
+                    "baseline_production": {
+                        "commit": "a" * 40,
+                        "dirty": False,
+                        "runner_sha256": "b" * 64,
+                    }
+                },
+                "feature_set": ["executable-sram-invalidation-filter"],
+                "measurement_cpu": 11,
+            }
+            self.module._record_manifest(record, identity)
+            self.module._write_sha256sums_once(record)
+            with_profile = dict(identity)
+            with_profile["diagnostic_profile_record"] = "rp2040-cpu-p1-b-profile-fixture"
+            self.module._record_manifest(record, with_profile)
+            manifest = self.module._read_json(record / "manifest.json")
+            self.assertEqual(
+                manifest["diagnostic_profile_record"],
+                "rp2040-cpu-p1-b-profile-fixture",
+            )
+            self.module._write_sha256sums_once(record)
+            with self.assertRaisesRegex(ValueError, "record manifest identity mismatch"):
+                changed = dict(with_profile)
+                changed["diagnostic_profile_record"] = "rp2040-cpu-p1-b-profile-other"
+                self.module._record_manifest(record, changed)
 
     def test_record_manifest_refuses_modified_leaf_after_checksum_index(self):
         with tempfile.TemporaryDirectory() as temporary:

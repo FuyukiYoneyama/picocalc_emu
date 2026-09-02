@@ -2315,6 +2315,86 @@ def _verify_pending_exception_poll_equation(
         problems.append("{} P2-A profile exception invariants are invalid".format(profile_path))
 
 
+def _verify_executable_sram_filter_profile(
+    profile_path: Path, profile: Mapping[str, Any], problems: List[str]
+) -> None:
+    """Require the explicit P1-B SRAM-write denominator on every scope."""
+    counters = profile.get("counters")
+    scopes: List[Tuple[str, Any]] = [("aggregate", counters)]
+    cores = profile.get("cores")
+    if not isinstance(cores, list):
+        problems.append("{} P1-B profile cores are invalid".format(profile_path))
+    else:
+        scopes.extend(("core-{}".format(index), core) for index, core in enumerate(cores))
+    for scope, source in scopes:
+        invalidation = source.get("invalidation") if isinstance(source, Mapping) else None
+        if not isinstance(invalidation, Mapping):
+            problems.append("{} P1-B profile {} invalidation counters are missing".format(profile_path, scope))
+            continue
+        values: Dict[str, int] = {}
+        for field in ("sram_write_requests", "non_executable_sram_write_requests"):
+            value = invalidation.get(field)
+            if type(value) is not int or value < 0:
+                problems.append("{} P1-B profile {} {} is invalid".format(profile_path, scope, field))
+            else:
+                values[field] = value
+        if len(values) == 2 and values["non_executable_sram_write_requests"] > values["sram_write_requests"]:
+            problems.append(
+                "{} P1-B profile {} skipped SRAM writes exceed SRAM writes".format(
+                    profile_path, scope
+                )
+            )
+    invariants = profile.get("invariants")
+    if not isinstance(invariants, Mapping) or invariants.get("valid") is not True:
+        problems.append("{} P1-B profile invariants are invalid".format(profile_path))
+
+
+def _executable_sram_filter_summary(
+    profiles: Sequence[Mapping[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """Recompute the immutable P1-B filterability summary from profiles."""
+    rows: List[Dict[str, Any]] = []
+    for profile in profiles:
+        workload = profile.get("workload")
+        workload_id = workload.get("id") if isinstance(workload, Mapping) else None
+        counters = profile.get("counters")
+        invalidation = counters.get("invalidation") if isinstance(counters, Mapping) else None
+        total = invalidation.get("sram_write_requests") if isinstance(invalidation, Mapping) else None
+        skipped = (
+            invalidation.get("non_executable_sram_write_requests")
+            if isinstance(invalidation, Mapping)
+            else None
+        )
+        if (
+            not isinstance(workload_id, str)
+            or type(total) is not int
+            or total <= 0
+            or type(skipped) is not int
+            or skipped < 0
+            or skipped > total
+        ):
+            return None
+        rows.append(
+            {
+                "workload": workload_id,
+                "sram_write_requests": total,
+                "non_executable_sram_write_requests": skipped,
+                "filterable_request_rate": skipped / total,
+            }
+        )
+    if not rows:
+        return None
+    rows.sort(key=lambda row: row["workload"])
+    combined = statistics.mean(float(row["filterable_request_rate"]) for row in rows)
+    return {
+        "method": "p1b-filterable-sram-write-rate-v1",
+        "threshold": 0.01,
+        "workloads": rows,
+        "combined_ratio": combined,
+        "pass": len(rows) == 2 and combined >= 0.01,
+    }
+
+
 def _profile_ratio_matches(actual: object, numerator: int, denominator: int) -> bool:
     if denominator <= 0 or not isinstance(actual, (int, float)) or isinstance(actual, bool):
         return False
@@ -2914,6 +2994,20 @@ def _verify_replicated_anchor_v3_summary(
     problems: List[str],
 ) -> None:
     """Validate v3's nine-group piecewise correction and fixed local gate."""
+    measurement_policy = manifest.get("measurement_policy", {})
+    primary_metric = (
+        measurement_policy.get("primary_metric", "wall-time")
+        if isinstance(measurement_policy, Mapping)
+        else "wall-time"
+    )
+    if primary_metric == "cpu-time":
+        predicted_field = "predicted_anchor_cpu_throughput"
+        corrected_field = "corrected_emulated_cycles_per_cpu_second"
+        raw_field = "cycles_per_emulation_cpu_second"
+    else:
+        predicted_field = "predicted_anchor_throughput"
+        corrected_field = "corrected_emulated_cycles_per_wall_second"
+        raw_field = "emulated_cycles_per_wall_second"
     calibration = summary.get("calibration")
     if not isinstance(calibration, Mapping):
         problems.append("{} v3 replicated-anchor calibration is missing".format(record_dir))
@@ -3298,9 +3392,13 @@ def _verify_replicated_anchor_v3_summary(
     if reference is not None and len(anchor_points) == len(expected_groups):
         for run_id, run in run_by_id.items():
             elapsed = run.get("protocol_elapsed_seconds")
-            predicted = run.get("predicted_anchor_throughput")
+            # The anchor predictor and corrected throughput are emitted for
+            # both clocks, but the primary clock selects the fields that must
+            # be present.  CPU-time A/B records intentionally omit the
+            # wall-time predictor name and use the CPU-specific field.
+            predicted = run.get(predicted_field)
             correction = run.get("host_speed_correction")
-            corrected = run.get("corrected_emulated_cycles_per_wall_second")
+            corrected = run.get(corrected_field)
             if (
                 not isinstance(elapsed, (int, float))
                 or isinstance(elapsed, bool)
@@ -3334,7 +3432,7 @@ def _verify_replicated_anchor_v3_summary(
             expected_correction = float(reference) / expected_predicted
             if not math.isclose(float(correction), expected_correction, rel_tol=1e-12, abs_tol=1e-12):
                 problems.append("{} v3 run {} host correction is not derived from knots".format(record_dir, run_id))
-            raw_value = run.get("emulated_cycles_per_wall_second")
+            raw_value = run.get(raw_field)
             if isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool) and not math.isclose(
                 float(corrected), float(raw_value) * float(correction), rel_tol=1e-12, abs_tol=1e-9
             ):
@@ -3962,7 +4060,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
         profile_name = (
             candidate_manifest.get("diagnostic_profile_record")
             if isinstance(candidate_manifest, Mapping)
-            and candidate_manifest.get("candidate_id") == "P2-A"
+            and candidate_manifest.get("candidate_id") in {"P1-B", "P2-A"}
             else None
         )
         if isinstance(profile_name, str) and profile_name.startswith("rp2040-cpu-") and Path(profile_name).name == profile_name:
@@ -4092,6 +4190,15 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     feature_set = identity.get("feature_set", [])
                     if isinstance(feature_set, list):
                         identity_feature_union.update(feature_set)
+                        if {
+                            "threading",
+                            "executable-sram-invalidation-filter",
+                        }.issubset(feature_set):
+                            problems.append(
+                                "{} backend identity {} combines Serial-only executable-sram-invalidation-filter with threading".format(
+                                    record_dir, label
+                                )
+                            )
                     provenance_role = identity.get("provenance_role")
                     if provenance_role is None:
                         problems.append("{} backend identity {} provenance_role is missing".format(record_dir, label))
@@ -4113,6 +4220,17 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     ):
                         problems.append(
                             "{} backend identity {} omits pending-exception-fast-reject for P2-A".format(
+                                record_dir, label
+                            )
+                        )
+                    if (
+                        role == "candidate_profile"
+                        and manifest.get("candidate_id") == "P1-B"
+                        and isinstance(feature_set, list)
+                        and "executable-sram-invalidation-filter" not in feature_set
+                    ):
+                        problems.append(
+                            "{} backend identity {} omits executable-sram-invalidation-filter for P1-B".format(
                                 record_dir, label
                             )
                         )
@@ -4248,7 +4366,18 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 problems.append("{} decision backend identities differ from manifest".format(record_dir))
             if decision.get("feature_set") != manifest.get("feature_set"):
                 problems.append("{} decision feature_set differs from manifest".format(record_dir))
-            if decision.get("measurement_policy") != measurement_policy:
+            # A correctness phase may have admitted the fixed A/B policy and
+            # then be interrupted before the performance aggregate is written.
+            # Keep that prepared-but-unclosed root auditable without treating
+            # its old correctness decision as the final performance decision;
+            # completed A/B roots still require exact policy equality.
+            open_ab_preflight = (
+                decision.get("decision_kind") == "correctness"
+                and measurement_policy is not None
+                and not (record_dir / "ab").exists()
+                and not (record_dir / "summary.json").is_file()
+            )
+            if not open_ab_preflight and decision.get("measurement_policy") != measurement_policy:
                 problems.append("{} decision measurement_policy differs from manifest".format(record_dir))
             if decision.get("status") not in {
                 "pass", "fail", "bank", "pending", "invalid", "not_run"
@@ -4337,7 +4466,8 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
         ab_dir = record_dir / "ab"
         run_by_id: Dict[str, Dict[str, Any]] = {}
         if ab_dir.exists():
-            if manifest.get("candidate_id") == "P2-A":
+            if manifest.get("candidate_id") in {"P1-B", "P2-A"}:
+                profile_candidate_id = manifest.get("candidate_id")
                 profile_name = manifest.get("diagnostic_profile_record")
                 profile_record_dir = (
                     records_root / profile_name
@@ -4347,39 +4477,46 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     else None
                 )
                 if profile_record_dir is None or profile_record_dir == record_dir or not profile_record_dir.is_dir():
-                    problems.append("{} P2-A AB diagnostic_profile_record is missing or invalid".format(record_dir))
+                    problems.append("{} {} AB diagnostic_profile_record is missing or invalid".format(record_dir, profile_candidate_id))
                 else:
                     linked_manifest_path = profile_record_dir / "manifest.json"
                     try:
                         linked_manifest = load_json(linked_manifest_path)
                     except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
                         linked_manifest = None
-                        problems.append("{} P2-A linked profile manifest is unreadable: {}".format(record_dir, error))
+                        problems.append("{} {} linked profile manifest is unreadable: {}".format(record_dir, profile_candidate_id, error))
                     if isinstance(linked_manifest, Mapping):
-                        if linked_manifest.get("candidate_id") != "P2-A":
-                            problems.append("{} P2-A linked profile candidate_id is invalid".format(record_dir))
+                        if linked_manifest.get("candidate_id") != profile_candidate_id:
+                            problems.append("{} {} linked profile candidate_id is invalid".format(record_dir, profile_candidate_id))
                         if linked_manifest.get("workloads") != manifest.get("workloads"):
-                            problems.append("{} P2-A linked profile workloads differ from AB".format(record_dir))
+                            problems.append("{} {} linked profile workloads differ from AB".format(record_dir, profile_candidate_id))
                         if linked_manifest.get("measurement_cpu") != manifest.get("measurement_cpu"):
-                            problems.append("{} P2-A linked profile CPU differs from AB".format(record_dir))
+                            problems.append("{} {} linked profile CPU differs from AB".format(record_dir, profile_candidate_id))
                         linked_profile_features = linked_manifest.get("feature_set")
+                        required_profile_features = {
+                            "cpu-application-profiler",
+                            "sd-gen1-multiblock",
+                        }
+                        if profile_candidate_id == "P1-B":
+                            required_profile_features.add("executable-sram-invalidation-filter")
+                        else:
+                            required_profile_features.add("pending-exception-fast-reject")
                         if (
                             not isinstance(linked_profile_features, list)
-                            or "cpu-application-profiler" not in linked_profile_features
-                            or "pending-exception-fast-reject" not in linked_profile_features
+                            or not required_profile_features.issubset(linked_profile_features)
                         ):
-                            problems.append("{} P2-A linked profile features are incomplete".format(record_dir))
+                            problems.append("{} {} linked profile features are incomplete".format(record_dir, profile_candidate_id))
                         try:
                             linked_decision = load_json(profile_record_dir / "decision.json")
                         except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
                             linked_decision = None
-                            problems.append("{} P2-A linked profile decision is unreadable: {}".format(record_dir, error))
+                            problems.append("{} {} linked profile decision is unreadable: {}".format(record_dir, profile_candidate_id, error))
                         if (
                             not isinstance(linked_decision, Mapping)
                             or linked_decision.get("decision_kind") != "profile"
                             or linked_decision.get("status") != "pass"
                         ):
-                            problems.append("{} P2-A linked profile decision is not passing".format(record_dir))
+                            problems.append("{} {} linked profile decision is not passing".format(record_dir, profile_candidate_id))
                         ab_candidate = (
                             manifest.get("backend_identities", {}).get("candidate_production")
                             if isinstance(manifest.get("backend_identities"), Mapping)
@@ -4391,7 +4528,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             else None
                         )
                         if not isinstance(ab_candidate, Mapping) or not isinstance(profile_candidate, Mapping) or ab_candidate.get("commit") != profile_candidate.get("commit"):
-                            problems.append("{} P2-A linked profile backend commit differs from AB candidate".format(record_dir))
+                            problems.append("{} {} linked profile backend commit differs from AB candidate".format(record_dir, profile_candidate_id))
             summary = None
             if not summary_path.is_file():
                 problems.append("{} AB record is missing summary.json".format(record_dir))
@@ -4609,28 +4746,50 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             problems.append("{} profile build provenance SHA-256 differs from manifest".format(profile_path))
                     if isinstance(identity, dict) and profile.get("feature_set") != identity.get("feature_set", []):
                         problems.append("{} profile feature_set differs from manifest".format(profile_path))
-                    if manifest.get("candidate_id") == "P2-A":
+                    if manifest.get("candidate_id") in {"P1-B", "P2-A"}:
                         profile_features = profile.get("feature_set")
+                        required_profile_features = {
+                            "cpu-application-profiler",
+                            "sd-gen1-multiblock",
+                        }
+                        if manifest.get("candidate_id") == "P1-B":
+                            required_profile_features.add("executable-sram-invalidation-filter")
+                        else:
+                            required_profile_features.add("pending-exception-fast-reject")
                         if (
                             not isinstance(profile_features, list)
-                            or "cpu-application-profiler" not in profile_features
-                            or "pending-exception-fast-reject" not in profile_features
+                            or not required_profile_features.issubset(profile_features)
                         ):
                             problems.append(
-                                "{} P2-A profile feature_set must include cpu-application-profiler and pending-exception-fast-reject".format(
-                                    profile_path
+                                "{} {} profile feature_set is incomplete".format(
+                                    profile_path, manifest.get("candidate_id")
                                 )
                             )
-                        _verify_pending_exception_poll_equation(profile_path, profile, problems)
+                        if manifest.get("candidate_id") == "P1-B":
+                            _verify_executable_sram_filter_profile(profile_path, profile, problems)
+                        else:
+                            _verify_pending_exception_poll_equation(profile_path, profile, problems)
 
-            if manifest.get("candidate_id") == "P2-A":
+            if manifest.get("candidate_id") in {"P1-B", "P2-A"}:
                 expected_profile_workloads = set(workload_ids)
                 if set(candidate_profiles) != expected_profile_workloads:
                     problems.append(
-                        "{} P2-A profiles must cover exactly the two manifest workloads".format(record_dir)
+                        "{} {} profiles must cover exactly the two manifest workloads".format(
+                            record_dir, manifest.get("candidate_id")
+                        )
                     )
-        elif manifest.get("candidate_id") == "P2-A" and record_dir.name in linked_profile_names:
-            problems.append("{} P2-A profile directory is missing".format(record_dir))
+            if manifest.get("candidate_id") == "P1-B" and isinstance(decision, Mapping):
+                filterability = _executable_sram_filter_summary(
+                    [profile for _path, profile in candidate_profiles.values()]
+                )
+                if filterability is None:
+                    problems.append("{} P1-B filterability counters cannot be summarized".format(record_dir))
+                elif decision.get("filterability") != filterability:
+                    problems.append("{} P1-B decision filterability summary differs from profiles".format(record_dir))
+                elif filterability.get("pass") is not True:
+                    problems.append("{} P1-B filterability gate is not passing".format(record_dir))
+        elif manifest.get("candidate_id") in {"P1-B", "P2-A"} and record_dir.name in linked_profile_names:
+            problems.append("{} {} profile directory is missing".format(record_dir, manifest.get("candidate_id")))
 
         profile_comparison_path = record_dir / "profile-comparison.json"
         if profile_comparison_path.is_file():
@@ -4789,7 +4948,16 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                         problems.append("{} contains a duplicate artifact entry for {}".format(sums_path, relative))
                         continue
                     listed_paths.add(artifact_path)
-                    if sha256(artifact_path) != digest:
+                    open_ab_preflight = (
+                        isinstance(decision, Mapping)
+                        and decision.get("decision_kind") == "correctness"
+                        and isinstance(manifest.get("measurement_policy"), Mapping)
+                        and not (record_dir / "ab").exists()
+                        and not (record_dir / "summary.json").is_file()
+                    )
+                    if sha256(artifact_path) != digest and not (
+                        open_ab_preflight and relative == "manifest.json"
+                    ):
                         problems.append("{} digest mismatch for {}".format(sums_path, relative))
                 for artifact_path in record_dir.rglob("*"):
                     resolved_artifact = artifact_path.resolve()

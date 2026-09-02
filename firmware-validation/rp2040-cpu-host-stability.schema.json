@@ -19,6 +19,10 @@
         "throughput": {"type": "number", "exclusiveMinimum": 0},
         "cycles": {"type": "integer", "minimum": 1},
         "wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "emulation_wall_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "emulation_cpu_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "cycles_per_emulation_wall_second": {"type": "number", "exclusiveMinimum": 0},
+        "cycles_per_emulation_cpu_second": {"type": "number", "exclusiveMinimum": 0},
         "backend_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
         "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "build_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
@@ -54,7 +58,8 @@
             "measured_runs": {"const": 10},
             "inter_run_cooldown_seconds": {"const": 60.0},
             "adjacent_log_throughput_threshold": {"const": 0.02},
-            "relative_mad_threshold": {"const": 0.02}
+            "relative_mad_threshold": {"const": 0.02},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]}
           }
         },
         {
@@ -73,7 +78,8 @@
             "group_count": {"const": 4},
             "inter_run_cooldown_seconds": {"const": 60.0},
             "group_adjacent_log_throughput_threshold": {"const": 0.02},
-            "relative_mad_threshold": {"const": 0.02}
+            "relative_mad_threshold": {"const": 0.02},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]}
           }
         },
         {
@@ -94,6 +100,7 @@
             "inter_run_cooldown_seconds": {"const": 60.0},
             "group_adjacent_log_throughput_threshold": {"const": 0.02},
             "relative_mad_threshold": {"const": 0.02},
+            "primary_metric": {"enum": ["cpu-time", "wall-time"]},
             "diagnostics": {
               "type": "array",
               "const": ["cpu_pressure", "proc_cpu_stat_steal", "cgroup_cpu_stat", "scheduler"]

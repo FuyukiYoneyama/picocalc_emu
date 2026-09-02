@@ -50,6 +50,7 @@ HOST_STABILITY_V2_GROUP_COUNT = HOST_STABILITY_V2_MEASURED_RUNS // HOST_STABILIT
 HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT = 0.02
 CPU_TIME_DIAGNOSTIC_WARMUP_RUNS = 1
 CPU_TIME_DIAGNOSTIC_MEASURED_RUNS = 4
+P1B_FILTERABLE_COMBINED_MIN_RATIO = 0.01
 LOAD_SHAPE_INSTANCE_COUNTS = (1, 2, 4, 8)
 LOAD_SHAPE_DEFAULT_CYCLES = 10_000_000
 AFFINITY_PILOT_MODES = ("pinned-vcpu", "inherited-set")
@@ -189,6 +190,13 @@ def normalize_feature_set(features: Sequence[str]) -> List[str]:
         )
     if len(set(values)) != len(values):
         raise ValueError("feature_set contains duplicate Cargo features")
+    if {
+        "threading",
+        "executable-sram-invalidation-filter",
+    }.issubset(values):
+        raise ValueError(
+            "executable-sram-invalidation-filter is Serial-only and cannot be combined with threading"
+        )
     return sorted(values)
 
 
@@ -202,6 +210,8 @@ def validate_profile_feature_set(candidate_id: str, features: Sequence[str]) -> 
     """Validate profile instrumentation required by the candidate phase."""
     declared = normalize_feature_set(features)
     required = ["cpu-application-profiler"]
+    if candidate_id == "P1-B":
+        required.append("executable-sram-invalidation-filter")
     if candidate_id == "P2-A":
         required.append("pending-exception-fast-reject")
     missing = [feature for feature in required if feature not in declared]
@@ -255,6 +265,86 @@ def validate_pending_exception_profile(profile: Mapping[str, Any]) -> None:
         or invariants.get("exception_source_conservation") is not True
     ):
         raise ValueError("P2-A profile exception invariants are invalid")
+
+
+def validate_executable_sram_filter_profile(profile: Mapping[str, Any]) -> None:
+    """Validate P1-B SRAM-write denominator and skipped-write counters.
+
+    ``invalidation.requests`` retains its historical meaning (requests that
+    actually entered the decode-invalidation queue), so it is intentionally
+    not used as the denominator here.  Both aggregate and per-core records
+    must expose the explicit P1-B counters and satisfy the conservation
+    inequality before a production A/B can start.
+    """
+    counters = profile.get("counters")
+    scopes: List[Tuple[str, Any]] = [("aggregate", counters)]
+    cores = profile.get("cores")
+    if not isinstance(cores, list):
+        raise ValueError("P1-B profile cores are invalid")
+    scopes.extend(("core-{}".format(index), core) for index, core in enumerate(cores))
+    for scope, source in scopes:
+        invalidation = source.get("invalidation") if isinstance(source, Mapping) else None
+        if not isinstance(invalidation, Mapping):
+            raise ValueError("P1-B profile {} invalidation counters are missing".format(scope))
+        values: Dict[str, int] = {}
+        for field in ("sram_write_requests", "non_executable_sram_write_requests"):
+            value = invalidation.get(field)
+            if type(value) is not int or value < 0:
+                raise ValueError("P1-B profile {} {} is invalid".format(scope, field))
+            values[field] = value
+        if values["non_executable_sram_write_requests"] > values["sram_write_requests"]:
+            raise ValueError("P1-B profile {} skipped writes exceed SRAM writes".format(scope))
+    invariants = profile.get("invariants")
+    if not isinstance(invariants, Mapping) or invariants.get("valid") is not True:
+        raise ValueError("P1-B profile invariants are invalid")
+
+
+def summarize_executable_sram_filter_profiles(
+    profiles: Sequence[Mapping[str, Any]],
+) -> Dict[str, Any]:
+    """Compute the fixed P1-B workload and equal-weight filterability gate."""
+    workload_rows: List[Dict[str, Any]] = []
+    for profile in profiles:
+        workload = profile.get("workload")
+        workload_id = workload.get("id") if isinstance(workload, Mapping) else None
+        counters = profile.get("counters")
+        invalidation = counters.get("invalidation") if isinstance(counters, Mapping) else None
+        total = invalidation.get("sram_write_requests") if isinstance(invalidation, Mapping) else None
+        skipped = (
+            invalidation.get("non_executable_sram_write_requests")
+            if isinstance(invalidation, Mapping)
+            else None
+        )
+        if (
+            not isinstance(workload_id, str)
+            or type(total) is not int
+            or total <= 0
+            or type(skipped) is not int
+            or skipped < 0
+            or skipped > total
+        ):
+            raise ValueError("P1-B profile filterability counters are invalid")
+        workload_rows.append(
+            {
+                "workload": workload_id,
+                "sram_write_requests": total,
+                "non_executable_sram_write_requests": skipped,
+                "filterable_request_rate": skipped / total,
+            }
+        )
+    if not workload_rows:
+        raise ValueError("P1-B profile has no workload counter rows")
+    workload_rows.sort(key=lambda row: row["workload"])
+    combined_ratio = statistics.mean(
+        float(row["filterable_request_rate"]) for row in workload_rows
+    )
+    return {
+        "method": "p1b-filterable-sram-write-rate-v1",
+        "threshold": P1B_FILTERABLE_COMBINED_MIN_RATIO,
+        "workloads": workload_rows,
+        "combined_ratio": combined_ratio,
+        "pass": len(workload_rows) == 2 and combined_ratio >= P1B_FILTERABLE_COMBINED_MIN_RATIO,
+    }
 
 
 def runner_provenance_path(runner: Path) -> Path:
@@ -1660,35 +1750,63 @@ def _sleep_between_runs(seconds: float) -> None:
         time.sleep(seconds)
 
 
-def host_stability_measurement_policy() -> Dict[str, Any]:
+def _with_host_stability_primary_metric(
+    policy: Dict[str, Any], primary_metric: Optional[str]
+) -> Dict[str, Any]:
+    """Annotate a newly generated sentinel with its throughput clock.
+
+    Historical v1/v2/v3 records omitted this field and therefore mean
+    wall-time.  Keeping the field optional preserves those immutable records;
+    new CPU-time sentinels must declare the clock explicitly so a CPU-primary
+    A/B cannot accidentally use a wall-only preflight.
+    """
+    if primary_metric is not None:
+        primary_metric_fields(primary_metric)
+        policy["primary_metric"] = primary_metric
+    return policy
+
+
+def host_stability_measurement_policy(
+    primary_metric: Optional[str] = None,
+) -> Dict[str, Any]:
     """Return the fixed sentinel protocol used before a v3 production batch."""
-    return {
-        "method": "host-stability-sentinel-v1",
-        "warmup_runs": HOST_STABILITY_WARMUP_RUNS,
-        "measured_runs": HOST_STABILITY_MEASURED_RUNS,
-        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
-        "adjacent_log_throughput_threshold": HOST_STABILITY_ADJACENT_LOG_LIMIT,
-        "relative_mad_threshold": HOST_STABILITY_MAD_LIMIT,
-    }
+    return _with_host_stability_primary_metric(
+        {
+            "method": "host-stability-sentinel-v1",
+            "warmup_runs": HOST_STABILITY_WARMUP_RUNS,
+            "measured_runs": HOST_STABILITY_MEASURED_RUNS,
+            "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+            "adjacent_log_throughput_threshold": HOST_STABILITY_ADJACENT_LOG_LIMIT,
+            "relative_mad_threshold": HOST_STABILITY_MAD_LIMIT,
+        },
+        primary_metric,
+    )
 
 
-def host_stability_measurement_policy_v2() -> Dict[str, Any]:
+def host_stability_measurement_policy_v2(
+    primary_metric: Optional[str] = None,
+) -> Dict[str, Any]:
     """Return the fixed grouped sentinel protocol used after v1 rejection."""
-    return {
-        "method": "host-stability-sentinel-v2",
-        "warmup_runs": HOST_STABILITY_WARMUP_RUNS,
-        "measured_runs": HOST_STABILITY_V2_MEASURED_RUNS,
-        "replicates_per_group": HOST_STABILITY_V2_GROUP_SIZE,
-        "group_count": HOST_STABILITY_V2_GROUP_COUNT,
-        "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
-        "group_adjacent_log_throughput_threshold": HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT,
-        "relative_mad_threshold": HOST_STABILITY_MAD_LIMIT,
-    }
+    return _with_host_stability_primary_metric(
+        {
+            "method": "host-stability-sentinel-v2",
+            "warmup_runs": HOST_STABILITY_WARMUP_RUNS,
+            "measured_runs": HOST_STABILITY_V2_MEASURED_RUNS,
+            "replicates_per_group": HOST_STABILITY_V2_GROUP_SIZE,
+            "group_count": HOST_STABILITY_V2_GROUP_COUNT,
+            "inter_run_cooldown_seconds": AB_INTER_RUN_COOLDOWN_SECONDS,
+            "group_adjacent_log_throughput_threshold": HOST_STABILITY_V2_GROUP_ADJACENT_LOG_LIMIT,
+            "relative_mad_threshold": HOST_STABILITY_MAD_LIMIT,
+        },
+        primary_metric,
+    )
 
 
-def host_stability_measurement_policy_v3() -> Dict[str, Any]:
+def host_stability_measurement_policy_v3(
+    primary_metric: Optional[str] = None,
+) -> Dict[str, Any]:
     """Return the grouped sentinel protocol with host attribution counters."""
-    policy = host_stability_measurement_policy_v2()
+    policy = host_stability_measurement_policy_v2(primary_metric=primary_metric)
     policy["method"] = "host-stability-sentinel-v3"
     policy["diagnostics"] = [
         "cpu_pressure",
@@ -1699,13 +1817,15 @@ def host_stability_measurement_policy_v3() -> Dict[str, Any]:
     return policy
 
 
-def host_stability_measurement_policy_for_version(version: int) -> Dict[str, Any]:
+def host_stability_measurement_policy_for_version(
+    version: int, primary_metric: Optional[str] = None
+) -> Dict[str, Any]:
     if version == 1:
-        return host_stability_measurement_policy()
+        return host_stability_measurement_policy(primary_metric=primary_metric)
     if version == 2:
-        return host_stability_measurement_policy_v2()
+        return host_stability_measurement_policy_v2(primary_metric=primary_metric)
     if version == 3:
-        return host_stability_measurement_policy_v3()
+        return host_stability_measurement_policy_v3(primary_metric=primary_metric)
     raise ValueError("unsupported host stability protocol version: {}".format(version))
 
 
@@ -2304,6 +2424,17 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
             "record_type", "record_version", "record_id", "candidate_id", "workloads",
             "measurement_cpu", "diagnostic_profile_record",
         ):
+            # A profile is produced after correctness for P1-B/P2-A.  The
+            # correctness phase therefore cannot know its record name yet;
+            # allow that optional identity field to transition from absent to
+            # its fixed pointer exactly once.  Any later change remains an
+            # identity mismatch and is rejected.
+            if (
+                field == "diagnostic_profile_record"
+                and existing.get(field) is None
+                and manifest.get(field) is not None
+            ):
+                continue
             if existing.get(field) != manifest.get(field):
                 raise ValueError("record manifest identity mismatch: {}".format(manifest_path))
         existing_features = set(normalize_feature_set(existing.get("feature_set", [])))
@@ -2320,6 +2451,11 @@ def _record_manifest(output: Path, identity: Mapping[str, Any]) -> None:
                 raise ValueError("record manifest backend identity mismatch: {}".format(label))
             merged_identities[label] = value
         merged["backend_identities"] = merged_identities
+        if (
+            merged.get("diagnostic_profile_record") is None
+            and manifest.get("diagnostic_profile_record") is not None
+        ):
+            merged["diagnostic_profile_record"] = manifest["diagnostic_profile_record"]
         existing_policy = existing.get("measurement_policy")
         new_policy = manifest.get("measurement_policy")
         if new_policy is not None:
@@ -2760,8 +2896,16 @@ def _require_host_stability_gate(
     baseline_identity: Mapping[str, Any],
     measurement_cpu: int,
     inter_run_cooldown_seconds: float,
+    primary_metric: str = "wall-time",
 ) -> Dict[str, Any]:
-    """Reject v3 A/B before subprocess launch unless the sentinel passed."""
+    """Reject v3 A/B before subprocess launch unless the sentinel passed.
+
+    A sentinel without ``primary_metric`` is a historical wall-time record.
+    CPU-primary A/B therefore requires a newly generated sentinel that
+    explicitly measures the in-process CPU-time throughput; a wall-only
+    preflight must never silently authorize a CPU-time comparison.
+    """
+    primary_metric_fields(primary_metric)
     if record_path is None:
         raise ValueError("v3 A/B requires --host-stability-record")
     path = record_path.resolve()
@@ -2778,13 +2922,40 @@ def _require_host_stability_gate(
     ):
         raise ValueError("host stability record is not passing: {}".format(path))
     measurement_policy = record.get("measurement_policy")
-    if measurement_policy == host_stability_measurement_policy():
+    if not isinstance(measurement_policy, Mapping):
+        raise ValueError("host stability measurement policy is invalid")
+    record_primary_metric = measurement_policy.get("primary_metric", "wall-time")
+    if record_primary_metric != primary_metric:
+        raise ValueError(
+            "host stability record primary metric differs from A/B: {} != {}".format(
+                record_primary_metric, primary_metric
+            )
+        )
+    method = measurement_policy.get("method")
+    if method == "host-stability-sentinel-v1":
         summarize = summarize_host_stability
-    elif measurement_policy == host_stability_measurement_policy_v2():
+        expected_policy = host_stability_measurement_policy(
+            primary_metric=record_primary_metric
+            if "primary_metric" in measurement_policy
+            else None
+        )
+    elif method == "host-stability-sentinel-v2":
         summarize = summarize_host_stability_v2
-    elif measurement_policy == host_stability_measurement_policy_v3():
+        expected_policy = host_stability_measurement_policy_v2(
+            primary_metric=record_primary_metric
+            if "primary_metric" in measurement_policy
+            else None
+        )
+    elif method == "host-stability-sentinel-v3":
         summarize = summarize_host_stability_v3
+        expected_policy = host_stability_measurement_policy_v3(
+            primary_metric=record_primary_metric
+            if "primary_metric" in measurement_policy
+            else None
+        )
     else:
+        raise ValueError("host stability measurement policy differs from the fixed protocol")
+    if dict(measurement_policy) != expected_policy:
         raise ValueError("host stability measurement policy differs from the fixed protocol")
     if record.get("measurement_cpu") != measurement_cpu:
         raise ValueError("host stability record CPU differs from A/B")
@@ -3873,7 +4044,13 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
     if args.cpu is None:
         raise ValueError("stability-preflight requires --cpu for affinity pinning")
     protocol_version = getattr(args, "protocol_version", 2)
-    policy = host_stability_measurement_policy_for_version(protocol_version)
+    requested_primary_metric = getattr(args, "primary_metric", None)
+    primary_metric = requested_primary_metric or "wall-time"
+    metric_fields = primary_metric_fields(primary_metric)
+    policy = host_stability_measurement_policy_for_version(
+        protocol_version,
+        primary_metric=requested_primary_metric,
+    )
     warmup = HOST_STABILITY_WARMUP_RUNS if args.warmup is None else args.warmup
     runs = int(policy["measured_runs"]) if args.runs is None else args.runs
     if warmup != int(policy["warmup_runs"]):
@@ -3915,20 +4092,36 @@ def run_host_stability_preflight(args: argparse.Namespace) -> int:
             ended_ns = time.perf_counter_ns()
             host_end = host_cpu()
             measurement = result["measurement"]
-            samples.append(
+            sample = {
+                "sample_id": "sentinel-{:03d}".format(index),
+                "protocol_elapsed_seconds": (ended_ns - started_ns) / 1_000_000_000,
+                "throughput": measurement[metric_fields["raw"]],
+                "cycles": measurement["cycles"],
+                "wall_seconds": measurement["wall_seconds"],
+                "backend_commit": measurement["backend_commit"],
+                "runner_sha256": measurement["runner_sha256"],
+                "build_provenance_sha256": measurement["build_provenance_sha256"],
+                "host_snapshot_start": host_start,
+                "host_snapshot_end": host_end,
+            }
+            optional_measurements = {
+                "emulation_wall_seconds": measurement.get("emulation_wall_seconds"),
+                "emulation_cpu_seconds": measurement.get("emulation_cpu_seconds"),
+                "cycles_per_emulation_wall_second": measurement.get(
+                    "emulated_cycles_per_wall_second"
+                ),
+                "cycles_per_emulation_cpu_second": measurement.get(
+                    "cycles_per_emulation_cpu_second"
+                ),
+            }
+            sample.update(
                 {
-                    "sample_id": "sentinel-{:03d}".format(index),
-                    "protocol_elapsed_seconds": (ended_ns - started_ns) / 1_000_000_000,
-                    "throughput": measurement["emulated_cycles_per_wall_second"],
-                    "cycles": measurement["cycles"],
-                    "wall_seconds": measurement["wall_seconds"],
-                    "backend_commit": measurement["backend_commit"],
-                    "runner_sha256": measurement["runner_sha256"],
-                    "build_provenance_sha256": measurement["build_provenance_sha256"],
-                    "host_snapshot_start": host_start,
-                    "host_snapshot_end": host_end,
+                    key: value
+                    for key, value in optional_measurements.items()
+                    if value is not None
                 }
             )
+            samples.append(sample)
             _sleep_between_runs(cooldown)
     except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
         error_text = str(error)
@@ -5074,47 +5267,62 @@ def _require_profile_gate(
     workloads: Sequence[Mapping[str, Any]],
     candidate_identity: Mapping[str, Any],
     measurement_cpu: Optional[int],
+    candidate_id: str = "P2-A",
 ) -> None:
-    """Require the P2-A feature-on diagnostic profile before production A/B."""
+    """Require the candidate-specific diagnostic profile before production A/B."""
     if profile_record is None:
-        raise ValueError("P2-A A/B requires --profile-record diagnostic profile")
+        raise ValueError("{} A/B requires --profile-record diagnostic profile".format(candidate_id))
     record = profile_record.resolve()
     _validate_record_root(record)
     if not (record / "SHA256SUMS").is_file():
-        raise ValueError("P2-A profile record is missing SHA256SUMS")
+        raise ValueError("{} profile record is missing SHA256SUMS".format(candidate_id))
     _verify_existing_sha256sums(record)
     manifest = _read_json(record / "manifest.json")
     decision = _read_json(record / "decision.json")
     if not isinstance(manifest, Mapping) or not isinstance(decision, Mapping):
-        raise ValueError("P2-A profile record manifest/decision must be objects")
+        raise ValueError("{} profile record manifest/decision must be objects".format(candidate_id))
     expected_workloads = _workload_manifest_entries(workloads)
     if (
         manifest.get("record_type") != RECORD_TYPE
         or manifest.get("record_version") != SCHEMA_VERSION
         or manifest.get("record_id") != record.name
-        or manifest.get("candidate_id") != "P2-A"
+        or manifest.get("candidate_id") != candidate_id
         or manifest.get("workloads") != expected_workloads
     ):
-        raise ValueError("P2-A profile record identity/workloads do not match A/B")
+        raise ValueError("{} profile record identity/workloads do not match A/B".format(candidate_id))
     if manifest.get("measurement_cpu") != measurement_cpu:
-        raise ValueError("P2-A profile record CPU differs from A/B")
+        raise ValueError("{} profile record CPU differs from A/B".format(candidate_id))
     identities = manifest.get("backend_identities")
     profile_identity = identities.get("candidate_profile") if isinstance(identities, Mapping) else None
     if not isinstance(profile_identity, Mapping):
-        raise ValueError("P2-A profile record candidate_profile identity is missing")
+        raise ValueError("{} profile record candidate_profile identity is missing".format(candidate_id))
     if profile_identity.get("commit") != candidate_identity.get("commit"):
-        raise ValueError("P2-A profile backend commit differs from A/B candidate")
+        raise ValueError("{} profile backend commit differs from A/B candidate".format(candidate_id))
     profile_features = profile_identity.get("feature_set")
-    required_features = {"cpu-application-profiler", "pending-exception-fast-reject", "sd-gen1-multiblock"}
-    if not isinstance(profile_features, list) or not required_features.issubset(profile_features):
-        raise ValueError("P2-A profile record lacks required profiler features")
+    profile_required_features = {"cpu-application-profiler", "sd-gen1-multiblock"}
+    # The profile binary intentionally includes the profiler, while the
+    # production candidate is a compile-out build.  Keep these requirements
+    # separate so a production A/B cannot be blocked for correctly omitting
+    # diagnostic code.
+    candidate_required_features = {"sd-gen1-multiblock"}
+    if candidate_id == "P1-B":
+        profile_required_features.add("executable-sram-invalidation-filter")
+        candidate_required_features.add("executable-sram-invalidation-filter")
+    elif candidate_id == "P2-A":
+        profile_required_features.add("pending-exception-fast-reject")
+        candidate_required_features.add("pending-exception-fast-reject")
+    if not isinstance(profile_features, list) or not profile_required_features.issubset(profile_features):
+        raise ValueError("{} profile record lacks required profiler features".format(candidate_id))
+    candidate_features = candidate_identity.get("feature_set")
+    if not isinstance(candidate_features, list) or not candidate_required_features.issubset(candidate_features):
+        raise ValueError("{} A/B candidate lacks required production features".format(candidate_id))
     if manifest.get("feature_set") != profile_features:
-        raise ValueError("P2-A profile record feature_set differs from candidate_profile identity")
+        raise ValueError("{} profile record feature_set differs from candidate_profile identity".format(candidate_id))
     if decision.get("decision_kind") != "profile" or decision.get("status") != "pass":
-        raise ValueError("P2-A profile record decision is not passing")
+        raise ValueError("{} profile record decision is not passing".format(candidate_id))
     profile_dir = record / "profile"
     if not profile_dir.is_dir():
-        raise ValueError("P2-A profile record directory is missing")
+        raise ValueError("{} profile record directory is missing".format(candidate_id))
     expected_paths = {
         profile_dir / "{}-r{}.json".format(workload["id"], workload["revision"])
         for workload in workloads
@@ -5125,23 +5333,34 @@ def _require_profile_gate(
         if not path.name.endswith("-measurement.json")
     }
     if actual_paths != expected_paths:
-        raise ValueError("P2-A profile record does not cover exactly both workloads")
+        raise ValueError("{} profile record does not cover exactly both workloads".format(candidate_id))
+    profile_values: List[Mapping[str, Any]] = []
     for workload in workloads:
         profile_path = profile_dir / "{}-r{}.json".format(workload["id"], workload["revision"])
         profile = _read_json(profile_path)
         if not isinstance(profile, Mapping):
-            raise ValueError("P2-A profile is not an object: {}".format(profile_path))
+            raise ValueError("{} profile is not an object: {}".format(candidate_id, profile_path))
         expected_profile_workload = {
             key: workload[key]
             for key in ("id", "revision", "firmware_sha256", "scenario_sha256")
         }
         if (
-            profile.get("candidate_id") != "P2-A"
+            profile.get("candidate_id") != candidate_id
             or profile.get("workload") != expected_profile_workload
             or profile.get("feature_set") != profile_features
         ):
-            raise ValueError("P2-A profile identity/workload/features are invalid: {}".format(profile_path))
-        validate_pending_exception_profile(profile)
+            raise ValueError("{} profile identity/workload/features are invalid: {}".format(candidate_id, profile_path))
+        if candidate_id == "P1-B":
+            validate_executable_sram_filter_profile(profile)
+        elif candidate_id == "P2-A":
+            validate_pending_exception_profile(profile)
+        profile_values.append(profile)
+    if candidate_id == "P1-B":
+        filterability = summarize_executable_sram_filter_profiles(profile_values)
+        if decision.get("filterability") != filterability:
+            raise ValueError("P1-B profile filterability summary does not match counters")
+        if filterability.get("pass") is not True:
+            raise ValueError("P1-B profile filterability gate is not passing")
 
 
 def run_ab(args: argparse.Namespace) -> int:
@@ -5188,12 +5407,13 @@ def run_ab(args: argparse.Namespace) -> int:
             and args.baseline_runner.resolve() == args.candidate_runner.resolve()
         ),
     )
-    if args.candidate_id == "P2-A":
+    if args.candidate_id in ("P1-B", "P2-A"):
         _require_profile_gate(
             getattr(args, "profile_record", None),
             workloads,
             identities["candidate_production"],
             args.cpu,
+            candidate_id=args.candidate_id,
         )
     _require_admission_gate(args.admission_record, workloads, identities["baseline_production"])
     batch_id = args.batch_id
@@ -5214,6 +5434,7 @@ def run_ab(args: argparse.Namespace) -> int:
             identities["baseline_production"],
             args.cpu,
             inter_run_cooldown_seconds,
+            primary_metric=getattr(args, "primary_metric", "cpu-time"),
         )
     _refuse_existing_files(record_root / "ab")
     for aggregate in (record_root / "summary.json", record_root / "decision.md", record_root / "hotpath-disassembly.txt"):
@@ -5239,10 +5460,10 @@ def run_ab(args: argparse.Namespace) -> int:
     if calibration_method == CALIBRATION_METHOD_INTERLEAVED_ANCHOR_V3:
         manifest_identity["host_stability_record"] = str(host_stability_record.resolve())
         manifest_identity["host_stability_record_sha256"] = sha256_file(host_stability_record.resolve())
-    if args.candidate_id == "P2-A":
+    if args.candidate_id in ("P1-B", "P2-A"):
         profile_record = getattr(args, "profile_record", None)
         if profile_record is None:
-            raise ValueError("P2-A A/B requires --profile-record diagnostic profile")
+            raise ValueError("{} A/B requires --profile-record diagnostic profile".format(args.candidate_id))
         manifest_identity["diagnostic_profile_record"] = profile_record.resolve().name
     _record_manifest(record_root, manifest_identity)
     decision_context = _manifest_decision_context(
@@ -5295,6 +5516,7 @@ def run_profile(args: argparse.Namespace) -> int:
         feature_set=getattr(args, "feature_set", []),
     )
     phase_dir.mkdir(parents=True, exist_ok=True)
+    normalized_profiles: List[Mapping[str, Any]] = []
     before = _set_cpu_affinity(args.cpu)
     try:
         for workload in workloads:
@@ -5360,25 +5582,30 @@ def run_profile(args: argparse.Namespace) -> int:
                 raise ValueError("CPU profile has no core records for {}".format(workload["id"]))
             if not isinstance(normalized_profile["counters"], Mapping):
                 raise ValueError("CPU profile counters are invalid for {}".format(workload["id"]))
-            if args.candidate_id == "P2-A":
+            if args.candidate_id == "P1-B":
+                validate_executable_sram_filter_profile(normalized_profile)
+            elif args.candidate_id == "P2-A":
                 validate_pending_exception_profile(normalized_profile)
             _write_json_once(profile_path, normalized_profile)
             _write_json_once(phase_dir / "{}-measurement.json".format(workload["id"]), result["measurement"])
+            normalized_profiles.append(normalized_profile)
     finally:
         _restore_cpu_affinity(before)
-    _write_json_replace(
-        record_root / "decision.json",
-        {
-            "schema_id": DECISION_SCHEMA_ID,
-            "schema_version": SCHEMA_VERSION,
-            "record_id": batch_id,
-            "candidate_id": args.candidate_id,
-            "decision_kind": "profile",
-            "status": "pass",
-            "correctness": {"status": "not_run", "profile": "written"},
-            **decision_context,
-        },
-    )
+    decision_payload: Dict[str, Any] = {
+        "schema_id": DECISION_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "record_id": batch_id,
+        "candidate_id": args.candidate_id,
+        "decision_kind": "profile",
+        "status": "pass",
+        "correctness": {"status": "not_run", "profile": "written"},
+        **decision_context,
+    }
+    if args.candidate_id == "P1-B":
+        decision_payload["filterability"] = summarize_executable_sram_filter_profiles(
+            normalized_profiles
+        )
+    _write_json_replace(record_root / "decision.json", decision_payload)
     _write_sha256sums_once(record_root)
     return 0
 
@@ -5611,6 +5838,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     stability.add_argument("--backend", type=Path, required=True)
     stability.add_argument("--runner", type=Path, required=True)
     stability.add_argument("--protocol-version", type=int, choices=(1, 2, 3), default=3)
+    stability.add_argument(
+        "--primary-metric", choices=AB_PRIMARY_METRICS,
+        help="throughput clock used by the sentinel; CPU-primary A/B requires an explicit cpu-time sentinel",
+    )
     stability.add_argument("--warmup", type=int)
     stability.add_argument("--runs", type=int)
     stability.add_argument(
@@ -5711,7 +5942,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     ab.add_argument("--candidate-runner", type=Path, required=True)
     ab.add_argument(
         "--profile-record", type=Path,
-        help="P2-A feature-on diagnostic profile record required before production A/B",
+        help="P1-B/P2-A feature-on diagnostic profile record required before production A/B",
     )
     ab.add_argument(
         "--host-stability-record", type=Path,

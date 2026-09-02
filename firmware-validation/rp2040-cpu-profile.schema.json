@@ -102,6 +102,8 @@
       "required": ["requests", "examined_slots", "matching_clears", "unrelated_would_clear", "wide_predecessor_clears"],
       "properties": {
         "requests": {"$ref": "#/$defs/counter"},
+        "sram_write_requests": {"$ref": "#/$defs/counter"},
+        "non_executable_sram_write_requests": {"$ref": "#/$defs/counter"},
         "examined_slots": {"$ref": "#/$defs/counter"},
         "matching_clears": {"$ref": "#/$defs/counter"},
         "unrelated_would_clear": {"$ref": "#/$defs/counter"},

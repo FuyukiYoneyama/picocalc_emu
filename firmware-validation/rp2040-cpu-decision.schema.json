@@ -5,6 +5,12 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_id", "schema_version", "record_id", "candidate_id", "decision_kind", "status", "workloads", "backend_identities", "feature_set"],
+  "$defs": {
+    "counter": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
   "properties": {
     "schema_id": {"const": "picocalc.rp2040-cpu-decision"},
     "schema_version": {"const": 1},
@@ -43,6 +49,35 @@
     "behavior": {"type": "object"},
     "correctness": {"type": "object"},
     "statistics": {"type": "object"},
+    "filterability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "threshold", "workloads", "combined_ratio", "pass"],
+      "properties": {
+        "method": {"const": "p1b-filterable-sram-write-rate-v1"},
+        "threshold": {"type": "number", "minimum": 0},
+        "workloads": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workload", "sram_write_requests",
+              "non_executable_sram_write_requests", "filterable_request_rate"
+            ],
+            "properties": {
+              "workload": {"type": "string", "minLength": 1},
+              "sram_write_requests": {"$ref": "#/$defs/counter"},
+              "non_executable_sram_write_requests": {"$ref": "#/$defs/counter"},
+              "filterable_request_rate": {"type": "number", "minimum": 0}
+            }
+          }
+        },
+        "combined_ratio": {"type": "number", "minimum": 0},
+        "pass": {"type": "boolean"}
+      }
+    },
     "evidence": {"type": "array"},
     "reasons": {"type": "array", "items": {"type": "string"}},
     "artifacts": {"type": "object"},
