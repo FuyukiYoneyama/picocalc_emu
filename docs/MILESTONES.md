@@ -48,7 +48,7 @@ recordなどの入力識別情報と検証記録だけである。SHA-256は同�
 | R6 | 文書・配布状態確定 | 完了 2026-08-08 |
 | R6-M | backend role／回帰境界の分離 | 完了 2026-08-09 |
 | PERF | PicoCalc emulator高速化 | **PERF-Q3まで完了後、約7.4倍の性能退行判明により以後を停止。履歴として保持** |
-| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0・R1完了、G0クリーン検証完了。G1（CPU・multicore・割込み正確性）の最小移植開始前** |
+| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0・R1完了、G0クリーン検証完了、G1（CPU・multicore・割込み正確性）candidate pass。G2（LCD・PIO・PSRAM正確性）待ち** |
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |

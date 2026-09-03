@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1 implementation pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1 candidate pass / G2 pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -248,7 +248,12 @@ Git管理下へ残す。不採用candidate codeをdefault-offで`main`へ残さ�
 
 本計画は承認後にR0（高速出発点と退行比較点の固定）、R1（必要機能の選別）を完了した。G0では
 e985のクリーンbackendの`rp2040-emu`テストと、既存PicoEdit（テキスト編集実装）のsourceを変更しない
-クリーンhost／RP2040 buildを確認した。次はG1（CPU・multicore・割込み正確性）の最小移植である。
-再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
-record、remote branchは変更しない。G1のproduction source移植は、対象履歴の差分と既存testを確認した
-うえで開始し、移植後に短probeと正確性testを通過しなければ次の機能群へ進まない。
+クリーンhost／RP2040 buildを確認した。G1（CPU・multicore・割込み正確性）は、必要部分を一時worktreeへ
+移植し、対象test、Tetris（軽ゲーム実装）短screening、NEXT-2A（マルチコア割込み受入実装）scenarioを
+通過した。記録は[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)
+にある。
+
+G1候補はbackend `main`へまだ統合していない。既受入artifactとのcycle差16は未丸めで記録し、性能改善とは
+扱わない。再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
+record、remote branchは変更していない。次はG2（LCD・PIO・PSRAM正確性）の最小移植であり、対象testと短probeを
+通過し、性能差を説明できる場合だけ次へ進む。

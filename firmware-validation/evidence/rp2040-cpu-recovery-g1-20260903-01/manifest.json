@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g1-20260903-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1 complete; G0 clean verification complete; G1 candidate pass; G2 pending",
+  "group": {
+    "id": "G1",
+    "display_name": "CPU・マルチコア・割込み正確性（最小移植）",
+    "purpose": "現行のマルチコア受入targetが必要とするguest-visible interrupt behaviorを高速Serial起点へ戻す"
+  },
+  "reconstruction": {
+    "base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "candidate_commit": "e785e02596eab17f50ba55a72cda2e7e7741b499",
+    "restored_history": [
+      "38683d65800ef36026f674dd47228024d69eb5e7",
+      "c184d6cf9e6c4cd254637bf848f07a4b84759175"
+    ],
+    "source_diff": "g1-source-diff.patch",
+    "source_diff_sha256": "667c2055e9f4ba8b9eda6dbb5e8d395b45e75bcccd2b7917fbde76315b4a3516",
+    "source_files_changed": 6,
+    "insertions": 180,
+    "deletions": 27,
+    "worktree": "temporary /tmp worktree; not a remote branch"
+  },
+  "tests": {
+    "rp2040_emu": {
+      "command": "cargo test --locked -p rp2040-emu",
+      "passed": [1232, 9, 9, 4, 6, 5],
+      "doctests": 0,
+      "status": "pass"
+    },
+    "picocalc_harness": {
+      "command": "cargo test --locked -p picocalc-harness",
+      "passed": [2, 39],
+      "status": "pass"
+    }
+  },
+  "tetris_short_screening": {
+    "display_name": "Tetris（軽ゲーム実装）",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario": "three-placement scenario",
+    "step_quantum": 1,
+    "measurement": "temporary host-timing sidecar; one-run diagnostics, not a qualification average",
+    "base_r0": {
+      "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+      "cycles": 187528660,
+      "cpu_seconds": 4.641699414,
+      "wall_seconds": 4.710422135,
+      "stop_reason": "scenario_done"
+    },
+    "isolated_38683": {
+      "cycles": 187528660,
+      "cpu_seconds": 4.954540759,
+      "wall_seconds": 4.900088587,
+      "stop_reason": "scenario_done"
+    },
+    "isolated_c184": {
+      "cycles": 187528656,
+      "cpu_seconds": 5.108380735,
+      "wall_seconds": 5.137696754,
+      "stop_reason": "scenario_done"
+    },
+    "combined_g1": {
+      "cycles": 187528656,
+      "cpu_seconds": 4.906316751,
+      "wall_seconds": 4.959809758,
+      "stop_reason": "scenario_done",
+      "unsupported_mmio": 0
+    },
+    "interpretation": "c184 changes the short probe by 4 guest cycles; this is recorded as IRQ exactness cost, not a performance gain"
+  },
+  "multicore_target_screening": {
+    "display_name": "NEXT-2A（マルチコア割込み受入実装）",
+    "firmware_source_commit": "e9e99f0bfde7b2706fbe7f5a2a92331eed141c98",
+    "firmware_artifact_sha256": "d8e67255952c64e246469176656bd46d3e61797b48e26a267ff61afff84942a9",
+    "scenario": "next2-multicore-v1",
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "stop_reason": "scenario_done",
+    "cycles": 152548108,
+    "elapsed_us": 615000,
+    "verdict": "pass",
+    "uart_markers": 5,
+    "irq_proc1": "count=1 word=0x13579bdf",
+    "uart_body_matches_accepted_after_provenance": true,
+    "framebuffer_rgb565_sha256": "7a8c4e73b96d34e87b8c1629c17e105351c69ad01cc92a71b81e0966ee9e49ff",
+    "framebuffer_non_black_pixels": 72320,
+    "psram": {
+      "cs_falling_count": 7,
+      "bytes_written": 24,
+      "bytes_read": 34,
+      "unknown_commands": 0
+    },
+    "unsupported_mmio": 0,
+    "accepted_reference_cycles": 152548092,
+    "cycle_difference_note": "candidate artifact differs from registry artifact; do not claim exact cycle equality or a performance gain"
+  },
+  "negative_control": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "same_firmware_artifact": "d8e67255952c64e246469176656bd46d3e61797b48e26a267ff61afff84942a9",
+    "stop_reason": "cycle_limit",
+    "cycle_limit": 1000000000,
+    "missing_markers": [
+      "[NEXT2][MC][IRQ_PROC1] status=pass count=1 word=0x13579bdf",
+      "[NEXT2][MC][VERDICT] launch=pass fifo=pass wfe_sev=pass irq_proc1=pass overall=pass"
+    ],
+    "interpretation": "G1 is required for the current multicore contract; this failed run is not a performance measurement"
+  },
+  "scope": {
+    "production_source_changed": false,
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "qualification_started": false
+  },
+  "next_step": {
+    "id": "G2",
+    "display_name": "LCD・PIO・PSRAM正確性の最小移植",
+    "start_condition": "G1 candidate evidence recorded; use one group, target tests first, then short Tetris screening"
+  }
+}

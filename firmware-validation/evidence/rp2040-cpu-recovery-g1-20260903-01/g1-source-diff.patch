@@ -1,0 +1,345 @@
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 57fae7f..76e5734 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -723,10 +723,12 @@ fn judge_run(
+ /// ARMv6-M IPSR exception numbers that mean "the firmware has fallen
+ /// over". Ordinary IRQs (>= 16), SVCall, PendSV and SysTick are normal
+ /// operation and must not stop the run.
+-fn fatal_exception_name(ipsr: u32) -> Option<&'static str> {
+-    match ipsr {
+-        2 => Some("NMI"),
+-        3 => Some("HardFault"),
++fn fatal_exception_name(core: usize, ipsr: u32) -> Option<&'static str> {
++    match (core, ipsr) {
++        (0, 2) => Some("NMI"),
++        (0, 3) => Some("HardFault"),
++        (1, 2) => Some("core1 NMI"),
++        (1, 3) => Some("core1 HardFault"),
+         _ => None,
+     }
+ }
+@@ -1046,15 +1048,17 @@ fn run_loop(
+                 None,
+             );
+         }
+-        if let Some(name) = fatal_exception_name(emu.cores[0].regs.xpsr & 0x1FF) {
+-            return finish(
+-                emu,
+-                &vclock,
+-                &mut uart_bytes,
+-                StopReason::Exception,
+-                Some(name),
+-                None,
+-            );
++        for (core, state) in emu.cores.iter().enumerate() {
++            if let Some(name) = fatal_exception_name(core, state.regs.xpsr & 0x1FF) {
++                return finish(
++                    emu,
++                    &vclock,
++                    &mut uart_bytes,
++                    StopReason::Exception,
++                    Some(name),
++                    None,
++                );
++            }
+         }
+         if emu.clock.cycles >= cycle_limit {
+             return finish(
+@@ -2530,12 +2534,13 @@ fn run() -> Result<Verdict, String> {
+ #[cfg(test)]
+ mod tests {
+     use super::{
+-        RunOutcome, SdReport, StopReason, Verdict, fatal_exception_name, json_escape, judge_run,
+-        validate_backend_identity, validate_sd_selection,
++        BoardHandles, RunOutcome, SdReport, StopReason, Verdict, fatal_exception_name, json_escape,
++        judge_run, run_loop, validate_backend_identity, validate_sd_selection,
+     };
+     use picocalc_board::SdFormat;
+     #[cfg(feature = "idle-profiler")]
+     use rp2040_emu::IdleProfileSnapshot;
++    use rp2040_emu::{Config, EmulatorBuilder};
+ 
+     #[cfg(feature = "behavior-trace")]
+     use super::behavior_projection;
+@@ -2753,12 +2758,40 @@ mod tests {
+ 
+     #[test]
+     fn only_nmi_and_hardfault_are_fatal() {
+-        assert_eq!(fatal_exception_name(0), None); // thread mode
+-        assert_eq!(fatal_exception_name(2), Some("NMI"));
+-        assert_eq!(fatal_exception_name(3), Some("HardFault"));
+-        assert_eq!(fatal_exception_name(11), None); // SVCall
+-        assert_eq!(fatal_exception_name(15), None); // SysTick
+-        assert_eq!(fatal_exception_name(16), None); // IRQ0
++        assert_eq!(fatal_exception_name(0, 0), None); // thread mode
++        assert_eq!(fatal_exception_name(0, 2), Some("NMI"));
++        assert_eq!(fatal_exception_name(0, 3), Some("HardFault"));
++        assert_eq!(fatal_exception_name(1, 2), Some("core1 NMI"));
++        assert_eq!(fatal_exception_name(1, 3), Some("core1 HardFault"));
++        assert_eq!(fatal_exception_name(0, 11), None); // SVCall
++        assert_eq!(fatal_exception_name(0, 15), None); // SysTick
++        assert_eq!(fatal_exception_name(0, 16), None); // IRQ0
++    }
++
++    #[test]
++    fn a_core1_hardfault_stops_the_run_fail_closed() {
++        let mut emu = EmulatorBuilder::new(Config::default())
++            .build()
++            .expect("serial emulator build");
++        emu.cores[1].regs.xpsr = (emu.cores[1].regs.xpsr & !0x1ff) | 3;
++
++        let run = run_loop(&mut emu, 100, None, None, &BoardHandles::default());
++
++        assert!(run.stop_reason == StopReason::Exception);
++        assert_eq!(run.exception, Some("core1 HardFault"));
++        let verdict = judge_run(
++            &run,
++            0,
++            false,
++            0,
++            0,
++            None,
++            false,
++            Some(StopReason::CycleLimit),
++            &[],
++        );
++        assert!(verdict.status == Verdict::Fail);
++        assert_eq!(verdict.reasons, ["exception", "stop_reason_mismatch"]);
+     }
+ 
+     #[test]
+diff --git a/crates/rp2040-emu/src/bus/mod.rs b/crates/rp2040-emu/src/bus/mod.rs
+index 156890c..23dbe07 100644
+--- a/crates/rp2040-emu/src/bus/mod.rs
++++ b/crates/rp2040-emu/src/bus/mod.rs
+@@ -38,8 +38,8 @@ use picoem_common::clocks::{pll_cs_read_with_lock, pll_should_arm_lock};
+ use crate::core::Nvic;
+ use crate::dma::Dma;
+ use crate::irq::{
+-    IRQ_ADC_IRQ_FIFO, IRQ_I2C0_IRQ, IRQ_I2C1_IRQ, IRQ_PWM_IRQ_WRAP, IRQ_SPI0_IRQ, IRQ_SPI1_IRQ,
+-    IRQ_UART0_IRQ, IRQ_UART1_IRQ,
++    IRQ_ADC_IRQ_FIFO, IRQ_I2C0_IRQ, IRQ_I2C1_IRQ, IRQ_PWM_IRQ_WRAP, IRQ_SIO_IRQ_PROC0,
++    IRQ_SIO_IRQ_PROC1, IRQ_SPI0_IRQ, IRQ_SPI1_IRQ, IRQ_UART0_IRQ, IRQ_UART1_IRQ,
+ };
+ use crate::memory::{FLASH_SIZE, Memory, ROM_SIZE, SRAM_SIZE, bank_for_address};
+ use crate::peripherals::adc::AdcRegs;
+@@ -1836,13 +1836,15 @@ impl Bus {
+ 
+     fn sio_read32(&mut self, addr: u32) -> u32 {
+         let offset = addr & 0xFFF;
+-        match offset {
++        let value = match offset {
+             0x004 => self.gpio_in,
+             _ => {
+                 let core = self.active_core;
+                 self.sio.read32(offset, core)
+             }
+-        }
++        };
++        self.refresh_sio_fifo_irqs();
++        value
+     }
+ 
+     fn sio_write32(&mut self, addr: u32, val: u32) {
+@@ -1852,6 +1854,21 @@ impl Bus {
+         if let Some(receiver) = self.sio.pending_fifo_event.take() {
+             self.event_flag[receiver] = true;
+         }
++        self.refresh_sio_fifo_irqs();
++    }
++
++    /// Project the two core-local, level-sensitive SIO FIFO interrupt lines
++    /// into their matching NVICs. These lines must not use `irq_pending`,
++    /// because that shared-peripheral path broadcasts every bit to both
++    /// cores; `SIO_IRQ_PROC0` belongs only to core 0 and `SIO_IRQ_PROC1`
++    /// only to core 1.
++    pub(crate) fn refresh_sio_fifo_irqs(&mut self) {
++        if self.sio.fifo_irq_asserted(0) {
++            self.nvics[0].set_pending(IRQ_SIO_IRQ_PROC0 as u8);
++        }
++        if self.sio.fifo_irq_asserted(1) {
++            self.nvics[1].set_pending(IRQ_SIO_IRQ_PROC1 as u8);
++        }
+     }
+ 
+     // --- Back-compat accessors for Phase 3 / 4 tests ---------------------
+@@ -2462,6 +2479,31 @@ mod tests {
+         assert_eq!(bus.read32(SIO_BASE), 0);
+     }
+ 
++    #[test]
++    fn sio_fifo_irq_routes_only_to_receiving_core_and_reasserts() {
++        let mut bus = Bus::new();
++        bus.sio.set_handshake_armed(false);
++
++        bus.set_active_core(0);
++        bus.write32(SIO_BASE + 0x054, 0xCAFE_BABE);
++        assert!(!bus.nvics[0].is_pending(IRQ_SIO_IRQ_PROC0 as u8));
++        assert!(!bus.nvics[0].is_pending(IRQ_SIO_IRQ_PROC1 as u8));
++        assert!(bus.nvics[1].is_pending(IRQ_SIO_IRQ_PROC1 as u8));
++
++        bus.nvics[1].clear_pending(IRQ_SIO_IRQ_PROC1 as u8);
++        bus.refresh_sio_fifo_irqs();
++        assert!(
++            bus.nvics[1].is_pending(IRQ_SIO_IRQ_PROC1 as u8),
++            "a still-readable FIFO must reassert its level IRQ"
++        );
++
++        bus.set_active_core(1);
++        assert_eq!(bus.read32(SIO_BASE + 0x058), 0xCAFE_BABE);
++        bus.nvics[1].clear_pending(IRQ_SIO_IRQ_PROC1 as u8);
++        bus.refresh_sio_fifo_irqs();
++        assert!(!bus.nvics[1].is_pending(IRQ_SIO_IRQ_PROC1 as u8));
++    }
++
+     #[test]
+     fn gpio_in_is_owned_by_bus() {
+         let mut bus = Bus::new();
+diff --git a/crates/rp2040-emu/src/bus/ppb.rs b/crates/rp2040-emu/src/bus/ppb.rs
+index f6be95b..24b3d46 100644
+--- a/crates/rp2040-emu/src/bus/ppb.rs
++++ b/crates/rp2040-emu/src/bus/ppb.rs
+@@ -106,6 +106,12 @@ impl Ppb {
+         }
+     }
+ 
++    /// True when `exc_num` is currently executing on this core.
++    #[inline]
++    pub fn is_active(&self, exc_num: u16) -> bool {
++        exc_num < 64 && (self.active & (1u64 << exc_num)) != 0
++    }
++
+     /// True if any exception is currently active (for nested-exception
+     /// return handling).
+     #[inline]
+diff --git a/crates/rp2040-emu/src/bus/sio.rs b/crates/rp2040-emu/src/bus/sio.rs
+index 16b4d9b..0deef8a 100644
+--- a/crates/rp2040-emu/src/bus/sio.rs
++++ b/crates/rp2040-emu/src/bus/sio.rs
+@@ -447,6 +447,18 @@ impl Sio {
+         (vld as u32) | ((rdy as u32) << 1) | ((wof as u32) << 2) | ((roe as u32) << 3)
+     }
+ 
++    /// Whether this core's level-sensitive SIO FIFO IRQ line is asserted.
++    ///
++    /// RP2040 raises `SIO_IRQ_PROC0/1` while the local receive FIFO has a
++    /// word or either local error sticky (`WOF`/`ROE`) is set. `RDY` is not
++    /// an interrupt source. Keep this query non-consuming so the bus can
++    /// re-project a still-high line after firmware clears the NVIC latch.
++    #[inline]
++    pub fn fifo_irq_asserted(&self, core: usize) -> bool {
++        debug_assert!(core < 2);
++        self.fifo_st_read(core) & 0x0d != 0
++    }
++
+     fn fifo_st_write(&mut self, val: u32, core: usize) {
+         if val & 0x4 != 0 {
+             self.fifo_wof[core] = false;
+@@ -737,6 +749,25 @@ mod tests {
+         assert_eq!(sio.read32(0x058, 1), 0xDEAD_BEEF);
+     }
+ 
++    #[test]
++    fn fifo_irq_is_level_from_vld_and_error_stickies() {
++        let mut sio = Sio::new();
++        sio.set_handshake_armed(false);
++        assert!(!sio.fifo_irq_asserted(0));
++        assert!(!sio.fifo_irq_asserted(1));
++
++        sio.write32(0x054, 0x1234_5678, 0);
++        assert!(!sio.fifo_irq_asserted(0));
++        assert!(sio.fifo_irq_asserted(1));
++        assert_eq!(sio.read32(0x058, 1), 0x1234_5678);
++        assert!(!sio.fifo_irq_asserted(1));
++
++        let _ = sio.read32(0x058, 1);
++        assert!(sio.fifo_irq_asserted(1), "ROE must assert the local IRQ");
++        sio.write32(0x050, 1 << 3, 1);
++        assert!(!sio.fifo_irq_asserted(1));
++    }
++
+     #[test]
+     fn handshake_fsm_armed_by_default() {
+         let sio = Sio::new();
+diff --git a/crates/rp2040-emu/src/core/nvic.rs b/crates/rp2040-emu/src/core/nvic.rs
+index 9f4d5bf..398d50f 100644
+--- a/crates/rp2040-emu/src/core/nvic.rs
++++ b/crates/rp2040-emu/src/core/nvic.rs
+@@ -37,6 +37,10 @@
+ //! (`intr & (inte | intf)`) re-asserts into `bus.irq_pending` on every
+ //! poll, not only on fresh match edges. Otherwise the emulator will
+ //! drop the level re-assert and silently diverge from silicon.
++//! `Emulator::drain_pending_irqs_to_cores` suppresses that repeated level
++//! only on a core already executing the same exception. If the source is
++//! still asserted after exception return, the next poll pends it again;
++//! the shared wire continues to pend normally on the other core.
+ //!
+ //! The Phase 1 Wave 2 TIMER (`peripherals::timer::TimerRegs::poll_alarms`)
+ //! satisfies this contract: after an alarm fires and auto-disarms, the
+diff --git a/crates/rp2040-emu/src/lib.rs b/crates/rp2040-emu/src/lib.rs
+index 33effe0..6c0f0ea 100644
+--- a/crates/rp2040-emu/src/lib.rs
++++ b/crates/rp2040-emu/src/lib.rs
+@@ -828,6 +828,12 @@ impl Emulator {
+             self.clock.cycles = self.clock.cycles.wrapping_add(c0.max(c1));
+         }
+ 
++        // SIO FIFO IRQs are core-local level signals, unlike the shared
++        // peripheral bits drained through `bus.irq_pending`. Refresh after
++        // both core steps so FIFO push/pop and WOF/ROE changes from this
++        // quantum are visible before blocked-core and wake decisions.
++        self.bus.refresh_sio_fifo_irqs();
++
+         let consumed = self.clock.cycles.wrapping_sub(start);
+         let both_cores_blocked = (self.cores[0].is_halted() || self.bus.wfe_waiting[0])
+             && (self.cores[1].is_halted() || self.bus.wfe_waiting[1]);
+@@ -1161,8 +1167,17 @@ impl Emulator {
+             let raised = std::mem::replace(&mut self.bus.irq_pending, 0);
+             for irq in 0..crate::irq::IRQ_COUNT {
+                 if raised & (1u32 << irq) != 0 {
+-                    self.bus.nvics[0].set_pending(irq as u8);
+-                    self.bus.nvics[1].set_pending(irq as u8);
++                    let exception = 16 + irq as u16;
++                    for core in 0..2 {
++                        // A still-asserted level belonging to the handler
++                        // that is already active is not a second event. If
++                        // the source remains asserted after exception
++                        // return, the next peripheral tick routes it again.
++                        // The other core still receives the shared wire.
++                        if !self.bus.ppb[core].is_active(exception) {
++                            self.bus.nvics[core].set_pending(irq as u8);
++                        }
++                    }
+                 }
+             }
+         }
+@@ -3113,6 +3128,28 @@ mod stage5_lib_residue {
+         assert!(emu.bus.nvics[0].is_pending(0) || emu.bus.nvics[1].is_pending(0));
+     }
+ 
++    #[test]
++    fn active_level_irq_does_not_repend_same_core_but_remains_shared() {
++        let mut emu = Emulator::new(Config::default());
++        const IRQ: u8 = 11;
++        const EXCEPTION: u16 = 16 + IRQ as u16;
++
++        emu.bus.ppb[0].mark_active(EXCEPTION);
++        emu.bus.irq_pending = 1u32 << IRQ;
++        emu.drain_pending_irqs_to_cores();
++
++        assert!(!emu.bus.nvics[0].is_pending(IRQ));
++        assert!(emu.bus.nvics[1].is_pending(IRQ));
++
++        emu.bus.nvics[1].clear_pending(IRQ);
++        emu.bus.ppb[0].clear_active(EXCEPTION);
++        emu.bus.irq_pending = 1u32 << IRQ;
++        emu.drain_pending_irqs_to_cores();
++
++        assert!(emu.bus.nvics[0].is_pending(IRQ));
++        assert!(emu.bus.nvics[1].is_pending(IRQ));
++    }
++
+     // ------------------- tick_systick (lines 812, 817) -------------------
+ 
+     /// Drives the true branches of `if systicks[0].tick()` (line 812) and
