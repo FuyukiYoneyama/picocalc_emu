@@ -23,6 +23,8 @@ production A/B は CPU 11、`interleaved-anchor-v3`、5 AB＋5 BAの10 pair/work
 
 根拠 record: `firmware-validation/records/rp2040-cpu-p1-a-production-v3-20260902-03/`
 
+P1-A再測定前のbaseline-only CPU時間診断と、P2-A A/Bで参照したhost-stability sentinelは、元の一時領域から[`firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/`](../firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/)へ保存した。元パス、record ID、SHA-256、診断専用であることを同ディレクトリの`manifest.json`と`README.md`に記録している。
+
 ## ソース統合
 
 - `rp2040-emu` の default feature に `decode-invalidation-tag-guard` を追加した。

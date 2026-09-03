@@ -1,0 +1,33 @@
+{
+  "archive_id": "rp2040-cpu-diagnostics-20260903-01",
+  "archive_type": "rp2040-cpu-auxiliary-diagnostics",
+  "archive_version": 1,
+  "created_date": "2026-09-03",
+  "purpose": "Persist auxiliary CPU-time attribution and host-stability diagnostics that were originally written under the temporary measurement workspace.",
+  "source_workspace": "/tmp/picocalc-rp2040-cpu-opt.PoEwYE",
+  "artifacts": [
+    {
+      "path": "cpu-time-diagnostic-p1-a-20260902-01.json",
+      "artifact_type": "cpu-time-attribution",
+      "record_id": "rp2040-cpu-p1-a-anchor-diagnostic-20260902-01",
+      "source_path": "/tmp/picocalc-rp2040-cpu-opt.PoEwYE/diagnostics/cpu-time-diagnostic-p1-a-20260902-01.json",
+      "sha256": "136a215e2ec4fa4ca75414bde2f7037a1e31139a835575b429998f9b153df44d",
+      "related_record": "firmware-validation/records/rp2040-cpu-p1-a-production-v3-20260902-03",
+      "interpretation": "baseline-only diagnostic; not a candidate promotion or A/B decision gate"
+    },
+    {
+      "path": "host-stability-cpu-v3-20260902-01.json",
+      "artifact_type": "host-stability",
+      "record_id": "rp2040-cpu-host-stability-cpu-v3-20260902-01",
+      "source_path": "/tmp/picocalc-rp2040-cpu-opt.PoEwYE/diagnostics/host-stability-cpu-v3-20260902-01.json",
+      "sha256": "2fc93238c008aa482335582b4df0937e2f8161cf159d9bec8f899305c7657ddc",
+      "related_record": "firmware-validation/records/rp2040-cpu-p2-a-production-v3-20260903-01",
+      "interpretation": "host-stability sentinel used as auxiliary provenance; not a candidate effect result"
+    }
+  ],
+  "preservation": {
+    "copy_method": "byte-for-byte copy from source_workspace",
+    "original_records_unchanged": true,
+    "candidate_decision_changed": false
+  }
+}

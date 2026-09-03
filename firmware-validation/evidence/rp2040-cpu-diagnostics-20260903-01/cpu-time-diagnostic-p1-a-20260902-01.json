@@ -1,0 +1,599 @@
+{
+  "artifact_type": "cpu-time-attribution",
+  "backend_identity": {
+    "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+    "commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+    "dirty": false,
+    "feature_set": [
+      "sd-gen1-multiblock"
+    ],
+    "provenance_role": "baseline_production",
+    "role": "baseline_production",
+    "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154"
+  },
+  "cpu_affinity": {
+    "effective": [
+      11
+    ],
+    "requested": 11
+  },
+  "inter_run_cooldown_seconds": 60.0,
+  "measurement_cpu": 11,
+  "measurement_policy": {
+    "inter_run_cooldown_seconds": 60.0,
+    "measured_runs": 4,
+    "method": "cpu-time-attribution-v1",
+    "primary_metric": "cycles_per_cpu_second",
+    "secondary_metric": "cycles_per_wall_second",
+    "warmup_runs": 1
+  },
+  "reasons": [],
+  "record_id": "rp2040-cpu-p1-a-anchor-diagnostic-20260902-01",
+  "samples": [
+    {
+      "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "cycles": 927528659,
+      "cycles_per_emulation_cpu_second": 4978841.44276118,
+      "cycles_per_emulation_wall_second": 5100654.163189003,
+      "emulation_cpu_seconds": 186.294074568,
+      "emulation_wall_seconds": 181.845039739,
+      "host_snapshot_end": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 72940000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6273528000,
+          "throttled_usec": 0,
+          "usage_usec": 165804332000,
+          "user_usec": 159530804000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685652757.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.99169921875,
+          0.73828125,
+          0.67333984375
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329197321,
+          "iowait": 75075,
+          "irq": 0,
+          "nice": 7294,
+          "softirq": 224673,
+          "steal": 0,
+          "system": 402679,
+          "user": 15945786
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "host_snapshot_start": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 72896000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6271868000,
+          "throttled_usec": 0,
+          "usage_usec": 165620204000,
+          "user_usec": 159348336000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685598752.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.35009765625,
+          0.486328125,
+          0.587890625
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 328997500,
+          "iowait": 75067,
+          "irq": 0,
+          "nice": 7289,
+          "softirq": 224598,
+          "steal": 0,
+          "system": 402588,
+          "user": 15927544
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+      "sample_id": "cpu-time-001",
+      "system_seconds": 0.008196999999999996,
+      "user_seconds": 186.29109300000002,
+      "wall_seconds": 181.85032442
+    },
+    {
+      "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "cycles": 927528659,
+      "cycles_per_emulation_cpu_second": 4864010.439326187,
+      "cycles_per_emulation_wall_second": 5004354.331752607,
+      "emulation_cpu_seconds": 190.692160424,
+      "emulation_wall_seconds": 185.344321667,
+      "host_snapshot_end": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 72996000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6275824000,
+          "throttled_usec": 0,
+          "usage_usec": 165992792000,
+          "user_usec": 159716968000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685709409.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.9736328125,
+          0.79248046875,
+          0.70166015625
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329472992,
+          "iowait": 75088,
+          "irq": 0,
+          "nice": 7299,
+          "softirq": 224792,
+          "steal": 0,
+          "system": 402789,
+          "user": 15964397
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "host_snapshot_start": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 72952000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6273852000,
+          "throttled_usec": 0,
+          "usage_usec": 165804844000,
+          "user_usec": 159530992000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685657176.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.3623046875,
+          0.60107421875,
+          0.62744140625
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329269306,
+          "iowait": 75080,
+          "irq": 0,
+          "nice": 7295,
+          "softirq": 224682,
+          "steal": 0,
+          "system": 402702,
+          "user": 15945804
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+      "sample_id": "cpu-time-002",
+      "system_seconds": 0.008230999999999995,
+      "user_seconds": 190.68917600000003,
+      "wall_seconds": 185.34955358
+    },
+    {
+      "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "cycles": 927528659,
+      "cycles_per_emulation_cpu_second": 4988183.780454056,
+      "cycles_per_emulation_wall_second": 5110245.781107818,
+      "emulation_cpu_seconds": 185.94516558,
+      "emulation_wall_seconds": 181.503727752,
+      "host_snapshot_end": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 73048000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6278240000,
+          "throttled_usec": 0,
+          "usage_usec": 166177556000,
+          "user_usec": 159899316000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685744692.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.97314453125,
+          0.81591796875,
+          0.72705078125
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329744363,
+          "iowait": 75103,
+          "irq": 0,
+          "nice": 7304,
+          "softirq": 224919,
+          "steal": 0,
+          "system": 402904,
+          "user": 15982626
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "host_snapshot_start": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 73012000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6276152000,
+          "throttled_usec": 0,
+          "usage_usec": 165993348000,
+          "user_usec": 159717196000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685723007.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.35546875,
+          0.6455078125,
+          0.65478515625
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329544912,
+          "iowait": 75092,
+          "irq": 0,
+          "nice": 7301,
+          "softirq": 224799,
+          "steal": 0,
+          "system": 402815,
+          "user": 15964418
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+      "sample_id": "cpu-time-003",
+      "system_seconds": 0.008195999999999995,
+      "user_seconds": 185.94211699999994,
+      "wall_seconds": 181.508942113
+    },
+    {
+      "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+      "build_provenance_sha256": "7adc180bbb2822fe399d2f9ad3a0905c8b5b09bbcd0bc2e9bbbbc33a9dc036b2",
+      "cycles": 927528659,
+      "cycles_per_emulation_cpu_second": 5013590.477321214,
+      "cycles_per_emulation_wall_second": 5160934.758016124,
+      "emulation_cpu_seconds": 185.002876321,
+      "emulation_wall_seconds": 179.721058779,
+      "host_snapshot_end": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 73096000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6281188000,
+          "throttled_usec": 0,
+          "usage_usec": 166360976000,
+          "user_usec": 160079788000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685798083.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.970703125,
+          0.82373046875,
+          0.7451171875
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 330013773,
+          "iowait": 75117,
+          "irq": 0,
+          "nice": 7309,
+          "softirq": 225090,
+          "steal": 0,
+          "system": 403028,
+          "user": 16000669
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "host_snapshot_start": {
+        "allowed_cpus": [
+          11
+        ],
+        "cgroup_cpu_stat": {
+          "burst_usec": 0,
+          "nice_usec": 73056000,
+          "nr_bursts": 0,
+          "nr_periods": 0,
+          "nr_throttled": 0,
+          "system_usec": 6278576000,
+          "throttled_usec": 0,
+          "usage_usec": 166178100000,
+          "user_usec": 159899524000
+        },
+        "cpu_pressure": {
+          "full": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 0.0
+          },
+          "some": {
+            "avg10": 0.0,
+            "avg300": 0.0,
+            "avg60": 0.0,
+            "total": 6685752201.0
+          }
+        },
+        "kernel": "6.18.33.2-microsoft-standard-WSL2",
+        "loadavg": [
+          0.35546875,
+          0.6650390625,
+          0.68017578125
+        ],
+        "logical_cpus": 12,
+        "model": "AMD Ryzen 5 5600X 6-Core Processor",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+        "proc_cpu_stat": {
+          "guest": 0,
+          "guest_nice": 0,
+          "idle": 329816287,
+          "iowait": 75106,
+          "irq": 0,
+          "nice": 7305,
+          "softirq": 224925,
+          "steal": 0,
+          "system": 402932,
+          "user": 15982646
+        },
+        "reported_mhz": 3693.107,
+        "scheduler": {
+          "nice": 0,
+          "policy": 0,
+          "priority": 0
+        }
+      },
+      "runner_sha256": "bcfbda82842dfd4d66efa8ec21e652137aa7bd487a47a9975226ea7643fa8154",
+      "sample_id": "cpu-time-004",
+      "system_seconds": 0.0,
+      "user_seconds": 185.00799500000005,
+      "wall_seconds": 179.725964773
+    }
+  ],
+  "schema_id": "picocalc.rp2040-cpu-time-attribution",
+  "schema_version": 1,
+  "status": "pass",
+  "summary": {
+    "cpu_throughput": {
+      "mad_log": 0.0034775493008352143,
+      "median": 4983510.422406461,
+      "relative_mad": 0.0051691286772939105
+    },
+    "cpu_throughputs": [
+      4978841.44276118,
+      4864010.439326187,
+      4988183.780454056,
+      5013590.477321214
+    ],
+    "cpu_time_sources": [
+      "in_process_run_loop"
+    ],
+    "cpu_to_wall_ratio": {
+      "mad_log": 0.002137182705275676,
+      "median": 0.9740604718150269,
+      "relative_mad": 0.0031736123571552977
+    },
+    "gates": {
+      "cpu_affinity_valid": true,
+      "cpu_time_valid": true,
+      "host_snapshot_valid": true,
+      "identity_valid": true,
+      "sample_count_valid": true,
+      "wall_time_valid": true
+    },
+    "primary_cpu_time_scope": "in_process_run_loop",
+    "sample_count": 4,
+    "valid": true,
+    "wall_throughput": {
+      "mad_log": 0.005875341261245559,
+      "median": 5105300.201707801,
+      "relative_mad": 0.008748830205658642
+    },
+    "wall_throughputs": [
+      5100505.935077617,
+      5004213.072461829,
+      5110098.974752213,
+      5160793.879568266
+    ]
+  },
+  "workload": {
+    "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "id": "picotetris-opt1b-vrp5",
+    "revision": 10,
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+  }
+}
