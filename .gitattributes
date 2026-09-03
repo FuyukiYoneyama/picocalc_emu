@@ -5,3 +5,4 @@ firmware-validation/evidence/**/uart.log binary
 firmware-validation/evidence/**/*.uart binary
 firmware-validation/evidence/**/*-uart.log binary
 firmware-validation/evidence/**/uart.raw binary
+firmware-validation/evidence/**/*-uart.raw binary

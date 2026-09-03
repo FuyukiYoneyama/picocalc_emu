@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "kind": "perf_q0_quantum_engagement",
+  "record_id": "quantum-engagement-20260903-01",
+  "recorded_on": "2026-09-03",
+  "status": "q0_complete",
+  "scope": "Determine whether a safe dynamic-quantum candidate has measurable opportunity and whether a step-start-only predicate is safe.",
+  "not_qualification": true,
+  "not_a_1x_measurement": true,
+  "production_backend_changed": false,
+  "formal_target_registry_changed": false,
+  "base_observation_backend": {
+    "repository": "picoem-picocalc",
+    "commit": "58e73010636bb1b60fdb1ccace40db29b5bb96cc",
+    "dirty": false,
+    "role": "clean Q0 observation base; not the PERF-Q3 performance baseline"
+  },
+  "diagnostic_runner": {
+    "repository": "picoem-picocalc",
+    "commit": "d7d5b3e25df367a4e40006db0bfb6c1ca534ecc4",
+    "dirty": false,
+    "role": "Q0-only scratch profiler; local detached worktree; not pushed and not an accepted target pin",
+    "binary_sha256": "10e7965afb50006ffe20bdeb0d5e8a8f62a325beec88fb2fa7558fcb54d4c80f"
+  },
+  "fixed_inputs": {
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "board": "picocalc",
+    "lcd_variant": "pio-rgb565",
+    "devices": ["psram", "keyboard", "sd:fat32"],
+    "scenario_repository": "picocalc_emu/scenarios/",
+    "scenario_role": "repository-owned fixed input; no external project was modified"
+  },
+  "applications": {
+    "tetris": {
+      "display_name": "Tetris（軽ゲーム実装）",
+      "target_id": "picotetris-opt1b-vrp5",
+      "target_revision": 10,
+      "source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+      "firmware": {
+        "basename": "PicoTetris.bin",
+        "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+        "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274"
+      },
+      "scenario": {
+        "file": "tetris-line-clear.json",
+        "sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+      },
+      "run": {
+        "cycles": 927528659,
+        "stop_reason": "scenario_done",
+        "scenario_status": "pass",
+        "scenario_steps": "85/85",
+        "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+        "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+        "engaged_cycles": 325450138,
+        "disengaged_cycles": 602078521,
+        "engaged_percent_upper_bound": 35.08787947866525,
+        "disengaged_percent_upper_bound": 64.91212052133474,
+        "steps": 701092536,
+        "direct_engaged_steps": 130182327,
+        "hysteresis_steps": 381717,
+        "reason_cycles": {
+          "pio_active": 217027939,
+          "psram_cs_asserted": 109160925,
+          "dma_busy": 5185785,
+          "one_step_hysteresis": 636246,
+          "external_i2c_active": 0
+        },
+        "report_sha256": "e4a031609d87ebaa370a4ace3594b31345934a53724d5caac9a4fe6e6c4b5c71",
+        "engagement_sha256": "f0eb2464cd8c70e8af7c6ca72b523efd07cc2bbbb34f6b2c03afb13ac1c1dd15"
+      }
+    },
+    "picoedit": {
+      "display_name": "PicoEdit（テキスト編集実装）",
+      "target_id": "picoedit-r1-vrp2f",
+      "target_revision": 4,
+      "source_commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+      "firmware": {
+        "basename": "picocalc_app.bin",
+        "bin_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+        "uf2_sha256": "730281ef0070a5cf00610471fec9033a2f53aabebf24f52c3b6f0e520f5c6b73"
+      },
+      "scenario": {
+        "file": "picoedit-blind-v1.json",
+        "sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+      },
+      "run": {
+        "cycles": 827799818,
+        "stop_reason": "scenario_done",
+        "scenario_status": "pass",
+        "scenario_steps": "11/11",
+        "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+        "framebuffer_rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+        "engaged_cycles": 197745735,
+        "disengaged_cycles": 630054083,
+        "engaged_percent_upper_bound": 23.8881104706887,
+        "disengaged_percent_upper_bound": 76.1118895293113,
+        "steps": 663235764,
+        "direct_engaged_steps": 59606597,
+        "hysteresis_steps": 10646,
+        "reason_cycles": {
+          "pio_active": 94972561,
+          "psram_cs_asserted": 109420156,
+          "dma_busy": 115069,
+          "one_step_hysteresis": 26381,
+          "external_i2c_active": 0
+        },
+        "report_sha256": "0bf714b6549f38bfa8389b5190189b329a164dfbf60054afd5b9c8ba9c6aa206",
+        "engagement_sha256": "3eb10d12d6997e1f9a246ebe2463c578c774388b15301ad34979066af9de15c4"
+      }
+    }
+  },
+  "q0_decisions": {
+    "opportunity_upper_bound": {
+      "threshold_disengaged_percent": 20.0,
+      "tetris_not_rejected": true,
+      "picoedit_not_rejected": true,
+      "status": "opportunity_not_rejected",
+      "meaning": "These are step-start conservative opportunity upper bounds, not speedup percentages or batchable-cycle guarantees."
+    },
+    "mid_quantum_transition": {
+      "fixture_commit": "ef50ebd9839a2204065b64dbd5887be1cfb9f93b",
+      "fixture_sha256": "0972315c5207b8996ce28d35c81d997505b4db0c12092ce0c45256b28a806df8",
+      "command": "cargo test --locked -p rp2040-emu --test q0_mid_quantum_transition",
+      "result": "2 passed, 0 failed",
+      "q1_reference_cycles": 17,
+      "q16_candidate_cycles": 17,
+      "start_state": "PIO0 idle before both runs",
+      "end_state": "PIO0 SM0 enabled in both runs; GPIO0 differs between q1 and q16",
+      "status": "step_start_only_rejected_transition_barrier_required"
+    },
+    "deadline_cap": {
+      "status": "partial_current_support_candidate_constraints_required",
+      "exact_sources": ["TIMER armed alarm", "PWM first wrap", "caller-owned external boundary"],
+      "one_cycle_fallback_sources": ["PIO", "DMA", "SysTick", "UART", "SPI", "I2C", "ADC", "active PWM blocker", "active TIMER blocker"],
+      "finding": "The existing exact horizon is complete for the current blocked-idle model, but a running candidate must still cap at external scenario boundaries and use q1 fallback for unresolved temporal sources."
+    }
+  },
+  "source_evidence": [
+    {
+      "path": "crates/rp2040-emu/src/lib.rs",
+      "lines": "938-1012",
+      "finding": "CPU core steps run until the quantum target before peripheral scheduling; a CPU MMIO transition can therefore occur inside the window."
+    },
+    {
+      "path": "crates/rp2040-emu/src/lib.rs",
+      "lines": "1147-1165",
+      "finding": "The current fast-path requires PIO idle, no pending IRQ, SysTick disabled, and all peripherals idle."
+    },
+    {
+      "path": "crates/rp2040-emu/src/lib.rs",
+      "lines": "1178-1216",
+      "finding": "The slow path advances TIMER/SysTick/peripherals and uses per-cycle PIO/GPIO interleave when a pin-watching device is attached."
+    },
+    {
+      "path": "crates/rp2040-emu/src/lib.rs",
+      "lines": "2347-2442",
+      "finding": "The horizon reports exact TIMER/PWM/external distances and one-cycle fallback for PIO/DMA/SysTick and other unresolved sources."
+    },
+    {
+      "path": "crates/rp2040-emu/src/bus/mod.rs",
+      "lines": "2841-2923",
+      "finding": "Peripheral ordering is TIMER, UART/SPI/I2C, external virtual time, ADC, PWM, then DMA; the current lazy deadline API is TIMER-only."
+    }
+  ],
+  "next": "Review this Q0 record. Do not begin PERF-Q1 production implementation until P2-A cleanup and a new clean performance baseline are fixed; the candidate must include the transition barrier and deadline caps above."
+}

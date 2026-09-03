@@ -1,0 +1,37 @@
+{
+  "backend_build": {
+    "commit": "d7d5b3e25df367a4e40006db0bfb6c1ca534ecc4",
+    "dirty": false
+  },
+  "barrier_required_for_candidate": true,
+  "counters": {
+    "direct_engaged_steps": 59606597,
+    "disengaged_cycles": 630054083,
+    "disengaged_percent_upper_bound": 76.1118895293113,
+    "disengaged_steps": 603618521,
+    "engaged_cycles": 197745735,
+    "engaged_percent_upper_bound": 23.8881104706887,
+    "hysteresis_steps": 10646,
+    "steps": 663235764,
+    "total_cycles": 827799818
+  },
+  "external_i2c_instance": null,
+  "firmware": {
+    "basename": "picocalc_app.bin",
+    "sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6"
+  },
+  "kind": "perf_q0_engagement_profile",
+  "reason_cycles": {
+    "dma_busy": 115069,
+    "external_i2c_active": 0,
+    "one_step_hysteresis": 26381,
+    "pio_active": 94972561,
+    "psram_cs_asserted": 109420156
+  },
+  "run_cycles": 827799818,
+  "schema_version": 1,
+  "source": "step_start_conservative_upper_bound",
+  "step_quantum": 1,
+  "stop_reason": "scenario_done",
+  "valid_for_wall_time": false
+}

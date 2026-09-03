@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 高速化 — 現行計画
 
-- Status: **current / document revision only / PERF-Q0 not started**
+- Status: **current / PERF-Q0 complete / opportunity not rejected, step-start-only policy rejected**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -290,9 +290,13 @@ process CPU-time帰属でcombined CPU-timeの10%以上を説明できる大分�
 
 ## 7. 現在の次の一手
 
-本書改訂時点では実装・測定を開始していない。次回の明示指示後に開始対象となり得る作業は
-**PERF-Q0（dynamic quantumの機会量上限とmid-quantum遷移危険の確認）だけ**である。
-PERF-Q0の結果をreviewしてからPERF-Q1へ進む。番号だけで報告せず、毎回
+PERF-Q0（dynamic quantumの機会量上限とmid-quantum遷移危険の確認）は完了した。
+実アプリ2件では機会量上限を理由に棄却しなかったが、step開始時だけで判断する方式はfixtureで棄却され、
+transition barrierが必要であることを確認した。deadlineはTIMER／PWM／外部境界のexact候補と、
+PIO／DMA／SysTick等の1-cycle fallbackに分かれる。Q0の証拠は
+[`firmware-validation/evidence/quantum-engagement-20260903-01/`](../firmware-validation/evidence/quantum-engagement-20260903-01/)
+に保存した。次はこの記録をreviewし、P2-A cleanup後に新しいclean performance baselineを固定してから
+PERF-Q1へ進む。番号だけで報告せず、毎回
 「PicoCalc firmware backendのどの待ち時間を、何を守りながら減らす作業か」を併記する。
 
 1倍速UXの旧計画と関連概念は

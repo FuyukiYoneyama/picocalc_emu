@@ -1,0 +1,37 @@
+{
+  "backend_build": {
+    "commit": "d7d5b3e25df367a4e40006db0bfb6c1ca534ecc4",
+    "dirty": false
+  },
+  "barrier_required_for_candidate": true,
+  "counters": {
+    "direct_engaged_steps": 130182327,
+    "disengaged_cycles": 602078521,
+    "disengaged_percent_upper_bound": 64.91212052133474,
+    "disengaged_steps": 570528492,
+    "engaged_cycles": 325450138,
+    "engaged_percent_upper_bound": 35.08787947866525,
+    "hysteresis_steps": 381717,
+    "steps": 701092536,
+    "total_cycles": 927528659
+  },
+  "external_i2c_instance": null,
+  "firmware": {
+    "basename": "PicoTetris.bin",
+    "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"
+  },
+  "kind": "perf_q0_engagement_profile",
+  "reason_cycles": {
+    "dma_busy": 5185785,
+    "external_i2c_active": 0,
+    "one_step_hysteresis": 636246,
+    "pio_active": 217027939,
+    "psram_cs_asserted": 109160925
+  },
+  "run_cycles": 927528659,
+  "schema_version": 1,
+  "source": "step_start_conservative_upper_bound",
+  "step_quantum": 1,
+  "stop_reason": "scenario_done",
+  "valid_for_wall_time": false
+}

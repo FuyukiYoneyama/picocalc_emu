@@ -1,0 +1,4 @@
+command: cargo test --locked -p rp2040-emu --test q0_mid_quantum_transition
+result: PASS
+tests: 2 passed, 0 failed
+comparison: q1 reference and q16 candidate both reached 17 guest cycles; PIO0 SM0 was enabled in both; GPIO0 differed
