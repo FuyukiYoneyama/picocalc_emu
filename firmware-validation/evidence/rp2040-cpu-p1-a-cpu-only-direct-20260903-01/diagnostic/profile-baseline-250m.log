@@ -1,0 +1,51 @@
+[single-model bench] reps=1 (+1 warmup discarded) --model serial --workload self-invalidate --step-quantum 256
+
+--- warmup 0/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3973 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 250000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       5.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   250000191 (c0=250000191, c1=0)
+Requested cyc:  250000191
+Avg MHz:        49.954630 (per-core peak, from executed cycles)
+Host/emu cycle: 79.540782
+CPU profile: c0 retired=125000096 decode_lookups=125000096 decode_hits=41666697 decode_misses=83333399 invalidation_requests=83333396 examined_slots=166666792 matching_clears=0 unrelated_would_clear=83333397 c1_retired=0
+Verdict:        UNPACED (profiling mode)
+(warmup: 50.0 MHz, discarded)
+
+--- rep 1/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3973 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 250000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+     5              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       6.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   250000191 (c0=250000191, c1=0)
+Requested cyc:  250000191
+Avg MHz:        41.596978 (per-core peak, from executed cycles)
+Host/emu cycle: 95.522837
+CPU profile: c0 retired=125000096 decode_lookups=125000096 decode_hits=41666697 decode_misses=83333399 invalidation_requests=83333396 examined_slots=166666792 matching_clears=0 unrelated_would_clear=83333397 c1_retired=0
+Verdict:        UNPACED (profiling mode)
+
+=== stats — workload: self-invalidate (model: serial) ===
+    model     median        p25        p75        min        max
+   serial       41.6       41.6       41.6       41.6       41.6

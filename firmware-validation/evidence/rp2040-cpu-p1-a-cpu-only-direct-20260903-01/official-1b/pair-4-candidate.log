@@ -1,0 +1,50 @@
+[single-model bench] reps=1 (+1 warmup discarded) --model serial --workload self-invalidate --step-quantum 256
+
+--- warmup 0/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3982 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 1000000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+     5              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       6.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   1000000257 (c0=1000000257, c1=0)
+Requested cyc:  1000000257
+Avg MHz:        166.556962 (per-core peak, from executed cycles)
+Host/emu cycle: 23.908427
+Verdict:        UNPACED (profiling mode)
+(warmup: 166.6 MHz, discarded)
+
+--- rep 1/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 4103 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 1000000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+     5              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       6.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   1000000257 (c0=1000000257, c1=0)
+Requested cyc:  1000000257
+Avg MHz:        166.595435 (per-core peak, from executed cycles)
+Host/emu cycle: 24.630782
+Verdict:        UNPACED (profiling mode)
+
+=== stats — workload: self-invalidate (model: serial) ===
+    model     median        p25        p75        min        max
+   serial      166.6      166.6      166.6      166.6      166.6

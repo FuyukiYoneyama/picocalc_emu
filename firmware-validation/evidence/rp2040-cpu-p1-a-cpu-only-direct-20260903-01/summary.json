@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "measurement_id": "rp2040-cpu-p1-a-cpu-only-direct-20260903-01",
+  "measured_at": "2026-09-03",
+  "purpose": "Direct CPU-only throughput measurement of the adopted P1-A decode-invalidation tag guard; no PicoCalc peripherals or real firmware.",
+  "baseline": {
+    "backend_commit": "d8f5bb22fae221a7a31ae45c953b64b375eeb316",
+    "feature_set": "rp2040-emu default features empty (historical index-only invalidation)"
+  },
+  "candidate": {
+    "backend_commit": "58e73010636bb1b60fdb1ccace40db29b5bb96cc",
+    "feature_set": "rp2040-emu default includes decode-invalidation-tag-guard"
+  },
+  "workload": {
+    "name": "self-invalidate",
+    "description": "single-core Thumb loop in SRAM; each iteration stores to 0x20004004, which aliases the hot loop cache slots (0x20000004/06) by index but is a different SRAM address; every store queues invalidation requests.",
+    "code_layout": {
+      "loop_base": "0x20000000",
+      "write_target": "0x20004004",
+      "decode_cache_size_entries": 8192,
+      "alias_offset_bytes": 16384
+    },
+    "runner": {
+      "binary": "paced_bench_rp2040",
+      "model": "serial",
+      "cycles_per_run": 1000000000,
+      "reps_per_process": 1,
+      "warmup_per_arm": 1,
+      "host_cpu_affinity": "taskset -c 11",
+      "clock_mhz": 125,
+      "quantum": 125,
+      "step_quantum": 256,
+      "unpaced": true
+    }
+  },
+  "protocol": {
+    "pairs": 10,
+    "measured_runs": 20,
+    "order": "odd pairs baseline→candidate; even pairs candidate→baseline",
+    "cooldown_seconds": 1,
+    "analysis_metric": "paired log ratio log(host_cycles_per_emu baseline / host_cycles_per_emu candidate)",
+    "ci": "two-sided 95% t interval on paired log ratios; df=9; t=2.2621571627; all pairs retained; no post-hoc exclusion"
+  },
+  "results": {
+    "baseline": {
+      "mhz": {
+        "median": 124.96355600000001,
+        "mean": 126.53466509999998,
+        "min": 122.832498,
+        "max": 142.806644
+      },
+      "host_cycles_per_emu": {
+        "median": 31.715412999999998,
+        "mean": 31.432395799999995,
+        "min": 28.734126,
+        "max": 32.772387
+      }
+    },
+    "candidate": {
+      "mhz": {
+        "median": 142.81028750000002,
+        "mean": 145.1879537,
+        "min": 142.804686,
+        "max": 166.595435
+      },
+      "host_cycles_per_emu": {
+        "median": 27.7303715,
+        "mean": 27.262431899999996,
+        "min": 24.630782,
+        "max": 28.733858
+      }
+    },
+    "paired": {
+      "n": 10,
+      "mean_log_ratio": 0.1425773261332201,
+      "sd_log_ratio": 0.03501662390120716,
+      "point_speedup_pct": 15.324225327376162,
+      "ci95_speedup_pct": [
+        12.471305668992771,
+        18.249511448732303
+      ],
+      "median_pair_speedup_pct": 14.289532492951562,
+      "min_pair_speedup_pct": 10.278422820525446,
+      "max_pair_speedup_pct": 22.79755064211928
+    }
+  },
+  "diagnostic_profile": {
+    "candidate_250m_run": {
+      "retired_instructions": 125000096,
+      "decode_lookups": 125000096,
+      "decode_hits": 125000091,
+      "decode_misses": 5,
+      "invalidation_requests": 83333396,
+      "examined_slots": 166666792,
+      "matching_clears": 0,
+      "unrelated_would_clear": 166666792
+    },
+    "baseline_250m_run": {
+      "retired_instructions": 125000096,
+      "decode_lookups": 125000096,
+      "decode_hits": 41666697,
+      "decode_misses": 83333399,
+      "invalidation_requests": 83333396,
+      "examined_slots": 166666792,
+      "matching_clears": 0,
+      "unrelated_would_clear": 83333397
+    },
+    "interpretation": "The diagnostic build confirms the workload reaches SRAM invalidation: candidate retains unrelated entries (unrelated_would_clear > 0) while decode misses remain at initialization only. Profiler binaries add instrumentation and are not used for throughput numbers."
+  },
+  "source_logs": {
+    "official_dir": "valid-runs-1b",
+    "metadata": "metadata.tsv",
+    "completion": "COMPLETE"
+  }
+}

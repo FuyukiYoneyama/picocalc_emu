@@ -1,0 +1,42 @@
+[single-model bench] reps=1 (+1 warmup discarded) --model serial --workload self-invalidate --step-quantum 256
+
+--- warmup 0/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3946 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 250000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       2.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   250000191 (c0=250000191, c1=0)
+Requested cyc:  250000191
+Avg MHz:        124.789237 (per-core peak, from executed cycles)
+Host/emu cycle: 31.626104
+Verdict:        UNPACED (profiling mode)
+(warmup: 124.8 MHz, discarded)
+
+--- rep 1/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3946 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 250000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       2.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   250000191 (c0=250000191, c1=0)
+Requested cyc:  250000191
+Avg MHz:        124.847558 (per-core peak, from executed cycles)
+Host/emu cycle: 31.611306
+Verdict:        UNPACED (profiling mode)
+
+=== stats — workload: self-invalidate (model: serial) ===
+    model     median        p25        p75        min        max
+   serial      124.8      124.8      124.8      124.8      124.8

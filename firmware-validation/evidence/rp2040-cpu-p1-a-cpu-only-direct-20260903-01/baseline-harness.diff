@@ -1,0 +1,150 @@
+diff --git a/crates/picoem-harness/Cargo.toml b/crates/picoem-harness/Cargo.toml
+index 1127011..7d14a71 100644
+--- a/crates/picoem-harness/Cargo.toml
++++ b/crates/picoem-harness/Cargo.toml
+@@ -15,6 +15,13 @@ publish = false
+ [lints]
+ workspace = true
+
++[features]
++# Temporary diagnostic forwarding for the CPU-only P1-A workload. This
++# feature is used only in the scratch worktree to prove that the benchmark
++# generates real SRAM invalidation requests; it is not a production harness
++# feature.
++cpu-application-profiler = ["rp2040-emu/cpu-application-profiler"]
++
+ [dependencies]
+ picoem-common = { path = "../picoem-common", features = ["pio-pad-diag"] }
+ picoem-devices = { path = "../picoem-devices" }
+diff --git a/crates/picoem-harness/src/bin/paced_bench_rp2040.rs b/crates/picoem-harness/src/bin/paced_bench_rp2040.rs
+index fa98568..fb5b866 100644
+--- a/crates/picoem-harness/src/bin/paced_bench_rp2040.rs
++++ b/crates/picoem-harness/src/bin/paced_bench_rp2040.rs
+@@ -18,7 +18,8 @@
+ //!   --core N           Pin benchmark thread to host core N (default 2).
+ //!   --unpaced          Run flat-out, no real-time pacing; also emits the
+ //!                      host-cycles-per-emulated-cycle figure.
+-//!   --workload <name>  One of: basic (default), peripheral, contention, stress.
++//!   --workload <name>  One of: basic (default), peripheral, contention, stress,
++//!                      self-invalidate.
+ //!                      Core count is implied by the workload: basic and
+ //!                      peripheral are single-core, contention and stress are
+ //!                      dual-core.
+@@ -77,6 +78,12 @@ enum Workload {
+     /// Composite: core 0 runs the peripheral loop, core 1 runs the basic
+     /// ALU loop, both in bank 0; PIO0 SM0 running. Realistic worst case.
+     Stress,
++    /// Single-core ALU loop with a word store into a different SRAM address
++    /// that aliases the hot loop's decode-cache slots. This is a CPU-only
++    /// invalidation workload for the P1-A tag guard: the store is an ordinary
++    /// SRAM write, but the written address is not the instruction bytes that
++    /// occupy the direct-mapped slots.
++    SelfInvalidate,
+ }
+
+ impl Workload {
+@@ -94,6 +101,7 @@ impl Workload {
+             Workload::Peripheral => "peripheral",
+             Workload::Contention => "contention",
+             Workload::Stress => "stress",
++            Workload::SelfInvalidate => "self-invalidate",
+         }
+     }
+ }
+@@ -250,6 +258,27 @@ fn setup_peripheral_core0(emu: &mut Emulator) {
+     emu.core_mut(0).regs.xpsr = 1 << 24;
+ }
+
++/// Core 0 P1-A invalidation loop at 0x2000_0000:
++///   prologue: LDR R2, [PC, #8] | MOVS R1, #1
++///   loop:     ADDS R0, R0, #1 | STR R1, [R2]
++///             B loop
++///
++/// R2 points at 0x2000_4004.  RP2040 SRAM aliases share backing storage, and
++/// the 0x4000 offset maps the store onto the same direct-mapped decode-cache
++/// slots as instructions at 0x2000_0004/0x2000_0006.  The bytes being written
++/// are not the hot instructions, so P1-A should retain those cache entries
++/// while the pre-P1-A index-only invalidation clears them.
++fn setup_self_invalidate_core0(emu: &mut Emulator) {
++    const TARGET: u32 = 0x2000_4004;
++    emu.poke(0x2000_0000, 0x2101_4A02); // LDR R2 | MOVS R1
++    emu.poke(0x2000_0004, 0x6011_1C40); // ADDS R0,R0,#1 | STR R1,[R2]
++    emu.poke(0x2000_0008, 0xBF00_E7FC); // B .-8 | NOP
++    emu.poke(0x2000_000C, TARGET); // literal: colliding SRAM address
++
++    emu.core_mut(0).regs.set_pc(0x2000_0000);
++    emu.core_mut(0).regs.xpsr = 1 << 24;
++}
++
+ /// Core 1 basic ALU loop at a caller-supplied address. Uses R1 as the
+ /// accumulator to differentiate from core 0 in register dumps.
+ fn setup_basic_core1_at(emu: &mut Emulator, addr: u32) {
+@@ -324,6 +353,9 @@ fn setup(emu: &mut Emulator, workload: Workload) {
+             emu.core_mut(1).regs.r[13] = core1_stack_top;
+             emu.core_mut(1).wake();
+         }
++        Workload::SelfInvalidate => {
++            setup_self_invalidate_core0(emu);
++        }
+     }
+ }
+
+@@ -547,6 +579,9 @@ fn run_once(cfg: &RunConfig) -> f64 {
+         }
+     };
+     setup(&mut emu, workload);
++    #[cfg(feature = "cpu-application-profiler")]
++    emu.enable_cpu_application_profiler()
++        .expect("CPU application profiler is Serial-only");
+
+     // --- Set up pacer ---
+     let mut pacer = Pacer::with_quantum(sys_clk_hz, quantum.into());
+@@ -684,11 +719,26 @@ fn run_once(cfg: &RunConfig) -> f64 {
+         );
+         println!("Requested cyc:  {}", unpaced_cycles);
+         println!(
+-            "Avg MHz:        {:.1} (per-core peak, from executed cycles)",
++            "Avg MHz:        {:.6} (per-core peak, from executed cycles)",
+             mhz
+         );
+         #[cfg(target_arch = "x86_64")]
+-        println!("Host/emu cycle: {:.2}", host_ticks_per_emu);
++        println!("Host/emu cycle: {:.6}", host_ticks_per_emu);
++        #[cfg(feature = "cpu-application-profiler")]
++        if let Some([core0, core1]) = emu.cpu_application_profile_snapshot() {
++            println!(
++                "CPU profile: c0 retired={} decode_lookups={} decode_hits={} decode_misses={} invalidation_requests={} examined_slots={} matching_clears={} unrelated_would_clear={} c1_retired={}",
++                core0.retired_instructions,
++                core0.decode.lookups,
++                core0.decode.hits,
++                core0.decode.misses,
++                core0.invalidation.requests,
++                core0.invalidation.examined_slots,
++                core0.invalidation.matching_clears,
++                core0.invalidation.unrelated_would_clear,
++                core1.retired_instructions,
++            );
++        }
+         #[cfg(not(target_arch = "x86_64"))]
+         println!("Host ns/emu cyc:{:>7.2}", host_ticks_per_emu);
+         println!("Verdict:        UNPACED (profiling mode)");
+@@ -796,7 +846,7 @@ fn parse_workload() -> Result<Workload, String> {
+         if a == "--workload" {
+             let v = args
+                 .get(i + 1)
+-                .ok_or("--workload requires basic|peripheral|contention|stress")?;
++        .ok_or("--workload requires basic|peripheral|contention|stress|self-invalidate")?;
+             return match_workload(v);
+         }
+     }
+@@ -809,8 +859,9 @@ fn match_workload(s: &str) -> Result<Workload, String> {
+         "peripheral" => Ok(Workload::Peripheral),
+         "contention" => Ok(Workload::Contention),
+         "stress" => Ok(Workload::Stress),
++        "self-invalidate" => Ok(Workload::SelfInvalidate),
+         other => Err(format!(
+-            "invalid --workload '{other}' (expected basic|peripheral|contention|stress)"
++            "invalid --workload '{other}' (expected basic|peripheral|contention|stress|self-invalidate)"
+         )),
+     }
+ }

@@ -1,0 +1,5 @@
+picoem-harness v0.41.9 (/tmp/picocalc-rp2040-cpu-p1a-direct.7AoYCt/baseline/crates/picoem-harness)
+├── rp2040-emu feature "default"
+│   └── rp2040-emu v0.1.5 (/tmp/picocalc-rp2040-cpu-p1a-direct.7AoYCt/baseline/crates/rp2040-emu)
+├── rp2040-emu feature "threading"
+│   └── rp2040-emu v0.1.5 (/tmp/picocalc-rp2040-cpu-p1a-direct.7AoYCt/baseline/crates/rp2040-emu) (*)

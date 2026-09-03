@@ -1,0 +1,54 @@
+[single-model bench] reps=1 (+1 warmup discarded) --model serial --workload self-invalidate --step-quantum 256
+
+--- warmup 0/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3953 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 1000000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+     5              0        0.0     0.0%     100.0%        0
+     6              0        0.0     0.0%     100.0%        0
+     7              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       8.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   1000000257 (c0=1000000257, c1=0)
+Requested cyc:  1000000257
+Avg MHz:        124.935282 (per-core peak, from executed cycles)
+Host/emu cycle: 31.644528
+Verdict:        UNPACED (profiling mode)
+(warmup: 124.9 MHz, discarded)
+
+--- rep 1/1 ---
+rp2040_emu paced benchmark — target 125 MHz, quantum 125 cycles, step_quantum 256, single-core, workload self-invalidate, runtime serial
+TSC calibrated: 3966 MHz
+
+  time     emu_cycles    emu_MHz    util%  headroom%   behind
+(unpaced mode — running flat-out until 1000000000 emulated cycles)
+     1              0        0.0     0.0%     100.0%        0
+     2              0        0.0     0.0%     100.0%        0
+     3              0        0.0     0.0%     100.0%        0
+     4              0        0.0     0.0%     100.0%        0
+     5              0        0.0     0.0%     100.0%        0
+     6              0        0.0     0.0%     100.0%        0
+     7              0        0.0     0.0%     100.0%        0
+
+--- summary ---
+Duration:       8.0 s
+Workload:       self-invalidate
+Runtime:        serial
+Executed cyc:   1000000257 (c0=1000000257, c1=0)
+Requested cyc:  1000000257
+Avg MHz:        124.962977 (per-core peak, from executed cycles)
+Host/emu cycle: 31.738432
+Verdict:        UNPACED (profiling mode)
+
+=== stats — workload: self-invalidate (model: serial) ===
+    model     median        p25        p75        min        max
+   serial      125.0      125.0      125.0      125.0      125.0

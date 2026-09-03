@@ -23,6 +23,14 @@ production A/B は CPU 11、`interleaved-anchor-v3`、5 AB＋5 BAの10 pair/work
 
 根拠 record: `firmware-validation/records/rp2040-cpu-p1-a-production-v3-20260902-03/`
 
+## CPU単体の直接効果測定（追加成果）
+
+実アプリとは別に、P1-Aの経路を直接通るCPU-only `self-invalidate` workloadを作成して再測定した。SRAM上のhot loopを実行しながら、同じdirect-mapped decode-cache slotへ衝突する別SRAMアドレスへ毎回word storeするため、baselineのindex-only evictionとP1-Aのfull-tag guardの差を周辺装置なしで比較できる。
+
+10 pair（各1,000,000,000 emulated cycles、CPU 11固定、Serial、全pair保持）の結果は、baseline中央値 **124.963556 MHz**、P1-A中央値 **142.810288 MHz**、paired中央値 **+14.289532%**、paired point estimate **+15.324225%**、95% CI **+12.471306%〜+18.249511%** だった。10 pairすべてでP1-Aがbaselineを上回った。これはホスト上のflat-out CPU throughputであり、実アプリcombined **+1.218973%** を置き換える値ではない。
+
+raw log、metadata、集計、診断profileは [`rp2040-cpu-p1-a-cpu-only-direct-20260903-01`](../firmware-validation/evidence/rp2040-cpu-p1-a-cpu-only-direct-20260903-01/) に保存した。診断profileでも、250M-cycle runの invalidation request **83,333,396** に対して candidate の decode miss **5**（baseline **83,333,399**）を確認しており、速度差が意図した無関係slot eviction抑止経路に由来することを確認した。profiler有効バイナリは経路確認専用で、速度値の算出には使っていない。
+
 P1-A再測定前のbaseline-only CPU時間診断と、P2-A A/Bで参照したhost-stability sentinelは、元の一時領域から[`firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/`](../firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/)へ保存した。元パス、record ID、SHA-256、診断専用であることを同ディレクトリの`manifest.json`と`README.md`に記録している。
 
 ## ソース統合

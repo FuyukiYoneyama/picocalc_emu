@@ -1,0 +1,9 @@
+generated_at=2026-09-03T11:33:55+09:00
+kernel:
+Linux DESKTOP-4U8IH7F 6.18.33.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 18 21:54:43 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+taskset:
+taskset from util-linux 2.39.3
+cpu_affinity_requested=11
+runner_flags=--workload self-invalidate --unpaced --model serial --cycles 1000000000 --reps 1 --core 11 --quantum 125 --clock-mhz 125 --step-quantum 256
+baseline_build=CARGO_TARGET_DIR=target-baseline-self cargo build --release -p picoem-harness --bin paced_bench_rp2040
+candidate_build=CARGO_TARGET_DIR=target-candidate-self cargo build --release -p picoem-harness --bin paced_bench_rp2040
