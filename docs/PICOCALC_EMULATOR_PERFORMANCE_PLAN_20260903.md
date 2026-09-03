@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 高速化 — 現行計画
 
-- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 baseline fixed**
+- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 candidate Q2 correctness complete / PERF-Q3 ready**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -298,8 +298,19 @@ PIO／DMA／SysTick等の1-cycle fallbackに分かれる。Q0の証拠は
 [`firmware-validation/evidence/quantum-engagement-20260903-01/`](../firmware-validation/evidence/quantum-engagement-20260903-01/)
 に保存した。P2-A cleanupはbackend commit `f32eba1`で完了し、PERF-Q1用clean baselineは
 [`firmware-validation/evidence/perf-q1-baseline-20260903-01/`](../firmware-validation/evidence/perf-q1-baseline-20260903-01/)
-に固定した。次はこのbaselineからtransition barrier／deadline cap候補を作り、Q2の小さい正確性gateへ
-進む。番号だけで報告せず、毎回
+に固定した。そこから作成したdynamic quantum候補（backend scratch commit
+`dade6492e525959ecd8d4b87beeb6a78ff430853`）について、Q2の小さい正確性gateを完了した。
+admissionとcorrectnessの記録は、それぞれ
+[`firmware-validation/records/rp2040-cpu-q1-admission-20260903-01/`](../firmware-validation/records/rp2040-cpu-q1-admission-20260903-01/)
+と
+[`firmware-validation/records/rp2040-cpu-q1-correctness-20260903-01/`](../firmware-validation/records/rp2040-cpu-q1-correctness-20260903-01/)
+に保存している。Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）のguest cycle、通常
+observation projection、UART／framebuffer／audio／SD／PSRAMを含むbehavior traceは両方passした。
+dynamic候補で変化するhost schedulerの`step_quantum`と`psram.tick_count`だけを事前固定どおり比較から除外し、
+独立verifierも37/37 passした。これは候補の正確性を示す記録であり、速度改善を示す記録ではない。
+比較対象のbaseline identityは確定済みだが、速度baseline（process CPU time）はまだ未計測である。
+次はPERF-Q3として、同じ2アプリでCPU affinityを固定し、baseline／candidateをAB・BAの2 pairずつ
+screeningする。番号だけで報告せず、毎回
 「PicoCalc firmware backendのどの待ち時間を、何を守りながら減らす作業か」を併記する。
 
 1倍速UXの旧計画と関連概念は
