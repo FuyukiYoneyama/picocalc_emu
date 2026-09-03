@@ -1,0 +1,1870 @@
+diff --git a/crates/picocalc-board/src/lib.rs b/crates/picocalc-board/src/lib.rs
+index 01c61cd..1c1d8c2 100644
+--- a/crates/picocalc-board/src/lib.rs
++++ b/crates/picocalc-board/src/lib.rs
+@@ -40,6 +40,8 @@ pub use framebuffer::{Framebuffer, PngError};
+ pub use keyboard::{KeyEvent, KeyState, Keyboard, KeyboardWire};
+ pub use lcd_pio_wire::LcdPioWire;
+ pub use sd_wire::SdCardWire;
+-pub use sdcard::{RawMetadata, SdCard, SdFormat};
++pub use sdcard::{
++    RawMetadata, SdCard, SdFormat, SdTraceData, SdTraceDirection, SdTraceEvent, SdTraceSnapshot,
++};
+ pub use st7365p::{Colmod, St7365p};
+ pub use wire::St7365pWire;
+diff --git a/crates/picocalc-board/src/sd_wire.rs b/crates/picocalc-board/src/sd_wire.rs
+index 1f49377..d8a4b84 100644
+--- a/crates/picocalc-board/src/sd_wire.rs
++++ b/crates/picocalc-board/src/sd_wire.rs
+@@ -48,7 +48,10 @@ impl SpiExternalDevice for SdCardWire {
+ 
+     fn observe_pins(&mut self, gpio_out_levels: u32) {
+         let cs = level(gpio_out_levels, SD_PIN_CS);
+-        // Only the rising edge matters: that is what ends a command.
++        if !cs && self.cs_high {
++            self.card.lock().expect("SD mutex").trace_select();
++        }
++        // The rising edge ends a command and closes its trace epoch.
+         if cs && !self.cs_high {
+             self.card.lock().expect("SD mutex").deselect();
+         }
+diff --git a/crates/picocalc-board/src/sdcard.rs b/crates/picocalc-board/src/sdcard.rs
+index 7741461..c8268cd 100644
+--- a/crates/picocalc-board/src/sdcard.rs
++++ b/crates/picocalc-board/src/sdcard.rs
+@@ -40,6 +40,8 @@ use std::fs::{File, OpenOptions};
+ use std::io::{self, Read, Seek, SeekFrom, Write};
+ use std::path::{Path, PathBuf};
+ 
++use crate::sha256::StreamingSha256;
++
+ /// Bytes per block. SDHC addresses in blocks, not bytes.
+ pub const BLOCK_SIZE: usize = 512;
+ 
+@@ -125,6 +127,228 @@ enum Phase {
+     DataResponse,
+ }
+ 
++/// Schema version for the diagnostic SD protocol trace. This is separate
++/// from the runner report schema because a trace is an optional observation
++/// artifact, not an acceptance input.
++pub const SD_TRACE_SCHEMA_VERSION: u32 = 1;
++const SD_TRACE_PREVIEW_LIMIT: usize = 4096;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum SdTraceDirection {
++    Read,
++    Write,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct SdTraceData {
++    pub direction: SdTraceDirection,
++    pub block: u32,
++    pub token: u8,
++    pub length: usize,
++    pub crc: [u8; 2],
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum SdTraceEvent {
++    Command {
++        sequence: u64,
++        cs_epoch: u64,
++        transfers: u64,
++        index: u8,
++        argument: u32,
++        crc: u8,
++        crc_valid: bool,
++        response: Vec<u8>,
++        data: Option<SdTraceData>,
++    },
++    BlockData {
++        sequence: u64,
++        cs_epoch: u64,
++        transfers: u64,
++        data: SdTraceData,
++    },
++    Deselect {
++        sequence: u64,
++        cs_epoch: u64,
++        transfers: u64,
++    },
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct SdTraceSnapshot {
++    pub schema_version: u32,
++    pub event_count: u64,
++    pub digest_sha256: String,
++    pub preview_truncated: bool,
++    pub preview: Vec<SdTraceEvent>,
++}
++
++#[derive(Clone)]
++struct SdTraceState {
++    digest: StreamingSha256,
++    event_count: u64,
++    preview: Vec<SdTraceEvent>,
++    preview_truncated: bool,
++    cs_epoch: u64,
++    cs_active: bool,
++    transfers: u64,
++}
++
++impl SdTraceState {
++    fn new() -> Self {
++        Self {
++            digest: StreamingSha256::new(),
++            event_count: 0,
++            preview: Vec::new(),
++            preview_truncated: false,
++            cs_epoch: 0,
++            cs_active: false,
++            transfers: 0,
++        }
++    }
++
++    fn select(&mut self) {
++        if !self.cs_active {
++            self.cs_epoch = self.cs_epoch.saturating_add(1);
++            self.cs_active = true;
++            self.transfers = 0;
++        }
++    }
++
++    fn transfer(&mut self) {
++        // Direct card tests may omit pin callbacks. Treat their first byte
++        // as an implicit CS-low edge so the trace remains self-contained.
++        self.select();
++        self.transfers = self.transfers.saturating_add(1);
++    }
++
++    fn record(&mut self, event: SdTraceEvent) {
++        let mut canonical = Vec::with_capacity(96);
++        match &event {
++            SdTraceEvent::Command {
++                sequence,
++                cs_epoch,
++                transfers,
++                index,
++                argument,
++                crc,
++                crc_valid,
++                response,
++                data,
++            } => {
++                canonical.push(1);
++                canonical.extend_from_slice(&sequence.to_be_bytes());
++                canonical.extend_from_slice(&cs_epoch.to_be_bytes());
++                canonical.extend_from_slice(&transfers.to_be_bytes());
++                canonical.push(*index);
++                canonical.extend_from_slice(&argument.to_be_bytes());
++                canonical.push(*crc);
++                canonical.push(u8::from(*crc_valid));
++                canonical.extend_from_slice(&(response.len() as u32).to_be_bytes());
++                canonical.extend_from_slice(response);
++                match data {
++                    Some(data) => {
++                        canonical.push(1);
++                        canonical.push(match data.direction {
++                            SdTraceDirection::Read => 0,
++                            SdTraceDirection::Write => 1,
++                        });
++                        canonical.extend_from_slice(&data.block.to_be_bytes());
++                        canonical.push(data.token);
++                        canonical.extend_from_slice(&(data.length as u64).to_be_bytes());
++                        canonical.extend_from_slice(&data.crc);
++                    }
++                    None => canonical.push(0),
++                }
++            }
++            SdTraceEvent::Deselect {
++                sequence,
++                cs_epoch,
++                transfers,
++            } => {
++                canonical.push(2);
++                canonical.extend_from_slice(&sequence.to_be_bytes());
++                canonical.extend_from_slice(&cs_epoch.to_be_bytes());
++                canonical.extend_from_slice(&transfers.to_be_bytes());
++            }
++            SdTraceEvent::BlockData {
++                sequence,
++                cs_epoch,
++                transfers,
++                data,
++            } => {
++                canonical.push(3);
++                canonical.extend_from_slice(&sequence.to_be_bytes());
++                canonical.extend_from_slice(&cs_epoch.to_be_bytes());
++                canonical.extend_from_slice(&transfers.to_be_bytes());
++                canonical.push(match data.direction {
++                    SdTraceDirection::Read => 0,
++                    SdTraceDirection::Write => 1,
++                });
++                canonical.extend_from_slice(&data.block.to_be_bytes());
++                canonical.push(data.token);
++                canonical.extend_from_slice(&(data.length as u64).to_be_bytes());
++                canonical.extend_from_slice(&data.crc);
++            }
++        }
++        self.digest.update(&canonical);
++        self.event_count = self.event_count.saturating_add(1);
++        if self.preview.len() < SD_TRACE_PREVIEW_LIMIT {
++            self.preview.push(event);
++        } else {
++            self.preview_truncated = true;
++        }
++    }
++
++    fn command(
++        &mut self,
++        index: u8,
++        argument: u32,
++        crc: u8,
++        crc_valid: bool,
++        response: Vec<u8>,
++        data: Option<SdTraceData>,
++    ) {
++        self.select();
++        let sequence = self.event_count;
++        self.record(SdTraceEvent::Command {
++            sequence,
++            cs_epoch: self.cs_epoch,
++            transfers: self.transfers,
++            index,
++            argument,
++            crc,
++            crc_valid,
++            response,
++            data,
++        });
++    }
++
++    fn deselect(&mut self) {
++        if !self.cs_active {
++            return;
++        }
++        let sequence = self.event_count;
++        self.record(SdTraceEvent::Deselect {
++            sequence,
++            cs_epoch: self.cs_epoch,
++            transfers: self.transfers,
++        });
++        self.cs_active = false;
++        self.transfers = 0;
++    }
++
++    fn snapshot(&self) -> SdTraceSnapshot {
++        SdTraceSnapshot {
++            schema_version: SD_TRACE_SCHEMA_VERSION,
++            event_count: self.event_count,
++            digest_sha256: self.digest.finalize_hex(),
++            preview_truncated: self.preview_truncated,
++            preview: self.preview.clone(),
++        }
++    }
++}
++
+ struct RawBacking {
+     file: File,
+     source_path: PathBuf,
+@@ -281,6 +505,9 @@ pub struct SdCard {
+     write_pending: bool,
+     /// Buffer for the block being written.
+     write_buf: Vec<u8>,
++    /// CRC bytes supplied after a block-write payload. General CRC is not
++    /// validated by this model, but the trace records the wire values.
++    write_crc: [u8; 2],
+ 
+     // --- observation counters ---
+     pub commands_seen: u64,
+@@ -288,6 +515,7 @@ pub struct SdCard {
+     pub blocks_written: u64,
+     /// Commands this model does not implement, with their counts.
+     pub unknown_commands: Vec<(u8, u32)>,
++    trace: Option<SdTraceState>,
+ }
+ 
+ impl Default for SdCard {
+@@ -319,10 +547,12 @@ impl SdCard {
+             write_block: 0,
+             write_pending: false,
+             write_buf: Vec::with_capacity(BLOCK_SIZE),
++            write_crc: [0; 2],
+             commands_seen: 0,
+             blocks_read: 0,
+             blocks_written: 0,
+             unknown_commands: Vec::new(),
++            trace: None,
+         };
+         match format {
+             SdFormat::Fat16 => card.format_fat16(),
+@@ -356,10 +586,12 @@ impl SdCard {
+             write_block: 0,
+             write_pending: false,
+             write_buf: Vec::with_capacity(BLOCK_SIZE),
++            write_crc: [0; 2],
+             commands_seen: 0,
+             blocks_read: 0,
+             blocks_written: 0,
+             unknown_commands: Vec::new(),
++            trace: None,
+         })
+     }
+ 
+@@ -389,6 +621,27 @@ impl SdCard {
+         self.format
+     }
+ 
++    /// Enable the bounded, structured SPI protocol trace used by the loader
++    /// investigation. It is opt-in and does not alter card replies,
++    /// counters, or backing-store behaviour.
++    pub fn enable_trace(&mut self) {
++        self.trace = Some(SdTraceState::new());
++    }
++
++    /// Return the trace snapshot, if diagnostic tracing was enabled.
++    pub fn trace_snapshot(&self) -> Option<SdTraceSnapshot> {
++        self.trace.as_ref().map(SdTraceState::snapshot)
++    }
++
++    /// Notify the card that SPI chip-select went low. The wire calls this on
++    /// the falling edge; direct card tests may omit it because the trace
++    /// state also infers a first selection from the first transfer.
++    pub fn trace_select(&mut self) {
++        if let Some(trace) = self.trace.as_mut() {
++            trace.select();
++        }
++    }
++
+     /// Lay down an empty FAT16 volume.
+     ///
+     /// The BSP mounts the card and expects a filesystem to be there; it
+@@ -608,13 +861,20 @@ impl SdCard {
+ 
+     /// Chip select released: abandon whatever was in flight.
+     pub fn deselect(&mut self) {
++        if let Some(trace) = self.trace.as_mut() {
++            trace.deselect();
++        }
+         self.phase = Phase::Idle;
+         self.reply.clear();
+         self.write_buf.clear();
++        self.write_crc = [0; 2];
+     }
+ 
+     /// One byte exchanged. Returns what the card puts on MISO.
+     pub fn transfer(&mut self, byte: u8) -> u8 {
++        if let Some(trace) = self.trace.as_mut() {
++            trace.transfer();
++        }
+         match self.phase {
+             Phase::Idle => {
+                 // A command frame starts with 0b01xxxxxx.
+@@ -665,6 +925,7 @@ impl SdCard {
+                 if byte == TOKEN_START {
+                     self.phase = Phase::WriteData { taken: 0 };
+                     self.write_buf.clear();
++                    self.write_crc = [0; 2];
+                 }
+                 IDLE
+             }
+@@ -675,6 +936,7 @@ impl SdCard {
+                     IDLE
+                 } else if taken < BLOCK_SIZE + 1 {
+                     // First CRC byte.
++                    self.write_crc[0] = byte;
+                     self.phase = Phase::WriteData { taken: taken + 1 };
+                     IDLE
+                 } else {
+@@ -682,6 +944,7 @@ impl SdCard {
+                     // discarding what comes back, then reads the
+                     // response on the *next* transfer -- so commit here
+                     // and answer one byte later.
++                    self.write_crc[1] = byte;
+                     self.commit_write();
+                     self.phase = Phase::DataResponse;
+                     IDLE
+@@ -710,6 +973,20 @@ impl SdCard {
+         };
+         if committed {
+             self.blocks_written += 1;
++            if let Some(trace) = self.trace.as_mut() {
++                trace.record(SdTraceEvent::BlockData {
++                    sequence: trace.event_count,
++                    cs_epoch: trace.cs_epoch,
++                    transfers: trace.transfers,
++                    data: SdTraceData {
++                        direction: SdTraceDirection::Write,
++                        block: block as u32,
++                        token: TOKEN_START,
++                        length: self.write_buf.len(),
++                        crc: self.write_crc,
++                    },
++                });
++            }
+         }
+         self.write_buf.clear();
+         self.write_pending = false;
+@@ -721,18 +998,29 @@ impl SdCard {
+ 
+     fn begin_reply(&mut self, index: u8, received_crc: u8) {
+         self.commands_seen += 1;
++        let argument = self.arg_value();
++        let crc_valid = !matches!(index, 0 | 8) || received_crc == self.command_crc(index);
+         self.reply.clear();
+         // The card takes a byte or two to answer; the driver polls for
+         // the first byte with bit 7 clear, so one idle byte in front is
+         // both realistic and harmless.
+         self.reply.push_back(IDLE);
+ 
+-        if matches!(index, 0 | 8) && received_crc != self.command_crc(index) {
++        if matches!(index, 0 | 8) && !crc_valid {
+             // A rejected command has no R3/R7 extension and must not
+             // otherwise change card state. In particular, do not consume
+             // a pending APP_CMD prefix for a frame that was never accepted.
+             let state = if self.initialised { R1_READY } else { R1_IDLE };
+-            self.reply.push_back(state | R1_COM_CRC_ERROR);
++            let response = state | R1_COM_CRC_ERROR;
++            self.reply.push_back(response);
++            self.trace_command(
++                index,
++                argument,
++                received_crc,
++                crc_valid,
++                vec![response],
++                None,
++            );
+             self.phase = Phase::Reply;
+             return;
+         }
+@@ -756,57 +1044,85 @@ impl SdCard {
+                     self.reply.push_back(R1_READY);
+                 }
+             }
++            let response = self.reply.back().copied().unwrap_or(R1_READY);
++            self.trace_command(
++                index,
++                argument,
++                received_crc,
++                crc_valid,
++                vec![response],
++                None,
++            );
+             self.phase = Phase::Reply;
+             return;
+         }
+ 
++        let mut response = Vec::new();
++        let mut data = None;
+         match index {
+             // GO_IDLE_STATE: enter SPI mode, report idle.
+-            0 => self.reply.push_back(R1_IDLE),
++            0 => response.push(R1_IDLE),
+             // SEND_IF_COND: R7 echoes the voltage nibble and check byte.
+             8 => {
+-                self.reply.push_back(R1_IDLE);
+-                self.reply.push_back(0x00);
+-                self.reply.push_back(0x00);
+-                self.reply.push_back(0x01);
+-                self.reply.push_back((self.arg_value() & 0xFF) as u8);
++                response.extend_from_slice(&[R1_IDLE, 0x00, 0x00, 0x01, (argument & 0xFF) as u8]);
+             }
+             // SET_BLOCKLEN: SDHC is fixed at 512, so just accept it.
+-            16 => self.reply.push_back(R1_READY),
++            16 => response.push(R1_READY),
+             // READ_SINGLE_BLOCK.
+             17 => {
+-                self.reply.push_back(R1_READY);
+-                self.queue_block_read(self.arg_value());
++                response.push(R1_READY);
++                data = self.queue_block_read(argument);
+             }
+             // WRITE_BLOCK: acknowledge, then take the data phase.
+             24 => {
+-                self.reply.push_back(R1_READY);
+-                self.write_block = self.arg_value();
++                response.push(R1_READY);
++                self.write_block = argument;
+                 self.write_pending = true;
+             }
+             // APP_CMD: the next command is an ACMD.
+             55 => {
+                 self.app_cmd_pending = true;
+-                self.reply
+-                    .push_back(if self.initialised { R1_READY } else { R1_IDLE });
++                response.push(if self.initialised { R1_READY } else { R1_IDLE });
+             }
+             // READ_OCR: R3. Bit 30 of the first byte marks high capacity,
+             // which is what makes the driver address in blocks.
+             58 => {
+-                self.reply.push_back(R1_READY);
+-                self.reply.push_back(0xC0);
+-                self.reply.push_back(0xFF);
+-                self.reply.push_back(0x80);
+-                self.reply.push_back(0x00);
++                response.extend_from_slice(&[R1_READY, 0xC0, 0xFF, 0x80, 0x00]);
+             }
+             other => {
+                 self.note_unknown(other);
+-                self.reply.push_back(R1_READY);
++                response.push(R1_READY);
+             }
+         }
++        // A block read queues its token and payload while the command is
++        // decoded. The SPI protocol still returns the command response
++        // first (R1, then the data token/payload); keep the queued data
++        // behind that response.
++        if data.is_some() {
++            let queued_data = self.reply.split_off(1);
++            self.reply.extend(response.iter().copied());
++            self.reply.extend(queued_data);
++        } else {
++            self.reply.extend(response.iter().copied());
++        }
++        self.trace_command(index, argument, received_crc, crc_valid, response, data);
+         self.phase = Phase::Reply;
+     }
+ 
++    fn trace_command(
++        &mut self,
++        index: u8,
++        argument: u32,
++        crc: u8,
++        crc_valid: bool,
++        response: Vec<u8>,
++        data: Option<SdTraceData>,
++    ) {
++        if let Some(trace) = self.trace.as_mut() {
++            trace.command(index, argument, crc, crc_valid, response, data);
++        }
++    }
++
+     /// CRC byte for a command frame: CRC7 over command+argument, shifted
+     /// left with the required end bit set.
+     fn command_crc(&self, index: u8) -> u8 {
+@@ -829,14 +1145,14 @@ impl SdCard {
+         (crc << 1) | 1
+     }
+ 
+-    fn queue_block_read(&mut self, block: u32) {
++    fn queue_block_read(&mut self, block: u32) -> Option<SdTraceData> {
+         let block = block as usize;
+         let sector = match self.read_sector(block) {
+             Ok(sector) => sector,
+             Err(_) => {
+                 // Out of range or unreadable: leave the host polling for a
+                 // token that never comes rather than inventing data.
+-                return;
++                return None;
+             }
+         };
+         self.reply.push_back(TOKEN_START);
+@@ -845,6 +1161,13 @@ impl SdCard {
+         self.reply.push_back(0xFF);
+         self.reply.push_back(0xFF);
+         self.blocks_read += 1;
++        Some(SdTraceData {
++            direction: SdTraceDirection::Read,
++            block: block as u32,
++            token: TOKEN_START,
++            length: BLOCK_SIZE,
++            crc: [0xFF, 0xFF],
++        })
+     }
+ 
+     fn note_unknown(&mut self, code: u8) {
+diff --git a/crates/picocalc-board/src/sha256.rs b/crates/picocalc-board/src/sha256.rs
+index 337388e..d83101e 100644
+--- a/crates/picocalc-board/src/sha256.rs
++++ b/crates/picocalc-board/src/sha256.rs
+@@ -27,6 +27,79 @@ const H0: [u32; 8] = [
+ 
+ use std::io::{self, Read};
+ 
++/// Incremental SHA-256 state for diagnostic streams whose complete input
++/// must not be retained in memory. `finalize_hex` does not consume the
++/// state, so callers may take a snapshot more than once.
++#[derive(Clone)]
++pub struct StreamingSha256 {
++    h: [u32; 8],
++    block: [u8; 64],
++    buffered: usize,
++    total: u64,
++}
++
++impl StreamingSha256 {
++    pub fn new() -> Self {
++        Self {
++            h: H0,
++            block: [0; 64],
++            buffered: 0,
++            total: 0,
++        }
++    }
++
++    pub fn update(&mut self, mut input: &[u8]) {
++        self.total = self.total.wrapping_add(input.len() as u64);
++
++        if self.buffered != 0 {
++            let take = (64 - self.buffered).min(input.len());
++            self.block[self.buffered..self.buffered + take].copy_from_slice(&input[..take]);
++            self.buffered += take;
++            input = &input[take..];
++            if self.buffered == 64 {
++                compress(&mut self.h, &self.block);
++                self.buffered = 0;
++            }
++        }
++
++        while input.len() >= 64 {
++            compress(
++                &mut self.h,
++                input[..64].try_into().expect("64-byte SHA-256 block"),
++            );
++            input = &input[64..];
++        }
++        if !input.is_empty() {
++            self.block[..input.len()].copy_from_slice(input);
++            self.buffered = input.len();
++        }
++    }
++
++    pub fn finalize_hex(&self) -> String {
++        let mut state = self.clone();
++        state.block[state.buffered] = 0x80;
++        state.block[state.buffered + 1..].fill(0);
++        if state.buffered >= 56 {
++            compress(&mut state.h, &state.block);
++            state.block = [0; 64];
++        }
++        state.block[56..].copy_from_slice(&state.total.wrapping_mul(8).to_be_bytes());
++        compress(&mut state.h, &state.block);
++
++        let mut out = String::with_capacity(64);
++        for word in state.h {
++            out.push_str(&format!("{word:08x}"));
++        }
++        out
++    }
++}
++
++impl Default for StreamingSha256 {
++    fn default() -> Self {
++        Self::new()
++    }
++}
++
+ /// Lowercase hex SHA-256 digest of `data`.
+ pub fn sha256_hex(data: &[u8]) -> String {
+     let mut h = H0;
+@@ -169,7 +242,7 @@ fn compress(h: &mut [u32; 8], block: &[u8; 64]) {
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{sha256_hex, sha256_reader_hex};
++    use super::{StreamingSha256, sha256_hex, sha256_reader_hex};
+     use std::io::Cursor;
+ 
+     #[test]
+@@ -207,4 +280,15 @@ mod tests {
+             sha256_hex(&data)
+         );
+     }
++
++    #[test]
++    fn streaming_matches_slice_for_split_updates() {
++        let data: Vec<u8> = (0..100_000u32).map(|i| (i % 251) as u8).collect();
++        let mut stream = StreamingSha256::new();
++        for chunk in data.chunks(37) {
++            stream.update(chunk);
++        }
++        assert_eq!(stream.finalize_hex(), sha256_hex(&data));
++        assert_eq!(stream.finalize_hex(), sha256_hex(&data));
++    }
+ }
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 17f69b1..44ae7b7 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -39,11 +39,12 @@ use std::time::{Duration, Instant};
+ use picocalc_board::sha256::sha256_hex;
+ use picocalc_board::{
+     Framebuffer, KeyEvent, KeyState, Keyboard, KeyboardWire, LcdPioWire, SdCard, SdCardWire,
+-    SdFormat, St7365p, St7365pWire, pins,
++    SdFormat, SdTraceData, SdTraceDirection, SdTraceEvent, SdTraceSnapshot, St7365p, St7365pWire,
++    pins,
+ };
+ #[cfg(feature = "behavior-trace")]
+ use rp2040_emu::{BehaviorEventDomain, BehaviorTraceSnapshot};
+-use rp2040_emu::{Config, Emulator, EmulatorBuilder};
++use rp2040_emu::{Config, Emulator, EmulatorBuilder, RP2040_SRAM_TOP, WatchdogResetEvent};
+ #[cfg(feature = "idle-profiler")]
+ use rp2040_emu::{
+     CumulativeHistogramSnapshot, IDLE_HISTOGRAM_BUCKETS, IDLE_PROFILE_SCHEMA_VERSION,
+@@ -220,9 +221,31 @@ impl LcdVariant {
+     }
+ }
+ 
++/// Explicit startup request. The runner keeps this separate from the
++/// reported [`BootMode`], because `app` may still fall back to the ROM
++/// reset vector for hand-assembled images.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++enum BootRequest {
++    App,
++    Boot2,
++}
++
++impl BootRequest {
++    fn parse(s: &str) -> Result<Self, String> {
++        match s {
++            "app" => Ok(Self::App),
++            "boot2" => Ok(Self::Boot2),
++            other => Err(format!(
++                "unknown --boot-mode '{other}' (expected app|boot2)"
++            )),
++        }
++    }
++}
++
+ struct Args {
+     bin: PathBuf,
+     bootrom: PathBuf,
++    boot_mode: BootRequest,
+     cycles: u64,
+     stop_pc: Option<u32>,
+     json: Option<PathBuf>,
+@@ -239,6 +262,7 @@ struct Args {
+     sd: bool,
+     sd_image: Option<PathBuf>,
+     sd_image_out: Option<PathBuf>,
++    sd_trace: Option<PathBuf>,
+     sd_format: SdFormat,
+     keys: Option<String>,
+     scenario: Option<PathBuf>,
+@@ -428,6 +452,7 @@ fn validate_sd_selection(
+     sd: bool,
+     sd_image: Option<&Path>,
+     sd_image_out: Option<&Path>,
++    sd_trace: Option<&Path>,
+     format_explicit: bool,
+ ) -> Result<(), String> {
+     if sd && sd_image.is_some() {
+@@ -439,6 +464,9 @@ fn validate_sd_selection(
+     if format_explicit && !sd {
+         return Err("--sd-format requires --sd".to_string());
+     }
++    if sd_trace.is_some() && !sd && sd_image.is_none() {
++        return Err("--sd-trace requires --sd or --sd-image".to_string());
++    }
+     Ok(())
+ }
+ 
+@@ -448,9 +476,11 @@ fn print_usage() {
+          picocalc-run --bin <firmware.bin> [options]\n\
+          \n\
+          --bin <path>             Required. Raw RP2040 flash image (.bin), loaded at\n\
+-                                  0x1000_0000 and direct-booted from offset 0x100.\n\
++                                  0x1000_0000; startup uses --boot-mode (default app).\n\
+          --bootrom <path>         16 KB RP2040 bootrom image, loaded but never executed.\n\
+                                   Default: {DEFAULT_BOOTROM_PATH}\n\
++         --boot-mode <app|boot2>  Startup path. Default 'app' preserves direct boot from\n\
++                                  flash+0x100; 'boot2' enters the flash offset 0 loader stub.\n\
+          --cycles <N>             Cycle budget. Exceeding it gives cycle_limit, which is\n\
+                                   not a pass unless explicitly expected. Default: {DEFAULT_CYCLE_LIMIT}\n\
+          --stop-pc <hex>          Stop with stop_reason=pc_match when core 0's PC equals\n\
+@@ -489,7 +519,9 @@ fn print_usage() {
+                                   emulated writes use a sector copy-on-write overlay.\n\
+          --sd-image-out <path>    Atomically export the RAW image plus COW writes after the run.\n\
+                                   Requires --sd-image and must differ from the input path.\n\
+-        --sd-format <fat32|fat16>\n\
++         --sd-trace <path>        Diagnostic-only structured SD SPI trace (separate JSON file).\n\
++                                  Requires --sd or --sd-image; not part of the normal report.\n\
++         --sd-format <fat32|fat16>\n\
+                                   Initial filesystem profile. FAT32 is the default, matching\n\
+                                   PicoCalc's bundled 32 GB card. Requires --sd.\n\
+          --scenario <path>        Run a JSON scenario: timed key input, and pixel / region\n\
+@@ -526,6 +558,7 @@ fn parse_args() -> Result<Args, String> {
+     let argv: Vec<String> = std::env::args().skip(1).collect();
+     let mut bin: Option<PathBuf> = None;
+     let mut bootrom: Option<PathBuf> = None;
++    let mut boot_mode = BootRequest::App;
+     let mut cycles: Option<u64> = None;
+     let mut stop_pc: Option<u32> = None;
+     let mut json: Option<PathBuf> = None;
+@@ -552,6 +585,7 @@ fn parse_args() -> Result<Args, String> {
+     let mut sd = false;
+     let mut sd_image: Option<PathBuf> = None;
+     let mut sd_image_out: Option<PathBuf> = None;
++    let mut sd_trace: Option<PathBuf> = None;
+     let mut sd_format = SdFormat::default();
+     let mut sd_format_explicit = false;
+     let mut keys: Option<String> = None;
+@@ -581,6 +615,7 @@ fn parse_args() -> Result<Args, String> {
+         match flag {
+             "--bin" => bin = Some(PathBuf::from(value("--bin")?)),
+             "--bootrom" => bootrom = Some(PathBuf::from(value("--bootrom")?)),
++            "--boot-mode" => boot_mode = BootRequest::parse(&value("--boot-mode")?)?,
+             "--cycles" => {
+                 let raw = value("--cycles")?;
+                 let cleaned = raw.replace('_', "");
+@@ -625,6 +660,12 @@ fn parse_args() -> Result<Args, String> {
+             "--sd" => sd = true,
+             "--sd-image" => sd_image = Some(PathBuf::from(value("--sd-image")?)),
+             "--sd-image-out" => sd_image_out = Some(PathBuf::from(value("--sd-image-out")?)),
++            "--sd-trace" => {
++                if sd_trace.is_some() {
++                    return Err("--sd-trace may be specified only once".to_string());
++                }
++                sd_trace = Some(PathBuf::from(value("--sd-trace")?));
++            }
+             "--sd-format" => {
+                 let raw = value("--sd-format")?;
+                 sd_format = raw.parse::<SdFormat>()?;
+@@ -718,6 +759,7 @@ fn parse_args() -> Result<Args, String> {
+         sd,
+         sd_image.as_deref(),
+         sd_image_out.as_deref(),
++        sd_trace.as_deref(),
+         sd_format_explicit,
+     )?;
+     // Queueing keys implies the controller they arrive through.
+@@ -762,6 +804,9 @@ fn parse_args() -> Result<Args, String> {
+         _ => {}
+     }
+     if machine_api {
++        if boot_mode == BootRequest::Boot2 {
++            return Err("--machine-api cannot be combined with --boot-mode boot2".to_string());
++        }
+         let conflicts = [
+             (scenario.is_some(), "--scenario"),
+             (stop_pc.is_some(), "--stop-pc"),
+@@ -777,6 +822,7 @@ fn parse_args() -> Result<Args, String> {
+             ),
+             (keys.is_some(), "--keys"),
+             (sd_image_out.is_some(), "--sd-image-out"),
++            (sd_trace.is_some(), "--sd-trace"),
+             (run_id.is_some(), "--run-id"),
+             (progress_interval.is_some(), "--progress-interval"),
+         ];
+@@ -802,6 +848,7 @@ fn parse_args() -> Result<Args, String> {
+     Ok(Args {
+         bin: bin.ok_or_else(|| "missing required --bin <path>".to_string())?,
+         bootrom: bootrom.unwrap_or_else(|| PathBuf::from(DEFAULT_BOOTROM_PATH)),
++        boot_mode,
+         cycles: cycles.unwrap_or(DEFAULT_CYCLE_LIMIT),
+         stop_pc,
+         json,
+@@ -818,6 +865,7 @@ fn parse_args() -> Result<Args, String> {
+         sd,
+         sd_image,
+         sd_image_out,
++        sd_trace,
+         sd_format,
+         keys,
+         scenario,
+@@ -884,6 +932,7 @@ struct RunOutcome {
+     exception: Option<&'static str>,
+     error: Option<String>,
+     uart_bytes: Vec<u8>,
++    watchdog_resets: Vec<WatchdogResetEvent>,
+ }
+ 
+ /// Process result. `CannotJudge` is distinct from a negative firmware
+@@ -1090,6 +1139,7 @@ fn load_image(path: &Path, what: &str) -> Result<Vec<u8>, String> {
+ enum BootMode {
+     DirectBootFromFlash,
+     BootromResetVector,
++    Boot2FromFlash,
+ }
+ 
+ impl BootMode {
+@@ -1097,22 +1147,45 @@ impl BootMode {
+         match self {
+             BootMode::DirectBootFromFlash => "direct_boot_from_flash",
+             BootMode::BootromResetVector => "bootrom_reset_vector",
++            BootMode::Boot2FromFlash => "boot2",
+         }
+     }
+ }
+ 
++fn boot_report_fragment(boot_mode: BootMode) -> String {
++    match boot_mode {
++        BootMode::Boot2FromFlash => format!(
++            "  \"boot\": {{\"mode\": {}, \"vtor_flash_offset\": null}},\n",
++            json_string(boot_mode.as_str())
++        ),
++        BootMode::DirectBootFromFlash | BootMode::BootromResetVector => format!(
++            "  \"boot\": {{\"mode\": {}, \"vtor_flash_offset\": \"{:#06x}\"}},\n",
++            json_string(boot_mode.as_str()),
++            SDK_VTOR_FLASH_OFFSET
++        ),
++    }
++}
++
+ /// Build the emulator and perform the direct-boot handoff.
+ #[allow(clippy::type_complexity)]
+ fn boot(
+     firmware: Vec<u8>,
+     bootrom: &[u8],
+     step_quantum: u32,
++    boot_request: BootRequest,
+     board: Board,
+     lcd_variant: LcdVariant,
+     psram: bool,
+     keyboard: Option<Arc<Mutex<Keyboard>>>,
+     sd: Option<Arc<Mutex<SdCard>>>,
+ ) -> Result<(Emulator, BootMode, Option<Arc<Mutex<St7365p>>>), String> {
++    if boot_request == BootRequest::Boot2 && firmware.len() < 256 {
++        return Err(format!(
++            "--boot-mode boot2 requires at least 256 firmware bytes for the boot2 region (got {})",
++            firmware.len()
++        ));
++    }
++
+     let mut builder = EmulatorBuilder::new(Config {
+         sys_clk_hz: DEFAULT_SYS_CLK_HZ,
+     })
+@@ -1183,6 +1256,7 @@ fn boot(
+     // The card sits on SPI0. Card detect is an input to the chip, so it
+     // is forced low here rather than driven by the device: the slot
+     // reports "occupied" for as long as a card is attached.
++    let sd_attached = sd.is_some();
+     if let Some(card) = sd {
+         emu.bus
+             .attach_spi_device(pins::SD_SPI_INSTANCE, Box::new(SdCardWire::new(card)))
+@@ -1196,6 +1270,23 @@ fn boot(
+     emu.load_bootrom(bootrom);
+     emu.reset();
+ 
++    // Card detect is an external slot signal, not MCU reset state. Restore
++    // it after the cold reset so the loader sees an attached card from its
++    // first instruction; the same restoration is performed by the session
++    // after watchdog warm resets.
++    if sd_attached {
++        let detect = 1u32 << pins::SD_PIN_DETECT;
++        emu.bus.external_gpio_in_mask |= detect;
++        emu.bus.external_gpio_in_override &= !detect;
++        emu.bus.gpio_in &= !detect;
++    }
++
++    if boot_request == BootRequest::Boot2 {
++        emu.boot2_from_flash(RP2040_SRAM_TOP, 0)
++            .map_err(|error| format!("entering flash boot2: {error}"))?;
++        return Ok((emu, BootMode::Boot2FromFlash, lcd));
++    }
++
+     // Sanity-check the vector table before seeding from it: a garbage
+     // SP/PC pair means the image is not an SDK flash image and the run
+     // would produce meaningless output.
+@@ -1297,6 +1388,8 @@ struct MachineSession {
+     uart_bytes: Vec<u8>,
+     dispatches: u64,
+     board: BoardHandles,
++    boot_mode: Option<BootMode>,
++    watchdog_resets: Vec<WatchdogResetEvent>,
+     sticky_stop: Option<SessionStop>,
+ }
+ 
+@@ -1316,10 +1409,43 @@ impl MachineSession {
+             uart_bytes: Vec::new(),
+             dispatches: 0,
+             board,
++            boot_mode: None,
++            watchdog_resets: Vec::new(),
+             sticky_stop: None,
+         }
+     }
+ 
++    #[inline]
++    fn set_boot_mode(&mut self, boot_mode: BootMode) {
++        self.boot_mode = Some(boot_mode);
++    }
++
++    /// Re-enter the selected firmware handoff after an emulated watchdog
++    /// warm reset. Flash, SD backing, and watchdog scratch were retained by
++    /// the emulator; this only selects the same entry path as the initial
++    /// boot and records the reset event for the report.
++    fn handle_watchdog_reset(&mut self) -> Result<bool, String> {
++        let Some(event) = self.emu.take_watchdog_reset_event() else {
++            return Ok(false);
++        };
++        self.watchdog_resets.push(event);
++        match self.boot_mode {
++            Some(BootMode::Boot2FromFlash) => self
++                .emu
++                .boot2_from_flash(RP2040_SRAM_TOP, 0)
++                .map_err(|error| {
++                    format!("re-entering flash boot2 after watchdog reset: {error}")
++                })?,
++            Some(BootMode::DirectBootFromFlash) => {
++                self.emu.direct_boot_from_flash(SDK_VTOR_FLASH_OFFSET);
++            }
++            Some(BootMode::BootromResetVector) | None => {}
++        }
++        self.vclock
++            .rebase(self.emu.clock.cycles, self.emu.bus.clock_tree.sys_clk_hz);
++        Ok(true)
++    }
++
+     #[inline(always)]
+     fn cycles(&self) -> u64 {
+         self.emu.clock.cycles
+@@ -1376,6 +1502,7 @@ impl MachineSession {
+             self.sticky_stop = Some(SessionStop::Error(message.clone()));
+             message
+         })?;
++        self.handle_watchdog_reset()?;
+         self.dispatches = self.dispatches.saturating_add(1);
+         if self.dispatches.is_multiple_of(UART_DRAIN_INTERVAL) {
+             self.drain_uart();
+@@ -1410,6 +1537,7 @@ impl MachineSession {
+             exception,
+             error,
+             uart_bytes: std::mem::take(&mut self.uart_bytes),
++            watchdog_resets: std::mem::take(&mut self.watchdog_resets),
+         }
+     }
+ }
+@@ -1491,6 +1619,10 @@ fn run_loop(
+         };
+         steps += 1;
+ 
++        if let Err(error) = machine.handle_watchdog_reset() {
++            return machine.finish(StopReason::Error, None, Some(error));
++        }
++
+         if consumed == 0 {
+             // Every core is halted or parked on WFE, so the master
+             // clock cannot advance and the cycle budget can never be
+@@ -3067,6 +3199,118 @@ fn write_flash_image(path: &Path, image: &[u8]) -> Result<(), String> {
+         .map_err(|error| format!("publishing flash image {}: {error}", path.display()))
+ }
+ 
++fn sd_trace_data_json(data: &SdTraceData) -> String {
++    let direction = match data.direction {
++        SdTraceDirection::Read => "read",
++        SdTraceDirection::Write => "write",
++    };
++    format!(
++        "{{\"direction\":{},\"block\":{},\"token\":{},\"length\":{},\"crc\":[{},{}]}}",
++        json_string(direction),
++        data.block,
++        data.token,
++        data.length,
++        data.crc[0],
++        data.crc[1]
++    )
++}
++
++fn sd_trace_event_json(event: &SdTraceEvent) -> String {
++    match event {
++        SdTraceEvent::Command {
++            sequence,
++            cs_epoch,
++            transfers,
++            index,
++            argument,
++            crc,
++            crc_valid,
++            response,
++            data,
++        } => {
++            let response = response
++                .iter()
++                .map(|byte| byte.to_string())
++                .collect::<Vec<_>>()
++                .join(",");
++            let data = data
++                .as_ref()
++                .map(sd_trace_data_json)
++                .unwrap_or_else(|| "null".to_string());
++            format!(
++                "{{\"kind\":\"command\",\"sequence\":{},\"cs_epoch\":{},\"transfers\":{},\"index\":{},\"argument\":{},\"crc\":{},\"crc_valid\":{},\"response\":[{}],\"data\":{}}}",
++                sequence, cs_epoch, transfers, index, argument, crc, crc_valid, response, data
++            )
++        }
++        SdTraceEvent::BlockData {
++            sequence,
++            cs_epoch,
++            transfers,
++            data,
++        } => format!(
++            "{{\"kind\":\"block_data\",\"sequence\":{},\"cs_epoch\":{},\"transfers\":{},\"data\":{}}}",
++            sequence,
++            cs_epoch,
++            transfers,
++            sd_trace_data_json(data)
++        ),
++        SdTraceEvent::Deselect {
++            sequence,
++            cs_epoch,
++            transfers,
++        } => format!(
++            "{{\"kind\":\"deselect\",\"sequence\":{},\"cs_epoch\":{},\"transfers\":{}}}",
++            sequence, cs_epoch, transfers
++        ),
++    }
++}
++
++fn sd_trace_json(snapshot: &SdTraceSnapshot) -> String {
++    let mut out = String::new();
++    out.push_str("{\n");
++    out.push_str(&format!(
++        "  \"schema_version\": {},\n  \"trace_kind\": \"sd-spi-structured-v1\",\n  \"event_count\": {},\n  \"digest_sha256\": {},\n  \"preview_truncated\": {},\n  \"preview\": [",
++        snapshot.schema_version,
++        snapshot.event_count,
++        json_string(&snapshot.digest_sha256),
++        snapshot.preview_truncated
++    ));
++    for (index, event) in snapshot.preview.iter().enumerate() {
++        if index == 0 {
++            out.push('\n');
++        } else {
++            out.push_str(",\n");
++        }
++        out.push_str("    ");
++        out.push_str(&sd_trace_event_json(event));
++    }
++    if !snapshot.preview.is_empty() {
++        out.push('\n');
++    }
++    out.push_str("  ]\n}\n");
++    out
++}
++
++fn write_sd_trace(path: &Path, contents: &str) -> Result<(), String> {
++    let temporary = path.with_extension(format!("tmp-{}", std::process::id()));
++    let result = (|| -> std::io::Result<()> {
++        let mut file = std::fs::OpenOptions::new()
++            .write(true)
++            .create(true)
++            .truncate(true)
++            .open(&temporary)?;
++        file.write_all(contents.as_bytes())?;
++        file.flush()?;
++        file.sync_all()?;
++        std::fs::rename(&temporary, path)
++    })();
++    if let Err(error) = result {
++        let _ = std::fs::remove_file(&temporary);
++        return Err(format!("writing SD trace {}: {error}", path.display()));
++    }
++    Ok(())
++}
++
+ /// TOP register reset value; a slice still holding it was never given a
+ /// wrap point.
+ const TOP_RESET_VALUE: u16 = 0xFFFF;
+@@ -3365,11 +3609,7 @@ fn build_report(
+         "  \"lcd_variant\": {},\n",
+         json_string(lcd_variant.as_str())
+     ));
+-    s.push_str(&format!(
+-        "  \"boot\": {{\"mode\": {}, \"vtor_flash_offset\": \"{:#06x}\"}},\n",
+-        json_string(boot_mode.as_str()),
+-        SDK_VTOR_FLASH_OFFSET
+-    ));
++    s.push_str(&boot_report_fragment(boot_mode));
+     s.push_str(&format!("  \"step_quantum\": {step_quantum},\n"));
+     s.push_str(&format!("  \"cycle_limit\": {cycle_limit},\n"));
+     s.push_str(&format!(
+@@ -3409,6 +3649,21 @@ fn build_report(
+             None => "null".to_string(),
+         }
+     ));
++    if !outcome.watchdog_resets.is_empty() {
++        s.push_str("  \"watchdog_resets\": [\n");
++        for (index, event) in outcome.watchdog_resets.iter().enumerate() {
++            s.push_str(&format!(
++                "    {{\"epoch\": {}, \"cycle\": {}, \"core\": {}, \"pc\": {}, \"reason\": {}}}{}\n",
++                event.epoch,
++                event.cycle,
++                event.core,
++                json_string(&format!("{:#010x}", event.pc)),
++                event.reason,
++                if index + 1 == outcome.watchdog_resets.len() { "" } else { "," },
++            ));
++        }
++        s.push_str("  ],\n");
++    }
+     s.push_str(&verdict.to_json());
+ 
+     s.push_str("  \"unsupported_mmio\": [");
+@@ -3788,11 +4043,17 @@ fn run() -> Result<Verdict, String> {
+     } else {
+         None
+     };
++    if args.sd_trace.is_some() {
++        if let Some(card) = sd_card.as_ref() {
++            card.lock().expect("SD mutex").enable_trace();
++        }
++    }
+ 
+     let (mut emu, boot_mode, lcd) = boot(
+         firmware,
+         &bootrom,
+         step_quantum,
++        args.boot_mode,
+         args.board,
+         args.lcd_variant,
+         args.psram,
+@@ -3830,6 +4091,7 @@ fn run() -> Result<Verdict, String> {
+         sd: sd_card.clone(),
+     };
+     let mut machine = MachineSession::new(emu, handles);
++    machine.set_boot_mode(boot_mode);
+     if args.machine_api {
+         run_machine_api(&mut machine, &args.snapshot_dir)?;
+         return Ok(Verdict::Pass);
+@@ -3968,6 +4230,17 @@ fn run() -> Result<Verdict, String> {
+         SdReport::snapshot(&card)
+     });
+ 
++    if let Some(path) = args.sd_trace.as_deref() {
++        let card = sd_card
++            .as_ref()
++            .ok_or_else(|| "--sd-trace requires an attached SD card".to_string())?;
++        let card = card.lock().expect("SD mutex");
++        let snapshot = card
++            .trace_snapshot()
++            .ok_or_else(|| "SD trace was not enabled before the run".to_string())?;
++        write_sd_trace(path, &sd_trace_json(&snapshot))?;
++    }
++
+     if let Some(path) = args.sd_image_out.as_deref() {
+         let card = sd_card
+             .as_ref()
+@@ -4264,6 +4537,7 @@ mod tests {
+             exception: None,
+             error: None,
+             uart_bytes: uart.to_vec(),
++            watchdog_resets: Vec::new(),
+         }
+     }
+ 
+@@ -4561,19 +4835,22 @@ mod tests {
+ 
+     #[test]
+     fn an_explicit_sd_format_requires_an_attached_card() {
+-        assert_eq!(validate_sd_selection(true, None, None, true), Ok(()));
+-        assert_eq!(validate_sd_selection(true, None, None, false), Ok(()));
+-        assert_eq!(validate_sd_selection(false, None, None, false), Ok(()));
++        assert_eq!(validate_sd_selection(true, None, None, None, true), Ok(()));
++        assert_eq!(validate_sd_selection(true, None, None, None, false), Ok(()));
++        assert_eq!(
++            validate_sd_selection(false, None, None, None, false),
++            Ok(())
++        );
+         assert_eq!(
+-            validate_sd_selection(false, None, None, true),
++            validate_sd_selection(false, None, None, None, true),
+             Err("--sd-format requires --sd".to_string())
+         );
+         assert_eq!(
+-            validate_sd_selection(true, Some(Path::new("input.raw")), None, false),
++            validate_sd_selection(true, Some(Path::new("input.raw")), None, None, false),
+             Err("--sd and --sd-image are mutually exclusive".to_string())
+         );
+         assert_eq!(
+-            validate_sd_selection(false, None, Some(Path::new("output.raw")), false),
++            validate_sd_selection(false, None, Some(Path::new("output.raw")), None, false),
+             Err("--sd-image-out requires --sd-image".to_string())
+         );
+     }
+diff --git a/crates/rp2040-emu/src/bus/mod.rs b/crates/rp2040-emu/src/bus/mod.rs
+index 1f04b76..9f1e485 100644
+--- a/crates/rp2040-emu/src/bus/mod.rs
++++ b/crates/rp2040-emu/src/bus/mod.rs
+@@ -385,6 +385,10 @@ pub struct Bus {
+     /// the `TICK` register at offset `0x2C` is modelled today; the rest
+     /// of the WATCHDOG block reads as 0.
+     pub watchdog_tick: WatchdogTickRegs,
++    /// Sticky request raised by WATCHDOG CTRL.TRIGGER. The CPU scheduler
++    /// consumes it only after the current instruction retires, so the core
++    /// executing the trigger never executes a following instruction.
++    pub(crate) watchdog_reset_requested: bool,
+     /// TIMER register model (Phase 1 Wave 2 — HLD V7 §5.3). Lazy
+     /// microsecond counter + four alarms; `advance_lazy_scheduled`
+     /// polls `poll_alarms` on every step tail to surface alarm-match
+@@ -562,6 +566,7 @@ impl Bus {
+             pio: [PioBlock::new(), PioBlock::new()],
+             pin_devices: Vec::new(),
+             watchdog_tick: WatchdogTickRegs::new(),
++            watchdog_reset_requested: false,
+             timer: TimerRegs::new(),
+             uart0: UartRegs::new(IRQ_UART0_IRQ),
+             uart1: UartRegs::new(IRQ_UART1_IRQ),
+@@ -624,6 +629,18 @@ impl Bus {
+         self.active_pc[self.active_core] = pc;
+     }
+ 
++    /// PC attributed to the instruction currently executing on the active
++    /// core. Used only for deterministic watchdog reset provenance.
++    #[inline]
++    pub(crate) fn active_pc_for_event(&self) -> u32 {
++        self.active_pc[self.active_core]
++    }
++
++    #[inline]
++    pub(crate) fn take_watchdog_reset_request(&mut self) -> bool {
++        std::mem::take(&mut self.watchdog_reset_requested)
++    }
++
+     /// Emit a single MMIO trace line. `rw` is `'R'` or `'W'`, `size` is 1/2/4
+     /// bytes, `val` is the value read or written. Zero overhead when
+     /// [`Self::mmio_trace_enabled`] is `false`; the caller is expected to gate
+@@ -1163,7 +1180,11 @@ impl Bus {
+                 let mc = self.master_cycle;
+                 self.timer.write32(offset, val, alias, mc, sys_hz);
+             }
+-            WATCHDOG_BASE => self.watchdog_tick.write32(offset, val, alias),
++            WATCHDOG_BASE => {
++                if self.watchdog_tick.write32(offset, val, alias) {
++                    self.watchdog_reset_requested = true;
++                }
++            }
+             UART0_BASE => self
+                 .uart0
+                 .write32(offset, val, alias, &mut self.irq_pending),
+diff --git a/crates/rp2040-emu/src/lib.rs b/crates/rp2040-emu/src/lib.rs
+index a1b2b83..75b8f4a 100644
+--- a/crates/rp2040-emu/src/lib.rs
++++ b/crates/rp2040-emu/src/lib.rs
+@@ -196,6 +196,41 @@ pub use self::bus::Bus;
+ pub use self::core::CortexM0Plus;
+ pub use self::memory::{Memory, ROM_SIZE, SRAM_SIZE, bank_for_address};
+ 
++/// RP2040 SRAM address at which the boot2 stack is seeded by the runner.
++pub const RP2040_SRAM_TOP: u32 = 0x2004_2000;
++
++/// Deterministic provenance for a watchdog warm reset. The event is
++/// produced at the scheduler boundary immediately after the triggering
++/// instruction retires.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct WatchdogResetEvent {
++    pub epoch: u64,
++    pub cycle: u64,
++    pub core: u8,
++    pub pc: u32,
++    pub reason: u32,
++}
++
++/// Failure returned when a boot2 entry contract cannot be seeded safely.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum Boot2EntryError {
++    /// The supplied stack pointer is not aligned or is outside RP2040 SRAM.
++    InvalidStackPointer(u32),
++}
++
++impl std::fmt::Display for Boot2EntryError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        match self {
++            Self::InvalidStackPointer(value) => write!(
++                f,
++                "boot2 stack pointer {value:#010x} is not a 4-byte-aligned RP2040 SRAM address"
++            ),
++        }
++    }
++}
++
++impl std::error::Error for Boot2EntryError {}
++
+ pub use picoem_common::Pacer;
+ pub use picoem_common::{Clock, PacerSnapshot, PacerStats};
+ 
+@@ -264,6 +299,10 @@ pub struct Emulator {
+     /// PC moved this tick. Initialised to a sentinel `0xFF` so the
+     /// very first observation always counts as an advance.
+     pub(crate) pio0_sm0_last_pc: u8,
++    /// Number of watchdog warm resets since the last cold reset.
++    pub watchdog_reset_count: u64,
++    /// Last watchdog reset event, consumed by the harness after a step.
++    watchdog_reset_event: Option<WatchdogResetEvent>,
+     /// OPT0-A Serial idle profiler. Entirely absent from normal builds;
+     /// diagnostic harnesses opt in through the `idle-profiler` feature.
+     #[cfg(feature = "idle-profiler")]
+@@ -416,6 +455,7 @@ impl Emulator {
+         self.bus.xosc_regs.reset();
+         self.bus.rosc_regs.reset();
+         self.bus.watchdog_tick.reset();
++        self.bus.watchdog_reset_requested = false;
+         self.bus.timer.reset();
+         self.bus.uart0.reset();
+         self.bus.uart1.reset();
+@@ -465,6 +505,8 @@ impl Emulator {
+         self.bus.end_core1_step();
+ 
+         self.clock = Clock { cycles: 0 };
++        self.watchdog_reset_count = 0;
++        self.watchdog_reset_event = None;
+ 
+         // Core 1 stays halted — bootrom on real silicon parks core 1 in
+         // a wait-for-event loop until core 0 sends the wake sequence.
+@@ -473,6 +515,57 @@ impl Emulator {
+         self.halt_core1();
+     }
+ 
++    /// Consume the most recent watchdog warm-reset event, if one occurred.
++    pub fn take_watchdog_reset_event(&mut self) -> Option<WatchdogResetEvent> {
++        self.watchdog_reset_event.take()
++    }
++
++    /// Apply an RP2040-style MCU warm reset while retaining XIP flash,
++    /// attached SD backing/devices, watchdog scratch and the monotonic
++    /// master-cycle counter. The caller selects the post-reset boot handoff
++    /// after observing the event.
++    fn apply_watchdog_warm_reset(&mut self, cycle: u64, core: usize, pc: u32, reason: u32) {
++        let scratch = self.bus.watchdog_tick.scratch;
++        let reset_reason = self.bus.watchdog_tick.reason | reason;
++        // Board-level inputs are external to the MCU reset domain. Preserve
++        // them so a warm reset does not electrically remove an attached SD
++        // card from the loader.
++        let external_gpio_in_mask = self.bus.external_gpio_in_mask;
++        let external_gpio_in_override = self.bus.external_gpio_in_override;
++        let next_epoch = self.watchdog_reset_count.saturating_add(1);
++        self.reset();
++        self.clock.cycles = cycle;
++        self.bus.master_cycle = cycle;
++        self.bus.external_gpio_in_mask = external_gpio_in_mask;
++        self.bus.external_gpio_in_override = external_gpio_in_override;
++        self.bus.watchdog_tick.scratch = scratch;
++        self.bus.watchdog_tick.reason = reset_reason;
++        self.watchdog_reset_count = next_epoch;
++        self.watchdog_reset_event = Some(WatchdogResetEvent {
++            epoch: next_epoch,
++            cycle,
++            core: core as u8,
++            pc,
++            reason: reset_reason,
++        });
++    }
++
++    /// If the current instruction requested a watchdog reset, perform it at
++    /// the exact instruction boundary. Returns true when the scheduler must
++    /// abandon the rest of the current quantum.
++    #[inline]
++    fn finish_watchdog_trigger(&mut self, instruction_cycles: u64) -> bool {
++        if !self.bus.take_watchdog_reset_request() {
++            return false;
++        }
++        let cycle = self.clock.cycles.wrapping_add(instruction_cycles);
++        let core = self.bus.active_core();
++        let pc = self.bus.active_pc_for_event();
++        let reason = self.bus.watchdog_tick.reason;
++        self.apply_watchdog_warm_reset(cycle, core, pc, reason);
++        true
++    }
++
+     /// Load a raw binary at the given address. ROM writes are honoured
+     /// (test seeding path); SRAM writes land in the SRAM backing store;
+     /// XIP loads use [`Self::load_flash`].
+@@ -592,6 +685,33 @@ impl Emulator {
+         self.halt_core1();
+     }
+ 
++    /// Enter a flash-resident RP2040 boot2 image without executing the
++    /// ROM's QSPI-detection/USB-MSC path.
++    ///
++    /// The full bootrom path is outside this emulator's scope. The caller
++    /// supplies the stack pointer and link-register values that boot2 would
++    /// receive; the PC is seeded at the XIP flash base and boot2 owns the
++    /// subsequent handoff.
++    pub fn boot2_from_flash(
++        &mut self,
++        stack_pointer: u32,
++        link_register: u32,
++    ) -> Result<(), Boot2EntryError> {
++        self.assert_not_placeholder();
++        if stack_pointer & 3 != 0 || !(0x2000_0000..=RP2040_SRAM_TOP).contains(&stack_pointer) {
++            return Err(Boot2EntryError::InvalidStackPointer(stack_pointer));
++        }
++
++        let core = &mut self.cores[0];
++        core.regs.msp = stack_pointer;
++        core.regs.set_sp(stack_pointer);
++        core.regs.set_lr(link_register);
++        core.regs.set_pc(bus::XIP_FLASH_BASE);
++        core.regs.xpsr = 1 << 24;
++        self.halt_core1();
++        Ok(())
++    }
++
+     /// Advance the system by up to `step_quantum` master-clock cycles,
+     /// then tick peripherals once. Returns the number of cycles actually
+     /// consumed in this quantum (may be less than `step_quantum` if both
+@@ -802,6 +922,9 @@ impl Emulator {
+                 // sees the eviction next quantum. Mirrors rp2350_emu
+                 // (commit 0c31479, lib.rs §lookup-and-drain).
+                 Self::drain_cache_invalidations(&mut self.bus, &mut self.cores);
++                if self.finish_watchdog_trigger(c) {
++                    return c;
++                }
+                 self.maybe_wake_core1(0);
+                 c
+             } else {
+@@ -814,6 +937,9 @@ impl Emulator {
+                 let c = self.cores[1].step(&mut self.bus) as u64;
+                 Self::drain_cache_invalidations(&mut self.bus, &mut self.cores);
+                 self.bus.end_core1_step();
++                if self.finish_watchdog_trigger(c0.max(c)) {
++                    return c0.max(c);
++                }
+                 self.maybe_wake_core1(1);
+                 c
+             } else {
+@@ -1439,6 +1565,8 @@ impl Emulator {
+             pio0_sm0_max_pc: self.pio0_sm0_max_pc,
+             pio0_sm0_pc_advances: self.pio0_sm0_pc_advances,
+             pio0_sm0_last_pc: self.pio0_sm0_last_pc,
++            watchdog_reset_count: self.watchdog_reset_count,
++            watchdog_reset_event: self.watchdog_reset_event,
+             #[cfg(feature = "idle-profiler")]
+             idle_profiler: None,
+             execution_model: ExecutionModel::Serial,
+@@ -1520,6 +1648,24 @@ impl Emulator {
+         if ext_mask != 0 {
+             out = (out & !ext_mask) | (self.bus.external_gpio_in_override & ext_mask);
+         }
++
++        // IO_BANK0 GPIO_CTRL.INOVER is applied to the resolved pad level,
++        // after external devices have contributed their input. The PicoCalc
++        // SD slot uses an active-low card-detect switch; the pinned loader
++        // configures INOVER=INVERT on that GPIO before testing it.
++        for pin in 0..bus::io_bank0::NUM_GPIOS {
++            let mode = (self.bus.io_bank0.ctrl[pin] >> 16) & 0x3;
++            if mode == 0 {
++                continue;
++            }
++            let mask = 1u32 << pin;
++            match mode {
++                1 => out ^= mask,
++                2 => out &= !mask,
++                3 => out |= mask,
++                _ => unreachable!(),
++            }
++        }
+         self.bus.gpio_in = out;
+ 
+         // Off-chip SPI slaves also watch side-band pins that move while
+@@ -2180,6 +2326,8 @@ impl EmulatorBuilder {
+             pio0_sm0_max_pc: 0,
+             pio0_sm0_pc_advances: 0,
+             pio0_sm0_last_pc: 0xFF,
++            watchdog_reset_count: 0,
++            watchdog_reset_event: None,
+             #[cfg(feature = "idle-profiler")]
+             idle_profiler: None,
+             #[cfg(feature = "behavior-trace")]
+@@ -3259,6 +3407,55 @@ mod stage5_lib_residue {
+         assert!(emu.gpio_read(5));
+     }
+ 
++    /// The PicoCalc SD slot's card-detect switch is physically active-low.
++    /// uf2loader configures IO_BANK0 GPIO_CTRL.INOVER=INVERT on GP22, so a
++    /// low external pad level must be observed by firmware as logical high.
++    #[test]
++    fn update_gpio_applies_io_bank0_input_override() {
++        let mut emu = Emulator::new(Config::default());
++        let pin = 22u8;
++        let mask = 1u32 << pin;
++        emu.bus.external_gpio_in_mask = mask;
++        emu.bus.external_gpio_in_override = 0;
++        emu.bus.io_bank0.ctrl[pin as usize] = 1u32 << 16; // INOVER=INVERT
++
++        emu.gpio_write(0, false);
++
++        assert!(emu.gpio_read(pin));
++    }
++
++    #[test]
++    fn watchdog_warm_reset_retains_external_state_and_reports_provenance() {
++        let mut emu = Emulator::new(Config::default());
++        emu.clock.cycles = 100;
++        emu.bus.master_cycle = 100;
++        emu.bus.set_active_core(1);
++        emu.bus.set_active_pc(0x1000_1234);
++        emu.bus.watchdog_tick.scratch[3] = 7;
++        emu.bus.watchdog_tick.reason = peripherals::watchdog_tick::REASON_FORCE;
++        emu.bus.external_gpio_in_mask = 1 << 22;
++        emu.bus.external_gpio_in_override = 0;
++        emu.bus.watchdog_reset_requested = true;
++
++        assert!(emu.finish_watchdog_trigger(4));
++        assert_eq!(emu.clock.cycles, 104);
++        assert_eq!(emu.bus.master_cycle, 104);
++        assert_eq!(emu.watchdog_reset_count, 1);
++        assert_eq!(emu.bus.watchdog_tick.scratch[3], 7);
++        assert_eq!(emu.bus.external_gpio_in_mask, 1 << 22);
++        assert_eq!(emu.bus.external_gpio_in_override, 0);
++
++        let event = emu
++            .take_watchdog_reset_event()
++            .expect("warm reset event is available once");
++        assert_eq!(event.epoch, 1);
++        assert_eq!(event.cycle, 104);
++        assert_eq!(event.core, 1);
++        assert_eq!(event.pc, 0x1000_1234);
++        assert_ne!(event.reason, 0);
++        assert!(emu.take_watchdog_reset_event().is_none());
++    }
++
+     // ------------------- wake_checks (lines 1148, 1155) -------------------
+ 
+     /// Drives the true arm of `if self.bus.wfe_waiting[core] &&
+diff --git a/crates/rp2040-emu/src/peripherals/watchdog_tick.rs b/crates/rp2040-emu/src/peripherals/watchdog_tick.rs
+index ac551f4..bfb80b3 100644
+--- a/crates/rp2040-emu/src/peripherals/watchdog_tick.rs
++++ b/crates/rp2040-emu/src/peripherals/watchdog_tick.rs
+@@ -1,11 +1,12 @@
+-//! WATCHDOG_TICK register model — minimal Phase 1 scope.
++//! RP2040 WATCHDOG register model.
+ //!
+ //! RP2040 datasheet §4.7. The watchdog block sits at base
+ //! `0x4005_8000`; this file models only the `TICK` register at offset
+ //! `0x2C`, which is the sole register TIMER reads to derive its 1 µs
+-//! cadence. The rest of the watchdog (timeout counter, reset select,
+-//! scratch registers, feed / pause state) is out of scope for Phase 1
+-//! — out-of-range offsets read as 0 and write as no-op.
++//! cadence. The register image also models the small subset used by the
++//! PicoCalc UF2 loader: CTRL/TRIGGER, REASON and SCRATCH0..7. The timer
++//! countdown itself remains lazy; a CTRL trigger is latched and consumed by
++//! the serial scheduler at the end of the instruction that wrote it.
+ //!
+ //! # `TICK` register layout (offset `0x2C`)
+ //!
+@@ -35,6 +36,20 @@ use super::apply_alias_rmw;
+ 
+ /// `TICK` register offset within the WATCHDOG block (datasheet §4.7.3).
+ pub const TICK_OFFSET: u32 = 0x2C;
++/// WATCHDOG CTRL register offset.
++pub const CTRL_OFFSET: u32 = 0x00;
++/// WATCHDOG LOAD register offset (stored for firmware readback).
++pub const LOAD_OFFSET: u32 = 0x04;
++/// WATCHDOG REASON register offset.
++pub const REASON_OFFSET: u32 = 0x08;
++
++/// CTRL bit used by `watchdog_reboot(0, 0, 0)` to request an immediate reset.
++pub const CTRL_TRIGGER: u32 = 1 << 31;
++/// CTRL enable bit. The timeout engine is intentionally lazy, but the bit
++/// is retained so firmware configuration/readback is deterministic.
++pub const CTRL_ENABLE: u32 = 1 << 30;
++/// REASON bit set by an explicit watchdog trigger.
++pub const REASON_FORCE: u32 = 1 << 1;
+ 
+ /// SCRATCH0 offset within the WATCHDOG block. The pico-sdk header
+ /// `rp2040/hardware_structs/include/hardware/structs/watchdog.h` lays
+@@ -60,6 +75,13 @@ pub const CYCLES_RESET: u16 = 12;
+ /// offsets within the watchdog block are Phase 1 no-ops (read 0, write
+ /// ignored) and are decoded at `Bus::peripheral_*32` dispatch time.
+ pub struct WatchdogTickRegs {
++    /// CTRL register image (ENABLE and other writable bits).
++    pub ctrl: u32,
++    /// LOAD register image (24-bit countdown seed).
++    pub load: u32,
++    /// Sticky reset reason. A warm reset preserves this value until a
++    /// subsequent cold reset, matching the firmware-visible contract.
++    pub reason: u32,
+     /// `CYCLES[8:0]` — cycles of `clk_ref` per 1 µs TIMER tick.
+     pub cycles: u16,
+     /// `ENABLE[9]` — tick-generator enable.
+@@ -73,33 +95,63 @@ pub struct WatchdogTickRegs {
+     /// last value. The PicoGUS multifw bootloader reads SCRATCH3 to
+     /// pick a firmware slot.
+     pub scratch: [u32; 8],
++    /// Latched when CTRL.TRIGGER is written. The bus consumes this at an
++    /// instruction boundary; it is never acted on in the middle of a bus
++    /// transaction.
++    triggered: bool,
+ }
+ 
+ impl WatchdogTickRegs {
+     /// Construct in the post-init state (CYCLES = 12, ENABLE/RUNNING = 0).
+     pub fn new() -> Self {
+         Self {
++            ctrl: 0,
++            load: 0,
++            reason: 0,
+             cycles: CYCLES_RESET,
+             enable: false,
+             running: false,
+             scratch: [0; 8],
++            triggered: false,
+         }
+     }
+ 
+     /// Reset to power-on defaults. Called from `Emulator::reset()`.
+     /// Clears scratch — `Emulator::reset()` is a cold-boot equivalent.
+     pub fn reset(&mut self) {
++        self.ctrl = 0;
++        self.load = 0;
++        self.reason = 0;
+         self.cycles = CYCLES_RESET;
+         self.enable = false;
+         self.running = false;
+         self.scratch = [0; 8];
++        self.triggered = false;
++    }
++
++    /// Reset MCU-side watchdog state while retaining scratch and REASON.
++    /// The external flash/SD models are owned by the bus and are therefore
++    /// unaffected by this operation.
++    pub fn warm_reset(&mut self) {
++        let scratch = self.scratch;
++        let reason = self.reason;
++        *self = Self::new();
++        self.scratch = scratch;
++        self.reason = reason;
++    }
++
++    /// Consume an already-latched CTRL trigger.
++    pub fn take_trigger(&mut self) -> bool {
++        std::mem::take(&mut self.triggered)
+     }
+ 
+     /// Read a register by canonical offset within the watchdog block.
+-    /// Only `TICK` (`0x2C`) returns meaningful state; other offsets are
+-    /// 0 in Phase 1.
++    /// Return the modeled WATCHDOG register image.
+     pub fn read32(&self, offset: u32) -> u32 {
+         match offset {
++            CTRL_OFFSET => self.ctrl & !CTRL_TRIGGER,
++            LOAD_OFFSET => self.load,
++            REASON_OFFSET => self.reason,
+             TICK_OFFSET => {
+                 let mut v = (self.cycles as u32) & 0x1FF;
+                 if self.enable {
+@@ -118,22 +170,42 @@ impl WatchdogTickRegs {
+     }
+ 
+     /// Write a register with an APB alias in the normalised 2-bit form
+-    /// (`0` plain / `1` XOR / `2` BITSET / `3` BITCLR). Only `TICK` is
+-    /// writable in Phase 1; other offsets are no-ops.
++    /// (`0` plain / `1` XOR / `2` BITSET / `3` BITCLR). Returns true when
++    /// CTRL.TRIGGER was asserted by this write.
+     ///
+     /// RUNNING mirrors ENABLE — any transition on bit 9 transitions
+     /// bit 10 on the same cycle. This collapses the "takes effect one
+     /// cycle later" silicon delay into an instant transition, which is
+     /// sufficient for firmware that polls `RUNNING` after `ENABLE`
+     /// (there's no corpus binary distinguishing the two cadences).
+-    pub fn write32(&mut self, offset: u32, value: u32, alias: u32) {
++    pub fn write32(&mut self, offset: u32, value: u32, alias: u32) -> bool {
+         if (SCRATCH0_OFFSET..SCRATCH_END_OFFSET).contains(&offset) && (offset & 0x3) == 0 {
+             let idx = ((offset - SCRATCH0_OFFSET) >> 2) as usize;
+             apply_alias_rmw(&mut self.scratch[idx], value, alias);
+-            return;
++            return false;
+         }
+-        if offset != TICK_OFFSET {
+-            return;
++        match offset {
++            CTRL_OFFSET => {
++                let mut word = self.ctrl;
++                apply_alias_rmw(&mut word, value, alias);
++                // TRIGGER is write-only and does not remain set in CTRL.
++                let trigger = word & CTRL_TRIGGER != 0;
++                self.ctrl = word & !CTRL_TRIGGER;
++                if trigger {
++                    self.reason |= REASON_FORCE;
++                    self.triggered = true;
++                }
++                return trigger;
++            }
++            LOAD_OFFSET => {
++                let mut word = self.load;
++                apply_alias_rmw(&mut word, value, alias);
++                self.load = word & 0x00FF_FFFF;
++                return false;
++            }
++            REASON_OFFSET => return false,
++            TICK_OFFSET => {}
++            _ => return false,
+         }
+         // Rebuild the stored word, apply the alias RMW, then decode
+         // back into fields. This keeps the alias math in a single
+@@ -151,6 +223,7 @@ impl WatchdogTickRegs {
+         self.enable = (word & (1 << 9)) != 0;
+         // RUNNING mirrors ENABLE on the same cycle — see doc comment.
+         self.running = self.enable;
++        false
+     }
+ }
+ 
+@@ -272,4 +345,30 @@ mod tests {
+         assert_eq!(t.scratch, [0; 8]);
+         assert_eq!(t.read32(SCRATCH0_OFFSET + 3 * 4), 0);
+     }
++
++    #[test]
++    fn explicit_trigger_is_latched_and_reason_is_visible() {
++        let mut t = WatchdogTickRegs::new();
++        t.write32(SCRATCH0_OFFSET + 3 * 4, 7, 0);
++        assert!(t.write32(CTRL_OFFSET, CTRL_TRIGGER, 0));
++        assert_eq!(t.read32(CTRL_OFFSET), 0);
++        assert_eq!(t.read32(REASON_OFFSET), REASON_FORCE);
++        assert!(t.take_trigger());
++        assert!(!t.take_trigger());
++        assert_eq!(t.scratch[3], 7);
++    }
++
++    #[test]
++    fn warm_reset_retains_scratch_and_reason_but_clears_trigger_state() {
++        let mut t = WatchdogTickRegs::new();
++        t.write32(SCRATCH0_OFFSET, 0xCAFE_BABE, 0);
++        t.write32(CTRL_OFFSET, CTRL_TRIGGER, 0);
++        assert!(t.take_trigger());
++        t.warm_reset();
++        assert_eq!(t.scratch[0], 0xCAFE_BABE);
++        assert_eq!(t.reason, REASON_FORCE);
++        assert!(!t.take_trigger());
++        assert_eq!(t.ctrl, 0);
++        assert_eq!(t.load, 0);
++    }
+ }
+diff --git a/crates/rp2040-emu/tests/smoke.rs b/crates/rp2040-emu/tests/smoke.rs
+index 34db158..63ed857 100644
+--- a/crates/rp2040-emu/tests/smoke.rs
++++ b/crates/rp2040-emu/tests/smoke.rs
+@@ -2,7 +2,7 @@
+ //! construct, reset, peek, and basic config/cycle accessors work. The
+ //! full CPU / bus / peripheral paths arrive in Phase 4+.
+ 
+-use rp2040_emu::{Config, Emulator, EmulatorBuilder};
++use rp2040_emu::{Config, Emulator, EmulatorBuilder, RP2040_SRAM_TOP};
+ 
+ #[test]
+ fn construct_and_reset() {
+@@ -90,3 +90,30 @@ fn direct_boot_from_flash_applies_vector_table() {
+     assert_eq!(emu.bus.read32(0xE000_ED08), 0x1000_0100);
+     assert!(emu.cores[1].is_halted());
+ }
++
++#[test]
++fn boot2_from_flash_seeds_loader_entry_state() {
++    let mut emu = EmulatorBuilder::new(Config::default())
++        .flash([0xFE, 0xE7].repeat(128)) // Thumb `b .` at flash offset 0.
++        .build()
++        .expect("Serial build is infallible");
++    emu.reset();
++    emu.boot2_from_flash(RP2040_SRAM_TOP, 0)
++        .expect("valid RP2040 boot2 entry state");
++
++    assert_eq!(emu.cores[0].regs.msp, RP2040_SRAM_TOP);
++    assert_eq!(emu.cores[0].regs.r[13], RP2040_SRAM_TOP);
++    assert_eq!(emu.cores[0].regs.r[14], 0);
++    assert_eq!(emu.cores[0].regs.r[15], 0x1000_0000);
++    assert_eq!(emu.cores[0].regs.xpsr, 1 << 24);
++    assert_eq!(emu.bus.ppb[0].vtor, 0);
++    assert!(emu.cores[1].is_halted());
++}
++
++#[test]
++fn boot2_from_flash_rejects_invalid_stack_pointer() {
++    let mut emu = Emulator::new(Config::default());
++    emu.reset();
++    assert!(emu.boot2_from_flash(0x2000_0002, 0).is_err());
++    assert!(emu.boot2_from_flash(0x2004_2004, 0).is_err());
++}

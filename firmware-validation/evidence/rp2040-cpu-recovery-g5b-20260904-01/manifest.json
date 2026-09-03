@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g5b-20260904-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3/G4/G5-A complete; G5-B candidate pass; G5-C pending",
+  "group": {
+    "id": "G5-B",
+    "display_name": "loader起動（boot2・watchdog warm reset）",
+    "purpose": "通常app経路へ影響を広げず、uf2loaderのboot2起動・warm reset・再attach契約を高速地点へ戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "70533db18830e5935ac7bdc6b659ad01a22236c9",
+    "candidate_commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b",
+    "source_diff": "g5b-source-diff.patch",
+    "source_diff_sha256": "329376b7d87d9cd315f86145ea6fedf7081e05a72741f2eb080ae7a81a4f60f6",
+    "source_files_changed": 9,
+    "insertions": 1088,
+    "deletions": 55,
+    "worktree": "temporary /tmp worktree; detached candidate; no remote branch"
+  },
+  "runner": {
+    "binary_sha256": "7b884d74d5cc90124f14bc653e6a0d1e4724d1faa537f4afcc9978ec21f7dcdc",
+    "backend_commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "step_quantum": 16
+  },
+  "tests": {
+    "picocalc_board": {"command": "cargo test --locked -p picocalc-board", "status": "pass", "library": 82, "doctests": 1, "log": "tests/picocalc-board.log"},
+    "rp2040_emu": {"command": "cargo test --locked -p rp2040-emu", "status": "pass", "library": 1243, "firmware": 9, "multicore": 9, "psram_pio_edge": 4, "smoke": 8, "wfe_irq_wake": 5, "doctests": 0, "log": "tests/rp2040-emu.log"},
+    "picocalc_harness": {"command": "cargo test --locked -p picocalc-harness", "status": "pass", "opt0_blocked_baseline": 2, "runner": 62, "log": "tests/picocalc-harness.log"},
+    "format": [
+      {"command": "cargo fmt --package picocalc-board -- --check", "status": "pass", "log": "tests/fmt-picocalc-board.log"},
+      {"command": "cargo fmt --package picocalc-harness -- --check", "status": "pass", "log": "tests/fmt-picocalc-harness.log"}
+    ],
+    "release_build": {"command": "cargo build --locked --release -p picocalc-harness --bin picocalc-run", "status": "pass", "log": "tests/release-build.log"}
+  },
+  "u6_candidate": {
+    "gate": "U6",
+    "record": "u6-gate.json",
+    "record_sha256": "b9654d7736f3219210c50242201db0e23380e216e88c20c9264614586afc98f6",
+    "status": "pass",
+    "repetitions": 3,
+    "watchdog_resets_per_run": 1,
+    "sd_trace_event_count": 970,
+    "sd_trace_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+    "report_sha256": "2ac69413ec9b65c89f3e0ba057b52267575d3caac5feb9f3d40d982a3b3c5c3b",
+    "uart_sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b",
+    "framebuffer_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45",
+    "final_flash_sha256": "0fbbb894b2123b60f1ceff205e81e764c12460681d88f5f863d6276015cfe308",
+    "reattach_flash_sha256": "0fbbb894b2123b60f1ceff205e81e764c12460681d88f5f863d6276015cfe308",
+    "reattach_sd_sha256": "7db6bed6c98d3d040b3011106248854cd88df98ddfb7cf29282ba917f24b8db9"
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "boot2 entry, watchdog warm reset, flash/SD retention, structured SD trace, three-run U6 candidate replay, and final-image reattach all passed",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "G5-C",
+    "next_group_display_name": "SD protocol（bounded multiblock）"
+  }
+}

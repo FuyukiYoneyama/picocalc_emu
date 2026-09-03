@@ -1,0 +1,3268 @@
+diff --git a/crates/picocalc-board/src/i2c_devices.rs b/crates/picocalc-board/src/i2c_devices.rs
+new file mode 100644
+index 0000000..c87c766
+--- /dev/null
++++ b/crates/picocalc-board/src/i2c_devices.rs
+@@ -0,0 +1,933 @@
++//! Deterministic models for the first private I2C-EXT devices.
++//!
++//! These models are intentionally independent of the harness CLI. A profile
++//! builder may compose them with [`crate::I2cBusMux`], while downstream users
++//! can copy the same child boundary for another private module without
++//! changing the RP2040 controller model.
++
++use rp2040_emu::peripherals::i2c::{I2cExternalDevice, I2cVirtualTimeDelta};
++
++pub const DS3231_ADDRESS: u16 = 0x68;
++pub const AT24C32_ADDRESS: u16 = 0x57;
++pub const AHT20_ADDRESS: u16 = 0x38;
++pub const BMP280_ADDRESS: u16 = 0x77;
++const DS3231_REG_STATUS: usize = 0x0f;
++pub const AT24C32_SIZE: usize = 4096;
++const AT24C32_PAGE_SIZE: u16 = 32;
++const EEPROM_WRITE_CYCLE_NS: u64 = 5_000_000;
++const AHT20_MEASUREMENT_NS: u64 = 90_000_000;
++const BMP280_MEASUREMENT_NS: u64 = 40_000_000;
++
++fn bcd(value: u8) -> u8 {
++    ((value / 10) << 4) | (value % 10)
++}
++
++fn unbcd(value: u8, max: u8) -> Option<u8> {
++    if value & 0x0f > 9 || value >> 4 > 9 {
++        return None;
++    }
++    let decoded = (value >> 4) * 10 + (value & 0x0f);
++    (decoded <= max).then_some(decoded)
++}
++
++fn leap(year: u16) -> bool {
++    year.is_multiple_of(400) || (year.is_multiple_of(4) && !year.is_multiple_of(100))
++}
++
++fn days_in_month(year: u16, month: u8) -> u8 {
++    match month {
++        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
++        4 | 6 | 9 | 11 => 30,
++        2 if leap(year) => 29,
++        2 => 28,
++        _ => 0,
++    }
++}
++
++/// A validated 24-hour DS3231 calendar value.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct RtcDateTime {
++    pub year: u16,
++    pub month: u8,
++    pub day: u8,
++    pub day_of_week: u8,
++    pub hour: u8,
++    pub minute: u8,
++    pub second: u8,
++}
++
++impl RtcDateTime {
++    pub fn new(
++        year: u16,
++        month: u8,
++        day: u8,
++        day_of_week: u8,
++        hour: u8,
++        minute: u8,
++        second: u8,
++    ) -> Option<Self> {
++        let value = Self {
++            year,
++            month,
++            day,
++            day_of_week,
++            hour,
++            minute,
++            second,
++        };
++        value.is_valid().then_some(value)
++    }
++
++    pub fn is_valid(self) -> bool {
++        (2000..=2099).contains(&self.year)
++            && (1..=12).contains(&self.month)
++            && (1..=days_in_month(self.year, self.month)).contains(&self.day)
++            && self.day_of_week > 0
++            && self.day_of_week <= 7
++            && self.hour < 24
++            && self.minute < 60
++            && self.second < 60
++    }
++
++    fn advance_one_second(&mut self) {
++        self.second += 1;
++        if self.second < 60 {
++            return;
++        }
++        self.second = 0;
++        self.minute += 1;
++        if self.minute < 60 {
++            return;
++        }
++        self.minute = 0;
++        self.hour += 1;
++        if self.hour < 24 {
++            return;
++        }
++        self.hour = 0;
++        self.day += 1;
++        self.day_of_week = self.day_of_week % 7 + 1;
++        if self.day <= days_in_month(self.year, self.month) {
++            return;
++        }
++        self.day = 1;
++        self.month += 1;
++        if self.month <= 12 {
++            return;
++        }
++        self.month = 1;
++        self.year = if self.year == 2099 {
++            2000
++        } else {
++            self.year + 1
++        };
++    }
++}
++
++/// Bounded DS3231 model used by the `picocalc-rtc-v1` profile.
++pub struct Ds3231 {
++    datetime: RtcDateTime,
++    status: u8,
++    pointer: u8,
++    pointer_expected: bool,
++    wrote_register: bool,
++    write_start_pointer: u8,
++    time_write_values: [u8; 7],
++    time_write_mask: u8,
++    fractional_ns: u64,
++    protocol_errors: u64,
++}
++
++impl Ds3231 {
++    pub fn new(datetime: RtcDateTime, osf: bool) -> Self {
++        Self {
++            datetime,
++            status: if osf { 0x80 } else { 0 },
++            pointer: 0,
++            pointer_expected: true,
++            wrote_register: false,
++            write_start_pointer: 0,
++            time_write_values: [0; 7],
++            time_write_mask: 0,
++            fractional_ns: 0,
++            protocol_errors: 0,
++        }
++    }
++
++    pub fn datetime(&self) -> RtcDateTime {
++        self.datetime
++    }
++
++    pub fn status(&self) -> u8 {
++        self.status
++    }
++
++    pub fn protocol_errors(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn register(&self, index: u8) -> u8 {
++        match index {
++            0 => bcd(self.datetime.second),
++            1 => bcd(self.datetime.minute),
++            2 => bcd(self.datetime.hour),
++            3 => bcd(self.datetime.day_of_week),
++            4 => bcd(self.datetime.day),
++            5 => bcd(self.datetime.month),
++            6 => bcd((self.datetime.year - 2000) as u8),
++            0x0f => self.status,
++            _ => 0,
++        }
++    }
++
++    fn commit_time_registers(&mut self, values: [u8; 7]) {
++        let Some(second) = unbcd(values[0] & 0x7f, 59) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(minute) = unbcd(values[1] & 0x7f, 59) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(hour) = unbcd(values[2] & 0x3f, 23) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(day_of_week) = unbcd(values[3] & 0x07, 7) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(day) = unbcd(values[4] & 0x3f, 31) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(month) = unbcd(values[5] & 0x1f, 12) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(year) = unbcd(values[6], 99) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        let Some(datetime) = RtcDateTime::new(
++            2000 + u16::from(year),
++            month,
++            day,
++            day_of_week,
++            hour,
++            minute,
++            second,
++        ) else {
++            self.protocol_errors += 1;
++            return;
++        };
++        self.datetime = datetime;
++        self.fractional_ns = 0;
++    }
++}
++
++impl I2cExternalDevice for Ds3231 {
++    fn model_name(&self) -> &'static str {
++        "ds3231"
++    }
++
++    fn protocol_error_count(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn state_summary(&self) -> String {
++        format!(
++            "{{\"datetime\":\"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\"day_of_week\":{},\"status\":{},\"pointer\":{}}}",
++            self.datetime.year,
++            self.datetime.month,
++            self.datetime.day,
++            self.datetime.hour,
++            self.datetime.minute,
++            self.datetime.second,
++            self.datetime.day_of_week,
++            self.status,
++            self.pointer,
++        )
++    }
++
++    fn responds_to(&self, addr: u16) -> bool {
++        addr == DS3231_ADDRESS
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        if !self.responds_to(addr) {
++            return false;
++        }
++        self.pointer_expected = true;
++        self.wrote_register = false;
++        true
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        if self.pointer_expected {
++            if byte > 0x12 {
++                self.protocol_errors += 1;
++                return false;
++            }
++            self.pointer = byte;
++            self.write_start_pointer = byte;
++            self.pointer_expected = false;
++            return true;
++        }
++        if self.pointer > 0x12 {
++            self.protocol_errors += 1;
++            return false;
++        }
++        self.wrote_register = true;
++        if self.pointer <= 6 {
++            self.time_write_values[self.pointer as usize] = byte;
++            self.time_write_mask |= 1 << self.pointer;
++        } else if self.pointer == DS3231_REG_STATUS as u8 {
++            self.status = byte & 0x88;
++        }
++        self.pointer = (self.pointer + 1) & 0x1f;
++        true
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        let value = self.register(self.pointer);
++        self.pointer = (self.pointer + 1) & 0x1f;
++        value
++    }
++
++    fn transaction_end(&mut self) {
++        if self.wrote_register && self.time_write_mask != 0 {
++            if self.write_start_pointer == 0 && self.time_write_mask == 0x7f {
++                self.commit_time_registers(self.time_write_values);
++            } else {
++                self.protocol_errors += 1;
++            }
++        }
++        self.pointer_expected = true;
++        self.wrote_register = false;
++        self.time_write_mask = 0;
++    }
++
++    fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        self.fractional_ns = self.fractional_ns.saturating_add(delta.nanoseconds);
++        let seconds = self.fractional_ns / 1_000_000_000;
++        self.fractional_ns %= 1_000_000_000;
++        for _ in 0..seconds {
++            self.datetime.advance_one_second();
++        }
++    }
++}
++
++/// AT24C32 (4 KiB, 32-byte pages) with deterministic write-cycle busy time.
++pub struct At24c32 {
++    memory: [u8; AT24C32_SIZE],
++    pointer: u16,
++    pointer_bytes: u8,
++    page_start: u16,
++    page_offset: u16,
++    pending_write: Vec<u8>,
++    busy_ns: u64,
++    protocol_errors: u64,
++}
++
++impl At24c32 {
++    pub fn new(initial: [u8; AT24C32_SIZE]) -> Self {
++        Self {
++            memory: initial,
++            pointer: 0,
++            pointer_bytes: 0,
++            page_start: 0,
++            page_offset: 0,
++            pending_write: Vec::new(),
++            busy_ns: 0,
++            protocol_errors: 0,
++        }
++    }
++
++    pub fn image(&self) -> &[u8; AT24C32_SIZE] {
++        &self.memory
++    }
++
++    pub fn is_busy(&self) -> bool {
++        self.busy_ns != 0
++    }
++
++    pub fn protocol_errors(&self) -> u64 {
++        self.protocol_errors
++    }
++}
++
++impl I2cExternalDevice for At24c32 {
++    fn model_name(&self) -> &'static str {
++        "at24c32"
++    }
++
++    fn protocol_error_count(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn state_summary(&self) -> String {
++        format!(
++            "{{\"image_sha256\":\"{}\",\"pointer\":{},\"busy\":{},\"busy_ns\":{}}}",
++            crate::sha256::sha256_hex(&self.memory),
++            self.pointer,
++            self.is_busy(),
++            self.busy_ns,
++        )
++    }
++
++    fn responds_to(&self, addr: u16) -> bool {
++        addr == AT24C32_ADDRESS
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.responds_to(addr) && !self.is_busy()
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        if self.pointer_bytes < 2 {
++            if self.pointer_bytes == 0 {
++                self.pointer = u16::from(byte) << 8;
++            } else {
++                self.pointer |= u16::from(byte);
++                self.page_start = self.pointer & !(AT24C32_PAGE_SIZE - 1);
++                self.page_offset = self.pointer & (AT24C32_PAGE_SIZE - 1);
++            }
++            self.pointer_bytes += 1;
++            return true;
++        }
++        if self.pending_write.len() >= usize::from(AT24C32_PAGE_SIZE) {
++            self.protocol_errors += 1;
++            return false;
++        }
++        self.pending_write.push(byte);
++        self.pointer = self.page_start
++            + ((self.page_offset + self.pending_write.len() as u16) & (AT24C32_PAGE_SIZE - 1));
++        true
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        let value = self.memory[usize::from(self.pointer) % AT24C32_SIZE];
++        self.pointer = (self.pointer + 1) % AT24C32_SIZE as u16;
++        value
++    }
++
++    fn transaction_end(&mut self) {
++        if !self.pending_write.is_empty() {
++            for (offset, byte) in self.pending_write.drain(..).enumerate() {
++                let address = self.page_start
++                    + ((self.page_offset + offset as u16) & (AT24C32_PAGE_SIZE - 1));
++                self.memory[usize::from(address) % AT24C32_SIZE] = byte;
++            }
++            self.busy_ns = EEPROM_WRITE_CYCLE_NS;
++        }
++        self.pointer_bytes = 0;
++    }
++
++    fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        self.busy_ns = self.busy_ns.saturating_sub(delta.nanoseconds);
++    }
++}
++
++fn aht20_crc8(bytes: &[u8; 6]) -> u8 {
++    let mut crc = 0xff;
++    for byte in bytes {
++        crc ^= *byte;
++        for _ in 0..8 {
++            crc = if crc & 0x80 != 0 {
++                (crc << 1) ^ 0x31
++            } else {
++                crc << 1
++            };
++        }
++    }
++    crc
++}
++
++/// Deterministic AHT20 model for the optional `picocalc-rtc-env-v1` profile.
++///
++/// The model follows the command sequence used by the PicoCalc reference
++/// firmware: optional calibration (`BE 08 00`), trigger (`AC 33 00`), a
++/// deterministic 90 ms conversion window, then a seven-byte measurement.
++/// Fixture bytes contain the sensor status/raw fields/CRC exactly as they
++/// appear on the wire; host wall time is never consulted.
++pub struct Aht20 {
++    measurement: [u8; 7],
++    status: u8,
++    command: Vec<u8>,
++    read_index: usize,
++    conversion_ns: u64,
++    protocol_errors: u64,
++}
++
++impl Aht20 {
++    pub fn new(measurement: [u8; 7]) -> Result<Self, String> {
++        let payload = [
++            measurement[0],
++            measurement[1],
++            measurement[2],
++            measurement[3],
++            measurement[4],
++            measurement[5],
++        ];
++        if measurement[0] & 0x80 != 0 {
++            return Err("AHT20 fixture measurement must not be marked busy".to_string());
++        }
++        if aht20_crc8(&payload) != measurement[6] {
++            return Err(format!(
++                "AHT20 measurement CRC mismatch: expected 0x{:02x}, got 0x{:02x}",
++                aht20_crc8(&payload),
++                measurement[6]
++            ));
++        }
++        Ok(Self {
++            measurement,
++            status: measurement[0] & 0x7f,
++            command: Vec::with_capacity(3),
++            read_index: 0,
++            conversion_ns: 0,
++            protocol_errors: 0,
++        })
++    }
++
++    pub fn measurement(&self) -> &[u8; 7] {
++        &self.measurement
++    }
++
++    pub fn is_busy(&self) -> bool {
++        self.conversion_ns != 0
++    }
++
++    pub fn protocol_errors(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn current_status(&self) -> u8 {
++        self.status | if self.is_busy() { 0x80 } else { 0 }
++    }
++
++    fn apply_command(&mut self) {
++        match self.command.as_slice() {
++            [0xbe, 0x08, 0x00] => self.status |= 0x08,
++            [0xac, 0x33, 0x00] if !self.is_busy() => {
++                self.conversion_ns = AHT20_MEASUREMENT_NS;
++            }
++            [0xac, 0x33, 0x00] => self.protocol_errors += 1,
++            [] => {}
++            _ => self.protocol_errors += 1,
++        }
++        self.command.clear();
++    }
++}
++
++impl I2cExternalDevice for Aht20 {
++    fn model_name(&self) -> &'static str {
++        "aht20"
++    }
++
++    fn protocol_error_count(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn state_summary(&self) -> String {
++        format!(
++            "{{\"status\":{},\"busy\":{},\"conversion_ns\":{},\"measurement_sha256\":\"{}\"}}",
++            self.current_status(),
++            self.is_busy(),
++            self.conversion_ns,
++            crate::sha256::sha256_hex(&self.measurement),
++        )
++    }
++
++    fn responds_to(&self, addr: u16) -> bool {
++        addr == AHT20_ADDRESS
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        if !self.responds_to(addr) {
++            return false;
++        }
++        self.command.clear();
++        self.read_index = 0;
++        true
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        if self.command.len() >= 3 {
++            self.protocol_errors += 1;
++            return false;
++        }
++        let valid = match self.command.as_slice() {
++            [] => matches!(byte, 0xbe | 0xac),
++            [0xbe] => byte == 0x08,
++            [0xac] => byte == 0x33,
++            [0xbe, 0x08] | [0xac, 0x33] => byte == 0x00,
++            _ => false,
++        };
++        if !valid {
++            self.protocol_errors += 1;
++            return false;
++        }
++        self.command.push(byte);
++        true
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        let value = if self.read_index == 0 {
++            self.current_status()
++        } else if self.read_index < self.measurement.len() {
++            self.measurement[self.read_index]
++        } else {
++            self.protocol_errors += 1;
++            0xff
++        };
++        self.read_index += 1;
++        value
++    }
++
++    fn transaction_end(&mut self) {
++        self.apply_command();
++        self.read_index = 0;
++    }
++
++    fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        self.conversion_ns = self.conversion_ns.saturating_sub(delta.nanoseconds);
++    }
++}
++
++/// Deterministic BMP280 model for the optional `picocalc-rtc-env-v1` profile.
++///
++/// Only the register windows exercised by the PicoCalc reference firmware are
++/// exposed: chip ID, calibration, measurement, and the two configuration
++/// writes that start a forced conversion. Conversion readiness is driven by
++/// shared virtual nanoseconds, not host time.
++pub struct Bmp280 {
++    calibration: [u8; 24],
++    measurement: [u8; 6],
++    pointer: u8,
++    pending_write: Option<(u8, u8)>,
++    read_index: usize,
++    conversion_ns: u64,
++    protocol_errors: u64,
++}
++
++impl Bmp280 {
++    pub fn new(calibration: [u8; 24], measurement: [u8; 6]) -> Result<Self, String> {
++        let dig_p1 = u16::from_le_bytes([calibration[6], calibration[7]]);
++        if dig_p1 == 0 {
++            return Err("BMP280 calibration dig_p1 must be non-zero".to_string());
++        }
++        Ok(Self {
++            calibration,
++            measurement,
++            pointer: 0,
++            pending_write: None,
++            read_index: 0,
++            conversion_ns: 0,
++            protocol_errors: 0,
++        })
++    }
++
++    pub fn calibration(&self) -> &[u8; 24] {
++        &self.calibration
++    }
++
++    pub fn measurement(&self) -> &[u8; 6] {
++        &self.measurement
++    }
++
++    pub fn is_busy(&self) -> bool {
++        self.conversion_ns != 0
++    }
++
++    pub fn protocol_errors(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn register_value(&mut self, register: u8) -> u8 {
++        match register {
++            0xd0 => 0x58,
++            0x88..=0x9f => self.calibration[usize::from(register - 0x88)],
++            0xf7..=0xfc => {
++                if self.is_busy() {
++                    self.protocol_errors += 1;
++                    // BMP280's unavailable-data sentinel is 0x80000 for
++                    // both ADC values, encoded as 80 00 00 per field.
++                    [0x80, 0x00, 0x00, 0x80, 0x00, 0x00][usize::from(register - 0xf7)]
++                } else {
++                    self.measurement[usize::from(register - 0xf7)]
++                }
++            }
++            _ => {
++                self.protocol_errors += 1;
++                0xff
++            }
++        }
++    }
++
++    fn apply_pending_write(&mut self) {
++        let Some((register, value)) = self.pending_write.take() else {
++            return;
++        };
++        match (register, value) {
++            (0xf5, 0x00) => {}
++            (0xf4, 0x25) => self.conversion_ns = BMP280_MEASUREMENT_NS,
++            _ => self.protocol_errors += 1,
++        }
++    }
++}
++
++impl I2cExternalDevice for Bmp280 {
++    fn model_name(&self) -> &'static str {
++        "bmp280"
++    }
++
++    fn protocol_error_count(&self) -> u64 {
++        self.protocol_errors
++    }
++
++    fn state_summary(&self) -> String {
++        format!(
++            "{{\"chip_id\":88,\"pointer\":{},\"busy\":{},\"conversion_ns\":{},\"calibration_sha256\":\"{}\",\"measurement_sha256\":\"{}\"}}",
++            self.pointer,
++            self.is_busy(),
++            self.conversion_ns,
++            crate::sha256::sha256_hex(&self.calibration),
++            crate::sha256::sha256_hex(&self.measurement),
++        )
++    }
++
++    fn responds_to(&self, addr: u16) -> bool {
++        addr == BMP280_ADDRESS
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        if !self.responds_to(addr) {
++            return false;
++        }
++        self.pending_write = None;
++        self.read_index = 0;
++        true
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        if self.pending_write.is_some() {
++            self.protocol_errors += 1;
++            return false;
++        }
++        if self.read_index == 0 {
++            self.pointer = byte;
++            self.read_index = 1;
++            return true;
++        }
++        if self.pointer != 0xf4 && self.pointer != 0xf5 {
++            self.protocol_errors += 1;
++            return false;
++        }
++        self.pending_write = Some((self.pointer, byte));
++        true
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        let value = self.register_value(self.pointer);
++        self.pointer = self.pointer.wrapping_add(1);
++        self.read_index = self.read_index.saturating_add(1);
++        value
++    }
++
++    fn transaction_end(&mut self) {
++        self.apply_pending_write();
++        self.read_index = 0;
++    }
++
++    fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        self.conversion_ns = self.conversion_ns.saturating_sub(delta.nanoseconds);
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn datetime() -> RtcDateTime {
++        RtcDateTime::new(2024, 2, 28, 3, 23, 59, 58).unwrap()
++    }
++
++    #[test]
++    fn rtc_rolls_over_leap_day_and_year() {
++        let mut clock = Ds3231::new(datetime(), false);
++        clock.advance_virtual_time(I2cVirtualTimeDelta {
++            nanoseconds: 2_000_000_000,
++        });
++        assert_eq!(clock.datetime().day, 29);
++        clock.advance_virtual_time(I2cVirtualTimeDelta {
++            nanoseconds: 86_400_000_000_000,
++        });
++        assert_eq!(clock.datetime().month, 3);
++        assert_eq!(clock.datetime().day, 1);
++    }
++
++    #[test]
++    fn rtc_rejects_unknown_register_and_preserves_address_contract() {
++        let mut clock = Ds3231::new(datetime(), true);
++        assert!(clock.address_phase(DS3231_ADDRESS));
++        assert!(!clock.write_byte(0x13));
++        assert_eq!(clock.protocol_errors(), 1);
++    }
++
++    #[test]
++    fn rtc_accepts_reference_seven_byte_bcd_time_write() {
++        let mut clock = Ds3231::new(datetime(), true);
++        assert!(clock.address_phase(DS3231_ADDRESS));
++        for byte in [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x24] {
++            assert!(clock.write_byte(byte));
++        }
++        clock.transaction_end();
++        assert_eq!(
++            clock.datetime(),
++            RtcDateTime::new(2024, 6, 5, 4, 3, 2, 1).unwrap()
++        );
++        assert_eq!(clock.protocol_errors(), 0);
++    }
++
++    #[test]
++    fn eeprom_page_write_wraps_and_busy_nacks_until_ready() {
++        let mut eeprom = At24c32::new([0; AT24C32_SIZE]);
++        assert!(eeprom.address_phase(AT24C32_ADDRESS));
++        assert!(eeprom.write_byte(0x00));
++        assert!(eeprom.write_byte(0x1F));
++        assert!(eeprom.write_byte(0xAA));
++        assert!(eeprom.write_byte(0x55));
++        eeprom.transaction_end();
++        assert_eq!(eeprom.image()[0x1F], 0xAA);
++        assert_eq!(eeprom.image()[0x00], 0x55);
++        assert!(!eeprom.address_phase(AT24C32_ADDRESS));
++        eeprom.advance_virtual_time(I2cVirtualTimeDelta {
++            nanoseconds: EEPROM_WRITE_CYCLE_NS,
++        });
++        assert!(eeprom.address_phase(AT24C32_ADDRESS));
++    }
++
++    #[test]
++    fn eeprom_pointer_write_without_data_does_not_enter_busy_cycle() {
++        let mut eeprom = At24c32::new([0xA5; AT24C32_SIZE]);
++        assert!(eeprom.address_phase(AT24C32_ADDRESS));
++        assert!(eeprom.write_byte(0x00));
++        assert!(eeprom.write_byte(0x10));
++        eeprom.transaction_end();
++        assert!(!eeprom.is_busy());
++        assert_eq!(eeprom.read_byte(), 0xA5);
++    }
++
++    #[test]
++    fn aht20_validates_crc_and_exposes_reference_command_sequence() {
++        let measurement = [0x18, 0x80, 0x00, 0x06, 0x00, 0x00, 0x23];
++        assert!(Aht20::new({
++            let mut invalid = measurement;
++            invalid[6] ^= 1;
++            invalid
++        })
++        .is_err());
++        assert!(Aht20::new({
++            let mut invalid = measurement;
++            invalid[0] |= 0x80;
++            invalid[6] = aht20_crc8(&[
++                invalid[0], invalid[1], invalid[2], invalid[3], invalid[4], invalid[5],
++            ]);
++            invalid
++        })
++        .is_err());
++        let mut sensor = Aht20::new(measurement).unwrap();
++        assert!(sensor.address_phase(AHT20_ADDRESS));
++        assert_eq!(sensor.read_byte(), 0x18);
++        sensor.transaction_end();
++
++        assert!(sensor.address_phase(AHT20_ADDRESS));
++        for byte in [0xbe, 0x08, 0x00] {
++            assert!(sensor.write_byte(byte));
++        }
++        sensor.transaction_end();
++        assert!(sensor.address_phase(AHT20_ADDRESS));
++        for byte in [0xac, 0x33, 0x00] {
++            assert!(sensor.write_byte(byte));
++        }
++        sensor.transaction_end();
++        assert!(sensor.is_busy());
++
++        assert!(sensor.address_phase(AHT20_ADDRESS));
++        assert_eq!(sensor.read_byte(), 0x98);
++        sensor.transaction_end();
++        sensor.advance_virtual_time(I2cVirtualTimeDelta {
++            nanoseconds: AHT20_MEASUREMENT_NS,
++        });
++        assert!(!sensor.is_busy());
++        assert!(sensor.address_phase(AHT20_ADDRESS));
++        let mut actual = [0u8; 7];
++        for byte in &mut actual {
++            *byte = sensor.read_byte();
++        }
++        sensor.transaction_end();
++        assert_eq!(actual, measurement);
++        assert_eq!(sensor.protocol_errors(), 0);
++    }
++
++    #[test]
++    fn bmp280_exposes_id_calibration_and_forced_measurement() {
++        let calibration = [
++            0x70, 0x6b, 0x43, 0x67, 0x18, 0xfc, 0x7d, 0x8e, 0x43, 0xd6, 0xd0, 0x0b, 0x27, 0x0b,
++            0x8c, 0x00, 0xf9, 0xff, 0x8c, 0x3c, 0xf8, 0xc6, 0x70, 0x17,
++        ];
++        let measurement = [0x65, 0x5a, 0xc0, 0x7e, 0xed, 0x00];
++        let mut invalid_calibration = calibration;
++        invalid_calibration[6] = 0;
++        invalid_calibration[7] = 0;
++        assert!(Bmp280::new(invalid_calibration, measurement).is_err());
++        let mut sensor = Bmp280::new(calibration, measurement).unwrap();
++
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0xd0));
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert_eq!(sensor.read_byte(), 0x58);
++        sensor.transaction_end();
++
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0x88));
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        let mut actual_calibration = [0u8; 24];
++        for byte in &mut actual_calibration {
++            *byte = sensor.read_byte();
++        }
++        sensor.transaction_end();
++        assert_eq!(actual_calibration, calibration);
++
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0xf5));
++        assert!(sensor.write_byte(0x00));
++        sensor.transaction_end();
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0xf4));
++        assert!(sensor.write_byte(0x25));
++        sensor.transaction_end();
++        assert!(sensor.is_busy());
++
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0xf7));
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert_eq!(sensor.read_byte(), 0x80);
++        sensor.transaction_end();
++        assert_eq!(sensor.protocol_errors(), 1);
++        sensor.advance_virtual_time(I2cVirtualTimeDelta {
++            nanoseconds: BMP280_MEASUREMENT_NS,
++        });
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        assert!(sensor.write_byte(0xf7));
++        assert!(sensor.address_phase(BMP280_ADDRESS));
++        let mut actual_measurement = [0u8; 6];
++        for byte in &mut actual_measurement {
++            *byte = sensor.read_byte();
++        }
++        sensor.transaction_end();
++        assert_eq!(actual_measurement, measurement);
++        assert_eq!(sensor.protocol_errors(), 1);
++    }
++}
+diff --git a/crates/picocalc-board/src/i2c_external.rs b/crates/picocalc-board/src/i2c_external.rs
+new file mode 100644
+index 0000000..032281e
+--- /dev/null
++++ b/crates/picocalc-board/src/i2c_external.rs
+@@ -0,0 +1,530 @@
++//! Optional external I2C device routing for private PicoCalc modules.
++//!
++//! The RP2040 controller intentionally sees one off-chip device. This board
++//! layer supplies the deterministic address mux used by an explicitly selected
++//! profile, while the default keyboard-only path continues to use the legacy
++//! single-device attachment. New hardware models should be independent child
++//! types and register their address here; they must not add runner-specific
++//! address conditionals.
++
++use std::fmt;
++
++use rp2040_emu::peripherals::i2c::{I2cExternalDevice, I2cVirtualTimeDelta};
++
++use crate::sha256::StreamingSha256;
++
++/// Configuration errors caught before a profile is attached to the emulator.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub enum I2cBusMuxError {
++    AddressOutOfRange(u16),
++    DuplicateAddress(u16),
++}
++
++impl fmt::Display for I2cBusMuxError {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            Self::AddressOutOfRange(addr) => {
++                write!(f, "I2C address 0x{addr:02x} is outside the 7-bit range")
++            }
++            Self::DuplicateAddress(addr) => {
++                write!(f, "duplicate I2C profile address 0x{addr:02x}")
++            }
++        }
++    }
++}
++
++impl std::error::Error for I2cBusMuxError {}
++
++struct Child {
++    address: u16,
++    device: Box<dyn I2cExternalDevice>,
++    observation: ChildObservation,
++}
++
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++struct ChildObservation {
++    address_phases: u64,
++    address_acks: u64,
++    address_nacks: u64,
++    write_bytes: u64,
++    read_bytes: u64,
++    stop_count: u64,
++    data_nacks: u64,
++}
++
++/// Per-device wire counters and final model state for an optional I2C
++/// profile. This is emitted only in the profile sidecar; it is not part of
++/// the primary firmware report.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct I2cChildObservation {
++    pub address: u16,
++    pub model: String,
++    pub address_phases: u64,
++    pub address_acks: u64,
++    pub address_nacks: u64,
++    pub write_bytes: u64,
++    pub read_bytes: u64,
++    pub stop_count: u64,
++    pub data_nacks: u64,
++    pub protocol_errors: u64,
++    pub state_summary: String,
++}
++
++/// Deterministic wire observation for one explicitly selected I2C profile.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct I2cBusObservation {
++    pub address_phases: u64,
++    pub address_acks: u64,
++    pub address_nacks: u64,
++    pub unknown_addresses: u64,
++    pub write_bytes: u64,
++    pub read_bytes: u64,
++    pub stop_count: u64,
++    pub data_nacks: u64,
++    pub protocol_errors: u64,
++    pub transaction_digest_sha256: String,
++    pub children: Vec<I2cChildObservation>,
++}
++
++/// Deterministic address router for an explicitly selected I2C profile.
++pub struct I2cBusMux {
++    children: Vec<Child>,
++    active: Option<usize>,
++    address_phases: u64,
++    address_acks: u64,
++    address_nacks: u64,
++    unknown_addresses: u64,
++    write_bytes: u64,
++    read_bytes: u64,
++    stop_count: u64,
++    data_nacks: u64,
++    transaction_digest: StreamingSha256,
++}
++
++impl I2cBusMux {
++    pub fn new() -> Self {
++        Self {
++            children: Vec::new(),
++            active: None,
++            address_phases: 0,
++            address_acks: 0,
++            address_nacks: 0,
++            unknown_addresses: 0,
++            write_bytes: 0,
++            read_bytes: 0,
++            stop_count: 0,
++            data_nacks: 0,
++            transaction_digest: StreamingSha256::new(),
++        }
++    }
++
++    fn digest_event(&mut self, kind: u8, address: u16, value: u8, ack: bool) {
++        self.transaction_digest.update(&[
++            kind,
++            (address >> 8) as u8,
++            address as u8,
++            value,
++            u8::from(ack),
++        ]);
++    }
++
++    /// Add one child at its declared 7-bit address.
++    pub fn add_device(
++        &mut self,
++        address: u16,
++        device: Box<dyn I2cExternalDevice>,
++    ) -> Result<(), I2cBusMuxError> {
++        if address >= 0x80 {
++            return Err(I2cBusMuxError::AddressOutOfRange(address));
++        }
++        if self.children.iter().any(|child| child.address == address) {
++            return Err(I2cBusMuxError::DuplicateAddress(address));
++        }
++        self.children.push(Child {
++            address,
++            device,
++            observation: ChildObservation::default(),
++        });
++        Ok(())
++    }
++
++    pub fn len(&self) -> usize {
++        self.children.len()
++    }
++
++    pub fn is_empty(&self) -> bool {
++        self.children.is_empty()
++    }
++
++    pub fn addresses(&self) -> impl Iterator<Item = u16> + '_ {
++        self.children.iter().map(|child| child.address)
++    }
++
++    /// Return deterministic transaction counters, a streaming wire digest,
++    /// and final state summaries for all attached children.
++    pub fn observation(&self) -> I2cBusObservation {
++        let mut protocol_errors = 0;
++        let children = self
++            .children
++            .iter()
++            .map(|child| {
++                let child_errors = child.device.protocol_error_count();
++                protocol_errors += child_errors;
++                I2cChildObservation {
++                    address: child.address,
++                    model: child.device.model_name().to_string(),
++                    address_phases: child.observation.address_phases,
++                    address_acks: child.observation.address_acks,
++                    address_nacks: child.observation.address_nacks,
++                    write_bytes: child.observation.write_bytes,
++                    read_bytes: child.observation.read_bytes,
++                    stop_count: child.observation.stop_count,
++                    data_nacks: child.observation.data_nacks,
++                    protocol_errors: child_errors,
++                    state_summary: child.device.state_summary(),
++                }
++            })
++            .collect();
++        I2cBusObservation {
++            address_phases: self.address_phases,
++            address_acks: self.address_acks,
++            address_nacks: self.address_nacks,
++            unknown_addresses: self.unknown_addresses,
++            write_bytes: self.write_bytes,
++            read_bytes: self.read_bytes,
++            stop_count: self.stop_count,
++            data_nacks: self.data_nacks,
++            protocol_errors,
++            transaction_digest_sha256: self.transaction_digest.finalize_hex(),
++            children,
++        }
++    }
++}
++
++impl Default for I2cBusMux {
++    fn default() -> Self {
++        Self::new()
++    }
++}
++
++impl I2cExternalDevice for I2cBusMux {
++    fn responds_to(&self, addr: u16) -> bool {
++        self.children
++            .iter()
++            .any(|child| child.address == addr && child.device.responds_to(addr))
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.address_phases = self.address_phases.wrapping_add(1);
++        let Some(index) = self.children.iter().position(|child| child.address == addr) else {
++            self.address_nacks = self.address_nacks.wrapping_add(1);
++            self.unknown_addresses = self.unknown_addresses.wrapping_add(1);
++            self.digest_event(b'A', addr, 0, false);
++            return false;
++        };
++
++        // The bounded E1 controller contract permits a repeated START only
++        // for the same target. A different target is selected by STOP,
++        // disable, IC_TAR, enable, then a new address phase.
++        if self.active.is_some_and(|active| active != index) {
++            self.address_nacks = self.address_nacks.wrapping_add(1);
++            self.children[index].observation.address_nacks = self.children[index]
++                .observation
++                .address_nacks
++                .wrapping_add(1);
++            self.digest_event(b'A', addr, 0, false);
++            return false;
++        }
++        let ack = self.children[index].device.address_phase(addr);
++        self.digest_event(b'A', addr, 0, ack);
++        if ack {
++            self.address_acks = self.address_acks.wrapping_add(1);
++            self.children[index].observation.address_phases = self.children[index]
++                .observation
++                .address_phases
++                .wrapping_add(1);
++            self.children[index].observation.address_acks = self.children[index]
++                .observation
++                .address_acks
++                .wrapping_add(1);
++            self.active = Some(index);
++            true
++        } else {
++            self.address_nacks = self.address_nacks.wrapping_add(1);
++            self.children[index].observation.address_phases = self.children[index]
++                .observation
++                .address_phases
++                .wrapping_add(1);
++            self.children[index].observation.address_nacks = self.children[index]
++                .observation
++                .address_nacks
++                .wrapping_add(1);
++            false
++        }
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        let Some(index) = self.active else {
++            self.data_nacks = self.data_nacks.wrapping_add(1);
++            return false;
++        };
++        let address = self.children[index].address;
++        let ack = self.children[index].device.write_byte(byte);
++        self.write_bytes = self.write_bytes.wrapping_add(1);
++        self.children[index].observation.write_bytes =
++            self.children[index].observation.write_bytes.wrapping_add(1);
++        if !ack {
++            self.data_nacks = self.data_nacks.wrapping_add(1);
++            self.children[index].observation.data_nacks =
++                self.children[index].observation.data_nacks.wrapping_add(1);
++        }
++        self.digest_event(b'W', address, byte, ack);
++        ack
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        let Some(index) = self.active else {
++            self.read_bytes = self.read_bytes.wrapping_add(1);
++            self.digest_event(b'R', 0, 0xff, false);
++            return 0xFF;
++        };
++        let address = self.children[index].address;
++        let byte = self.children[index].device.read_byte();
++        self.read_bytes = self.read_bytes.wrapping_add(1);
++        self.children[index].observation.read_bytes =
++            self.children[index].observation.read_bytes.wrapping_add(1);
++        self.digest_event(b'R', address, byte, true);
++        byte
++    }
++
++    fn transaction_end(&mut self) {
++        if let Some(index) = self.active.take() {
++            let address = self.children[index].address;
++            self.children[index].device.transaction_end();
++            self.children[index].observation.stop_count =
++                self.children[index].observation.stop_count.wrapping_add(1);
++            self.stop_count = self.stop_count.wrapping_add(1);
++            self.digest_event(b'S', address, 0, true);
++        }
++    }
++
++    fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        for child in &mut self.children {
++            child.device.advance_virtual_time(delta);
++        }
++    }
++}
++
++/// Small public connection-point example for downstream module authors.
++///
++/// It intentionally NACKs data bytes and returns a fixed read byte. It is not
++/// registered in any profile and never attaches to the default board. Its
++/// purpose is to make the child lifecycle and fail-closed behavior explicit in
++/// unit tests and in forks adding a private module.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct I2cExternalDeviceStub {
++    address: u16,
++    read_value: u8,
++}
++
++impl I2cExternalDeviceStub {
++    pub fn new(address: u16, read_value: u8) -> Result<Self, I2cBusMuxError> {
++        if address >= 0x80 {
++            return Err(I2cBusMuxError::AddressOutOfRange(address));
++        }
++        Ok(Self {
++            address,
++            read_value,
++        })
++    }
++}
++
++impl I2cExternalDevice for I2cExternalDeviceStub {
++    fn responds_to(&self, addr: u16) -> bool {
++        addr == self.address
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.responds_to(addr)
++    }
++
++    fn write_byte(&mut self, _byte: u8) -> bool {
++        false
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        self.read_value
++    }
++
++    fn transaction_end(&mut self) {}
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::sync::{Arc, Mutex};
++
++    #[derive(Default)]
++    struct Probe {
++        address: u16,
++        bytes: Vec<u8>,
++        reads: u8,
++        stops: u32,
++        advances: Vec<u64>,
++    }
++
++    #[derive(Clone)]
++    struct ProbeWire(Arc<Mutex<Probe>>);
++
++    impl I2cExternalDevice for ProbeWire {
++        fn responds_to(&self, addr: u16) -> bool {
++            self.0.lock().unwrap().address == addr
++        }
++
++        fn address_phase(&mut self, addr: u16) -> bool {
++            self.responds_to(addr)
++        }
++
++        fn write_byte(&mut self, byte: u8) -> bool {
++            self.0.lock().unwrap().bytes.push(byte);
++            true
++        }
++
++        fn read_byte(&mut self) -> u8 {
++            let mut p = self.0.lock().unwrap();
++            let value = p.reads;
++            p.reads = p.reads.wrapping_add(1);
++            value
++        }
++
++        fn transaction_end(&mut self) {
++            self.0.lock().unwrap().stops += 1;
++        }
++
++        fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++            self.0.lock().unwrap().advances.push(delta.nanoseconds);
++        }
++    }
++
++    #[test]
++    fn duplicate_and_out_of_range_addresses_are_rejected() {
++        let mut mux = I2cBusMux::new();
++        mux.add_device(0x38, Box::new(I2cExternalDeviceStub::new(0x38, 0).unwrap()))
++            .unwrap();
++        assert_eq!(
++            mux.add_device(0x38, Box::new(I2cExternalDeviceStub::new(0x38, 0).unwrap())),
++            Err(I2cBusMuxError::DuplicateAddress(0x38))
++        );
++        assert_eq!(
++            I2cExternalDeviceStub::new(0x80, 0),
++            Err(I2cBusMuxError::AddressOutOfRange(0x80))
++        );
++    }
++
++    #[test]
++    fn only_active_child_receives_wire_and_stop() {
++        let first = Arc::new(Mutex::new(Probe {
++            address: 0x38,
++            ..Default::default()
++        }));
++        let second = Arc::new(Mutex::new(Probe {
++            address: 0x68,
++            ..Default::default()
++        }));
++        let mut mux = I2cBusMux::new();
++        mux.add_device(0x38, Box::new(ProbeWire(first.clone())))
++            .unwrap();
++        mux.add_device(0x68, Box::new(ProbeWire(second.clone())))
++            .unwrap();
++
++        assert!(mux.address_phase(0x38));
++        assert!(mux.write_byte(0xAA));
++        assert_eq!(mux.read_byte(), 0);
++        mux.transaction_end();
++        assert_eq!(first.lock().unwrap().bytes, vec![0xAA]);
++        assert_eq!(first.lock().unwrap().stops, 1);
++        assert!(second.lock().unwrap().bytes.is_empty());
++
++        assert!(mux.address_phase(0x68));
++        assert!(mux.write_byte(0xBB));
++        mux.transaction_end();
++        assert_eq!(second.lock().unwrap().bytes, vec![0xBB]);
++        assert_eq!(second.lock().unwrap().stops, 1);
++    }
++
++    #[test]
++    fn repeated_start_to_other_child_is_rejected_without_stop() {
++        let first = Arc::new(Mutex::new(Probe {
++            address: 0x38,
++            ..Default::default()
++        }));
++        let second = Arc::new(Mutex::new(Probe {
++            address: 0x68,
++            ..Default::default()
++        }));
++        let mut mux = I2cBusMux::new();
++        mux.add_device(0x38, Box::new(ProbeWire(first.clone())))
++            .unwrap();
++        mux.add_device(0x68, Box::new(ProbeWire(second.clone())))
++            .unwrap();
++        assert!(mux.address_phase(0x38));
++        assert!(!mux.address_phase(0x68));
++        assert_eq!(first.lock().unwrap().stops, 0);
++        assert_eq!(second.lock().unwrap().stops, 0);
++    }
++
++    #[test]
++    fn virtual_time_is_forwarded_to_all_children() {
++        let first = Arc::new(Mutex::new(Probe {
++            address: 0x38,
++            ..Default::default()
++        }));
++        let second = Arc::new(Mutex::new(Probe {
++            address: 0x68,
++            ..Default::default()
++        }));
++        let mut mux = I2cBusMux::new();
++        mux.add_device(0x38, Box::new(ProbeWire(first.clone())))
++            .unwrap();
++        mux.add_device(0x68, Box::new(ProbeWire(second.clone())))
++            .unwrap();
++        mux.advance_virtual_time(I2cVirtualTimeDelta { nanoseconds: 123 });
++        assert_eq!(first.lock().unwrap().advances, vec![123]);
++        assert_eq!(second.lock().unwrap().advances, vec![123]);
++    }
++
++    #[test]
++    fn observation_is_deterministic_and_counts_wire_events() {
++        let first = Arc::new(Mutex::new(Probe {
++            address: 0x38,
++            ..Default::default()
++        }));
++        let mut mux = I2cBusMux::new();
++        mux.add_device(0x38, Box::new(ProbeWire(first.clone())))
++            .unwrap();
++
++        assert!(mux.address_phase(0x38));
++        assert!(mux.write_byte(0xaa));
++        assert_eq!(mux.read_byte(), 0);
++        mux.transaction_end();
++        assert!(!mux.address_phase(0x39));
++
++        let observation = mux.observation();
++        assert_eq!(observation.address_phases, 2);
++        assert_eq!(observation.address_acks, 1);
++        assert_eq!(observation.address_nacks, 1);
++        assert_eq!(observation.unknown_addresses, 1);
++        assert_eq!(observation.write_bytes, 1);
++        assert_eq!(observation.read_bytes, 1);
++        assert_eq!(observation.stop_count, 1);
++        assert_eq!(observation.data_nacks, 0);
++        assert_eq!(observation.children[0].address, 0x38);
++        assert_eq!(observation.children[0].write_bytes, 1);
++        assert_eq!(observation.children[0].read_bytes, 1);
++        assert_eq!(observation.children[0].stop_count, 1);
++        assert_eq!(observation.transaction_digest_sha256.len(), 64);
++
++        let again = mux.observation();
++        assert_eq!(observation, again);
++    }
++}
+diff --git a/crates/picocalc-board/src/keyboard.rs b/crates/picocalc-board/src/keyboard.rs
+index ad88cdf..4d8f9ed 100644
+--- a/crates/picocalc-board/src/keyboard.rs
++++ b/crates/picocalc-board/src/keyboard.rs
+@@ -684,6 +684,10 @@ impl rp2040_emu::peripherals::i2c::I2cExternalDevice for Keyboard {
+         addr == self.addr
+     }
+ 
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.responds_to(addr)
++    }
++
+     fn write_byte(&mut self, byte: u8) -> bool {
+         // Second byte of a two-byte register write.
+         if let Some(reg) = self.pending_write_reg.take() {
+@@ -784,10 +788,38 @@ impl KeyboardWire {
+ }
+ 
+ impl rp2040_emu::peripherals::i2c::I2cExternalDevice for KeyboardWire {
++    fn model_name(&self) -> &'static str {
++        "picocalc-keyboard"
++    }
++
++    fn protocol_error_count(&self) -> u64 {
++        let keyboard = self.inner.lock().expect("keyboard mutex");
++        keyboard.unknown_reg_selects + keyboard.unknown_reg_writes
++    }
++
++    fn state_summary(&self) -> String {
++        let keyboard = self.inner.lock().expect("keyboard mutex");
++        format!(
++            "{{\"queued\":{},\"delivered\":{},\"dropped\":{},\"unknown_reg_selects\":{},\"unknown_reg_writes\":{}}}",
++            keyboard.queued(),
++            keyboard.key_events_delivered,
++            keyboard.key_events_dropped,
++            keyboard.unknown_reg_selects,
++            keyboard.unknown_reg_writes,
++        )
++    }
++
+     fn responds_to(&self, addr: u16) -> bool {
+         self.inner.lock().expect("keyboard mutex").responds_to(addr)
+     }
+ 
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.inner
++            .lock()
++            .expect("keyboard mutex")
++            .address_phase(addr)
++    }
++
+     fn write_byte(&mut self, byte: u8) -> bool {
+         self.inner.lock().expect("keyboard mutex").write_byte(byte)
+     }
+diff --git a/crates/picocalc-board/src/lib.rs b/crates/picocalc-board/src/lib.rs
+index 1c1d8c2..74cc615 100644
+--- a/crates/picocalc-board/src/lib.rs
++++ b/crates/picocalc-board/src/lib.rs
+@@ -27,6 +27,8 @@
+ //! ```
+ 
+ pub mod framebuffer;
++pub mod i2c_devices;
++pub mod i2c_external;
+ pub mod keyboard;
+ pub mod lcd_pio_wire;
+ pub mod pins;
+@@ -37,6 +39,13 @@ pub mod st7365p;
+ pub mod wire;
+ 
+ pub use framebuffer::{Framebuffer, PngError};
++pub use i2c_devices::{
++    AHT20_ADDRESS, AT24C32_ADDRESS, AT24C32_SIZE, Aht20, At24c32, BMP280_ADDRESS, Bmp280,
++    DS3231_ADDRESS, Ds3231, RtcDateTime,
++};
++pub use i2c_external::{
++    I2cBusMux, I2cBusMuxError, I2cBusObservation, I2cChildObservation, I2cExternalDeviceStub,
++};
+ pub use keyboard::{KeyEvent, KeyState, Keyboard, KeyboardWire};
+ pub use lcd_pio_wire::LcdPioWire;
+ pub use sd_wire::SdCardWire;
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 6ce7885..c81aa88 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -38,10 +38,11 @@ use std::time::{Duration, Instant};
+ 
+ use picocalc_board::sha256::sha256_hex;
+ use picocalc_board::{
+-    Framebuffer, KeyEvent, KeyState, Keyboard, KeyboardWire, LcdPioWire, SdCard, SdCardWire,
+-    SdFormat, SdTraceData, SdTraceDirection, SdTraceEvent, SdTraceSnapshot, St7365p, St7365pWire,
+-    pins,
++    Aht20, At24c32, Bmp280, Ds3231, Framebuffer, I2cBusMux, I2cBusObservation, KeyEvent, KeyState,
++    Keyboard, KeyboardWire, LcdPioWire, RtcDateTime, SdCard, SdCardWire, SdFormat, SdTraceData,
++    SdTraceDirection, SdTraceEvent, SdTraceSnapshot, St7365p, St7365pWire, pins,
+ };
++use rp2040_emu::peripherals::i2c::I2cExternalDevice;
+ #[cfg(feature = "behavior-trace")]
+ use rp2040_emu::{BehaviorEventDomain, BehaviorTraceSnapshot};
+ use rp2040_emu::{Config, Emulator, EmulatorBuilder, RP2040_SRAM_TOP, WatchdogResetEvent};
+@@ -259,6 +260,9 @@ struct Args {
+     psram: bool,
+     psram_verify_range: Option<(u32, u32)>,
+     keyboard: bool,
++    i2c_profile: Option<String>,
++    i2c_fixture: Option<PathBuf>,
++    i2c_report: Option<PathBuf>,
+     sd: bool,
+     sd_image: Option<PathBuf>,
+     sd_image_out: Option<PathBuf>,
+@@ -543,6 +547,12 @@ fn print_usage() {
+                                   Require the little-endian PWM5_CC stream SHA-256.\n\
+          -h, --help               This message."
+     );
++    eprintln!(
++        "         --i2c-profile <name>     Attach optional picocalc-rtc-v1 (DS3231 + AT24C32)\n\
++                                  or picocalc-rtc-env-v1 (+ AHT20 + BMP280).\n\
++         --i2c-fixture <path>     Deterministic fixture JSON; defaults to a built-in fixture.\n\
++         --i2c-report <path>      Required sidecar report path when --i2c-profile is used."
++    );
+     #[cfg(feature = "idle-profiler")]
+     eprintln!(
+         "         --idle-profile <path>   OPT0-A diagnostic JSON (not valid for wall-time measurement)."
+@@ -582,6 +592,9 @@ fn parse_args() -> Result<Args, String> {
+     let mut psram = false;
+     let mut psram_verify_range: Option<(u32, u32)> = None;
+     let mut keyboard = false;
++    let mut i2c_profile: Option<String> = None;
++    let mut i2c_fixture: Option<PathBuf> = None;
++    let mut i2c_report: Option<PathBuf> = None;
+     let mut sd = false;
+     let mut sd_image: Option<PathBuf> = None;
+     let mut sd_image_out: Option<PathBuf> = None;
+@@ -657,6 +670,24 @@ fn parse_args() -> Result<Args, String> {
+             }
+             "--psram" => psram = true,
+             "--keyboard" => keyboard = true,
++            "--i2c-profile" => {
++                if i2c_profile.is_some() {
++                    return Err("--i2c-profile may be specified only once".to_string());
++                }
++                i2c_profile = Some(value("--i2c-profile")?);
++            }
++            "--i2c-fixture" => {
++                if i2c_fixture.is_some() {
++                    return Err("--i2c-fixture may be specified only once".to_string());
++                }
++                i2c_fixture = Some(PathBuf::from(value("--i2c-fixture")?));
++            }
++            "--i2c-report" => {
++                if i2c_report.is_some() {
++                    return Err("--i2c-report may be specified only once".to_string());
++                }
++                i2c_report = Some(PathBuf::from(value("--i2c-report")?));
++            }
+             "--sd" => sd = true,
+             "--sd-image" => sd_image = Some(PathBuf::from(value("--sd-image")?)),
+             "--sd-image-out" => sd_image_out = Some(PathBuf::from(value("--sd-image-out")?)),
+@@ -755,6 +786,21 @@ fn parse_args() -> Result<Args, String> {
+     if psram_verify_range.is_some() && !psram {
+         return Err("--psram-verify-range requires --psram".to_string());
+     }
++    if let Some(profile) = i2c_profile.as_deref() {
++        if board != Board::PicoCalc {
++            return Err("--i2c-profile requires --board picocalc".to_string());
++        }
++        if profile != "picocalc-rtc-v1" && profile != "picocalc-rtc-env-v1" {
++            return Err(format!(
++                "unknown --i2c-profile '{profile}' (expected picocalc-rtc-v1|picocalc-rtc-env-v1)"
++            ));
++        }
++        if i2c_report.is_none() {
++            return Err("--i2c-profile requires --i2c-report".to_string());
++        }
++    } else if i2c_fixture.is_some() || i2c_report.is_some() {
++        return Err("--i2c-fixture and --i2c-report require --i2c-profile".to_string());
++    }
+     validate_sd_selection(
+         sd,
+         sd_image.as_deref(),
+@@ -823,6 +869,9 @@ fn parse_args() -> Result<Args, String> {
+             (keys.is_some(), "--keys"),
+             (sd_image_out.is_some(), "--sd-image-out"),
+             (sd_trace.is_some(), "--sd-trace"),
++            (i2c_profile.is_some(), "--i2c-profile"),
++            (i2c_fixture.is_some(), "--i2c-fixture"),
++            (i2c_report.is_some(), "--i2c-report"),
+             (run_id.is_some(), "--run-id"),
+             (progress_interval.is_some(), "--progress-interval"),
+         ];
+@@ -862,6 +911,9 @@ fn parse_args() -> Result<Args, String> {
+         psram,
+         psram_verify_range,
+         keyboard,
++        i2c_profile,
++        i2c_fixture,
++        i2c_report,
+         sd,
+         sd_image,
+         sd_image_out,
+@@ -1099,6 +1151,13 @@ fn apply_sd_protocol_errors(verdict: &mut VerdictReport, sd: Option<&SdReport>)
+     }
+ }
+ 
++fn apply_i2c_protocol_errors(verdict: &mut VerdictReport, observation: &I2cBusObservation) {
++    if observation.protocol_errors > 0 || observation.data_nacks > 0 {
++        verdict.status = Verdict::Fail;
++        verdict.reasons.push("i2c_protocol_error");
++    }
++}
++
+ /// ARMv6-M IPSR exception numbers that mean "the firmware has fallen
+ /// over". Ordinary IRQs (>= 16), SVCall, PendSV and SysTick are normal
+ /// operation and must not stop the run.
+@@ -1132,6 +1191,570 @@ fn load_image(path: &Path, what: &str) -> Result<Vec<u8>, String> {
+     Ok(bytes)
+ }
+ 
++/// Runtime metadata for one explicitly selected optional I2C profile.
++struct I2cProfileRuntime {
++    profile: String,
++    fixture_id: String,
++    fixture_basename: Option<String>,
++    fixture_sha256: Option<String>,
++    attached_addresses: Vec<u16>,
++    mux: Arc<Mutex<I2cBusMux>>,
++}
++
++impl I2cProfileRuntime {
++    fn observation(&self) -> I2cBusObservation {
++        self.mux.lock().expect("I2C mux mutex").observation()
++    }
++}
++
++/// The emulator owns the trait object while the runner retains a shared
++/// handle for the profile sidecar. This keeps observation out of the primary
++/// report and avoids downcasting a board-specific model through rp2040-emu.
++struct SharedI2cBusMux {
++    inner: Arc<Mutex<I2cBusMux>>,
++}
++
++impl I2cExternalDevice for SharedI2cBusMux {
++    fn responds_to(&self, addr: u16) -> bool {
++        self.inner.lock().expect("I2C mux mutex").responds_to(addr)
++    }
++
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.inner
++            .lock()
++            .expect("I2C mux mutex")
++            .address_phase(addr)
++    }
++
++    fn write_byte(&mut self, byte: u8) -> bool {
++        self.inner.lock().expect("I2C mux mutex").write_byte(byte)
++    }
++
++    fn read_byte(&mut self) -> u8 {
++        self.inner.lock().expect("I2C mux mutex").read_byte()
++    }
++
++    fn transaction_end(&mut self) {
++        self.inner.lock().expect("I2C mux mutex").transaction_end();
++    }
++
++    fn advance_virtual_time(&mut self, delta: rp2040_emu::peripherals::i2c::I2cVirtualTimeDelta) {
++        self.inner
++            .lock()
++            .expect("I2C mux mutex")
++            .advance_virtual_time(delta);
++    }
++}
++
++fn fixture_object<'a>(
++    value: &'a serde_json::Value,
++    path: &str,
++) -> Result<&'a serde_json::Map<String, serde_json::Value>, String> {
++    value
++        .as_object()
++        .ok_or_else(|| format!("{path} must be an object"))
++}
++
++fn fixture_u64(value: &serde_json::Value, path: &str) -> Result<u64, String> {
++    value
++        .as_u64()
++        .ok_or_else(|| format!("{path} must be an unsigned integer"))
++}
++
++fn fixture_string<'a>(
++    object: &'a serde_json::Map<String, serde_json::Value>,
++    key: &str,
++    path: &str,
++) -> Result<&'a str, String> {
++    object
++        .get(key)
++        .and_then(serde_json::Value::as_str)
++        .ok_or_else(|| format!("{path}.{key} must be a string"))
++}
++
++fn parse_fixture_hex_byte(value: &serde_json::Value, path: &str) -> Result<u8, String> {
++    let number = fixture_u64(value, path)?;
++    u8::try_from(number).map_err(|_| format!("{path} must be in the range 0..=255"))
++}
++
++fn parse_fixture_registers(
++    state: &serde_json::Map<String, serde_json::Value>,
++    path: &str,
++) -> Result<[u8; picocalc_board::AT24C32_SIZE], String> {
++    let mut image = [0u8; picocalc_board::AT24C32_SIZE];
++    let Some(registers) = state.get("registers") else {
++        return Ok(image);
++    };
++    let registers = fixture_object(registers, &format!("{path}.registers"))?;
++    for (key, value) in registers {
++        let raw = key
++            .strip_prefix("0x")
++            .ok_or_else(|| format!("{path}.registers.{key} must use a 0x prefix"))?;
++        let address = u16::from_str_radix(raw, 16)
++            .map_err(|_| format!("{path}.registers.{key} is not hexadecimal"))?;
++        if usize::from(address) >= image.len() {
++            return Err(format!(
++                "{path}.registers.{key} is outside the AT24C32 image"
++            ));
++        }
++        image[usize::from(address)] =
++            parse_fixture_hex_byte(value, &format!("{path}.registers.{key}"))?;
++    }
++    Ok(image)
++}
++
++fn parse_fixture_bytes<const N: usize>(
++    state: &serde_json::Map<String, serde_json::Value>,
++    key: &str,
++    path: &str,
++) -> Result<[u8; N], String> {
++    let raw = fixture_string(state, key, path)?;
++    let compact = raw
++        .chars()
++        .filter(|character| !character.is_ascii_whitespace() && *character != '-')
++        .collect::<String>();
++    if compact.len() != N * 2 {
++        return Err(format!(
++            "{path}.{key} must contain exactly {N} hexadecimal bytes"
++        ));
++    }
++    let mut bytes = [0u8; N];
++    for (index, byte) in bytes.iter_mut().enumerate() {
++        *byte = u8::from_str_radix(&compact[index * 2..index * 2 + 2], 16).map_err(|_| {
++            format!("{path}.{key} contains a non-hexadecimal byte at index {index}")
++        })?;
++    }
++    Ok(bytes)
++}
++
++fn parse_fixture_datetime(raw: &str) -> Result<RtcDateTime, String> {
++    if raw.len() != 20
++        || raw.as_bytes().get(4) != Some(&b'-')
++        || raw.as_bytes().get(7) != Some(&b'-')
++        || raw.as_bytes().get(10) != Some(&b'T')
++        || raw.as_bytes().get(13) != Some(&b':')
++        || raw.as_bytes().get(16) != Some(&b':')
++        || raw.as_bytes().get(19) != Some(&b'Z')
++    {
++        return Err(format!(
++            "invalid DS3231 initial_datetime '{raw}' (expected YYYY-MM-DDTHH:MM:SSZ)"
++        ));
++    }
++    let parse = |range: std::ops::Range<usize>, name: &str| {
++        raw[range]
++            .parse::<u16>()
++            .map_err(|_| format!("invalid {name} in DS3231 initial_datetime '{raw}'"))
++    };
++    let year = parse(0..4, "year")?;
++    let month = u8::try_from(parse(5..7, "month")?)
++        .map_err(|_| "month is outside the u8 range".to_string())?;
++    let day = u8::try_from(parse(8..10, "day")?)
++        .map_err(|_| "day is outside the u8 range".to_string())?;
++    let hour = u8::try_from(parse(11..13, "hour")?)
++        .map_err(|_| "hour is outside the u8 range".to_string())?;
++    let minute = u8::try_from(parse(14..16, "minute")?)
++        .map_err(|_| "minute is outside the u8 range".to_string())?;
++    let second = u8::try_from(parse(17..19, "second")?)
++        .map_err(|_| "second is outside the u8 range".to_string())?;
++
++    // DS3231 uses 1=Sunday..7=Saturday.  Count from Saturday 2000-01-01.
++    let mut days = 0u64;
++    for y in 2000..year {
++        days += if (y % 400 == 0) || (y % 4 == 0 && y % 100 != 0) {
++            366
++        } else {
++            365
++        };
++    }
++    for m in 1..month {
++        days += match m {
++            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
++            4 | 6 | 9 | 11 => 30,
++            2 if (year % 400 == 0) || (year % 4 == 0 && year % 100 != 0) => 29,
++            2 => 28,
++            _ => 0,
++        };
++    }
++    days += u64::from(day.saturating_sub(1));
++    let day_of_week = ((6 + days % 7) % 7 + 1) as u8;
++    RtcDateTime::new(year, month, day, day_of_week, hour, minute, second)
++        .ok_or_else(|| format!("invalid DS3231 initial_datetime '{raw}'"))
++}
++
++fn build_i2c_profile(
++    profile: &str,
++    fixture_path: Option<&Path>,
++    keyboard: Option<Arc<Mutex<Keyboard>>>,
++) -> Result<I2cProfileRuntime, String> {
++    if profile != "picocalc-rtc-v1" && profile != "picocalc-rtc-env-v1" {
++        return Err(format!("unsupported I2C profile '{profile}'"));
++    }
++
++    // The values are deliberately ordinary, deterministic sensor samples;
++    // callers needing another environment provide a fixture instead.
++    let builtin_aht20 = [0x18, 0x80, 0x00, 0x06, 0x00, 0x00, 0x23];
++    let builtin_bmp280_calibration = [
++        0x70, 0x6b, 0x43, 0x67, 0x18, 0xfc, 0x7d, 0x8e, 0x43, 0xd6, 0xd0, 0x0b, 0x27, 0x0b, 0x8c,
++        0x00, 0xf9, 0xff, 0x8c, 0x3c, 0xf8, 0xc6, 0x70, 0x17,
++    ];
++    let builtin_bmp280_measurement = [0x65, 0x5a, 0xc0, 0x7e, 0xed, 0x00];
++    let (
++        fixture_id,
++        fixture_basename,
++        fixture_sha256,
++        datetime,
++        osf,
++        eeprom,
++        aht_measurement,
++        bmp_calibration,
++        bmp_measurement,
++        seen_aht20,
++        seen_bmp280,
++    ) = if let Some(path) = fixture_path {
++        let bytes = std::fs::read(path)
++            .map_err(|e| format!("reading I2C fixture {}: {e}", path.display()))?;
++        let text = std::str::from_utf8(&bytes)
++            .map_err(|e| format!("I2C fixture {} is not UTF-8: {e}", path.display()))?;
++        let value: serde_json::Value = serde_json::from_str(text)
++            .map_err(|e| format!("parsing I2C fixture {}: {e}", path.display()))?;
++        let root = fixture_object(&value, "fixture")?;
++        if fixture_u64(
++            root.get("schema_version")
++                .ok_or_else(|| "fixture.schema_version is required".to_string())?,
++            "fixture.schema_version",
++        )? != 1
++        {
++            return Err("fixture.schema_version must be 1".to_string());
++        }
++        let fixture_profile = fixture_string(root, "profile", "fixture")?;
++        if fixture_profile != profile {
++            return Err(format!(
++                "fixture.profile '{}' does not match --i2c-profile '{}'",
++                fixture_profile, profile
++            ));
++        }
++        let bus = fixture_object(
++            root.get("bus")
++                .ok_or_else(|| "fixture.bus is required".to_string())?,
++            "fixture.bus",
++        )?;
++        if fixture_string(bus, "controller", "fixture.bus")? != "i2c1"
++            || fixture_u64(
++                bus.get("sda_gpio")
++                    .ok_or_else(|| "fixture.bus.sda_gpio is required".to_string())?,
++                "fixture.bus.sda_gpio",
++            )? != 6
++            || fixture_u64(
++                bus.get("scl_gpio")
++                    .ok_or_else(|| "fixture.bus.scl_gpio is required".to_string())?,
++                "fixture.bus.scl_gpio",
++            )? != 7
++            || fixture_u64(
++                bus.get("address_bits")
++                    .ok_or_else(|| "fixture.bus.address_bits is required".to_string())?,
++                "fixture.bus.address_bits",
++            )? != 7
++        {
++            return Err(
++                "fixture.bus must describe i2c1 on GPIO6/GPIO7 with 7-bit addresses".to_string(),
++            );
++        }
++        let devices = root
++            .get("devices")
++            .and_then(serde_json::Value::as_array)
++            .ok_or_else(|| "fixture.devices must be an array".to_string())?;
++        let mut datetime = None;
++        let mut osf = false;
++        let mut eeprom = [0u8; picocalc_board::AT24C32_SIZE];
++        let mut seen_ds3231 = false;
++        let mut seen_at24c32 = false;
++        let mut aht_measurement = builtin_aht20;
++        let mut bmp_calibration = builtin_bmp280_calibration;
++        let mut bmp_measurement = builtin_bmp280_measurement;
++        let mut seen_aht20 = false;
++        let mut seen_bmp280 = false;
++        let mut seen_keyboard = false;
++        for (index, device) in devices.iter().enumerate() {
++            let path = format!("fixture.devices[{index}]");
++            let device = fixture_object(device, &path)?;
++            let kind = fixture_string(device, "kind", &path)?;
++            let address = fixture_u64(
++                device
++                    .get("address")
++                    .ok_or_else(|| format!("{path}.address is required"))?,
++                &format!("{path}.address"),
++            )?;
++            let state = fixture_object(
++                device
++                    .get("state")
++                    .ok_or_else(|| format!("{path}.state is required"))?,
++                &format!("{path}.state"),
++            )?;
++            if fixture_string(state, "encoding", &format!("{path}.state"))? != "register_bytes" {
++                return Err(format!("{path}.state.encoding must be register_bytes"));
++            }
++            match kind {
++                "ds3231" => {
++                    if address != u64::from(picocalc_board::DS3231_ADDRESS) || seen_ds3231 {
++                        return Err(format!("{path} must be the unique DS3231 at 0x68"));
++                    }
++                    let raw_datetime =
++                        fixture_string(state, "initial_datetime", &format!("{path}.state"))?;
++                    datetime = Some(parse_fixture_datetime(raw_datetime)?);
++                    osf = state
++                        .get("osf")
++                        .and_then(serde_json::Value::as_bool)
++                        .unwrap_or(false);
++                    seen_ds3231 = true;
++                }
++                "at24c32" => {
++                    if address != u64::from(picocalc_board::AT24C32_ADDRESS) || seen_at24c32 {
++                        return Err(format!("{path} must be the unique AT24C32 at 0x57"));
++                    }
++                    eeprom = parse_fixture_registers(state, &format!("{path}.state"))?;
++                    seen_at24c32 = true;
++                }
++                "aht20" => {
++                    if profile != "picocalc-rtc-env-v1"
++                        || address != u64::from(picocalc_board::AHT20_ADDRESS)
++                        || seen_aht20
++                    {
++                        return Err(format!(
++                            "{path} must be the unique AHT20 at 0x38 in picocalc-rtc-env-v1"
++                        ));
++                    }
++                    aht_measurement =
++                        parse_fixture_bytes(state, "measurement_bytes", &format!("{path}.state"))?;
++                    // Aht20::new performs the CRC check before the model is
++                    // attached, so malformed fixtures fail closed here.
++                    Aht20::new(aht_measurement)
++                        .map_err(|error| format!("{path}.state: {error}"))?;
++                    seen_aht20 = true;
++                }
++                "bmp280" => {
++                    if profile != "picocalc-rtc-env-v1"
++                        || address != u64::from(picocalc_board::BMP280_ADDRESS)
++                        || seen_bmp280
++                    {
++                        return Err(format!(
++                            "{path} must be the unique BMP280 at 0x77 in picocalc-rtc-env-v1"
++                        ));
++                    }
++                    bmp_calibration =
++                        parse_fixture_bytes(state, "calibration_bytes", &format!("{path}.state"))?;
++                    bmp_measurement =
++                        parse_fixture_bytes(state, "measurement_bytes", &format!("{path}.state"))?;
++                    Bmp280::new(bmp_calibration, bmp_measurement)
++                        .map_err(|error| format!("{path}.state: {error}"))?;
++                    seen_bmp280 = true;
++                }
++                "keyboard" => {
++                    if address != u64::from(picocalc_board::keyboard::KEYBOARD_I2C_ADDR)
++                        || seen_keyboard
++                    {
++                        return Err(format!("{path} must use keyboard address 0x1f"));
++                    }
++                    seen_keyboard = true;
++                }
++                other => {
++                    return Err(format!(
++                        "{path}.kind '{other}' is not implemented by {profile}"
++                    ));
++                }
++            }
++        }
++        let datetime = datetime.ok_or_else(|| "fixture is missing ds3231".to_string())?;
++        if !seen_at24c32 {
++            return Err("fixture is missing at24c32".to_string());
++        }
++        if profile == "picocalc-rtc-env-v1" && !seen_aht20 {
++            return Err("picocalc-rtc-env-v1 fixture is missing aht20".to_string());
++        }
++        if profile == "picocalc-rtc-env-v1" && !seen_bmp280 {
++            return Err("picocalc-rtc-env-v1 fixture is missing bmp280".to_string());
++        }
++        if seen_keyboard && keyboard.is_none() {
++            return Err(
++                "fixture declares keyboard 0x1f; rerun with --keyboard to attach it".to_string(),
++            );
++        }
++        (
++            fixture_string(root, "fixture_id", "fixture")?.to_string(),
++            Some(basename(path)),
++            Some(sha256_hex(&bytes)),
++            datetime,
++            osf,
++            eeprom,
++            aht_measurement,
++            bmp_calibration,
++            bmp_measurement,
++            seen_aht20,
++            seen_bmp280,
++        )
++    } else {
++        (
++            format!("builtin-{profile}"),
++            None,
++            None,
++            parse_fixture_datetime("2024-01-01T00:00:00Z")?,
++            false,
++            [0u8; picocalc_board::AT24C32_SIZE],
++            builtin_aht20,
++            builtin_bmp280_calibration,
++            builtin_bmp280_measurement,
++            profile == "picocalc-rtc-env-v1",
++            profile == "picocalc-rtc-env-v1",
++        )
++    };
++
++    let mut mux = I2cBusMux::new();
++    if let Some(keyboard) = keyboard {
++        mux.add_device(
++            picocalc_board::keyboard::KEYBOARD_I2C_ADDR,
++            Box::new(KeyboardWire::new(keyboard)),
++        )
++        .map_err(|e| format!("adding keyboard to I2C profile: {e}"))?;
++    }
++    mux.add_device(
++        picocalc_board::DS3231_ADDRESS,
++        Box::new(Ds3231::new(datetime, osf)),
++    )
++    .map_err(|e| format!("adding DS3231 to I2C profile: {e}"))?;
++    mux.add_device(
++        picocalc_board::AT24C32_ADDRESS,
++        Box::new(At24c32::new(eeprom)),
++    )
++    .map_err(|e| format!("adding AT24C32 to I2C profile: {e}"))?;
++    if profile == "picocalc-rtc-env-v1" {
++        if !seen_aht20 || !seen_bmp280 {
++            return Err("picocalc-rtc-env-v1 requires AHT20 and BMP280".to_string());
++        }
++        mux.add_device(
++            picocalc_board::AHT20_ADDRESS,
++            Box::new(
++                Aht20::new(aht_measurement)
++                    .map_err(|error| format!("adding AHT20 to I2C profile: {error}"))?,
++            ),
++        )
++        .map_err(|e| format!("adding AHT20 to I2C profile: {e}"))?;
++        mux.add_device(
++            picocalc_board::BMP280_ADDRESS,
++            Box::new(
++                Bmp280::new(bmp_calibration, bmp_measurement)
++                    .map_err(|error| format!("adding BMP280 to I2C profile: {error}"))?,
++            ),
++        )
++        .map_err(|e| format!("adding BMP280 to I2C profile: {e}"))?;
++    }
++    let attached_addresses = mux.addresses().collect();
++    let mux = Arc::new(Mutex::new(mux));
++
++    Ok(I2cProfileRuntime {
++        profile: profile.to_string(),
++        fixture_id,
++        fixture_basename,
++        fixture_sha256,
++        attached_addresses,
++        mux,
++    })
++}
++
++fn write_i2c_profile_report(
++    path: &Path,
++    profile: &I2cProfileRuntime,
++    outcome: &RunOutcome,
++    verdict: &VerdictReport,
++) -> Result<(), String> {
++    let observation = profile.observation();
++    let status = if verdict.status == Verdict::Pass {
++        "pass"
++    } else {
++        "fail"
++    };
++    let addresses = profile
++        .attached_addresses
++        .iter()
++        .map(|address| json_string(&format!("0x{address:02x}")))
++        .collect::<Vec<_>>()
++        .join(", ");
++    let error = outcome
++        .error
++        .as_deref()
++        .map(json_string)
++        .unwrap_or_else(|| "null".to_string());
++    let reasons = verdict
++        .reasons
++        .iter()
++        .map(|reason| json_string(reason))
++        .collect::<Vec<_>>()
++        .join(", ");
++    let child_json = observation
++        .children
++        .iter()
++        .map(|child| {
++            let state = serde_json::from_str::<serde_json::Value>(&child.state_summary)
++                .map(|value| value.to_string())
++                .unwrap_or_else(|_| json_string(&child.state_summary));
++            format!(
++                "{{\"address\":\"0x{:02x}\",\"model\":{},\"address_phases\":{},\"address_acks\":{},\"address_nacks\":{},\"write_bytes\":{},\"read_bytes\":{},\"stop_count\":{},\"data_nacks\":{},\"protocol_errors\":{},\"state\":{}}}",
++                child.address,
++                json_string(&child.model),
++                child.address_phases,
++                child.address_acks,
++                child.address_nacks,
++                child.write_bytes,
++                child.read_bytes,
++                child.stop_count,
++                child.data_nacks,
++                child.protocol_errors,
++                state,
++            )
++        })
++        .collect::<Vec<_>>()
++        .join(", ");
++    let model_scope = if profile.profile == "picocalc-rtc-env-v1" {
++        "E3-AHT20-BMP280-profile-attach"
++    } else {
++        "E2-DS3231-AT24C32-profile-attach"
++    };
++    let report = format!(
++        "{{\n  \"schema_version\": 2,\n  \"profile\": {},\n  \"fixture\": {{\"id\": {}, \"basename\": {}, \"sha256\": {}}},\n  \"bus\": {{\"controller\": \"i2c1\", \"sda_gpio\": 6, \"scl_gpio\": 7, \"address_bits\": 7}},\n  \"attached_addresses\": [{}],\n  \"model_scope\": {},\n  \"observation\": {{\"address_phases\": {}, \"address_acks\": {}, \"address_nacks\": {}, \"unknown_addresses\": {}, \"write_bytes\": {}, \"read_bytes\": {}, \"stop_count\": {}, \"data_nacks\": {}, \"protocol_errors\": {}, \"transaction_digest_sha256\": {}, \"children\": [{}]}},\n  \"status\": {},\n  \"verdict_status\": {},\n  \"verdict_reasons\": [{}],\n  \"stop_reason\": {},\n  \"cycles\": {},\n  \"error\": {}\n}}\n",
++        json_string(&profile.profile),
++        json_string(&profile.fixture_id),
++        profile
++            .fixture_basename
++            .as_deref()
++            .map(json_string)
++            .unwrap_or_else(|| "null".to_string()),
++        profile
++            .fixture_sha256
++            .as_deref()
++            .map(json_string)
++            .unwrap_or_else(|| "null".to_string()),
++        addresses,
++        json_string(model_scope),
++        observation.address_phases,
++        observation.address_acks,
++        observation.address_nacks,
++        observation.unknown_addresses,
++        observation.write_bytes,
++        observation.read_bytes,
++        observation.stop_count,
++        observation.data_nacks,
++        observation.protocol_errors,
++        json_string(&observation.transaction_digest_sha256),
++        child_json,
++        json_string(status),
++        json_string(verdict.status.as_str()),
++        reasons,
++        json_string(outcome.stop_reason.as_str()),
++        outcome.cycles,
++        error,
++    );
++    std::fs::write(path, report.as_bytes())
++        .map_err(|e| format!("writing I2C profile report {}: {e}", path.display()))
++}
++
+ /// How execution was started. Reported so a run can never be mistaken
+ /// for a direct boot that did not happen.
+ ///
+@@ -1185,6 +1808,7 @@ fn boot(
+     lcd_variant: LcdVariant,
+     psram: bool,
+     keyboard: Option<Arc<Mutex<Keyboard>>>,
++    i2c_profile_device: Option<Box<dyn I2cExternalDevice>>,
+     sd: Option<Arc<Mutex<SdCard>>>,
+ ) -> Result<(Emulator, BootMode, Option<Arc<Mutex<St7365p>>>), String> {
+     if boot_request == BootRequest::Boot2 && firmware.len() < 256 {
+@@ -1252,7 +1876,11 @@ fn boot(
+ 
+     // The keyboard/power controller hangs off I2C1 regardless of the
+     // display model, same as the real mainboard.
+-    if let Some(kbd) = keyboard {
++    if let Some(profile) = i2c_profile_device {
++        emu.bus
++            .attach_i2c_device_exclusive(pins::KEYBOARD_I2C_INSTANCE, profile)
++            .map_err(|i| format!("no I2C instance {i} on RP2040"))?;
++    } else if let Some(kbd) = keyboard {
+         emu.bus
+             .attach_i2c_device(
+                 pins::KEYBOARD_I2C_INSTANCE,
+@@ -1327,55 +1955,6 @@ fn park_state(emu: &Emulator, core: usize) -> &'static str {
+     }
+ }
+ 
+-/// Emulated cycles converted to virtual nanoseconds.
+-///
+-/// The system clock is not a constant: firmware boots on ROSC and moves
+-/// to a PLL, so a fixed divisor would put every timestamp taken before
+-/// the switch off by a factor of twenty. Instead the conversion is
+-/// re-based whenever `clk_sys` changes — time already elapsed keeps the
+-/// rate it was measured at, and only the new stretch uses the new rate.
+-struct VirtualClock {
+-    epoch_cycles: u64,
+-    epoch_ns: u64,
+-    hz: u64,
+-}
+-
+-impl VirtualClock {
+-    fn new(hz: u32) -> Self {
+-        Self {
+-            epoch_cycles: 0,
+-            epoch_ns: 0,
+-            hz: u64::from(hz).max(1),
+-        }
+-    }
+-
+-    fn ns_at(&self, cycles: u64) -> u64 {
+-        let elapsed = u128::from(cycles.saturating_sub(self.epoch_cycles));
+-        self.epoch_ns + (elapsed * 1_000_000_000 / u128::from(self.hz)) as u64
+-    }
+-
+-    /// The cycle count at which the clock will read `ns`, saturating at
+-    /// `u64::MAX` so a far-future deadline simply never arrives.
+-    fn cycles_at(&self, ns: u64) -> u64 {
+-        let ahead = u128::from(ns.saturating_sub(self.epoch_ns));
+-        let cycles = ahead * u128::from(self.hz) / 1_000_000_000;
+-        self.epoch_cycles
+-            .saturating_add(u64::try_from(cycles).unwrap_or(u64::MAX))
+-    }
+-
+-    /// Adopt a new rate from `cycles` onwards. No-op if unchanged.
+-    fn rebase(&mut self, cycles: u64, hz: u32) -> bool {
+-        let hz = u64::from(hz).max(1);
+-        if hz == self.hz {
+-            return false;
+-        }
+-        self.epoch_ns = self.ns_at(cycles);
+-        self.epoch_cycles = cycles;
+-        self.hz = hz;
+-        true
+-    }
+-}
+-
+ /// Board models the scenario engine can reach into mid-run.
+ #[derive(Default)]
+ struct BoardHandles {
+@@ -1392,7 +1971,6 @@ struct BoardHandles {
+ /// clock-rebase, or observation semantics.
+ struct MachineSession {
+     emu: Emulator,
+-    vclock: VirtualClock,
+     uart_bytes: Vec<u8>,
+     dispatches: u64,
+     board: BoardHandles,
+@@ -1410,10 +1988,8 @@ enum SessionStop {
+ impl MachineSession {
+     #[inline]
+     fn new(emu: Emulator, board: BoardHandles) -> Self {
+-        let vclock = VirtualClock::new(emu.bus.clock_tree.sys_clk_hz);
+         Self {
+             emu,
+-            vclock,
+             uart_bytes: Vec::new(),
+             dispatches: 0,
+             board,
+@@ -1449,8 +2025,6 @@ impl MachineSession {
+             }
+             Some(BootMode::BootromResetVector) | None => {}
+         }
+-        self.vclock
+-            .rebase(self.emu.clock.cycles, self.emu.bus.clock_tree.sys_clk_hz);
+         Ok(true)
+     }
+ 
+@@ -1461,7 +2035,7 @@ impl MachineSession {
+ 
+     #[inline(always)]
+     fn elapsed_ns(&self) -> u64 {
+-        self.vclock.ns_at(self.cycles())
++        self.emu.bus.virtual_time_ns()
+     }
+ 
+     fn fatal_exception(&self) -> Option<&'static str> {
+@@ -1505,6 +2079,7 @@ impl MachineSession {
+     /// external boundary. Returns `(cycles_consumed, clock_rate_changed)`.
+     #[inline(always)]
+     fn advance_once(&mut self, external_event_cycle: u64) -> Result<(u64, bool), String> {
++        let previous_hz = self.emu.bus.clock_tree.sys_clk_hz;
+         let consumed = self.emu.step_until(external_event_cycle).map_err(|error| {
+             let message = error.to_string();
+             self.sticky_stop = Some(SessionStop::Error(message.clone()));
+@@ -1515,10 +2090,8 @@ impl MachineSession {
+         if self.dispatches.is_multiple_of(UART_DRAIN_INTERVAL) {
+             self.drain_uart();
+         }
+-        let rebased = self
+-            .vclock
+-            .rebase(self.emu.clock.cycles, self.emu.bus.clock_tree.sys_clk_hz);
+-        Ok((consumed, rebased))
++        let rate_changed = self.emu.bus.clock_tree.sys_clk_hz != previous_hz;
++        Ok((consumed, rate_changed))
+     }
+ 
+     fn mark_clock_stalled(&mut self) {
+@@ -1566,7 +2139,7 @@ fn run_loop(
+     // per-step check to one integer compare; the division only happens
+     // at a poll or a clock change.
+     let mut next_poll_cycles = match engine.as_deref() {
+-        Some(e) => machine.vclock.cycles_at(e.next_poll_ns()),
++        Some(e) => machine.emu.bus.virtual_time_cycles_at(e.next_poll_ns()),
+         None => u64::MAX,
+     };
+ 
+@@ -1598,7 +2171,7 @@ fn run_loop(
+             if e.is_done() {
+                 return machine.finish(StopReason::ScenarioDone, None, None);
+             }
+-            next_poll_cycles = machine.vclock.cycles_at(e.next_poll_ns());
++            next_poll_cycles = machine.emu.bus.virtual_time_cycles_at(e.next_poll_ns());
+             // A poll that changed nothing would otherwise re-fire every
+             // step until virtual time moved on.
+             next_poll_cycles = next_poll_cycles.max(machine.cycles() + 1);
+@@ -1619,6 +2192,7 @@ fn run_loop(
+         }
+ 
+         let external_event_cycle = next_poll_cycles.min(cycle_limit);
++        let previous_hz = machine.emu.bus.clock_tree.sys_clk_hz;
+         let consumed = match machine.emu.step_until(external_event_cycle) {
+             Ok(consumed) => consumed,
+             Err(error) => {
+@@ -1660,14 +2234,13 @@ fn run_loop(
+         // mean. The pending poll deadline is expressed in nanoseconds, so
+         // it moves with the rebase rather than being stranded at the old
+         // rate.
+-        if machine.vclock.rebase(
+-            machine.emu.clock.cycles,
+-            machine.emu.bus.clock_tree.sys_clk_hz,
+-        ) && let Some(e) = engine.as_deref()
++        if machine.emu.bus.clock_tree.sys_clk_hz != previous_hz
++            && let Some(e) = engine.as_deref()
+         {
+             next_poll_cycles = machine
+-                .vclock
+-                .cycles_at(e.next_poll_ns())
++                .emu
++                .bus
++                .virtual_time_cycles_at(e.next_poll_ns())
+                 .max(machine.cycles() + 1);
+         }
+     }
+@@ -4055,6 +4628,20 @@ fn run() -> Result<Verdict, String> {
+         kbd
+     });
+ 
++    let i2c_profile_runtime = match args.i2c_profile.as_deref() {
++        Some(profile) => Some(build_i2c_profile(
++            profile,
++            args.i2c_fixture.as_deref(),
++            keyboard.clone(),
++        )?),
++        None => None,
++    };
++    let i2c_profile_device = i2c_profile_runtime.as_ref().map(|runtime| {
++        Box::new(SharedI2cBusMux {
++            inner: Arc::clone(&runtime.mux),
++        }) as Box<dyn I2cExternalDevice>
++    });
++
+     // The BSP mounts but does not format (FF_USE_MKFS=0), so the card
+     // constructor supplies the selected pre-formatted volume. FAT32 is
+     // the default; FAT16 is retained for compatibility targets.
+@@ -4085,6 +4672,7 @@ fn run() -> Result<Verdict, String> {
+         args.lcd_variant,
+         args.psram,
+         keyboard.clone(),
++        i2c_profile_device,
+         sd_card.clone(),
+     )?;
+     emu.bus.unsupported_mmio_log_enabled = true;
+@@ -4358,6 +4946,13 @@ fn run() -> Result<Verdict, String> {
+     apply_audio_sink_expectation(&mut verdict, audio_sink_report.as_ref());
+     #[cfg(feature = "sd-gen1-multiblock")]
+     apply_sd_protocol_errors(&mut verdict, sd_report.as_ref());
++    if let Some(runtime) = &i2c_profile_runtime {
++        let observation = runtime.observation();
++        apply_i2c_protocol_errors(&mut verdict, &observation);
++    }
++    if let (Some(runtime), Some(path)) = (&i2c_profile_runtime, args.i2c_report.as_deref()) {
++        write_i2c_profile_report(path, runtime, &outcome, &verdict)?;
++    }
+ 
+     let report = build_report(
+         backend_commit,
+@@ -4447,10 +5042,10 @@ fn run() -> Result<Verdict, String> {
+ mod tests {
+     use super::{
+         AudioSinkReport, BoardHandles, MachineApiState, MachineSession, RunOutcome, SdReport,
+-        StopReason, Verdict, apply_audio_sink_expectation, dispatch_machine_request,
+-        fatal_exception_name, json_escape, judge_run, run_loop, snapshot_machine,
+-        validate_backend_identity, validate_progress_interval, validate_run_id,
+-        validate_sd_selection,
++        StopReason, Verdict, apply_audio_sink_expectation, build_i2c_profile,
++        dispatch_machine_request, fatal_exception_name, json_escape, judge_run, run_loop,
++        sha256_hex, snapshot_machine, validate_backend_identity, validate_progress_interval,
++        validate_run_id, validate_sd_selection,
+     };
+     #[cfg(feature = "sd-gen1-multiblock")]
+     use super::{VerdictReport, apply_sd_protocol_errors};
+@@ -4462,6 +5057,73 @@ mod tests {
+     use std::path::Path;
+     use std::sync::{Arc, Mutex};
+ 
++    #[test]
++    fn i2c_profile_builtin_has_only_the_declared_rtc_devices() {
++        let profile = build_i2c_profile("picocalc-rtc-v1", None, None).unwrap();
++        assert_eq!(profile.fixture_id, "builtin-picocalc-rtc-v1");
++        assert_eq!(profile.fixture_basename, None);
++        assert_eq!(
++            profile.attached_addresses,
++            vec![
++                picocalc_board::DS3231_ADDRESS,
++                picocalc_board::AT24C32_ADDRESS
++            ]
++        );
++        assert_eq!(profile.observation().protocol_errors, 0);
++    }
++
++    #[test]
++    fn i2c_profile_fixture_checks_bus_devices_and_records_provenance() {
++        let path =
++            std::env::temp_dir().join(format!("picocalc-i2c-fixture-{}.json", std::process::id()));
++        let fixture = r#"{
++          "schema_version": 1,
++          "fixture_id": "test-rtc",
++          "profile": "picocalc-rtc-v1",
++          "bus": {"controller": "i2c1", "sda_gpio": 6, "scl_gpio": 7, "address_bits": 7},
++          "devices": [
++            {"kind": "ds3231", "address": 104, "state": {
++              "encoding": "register_bytes",
++              "initial_datetime": "2024-02-29T12:34:56Z",
++              "osf": true
++            }},
++            {"kind": "at24c32", "address": 87, "state": {
++              "encoding": "register_bytes",
++              "registers": {"0x0000": 165, "0x0fff": 90}
++            }}
++          ]
++        }"#;
++        std::fs::write(&path, fixture).unwrap();
++        let profile = build_i2c_profile("picocalc-rtc-v1", Some(&path), None).unwrap();
++        assert_eq!(profile.fixture_id, "test-rtc");
++        assert_eq!(
++            profile.fixture_basename.as_deref(),
++            path.file_name().and_then(|name| name.to_str())
++        );
++        assert_eq!(
++            profile.fixture_sha256.as_deref(),
++            Some(sha256_hex(fixture.as_bytes()).as_str())
++        );
++        assert_eq!(profile.attached_addresses.len(), 2);
++        std::fs::remove_file(path).unwrap();
++    }
++
++    #[test]
++    fn i2c_environment_profile_builtin_attaches_both_sensors() {
++        let profile = build_i2c_profile("picocalc-rtc-env-v1", None, None).unwrap();
++        assert_eq!(profile.fixture_id, "builtin-picocalc-rtc-env-v1");
++        assert_eq!(
++            profile.attached_addresses,
++            vec![
++                picocalc_board::DS3231_ADDRESS,
++                picocalc_board::AT24C32_ADDRESS,
++                picocalc_board::AHT20_ADDRESS,
++                picocalc_board::BMP280_ADDRESS,
++            ]
++        );
++        assert_eq!(profile.observation().protocol_errors, 0);
++    }
++
+     #[cfg(feature = "behavior-trace")]
+     use super::behavior_projection;
+     #[cfg(feature = "idle-profiler")]
+diff --git a/crates/rp2040-emu/src/bus/mod.rs b/crates/rp2040-emu/src/bus/mod.rs
+index 9f1e485..ce051ef 100644
+--- a/crates/rp2040-emu/src/bus/mod.rs
++++ b/crates/rp2040-emu/src/bus/mod.rs
+@@ -49,6 +49,7 @@ use crate::peripherals::spi::SpiRegs;
+ use crate::peripherals::timer::TimerRegs;
+ use crate::peripherals::uart::UartRegs;
+ use crate::peripherals::watchdog_tick::WatchdogTickRegs;
++use crate::virtual_time::VirtualClock;
+ use clocks::{ClockTree, ClocksRegs, PLL_RESET, PllRegs, ROSC_FREQ_HZ, RoscRegs, XoscRegs};
+ use io_bank0::IoBank0;
+ use pads_bank0::PadsBank0;
+@@ -357,6 +358,9 @@ pub struct Bus {
+     pub(crate) pll_usb_lock_at_cycle: Option<u64>,
+     /// Derived clock tree frequencies (recomputed on any CLOCKS/PLL write).
+     pub clock_tree: ClockTree,
++    /// Single deterministic cycle-to-nanosecond snapshot shared by all
++    /// optional external I2C devices and the harness observation API.
++    virtual_time: VirtualClock,
+     /// IO_BANK0 per-pin function select.
+     pub io_bank0: IoBank0,
+     /// PADS_BANK0 per-pin pad control.
+@@ -556,6 +560,7 @@ impl Bus {
+             pll_sys_lock_at_cycle: None,
+             pll_usb_lock_at_cycle: None,
+             clock_tree: ClockTree::default(),
++            virtual_time: VirtualClock::new(ClockTree::default().sys_clk_hz),
+             io_bank0: IoBank0::new(),
+             pads_bank0: PadsBank0::new(),
+             xip_sram: Box::new([0u8; XIP_SRAM_SIZE]),
+@@ -718,6 +723,50 @@ impl Bus {
+     pub fn seed_sys_clk_hz(&mut self, hz: u32) {
+         self.clock_tree.sys_clk_hz = hz;
+         self.clock_tree.ref_clk_hz = hz;
++        self.virtual_time.rebase(self.master_cycle, hz);
++    }
++
++    /// Current deterministic virtual time in nanoseconds.
++    #[inline]
++    pub fn virtual_time_ns(&self) -> u64 {
++        self.virtual_time.ns_at(self.master_cycle)
++    }
++
++    /// Convert a virtual nanosecond deadline to the corresponding absolute
++    /// master cycle using the shared snapshot.
++    #[inline]
++    pub fn virtual_time_cycles_at(&self, ns: u64) -> u64 {
++        self.virtual_time.cycles_at(ns)
++    }
++
++    /// Reset the shared virtual-time epoch for a cold emulator reset.
++    pub(crate) fn reset_virtual_time(&mut self) {
++        self.virtual_time.reset(self.clock_tree.sys_clk_hz);
++    }
++
++    /// Restore virtual time after a watchdog warm reset. The external
++    /// module state remains attached, so elapsed time must not jump back to
++    /// zero merely because the MCU reset domain did.
++    pub(crate) fn restore_virtual_time_after_reset(&mut self, ns: u64) {
++        self.virtual_time.restore_after_reset(
++            self.master_cycle,
++            ns,
++            self.clock_tree.sys_clk_hz,
++        );
++    }
++
++    /// Advance the shared snapshot once and deliver the resulting delta to
++    /// both I2C controllers. This is called exactly once for each peripheral
++    /// window, regardless of whether the scheduler used normal ticking or
++    /// lazy fast-forward.
++    #[inline]
++    fn advance_external_virtual_time(&mut self) {
++        let nanoseconds = self
++            .virtual_time
++            .advance_to(self.master_cycle, self.clock_tree.sys_clk_hz);
++        let delta = crate::peripherals::i2c::I2cVirtualTimeDelta { nanoseconds };
++        self.i2c0.advance_virtual_time(delta);
++        self.i2c1.advance_virtual_time(delta);
+     }
+ 
+     fn recompute_clock_tree(&mut self) {
+@@ -2118,6 +2167,21 @@ impl Bus {
+         }
+     }
+ 
++    /// Attach an explicitly configured I2C profile and disable the legacy
++    /// synthetic ACK fallback for that controller. Profile builders use
++    /// this entry point so unclaimed addresses remain NACKed.
++    pub fn attach_i2c_device_exclusive(
++        &mut self,
++        instance: usize,
++        device: Box<dyn crate::peripherals::i2c::I2cExternalDevice>,
++    ) -> Result<Option<Box<dyn crate::peripherals::i2c::I2cExternalDevice>>, usize> {
++        match instance {
++            0 => Ok(self.i2c0.attach_device_exclusive(device)),
++            1 => Ok(self.i2c1.attach_device_exclusive(device)),
++            other => Err(other),
++        }
++    }
++
+     /// Mutably borrow the slave attached to I2C `instance`, e.g. to
+     /// inject input from a scenario.
+     pub fn i2c_device_mut(
+@@ -2402,6 +2466,11 @@ impl Bus {
+             .tick(cycles, &self.clock_tree, &mut self.irq_pending);
+         self.i2c1
+             .tick(cycles, &self.clock_tree, &mut self.irq_pending);
++        // External I2C devices consume the same shared virtual-time
++        // snapshot as the harness. This is deliberately one call per
++        // peripheral window; lazy scheduled advance below is the other,
++        // mutually exclusive path.
++        self.advance_external_virtual_time();
+         // ADC: fixed-point clk_adc accumulator advances via tick.
+         self.adc
+             .tick(cycles, &self.clock_tree, &mut self.irq_pending);
+@@ -2430,6 +2499,7 @@ impl Bus {
+             .timer
+             .poll_alarms(self.master_cycle, self.clock_tree.sys_clk_hz);
+         self.irq_pending |= nvic_bits & 0xF;
++        self.advance_external_virtual_time();
+     }
+ 
+     /// Soonest scheduled lazy IRQ deadline (master-cycle space) across
+@@ -2568,6 +2638,37 @@ impl CoreBus for Bus {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use std::sync::{Arc, Mutex};
++
++    struct TimeProbe {
++        deltas: Arc<Mutex<Vec<u64>>>,
++    }
++
++    impl crate::peripherals::i2c::I2cExternalDevice for TimeProbe {
++        fn responds_to(&self, addr: u16) -> bool {
++            addr == 0x68
++        }
++
++        fn write_byte(&mut self, _byte: u8) -> bool {
++            true
++        }
++
++        fn read_byte(&mut self) -> u8 {
++            0
++        }
++
++        fn transaction_end(&mut self) {}
++
++        fn advance_virtual_time(
++            &mut self,
++            delta: crate::peripherals::i2c::I2cVirtualTimeDelta,
++        ) {
++            self.deltas
++                .lock()
++                .expect("time probe lock")
++                .push(delta.nanoseconds);
++        }
++    }
+ 
+     #[test]
+     fn new_bus_all_peripherals_in_reset() {
+@@ -2575,6 +2676,33 @@ mod tests {
+         assert_eq!(bus.resets.state, resets::RESET_MASK);
+     }
+ 
++    #[test]
++    fn external_i2c_devices_receive_one_shared_delta_per_window() {
++        let mut bus = Bus::new();
++        bus.seed_sys_clk_hz(100_000_000);
++        let deltas = Arc::new(Mutex::new(Vec::new()));
++        bus.attach_i2c_device_exclusive(
++            1,
++            Box::new(TimeProbe {
++                deltas: Arc::clone(&deltas),
++            }),
++        )
++        .expect("I2C1 exists");
++
++        bus.master_cycle = 100;
++        bus.tick_peripherals(100);
++        // Calling the private helper a second time for the same absolute
++        // cycle must not double-advance the child.
++        bus.advance_external_virtual_time();
++        bus.advance_lazy_scheduled(100);
++
++        assert_eq!(
++            *deltas.lock().expect("time probe lock"),
++            vec![1_000, 1_000],
++            "100 cycles at 100 MHz must be delivered once per window"
++        );
++    }
++
+     #[test]
+     fn sram_write_read_roundtrip() {
+         let mut bus = Bus::new();
+diff --git a/crates/rp2040-emu/src/lib.rs b/crates/rp2040-emu/src/lib.rs
+index 75b8f4a..c142bbc 100644
+--- a/crates/rp2040-emu/src/lib.rs
++++ b/crates/rp2040-emu/src/lib.rs
+@@ -28,6 +28,9 @@ pub mod peripherals;
+ pub use audio_sink::AudioSinkSnapshot;
+ 
+ mod idle_profile;
++mod virtual_time;
++
++pub use virtual_time::VirtualClock;
+ 
+ #[cfg(feature = "idle-profiler")]
+ pub use idle_profile::{
+@@ -476,6 +479,7 @@ impl Emulator {
+         self.bus.pll_usb_lock_at_cycle = None;
+         self.bus.master_cycle = 0;
+         self.bus.clock_tree = Default::default();
++        self.bus.reset_virtual_time();
+         self.bus.io_bank0.reset();
+         self.bus.pads_bank0.reset();
+         for pio in &mut self.bus.pio {
+@@ -525,6 +529,7 @@ impl Emulator {
+     /// master-cycle counter. The caller selects the post-reset boot handoff
+     /// after observing the event.
+     fn apply_watchdog_warm_reset(&mut self, cycle: u64, core: usize, pc: u32, reason: u32) {
++        let virtual_time_ns = self.bus.virtual_time_ns();
+         let scratch = self.bus.watchdog_tick.scratch;
+         let reset_reason = self.bus.watchdog_tick.reason | reason;
+         // Board-level inputs are external to the MCU reset domain. Preserve
+@@ -536,6 +541,7 @@ impl Emulator {
+         self.reset();
+         self.clock.cycles = cycle;
+         self.bus.master_cycle = cycle;
++        self.bus.restore_virtual_time_after_reset(virtual_time_ns);
+         self.bus.external_gpio_in_mask = external_gpio_in_mask;
+         self.bus.external_gpio_in_override = external_gpio_in_override;
+         self.bus.watchdog_tick.scratch = scratch;
+diff --git a/crates/rp2040-emu/src/peripherals/i2c.rs b/crates/rp2040-emu/src/peripherals/i2c.rs
+index 98d086b..8e05f7b 100644
+--- a/crates/rp2040-emu/src/peripherals/i2c.rs
++++ b/crates/rp2040-emu/src/peripherals/i2c.rs
+@@ -107,7 +107,6 @@ const IC_CON_IC_RESTART_EN: u32 = 1 << 5;
+ // --- IC_DATA_CMD bits -------------------------------------------------
+ const DATA_CMD_READ: u32 = 1 << 8;
+ const DATA_CMD_STOP: u32 = 1 << 9;
+-#[allow(dead_code)] // firmware may set RESTART during scan; emulator treats as STOP
+ const DATA_CMD_RESTART: u32 = 1 << 10;
+ 
+ // --- Interrupt bits (shared across INTR_STAT / RAW_INTR_STAT / MASK) --
+@@ -150,7 +149,18 @@ const ABRT_7B_ADDR_NOACK: u32 = 1 << 0;
+ /// indicator when firmware enables `IC_CON.10BITADDR_MASTER`. Real DW
+ /// silicon sets this bit when the slave NACKs the first (upper) 10-bit
+ /// address byte; since we NACK every 10-bit attempt we reuse the bit.
+-const ABRT_10ADDR1_NOACK: u32 = 1 << 2;
++const ABRT_10ADDR1_NOACK: u32 = 1 << 1;
++/// TX_ABRT reason bit for a data byte NACK from an addressed slave.
++const ABRT_TXDATA_NOACK: u32 = 1 << 3;
++
++/// Deterministic virtual-time increment delivered to optional I2C devices.
++///
++/// The controller reports integer nanoseconds only. Device models must not
++/// consult host wall time or reconstruct time from their own cycle counter.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub struct I2cVirtualTimeDelta {
++    pub nanoseconds: u64,
++}
+ 
+ /// An off-chip I2C slave attached to one of the two controllers.
+ ///
+@@ -168,12 +178,37 @@ const ABRT_10ADDR1_NOACK: u32 = 1 << 2;
+ pub trait I2cExternalDevice: Send {
+     /// True iff this device answers the 7-bit address `addr`.
+     fn responds_to(&self, addr: u16) -> bool;
++    /// Begin an address phase. The default preserves the original single
++    /// device API while allowing a bus mux to select a child without
++    /// interior mutability. Implementations that need address-sensitive
++    /// state may override this method.
++    fn address_phase(&mut self, addr: u16) -> bool {
++        self.responds_to(addr)
++    }
+     /// Master wrote `byte`. Return false to NACK it.
+     fn write_byte(&mut self, byte: u8) -> bool;
+     /// Master is clocking a byte out of the device.
+     fn read_byte(&mut self) -> u8;
+     /// Master issued STOP.
+     fn transaction_end(&mut self);
++    /// Advance the child by deterministic virtual time. The default keeps
++    /// existing keyboard and test devices time-independent.
++    fn advance_virtual_time(&mut self, _delta: I2cVirtualTimeDelta) {}
++    /// Stable model label used only by an optional board-level observation
++    /// sidecar. The default keeps existing third-party/test devices opaque.
++    fn model_name(&self) -> &'static str {
++        "external"
++    }
++    /// Protocol errors detected by the device model itself. A model must not
++    /// silently turn an unsupported command into a successful transaction.
++    fn protocol_error_count(&self) -> u64 {
++        0
++    }
++    /// Deterministic, human-readable state summary for an observation
++    /// sidecar. It is deliberately not part of the primary runner report.
++    fn state_summary(&self) -> String {
++        "{}".to_string()
++    }
+ }
+ 
+ pub struct I2cRegs {
+@@ -200,6 +235,15 @@ pub struct I2cRegs {
+     /// Off-chip slave, if any. Survives [`Self::reset`] — resetting the
+     /// controller does not unsolder the device from the board.
+     device: Option<Box<dyn I2cExternalDevice>>,
++    /// Address selected by the current transaction. A STOP, abort, disable,
++    /// or reset clears it so the next command starts a fresh address phase.
++    active_address: Option<u16>,
++    /// Whether the selected address belongs to the attached child rather
++    /// than the historical synthetic ACK fallback.
++    active_device: bool,
++    /// Keep the historical 0x3C/0x50 ACK fallback for legacy and
++    /// keyboard-only runs. Explicit profiles disable it.
++    legacy_ack_fallback: bool,
+     #[cfg(feature = "behavior-trace")]
+     behavior_transactions: u64,
+ }
+@@ -234,6 +278,9 @@ impl I2cRegs {
+             activity: false,
+             nvic_irq,
+             device: None,
++            active_address: None,
++            active_device: false,
++            legacy_ack_fallback: true,
+             #[cfg(feature = "behavior-trace")]
+             behavior_transactions: 0,
+         }
+@@ -242,8 +289,10 @@ impl I2cRegs {
+     pub fn reset(&mut self) {
+         let irq = self.nvic_irq;
+         let device = self.device.take();
++        let legacy_ack_fallback = self.legacy_ack_fallback;
+         *self = Self::new(irq);
+         self.device = device;
++        self.legacy_ack_fallback = legacy_ack_fallback;
+     }
+ 
+     /// Attach an off-chip slave, returning whatever was attached before.
+@@ -251,6 +300,22 @@ impl I2cRegs {
+         &mut self,
+         device: Box<dyn I2cExternalDevice>,
+     ) -> Option<Box<dyn I2cExternalDevice>> {
++        self.legacy_ack_fallback = true;
++        self.active_address = None;
++        self.active_device = false;
++        self.device.replace(device)
++    }
++
++    /// Attach an explicitly configured board profile. Unlike the historical
++    /// single-device hook, this disables the synthetic 0x3C/0x50 ACK list so
++    /// an unclaimed address cannot appear to exist beside a profile mux.
++    pub fn attach_device_exclusive(
++        &mut self,
++        device: Box<dyn I2cExternalDevice>,
++    ) -> Option<Box<dyn I2cExternalDevice>> {
++        self.legacy_ack_fallback = false;
++        self.active_address = None;
++        self.active_device = false;
+         self.device.replace(device)
+     }
+ 
+@@ -269,6 +334,17 @@ impl I2cRegs {
+         self.device.as_deref_mut()
+     }
+ 
++    /// Advance the attached device once for a shared bus-clock window.
++    /// `Bus` owns the clock snapshot and calls this from both the normal
++    /// peripheral tick and lazy fast-forward paths.
++    pub(crate) fn advance_virtual_time(&mut self, delta: I2cVirtualTimeDelta) {
++        if delta.nanoseconds != 0
++            && let Some(device) = self.device.as_mut()
++        {
++            device.advance_virtual_time(delta);
++        }
++    }
++
+     /// True iff FIFOs empty, no sticky interrupts, bus inactive.
+     pub fn is_idle(&self) -> bool {
+         self.tx_fifo.is_empty() && self.rx_fifo.is_empty() && self.raw_intr_stat == 0
+@@ -368,19 +444,53 @@ impl I2cRegs {
+         self.raw_intr_stat |= INT_ACTIVITY | INT_START_DET;
+         let slave = self.tar & 0x3FF;
+         let ten_bit = (self.con & IC_CON_10BIT_ADDR_MASTER) != 0;
+-        // 10-bit mode never ACKs in our stub; the 7-bit ACK list only
+-        // applies when firmware left the block in 7-bit mode. An
+-        // attached off-chip device claims its own address; the stub
+-        // list stays as a fallback so bus scans still find something on
+-        // boards with no modelled slave.
+-        let device_claims = !ten_bit
+-            && self
+-                .device
+-                .as_ref()
+-                .is_some_and(|d| d.responds_to(slave as u16));
+-        let ack = device_claims || (!ten_bit && ALWAYS_ACK_ADDRS.contains(&slave));
++        let restart = (cmd & DATA_CMD_RESTART) != 0;
+         let is_read = (cmd & DATA_CMD_READ) != 0;
+ 
++        // The address phase is explicit. A new transfer starts it after
++        // enable/STOP; RESTART may switch only the same target in this
++        // bounded controller model. Enabled IC_TAR writes remain ignored,
++        // so a different target uses the documented disable/reconfigure
++        // sequence.
++        let needs_address = self.active_address.is_none() || restart;
++        let mut device_claims = self.active_device;
++        let mut ack = true;
++        if needs_address {
++            if ten_bit {
++                ack = false;
++                device_claims = false;
++            } else if restart
++                && self.active_address.is_some()
++                && self.active_address != Some(slave as u16)
++            {
++                // A repeated START to a different target is outside the
++                // initial contract and fails closed rather than silently
++                // switching a mux child without a STOP.
++                ack = false;
++                device_claims = false;
++            } else {
++                device_claims = self
++                    .device
++                    .as_mut()
++                    .is_some_and(|d| d.address_phase(slave as u16));
++                ack = device_claims
++                    || (self.legacy_ack_fallback && ALWAYS_ACK_ADDRS.contains(&slave));
++                if ack {
++                    self.active_address = Some(slave as u16);
++                    self.active_device = device_claims;
++                }
++            }
++            if restart {
++                self.raw_intr_stat |= INT_RESTART_DET;
++            }
++        } else if self.active_address != Some(slave as u16) {
++            // This should only be reachable through an invalid internal
++            // state; treating it as an address NACK keeps the model fail
++            // closed.
++            ack = false;
++            device_claims = false;
++        }
++
+         if !ack {
+             // NACK: set TX_ABRT + abort-source bit. Distinguish 10-bit
+             // unsupported (distinctive bit) from 7-bit unknown-slave.
+@@ -414,8 +524,15 @@ impl I2cRegs {
+                 // queued would fill the FIFO after 16 writes and stall
+                 // every later transfer on TFNF, which firmware reports
+                 // as a write timeout.
+-                if let Some(d) = self.device.as_mut() {
+-                    d.write_byte((cmd & 0xFF) as u8);
++                let data_ack = self
++                    .device
++                    .as_mut()
++                    .is_some_and(|d| d.write_byte((cmd & 0xFF) as u8));
++                if !data_ack {
++                    self.raw_intr_stat |= INT_TX_ABRT;
++                    self.tx_abrt_source |= ABRT_TXDATA_NOACK;
++                    self.tx_fifo.clear();
++                    ack = false;
+                 }
+             } else if self.tx_fifo.len() < I2C_FIFO_DEPTH {
+                 self.tx_fifo.push_back(cmd & 0xFF);
+@@ -434,6 +551,8 @@ impl I2cRegs {
+             if device_claims && let Some(d) = self.device.as_mut() {
+                 d.transaction_end();
+             }
++            self.active_address = None;
++            self.active_device = false;
+         }
+         self.route_irq(irqs);
+     }
+@@ -609,6 +728,8 @@ impl I2cRegs {
+                     self.tx_fifo.clear();
+                     self.rx_fifo.clear();
+                     self.activity = false;
++                    self.active_address = None;
++                    self.active_device = false;
+                 }
+             }
+             IC_SDA_HOLD => {
+@@ -889,6 +1010,7 @@ mod tests {
+         written: Vec<u8>,
+         next_read: u8,
+         stops: u32,
++        nack_writes: bool,
+     }
+ 
+     impl I2cExternalDevice for SpyDevice {
+@@ -897,7 +1019,7 @@ mod tests {
+         }
+         fn write_byte(&mut self, byte: u8) -> bool {
+             self.written.push(byte);
+-            true
++            !self.nack_writes
+         }
+         fn read_byte(&mut self) -> u8 {
+             let b = self.next_read;
+@@ -958,6 +1080,68 @@ mod tests {
+         assert_eq!(i.rx_fifo.pop_front(), Some(0x11));
+     }
+ 
++    #[test]
++    fn same_target_repeated_start_reenters_address_phase_without_stop() {
++        let mut i = enabled_with_device(0x1F, 0x10);
++        let mut irqs = 0;
++        i.write32(IC_DATA_CMD, 0x09, 0, &mut irqs);
++        i.write32(IC_DATA_CMD, DATA_CMD_READ | DATA_CMD_RESTART, 0, &mut irqs);
++        assert_eq!(i.raw_intr_stat & INT_RESTART_DET, INT_RESTART_DET);
++        assert_eq!(i.raw_intr_stat & INT_TX_ABRT, 0);
++        assert_eq!(i.rx_fifo.pop_front(), Some(0x10));
++        assert_eq!(i.active_address, Some(0x1F));
++    }
++
++    #[test]
++    fn different_target_repeated_start_fails_closed() {
++        let mut i = enabled_with_device(0x1F, 0);
++        let mut irqs = 0;
++        // IC_TAR writes while enabled are intentionally ignored by the
++        // model; seed the impossible target switch directly to exercise the
++        // controller's fail-closed guard.
++        i.active_address = Some(0x1F);
++        i.active_device = true;
++        i.tar = 0x22;
++        i.write32(IC_DATA_CMD, DATA_CMD_READ | DATA_CMD_RESTART, 0, &mut irqs);
++        assert_ne!(i.raw_intr_stat & INT_TX_ABRT, 0);
++        assert_ne!(i.tx_abrt_source & ABRT_7B_ADDR_NOACK, 0);
++        assert_eq!(i.active_address, None);
++    }
++
++    #[test]
++    fn child_data_nack_sets_txdata_abort_and_ends_transaction() {
++        let mut i = I2cRegs::new(I2C0_IRQ);
++        let mut irqs = 0;
++        i.attach_device(Box::new(SpyDevice {
++            addr: 0x1F,
++            nack_writes: true,
++            ..Default::default()
++        }));
++        i.write32(IC_TAR, 0x1F, 0, &mut irqs);
++        i.write32(IC_ENABLE, 1, 0, &mut irqs);
++        i.write32(IC_DATA_CMD, 0x42 | DATA_CMD_STOP, 0, &mut irqs);
++        assert_ne!(i.raw_intr_stat & INT_TX_ABRT, 0);
++        assert_ne!(i.tx_abrt_source & ABRT_TXDATA_NOACK, 0);
++        assert_ne!(i.raw_intr_stat & INT_STOP_DET, 0);
++        assert_eq!(i.active_address, None);
++    }
++
++    #[test]
++    fn exclusive_device_attachment_disables_historical_ack_fallback() {
++        let mut i = I2cRegs::new(I2C0_IRQ);
++        let mut irqs = 0;
++        i.attach_device_exclusive(Box::new(SpyDevice {
++            addr: 0x1F,
++            ..Default::default()
++        }));
++        i.write32(IC_TAR, 0x50, 0, &mut irqs);
++        i.write32(IC_ENABLE, 1, 0, &mut irqs);
++        i.write32(IC_DATA_CMD, DATA_CMD_READ | DATA_CMD_STOP, 0, &mut irqs);
++        assert_ne!(i.raw_intr_stat & INT_TX_ABRT, 0);
++        assert_ne!(i.tx_abrt_source & ABRT_7B_ADDR_NOACK, 0);
++        assert_eq!(i.rx_fifo.len(), 0);
++    }
++
+     #[test]
+     fn unclaimed_address_still_nacks_with_a_device_attached() {
+         let mut i = enabled_with_device(0x1F, 0);
+diff --git a/crates/rp2040-emu/src/virtual_time.rs b/crates/rp2040-emu/src/virtual_time.rs
+new file mode 100644
+index 0000000..69c5afd
+--- /dev/null
++++ b/crates/rp2040-emu/src/virtual_time.rs
+@@ -0,0 +1,121 @@
++//! Deterministic conversion between emulator cycles and virtual nanoseconds.
++//!
++//! The clock is rebased whenever the firmware changes `clk_sys`.  Elapsed
++//! time before the change keeps the old rate; only cycles after the rebase use
++//! the new rate.  All arithmetic is integer-only so reports and external
++//! devices cannot depend on host floating-point behaviour.
++
++#[derive(Clone, Debug)]
++pub struct VirtualClock {
++    epoch_cycles: u64,
++    epoch_ns: u64,
++    hz: u64,
++    snapshot_ns: u64,
++}
++
++impl VirtualClock {
++    /// Create a clock whose epoch is cycle zero and whose initial rate is
++    /// `hz`. A zero rate is clamped to one to keep all conversions defined.
++    pub fn new(hz: u32) -> Self {
++        Self {
++            epoch_cycles: 0,
++            epoch_ns: 0,
++            hz: u64::from(hz).max(1),
++            snapshot_ns: 0,
++        }
++    }
++
++    /// Virtual nanoseconds at an absolute master-cycle count.
++    #[inline]
++    pub fn ns_at(&self, cycles: u64) -> u64 {
++        let elapsed = u128::from(cycles.saturating_sub(self.epoch_cycles));
++        self.epoch_ns
++            .saturating_add((elapsed * 1_000_000_000 / u128::from(self.hz)) as u64)
++    }
++
++    /// The cycle count at which the clock reaches `ns`.
++    #[inline]
++    pub fn cycles_at(&self, ns: u64) -> u64 {
++        let ahead = u128::from(ns.saturating_sub(self.epoch_ns));
++        let cycles = ahead * u128::from(self.hz) / 1_000_000_000;
++        self.epoch_cycles
++            .saturating_add(u64::try_from(cycles).unwrap_or(u64::MAX))
++    }
++
++    /// Adopt a new clock rate from `cycles` onwards. Returns true when the
++    /// rate changed and the epoch was rebased.
++    #[inline]
++    pub fn rebase(&mut self, cycles: u64, hz: u32) -> bool {
++        let hz = u64::from(hz).max(1);
++        if hz == self.hz {
++            return false;
++        }
++        self.epoch_ns = self.ns_at(cycles);
++        self.epoch_cycles = cycles;
++        self.hz = hz;
++        self.snapshot_ns = self.epoch_ns;
++        true
++    }
++
++    /// Advance the snapshot to `cycles` and return the elapsed virtual time
++    /// since the previous snapshot. A clock-rate change establishes a new
++    /// epoch and deliberately returns zero for that boundary, matching the
++    /// harness's historical rebasing behaviour.
++    #[inline]
++    pub fn advance_to(&mut self, cycles: u64, hz: u32) -> u64 {
++        if self.rebase(cycles, hz) {
++            return 0;
++        }
++        let now = self.ns_at(cycles);
++        let delta = now.saturating_sub(self.snapshot_ns);
++        self.snapshot_ns = now;
++        delta
++    }
++
++    /// Reset the epoch without carrying time from an earlier machine run.
++    #[inline]
++    pub(crate) fn reset(&mut self, hz: u32) {
++        self.epoch_cycles = 0;
++        self.epoch_ns = 0;
++        self.hz = u64::from(hz).max(1);
++        self.snapshot_ns = 0;
++    }
++
++    /// Restore a snapshot after an MCU warm reset. The wall of virtual time
++    /// is retained, but subsequent cycles use the reset clock rate.
++    #[inline]
++    pub(crate) fn restore_after_reset(&mut self, cycles: u64, ns: u64, hz: u32) {
++        self.epoch_cycles = cycles;
++        self.epoch_ns = ns;
++        self.hz = u64::from(hz).max(1);
++        self.snapshot_ns = ns;
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::VirtualClock;
++
++    #[test]
++    fn integer_conversion_and_rebase_are_deterministic() {
++        let mut clock = VirtualClock::new(100_000_000);
++        assert_eq!(clock.ns_at(100), 1_000);
++        assert_eq!(clock.advance_to(100, 100_000_000), 1_000);
++        assert_eq!(clock.advance_to(200, 50_000_000), 0);
++        assert_eq!(clock.ns_at(250), 3_000);
++    }
++
++    #[test]
++    fn cycles_at_saturates_far_future() {
++        let clock = VirtualClock::new(u32::MAX);
++        assert_eq!(clock.cycles_at(u64::MAX), u64::MAX);
++    }
++
++    #[test]
++    fn incremental_deltas_sum_to_the_global_integer_conversion() {
++        let mut clock = VirtualClock::new(3);
++        let first = clock.advance_to(1, 3);
++        let second = clock.advance_to(2, 3);
++        assert_eq!(first + second, clock.ns_at(2));
++    }
++}

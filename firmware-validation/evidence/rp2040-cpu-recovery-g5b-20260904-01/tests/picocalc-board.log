@@ -1,0 +1,98 @@
+    Blocking waiting for file lock on build directory
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.97s
+     Running unittests src/lib.rs (target/debug/deps/picocalc_board-aa4d8e55938857fc)
+
+running 82 tests
+test keyboard::overflow_tests::a_controller_with_one_slot_left_keeps_the_press_and_loses_the_release ... ok
+test keyboard::overflow_tests::a_drained_controller_still_reports_empty ... ok
+test keyboard::tests::a_new_read_request_resends_the_latched_reply_from_byte_zero ... ok
+test keyboard::tests::battery_percentage_lands_where_firmware_looks_for_it ... ok
+test keyboard::overflow_tests::a_full_controller_never_reports_itself_empty ... ok
+test keyboard::tests::c64_power_and_reset_registers_follow_the_wire_contract ... ok
+test keyboard::tests::configured_overflow_overwrites_oldest_and_latches_interrupt ... ok
+test keyboard::tests::count_register_includes_caps_and_num_lock_flags ... ok
+test keyboard::tests::charging_flag_rides_the_top_bit_of_the_high_byte ... ok
+test framebuffer::tests::viewport_is_the_top_left_square_of_the_gram ... ok
+test keyboard::tests::both_backlights_use_the_official_quantisation ... ok
+test framebuffer::tests::rgb8_expansion_saturates_full_scale_channels ... ok
+test keyboard::tests::empty_fifo_reads_as_zero ... ok
+test keyboard::tests::alt_shortcuts_and_hold_repeat_match_the_official_transition ... ok
+test keyboard::tests::backlight_write_stores_the_level ... ok
+test keyboard::overflow_tests::the_queue_never_exceeds_what_the_count_register_can_express ... ok
+test keyboard::tests::fifo_drains_in_order_then_returns_zero ... ok
+test keyboard::tests::key_count_register_reports_queue_depth ... ok
+test keyboard::tests::official_matrix_mapping_modifiers_and_caps_are_preserved ... ok
+test keyboard::tests::official_modifier_report_codes_are_exact ... ok
+test keyboard::tests::official_version_and_internal_only_registers_match_source ... ok
+test keyboard::tests::press_event_decodes_the_way_firmware_reads_it ... ok
+test keyboard::tests::reading_past_the_reply_returns_zero ... ok
+test keyboard::tests::answers_only_its_own_address ... ok
+test keyboard::tests::stop_between_select_and_read_keeps_the_reply ... ok
+test keyboard::tests::unknown_register_is_counted_not_silently_ignored ... ok
+test keyboard::tests::write_flag_on_an_official_read_case_is_not_a_protocol_error ... ok
+test keyboard::tests::unknown_register_writes_are_observable ... ok
+test keyboard::tests::write_then_read_back_never_reports_a_dead_controller ... ok
+test lcd_pio_wire::tests::bits_arrive_most_significant_first ... ok
+test framebuffer::tests::raw_bytes_are_row_major_little_endian ... ok
+test lcd_pio_wire::tests::a_partial_byte_is_discarded_when_cs_rises ... ok
+test lcd_pio_wire::tests::falling_edges_do_not_latch ... ok
+test lcd_pio_wire::tests::a_command_byte_reaches_the_panel ... ok
+test lcd_pio_wire::tests::sio_ramrd_returns_rgb666_in_rgb_order_after_one_wire_dummy ... ok
+test lcd_pio_wire::tests::deselect_restores_same_transfer_spi_dummy_timing ... ok
+test lcd_pio_wire::tests::nothing_is_latched_while_cs_is_high ... ok
+test sd_wire::tests::go_idle_state_rejects_bad_crc_and_accepts_a_retry ... ok
+test sd_wire::tests::a_written_block_reads_back_unchanged ... ok
+test sd_wire::tests::acmd41_reports_busy_then_ready ... ok
+test sd_wire::tests::go_idle_state_reports_idle ... ok
+test sd_wire::tests::send_if_cond_rejects_bad_crc_without_r7 ... ok
+test sd_wire::tests::read_ocr_marks_the_card_high_capacity ... ok
+test sd_wire::tests::unknown_commands_are_counted ... ok
+test sdcard::format_tests::fat16_remains_an_explicit_compatibility_profile ... ok
+test sdcard::format_tests::format_names_parse_and_reject_unknown_values ... ok
+test sd_wire::tests::send_if_cond_echoes_the_check_pattern ... ok
+test sdcard::format_tests::mandatory_command_crc_known_vectors_match_sd_protocol ... ok
+test sd_wire::tests::releasing_cs_abandons_a_partial_command ... ok
+test lcd_pio_wire::tests::reset_is_passed_through_active_low ... ok
+test sdcard::format_tests::raw_backing_rejects_empty_and_unaligned_inputs ... ok
+test sha256::tests::known_vectors ... ok
+test sha256::tests::multi_block ... ok
+test st7365p::tests::caset_raset_set_the_window_and_origin ... ok
+test st7365p::tests::colmod_reg_decode ... ok
+test st7365p::tests::bytes_are_ignored_while_deselected_or_in_reset ... ok
+test st7365p::tests::command_state_survives_cs_pulsing_between_bytes ... ok
+test st7365p::tests::pointer_walks_columns_then_rows_and_wraps_at_the_window_end ... ok
+test st7365p::tests::power_state_commands_track ... ok
+test st7365p::tests::ramrd_is_counted_and_starts_with_a_dummy_byte ... ok
+test st7365p::tests::ramrd_rgb666_uses_the_hardware_observed_rgb_order ... ok
+test st7365p::tests::ramrd_walks_the_window_pixel_by_pixel ... ok
+test st7365p::tests::rgb565_colmod_consumes_two_bytes_per_pixel ... ok
+test st7365p::tests::rgb666_boundary_values ... ok
+test st7365p::tests::reset_edge_reinitialises_and_counts ... ok
+test st7365p::tests::single_pixel_window_stays_put ... ok
+test st7365p::tests::swreset_clears_gram_but_keeps_counters ... ok
+test st7365p::tests::unknown_commands_are_counted_by_opcode_and_sorted ... ok
+test sdcard::format_tests::raw_export_rejects_the_input_path_and_memory_cards ... ok
+test st7365p::tests::unsupported_colmod_leaves_the_previous_format_in_force ... ok
+test st7365p::tests::writes_outside_the_gram_are_dropped_not_panicking ... ok
+test wire::tests::pad_levels_map_onto_cs_dc_reset ... ok
+test wire::tests::deselected_frames_are_dropped ... ok
+test wire::tests::only_the_low_byte_of_a_frame_reaches_the_panel ... ok
+test st7365p::tests::viewport_crops_the_gram_to_the_visible_square ... ok
+test sha256::tests::reader_matches_slice ... ok
+test sdcard::format_tests::raw_backing_reads_through_and_exports_cow_sectors ... ok
+test sha256::tests::streaming_matches_slice_for_split_updates ... ok
+test framebuffer::tests::hash_is_stable_and_sensitive ... ok
+test sdcard::format_tests::fat32_writes_fsinfo_backup_and_both_fats ... ok
+test sdcard::format_tests::fat32_bpb_has_mountable_geometry ... ok
+test sdcard::format_tests::default_card_is_fat32 ... ok
+
+test result: ok. 82 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+   Doc-tests picocalc_board
+
+running 1 test
+test crates/picocalc-board/src/lib.rs - (line 18) - compile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.49s; merged doctests compilation took 0.49s

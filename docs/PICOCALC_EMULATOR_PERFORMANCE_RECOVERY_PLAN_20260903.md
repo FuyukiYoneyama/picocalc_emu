@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4・G5-A candidate pass / G5 inventory complete / G5-B pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4・G5-A・G5-B・G5-C・G6 candidate pass / G5 complete / G7 pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -149,7 +149,7 @@ commit全体をcherry-pickせず、必要部分だけを再実装する。
 | G2 | LCD・PIO・PSRAM正確性 | LCD readback、RAMRD、PIO／PSRAM edge semantics | 現行accepted observationに必要な修正だけ |
 | G3 | DMA・audio（音声DMA実装） | DMA-paced audio、priority、timer競合、capture | 現行audio targetの契約を満たす最小実装 |
 | G4 | headless実行基盤 | stable machine API、heartbeat、report入口 | 現行利用者の実行経路に必要で、emulation hot pathへ不要なcostを加えないこと |
-| G5 | flash・SD・boot | RAW SD、flash mutation、UF2 boot、multiblock | 現行公開capabilityを維持する最小実装 |
+| G5 | flash・SD・boot | G5-A保存領域（RAW SD・NOR flash mutation）、G5-B loader起動（boot2・watchdog warm reset）、G5-C SD protocol（bounded multiblock） | 現行公開capabilityを維持する最小実装 |
 | G6 | 外部I2C module | RTC、EEPROM、AHT20、BMP280、観測値 | capabilityを維持する場合だけ。未使用時costを加えないこと |
 | G7 | preview境界 | preview API、replay、bounded audio transport | 中断済み1倍計画ではなく、現在の利用経路に必要と確認できた部分だけ |
 
@@ -274,5 +274,23 @@ G5（保存領域・起動経路）の棚卸しは完了した。G5-A（保存�
 RAW SD／NOR mutation／mandatory CRCの対象test、clean release build、RAW実行入口、Tetris（軽ゲーム実装）
 短screeningを通過した。G4 controlとのguest-visible normalized結果も一致している。記録は
 [`rp2040-cpu-recovery-g5a-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5a-20260903-01/)にある。
-G5-A candidateはbackend `main`へ未統合であり、速度改善や1倍速は主張しない。次はG5-B（loader起動：
-boot2・watchdog warm reset）で、既存uf2loaderの固定recordを再利用できる最小境界だけを扱う。
+続くG5-B（loader起動：boot2・watchdog warm reset）は、明示`--boot-mode boot2`、watchdog reset event、
+flash／SD保持、structured SD traceを候補へ戻し、既存U6の受入条件・scenario・traceと照合した3回回帰と
+final flash再attachを通過した。記録は[`rp2040-cpu-recovery-g5b-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5b-20260904-01/)にある。
+続くG5-C（SD protocol：bounded multiblock）は、CMD18/CMD12 read、CMD23/CMD25 write、protocol
+errorのfail-closed、feature-off後方経路、release CLI E2Eをcandidateへ戻した。Tetris（軽ゲーム実装）の
+guest-visible normalized projectionはG4 controlと一致し、U6候補3回回帰とfinal flash再attachも通過した。
+記録は[`rp2040-cpu-recovery-g5c-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5c-20260904-01/)にある。
+G5-A／G5-B／G5-C candidateはbackend `main`へ未統合であり、速度改善や1倍速は主張しない。旧U6のraw UF2は
+保存されていなかったため、G5-Bはbyte-identicalな旧runの再実行とは称さず、今回再生成した入力hashと
+一致したtraceを別recordに固定した。G5-Cも同じ制約のもと、今回の入力hashとcandidate source差分を
+新しいrecordへ固定した。G5全体のcandidate差分確認は完了した。
+
+G6（外部I2C module：RTC／EEPROM／AHT20／BMP280）は、G5-C candidateを起点に、明示profileでの
+I2C1 mux、共有virtual-time、DS3231／AT24C32／AHT20／BMP280、fixture検証、schema 2 sidecar、
+protocol errorのfail-closedを候補へ戻した。既存E5相当の固定`Picocalc_Clock.bin`を3回実行し、
+report／I2C sidecar／UART／framebufferをbyte-identicalで確認した。I2C profileなしのTetris（軽ゲーム実装）
+短screeningもG5-C normalized projectionと一致し、feature有効／無効のunit testとrelease buildも通過した。
+記録は[`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)にある。
+G6 candidateはbackend `main`、active target registry、既存E5 recordへ未統合であり、速度改善や1倍速は主張しない。
+次はG7（preview境界／延期機能）の必要性と、G0〜G6 candidateを統合する前提を棚卸しする。

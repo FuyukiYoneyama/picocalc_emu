@@ -1,0 +1,128 @@
+{
+  "cycles": 187528659,
+  "elapsed_us": 755000,
+  "framebuffer": {
+    "height": 320,
+    "non_black_pixels": 16020,
+    "png": null,
+    "rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+    "width": 320
+  },
+  "lcd": {
+    "caset": 1826,
+    "colmod": "0x65",
+    "init": {
+      "dispoff": 0,
+      "dispon": 1,
+      "slpin": 0,
+      "slpout": 1,
+      "swreset": 0
+    },
+    "madctl": "0x48",
+    "orphan_data_bytes": 0,
+    "pixels_dropped": 0,
+    "pixels_written": 476000,
+    "ramrd": 0,
+    "ramwr": 1826,
+    "raset": 1826,
+    "reset_pulses": 2,
+    "state": {
+      "display_on": true,
+      "inverted": true,
+      "sleeping": false
+    },
+    "unknown_commands": [
+      {
+        "code": "0x35",
+        "count": 1
+      },
+      {
+        "code": "0xb1",
+        "count": 1
+      },
+      {
+        "code": "0xb4",
+        "count": 1
+      },
+      {
+        "code": "0xb7",
+        "count": 1
+      },
+      {
+        "code": "0xb9",
+        "count": 1
+      },
+      {
+        "code": "0xc0",
+        "count": 1
+      },
+      {
+        "code": "0xc1",
+        "count": 1
+      },
+      {
+        "code": "0xc2",
+        "count": 1
+      },
+      {
+        "code": "0xc5",
+        "count": 1
+      },
+      {
+        "code": "0xe0",
+        "count": 1
+      },
+      {
+        "code": "0xe1",
+        "count": 1
+      },
+      {
+        "code": "0xe8",
+        "count": 1
+      },
+      {
+        "code": "0xf0",
+        "count": 4
+      }
+    ]
+  },
+  "psram": {
+    "attached": true,
+    "bytes_read": 34,
+    "bytes_written": 24,
+    "cmd_counts": {
+      "fast_read": 1,
+      "reset": 1,
+      "reset_enable": 1,
+      "unknown": 0,
+      "write": 1
+    },
+    "cs_falling_count": 7,
+    "tick_count": 62265291,
+    "verify": null
+  },
+  "sd": {
+    "attached": true,
+    "block_count": 131072,
+    "block_size": 512,
+    "blocks_read": 0,
+    "blocks_written": 0,
+    "commands_seen": 0,
+    "format": "fat32",
+    "unknown_commands": []
+  },
+  "stop_reason": "scenario_done",
+  "uart": {
+    "bytes": 1387,
+    "sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"
+  },
+  "verdict": {
+    "expected_stop_reason": "scenario_done",
+    "missing_uart_markers": [],
+    "reasons": [],
+    "required_uart_markers": [
+      "[TETRIS] start"
+    ],
+    "status": "pass"
+  }
+}

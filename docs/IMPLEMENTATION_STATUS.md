@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-09-03
+更新日: 2026-09-04
 
 ## 版とbackend
 
@@ -24,15 +24,17 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 ## 現行の高速化
 
 現行計画は
-[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
-です。1倍速qualificationやUX用の近似backendではなく、`ExecutionModel::Serial`のguest-visibleな
-正確性を維持しながら、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を
-短縮します。
+[`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
+です。1倍速qualificationやUX用の近似backendではなく、`e985a9d...`の高速地点へ必要なguest-visible
+機能を一つずつ戻し、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を回復します。
 
-次に実施できるのはPERF-Q0です。これはdynamic quantum候補について、q1のまま機会量を数え、
-量子途中のCS／PIO／DMA／I2C開始を見逃す危険を最小fixtureで確認する調査です。production高速化は
-まだ実装していません。機会量不足または安全なtransition barrierを実装できない場合は、候補を
-早期に棄却します。
+G0〜G5-Cに続くG6（外部I²C module：RTC／EEPROM／AHT20／BMP280）はcandidate-passまで進みました。
+外部I²C profileを使う既存E5相当firmwareを3回実行し、I²C sidecar・UART・framebufferをbyte-identicalで
+確認し、profileなしTetris（軽ゲーム実装）のnormalized projectionもG5-Cと一致しました。記録は
+[`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)です。
+G6はまだbackend `main`、active target registry、既存E5 recordへ統合していません。次はG7（preview境界／
+延期機能）の必要性を棚卸しし、その後にG0〜G6 candidateの統合可否を判断します。production高速化の
+新規実装、性能改善値の更新、1倍速qualificationはまだ開始していません。
 
 ## 利用できる経路
 
@@ -264,7 +266,24 @@ G4ではmachine API golden 8要求を3回再生し、応答JSONLとsnapshotの�
 対象unit test、clean release build、RAW SD実行入口、Tetris短screeningを通過し、G4 controlとのguest-visible
 normalized結果が一致しました。G5-A candidateはbackend `main`へ未統合で、速度改善や1倍速は主張していません。
 記録は[`rp2040-cpu-recovery-g5a-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5a-20260903-01/)を参照してください。
-次はG5-B（loader起動：boot2・watchdog warm reset）です。
+続くG5-B（loader起動：boot2・watchdog warm reset）は、明示`--boot-mode boot2`でloaderを起動し、watchdog
+warm reset後のflash／SD保持、SD trace、3回のU6候補回帰、final flash再attachを通過しました。記録は
+[`rp2040-cpu-recovery-g5b-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5b-20260904-01/)にあります。
+続くG5-C（SD protocol：bounded multiblock）は、CMD18/CMD12 read、CMD23/CMD25 write、protocol errorの
+fail-closed、feature-off後方経路、release CLI E2Eをcandidateへ戻しました。Tetris（軽ゲーム実装）の
+guest-visible normalized projectionはG4 controlと一致し、U6候補3回回帰とfinal flash再attachも通過しました。
+記録は[`rp2040-cpu-recovery-g5c-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5c-20260904-01/)にあります。
+G5-A／G5-B／G5-C candidateはbackend `main`へ未統合で、速度改善や1倍速は主張していません。旧U6のraw UF2は
+保存されていないため、G5-Bはbyte-identicalな旧runの再実行ではなく、再生成入力のhashと既存traceを
+照合した新しいcandidate evidenceです。G5-Cも、入力hashとcandidate source差分を別recordへ固定しました。
+G5全体の候補差分確認は完了しました。G6（外部I2C module：RTC／EEPROM／AHT20／BMP280）は、明示profileでの
+I2C1 mux、共有virtual-time、DS3231／AT24C32／AHT20／BMP280、fixture検証、schema 2 sidecar、protocol
+errorのfail-closedをcandidateへ戻しました。既存E5相当の固定`Picocalc_Clock.bin`を3回実行し、report／
+I2C sidecar／UART／framebufferをbyte-identicalで確認しました。profileなしTetris（軽ゲーム実装）の短screening
+もG5-C normalized projectionと一致し、feature有効／無効のunit testとrelease buildもpassしています。記録は
+[`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)です。
+G6 candidateはbackend `main`、active target registry、既存E5 recordへ未統合であり、速度改善や1倍速は主張しません。
+次はG7（preview境界／延期機能）の必要性を棚卸しします。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

@@ -1,0 +1,87 @@
+{
+  "schema_version": 8,
+  "backend_commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b",
+  "backend_build": {"commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b", "dirty": false},
+  "firmware": {"basename": "initial.bin", "sha256": "6e036eae93fc7ecea6290113ec3c5b5570e64d58a299df686c4fdd6941dc47d5"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "hwspi-rgb888",
+  "boot": {"mode": "boot2", "vtor_flash_offset": null},
+  "step_quantum": 16,
+  "cycle_limit": 1500000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 699715064,
+  "elapsed_us": 5600000,
+  "pc": "0x1000151a",
+  "exception": null,
+  "error": null,
+  "watchdog_resets": [
+    {"epoch": 1, "cycle": 313343678, "core": 0, "pc": "0x20002cd2", "reason": 2}
+  ],
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 4,
+    "init": {"swreset": 0, "slpout": 2, "slpin": 0, "dispon": 2, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x66",
+    "caset": 1656, "raset": 1656, "ramwr": 1656, "ramrd": 0,
+    "pixels_written": 657380, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0xb0", "count": 2},
+      {"code": "0xb1", "count": 2},
+      {"code": "0xb4", "count": 2},
+      {"code": "0xb6", "count": 2},
+      {"code": "0xb7", "count": 2},
+      {"code": "0xc0", "count": 2},
+      {"code": "0xc1", "count": 2},
+      {"code": "0xc5", "count": 2},
+      {"code": "0xe0", "count": 2},
+      {"code": "0xe1", "count": 2},
+      {"code": "0xe9", "count": 2},
+      {"code": "0xf7", "count": 2}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45", "non_black_pixels": 102400, "png": null},
+  "flash": {"image_bytes": 2097152, "erase_count": 6, "program_count": 88, "program_bytes": 22528, "command_counts": [{"command": 53, "count": 2}, {"command": 235, "count": 2}, {"command": 0, "count": 94}, {"command": 255, "count": 94}, {"command": 6, "count": 94}, {"command": 32, "count": 6}, {"command": 5, "count": 94}, {"command": 2, "count": 88}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 484, "blocks_read": 470, "blocks_written": 0,
+    "raw_image": {"bytes": 67108864, "blocks": 131072, "dirty_blocks": 0, "source_sha256": "7db6bed6c98d3d040b3011106248854cd88df98ddfb7cf29282ba917f24b8db9" },
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 128, "key_events_delivered": 4, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 2, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": []
+  },
+  "pio": [],
+  "scenario": {
+    "file": "uf2loader-u6-e2e.json",
+    "name": "uf2loader-u6-e2e",
+    "description": "Boot2 -> BOOT2040 loader -> app UF2 -> warm reset -> app launch.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 5,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait", "label": null, "status": "pass", "at_ms": 2000, "at_cycles": 249857895, "detail": "waited 2000 ms"},
+      {"index": 1, "op": "snapshot", "label": "loader before selection", "status": "pass", "at_ms": 2000, "at_cycles": 249857895, "detail": "5671 non-black pixels", "rgb565_sha256": "df2128475b54b5ca3052d99c34f6099648d6cac5d265633a918af506d73c428b", "png_basename": "loader.png"},
+      {"index": 2, "op": "key_events", "label": "select the lower-case application UF2", "status": "pass", "at_ms": 2600, "at_cycles": 324723897, "detail": "sent 4 raw key event(s)"},
+      {"index": 3, "op": "wait", "label": null, "status": "pass", "at_ms": 5600, "at_cycles": 699715064, "detail": "waited 3000 ms"},
+      {"index": 4, "op": "snapshot", "label": "application after loader reset", "status": "pass", "at_ms": 5600, "at_cycles": 699715064, "detail": "102400 non-black pixels", "rgb565_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45", "png_basename": "app.png"}
+    ]
+  },
+  "uart": {"bytes": 382, "sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b"}
+}

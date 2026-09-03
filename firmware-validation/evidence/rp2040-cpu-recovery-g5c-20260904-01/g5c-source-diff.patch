@@ -1,0 +1,1128 @@
+diff --git a/crates/picocalc-board/Cargo.toml b/crates/picocalc-board/Cargo.toml
+index 05ba1d6..ed02be1 100644
+--- a/crates/picocalc-board/Cargo.toml
++++ b/crates/picocalc-board/Cargo.toml
+@@ -9,6 +9,13 @@ rust-version.workspace = true
+ # framebuffer extraction. `rp2040-emu` stays board-agnostic.
+ publish = false
+ 
++[features]
++# Bounded SD-GEN-1 multi-block wire model. The normal board build exercises
++# the promoted runtime; `--no-default-features` remains the explicit
++# single-block differential boundary.
++default = ["sd-gen1-multiblock"]
++sd-gen1-multiblock = []
++
+ [lints]
+ workspace = true
+ 
+diff --git a/crates/picocalc-board/src/sd_wire.rs b/crates/picocalc-board/src/sd_wire.rs
+index d8a4b84..6c324bb 100644
+--- a/crates/picocalc-board/src/sd_wire.rs
++++ b/crates/picocalc-board/src/sd_wire.rs
+@@ -236,4 +236,172 @@ mod tests {
+         let _ = command(&mut w, 62, 0);
+         assert_eq!(card.lock().unwrap().unknown_commands, vec![(62, 1)]);
+     }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn send_frame(wire: &mut SdCardWire, index: u8, arg: u32) {
++        wire.transfer(0x40 | index as u16, 8);
++        for shift in [24, 16, 8, 0] {
++            wire.transfer(((arg >> shift) & 0xFF) as u16, 8);
++        }
++        wire.transfer(0x01, 8);
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn drain_block(wire: &mut SdCardWire) -> Vec<u8> {
++        let token_seen = (0..32).find_map(|_| {
++            let byte = wire.transfer(0xFF, 8) as u8;
++            (byte == 0xFE).then_some(byte)
++        });
++        assert_eq!(token_seen, Some(0xFE), "expected a data token");
++        (0..crate::sdcard::BLOCK_SIZE + 2)
++            .map(|_| wire.transfer(0xFF, 8) as u8)
++            .collect()
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn write_multi_block(wire: &mut SdCardWire, block: u32, value: u8) {
++        assert_eq!(wire.transfer(0xFC, 8) as u8, 0xFF);
++        for _ in 0..crate::sdcard::BLOCK_SIZE {
++            wire.transfer(value as u16, 8);
++        }
++        wire.transfer(0xFF, 8);
++        wire.transfer(0xFF, 8);
++        assert_eq!(wire.transfer(0xFF, 8) as u8, 0x05, "block {block} accepted");
++        assert_eq!(wire.transfer(0xFF, 8) as u8, 0x00, "block {block} busy");
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn synthetic_cmd18_streams_two_blocks_and_cmd12_stops() {
++        let (mut w, card) = wire();
++        send_frame(&mut w, 18, 3);
++        let first = drain_block(&mut w);
++        assert_eq!(first.len(), crate::sdcard::BLOCK_SIZE + 2);
++
++        // One idle host clock requests the next block while CS remains low.
++        assert_eq!(w.transfer(0xFF, 8) as u8, 0xFF);
++        let second = drain_block(&mut w);
++        assert_eq!(second.len(), crate::sdcard::BLOCK_SIZE + 2);
++
++        // CMD12 is framed without a CS pulse after the final block.
++        send_frame(&mut w, 12, 0);
++        let stop_reply: Vec<_> = (0..8).map(|_| w.transfer(0xFF, 8) as u8).collect();
++        assert_eq!(r1(&stop_reply), 0x00);
++        assert!(card.lock().unwrap().protocol_errors.is_empty());
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn synthetic_multi_read_trace_replays_command_and_block_boundaries() {
++        let (mut w, card) = wire();
++        card.lock().unwrap().enable_trace();
++        w.observe_pins(0);
++        send_frame(&mut w, 18, 3);
++        let _ = drain_block(&mut w);
++        let _ = w.transfer(0xFF, 8);
++        let _ = drain_block(&mut w);
++        send_frame(&mut w, 12, 0);
++        let _ = (0..8)
++            .map(|_| w.transfer(0xFF, 8) as u8)
++            .collect::<Vec<_>>();
++        w.observe_pins(1 << SD_PIN_CS);
++
++        let snapshot = card.lock().unwrap().trace_snapshot().unwrap();
++        let command_indices = snapshot
++            .preview
++            .iter()
++            .filter_map(|event| match event {
++                crate::sdcard::SdTraceEvent::Command { index, .. } => Some(*index),
++                _ => None,
++            })
++            .collect::<Vec<_>>();
++        let block_events = snapshot
++            .preview
++            .iter()
++            .filter(|event| matches!(event, crate::sdcard::SdTraceEvent::BlockData { .. }))
++            .count();
++        assert_eq!(command_indices, vec![18, 12]);
++        assert_eq!(block_events, 1, "first block is attached to CMD18");
++        assert_eq!(snapshot.event_count, 4, "CMD18 + block + CMD12 + deselect");
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn synthetic_cmd23_cmd25_writes_two_blocks_with_busy_between_them() {
++        let (mut w, card) = wire();
++        send_frame(&mut w, 23, 2);
++        let _ = (0..2)
++            .map(|_| w.transfer(0xFF, 8) as u8)
++            .collect::<Vec<_>>();
++        // CMD23 and CMD25 normally use separate CS epochs. The block count
++        // is a card setting and must survive that command boundary.
++        w.observe_pins(1 << SD_PIN_CS);
++        w.observe_pins(0);
++        send_frame(&mut w, 25, 3);
++        let _ = (0..2)
++            .map(|_| w.transfer(0xFF, 8) as u8)
++            .collect::<Vec<_>>();
++
++        write_multi_block(&mut w, 3, 0xA5);
++        write_multi_block(&mut w, 4, 0x5A);
++        assert_eq!(w.transfer(0xFD, 8) as u8, 0xFF, "stop token is consumed");
++        assert_eq!(card.lock().unwrap().blocks_written, 2);
++
++        send_frame(&mut w, 17, 3);
++        let data = drain_block(&mut w);
++        assert!(
++            data[..crate::sdcard::BLOCK_SIZE]
++                .iter()
++                .all(|byte| *byte == 0xA5)
++        );
++        let errors = card.lock().unwrap().protocol_errors.clone();
++        assert!(errors.is_empty(), "unexpected protocol errors: {errors:?}");
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn multi_block_mutations_are_visible_and_fail_closed() {
++        let (mut w, card) = wire();
++
++        // Out-of-range CMD18 returns no token and records the reason.
++        send_frame(&mut w, 18, 64);
++        let reply: Vec<_> = (0..16).map(|_| w.transfer(0xFF, 8) as u8).collect();
++        assert!(!reply.contains(&0xFE));
++        assert!(
++            card.lock()
++                .unwrap()
++                .protocol_errors
++                .iter()
++                .any(|error| error == "multi_read_block_out_of_range_64")
++        );
++
++        // A single-block token is not silently accepted for CMD25.
++        send_frame(&mut w, 25, 3);
++        let _ = (0..2)
++            .map(|_| w.transfer(0xFF, 8) as u8)
++            .collect::<Vec<_>>();
++        assert_eq!(w.transfer(0xFE, 8) as u8, 0xFF);
++        assert!(
++            card.lock()
++                .unwrap()
++                .protocol_errors
++                .iter()
++                .any(|error| error == "multi_write_expected_fc_or_fd_got_fe")
++        );
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn cs_abort_discards_a_multi_block_transfer() {
++        let (mut w, card) = wire();
++        send_frame(&mut w, 18, 3);
++        let _ = drain_block(&mut w);
++        w.observe_pins(1 << SD_PIN_CS);
++        w.observe_pins(0);
++
++        send_frame(&mut w, 17, 0);
++        let data = drain_block(&mut w);
++        assert_eq!(data.len(), crate::sdcard::BLOCK_SIZE + 2);
++        assert!(card.lock().unwrap().protocol_errors.is_empty());
++    }
+ }
+diff --git a/crates/picocalc-board/src/sdcard.rs b/crates/picocalc-board/src/sdcard.rs
+index c8268cd..ca623c4 100644
+--- a/crates/picocalc-board/src/sdcard.rs
++++ b/crates/picocalc-board/src/sdcard.rs
+@@ -29,11 +29,11 @@
+ //! # What is not modelled
+ //!
+ //! No card-removal or write-protect behaviour, no CSD/CID registers
+-//! beyond what bring-up reads, no multi-block transfer (CMD18/CMD25),
+-//! and no busy timing: writes complete immediately rather than holding
+-//! MISO low for a programming delay. Nothing in the conformance track
+-//! exercises those, and a half-modelled busy state would be harder to
+-//! reason about than its absence.
++//! beyond what bring-up reads. The production build includes the bounded
++//! SD-GEN-1 multi-block transfer states (CMD18/CMD12/CMD23/CMD25); the
++//! single-block boundary remains available with `--no-default-features`
++//! for differential tests. Busy timing is deterministic rather than
++//! wall-clock based: multi-block writes expose a one-byte busy interval.
+ 
+ use std::collections::HashMap;
+ use std::fs::{File, OpenOptions};
+@@ -125,6 +125,23 @@ enum Phase {
+     WriteData { taken: usize },
+     /// Data taken; the acceptance token goes out on the next transfer.
+     DataResponse,
++    /// A multi-block read has finished its current block. The host may
++    /// clock the next block or start CMD12 without raising CS.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    MultiReadAwait { next_block: u32 },
++    /// A multi-block write is waiting for either another block token or the
++    /// stop token.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    MultiWriteAwaitToken { block: u32 },
++    /// Taking the 512-byte payload and two CRC bytes of a multi-block write.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    MultiWriteData { block: u32, taken: usize },
++    /// The data-response token is returned one transfer after the CRC.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    MultiWriteDataResponse { next_block: u32 },
++    /// A bounded busy interval follows each accepted multi-block write.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    MultiWriteBusy { next_block: u32 },
+ }
+ 
+ /// Schema version for the diagnostic SD protocol trace. This is separate
+@@ -515,6 +532,17 @@ pub struct SdCard {
+     pub blocks_written: u64,
+     /// Commands this model does not implement, with their counts.
+     pub unknown_commands: Vec<(u8, u32)>,
++    /// Protocol violations observed by the bounded SD-GEN-1 model.
++    #[cfg(feature = "sd-gen1-multiblock")]
++    pub protocol_errors: Vec<String>,
++    #[cfg(feature = "sd-gen1-multiblock")]
++    multi_write_expected: Option<u32>,
++    #[cfg(feature = "sd-gen1-multiblock")]
++    multi_write_start_pending: Option<u32>,
++    #[cfg(feature = "sd-gen1-multiblock")]
++    multi_write_blocks_done: u32,
++    #[cfg(feature = "sd-gen1-multiblock")]
++    multi_read_next_block: Option<u32>,
+     trace: Option<SdTraceState>,
+ }
+ 
+@@ -552,6 +580,16 @@ impl SdCard {
+             blocks_read: 0,
+             blocks_written: 0,
+             unknown_commands: Vec::new(),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            protocol_errors: Vec::new(),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_expected: None,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_start_pending: None,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_blocks_done: 0,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_read_next_block: None,
+             trace: None,
+         };
+         match format {
+@@ -591,6 +629,16 @@ impl SdCard {
+             blocks_read: 0,
+             blocks_written: 0,
+             unknown_commands: Vec::new(),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            protocol_errors: Vec::new(),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_expected: None,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_start_pending: None,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_write_blocks_done: 0,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            multi_read_next_block: None,
+             trace: None,
+         })
+     }
+@@ -633,6 +681,20 @@ impl SdCard {
+         self.trace.as_ref().map(SdTraceState::snapshot)
+     }
+ 
++    /// Protocol errors raised by the bounded SD-GEN-1 model. The legacy
++    /// single-block build exposes an empty slice so report code can remain
++    /// feature-independent.
++    pub fn protocol_errors(&self) -> &[String] {
++        #[cfg(feature = "sd-gen1-multiblock")]
++        {
++            &self.protocol_errors
++        }
++        #[cfg(not(feature = "sd-gen1-multiblock"))]
++        {
++            &[]
++        }
++    }
++
+     /// Notify the card that SPI chip-select went low. The wire calls this on
+     /// the falling edge; direct card tests may omit it because the trace
+     /// state also infers a first selection from the first transfer.
+@@ -868,6 +930,13 @@ impl SdCard {
+         self.reply.clear();
+         self.write_buf.clear();
+         self.write_crc = [0; 2];
++        self.write_pending = false;
++        #[cfg(feature = "sd-gen1-multiblock")]
++        {
++            self.multi_read_next_block = None;
++            self.multi_write_start_pending = None;
++            self.multi_write_blocks_done = 0;
++        }
+     }
+ 
+     /// One byte exchanged. Returns what the card puts on MISO.
+@@ -906,8 +975,26 @@ impl SdCard {
+                         // A write command hands over to the data phase
+                         // rather than going idle.
+                         self.phase = match self.pending_write() {
+-                            true => Phase::AwaitWriteToken,
+-                            false => Phase::Idle,
++                            true => {
++                                #[cfg(feature = "sd-gen1-multiblock")]
++                                if let Some(block) = self.multi_write_start_pending.take() {
++                                    Phase::MultiWriteAwaitToken { block }
++                                } else {
++                                    Phase::AwaitWriteToken
++                                }
++                                #[cfg(not(feature = "sd-gen1-multiblock"))]
++                                Phase::AwaitWriteToken
++                            }
++                            false => {
++                                #[cfg(feature = "sd-gen1-multiblock")]
++                                if let Some(next_block) = self.multi_read_next_block {
++                                    Phase::MultiReadAwait { next_block }
++                                } else {
++                                    Phase::Idle
++                                }
++                                #[cfg(not(feature = "sd-gen1-multiblock"))]
++                                Phase::Idle
++                            }
+                         };
+                     }
+                     b
+@@ -950,6 +1037,89 @@ impl SdCard {
+                     IDLE
+                 }
+             }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            Phase::MultiReadAwait { next_block } => {
++                if byte & 0xC0 == 0x40 {
++                    // CMD12 is sent while CS remains low after a block.
++                    self.phase = Phase::Command {
++                        index: byte & 0x3F,
++                        taken: 0,
++                    };
++                } else if byte == IDLE {
++                    if let Some(data) = self.queue_multi_read_block(next_block) {
++                        self.trace_block_data(data);
++                        self.multi_read_next_block = next_block.checked_add(1);
++                        self.phase = Phase::Reply;
++                    } else {
++                        self.multi_read_next_block = None;
++                        self.phase = Phase::Idle;
++                    }
++                } else {
++                    self.note_protocol_error(format!(
++                        "multi_read_expected_clock_or_cmd12_got_{byte:02x}"
++                    ));
++                }
++                IDLE
++            }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            Phase::MultiWriteAwaitToken { block } => {
++                match byte {
++                    0xFC => {
++                        self.write_block = block;
++                        self.write_buf.clear();
++                        self.write_crc = [0; 2];
++                        self.phase = Phase::MultiWriteData { block, taken: 0 };
++                    }
++                    0xFD => {
++                        self.finish_multi_write(block);
++                        self.phase = Phase::Idle;
++                    }
++                    other => self.note_protocol_error(format!(
++                        "multi_write_expected_fc_or_fd_got_{other:02x}"
++                    )),
++                }
++                IDLE
++            }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            Phase::MultiWriteData { block, taken } => {
++                if taken < BLOCK_SIZE {
++                    self.write_buf.push(byte);
++                    self.phase = Phase::MultiWriteData {
++                        block,
++                        taken: taken + 1,
++                    };
++                    IDLE
++                } else if taken < BLOCK_SIZE + 1 {
++                    self.write_crc[0] = byte;
++                    self.phase = Phase::MultiWriteData {
++                        block,
++                        taken: taken + 1,
++                    };
++                    IDLE
++                } else {
++                    self.write_crc[1] = byte;
++                    self.write_block = block;
++                    if self.commit_write() {
++                        self.phase = Phase::MultiWriteDataResponse {
++                            next_block: block.saturating_add(1),
++                        };
++                    } else {
++                        self.note_protocol_error(format!("multi_write_block_out_of_range_{block}"));
++                        self.phase = Phase::Idle;
++                    }
++                    IDLE
++                }
++            }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            Phase::MultiWriteDataResponse { next_block } => {
++                self.phase = Phase::MultiWriteBusy { next_block };
++                DATA_ACCEPTED
++            }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            Phase::MultiWriteBusy { next_block } => {
++                self.phase = Phase::MultiWriteAwaitToken { block: next_block };
++                0x00
++            }
+         }
+     }
+ 
+@@ -958,7 +1128,7 @@ impl SdCard {
+         self.write_pending
+     }
+ 
+-    fn commit_write(&mut self) {
++    fn commit_write(&mut self) -> bool {
+         let block = self.write_block as usize;
+         let committed = if let Some(raw) = self.raw.as_mut() {
+             block < raw.block_count && raw.write_sector(block, &self.write_buf).is_ok()
+@@ -973,6 +1143,10 @@ impl SdCard {
+         };
+         if committed {
+             self.blocks_written += 1;
++            #[cfg(feature = "sd-gen1-multiblock")]
++            if matches!(self.phase, Phase::MultiWriteData { .. }) {
++                self.multi_write_blocks_done = self.multi_write_blocks_done.saturating_add(1);
++            }
+             if let Some(trace) = self.trace.as_mut() {
+                 trace.record(SdTraceEvent::BlockData {
+                     sequence: trace.event_count,
+@@ -990,6 +1164,7 @@ impl SdCard {
+         }
+         self.write_buf.clear();
+         self.write_pending = false;
++        committed
+     }
+ 
+     fn arg_value(&self) -> u32 {
+@@ -1068,17 +1243,56 @@ impl SdCard {
+             }
+             // SET_BLOCKLEN: SDHC is fixed at 512, so just accept it.
+             16 => response.push(R1_READY),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            // STOP_TRANSMISSION. This is meaningful only while a
++            // multi-block read is waiting for another host clock.
++            12 => {
++                if self.multi_read_next_block.is_some() {
++                    self.multi_read_next_block = None;
++                } else {
++                    self.note_protocol_error("cmd12_without_active_multi_read".to_string());
++                }
++                response.push(R1_READY);
++            }
+             // READ_SINGLE_BLOCK.
+             17 => {
+                 response.push(R1_READY);
+                 data = self.queue_block_read(argument);
+             }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            // READ_MULTIPLE_BLOCK. The host ends the stream with CMD12.
++            18 => {
++                if self.multi_read_next_block.is_some() {
++                    self.note_protocol_error("nested_cmd18".to_string());
++                    response.push(R1_READY);
++                } else {
++                    response.push(R1_READY);
++                    data = self.queue_multi_read_block(argument);
++                    if data.is_some() {
++                        self.multi_read_next_block = argument.checked_add(1);
++                    }
++                }
++            }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            // SET_BLOCK_COUNT for the following multi-block write.
++            23 => {
++                self.multi_write_expected = Some(argument);
++                response.push(R1_READY);
++            }
+             // WRITE_BLOCK: acknowledge, then take the data phase.
+             24 => {
+                 response.push(R1_READY);
+                 self.write_block = argument;
+                 self.write_pending = true;
+             }
++            #[cfg(feature = "sd-gen1-multiblock")]
++            // WRITE_MULTIPLE_BLOCK. The data phase starts with 0xFC.
++            25 => {
++                response.push(R1_READY);
++                self.multi_write_start_pending = Some(argument);
++                self.multi_write_blocks_done = 0;
++                self.write_pending = true;
++            }
+             // APP_CMD: the next command is an ACMD.
+             55 => {
+                 self.app_cmd_pending = true;
+@@ -1123,6 +1337,18 @@ impl SdCard {
+         }
+     }
+ 
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn trace_block_data(&mut self, data: SdTraceData) {
++        if let Some(trace) = self.trace.as_mut() {
++            trace.record(SdTraceEvent::BlockData {
++                sequence: trace.event_count,
++                cs_epoch: trace.cs_epoch,
++                transfers: trace.transfers,
++                data,
++            });
++        }
++    }
++
+     /// CRC byte for a command frame: CRC7 over command+argument, shifted
+     /// left with the required end bit set.
+     fn command_crc(&self, index: u8) -> u8 {
+@@ -1170,6 +1396,52 @@ impl SdCard {
+         })
+     }
+ 
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn queue_multi_read_block(&mut self, block: u32) -> Option<SdTraceData> {
++        let sector = match self.read_sector(block as usize) {
++            Ok(sector) => sector,
++            Err(_) => {
++                self.note_protocol_error(format!("multi_read_block_out_of_range_{block}"));
++                return None;
++            }
++        };
++        self.reply.push_back(TOKEN_START);
++        self.reply.extend(sector);
++        self.reply.extend([0xFF, 0xFF]);
++        self.blocks_read += 1;
++        Some(SdTraceData {
++            direction: SdTraceDirection::Read,
++            block,
++            token: TOKEN_START,
++            length: BLOCK_SIZE,
++            crc: [0xFF, 0xFF],
++        })
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn finish_multi_write(&mut self, next_block: u32) {
++        if let Some(expected) = self.multi_write_expected
++            && expected != self.multi_write_blocks_done
++        {
++            self.note_protocol_error(format!(
++                "multi_write_count_mismatch_expected_{expected}_actual_{}",
++                self.multi_write_blocks_done
++            ));
++        }
++        if next_block == u32::MAX {
++            self.note_protocol_error("multi_write_block_address_overflow".to_string());
++        }
++        self.multi_write_expected = None;
++        self.multi_write_start_pending = None;
++        self.multi_write_blocks_done = 0;
++        self.write_pending = false;
++    }
++
++    #[cfg(feature = "sd-gen1-multiblock")]
++    fn note_protocol_error(&mut self, error: String) {
++        self.protocol_errors.push(error);
++    }
++
+     fn note_unknown(&mut self, code: u8) {
+         if let Some(entry) = self
+             .unknown_commands
+diff --git a/crates/picocalc-harness/Cargo.toml b/crates/picocalc-harness/Cargo.toml
+index 5d1e6ad..942c2c6 100644
+--- a/crates/picocalc-harness/Cargo.toml
++++ b/crates/picocalc-harness/Cargo.toml
+@@ -11,13 +11,17 @@ publish = false
+ build = "build.rs"
+ 
+ [features]
+-default = []
++# The normal runner includes the bounded SD-GEN-1 multi-block model. The
++# legacy single-block boundary is available only with --no-default-features.
++default = ["sd-gen1-multiblock"]
+ # Diagnostic-only OPT0-A build. The normal conformance runner remains
+ # byte-for-byte schema compatible and carries no profiler hot-path branch.
+ idle-profiler = ["rp2040-emu/idle-profiler"]
+ # Diagnostic-only OPT0-B correctness build. Normal conformance and
+ # performance runners do not compile the streaming hash path.
+ behavior-trace = ["rp2040-emu/behavior-trace"]
++# Promoted bounded SD multi-block model and fail-closed protocol reporting.
++sd-gen1-multiblock = ["picocalc-board/sd-gen1-multiblock"]
+ 
+ [lints]
+ workspace = true
+@@ -28,7 +32,7 @@ workspace = true
+ # docs/IMPLEMENTATION_PLAN.md §3.1). No `threading` feature.
+ rp2040-emu = { path = "../rp2040-emu" }
+ # Board models (ST7365P display, pin map, framebuffer/PNG, shared sha256).
+-picocalc-board = { path = "../picocalc-board" }
++picocalc-board = { path = "../picocalc-board", default-features = false }
+ # Scenario files are JSON *input*. Reports stay hand-written so field
+ # order — and therefore the report bytes — is fixed by this crate rather
+ # than by a serialiser's map ordering. Parsed through `Value` rather than
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 44ae7b7..6ce7885 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -1091,6 +1091,14 @@ fn apply_audio_sink_expectation(verdict: &mut VerdictReport, audio_sink: Option<
+     }
+ }
+ 
++#[cfg(feature = "sd-gen1-multiblock")]
++fn apply_sd_protocol_errors(verdict: &mut VerdictReport, sd: Option<&SdReport>) {
++    if sd.is_some_and(|report| !report.protocol_errors.is_empty()) {
++        verdict.status = Verdict::Fail;
++        verdict.reasons.push("sd_protocol_error");
++    }
++}
++
+ /// ARMv6-M IPSR exception numbers that mean "the firmware has fallen
+ /// over". Ordinary IRQs (>= 16), SVCall, PendSV and SysTick are normal
+ /// operation and must not stop the run.
+@@ -3323,6 +3331,8 @@ struct SdReport {
+     blocks_read: u64,
+     blocks_written: u64,
+     unknown_commands: Vec<(u8, u32)>,
++    #[cfg(feature = "sd-gen1-multiblock")]
++    protocol_errors: Vec<String>,
+     raw: Option<picocalc_board::sdcard::RawMetadata>,
+ }
+ 
+@@ -3337,6 +3347,8 @@ impl SdReport {
+             blocks_read: card.blocks_read,
+             blocks_written: card.blocks_written,
+             unknown_commands,
++            #[cfg(feature = "sd-gen1-multiblock")]
++            protocol_errors: card.protocol_errors().to_vec(),
+             raw: card.raw_metadata(),
+         }
+     }
+@@ -3363,6 +3375,21 @@ impl SdReport {
+                 json_string(&raw.source_sha256),
+             ));
+         }
++        #[cfg(feature = "sd-gen1-multiblock")]
++        {
++            s.push_str("    \"protocol_errors\": [");
++            if self.protocol_errors.is_empty() {
++                s.push_str("],\n");
++            } else {
++                for (index, error) in self.protocol_errors.iter().enumerate() {
++                    if index > 0 {
++                        s.push_str(", ");
++                    }
++                    s.push_str(&json_string(error));
++                }
++                s.push_str("],\n");
++            }
++        }
+         s.push_str("    \"unknown_commands\": [");
+         if self.unknown_commands.is_empty() {
+             s.push_str("]\n");
+@@ -4329,6 +4356,8 @@ fn run() -> Result<Verdict, String> {
+         &args.expected_uart,
+     );
+     apply_audio_sink_expectation(&mut verdict, audio_sink_report.as_ref());
++    #[cfg(feature = "sd-gen1-multiblock")]
++    apply_sd_protocol_errors(&mut verdict, sd_report.as_ref());
+ 
+     let report = build_report(
+         backend_commit,
+@@ -4423,6 +4452,8 @@ mod tests {
+         validate_backend_identity, validate_progress_interval, validate_run_id,
+         validate_sd_selection,
+     };
++    #[cfg(feature = "sd-gen1-multiblock")]
++    use super::{VerdictReport, apply_sd_protocol_errors};
+     use picocalc_board::{Keyboard, SdFormat, St7365p};
+     use rp2040_emu::AudioSinkSnapshot;
+     #[cfg(feature = "idle-profiler")]
+@@ -4864,6 +4895,8 @@ mod tests {
+             blocks_read: 2,
+             blocks_written: 1,
+             unknown_commands: Vec::new(),
++            #[cfg(feature = "sd-gen1-multiblock")]
++            protocol_errors: Vec::new(),
+             raw: None,
+         }
+         .to_json();
+@@ -4872,6 +4905,31 @@ mod tests {
+         assert!(report.contains("\"blocks_written\": 1"));
+     }
+ 
++    #[cfg(feature = "sd-gen1-multiblock")]
++    #[test]
++    fn sd_protocol_error_forces_a_judged_failure() {
++        let mut verdict = VerdictReport {
++            status: Verdict::Pass,
++            reasons: Vec::new(),
++            expected_stop: None,
++            required_uart_markers: Vec::new(),
++            missing_uart_markers: Vec::new(),
++        };
++        let report = SdReport {
++            format: SdFormat::Fat32,
++            block_count: 128,
++            commands_seen: 1,
++            blocks_read: 0,
++            blocks_written: 0,
++            unknown_commands: Vec::new(),
++            protocol_errors: vec!["wrong_token".to_string()],
++            raw: None,
++        };
++        apply_sd_protocol_errors(&mut verdict, Some(&report));
++        assert!(matches!(verdict.status, Verdict::Fail));
++        assert_eq!(verdict.reasons, vec!["sd_protocol_error"]);
++    }
++
+     #[test]
+     fn audio_sink_report_matches_only_on_exact_count_and_sha() {
+         let mut snapshot = AudioSinkSnapshot {
+diff --git a/crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs b/crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs
+new file mode 100644
+index 0000000..d5dfff9
+--- /dev/null
++++ b/crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs
+@@ -0,0 +1,369 @@
++//! End-to-end coverage for the promoted SD-GEN-1 runtime path.
++//!
++//! The fixture is deliberately a tiny, repository-owned Thumb program.  It
++//! configures SPI0 and the real PicoCalc SD chip-select pin, performs a
++//! CMD18 two-block read followed by CMD12 while CS remains asserted, then
++//! performs a CMD23/CMD25 one-block write and CMD17 readback before emitting
++//! a UART marker.  The test repeats the complete path three times and checks
++//! the stable report projection, trace, and exported image.  It therefore
++//! exercises the complete path (CPU ->
++//! SIO/SPI0 -> `SdCardWire` -> default `SdCard` feature) rather than calling
++//! the card state machine directly.
++
++#![cfg(feature = "sd-gen1-multiblock")]
++
++use std::fs;
++use std::path::{Path, PathBuf};
++use std::process::Command;
++
++use serde_json::Value;
++
++const XIP_BASE: u32 = 0x1000_0000;
++const VTOR_OFFSET: usize = 0x100;
++const CODE_OFFSET: usize = 0x108;
++
++/// Small Thumb-1 emitter using only instructions implemented by the
++/// emulator's raw-flash fixture tests.  Addresses are synthesized from
++/// their high byte plus 12-bit page offset, so the long transfer stream does
++/// not depend on a literal pool or on an ARM cross compiler.
++struct Program {
++    words: Vec<u16>,
++}
++
++impl Program {
++    fn new() -> Self {
++        Self { words: Vec::new() }
++    }
++
++    fn push(&mut self, word: u16) {
++        self.words.push(word);
++    }
++
++    fn movs(&mut self, register: u8, value: u8) {
++        assert!(register < 8);
++        self.push(0x2000 | (u16::from(register) << 8) | u16::from(value));
++    }
++
++    fn lsls(&mut self, register: u8, shift: u8) {
++        assert!(register < 8 && shift < 32);
++        self.push((u16::from(shift) << 6) | (u16::from(register) << 3) | u16::from(register));
++    }
++
++    fn adds_imm(&mut self, register: u8, value: u8) {
++        assert!(register < 8);
++        self.push(0x3000 | (u16::from(register) << 8) | u16::from(value));
++    }
++
++    fn adds_reg(&mut self, destination: u8, left: u8, right: u8) {
++        assert!(destination < 8 && left < 8 && right < 8);
++        self.push(
++            0x1800 | (u16::from(right) << 6) | (u16::from(left) << 3) | u16::from(destination),
++        );
++    }
++
++    fn str_word(&mut self, value: u8, address: u8) {
++        assert!(value < 8 && address < 8);
++        self.push(0x6000 | (u16::from(address) << 3) | u16::from(value));
++    }
++
++    fn ldr_word(&mut self, destination: u8, address: u8) {
++        assert!(destination < 8 && address < 8);
++        self.push(0x6800 | (u16::from(address) << 3) | u16::from(destination));
++    }
++
++    fn nops(&mut self, count: usize) {
++        self.words.extend(std::iter::repeat_n(0x46c0, count));
++    }
++
++    fn load_page_address(&mut self, destination: u8, high_byte: u8, page: u8) {
++        // destination = (high_byte << 24) + (page << 12), using r0 as
++        // scratch.  All destination registers used by this fixture are r4-
++        // r7, leaving r0/r1 available for the construction and stores.
++        assert!(destination >= 4);
++        self.movs(destination, high_byte);
++        self.lsls(destination, 24);
++        self.movs(0, page);
++        self.lsls(0, 12);
++        self.adds_reg(destination, destination, 0);
++    }
++
++    fn write_byte(&mut self, address: u8, value: u8) {
++        // SPI0 shifts one 8-bit frame in 16 sysclks at the fixture's
++        // prescale.  The delay lets the TX word reach the off-chip model;
++        // the load drains the corresponding RX byte and prevents a PL022
++        // overrun from hiding the SD transaction.
++        self.movs(1, value);
++        self.str_word(1, address);
++        self.nops(16);
++        self.ldr_word(2, address);
++    }
++
++    fn finish(mut self) -> Vec<u8> {
++        self.push(0xe7fe); // forever loop after the marker
++        let mut image = vec![0u8; CODE_OFFSET + self.words.len() * 2];
++        image[VTOR_OFFSET..VTOR_OFFSET + 4].copy_from_slice(&0x2000_4000u32.to_le_bytes());
++        image[VTOR_OFFSET + 4..VTOR_OFFSET + 8]
++            .copy_from_slice(&(XIP_BASE + CODE_OFFSET as u32 + 1).to_le_bytes());
++        for (index, word) in self.words.into_iter().enumerate() {
++            let offset = CODE_OFFSET + index * 2;
++            image[offset..offset + 2].copy_from_slice(&word.to_le_bytes());
++        }
++        image
++    }
++}
++
++fn multiblock_fixture_image() -> Vec<u8> {
++    let mut program = Program::new();
++
++    // Release SPI0 and UART0 reset gates independently through RESETS_CLR.
++    program.load_page_address(5, 0x40, 0x0f);
++    program.movs(1, 1);
++    program.lsls(1, 16);
++    program.str_word(1, 5);
++    program.movs(1, 1);
++    program.lsls(1, 22);
++    program.str_word(1, 5);
++
++    // SPI0: 8-bit frames, SSE, and the minimum legal even prescale.
++    program.load_page_address(6, 0x40, 0x3c);
++    program.movs(1, 7);
++    program.str_word(1, 6); // SSPCR0
++    program.adds_imm(6, 4);
++    program.movs(1, 2);
++    program.str_word(1, 6); // SSPCR1.SSE
++    program.adds_imm(6, 12);
++    program.movs(1, 2);
++    program.str_word(1, 6); // SSPCPSR
++    program.load_page_address(6, 0x40, 0x3c);
++    program.adds_imm(6, 8); // SSPDR
++
++    // SIO output-enable and idle-high CS.
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x24); // GPIO_OE_SET
++    program.movs(1, 1);
++    program.lsls(1, 17);
++    program.str_word(1, 4);
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x14); // GPIO_OUT_SET
++    program.str_word(1, 4);
++
++    // Select the card (CS low) and issue CMD18, block 3.
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x18); // GPIO_OUT_CLR
++    program.str_word(1, 4); // r1 still holds the CS mask
++    for byte in [0x52, 0x00, 0x00, 0x00, 0x03, 0x01] {
++        program.write_byte(6, byte);
++    }
++    // The first block (block 3) is queued with the CMD18 response.  Eight
++    // clocks consume its response prefix; the remaining 509 clocks finish
++    // it, one clock requests block 4, and 515 clocks consume block 4.
++    for _ in 0..8 {
++        program.write_byte(6, 0xff);
++    }
++    for _ in 0..1025 {
++        program.write_byte(6, 0xff);
++    }
++
++    // CMD12 is framed while CS remains low, as on the real SPI card.
++    for byte in [0x4c, 0x00, 0x00, 0x00, 0x00, 0x01] {
++        program.write_byte(6, byte);
++    }
++    for _ in 0..8 {
++        program.write_byte(6, 0xff);
++    }
++
++    // Start a fresh CS epoch for the multi-block write.  CMD23 and CMD25
++    // have only the two-byte [idle, R1] response in this model; clocking
++    // beyond it would correctly be treated as an invalid data token.
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x14); // GPIO_OUT_SET
++    program.movs(1, 1);
++    program.lsls(1, 17);
++    program.str_word(1, 4);
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x18); // GPIO_OUT_CLR
++    program.str_word(1, 4);
++
++    // ACMD23-style pre-erase count followed by CMD25 at block 6.
++    for byte in [0x57, 0x00, 0x00, 0x00, 0x01, 0x01] {
++        program.write_byte(6, byte);
++    }
++    for _ in 0..2 {
++        program.write_byte(6, 0xff);
++    }
++    for byte in [0x59, 0x00, 0x00, 0x00, 0x06, 0x01] {
++        program.write_byte(6, byte);
++    }
++    for _ in 0..2 {
++        program.write_byte(6, 0xff);
++    }
++    program.write_byte(6, 0xfc); // multi-block data token
++    for _ in 0..512 {
++        program.write_byte(6, 0xa5);
++    }
++    program.write_byte(6, 0xff); // CRC high
++    program.write_byte(6, 0xff); // CRC low
++    program.write_byte(6, 0xff); // data-accepted token
++    program.write_byte(6, 0xff); // busy byte
++    program.write_byte(6, 0xfd); // stop transmission token
++
++    // Read the written block through the existing single-block path.  The
++    // runner exports the COW-backed RAW image after the run and the test
++    // below checks that the readback source is byte-for-byte A5.
++    for byte in [0x51, 0x00, 0x00, 0x00, 0x06, 0x01] {
++        program.write_byte(6, byte);
++    }
++    for _ in 0..517 {
++        program.write_byte(6, 0xff);
++    }
++
++    // Deselect before reporting completion.
++    program.load_page_address(4, 0xd0, 0x00);
++    program.adds_imm(4, 0x14); // GPIO_OUT_SET
++    program.movs(1, 1);
++    program.lsls(1, 17);
++    program.str_word(1, 4);
++
++    // Emit a marker that the runner can use as the app-level completion
++    // condition.
++    program.load_page_address(7, 0x40, 0x34);
++    program.adds_imm(7, 0x30); // UART0_UARTCR
++    program.movs(1, 0x01);
++    program.lsls(1, 8);
++    program.adds_imm(1, 0x01);
++    program.str_word(1, 7); // UARTEN|TXE (the fixture only needs TX)
++    program.load_page_address(7, 0x40, 0x34);
++    for byte in b"SD_MB_FIXTURE\n" {
++        program.movs(1, *byte);
++        program.str_word(1, 7);
++        program.nops(16);
++    }
++    program.finish()
++}
++
++fn bootrom_path() -> PathBuf {
++    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../roms/rp2040/bootrom-rp2040-b2.bin")
++}
++
++fn temp_dir() -> PathBuf {
++    let path = std::env::temp_dir().join(format!(
++        "picocalc-harness-cli-sd-multiblock-{}-{}",
++        std::process::id(),
++        std::thread::current().name().unwrap_or("test")
++    ));
++    let _ = fs::remove_dir_all(&path);
++    fs::create_dir_all(&path).expect("create isolated CLI fixture directory");
++    path
++}
++
++fn run_fixture(directory: &Path) -> (Value, Value, Vec<u8>) {
++    fs::create_dir_all(directory).expect("create isolated CLI run directory");
++    let firmware = directory.join("sd-multiblock-fixture.bin");
++    let input_image = directory.join("input.img");
++    let output_image = directory.join("output.img");
++    let report_path = directory.join("report.json");
++    let trace_path = directory.join("sd-trace.json");
++    fs::write(&firmware, multiblock_fixture_image()).expect("write generated raw firmware");
++    fs::write(&input_image, vec![0u8; 8 * 512]).expect("write isolated RAW SD image");
++
++    let output = Command::new(env!("CARGO_BIN_EXE_picocalc-run"))
++        .args([
++            "--bin",
++            firmware.to_str().unwrap(),
++            "--bootrom",
++            bootrom_path().to_str().unwrap(),
++            "--board",
++            "picocalc",
++            "--sd-image",
++            input_image.to_str().unwrap(),
++            "--sd-image-out",
++            output_image.to_str().unwrap(),
++            "--sd-trace",
++            trace_path.to_str().unwrap(),
++            "--cycles",
++            "100000",
++            "--expect-stop",
++            "cycle_limit",
++            "--expect-uart",
++            "SD_MB_FIXTURE",
++            "--json",
++            report_path.to_str().unwrap(),
++        ])
++        .output()
++        .expect("run picocalc-run CLI");
++    assert!(
++        output.status.success(),
++        "CLI failed: status={:?}\nstdout={}\nstderr={}",
++        output.status,
++        String::from_utf8_lossy(&output.stdout),
++        String::from_utf8_lossy(&output.stderr)
++    );
++
++    let report: Value = serde_json::from_slice(&fs::read(&report_path).expect("read report"))
++        .expect("parse report");
++    assert_eq!(report["schema_version"], 8);
++    assert_eq!(report["verdict"]["status"], "pass");
++    assert_eq!(report["sd"]["protocol_errors"], serde_json::json!([]));
++    assert_eq!(report["sd"]["unknown_commands"], serde_json::json!([]));
++    assert_eq!(report["sd"]["commands_seen"], 5);
++    assert_eq!(report["sd"]["blocks_read"], 3);
++    assert_eq!(report["sd"]["blocks_written"], 1);
++
++    let exported = fs::read(&output_image).expect("read exported RAW SD image");
++    assert_eq!(exported.len(), 8 * 512);
++    assert!(exported[6 * 512..7 * 512].iter().all(|byte| *byte == 0xa5));
++
++    let trace: Value = serde_json::from_slice(&fs::read(&trace_path).expect("read SD trace"))
++        .expect("parse SD trace");
++    assert_eq!(trace["schema_version"], 1);
++    assert!(trace["event_count"].as_u64().unwrap_or(0) >= 4);
++    assert!(!trace["digest_sha256"].as_str().unwrap_or("").is_empty());
++
++    (report, trace, exported)
++}
++
++fn stable_report_projection(report: &Value) -> Value {
++    serde_json::json!({
++        "backend_build": report["backend_build"],
++        "firmware": report["firmware"],
++        "cycles": report["cycles"],
++        "stop_reason": report["stop_reason"],
++        "verdict": report["verdict"],
++        "sd": report["sd"],
++        "uart": report["uart"],
++    })
++}
++
++#[test]
++fn default_runtime_executes_multiblock_read_write_and_readback_without_protocol_errors() {
++    let directory = temp_dir();
++    let mut baseline_projection = None;
++    let mut baseline_trace = None;
++    let mut baseline_export = None;
++
++    for iteration in 0..3 {
++        let run_directory = directory.join(format!("run-{iteration}"));
++        let (report, trace, exported) = run_fixture(&run_directory);
++        let projection = stable_report_projection(&report);
++
++        if let Some(expected) = baseline_projection.as_ref() {
++            assert_eq!(expected, &projection, "stable report projection changed");
++        } else {
++            baseline_projection = Some(projection);
++        }
++        if let Some(expected) = baseline_trace.as_ref() {
++            assert_eq!(expected, &trace, "structured SD trace changed");
++        } else {
++            baseline_trace = Some(trace);
++        }
++        if let Some(expected) = baseline_export.as_ref() {
++            assert_eq!(expected, &exported, "exported SD image changed");
++        } else {
++            baseline_export = Some(exported);
++        }
++    }
++
++    if std::env::var_os("PICOCALC_P4_KEEP").is_none() {
++        let _ = fs::remove_dir_all(directory);
++    }
++}

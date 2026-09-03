@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g5c-20260904-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3/G4/G5-A/G5-B candidate pass; G5-C candidate pass; G6 pending",
+  "group": {
+    "id": "G5-C",
+    "display_name": "SD protocol（bounded multiblock）",
+    "purpose": "通常アプリとloaderの公開SD経路に必要なbounded CMD18/CMD12 readとCMD23/CMD25 writeを高速地点へ戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b",
+    "candidate_commit": "bba2153d8de7d4503f0e7aff1a5b088bbd146da8",
+    "source_diff": "g5c-source-diff.patch",
+    "source_diff_sha256": "1258064178202eb06fbbf1bbd6d324068f1fbdab2112cf7de0c8d08a2815410b",
+    "source_files_changed": 6,
+    "insertions": 888,
+    "deletions": 10,
+    "worktree": "temporary /tmp worktree; detached candidate; no remote branch"
+  },
+  "runner": {
+    "binary_sha256": "eca0cf600ec9fae34071641a5e5bb9c59e2673b9a1e0913542248b81c9fc4867",
+    "backend_commit": "bba2153d8de7d4503f0e7aff1a5b088bbd146da8",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "u6_step_quantum": 16,
+    "tetris_screening_step_quantum": 1
+  },
+  "tests": {
+    "picocalc_board": {"feature_on": {"status": "pass", "library": 87, "doctests": 1}, "no_default_features": {"status": "pass", "library": 82, "doctests": 1}},
+    "picocalc_harness": {"feature_on": {"status": "pass", "opt0_blocked_baseline": 2, "runner": 63, "sd_multiblock_e2e": 1}, "no_default_features": {"status": "pass", "opt0_blocked_baseline": 2, "runner": 62}},
+    "format": {"status": "pass", "scope": "picocalc-board and picocalc-harness"},
+    "diff_check": {"status": "pass"},
+    "release_build": {"status": "pass", "binary": "picocalc-run"},
+    "release_sd_multiblock_e2e": {"status": "pass", "tests": 1, "repetitions": 3}
+  },
+  "tetris_screening": {
+    "record": "tetris/report.json",
+    "status": "pass",
+    "cycles": 187528659,
+    "elapsed_us": 755000,
+    "report_sha256": "1306d06190e5c4288ee83be56a847c1c34dd705eb7d8745bc0401e44994f2b07",
+    "normalized_sha256": "fe658ee07415b6d55799e250c09e6997fe9ac98dcd43140efb452fcb4bed4da5",
+    "guest_visible_regression": "not observed in normalized projection",
+    "performance_improvement_claimed": false
+  },
+  "u6_candidate": {
+    "gate": "U6",
+    "record": "u6-gate.json",
+    "record_sha256": "25d64fabd6633bab762a3660b971c738d4e2242cbf0342db23bcfc5803d4e8d6",
+    "status": "pass",
+    "repetitions": 3,
+    "watchdog_resets_per_run": 1,
+    "sd_trace_event_count": 970,
+    "sd_trace_sha256": "bbbf1bf99d180a26fda0b8f470d70ef0af7bc8819e617b541bf044ac4f2bece3",
+    "report_sha256": "b9ba3e3e0bffc59b8fe50a0f037d3b9101937b566e06458103bd36d91a36a5aa",
+    "uart_sha256": "1a1ff8de54237fae11773825e29d627dfd90a5473c5a6db4c924610e1089448b",
+    "framebuffer_sha256": "db449bc298f72dbd0a14ea9d482cf719622ac93782c17580a3ad6774f6f28c45",
+    "final_flash_sha256": "0fbbb894b2123b60f1ceff205e81e764c12460681d88f5f863d6276015cfe308",
+    "reattach_flash_sha256": "0fbbb894b2123b60f1ceff205e81e764c12460681d88f5f863d6276015cfe308",
+    "reattach_sd_sha256": "7db6bed6c98d3d040b3011106248854cd88df98ddfb7cf29282ba917f24b8db9"
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "bounded SD multiblock unit/E2E, feature-off compatibility, Tetris screening, three-run U6 replay, and final-image reattach passed",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "G6",
+    "next_group_display_name": "外部I2C module（RTC／EEPROM／AHT20／BMP280）"
+  }
+}

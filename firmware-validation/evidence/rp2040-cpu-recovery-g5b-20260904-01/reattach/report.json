@@ -1,0 +1,73 @@
+{
+  "schema_version": 8,
+  "backend_commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b",
+  "backend_build": {"commit": "a5fa765cf308c35a750557c68fd3d68ede7ff35b", "dirty": false},
+  "firmware": {"basename": "final.bin", "sha256": "0fbbb894b2123b60f1ceff205e81e764c12460681d88f5f863d6276015cfe308"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "hwspi-rgb888",
+  "boot": {"mode": "boot2", "vtor_flash_offset": null},
+  "step_quantum": 16,
+  "cycle_limit": 1500000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 249857093,
+  "elapsed_us": 2000000,
+  "pc": "0x1000151a",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x66",
+    "caset": 5, "raset": 5, "ramwr": 5, "ramrd": 0,
+    "pixels_written": 204800, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0xb0", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb6", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe9", "count": 1},
+      {"code": "0xf7", "count": 1}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "9bc556df1f79436a7b2c4608e6bde978bb9c200626281c148a974f91c1eeb51d", "non_black_pixels": 102400, "png": null},
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [{"command": 53, "count": 1}, {"command": 235, "count": 1}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 0, "blocks_read": 0, "blocks_written": 0,
+    "raw_image": {"bytes": 67108864, "blocks": 131072, "dirty_blocks": 0, "source_sha256": "7db6bed6c98d3d040b3011106248854cd88df98ddfb7cf29282ba917f24b8db9" },
+    "unknown_commands": []
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": []
+  },
+  "pio": [],
+  "scenario": {
+    "file": "uf2loader-u6-reattach.json",
+    "name": "uf2loader-u6-reattach",
+    "description": "Reattach the exported flash image and boot the selected application directly.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 2,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait", "label": null, "status": "pass", "at_ms": 2000, "at_cycles": 249857093, "detail": "waited 2000 ms"},
+      {"index": 1, "op": "snapshot", "label": "application after flash reattach", "status": "pass", "at_ms": 2000, "at_cycles": 249857093, "detail": "102400 non-black pixels", "rgb565_sha256": "9bc556df1f79436a7b2c4608e6bde978bb9c200626281c148a974f91c1eeb51d", "png_basename": "app.png"}
+    ]
+  },
+  "uart": {"bytes": 270, "sha256": "dec3c67594f340dc818cfa007ab0344058b81d53f676424b88345f251df99182"}
+}

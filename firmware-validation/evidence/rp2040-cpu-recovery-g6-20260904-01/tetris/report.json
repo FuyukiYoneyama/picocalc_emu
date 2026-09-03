@@ -1,0 +1,99 @@
+{
+  "schema_version": 8,
+  "backend_commit": "091c371df0baa664f8a082f44d1256f112152798",
+  "backend_build": {"commit": "091c371df0baa664f8a082f44d1256f112152798", "dirty": false},
+  "firmware": {"basename": "PicoTetris.bin", "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1000000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 187528659,
+  "elapsed_us": 755000,
+  "pc": "0x100029be",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": ["[TETRIS] start"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x65",
+    "caset": 1826, "raset": 1826, "ramwr": 1826, "ramrd": 0,
+    "pixels_written": 476000, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xb9", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe8", "count": 1},
+      {"code": "0xf0", "count": 4}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162", "non_black_pixels": 16020, "png": "framebuffer.png"},
+  "psram": {
+    "attached": true,
+    "tick_count": 62265291, "cs_falling_count": 7,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [{"command": 0, "count": 1}, {"command": 255, "count": 1}, {"command": 75, "count": 1}, {"command": 53, "count": 1}, {"command": 235, "count": 1}], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 0, "blocks_read": 0, "blocks_written": 0,
+    "protocol_errors": [],
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 40, "key_events_delivered": 16, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]},
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "r0-scenario-probe.json",
+    "name": "r0-scenario-probe",
+    "description": "R0 short scenario probe: startup and first three placements only.",
+    "status": "pass",
+    "poll_ms": 5,
+    "steps_total": 7,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "game started", "status": "pass", "at_ms": 515, "at_cycles": 127528659, "detail": "1387 UART bytes seen"},
+      {"index": 1, "op": "key", "label": "drop 0", "status": "pass", "at_ms": 515, "at_cycles": 127528659, "detail": "sent 4 key event(s)"},
+      {"index": 2, "op": "wait", "label": null, "status": "pass", "at_ms": 595, "at_cycles": 147528659, "detail": "waited 80 ms"},
+      {"index": 3, "op": "key", "label": "drop 1", "status": "pass", "at_ms": 595, "at_cycles": 147528659, "detail": "sent 2 key event(s)"},
+      {"index": 4, "op": "wait", "label": null, "status": "pass", "at_ms": 675, "at_cycles": 167528659, "detail": "waited 80 ms"},
+      {"index": 5, "op": "key", "label": "drop 2", "status": "pass", "at_ms": 675, "at_cycles": 167528659, "detail": "sent 2 key event(s)"},
+      {"index": 6, "op": "wait", "label": null, "status": "pass", "at_ms": 755, "at_cycles": 187528659, "detail": "waited 80 ms"}
+    ]
+  },
+  "uart": {"bytes": 1387, "sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"}
+}
