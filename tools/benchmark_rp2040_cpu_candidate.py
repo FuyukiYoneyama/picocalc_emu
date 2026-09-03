@@ -67,6 +67,10 @@ SHORT_BLOCK_COOLDOWN_SECONDS = 0.0
 SHORT_BLOCK_ANCHOR_MAD_LIMIT = 0.02
 SHORT_BLOCK_ANCHOR_DRIFT_LIMIT = 0.02
 AB_PRIMARY_METRICS = ("cpu-time", "wall-time")
+CPU_SCREENING_METHOD = "paired-cpu-screening-v1"
+CPU_SCREENING_PAIRS = 2
+CPU_SCREENING_MEASURED_RUNS = 8
+CPU_SCREENING_COOLDOWN_SECONDS = 0.0
 REQUIRED_WORKLOAD_IDS = frozenset(("picotetris-opt1b-vrp5", "picoedit-r1-vrp2f"))
 # The first null batch exposed a long-session host throughput drift.  Keep the
 # recovery interval fixed and part of the record identity so it cannot be
@@ -1790,6 +1794,25 @@ def primary_metric_fields(primary_metric: str) -> Dict[str, str]:
             "predicted": "predicted_anchor_throughput",
         }
     raise ValueError("unknown primary metric: {}".format(primary_metric))
+
+
+def cpu_screening_measurement_policy() -> Dict[str, Any]:
+    """Return the immutable short Q3 performance-screening contract."""
+    return {
+        "method": CPU_SCREENING_METHOD,
+        "pairs": CPU_SCREENING_PAIRS,
+        "measured_runs": CPU_SCREENING_MEASURED_RUNS,
+        "order_schedule": ["AB", "BA"],
+        "warmup_runs": 0,
+        "inter_run_cooldown_seconds": CPU_SCREENING_COOLDOWN_SECONDS,
+        "calibration_method": "none",
+        "primary_metric": "cpu-time",
+        "secondary_metric": "wall-time",
+        "affinity": "single-vcpu",
+        "host_timing_scope": "picocalc-harness::run_loop",
+        "diagnostic_only": True,
+        "promotion_requires_full_production_ab": True,
+    }
 
 
 def _sleep_between_runs(seconds: float) -> None:
@@ -5427,6 +5450,342 @@ def _require_profile_gate(
             raise ValueError("P1-B profile filterability gate is not passing")
 
 
+def run_cpu_screening(args: argparse.Namespace) -> int:
+    """Run the fixed, short PERF-Q3 CPU-time screening protocol.
+
+    This command is intentionally separate from ``ab``.  It fixes two AB/BA
+    pairs, uses no warm-up/cooldown/anchor, and produces a diagnostic record;
+    the result cannot by itself promote a backend candidate.
+    """
+    if args.candidate_id != "PERF-Q1":
+        raise ValueError("screen fixes --candidate-id at PERF-Q1")
+    declared_features = normalize_feature_set(getattr(args, "feature_set", []))
+    if DYNAMIC_QUANTUM_FEATURE not in declared_features:
+        raise ValueError(
+            "screen requires --feature-set dynamic-quantum-prototype"
+        )
+    workloads = load_workloads(args.target, args.firmware)
+    if len(workloads) != 2:
+        raise ValueError("screen requires exactly the two registered workloads")
+    if args.cpu is None:
+        raise ValueError("screen requires --cpu for affinity pinning")
+
+    identities = preflight_backends(
+        [args.baseline_backend, args.candidate_backend],
+        [args.baseline_runner, args.candidate_runner],
+        labels=("baseline_production", "candidate_production"),
+        feature_sets=((), declared_features),
+    )
+    _require_admission_gate(
+        args.admission_record, workloads, identities["baseline_production"]
+    )
+
+    correctness_record = args.correctness_record.resolve()
+    _validate_record_root(correctness_record)
+    if not correctness_record.is_dir() or not (correctness_record / "SHA256SUMS").is_file():
+        raise ValueError("screen correctness record is missing or incomplete")
+    correctness_manifest = _read_json(correctness_record / "manifest.json")
+    if (
+        not isinstance(correctness_manifest, Mapping)
+        or correctness_manifest.get("candidate_id") != args.candidate_id
+        or correctness_manifest.get("record_id") != correctness_record.name
+    ):
+        raise ValueError("screen correctness record candidate identity is invalid")
+    _require_correctness_gate(
+        correctness_record,
+        workloads,
+        identities,
+        required_trace=True,
+    )
+    correctness_record_sha256 = sha256_file(correctness_record / "SHA256SUMS")
+
+    record_root = args.output.resolve()
+    _validate_record_root(record_root)
+    _validate_batch_id(record_root, args.batch_id)
+    if record_root == correctness_record:
+        raise ValueError("screen output must be separate from the correctness record")
+    if record_root.exists():
+        if not record_root.is_dir() or any(record_root.iterdir()):
+            raise ValueError("screen output record must be a new empty directory")
+
+    policy = cpu_screening_measurement_policy()
+    before = _set_cpu_affinity(args.cpu)
+    host_start: Optional[Dict[str, Any]] = None
+    host_end: Optional[Dict[str, Any]] = None
+    rows: List[Dict[str, Any]] = []
+    error_text: Optional[str] = None
+    try:
+        host_start = host_cpu()
+        if host_start.get("allowed_cpus") != [args.cpu]:
+            raise ValueError("screen protocol did not retain requested CPU affinity")
+
+        manifest_identity = _base_manifest(
+            args.batch_id,
+            workloads,
+            identities,
+            candidate_id=args.candidate_id,
+            cpu=args.cpu,
+            feature_set=declared_features,
+            measurement_policy=policy,
+        )
+        manifest_identity["correctness_record"] = correctness_record.name
+        manifest_identity["correctness_record_sha256"] = correctness_record_sha256
+        _record_manifest(record_root, manifest_identity)
+        decision_context = _manifest_decision_context(
+            record_root,
+            workloads,
+            identities,
+            feature_set=declared_features,
+        )
+
+        schedule = make_ab_schedule(
+            [workload["id"] for workload in workloads], CPU_SCREENING_PAIRS
+        )
+        by_id = {workload["id"]: workload for workload in workloads}
+        ab_dir = record_root / "ab"
+        ab_dir.mkdir(parents=True, exist_ok=True)
+        for item in schedule:
+            workload = by_id[item["workload"]]
+            role = item["role"]
+            identity = identities["{}_production".format(role)]
+            result = run_guest(
+                workload,
+                args.baseline_backend if role == "baseline" else args.candidate_backend,
+                args.baseline_runner if role == "baseline" else args.candidate_runner,
+                expected_backend_identity=identity,
+            )
+            measurement = result["measurement"]
+            row = {
+                "schema_id": AB_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "record_id": args.batch_id,
+                "candidate_id": args.candidate_id,
+                "artifact_type": "run",
+                **item,
+                **measurement,
+                "measurement_cpu": args.cpu,
+                "primary_metric": "cpu-time",
+                "primary_throughput": measurement[
+                    "cycles_per_emulation_cpu_second"
+                ],
+            }
+            _write_json_once(ab_dir / "{}.json".format(item["run_id"]), row)
+            rows.append(row)
+        host_end = host_cpu()
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
+        error_text = str(error)
+        host_end = host_cpu()
+    finally:
+        _restore_cpu_affinity(before)
+
+    if host_start is None:
+        raise ValueError("screen protocol did not start")
+    if host_end is None:
+        host_end = host_start
+
+    grouped: Dict[str, Dict[int, Dict[str, Mapping[str, Any]]]] = {}
+    for row in rows:
+        grouped.setdefault(row["workload"], {}).setdefault(row["pair"], {})[
+            row["role"]
+        ] = row
+
+    pair_results: List[Dict[str, Any]] = []
+    workload_summaries: Dict[str, Any] = {}
+    for workload in workloads:
+        workload_id = workload["id"]
+        ratios: List[float] = []
+        for pair in range(1, CPU_SCREENING_PAIRS + 1):
+            values = grouped.get(workload_id, {}).get(pair, {})
+            baseline = values.get("baseline")
+            candidate = values.get("candidate")
+            if not isinstance(baseline, Mapping) or not isinstance(candidate, Mapping):
+                continue
+            cpu_ratio = log_ratio(
+                float(candidate["cycles_per_emulation_cpu_second"]),
+                float(baseline["cycles_per_emulation_cpu_second"]),
+            )
+            wall_ratio = log_ratio(
+                float(candidate["emulated_cycles_per_wall_second"]),
+                float(baseline["emulated_cycles_per_wall_second"]),
+            )
+            cycles_equal = baseline.get("cycles") == candidate.get("cycles")
+            stop_reason_equal = baseline.get("stop_reason") == candidate.get("stop_reason")
+            guest_observation_equal = (
+                baseline.get("guest_observation_sha256")
+                == candidate.get("guest_observation_sha256")
+            )
+            ratios.append(cpu_ratio)
+            pair_results.append(
+                {
+                    "workload": workload_id,
+                    "pair_index": pair,
+                    "order": baseline["order"],
+                    "run_ids": [baseline["run_id"], candidate["run_id"]],
+                    "pair_log_ratio": cpu_ratio,
+                    "primary_metric": "cpu-time",
+                    "cpu_pair_log_ratio": cpu_ratio,
+                    "wall_pair_log_ratio": wall_ratio,
+                    "cycles_equal": cycles_equal,
+                    "stop_reason_equal": stop_reason_equal,
+                    "baseline_guest_observation_sha256": baseline[
+                        "guest_observation_sha256"
+                    ],
+                    "candidate_guest_observation_sha256": candidate[
+                        "guest_observation_sha256"
+                    ],
+                    "guest_observation_equal": guest_observation_equal,
+                }
+            )
+        workload_summaries[workload_id] = (
+            summarize_log_effect(ratios)
+            if len(ratios) == CPU_SCREENING_PAIRS
+            else {"n": len(ratios)}
+        )
+
+    combined_values = []
+    for pair in range(1, CPU_SCREENING_PAIRS + 1):
+        values = [
+            float(item["pair_log_ratio"])
+            for item in pair_results
+            if item.get("pair_index") == pair
+        ]
+        if len(values) == len(workloads):
+            combined_values.append(statistics.mean(values))
+    combined = (
+        summarize_log_effect(combined_values)
+        if len(combined_values) == CPU_SCREENING_PAIRS
+        else {"n": len(combined_values)}
+    )
+
+    pair_valid = all(
+        item.get("cycles_equal") is True
+        and item.get("stop_reason_equal") is True
+        and item.get("guest_observation_equal") is True
+        for item in pair_results
+    )
+    positive_clocks = all(
+        isinstance(row.get(field), (int, float))
+        and not isinstance(row.get(field), bool)
+        and float(row[field]) > 0
+        for row in rows
+        for field in ("emulation_cpu_seconds", "emulation_wall_seconds", "wall_seconds")
+    )
+    validity = {
+        "all_runs_completed": error_text is None and len(rows) == CPU_SCREENING_MEASURED_RUNS,
+        "pair_count_complete": len(pair_results) == len(workloads) * CPU_SCREENING_PAIRS,
+        "guest_work_equal": pair_valid,
+        "positive_cpu_and_wall_clocks": positive_clocks,
+        "affinity_start": host_start.get("allowed_cpus") == [args.cpu],
+        "affinity_end": host_end.get("allowed_cpus") == [args.cpu],
+        "execution_error": error_text is None,
+    }
+    validity["valid"] = all(validity.values())
+    reasons: List[str] = []
+    if error_text is not None:
+        reasons.append(error_text)
+    if not validity["all_runs_completed"]:
+        reasons.append(
+            "expected {} measured runs, got {}".format(
+                CPU_SCREENING_MEASURED_RUNS, len(rows)
+            )
+        )
+    if not validity["pair_count_complete"]:
+        reasons.append("screening pair results do not cover both workloads and pairs")
+    if not validity["guest_work_equal"]:
+        reasons.append("guest cycle, stop-reason, or observation projection mismatch")
+    if not validity["positive_cpu_and_wall_clocks"]:
+        reasons.append("a measured run has a non-positive CPU or wall clock")
+    if not validity["affinity_start"] or not validity["affinity_end"]:
+        reasons.append("requested single-vCPU affinity was not retained")
+
+    summary = {
+        "schema_id": AB_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "record_id": args.batch_id,
+        "candidate_id": args.candidate_id,
+        "artifact_type": "summary",
+        "status": "pass" if validity["valid"] else "invalid",
+        "pairs": CPU_SCREENING_PAIRS,
+        "measured_runs": len(rows),
+        "schedule": {"ab": 1, "ba": 1},
+        "workloads": workload_summaries,
+        "combined": combined,
+        "pair_results": pair_results,
+        "host": host_end,
+        "measurement_cpu": args.cpu,
+        "cpu_affinity": {
+            "requested": args.cpu,
+            "effective_start": host_start.get("allowed_cpus"),
+            "effective_end": host_end.get("allowed_cpus"),
+        },
+        "validity": validity,
+        "measurement_policy": policy,
+        "correctness_record": correctness_record.name,
+        "correctness_record_sha256": correctness_record_sha256,
+    }
+    if error_text is not None:
+        summary["error"] = error_text
+    _write_json_once(record_root / "summary.json", summary)
+
+    if validity["valid"]:
+        decision = {
+            "schema_id": DECISION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "record_id": args.batch_id,
+            "candidate_id": args.candidate_id,
+            "decision_kind": "performance",
+            "status": "pending",
+            "correctness": {
+                "status": "pass",
+                "source": correctness_record.name,
+                "sha256": correctness_record_sha256,
+            },
+            "correctness_record": correctness_record.name,
+            "correctness_record_sha256": correctness_record_sha256,
+            "statistics": {
+                "primary_metric": "cpu-time",
+                "secondary_metric": "wall-time",
+                "workloads": workload_summaries,
+                "combined": combined,
+                "validity": validity,
+            },
+            "reasons": [
+                "screening valid; no adoption yet; full production A/B and Q4 regression required"
+            ],
+            **decision_context,
+        }
+        decision_text = (
+            "# RP2040 CPU Q3 screening decision\n\n"
+            "Screening is valid; this diagnostic does not adopt the candidate. "
+            "Full production A/B and Q4 regression remain required.\n"
+        )
+    else:
+        decision = {
+            "schema_id": DECISION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "record_id": args.batch_id,
+            "candidate_id": args.candidate_id,
+            "decision_kind": "invalid",
+            "status": "invalid",
+            "correctness_record": correctness_record.name,
+            "correctness_record_sha256": correctness_record_sha256,
+            "statistics": summary,
+            "reasons": reasons,
+            **decision_context,
+        }
+        decision_text = (
+            "# RP2040 CPU Q3 screening decision\n\n"
+            "Screening was invalid; see summary.json.\n"
+        )
+    _write_json_replace(record_root / "decision.json", decision)
+    _write_text_once(record_root / "decision.md", decision_text)
+    _write_sha256sums_once(record_root)
+    if not validity["valid"]:
+        raise ValueError("CPU screening protocol is invalid; see {}".format(record_root))
+    print("CPU Q3 screening: PASS ({})".format(record_root))
+    return 0
+
+
 def run_ab(args: argparse.Namespace) -> int:
     workloads = load_workloads(args.target, args.firmware)
     if len(workloads) != 2:
@@ -5998,6 +6357,22 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     short_block.add_argument("--output", type=Path, required=True)
     short_block.set_defaults(handler=run_short_block)
 
+    screen = subparsers.add_parser(
+        "screen",
+        help="run the fixed two-pair PERF-Q3 CPU-time screening protocol",
+    )
+    _add_workloads(screen)
+    screen.add_argument("--baseline-backend", type=Path, required=True)
+    screen.add_argument("--candidate-backend", type=Path, required=True)
+    screen.add_argument("--baseline-runner", type=Path, required=True)
+    screen.add_argument("--candidate-runner", type=Path, required=True)
+    screen.add_argument("--candidate-id", default="PERF-Q1")
+    screen.add_argument("--correctness-record", type=Path, required=True)
+    screen.add_argument("--admission-record", type=Path, required=True)
+    screen.add_argument("--batch-id", required=True)
+    screen.add_argument("--output", type=Path, required=True)
+    screen.set_defaults(handler=run_cpu_screening)
+
     ab = subparsers.add_parser("ab")
     _add_workloads(ab)
     ab.add_argument("--baseline-backend", type=Path, required=True)
@@ -6073,6 +6448,17 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     provenance.set_defaults(handler=write_runner_provenance)
 
     args = parser.parse_args(argv)
+    if args.command == "screen":
+        if args.cpu is None:
+            parser.error("screen requires --cpu for affinity pinning")
+        if args.candidate_id != "PERF-Q1":
+            parser.error("screen fixes --candidate-id at PERF-Q1")
+        try:
+            declared_features = normalize_feature_set(args.feature_set)
+        except ValueError as error:
+            parser.error(str(error))
+        if DYNAMIC_QUANTUM_FEATURE not in declared_features:
+            parser.error("screen requires --feature-set dynamic-quantum-prototype")
     if args.command == "ab":
         if args.pairs != 10:
             parser.error("--pairs is fixed at 10 (5 AB + 5 BA)")

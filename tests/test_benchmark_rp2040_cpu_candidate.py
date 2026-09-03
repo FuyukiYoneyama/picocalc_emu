@@ -209,6 +209,40 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertEqual(args.replicates, self.module.SHORT_BLOCK_ANCHOR_REPLICATES)
         self.assertEqual(args.inter_run_cooldown_seconds, 0.0)
 
+    def test_cpu_screening_policy_and_cli_are_fixed(self):
+        policy = self.module.cpu_screening_measurement_policy()
+        self.assertEqual(policy["method"], "paired-cpu-screening-v1")
+        self.assertEqual(policy["pairs"], 2)
+        self.assertEqual(policy["measured_runs"], 8)
+        self.assertEqual(policy["order_schedule"], ["AB", "BA"])
+        self.assertEqual(policy["warmup_runs"], 0)
+        self.assertEqual(policy["inter_run_cooldown_seconds"], 0.0)
+        self.assertEqual(policy["primary_metric"], "cpu-time")
+        self.assertEqual(policy["secondary_metric"], "wall-time")
+        args = self.module.parse_arguments(
+            [
+                "screen", "--cpu", "0",
+                "--feature-set", "dynamic-quantum-prototype",
+                "--baseline-backend", "/tmp/baseline",
+                "--candidate-backend", "/tmp/candidate",
+                "--baseline-runner", "/tmp/baseline-runner",
+                "--candidate-runner", "/tmp/candidate-runner",
+                "--correctness-record", "/tmp/correctness",
+                "--admission-record", "/tmp/admission",
+                "--batch-id", "rp2040-cpu-screen-fixture",
+                "--output", "/tmp/screen",
+            ]
+        )
+        self.assertEqual(args.candidate_id, "PERF-Q1")
+        self.assertEqual(args.cpu, 0)
+        self.assertEqual(args.feature_set, ["dynamic-quantum-prototype"])
+
+    def test_two_pair_schedule_has_eight_runs_and_both_orders(self):
+        schedule = self.module.make_ab_schedule(["tetris", "edit"], 2)
+        self.assertEqual(len(schedule), 8)
+        self.assertEqual([item["order"] for item in schedule], ["AB"] * 4 + ["BA"] * 4)
+        self.assertEqual({item["pair"] for item in schedule}, {1, 2})
+
     def test_primary_metric_fields_select_cpu_or_wall_clock(self):
         self.assertEqual(
             self.module.primary_metric_fields("cpu-time"),

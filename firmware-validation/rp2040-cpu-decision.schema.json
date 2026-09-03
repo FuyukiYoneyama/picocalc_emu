@@ -25,6 +25,7 @@
     "candidate_executable_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "profile_runtime_parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "profile_only_delta": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "correctness_record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "delta_files": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
     "runtime_semantics_changed": {"const": false},
     "correctness_record": {"type": "string", "minLength": 1},
@@ -216,6 +217,31 @@
             "anchor_group_dispersion_gate_used": {"const": true},
             "anchor_group_dispersion_threshold": {"const": 0.02},
             "pair_level_sensitivity_method": {"const": "raw-vs-host-corrected-log-ratio-v1"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method", "pairs", "measured_runs", "order_schedule", "warmup_runs",
+            "inter_run_cooldown_seconds", "calibration_method", "primary_metric",
+            "secondary_metric", "affinity", "host_timing_scope", "diagnostic_only",
+            "promotion_requires_full_production_ab"
+          ],
+          "properties": {
+            "method": {"const": "paired-cpu-screening-v1"},
+            "pairs": {"const": 2},
+            "measured_runs": {"const": 8},
+            "order_schedule": {"const": ["AB", "BA"]},
+            "warmup_runs": {"const": 0},
+            "inter_run_cooldown_seconds": {"const": 0},
+            "calibration_method": {"const": "none"},
+            "primary_metric": {"const": "cpu-time"},
+            "secondary_metric": {"const": "wall-time"},
+            "affinity": {"const": "single-vcpu"},
+            "host_timing_scope": {"const": "picocalc-harness::run_loop"},
+            "diagnostic_only": {"const": true},
+            "promotion_requires_full_production_ab": {"const": true}
           }
         },
         {

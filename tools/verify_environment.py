@@ -2133,10 +2133,12 @@ def _rp2040_guest_observation_projection(
     return projection
 
 
-def _expected_rp2040_cpu_schedule(workload_ids: List[str]) -> Dict[str, Dict[str, object]]:
+def _expected_rp2040_cpu_schedule(
+    workload_ids: List[str], pairs: int = 10
+) -> Dict[str, Dict[str, object]]:
     expected: Dict[str, Dict[str, object]] = {}
     run_number = 1
-    for pair in range(1, 11):
+    for pair in range(1, pairs + 1):
         order = "AB" if pair % 2 else "BA"
         selected = workload_ids if pair % 2 else list(reversed(workload_ids))
         roles = ("baseline", "candidate") if order == "AB" else ("candidate", "baseline")
@@ -2147,6 +2149,100 @@ def _expected_rp2040_cpu_schedule(workload_ids: List[str]) -> Dict[str, Dict[str
                 }
                 run_number += 1
     return expected
+
+
+def _expected_cpu_screening_measurement_policy() -> Dict[str, Any]:
+    return {
+        "method": "paired-cpu-screening-v1",
+        "pairs": 2,
+        "measured_runs": 8,
+        "order_schedule": ["AB", "BA"],
+        "warmup_runs": 0,
+        "inter_run_cooldown_seconds": 0.0,
+        "calibration_method": "none",
+        "primary_metric": "cpu-time",
+        "secondary_metric": "wall-time",
+        "affinity": "single-vcpu",
+        "host_timing_scope": "picocalc-harness::run_loop",
+        "diagnostic_only": True,
+        "promotion_requires_full_production_ab": True,
+    }
+
+
+def _verify_external_correctness_record(
+    record_dir: Path,
+    manifest: Mapping[str, Any],
+    workload_ids: Sequence[str],
+    identities: Mapping[str, Any],
+    problems: List[str],
+) -> None:
+    """Verify a performance record's immutable external correctness gate."""
+    name = manifest.get("correctness_record")
+    digest = manifest.get("correctness_record_sha256")
+    if name is None and digest is None:
+        return
+    records_root = record_dir.parent.resolve()
+    correctness_record = _record_path_within(records_root, name)
+    if (
+        not isinstance(name, str)
+        or not name
+        or correctness_record is None
+        or correctness_record.parent != records_root
+        or correctness_record == record_dir.resolve()
+        or Path(name).name != name
+        or not correctness_record.is_dir()
+    ):
+        problems.append("{} correctness_record is not a direct external record".format(record_dir))
+        return
+    checksum_path = correctness_record / "SHA256SUMS"
+    if not checksum_path.is_file() or not _is_sha256_text(digest):
+        problems.append("{} correctness_record checksum is missing or invalid".format(record_dir))
+    elif sha256(checksum_path) != digest:
+        problems.append("{} correctness_record checksum differs from manifest".format(record_dir))
+    try:
+        correctness_manifest = load_json(correctness_record / "manifest.json")
+        correctness_decision = load_json(correctness_record / "decision.json")
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+        problems.append("{} correctness_record is unreadable: {}".format(record_dir, error))
+        return
+    if not isinstance(correctness_manifest, Mapping):
+        problems.append("{} correctness_record manifest is not an object".format(record_dir))
+        return
+    if (
+        correctness_manifest.get("record_type") != "picocalc.rp2040-cpu-record"
+        or correctness_manifest.get("record_version") != 1
+        or correctness_manifest.get("record_id") != correctness_record.name
+        or correctness_manifest.get("candidate_id") != manifest.get("candidate_id")
+        or correctness_manifest.get("workloads") != manifest.get("workloads")
+    ):
+        problems.append("{} correctness_record identity differs from screening manifest".format(record_dir))
+    correctness_identities = correctness_manifest.get("backend_identities", {})
+    if not isinstance(correctness_identities, Mapping):
+        problems.append("{} correctness_record backend identities are missing".format(record_dir))
+    else:
+        for label in ("baseline_production", "candidate_production"):
+            if correctness_identities.get(label) != identities.get(label):
+                problems.append("{} correctness_record {} identity differs from screening".format(record_dir, label))
+    if (
+        not isinstance(correctness_decision, Mapping)
+        or correctness_decision.get("decision_kind") != "correctness"
+        or correctness_decision.get("status") != "pass"
+    ):
+        problems.append("{} correctness_record decision is not a passing correctness gate".format(record_dir))
+    for workload_id in workload_ids:
+        comparison_path = correctness_record / "correctness" / workload_id / "comparison.json"
+        try:
+            comparison = load_json(comparison_path)
+        except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError) as error:
+            problems.append("{} correctness_record comparison is unreadable for {}: {}".format(record_dir, workload_id, error))
+            continue
+        if (
+            not isinstance(comparison, Mapping)
+            or comparison.get("status") != "pass"
+            or comparison.get("guest_observation_equal") is not True
+            or comparison.get("record_id") != correctness_record.name
+        ):
+            problems.append("{} correctness_record comparison is not passing for {}".format(record_dir, workload_id))
 
 
 def _verify_rp2040_cpu_artifact_shape(
@@ -4280,7 +4376,15 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 and type(measurement_policy.get("inter_run_cooldown_seconds")) in (int, float)
                 and measurement_policy.get("inter_run_cooldown_seconds") >= 0
             )
-            if policy_valid and "calibration_method" in measurement_policy:
+            if (
+                policy_valid
+                and measurement_policy.get("method") == "paired-cpu-screening-v1"
+            ):
+                policy_valid = (
+                    measurement_policy
+                    == _expected_cpu_screening_measurement_policy()
+                )
+            elif policy_valid and "calibration_method" in measurement_policy:
                 expected_v1_policy = {
                     "inter_run_cooldown_seconds": 60.0,
                     "calibration_method": "interleaved-anchor-v1",
@@ -4372,6 +4476,21 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 policy_valid = False
             if not policy_valid:
                 problems.append("{} manifest measurement_policy is invalid".format(record_dir))
+        is_cpu_screening = (
+            isinstance(measurement_policy, Mapping)
+            and measurement_policy.get("method") == "paired-cpu-screening-v1"
+        )
+        expected_pairs = 2 if is_cpu_screening else 10
+        expected_run_count = expected_pairs * len(workload_ids) * 2
+        expected_pair_result_count = expected_pairs * len(workload_ids)
+        if is_cpu_screening:
+            _verify_external_correctness_record(
+                record_dir,
+                manifest,
+                workload_ids,
+                identities if isinstance(identities, Mapping) else {},
+                problems,
+            )
         if not decision_path.is_file():
             problems.append("{} is missing decision.json".format(record_dir))
             decision = None
@@ -4563,10 +4682,32 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                 if summary is not None:
                     if summary.get("record_id") != manifest.get("record_id"):
                         problems.append("{} summary record_id differs from manifest".format(record_dir))
-                    if summary.get("pairs") != 10 or summary.get("measured_runs") != 40:
-                        problems.append("{} summary does not describe the fixed 10-pair/40-run batch".format(record_dir))
+                    if summary.get("pairs") != expected_pairs or summary.get("measured_runs") != expected_run_count:
+                        problems.append(
+                            "{} summary does not describe the fixed {}-pair/{}-run batch".format(
+                                record_dir, expected_pairs, expected_run_count
+                            )
+                        )
                     if summary.get("measurement_policy") != measurement_policy:
                         problems.append("{} summary measurement_policy differs from manifest".format(record_dir))
+                    if is_cpu_screening:
+                        if summary.get("schedule") != {"ab": 1, "ba": 1}:
+                            problems.append("{} CPU screening schedule is invalid".format(record_dir))
+                        summary_affinity = summary.get("cpu_affinity")
+                        measurement_cpu = manifest.get("measurement_cpu")
+                        if (
+                            not isinstance(summary_affinity, Mapping)
+                            or summary_affinity.get("requested") != measurement_cpu
+                            or summary_affinity.get("effective_start") != [measurement_cpu]
+                            or summary_affinity.get("effective_end") != [measurement_cpu]
+                        ):
+                            problems.append("{} CPU screening affinity is invalid".format(record_dir))
+                        validity = summary.get("validity")
+                        if (
+                            not isinstance(validity, Mapping)
+                            or validity.get("valid") is not (summary.get("status") == "pass")
+                        ):
+                            problems.append("{} CPU screening validity summary is invalid".format(record_dir))
                     summary_is_invalid = summary.get("status") == "invalid"
                     if not isinstance(summary.get("workloads"), dict):
                         problems.append("{} summary workloads is not an object".format(record_dir))
@@ -4582,6 +4723,11 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             isinstance(calibration, Mapping)
                             and calibration.get("valid") is False
                         )
+                        screening_failed = (
+                            is_cpu_screening
+                            and isinstance(summary.get("validity"), Mapping)
+                            and summary["validity"].get("valid") is False
+                        )
                         has_projection_mismatch = any(
                             isinstance(item, Mapping)
                             and item.get("guest_observation_equal") is not True
@@ -4593,24 +4739,41 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             and isinstance(null_control, Mapping)
                             and null_control.get("pass") is False
                         )
-                        if not (calibration_failed or has_projection_mismatch or null_failed):
+                        if not (
+                            calibration_failed
+                            or screening_failed
+                            or has_projection_mismatch
+                            or null_failed
+                        ):
                             problems.append(
-                                "{} invalid summary does not preserve a calibration, projection, or null-control failure".format(
+                                "{} invalid summary does not preserve a calibration, screening, projection, or null-control failure".format(
                                     record_dir
                                 )
                             )
-                        if len(summary["pair_results"]) not in {0, 20}:
+                        if len(summary["pair_results"]) not in {0, expected_pair_result_count}:
                             problems.append("{} invalid summary pair_results has an unexpected size".format(record_dir))
                         if len(summary["pair_results"]) == 0 and summary.get("workloads") != {}:
                             problems.append("{} invalid summary without pair results must have empty workloads".format(record_dir))
-                    elif len(summary["pair_results"]) != 20:
-                        problems.append("{} summary pair_results is not the fixed 20-entry set".format(record_dir))
+                    elif len(summary["pair_results"]) != expected_pair_result_count:
+                        problems.append(
+                            "{} summary pair_results is not the fixed {}-entry set".format(
+                                record_dir, expected_pair_result_count
+                            )
+                        )
             run_paths = sorted(ab_dir.glob("run-*.json")) if ab_dir.is_dir() else []
             if not run_paths:
                 problems.append("{} AB directory has no run artifacts".format(record_dir))
-            if len(run_paths) != 40:
-                problems.append("{} AB directory must contain exactly 40 run artifacts".format(record_dir))
-            expected_schedule = _expected_rp2040_cpu_schedule(workload_ids) if isinstance(workloads, list) and len(workload_ids) == 2 else {}
+            if len(run_paths) != expected_run_count:
+                problems.append(
+                    "{} AB directory must contain exactly {} run artifacts".format(
+                        record_dir, expected_run_count
+                    )
+                )
+            expected_schedule = (
+                _expected_rp2040_cpu_schedule(workload_ids, expected_pairs)
+                if isinstance(workloads, list) and len(workload_ids) == 2
+                else {}
+            )
             seen_run_ids = set()
             for run_path in run_paths:
                 run = _verify_rp2040_cpu_artifact_shape(
@@ -4628,6 +4791,25 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     else:
                         if any(run.get(field) != expected_run[field] for field in ("pair", "order", "workload", "role")):
                             problems.append("{} run fields differ from the fixed schedule".format(run_path))
+                    if is_cpu_screening:
+                        if run.get("primary_metric") != "cpu-time":
+                            problems.append("{} CPU screening run primary metric is invalid".format(run_path))
+                        if run.get("measurement_cpu") != manifest.get("measurement_cpu"):
+                            problems.append("{} CPU screening run affinity CPU differs from manifest".format(run_path))
+                        for field in (
+                            "emulation_cpu_seconds",
+                            "emulation_wall_seconds",
+                            "cycles_per_emulation_cpu_second",
+                            "cycles_per_emulation_wall_second",
+                        ):
+                            value = run.get(field)
+                            if (
+                                not isinstance(value, (int, float))
+                                or isinstance(value, bool)
+                                or not math.isfinite(float(value))
+                                or float(value) <= 0
+                            ):
+                                problems.append("{} CPU screening {} is invalid".format(run_path, field))
                     if isinstance(run_id, str):
                         if run_id in seen_run_ids:
                             problems.append("{} run_id is duplicated".format(run_path))
@@ -4687,6 +4869,33 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                     )
                     if pair_result.get("guest_observation_equal") != expected_equal:
                         problems.append("{} pair result guest equality disagrees with run artifacts".format(summary_path))
+                    if is_cpu_screening:
+                        if pair_result.get("primary_metric") != "cpu-time":
+                            problems.append("{} CPU screening pair primary metric is invalid".format(summary_path))
+                        if pair_result.get("cycles_equal") is not True:
+                            problems.append("{} CPU screening pair cycle count differs".format(summary_path))
+                        if pair_result.get("stop_reason_equal") is not True:
+                            problems.append("{} CPU screening pair stop reason differs".format(summary_path))
+                        baseline_cpu = baseline_run.get("cycles_per_emulation_cpu_second")
+                        candidate_cpu = candidate_run.get("cycles_per_emulation_cpu_second")
+                        recorded_ratio = pair_result.get("pair_log_ratio")
+                        if (
+                            not isinstance(baseline_cpu, (int, float))
+                            or isinstance(baseline_cpu, bool)
+                            or not isinstance(candidate_cpu, (int, float))
+                            or isinstance(candidate_cpu, bool)
+                            or not isinstance(recorded_ratio, (int, float))
+                            or isinstance(recorded_ratio, bool)
+                            or float(baseline_cpu) <= 0
+                            or float(candidate_cpu) <= 0
+                            or not math.isclose(
+                                float(recorded_ratio),
+                                math.log(float(candidate_cpu) / float(baseline_cpu)),
+                                rel_tol=1e-12,
+                                abs_tol=1e-15,
+                            )
+                        ):
+                            problems.append("{} CPU screening pair CPU ratio is not derived from runs".format(summary_path))
 
             if isinstance(summary, Mapping):
                 _verify_interleaved_anchor_summary(record_dir, manifest, summary, run_by_id, problems)
