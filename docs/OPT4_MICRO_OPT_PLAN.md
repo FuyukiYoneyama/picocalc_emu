@@ -1,6 +1,8 @@
 # OPT4 micro-opt bank
 
-> **現行計画。** これは歴史記録ではない。現在の性能改善作業と採否条件はこの文書を正典とする。
+> **完了・保留履歴（2026-09-03更新）。** これは現行計画ではない。現在の性能改善作業と
+> 採否条件は[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+> を正典とする。新しいwall-time帰属や安全機構なしにOPT4候補を再開しない。
 
 2026-08-16のbackend整合性レビューで、その時点のmainのOPT4-A featureにempty-sentinel回帰を確認した。
 新しい性能測定より先に、backend側の

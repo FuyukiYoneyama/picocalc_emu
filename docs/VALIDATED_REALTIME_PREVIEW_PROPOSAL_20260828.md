@@ -1,6 +1,6 @@
 # Validated Realtime Preview 提案
 
-Status: Proposal (review revised; VRP-LOAD-0 correction adopted)
+Status: **Historical proposal / VRP-0〜VRP-4実装済み、1倍速UXは中断。現行作業計画ではない**
 Date: 2026-08-28 (updated 2026-08-29)
 Owner: FuyukiYoneyama
 Tracking issue / PR: 未作成。P0 実装開始前に作成し、本書から相互リンクする。
@@ -14,6 +14,9 @@ Tracking issue / PR: 未作成。P0 実装開始前に作成し、本書から�
 - [Versioning](VERSIONING.md)
 - [Firmware target registry](../reference-projects/firmware-targets.json)
 - [Implementation plan](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
+- [Current performance plan](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+
+本書のwall-clock 1倍目標、LOAD-0 qualification、VRP-5以降は現在の実行指示ではない。
 
 ## 0. 用語
 

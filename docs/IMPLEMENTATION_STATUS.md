@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-08-30
+更新日: 2026-09-03
 
 ## 版とbackend
 
@@ -21,16 +21,29 @@
 
 targetはそれぞれ正確なbackend commitを固定します。branch headやローカルmainを自動採用しません。
 
+## 現行の高速化
+
+現行計画は
+[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+です。1倍速qualificationやUX用の近似backendではなく、`ExecutionModel::Serial`のguest-visibleな
+正確性を維持しながら、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を
+短縮します。
+
+次に実施できるのはPERF-Q0です。これはdynamic quantum候補について、q1のまま機会量を数え、
+量子途中のCS／PIO／DMA／I2C開始を見逃す危険を最小fixtureで確認する調査です。production高速化は
+まだ実装していません。機会量不足または安全なtransition barrierを実装できない場合は、候補を
+早期に棄却します。
+
 ## 利用できる経路
 
 この文書でいう **LOAD-0（最大級の継続負荷性能テスト0番）** は内部ID
 `VRP-LOAD-0`、**Tetris（軽ゲーム実装）** は内部target ID
 `picotetris-opt1b`に対応します。表示名は計測対象の意味を示し、registryや証拠のIDは変更しません。
 
-LOAD-0は数値の基準値ではなく、1倍速判定へ投入する人工的な固定負荷試験ケースです。
+LOAD-0は数値の基準値や高速化gateではなく、保存済みの人工stress fixtureです。
 LOAD-0を実行して得た数値が、そのLOAD-0に対する測定結果です。120秒vertical sliceの
 `1.929283%`は準備段階のLOAD-0観測値であり、現行エミュレーター全体の性能値や、1倍速の
-達成可能性を示すものではありません。
+達成可能性を示すものではありません。追加の3回determinism、10 virtual分run、1倍判定は行いません。
 
 ### Canonical BSP
 
@@ -63,10 +76,10 @@ LOAD-0を実行して得た数値が、そのLOAD-0に対する測定結果で�
 
 ### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-5 reusable backend pin preflight完了、1倍速UX qualificationは中断）
 
-1倍速UXプロジェクトは、LOAD-0 r1のprototypeと120秒non-formal vertical sliceで停止しています。これはVRP実装の失敗や既存formal evidenceの取消しではなく、役割レビュー前に準備runを増やさないための明示的な中断です。`ux`モードは未採用・未実装であり、再開条件と未完了gateは[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)に固定しています。
+1倍速UXプロジェクトは、LOAD-0 r1のprototypeと120秒non-formal vertical sliceで停止しています。これはVRP実装の失敗や既存formal evidenceの取消しではありません。`ux`モードは未採用・未実装で、VRP-5以降とLOAD-0の追加長時間runは現行高速化へ持ち越しません。判断は[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)に固定しています。
 
-Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
-`picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では
+Firmware backendでPASSした同一raw BINとbyte-identicalな`picocalc-run`を対話観測する既存経路です。
+wall-clock 1倍目標は中断済みです。2026-08-29時点では
 VRP-0のcontract／fixture、WSLg host capability probe、2 workloadのprovenance／GUIなしbaselineに加え、
 VRP-1のreceipt生成と共通admission（参照artifactの再hash、registry／validation record／backend clean
 pinの再検証、admitted descriptor出力）が固定済みです。backend側には`--preview-api`の固定PCRP
@@ -99,19 +112,18 @@ realtime 1倍を追加せず、既存machine APIをrealtime previewと呼び替�
 [`validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md`](validated-realtime-preview/VRP1_RECEIPT_ADMISSION_20260828.md)、実施順序と安全gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
 を正典とします。VRP-2-c/dの証拠は[`validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md`](validated-realtime-preview/VRP2CD_MACHINE_UART_20260829.md)に、VRP-2-eの境界は[`validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)に固定しました。previewの初期workloadは`picotetris-opt1b`（baseline revision 5）と`picoedit-r1`（baseline revision 1）で、VRP-2-eの受入descriptorはそれぞれrevision 8／4へversionedされています。
-ただし、VRP-2-eのbackend pin `c1c20d7d86a3006569375bc333cf72494e95eb46`は、2026-08-29時点でbackendのbranch／tagから到達できません。VRP-2-eの既存evidence／recordを無効化・改変せず、到達可能なclean backend（`main`の`65c795e87321e79b960ac8a7495a205de6a24ec0`）で新しい`picotetris-opt1b-vrp5` revision 10／validation／receiptを作成し、admissionとheadless preview consumerまで確認しました。backend作業ツリーにある14ファイルの未コミット差分はpreview変更へ混ぜていません。このreusable backend pin preflightの証拠は[`validated-realtime-preview/VRP5_BACKEND_PIN_PREFLIGHT_20260829.md`](validated-realtime-preview/VRP5_BACKEND_PIN_PREFLIGHT_20260829.md)に固定し、VRP-LOAD-0のsource／fixture prototypeとは独立に扱います。VRP-5 qualificationはVRP-LOAD-0のcompletion gate後です。
-正式な`realtime-1x-qualified`昇格には、NESの意味論ではなく、repository-ownedな継続負荷workload
-（`VRP-LOAD-0`）が必要です。`VRP-LOAD-0`は320x320 RGB565全画面更新、48 kHz DMA-paced audio、
-継続CPU負荷、固定入力、10 virtual分以上の連続実行、clean clone再現性を固定する計画です。
+VRP-2-eのbackend pin `c1c20d7d86a3006569375bc333cf72494e95eb46`は歴史的な不変evidenceに残します。到達可能なclean backendで`picotetris-opt1b-vrp5` revision 10のpreflightも完了していますが、1倍速中断によりVRP-5 qualificationは開始しません。
+旧計画では`realtime-1x-qualified`にrepository-ownedな継続負荷workload（`VRP-LOAD-0`）を要求していました。
+この要件は現行高速化へ継承しません。
 repository-owned r1 prototypeの実装、2つのclean cloneによる固定条件BIN／UF2一致、1秒／2秒の
 runtime／input smoke（公式scenarioを含む）、120秒のnon-formal vertical slice、preview-only target
 `vrp-load0-r1-vslice` revision 1のwrapper report／receipt／admission／headless preview consumerまでは完了しています。
-これは受入経路の確認であり、LOAD-0 completion、3回determinism、10 virtual分以上の準備run、threshold decision、
-VRP-5 qualificationは未完了です。vertical sliceの証拠は
+これは受入経路の確認です。LOAD-0 completion、3回determinism、10 virtual分以上の準備run、threshold decision、
+VRP-5 qualificationは未完了のまま中断し、追加実行しません。vertical sliceの証拠は
 [`validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md`](validated-realtime-preview/VRP_LOAD0_PROFILE_R1.md)と
 `firmware-validation/records/vrp-load0-vslice-120s-20260829-01/`にあります。詳細は
 [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)
-と正典計画を参照してください。
+と中断判断を参照してください。
 `VRP-NES-0`のsynthetic NROM fixture、target、validation、3回local evidenceは歴史資料として保持しますが、
 `historical / non-qualifying`であり、VRP-5のblockerや`realtime-1x-qualified`の入力ではありません。
 使用したNESco診断commit `7f3fa05971930e03653694117cbf6a435ec1dd4e`は公開remoteに到達できないため、
@@ -228,8 +240,14 @@ snapshotを使い、runnerへhost directoryを直接mountするものではな�
 
 ## 性能
 
-正式promoted値はPicoTetrisでwall中央値**25.381594秒**、実時間比**14.636593%**です。
-R5前baseline 63.247秒から約2.492倍高速化しています。
+現行の性能作業は、実アプリの検証wall時間をSerialの正確性を維持して短縮する計画です。
+dynamic quantum候補は未実装で、PERF-Q0の調査前です。LOAD-0、1倍速、CPU-only MHzは採否指標に
+使いません。
+
+歴史的なpromoted PicoTetris値はwall中央値**25.381594秒**、実時間比**14.636593%**で、
+R5前baseline 63.247秒から約2.492倍高速化しました。これは当時のbackend／targetに対する値で、
+現在のbackendを再測定した値ではありません。採用済みP1-Aは実アプリCPU-time combined rawで
+**+1.218973%**でした。CPU-only fixtureの大きな改善を実アプリ全体の改善と呼び替えません。
 
 OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselineに対して4.1542%改善でしたが
 5%採用基準未達でrevertしました。OPT4 micro-opt bankをfeature-gated候補として評価しましたが、

@@ -12,8 +12,9 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 
 ## 現在の状態
 
+- 現行の高速化計画: [`docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)。1倍速qualificationではなく、Serialの正確性を維持しながら、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を短縮します。次に許可される作業はdynamic quantum候補の機会量と危険遷移を調べるPERF-Q0だけです
 - workloadの表示名: **LOAD-0（最大級の継続負荷性能テスト0番）**（内部ID: `VRP-LOAD-0`）、**Tetris（軽ゲーム実装）**（内部target ID: `picotetris-opt1b`）。表示名は計測内容を示し、内部ID・証拠ファイル名は再現性のため保持します
-- LOAD-0は数値の基準値ではなく、画面・音声・CPU・virtual timeを同時に継続させる人工的な固定試験ケースです。120秒sliceの`1.929283%`はLOAD-0に対する準備段階の観測値であり、現行エミュレーター全体やTetris（軽ゲーム実装）の性能値ではありません
+- LOAD-0は数値の基準値や高速化gateではなく、画面・音声・CPU・virtual timeを同時に継続させる保存済みの人工stress fixtureです。120秒sliceの`1.929283%`はLOAD-0固有の歴史的観測値であり、追加の3回determinism、10 virtual分run、1倍判定は行いません
 - 現行BSP source: **0.9.0**
 - 標準BSP機能の実機相関baseline: **0.8.8**
 - 推奨LCD: `pio-rgb565`（PIO0、RGB565、LCD DMAなし）
@@ -21,7 +22,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - SD RAWの標準pack／extract: [`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)
 - 対話型preview GUI（PicoCalc skin／LCD／UART0／入力）: [`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)
 - bounded host audio monitor（可変rate／drop診断／非同期transport）: [`docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)
-- 1倍速判定用の人工高負荷試験ケース: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定するr1 prototypeを実装済みで、固定条件BIN／UF2再現性、1秒／2秒のruntime／input smoke、120秒のnon-formal vertical slice、preview-only targetのadmission／receipt／headless consumerまで確認済みです。これはLOAD-0の試験経路確認であり、数値の基準値や現行エミュレーター全体の性能値ではありません。LOAD-0の役割レビュー、3回determinism、10 virtual分以上の準備run、VRP-5 formal qualificationは未完了です
+- 保存済み人工stress fixture: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0` r1 prototypeはbuild再現性、短時間smoke、120秒non-formal slice、preview-only経路まで確認済みです。高速化のbaselineや採否には使いません
 - 1倍速UXプロジェクトの判断: [`docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)。LOAD-0 r1の120秒sliceを準備段階の停止点とし、`ux`は未採用・未実装、1倍速qualificationは未完了として扱います
 - 通常のfirmware回帰backend: OPT1-B promoted commitをtargetごとに固定
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
@@ -31,9 +32,9 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - U6証拠: [`firmware-validation/evidence/uf2loader-u6-20260822-01/`](firmware-validation/evidence/uf2loader-u6-20260822-01/)。USB BOOTSEL/MSC、全UF2 family、任意loader forkは対象外
 - SD-GEN-1-P0〜P5: **完了（P5 bounded capability accepted）**。P4でmulti-blockをdefault runtimeへ接続し、CMD18→2 block→CS保持中CMD12、CMD23/CMD25→1 block write→CMD17 readbackの実SPI0 synthetic firmware E2E、RAW export byte一致、既存U6・M-NESCO・FAT16/FAT32凍結trace再play、legacy no-default差分を確認しました。P5でversioned validation contractと限定範囲の`sd-multi-block` capabilityを追加しました。versioned targetと固定版`uf2loader-e2e`は変更していません。詳細計画は[`docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)、P5証拠は[`firmware-validation/evidence/sd-gen1-p5-20260823-01/`](firmware-validation/evidence/sd-gen1-p5-20260823-01/)です
 - I2C-EXT: **E0〜E6完了**。DS3231／AT24C32／AHT20／BMP280を既定構成へ入れず、明示的なprofileでのみ接続するoptional capabilityを同一UF2実機相関まで固定しました。詳細は[`docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)と[`firmware-validation/capability.json`](firmware-validation/capability.json)です
-- Validated Realtime Preview: **VRP-0／VRP-1／VRP-2-a〜e／VRP-3／VRP-4完了（VRP-4 formal gate 2026-08-29）**。`picocalc.py preview`は権威あるfirmware PASS済みの同一BIN・同一runnerを再検証し、admitted descriptorを出力します。`preview-digest-gate`はclean backend `c1c20d7d86a3006569375bc333cf72494e95eb46`、runner SHA `f1a79384d0f90fafea1fbe9db249dc9c54327ef12bed0445c1e4bef23e3a050c`で、`picotetris-opt1b-vrp2f` revision 8と`picoedit-r1-vrp2f` revision 4のbatch／machine API／preview API／registered report四者projection digest、timeline、終端cycle、report checksを完全一致させました。`preview-gui`は同じadmitted descriptorからTk薄型frontendを起動し、PicoCalc skinへ320x320 RGB565 LCDを合成、UART0 consoleを自動起動、key down/held/up・auto-repeat抑止、reset/reload、sticky UX-invalid、F12 screenshotを提供します。VRP-4はbounded backend tap／非同期writer／frontend・host queue、可変source rate resampling、drop／underrun／epoch statusを追加し、host player障害をemulation verdictから分離します。同一`picotetris-opt1b-vrp4` revision 9のmonitor off／on／forced-dropを比較するformal evidenceを[`firmware-validation/records/vrp4-picotetris-20260829-01/`](firmware-validation/records/vrp4-picotetris-20260829-01/)に保存しています。これは実機相関、hardware-audio fidelity、または`realtime-1x-qualified`を意味しません。`VRP-LOAD-0`のrepository-owned sustained-load計画をVRP-5の正式qualification前提として追加し、既存VRP-NES-0のfixture／target／evidenceは歴史資料として保持します。詳細は[`docs/validated-realtime-preview/`](docs/validated-realtime-preview/)と[`docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を参照してください
+- Validated Realtime Preview: **VRP-0／VRP-1／VRP-2-a〜e／VRP-3／VRP-4完了**。既存GUI、admission、digest、audio monitorは利用できますが、1倍速qualificationは中断済みで、VRP-5以降は現行作業ではありません。詳細は[`docs/validated-realtime-preview/`](docs/validated-realtime-preview/)と[`中断判断`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)を参照してください
 
-VRP-2-eの`c1c20d7d86a3006569375bc333cf72494e95eb46`は当時の不変evidenceに残しますが、現在のbackendのbranch／tagから到達できないため、VRP-5の再現可能なpinとしては使いません。到達可能なclean backendでの新しいversioned target／validation／receiptがVRP-5の前提です。`VRP-LOAD-0`のsource／fixture prototypeはこれと並行できます。
+VRP-2-eの`c1c20d7d86a3006569375bc333cf72494e95eb46`は当時の不変evidenceに残します。到達可能なclean backendでのVRP-5 preflightも完了していますが、1倍速中断により追加qualificationの開始条件には使いません。
 
 既存VRP-NES-0のsynthetic NROM fixture、target、validation、3回local evidenceは`historical / non-qualifying`
 として保持します。`Picocalc_NESco`は独立プロジェクトであり、`picocalc_emu`はbranchを作成・改造・公開・pushせず、

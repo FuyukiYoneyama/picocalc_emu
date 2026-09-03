@@ -1,6 +1,11 @@
 # RP2040 CPU 実アプリ高速化 実装・効果測定計画
 
-> **現行ステータス（2026-09-03）**: P0基盤、P1-A/P1-B/P2-Aの実装・correctness・profile・CPU-time A/Bは完了した。P1-Aは、二つの実アプリを等重みで集約した combined raw CPU-time効果が **+1.218973%**（95% CI **+0.437619%〜+2.006406%**）でマイナスではなかったため、ユーザー決定により採用する。バックエンド commit `58e73010636bb1b60fdb1ccace40db29b5bb96cc` で `decode-invalidation-tag-guard` を通常版の既定 featureへ昇格し、`picocalc-harness` の provenanceにも反映した。P1-A A/B recordの `status=invalid` は `local residual=3.096448%` が事前固定した校正診断閾値を超えたことを示すもので、raw効果をゼロまたは負へ読み替える根拠ではない。recordはimmutableに保持し、校正上の注意事項として併記する。P1-Bは combined raw **-2.177466%** のため採用せず、候補ブランチ `codex/p1b-executable-sram-filter` と一時worktreeは削除済みで、`main`へも統合していない。P2-Aは combined raw **+0.204677%** だが CIがゼロをまたぐため今回の既定化対象にはせず、`main`にあるコードも `pending-exception-fast-reject` featureを既定オフのまま保持する。過去の測定経路・invalid判定の記述は履歴であり、この段落と末尾の「現行採用判定」を現行判断として扱う。
+> **位置づけ（2026-09-03）**: P1-A採用、P1-B不採用、P2-A既定化見送りまでを記録した
+> 完了履歴であり、新しい候補の実行計画ではない。現行のPicoCalc全体高速化は
+> [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+> に従う。40-run CPU protocolを構造的なscheduler候補へ流用しない。
+
+> **最終採用ステータス（2026-09-03）**: P0基盤、P1-A/P1-B/P2-Aの実装・correctness・profile・CPU-time A/Bは完了した。P1-Aは、二つの実アプリを等重みで集約した combined raw CPU-time効果が **+1.218973%**（95% CI **+0.437619%〜+2.006406%**）でマイナスではなかったため、ユーザー決定により採用する。バックエンド commit `58e73010636bb1b60fdb1ccace40db29b5bb96cc` で `decode-invalidation-tag-guard` を通常版の既定 featureへ昇格し、`picocalc-harness` の provenanceにも反映した。P1-A A/B recordの `status=invalid` は `local residual=3.096448%` が事前固定した校正診断閾値を超えたことを示すもので、raw効果をゼロまたは負へ読み替える根拠ではない。recordはimmutableに保持し、校正上の注意事項として併記する。P1-Bは combined raw **-2.177466%** のため採用せず、候補ブランチ `codex/p1b-executable-sram-filter` と一時worktreeは削除済みで、`main`へも統合していない。P2-Aは combined raw **+0.204677%** だが CIがゼロをまたぐため今回の既定化対象にはせず、`main`にあるコードも `pending-exception-fast-reject` featureを既定オフのまま保持する。過去の測定経路・invalid判定の記述は履歴であり、この段落と末尾の「現行採用判定」を最終判断として扱う。
 
 追加の CPU-only 直接測定では、P1-Aのfull-tag guardを実際に通る `self-invalidate` workloadを用い、baseline中央値124.963556 MHzに対してP1-A中央値142.810288 MHz、paired point **+15.324225%**（median **+14.289532%**、95% CI **+12.471306%〜+18.249511%**）を得た。10 pairすべてでcandidateがbaselineを上回った。この値はホスト上のflat-out CPU microbenchmarkであり、実アプリcombined +1.218973%を置き換えない。raw、集計、診断profileは `firmware-validation/evidence/rp2040-cpu-p1-a-cpu-only-direct-20260903-01/` に保存した。`paced_bench_rp2040 --workload basic` はP1-AのSRAM write/invalidationを通らないため、同測定の採否資料には使用していない。
 

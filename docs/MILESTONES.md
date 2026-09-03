@@ -1,17 +1,25 @@
-# 現行計画の完了状態
+# 作業計画の完了状態
 
-**この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
+**この文書は完了・終了した作業の台帳です。** R0〜NEXT-4は完了または正式終了しています。
+現在の高速化の目的、実施順序、採否条件は
+[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+を正典とします。
 表示名として、`VRP-LOAD-0`は **LOAD-0（最大級の継続負荷性能テスト0番）**、
 `picotetris-opt1b`は **Tetris（軽ゲーム実装）** と記載します。内部IDと証拠のパスは変更しません。
-LOAD-0は数値の基準値ではなく、正式判定に使う人工的な固定負荷の試験ケースです。120秒sliceの
-測定値はLOAD-0固有の準備段階の観測値であり、現行エミュレーター全体の性能値ではありません。
-性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
-直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。Validated Realtime PreviewはVRP-0〜VRP-4を受入し、VRP-5 reusable backend pin preflightも完了しています。VRP-2-eではclean backend・実BIN・fresh complete audio reportによるregistered-target四者digest gateを2つのversioned targetで受入、VRP-3ではTk薄型GUI・PicoCalc skin・LCD・keyboard・UART0 console・reset/reloadをWSLgで受入、VRP-4では同一registered targetのmonitor off／on／forced-drop formal evidenceを固定しました。VRP-5〜VRP-7、正式qualificationとcapability昇格は未完了です。NEScoに依存しないrepository-ownedな継続負荷workload `VRP-LOAD-0`をVRP-5の正式qualification前提として計画し、r1のpreview-only targetによるreceipt／admission／headless経路まで受入しました。既存VRP-NES-0のfixture・target・evidenceは歴史資料として保持します。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
-1倍速UXプロジェクトは、LOAD-0 r1の120秒non-formal vertical sliceを準備段階の停止点として中断しています。3回determinism、10 virtual分以上の準備run、threshold decision、input-to-visible-response、hardware correlation、正式qualificationは未完了です。判断と再開条件は[`validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)を参照してください。
+LOAD-0は数値の基準値や高速化gateではなく、保存済みの人工stress fixtureです。120秒sliceの
+測定値はLOAD-0固有の歴史的観測値であり、現行エミュレーター全体の性能値ではありません。
+OPT4 micro-opt bankは完了・保留履歴であり、現行計画ではありません。
+I2C-EXTはE0〜E6まで完了しています。Validated Realtime PreviewはVRP-0〜VRP-4とVRP-5 reusable backend-pin preflightまで完了し、LOAD-0 r1のpreview-only経路も確認済みです。これらは完了・中断履歴であり、未完了のVRP-5〜VRP-7、正式qualification、capability昇格は現行作業ではありません。
+1倍速UXプロジェクトは、LOAD-0 r1の120秒non-formal vertical sliceを停止点として中断しています。
+未完了項目は現行高速化へ持ち越さず、追加の長時間runやVRP-5 qualificationを開始しません。判断は
+[`validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)
+を参照してください。
 
 ## 状態
 
-VRP-2-eの`c1c20d7d86a3006569375bc333cf72494e95eb46`は当時の不変evidenceとして保持するが、現在のbackend branch／tagから到達できないため、VRP-5の再現可能なbackend pinとしては使用しない。到達可能なclean backendでの新しいversioned target／validation／receiptは作成・受入済みである。`VRP-LOAD-0`のsource／fixture prototypeはこのpreflightと並行できるが、正式qualificationは両方のgate後に行う。
+VRP-2-eの`c1c20d7d86a3006569375bc333cf72494e95eb46`は当時の不変evidenceとして保持する。
+到達可能なclean backendでの新しいversioned target／validation／receiptも作成・受入済みだが、
+1倍速中断により正式qualificationは開始しない。
 
 ### VRP-NES-0／NESco歴史資料の境界（2026-08-29時点）
 
@@ -39,6 +47,7 @@ recordなどの入力識別情報と検証記録だけである。SHA-256は同�
 | R5 | 同一artifact PicoCalc実機相関 | 完了 2026-08-08 |
 | R6 | 文書・配布状態確定 | 完了 2026-08-08 |
 | R6-M | backend role／回帰境界の分離 | 完了 2026-08-09 |
+| PERF | PicoCalc emulator高速化 | **現行。実アプリwall時間短縮が目的。PERF-Q0（dynamic quantumの機会量・危険遷移調査）から開始** |
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
@@ -74,9 +83,11 @@ Host backendの合格だけでハードウェア挙動を合格にしません�
 
 ## 現在の正式計画
 
-R/NEXTの機能作業は完了しています。UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5は完了しています。SD-GEN-1 P5で
-boundedな`sd-multi-block` capabilityをversioned validationとして受け入れました。現行作業は、性能面では
-[`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md)、機能面では番号付き作業とは別に固定した
+現在の性能作業は
+[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+に従います。R/NEXTの機能作業、UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5は完了しています。
+SD-GEN-1 P5でboundedな`sd-multi-block` capabilityをversioned validationとして受け入れました。
+機能面では番号付き作業とは別に固定した
 **UF2Loader SD／flash統合（U0〜U6）**とM-NESCO拡張受入は完了し、U6の限定capabilityを有効化しました。U4はCMD18/CMD12追加なしと判定済みです。通常direct boot debugは従来どおりで、
 USB BOOTSEL/MSCや全UF2互換は未対応です。
 OPT4／backend側は、性能測定を再開する前に
@@ -93,11 +104,11 @@ cycle差は暫定分類として記録し、差分targetはhold、旧pinとpromo
 DS3231/AT24C32/AHT20/BMP280 modelとpicocalc-rtc-v1／picocalc-rtc-env-v1 profile接続、schema 2 sidecar、target contract接続、E5同一UF2実機probe、E6 active target／versioned validation／bounded capabilityまで完了した。
 U0のprovenance固定は完了しており、現在はproduction codeを変更できる状態です。
 
-次に開始した新規機能計画はValidated Realtime Previewです。VRP-0 contract/host spike、VRP-1
+Validated Realtime Previewは完了・中断状態を記録する履歴です。VRP-0 contract/host spike、VRP-1
 receipt/admission、VRP-2-a current-backend versioned target revalidation、VRP-2-b descriptor consumer、VRP-2-c machine API schema-1 transcript、VRP-2-d UART RX、VRP-2-e registered-target digest gate実装と実target受入、VRP-3のTk GUI／PicoCalc skin／LCD／keyboard／UART0 console／reset-reload、VRP-4のbounded host audio monitorとregistered-target off／on／forced-drop formal evidence、VRP-5 reusable backend pin preflightは完了しています。shared sessionとversioned observation projection/digest、board-backed synthetic UART fixtureの三者report-compatible observation digest smoke gateも実装済みです。VRP-LOAD-0はrepository-ownedな320x320 RGB565全画面・48 kHz DMA音声・継続CPU負荷・clean clone再現性を固定するr1 prototypeを実装し、固定条件BIN／UF2再現性、1秒／2秒のruntime／input smoke（公式scenarioを含む）、120秒 vertical slice、preview-only targetのreceipt／admission／headless consumerまで確認済みです。3回determinism、10 virtual分以上の準備run、LOAD-0 completionは未完了です。既存VRP-NES-0のsynthetic NROM fixtureと3回local firmware evidenceは歴史資料として保持し、VRP-5の依存にはしません。VRP-7 exact optimizationはVRP-5で1倍未達を
-確認した場合だけ開始します。詳細と各gateは
+確認した場合だけ開始する旧条件でしたが、現在はVRP-5以降とVRP-7を開始しません。詳細と当時の各gateは
 [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)
-を正典とし、提案書だけからproduction実装の順序を推測しません。
+に記録していますが、production実装の順序には使いません。
 
 ### UF2Loader計画の実施順序と中間マイルストーン
 

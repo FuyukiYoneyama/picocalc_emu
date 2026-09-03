@@ -1,11 +1,15 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 preview-only target, receipt/admission, and headless path complete; 1x UX qualification suspended before LOAD-0 completion, preparation, threshold, and VRP-5 qualification**
+Status: **Historical implementation record / VRP-0〜VRP-4 complete; 1x UX and VRP-5以降は中断。現行作業計画ではない**
 Date: 2026-08-28 (updated 2026-09-03)
 表示名の規則: `VRP-LOAD-0`は、利用者向けには **LOAD-0（最大級の継続負荷性能テスト0番）**（英: *Maximum Sustained-Load Performance Test #0*）と表記する。`VRP-LOAD-0`はregistry・validation record・receipt・証拠パスに使う変更しない内部IDである。また、`picotetris-opt1b`は利用者向けには **Tetris（軽ゲーム実装）** と表記する。これらの表示名は計測対象の意味を補足し、machine-readableなIDは変更しない。
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
 Suspension decision: [VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)
+Current performance plan: [PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+
+本書の未完了gateは現行高速化へ持ち越さない。LOAD-0の追加run、VRP-5 qualification、VRP-7、
+`ux`モードを本書から開始してはならない。
 
 ## 1. 判定
 

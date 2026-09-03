@@ -3,6 +3,7 @@
 Status: **suspended / non-qualifying**
 Decision date: 2026-09-03
 Scope: `picocalc_emu` Validated Realtime Preview and its `picoem-picocalc` backend
+Replacement performance direction: [`../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
 
 ## 決定
 
@@ -15,6 +16,9 @@ preview-only targetのreceipt／admission／headless経路を確認した時点�
 `ux`モードは概念設計のみで、未採用・未実装のままとする。120秒sliceの完了を理由に、
 3回determinism、10 virtual分以上の準備run、VRP-5 qualification、または条件付きVRP-7
 最適化を自動開始しない。
+
+PicoCalc emulatorの高速化自体は終了しない。1倍速qualificationと近似`ux` backendを切り離し、
+Serialのguest-visibleな正確性を保った実アプリwall時間短縮として別計画で継続する。
 
 ## 確認済みの範囲
 

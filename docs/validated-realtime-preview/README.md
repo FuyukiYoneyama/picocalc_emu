@@ -21,6 +21,9 @@ The 1x UX project is explicitly suspended at this preparation boundary. The
 `ux` mode remains concept-only and unimplemented; the suspension decision and
 resume conditions are recorded in
 [`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md).
+The unfinished VRP gates are not the current work queue. Current performance
+work preserves Serial guest-visible behavior and follows
+[`../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md).
 
 ## Canonical files
 
@@ -147,8 +150,8 @@ authoritative preview backend. VRP-3 adds the standard-library Python/Tk
 frontend, but no Rust GUI/audio dependency and no emulator-core copy. VRP-4
 adds a bounded, optional host PCM monitor using the existing PCRP stream and
 an external `ffplay` process when available. The GUI and monitor do not
-promote hardware correlation or `realtime-1x-qualified`; those remain VRP-5
-and later gates.
+promote hardware correlation or `realtime-1x-qualified`; those gates are
+suspended and are not the current work queue.
 
 ## VRP-4 host audio monitor
 

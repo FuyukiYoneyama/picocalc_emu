@@ -15,16 +15,18 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
-| 現在の計画（Validated Realtime Preview／VRP-LOAD-0・VRP-5以降。VRP-0〜VRP-4 formal evidenceまで完了） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
+| **現在の高速化計画（実アプリの検証待ち時間を、Serialの正確性を保って短縮）** | [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md) |
+| 中断済み1倍速UX計画の実装履歴（現行作業ではない） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | VRP-2 backendのrunner実装・IPC境界・ローカル検証 | [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md) |
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |
 | LOAD-0 r1のrepository-owned sustained-load計画と120秒準備slice（formal qualificationは中断） | [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md) |
 | 1倍速UXプロジェクトの中断判断と再開条件 | [`validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md) |
 | VRP-NES-0の歴史資料・非適格fixture/evidence | [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md) |
-| `ux`モード（体感評価用の高速実行）の概念設計。**未採用・未実装** | [`validated-realtime-preview/UX_MODE_CONCEPT_20260830.md`](validated-realtime-preview/UX_MODE_CONCEPT_20260830.md) |
+| `ux`モード（体感評価用の高速実行）の歴史的概念。**未採用・未実装・現行高速化の対象外** | [`validated-realtime-preview/UX_MODE_CONCEPT_20260830.md`](validated-realtime-preview/UX_MODE_CONCEPT_20260830.md) |
 | CPU単体経路の旧`basic`差分分析（履歴。111.7 MHzは出典未確定） | [`validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md`](validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md) |
 | RP2040 CPU性能値の正典台帳（現行直接測定値、実アプリ値、旧111.7 MHzの出典訂正） | [`RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](RP2040_CPU_MEASUREMENT_LEDGER_20260903.md) |
-| 1倍前提の誤りと2バージョン構成への是正助言。**未採用** | [`VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md`](VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md) |
+| 1倍前提の誤りと2バージョン構成への歴史的な是正助言。**1倍中断により未採用** | [`VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md`](VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md) |
+| `step_quantum`のengagement gating候補。**単純な現在状態判定は不採用、補正版の調査だけ現行計画PERF-Q0で許可** | [`QUANTUM_ENGAGEMENT_GATING_PROPOSAL_20260903.md`](QUANTUM_ENGAGEMENT_GATING_PROPOSAL_20260903.md) |
 | 完了済みI2C-EXTのoptional capability（RTC/環境sensor） | [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md) |
 | 改造・backend変更・AI開発の入口 | [`../DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) |
 | M-NESCO拡張の実行証拠・完了記録 | [`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)、[`完了済み契約`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md) |
@@ -35,7 +37,7 @@
 | SD-GEN-1-P3 replay／negative／既存回帰 | [`P3 evidence`](../firmware-validation/evidence/sd-gen1-p3-20260823-01/)、[`validation contract`](../firmware-validation/contracts/sd-gen1-p3-validation-v1.json) |
 | SD-GEN-1-P4 default runtime／代表E2E回帰 | [`P4 evidence`](../firmware-validation/evidence/sd-gen1-p4-20260823-01/) |
 | U6実uf2loader end-to-endの契約・実測結果 | [`U6 evidence`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)、[`完了済み契約`](history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md) |
-| 性能micro-optの現行計画 | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
+| 性能micro-optの完了・保留履歴（現行計画ではない） | [`OPT4_MICRO_OPT_PLAN.md`](OPT4_MICRO_OPT_PLAN.md) |
 | 現行backend変更の修正・検証順序 | [`picoem-picocalc/docs/BACKEND_CHANGE_VALIDATION_PLAN.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/BACKEND_CHANGE_VALIDATION_PLAN.md) |
 | OPT4候補の試作・A/B記録 | [`history/opt4/`](history/opt4/) |
 | OPT4 bank判定・残件 | [`OPT4_BANK_DECISION.md`](OPT4_BANK_DECISION.md) |
@@ -116,7 +118,7 @@ P1のmachine-readable契約は
 [`history/sd-gen1/`](history/sd-gen1/)へ移し、P2実装時点では通常runtime／runnerへ接続していませんでしたが、
 P4でdefault runtimeへ昇格しました。P4の代表E2EはCMD18→2 block→CMD12、CMD23/CMD25→1 block write→CMD17 readbackを実SPI0経路で実行し、RAW exportのbyte一致も確認しています。同じclean backendで3回再実行し、安定report項目・trace・exported imageが一致しました。既存U6／M-NESCO／FAT16／FAT32の凍結clean traceも再playしています。
 versioned targetと固定版`uf2loader-e2e`は変更していません。これらの完了済みSD作業を再開せず、
-新しい作業はValidated Realtime Previewの現行計画に従います。
+新しい性能作業は[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)に従います。
 
 `NEXT1_PICOEDIT_BLIND_CONTRACT.md`とNEXT-3の3文書は、検証器がSHA-256を含めて読む凍結契約です。
 作成時点の状態や「次は」が残っていても現在計画ではなく、改変して現在値へ合わせません。

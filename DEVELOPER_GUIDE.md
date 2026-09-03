@@ -13,8 +13,9 @@
 2. [`AI_START_HERE.md`](AI_START_HERE.md) — AIの責任境界、実機依頼、CI節約規則
 3. [`README.md`](README.md) — 公開範囲と5分の概要
 4. [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、[`docs/MILESTONES.md`](docs/MILESTONES.md)、[`firmware-validation/capability.json`](firmware-validation/capability.json) — 現在の対応範囲
-5. [`reference-projects/firmware-targets.json`](reference-projects/firmware-targets.json) — targetのsource／BIN／backend／scenario pin
-6. `docs/history/`、`firmware-validation/records/`、`hardware-validation/records/` — 書き換えない時点証拠
+5. 性能作業では[`docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md) — 現行目的、実施順序、採否条件
+6. [`reference-projects/firmware-targets.json`](reference-projects/firmware-targets.json) — targetのsource／BIN／backend／scenario pin
+7. `docs/history/`、`firmware-validation/records/`、`hardware-validation/records/` — 書き換えない時点証拠
 
 履歴文書にある「次に行う」は当時の判断です。現在の作業を決めるときは、必ず上位の現在文書と
 machine-readable capabilityを確認します。文書とsourceのどちらかが矛盾している場合、推測で進めず、
@@ -35,7 +36,7 @@ machine-readable capabilityを確認します。文書とsourceのどちらか�
 現在のbackendの役割は次の通りです。
 
 - 一般のpromoted target: `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`
-- I2C-EXT E5/E6を含む現在のlocal development main: `f810d059958773d1b42a1c6d03cc15183cdc1a4f`
+- development `main`: transientであり、targetの正確性pinとして自動採用しない。性能実験は開始時のclean commitをrecordへ固定する。2026-09-03のP1-A採用commitは`58e73010636bb1b60fdb1ccace40db29b5bb96cc`
 - OPT4時点の`d96f73b`や`a67e81c9`は凍結した過去の測定値であり、現在のHEADではありません
 
 ## 3. 最小セットアップ
@@ -52,6 +53,10 @@ git clone --recursive https://github.com/FuyukiYoneyama/picoem-picocalc.git ../p
 必要条件はPython 3.9以降です。RP2040のBINを再ビルドする場合だけPico SDKを用意し、
 `PICO_SDK_PATH`を設定します。Rust backendを変更する場合は、repositoryが要求するstable toolchainと
 `Cargo.lock`を使い、`--locked`を付けます。
+
+性能作業では1倍速、LOAD-0、旧OPT4、未完了VRP gateを開始条件にしません。同じfirmware
+artifact／scenarioを使い、clean baseline backendとcandidate backendだけを比較します。最初に許可される
+作業は、dynamic quantumの機会量と量子途中のdevice開始を調べるPERF-Q0です。
 
 外部アプリを再ビルドしない新規開発では、`picocalc_emu_ext`、PicoTetris、PicoEdit、speaker校正
 workspaceは不要です。既存targetのsourceから再生成したり、過去の実機相関を再現する場合だけ、
@@ -105,7 +110,8 @@ VRP-4のhost audio monitorはbounded PCM tap、非同期IPC writer、frontend／
 使うpresentation専用経路です。`--audio off`、`--audio-host-rate`、`--audio-queue-blocks`はhost monitorだけを変更し、
 emulated sink、virtual cycle、UART、framebuffer、validation digest、descriptorには影響しません。playerなしは
 `timing-only`、queue／IPC／ingress／player障害は`degraded`であり、emulatorのPASS/FAILや実機speaker品質を示しません。
-VRP-4のformal registered-target off/on/forced-drop evidenceが揃うまでcapabilityへ昇格しません。
+VRP-4のformal registered-target off/on/forced-drop evidenceは完了していますが、previewや1倍速を
+capabilityへ昇格したことを意味しません。1倍速qualificationは中断済みです。
 
 VRP-3の表示処理（skin、RGB565変換、screenshot）はpresentation専用です。古いframeの描画を
 coalesceしてpresentation dropとして数えることは許可しますが、backendが発行したdevice event、

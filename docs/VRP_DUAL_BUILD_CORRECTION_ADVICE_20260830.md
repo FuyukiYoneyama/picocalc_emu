@@ -4,7 +4,11 @@
 起票: Sol（レビュワー）
 対象: `docs/VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`
       `docs/VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md`
-状態: **助言のみ。計画の修正・実装は未実施。**
+状態: **歴史的助言。1倍速UX中断により未採用。現行高速化の実行指示ではない。**
+
+現行高速化は[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+に従い、UX用近似backendではなくSerialの正確性を保った実アプリwall時間短縮を扱う。本書は、
+1倍目標が中断されるまでに検討した別案として保持する。
 
 数値に関する訂正: 本書にある111.7 MHz（117 MHzではない）と44.7%は、raw log・測定コマンド・
 host/source provenanceを特定できない過去資料の引用である。現行のCPU単体直接測定値や、

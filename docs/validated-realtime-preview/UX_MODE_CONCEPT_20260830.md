@@ -1,7 +1,7 @@
 # UXモード — 概念設計
 
 作成日: 2026-08-30
-状態: **概念のみ。設計確定・実装ともに未着手。**
+状態: **歴史的概念。未採用・未実装。1倍速UX中断により現行高速化の対象外。**
 
 関連文書:
 
@@ -11,10 +11,14 @@
 - 実測の出典: [`../history/OPT2_D_LEVER_COMPARISON.md`](../history/OPT2_D_LEVER_COMPARISON.md)、
   [`../history/OPT3_A_XIP_CURSOR_PROFILE.md`](../history/OPT3_A_XIP_CURSOR_PROFILE.md)
 - CPU性能値の台帳: [`../RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](../RP2040_CPU_MEASUREMENT_LEDGER_20260903.md)
+- 現行高速化計画: [`../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
 
-本書は`ux`モードの**概念**を記録する。正典計画（上記）は現在`exact`モードのみを前提にしており、
-本書の内容を採用する場合は計画側の§3構成・§9完成定義・VRP-5判定対象の修正が必要になる。
-その差分は是正助言に一覧がある。
+本書は検証用backendとUX用近似backendを分ける可能性を記録した資料である。現行計画はこの方式を
+採用せず、Serialのguest-visibleな正確性を維持した検証wall時間の短縮を扱う。
+
+以下は`ux`モードを検討した当時の概念を記録する。旧VRP計画へ採用する場合に必要とされた
+§3構成・§9完成定義・VRP-5判定対象の修正は現在は実行しない。その差分は歴史資料として
+是正助言に残す。
 
 ## 0. この文書の位置づけ
 
