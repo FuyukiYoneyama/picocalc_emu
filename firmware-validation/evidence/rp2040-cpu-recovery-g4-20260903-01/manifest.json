@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g4-20260903-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3 complete; G4 candidate pass; G5 pending",
+  "group": {
+    "id": "G4",
+    "display_name": "ヘッドレス実行基盤（machine API・heartbeat・report入口）",
+    "purpose": "現在の利用者が使うheadless操作と長時間実行の進行通知を、高速地点へ必要部分だけ戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "151cbc0574756a3c76e2314bd46afb2dcd101c96",
+    "candidate_commit": "f2d4d52711af70cd7f4e1c74ffda667966df15cb",
+    "source_diff": "g4-source-diff.patch",
+    "source_diff_sha256": "bacdafab52a87f230519bc3fa2d7496c71d1c2d1b9433c8452247a7b0a0e850d",
+    "source_files_changed": 4,
+    "insertions": 1986,
+    "deletions": 110,
+    "worktree": "temporary /tmp worktree; detached candidate; no remote branch"
+  },
+  "runner": {
+    "binary_sha256": "9578affb263e58c78b472392aff36d5b6253d3662a95be1fee0b58b75ed13d1d",
+    "backend_commit": "f2d4d52711af70cd7f4e1c74ffda667966df15cb",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "step_quantum": 1
+  },
+  "tests": {
+    "picocalc_harness": {
+      "command": "cargo test --locked -p picocalc-harness",
+      "passed": {
+        "opt0_blocked_baseline": 2,
+        "runner": 62
+      },
+      "status": "pass"
+    },
+    "rp2040_emu": {
+      "command": "cargo test --locked -p rp2040-emu",
+      "passed": {
+        "library": 1240,
+        "firmware": 9,
+        "multicore": 9,
+        "psram_pio_edge": 4,
+        "smoke": 6,
+        "wfe_irq_wake": 5
+      },
+      "doctests": 0,
+      "status": "pass"
+    },
+    "picocalc_board": {
+      "command": "cargo test --locked -p picocalc-board",
+      "passed": 74,
+      "doctests": 1,
+      "status": "pass"
+    },
+    "format": {
+      "command": "cargo fmt --package picocalc-harness -- --check",
+      "status": "pass"
+    },
+    "release_build": {
+      "status": "pass"
+    }
+  },
+  "machine_api": {
+    "schema": 1,
+    "fixture_source": "current backend main; read-only source fixture",
+    "fixture_source_commit": "f133cf8e67b710f67d74c4b760eab3eb166c4ea1",
+    "fixture": "machine-api/golden.jsonl",
+    "fixture_sha256": "690037ba9dc12f6b838f242975c6b4a13cf96277de1e854e97abc8f538494878",
+    "requests": "machine-api/requests.jsonl",
+    "requests_sha256": "87d808cddb5d7d7fbebfe273125c622d32fc5b711531b246fef9d00c95e5a9fe",
+    "expected": "machine-api/expected.jsonl",
+    "expected_sha256": "6393bf03dffdff5900b421466cb5c76c025fef9073a91119a9958fa7c3ca08a6",
+    "firmware": {
+      "basename": "uart_hello.bin",
+      "sha256": "ec8a0ec651f408ed4d13ba3591dd9b5895182bf3685c287247868a2762677a28"
+    },
+    "bootrom": {
+      "basename": "bootrom-rp2040-b2.bin",
+      "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+    },
+    "board": "picocalc",
+    "lcd_variant": "pio-rgb565",
+    "keyboard": true,
+    "request_count": 8,
+    "runs": [
+      {
+        "id": "run-1",
+        "response": "machine-api/run-1/responses.jsonl",
+        "response_sha256": "6393bf03dffdff5900b421466cb5c76c025fef9073a91119a9958fa7c3ca08a6",
+        "snapshot": "machine-api/run-1/snapshots/golden.png",
+        "snapshot_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581",
+        "golden_response_match": true
+      },
+      {
+        "id": "run-2",
+        "response": "machine-api/run-2/responses.jsonl",
+        "response_sha256": "6393bf03dffdff5900b421466cb5c76c025fef9073a91119a9958fa7c3ca08a6",
+        "snapshot": "machine-api/run-2/snapshots/golden.png",
+        "snapshot_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581",
+        "golden_response_match": true
+      },
+      {
+        "id": "run-3",
+        "response": "machine-api/run-3/responses.jsonl",
+        "response_sha256": "6393bf03dffdff5900b421466cb5c76c025fef9073a91119a9958fa7c3ca08a6",
+        "snapshot": "machine-api/run-3/snapshots/golden.png",
+        "snapshot_sha256": "67452db642dfe52dd18e98102ba5b13187b9b94f6b91891bb2daab946d684581",
+        "golden_response_match": true
+      }
+    ],
+    "deterministic": true
+  },
+  "heartbeat": {
+    "display_name": "Tetris（軽ゲーム実装）長時間処理の進行通知",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "scenario": "heartbeat/r0-scenario-probe.json",
+    "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+    "execution_model": "Serial",
+    "cpu_affinity": 11,
+    "step_quantum": 1,
+    "run_id": "g4-tetris-heartbeat",
+    "progress_interval_seconds": 1,
+    "heartbeat_count": 15,
+    "stderr": "heartbeat/heartbeat.stderr.log",
+    "stderr_sha256": "139216a63698c86225e84e8bacc650f563dc06656dc031686f2053f8da2b7433",
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 187528659,
+    "guest_elapsed_us": 755000,
+    "uart_bytes": 1387,
+    "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+    "framebuffer_rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+    "report": "heartbeat/tetris-report.json",
+    "report_sha256": "a6f8b2d518f2c0bac3d48db5c580b3e365c0299af415f9674b326298c4a28251",
+    "performance_claim": "none"
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "Machine API golden responses and snapshots match in three replays; Tetris heartbeat emits start, 15 progress events, and a successful finish without guest-visible regression.",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "G5",
+    "next_group_display_name": "flash・SD・boot（RAW SD、flash mutation、UF2 boot、multiblock）"
+  }
+}

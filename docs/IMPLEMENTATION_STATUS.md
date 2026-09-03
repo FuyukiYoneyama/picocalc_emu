@@ -253,11 +253,14 @@ NEXT-2A（マルチコア割込み受入実装）scenarioを通過しました�
 最小移植し、board／emu／harnessの対象test、clean audio target scenario、Tetris（軽ゲーム実装）短screeningを
 通過しました。Tetris短screeningはG2比で3 cycle増えましたが、UART、framebuffer、PSRAM transaction観測などの
 guest-visible結果は一致しています。この差は復元したaudio timer pacingの候補境界差として記録し、性能改善とは
-扱っていません。audio sinkは期待値指定runだけで有効です。G1〜G3候補はまだbackend `main`へ統合しておらず、
+扱っていません。audio sinkは期待値指定runだけで有効です。G1〜G4候補はまだbackend `main`へ統合しておらず、
 現行backend `main`とtarget registryは変更していません。詳細は[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)、
 [`rp2040-cpu-recovery-g2-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/)、
-[`rp2040-cpu-recovery-g3-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/)を参照してください。
-次はG4（headless実行基盤）の必要部分の棚卸しです。
+[`rp2040-cpu-recovery-g3-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/)、
+[`rp2040-cpu-recovery-g4-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g4-20260903-01/)を参照してください。
+G4ではmachine API golden 8要求を3回再生し、応答JSONLとsnapshotの一致、Tetris（軽ゲーム実装）のheartbeat 15回と
+正常finishを確認しました。heartbeatは長時間実行の監視機能であり、性能改善値へ使っていません。次はG5
+（flash・SD・boot）の必要部分の棚卸しです。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

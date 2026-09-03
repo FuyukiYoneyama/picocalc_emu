@@ -1,0 +1,25 @@
+[PICOCALC][RUN] event=start run=g4-tetris-heartbeat pid=9 budget=1000000000
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=1 cycles=69669737 budget=1000000000 pct=6.967 elapsed_s=1.000 rate_mcycles_s=69.667
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=2 cycles=107216932 budget=1000000000 pct=10.722 elapsed_s=2.000 rate_mcycles_s=53.608
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=3 cycles=115981866 budget=1000000000 pct=11.598 elapsed_s=3.000 rate_mcycles_s=38.660
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=4 cycles=124245612 budget=1000000000 pct=12.425 elapsed_s=4.000 rate_mcycles_s=31.061
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=5 cycles=131852791 budget=1000000000 pct=13.185 elapsed_s=5.000 rate_mcycles_s=26.370
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=6 cycles=139003514 budget=1000000000 pct=13.900 elapsed_s=6.000 rate_mcycles_s=23.167
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=7 cycles=145927848 budget=1000000000 pct=14.593 elapsed_s=7.000 rate_mcycles_s=20.847
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=8 cycles=152241943 budget=1000000000 pct=15.224 elapsed_s=8.000 rate_mcycles_s=19.030
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=9 cycles=156684061 budget=1000000000 pct=15.668 elapsed_s=9.000 rate_mcycles_s=17.409
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=10 cycles=161152035 budget=1000000000 pct=16.115 elapsed_s=10.000 rate_mcycles_s=16.115
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=11 cycles=165614633 budget=1000000000 pct=16.561 elapsed_s=11.000 rate_mcycles_s=15.056
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=12 cycles=171096268 budget=1000000000 pct=17.110 elapsed_s=12.000 rate_mcycles_s=14.258
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=13 cycles=175776438 budget=1000000000 pct=17.578 elapsed_s=13.000 rate_mcycles_s=13.521
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=14 cycles=180221116 budget=1000000000 pct=18.022 elapsed_s=14.000 rate_mcycles_s=12.873
+[PICOCALC][RUN] event=heartbeat run=g4-tetris-heartbeat pid=9 seq=15 cycles=184693954 budget=1000000000 pct=18.469 elapsed_s=15.000 rate_mcycles_s=12.313
+scenario 'r0-scenario-probe': pass
+  [pass]      515 ms  game started — 1387 UART bytes seen
+  [pass]      515 ms  drop 0 — sent 4 key event(s)
+  [pass]      595 ms  wait — waited 80 ms
+  [pass]      595 ms  drop 1 — sent 2 key event(s)
+  [pass]      675 ms  wait — waited 80 ms
+  [pass]      675 ms  drop 2 — sent 2 key event(s)
+  [pass]      755 ms  wait — waited 80 ms
+[PICOCALC][RUN] event=finish run=g4-tetris-heartbeat pid=9 cycles=187528659 elapsed_s=15.639 stop=scenario_done exit=0

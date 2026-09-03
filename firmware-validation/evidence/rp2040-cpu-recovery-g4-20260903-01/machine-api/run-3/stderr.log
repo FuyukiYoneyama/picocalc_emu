@@ -1,0 +1,1 @@
+picocalc-run: flash+0x100 is not an SDK vector table (SP=0x00000000, PC=0x00000000) — booting from the bootrom reset vector instead

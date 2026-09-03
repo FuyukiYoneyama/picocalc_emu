@@ -1,0 +1,8 @@
+{"schema":1,"id":"m0","op":"observe","domains":["machine"]}
+{"schema":1,"id":"s1","op":"step","count":2}
+{"schema":1,"id":"u2","op":"subscribe","domains":["framebuffer","stop","uart"]}
+{"schema":1,"id":"r3","op":"run","max_cycles":25000}
+{"schema":1,"id":"i4","op":"input","events":[{"state":"pressed","code":65},{"state":"held","code":65},{"state":"released","code":65}]}
+{"schema":1,"id":"o5","op":"observe","domains":["machine","uart","framebuffer","unsupported_mmio"]}
+{"schema":1,"id":"ru6","op":"run_until","condition":{"kind":"cycle_at_least","value":25500},"max_cycles":1000,"poll_cycles":25}
+{"schema":1,"id":"x8","op":"snapshot","png":"golden.png"}

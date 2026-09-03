@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3 candidate pass / G4 pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4 candidate pass / G5 pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -266,5 +266,9 @@ passしたが、G2比で完了cycleが3増えた。この差は復元したaudio
 性能改善とは扱わない。audio sinkは期待値指定runだけで有効にし、通常Tetris runへ常時hashコストを加えていない。
 記録は[`rp2040-cpu-recovery-g3-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/)にある。
 再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation record、
-remote branchは変更していない。次はG4（headless実行基盤）の必要部分の棚卸しであり、対象testと短probeを通過し、
-未説明のcostがない場合だけ次へ進む。
+remote branchは変更していない。G4（ヘッドレス実行基盤）はschema 1 machine APIのgolden要求8件を3回再生して
+応答JSONLとsnapshotを完全一致させ、Tetris（軽ゲーム実装）の短scenarioで1秒間隔heartbeat 15回と正常finishを
+確認した。G3比のguest-visible差はなく、heartbeatは性能改善値へ使っていない。記録は
+[`rp2040-cpu-recovery-g4-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g4-20260903-01/)にある。
+次はG5（flash・SD・boot）の必要部分の棚卸しであり、対象testと短probeを通過し、未説明のcostがない場合だけ
+次へ進む。
