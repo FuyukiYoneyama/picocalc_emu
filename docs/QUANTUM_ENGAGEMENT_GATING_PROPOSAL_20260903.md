@@ -24,8 +24,8 @@ disengagedで始まったstepの途中でCPUがCS assert、PIO enable、DMA star
 2. TIMER、SysTick、DMA、PIO、外部入力scenarioなど、既知の次回deadlineを越えないようquantumを
    短縮する。
 3. 初版候補は64ではなく16とし、q1へ保守的にfallbackできるようにする。
-4. 機会量とバリア実装可能性を確認した後、代表2アプリの正確性とwall時間をscreeningし、効果が
-   確認できた場合だけ全target回帰へ進む。
+4. 機会量とバリア実装可能性を確認した後、代表2アプリの正確性とprocess CPU-timeをscreening
+   する。wall時間はUX副指標として併記し、CPU-time効果が確認できた場合だけ全target回帰へ進む。
 
 以下に残るH1、engagement条件、既存計測は候補の分析材料である。上記の補正なしに§4の当初案を
 production実装してはならない。
@@ -334,7 +334,8 @@ transition barrierとdeadline capはwindow途中でbatchを打ち切るため、
    `psram_pio_edge_interleave.rs`、TIMER／DMA／audio／NVICは既存
    `dma_quantum_invariance.rs`、SysTickは既存SysTick／exception test群を拡張し、同じ契約を
    重複する新規test fileは作らない。
-3. 代表2アプリのcombined wall短縮が採用screeningを通り、どちらにも3%超の退行がない。
+3. 代表2アプリのcombined process CPU-time短縮が採用screeningを通り、wall時間に明確なUX退行がなく、
+   どちらにも3%超の退行がない。
 4. 効果確認後に限って全target回帰、代表behavior trace、unit／integration／CLI／feature gateを
    通す。guest-visible差は例外を追加せず不採用とする。
 5. 採用時はmainへ統合し、不採用時は判断記録を残してcandidate branch／worktreeを削除する。
@@ -342,19 +343,36 @@ transition barrierとdeadline capはwindow途中でbatchを打ち切るため、
 ## 7. 測定計画
 
 **効果量に測定精度を合わせる。** CPU候補用の40 measured run＋27 anchor＋60秒cooldownは使わない。
-正確性の小gateを通した後、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）で
-baseline／candidateをAB・BAの2 pairずつ実行し、wall時間を主指標にする。P2-A cleanup後の
-clean commitを共通baselineとして固定し、candidateがそのcommitから派生していることを開始直前に
-照合する。hostで利用可能な単一vCPUを一つ選び、全runを`--cpu`相当の同一affinityへ固定して、
-選択値と固定方法をrecordへ保存する。affinityを固定できないhostでは測定を開始しない。
+正確性の小gateを通した後、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）で固定guest
+cycle数のbaseline／candidateをAB・BAの2 pairずつ実行する。これは効果screeningであり、1%級の
+改善をこのrun数だけで確定する確認試験ではない。
 
-- combined wall短縮5%未満: 不採用
-- 5%以上10%未満: コードを削減・単純化する場合だけ採用候補
-- 10%以上: 全target回帰へ進む
-- どちらか一方が3%超退行: combined値にかかわらず不採用
+測定は既存`picocalc-run --host-timing`のemulation interval（`CLOCK_PROCESS_CPUTIME_ID`）を使い、
+`cycles_per_emulation_cpu_second`を主指標にする。wall時間、`emulation_cpu_ns`、guest cycle数、
+stop reason、guest observation digestを全runへ併記する。P2-A cleanup後のclean commitを共通baseline
+として固定し、candidateがそのcommitから派生していることを開始直前に照合する。
 
-境界から2 percentage point以内の場合だけ1 pairを追加できる。効果が境界から離れているのに
-run数を増やして有意差を探さない。
+hostで利用可能な単一vCPUを一つ選び、全runを`--cpu`相当の同一affinityへ固定して、選択値と実効値を
+recordへ保存する。affinityを固定できないhostでは測定を開始しない。validity gate（同一guest work、
+正のCPU／wall clock、実効affinity、実行エラーなし、correctness projection一致）のいずれかに
+失敗したrecordは、raw値を診断資料として保持するだけで性能採用の根拠にしない。
+
+paired CPU-time log ratioの95% CIを計算し、計算式をrecordへ保存する。
+
+以下の5%は測定誤差の境界ではない。新しい構造的複雑性を追加する候補に対して、保守・回帰リスクに
+見合う実用的な効果を要求する費用対効果の基準である。測定誤差の扱いはvalidity gateとCPU-timeの
+95% CIで別に判定する。
+
+- CI下限が0以下: 性能改善は未証明。不採用
+- CI下限が0を超え、コード量・複雑性を増やさない: 1〜5%でも小改善の採用候補。ただし1〜5%を
+  性能効果として認定する場合は、run数を結果後に増やさず、別途事前固定した確認protocolで確認する
+- CI下限が0を超え、新しい構造的複雑性を追加する: combined効果5%未満は棄却、5%以上10%未満は
+  コード削減・単純化がない限り棄却、10%以上は全target回帰へ進む
+- wall時間はUX副指標であり、CPU-time効果へ読み替えない。wall時間に明確な実アプリ退行があれば、
+  CPU-time効果があってもUX改善候補としては不採用
+
+2 pairのscreening結果を見て、都合のよい方向へrun数を増やさない。小改善の確認が必要な場合の
+protocol、run数、判定は候補実装前に固定する。
 
 証拠は `firmware-validation/evidence/quantum-engagement-<YYYYMMDD>-NN/` へ、
 コマンド、host 情報、raw 出力、成果物 SHA、判定を置く。CPU A/B の record schema は使わない。
@@ -382,7 +400,7 @@ run数を増やして有意差を探さない。
 | 2 | P2-A不採用runtimeの独立cleanupとbaseline再固定 | clean baseline commit | cleanup差分が混ざれば候補を作らない |
 | 3 | q16＋transition barrier＋deadline cap | baselineから派生した最小candidateとunit test | q1意味論を保てなければ終了 |
 | 4 | 小さい正確性gate | fixtureと代表2アプリの比較 | guest-visible差があれば終了 |
-| 5 | 代表2アプリのwall-time screening | 同一affinityのAB／BA各2 pair | §7の性能条件未達なら終了 |
+| 5 | 代表2アプリのprocess CPU-time screening（wall-timeはUX副指標） | 同一affinityのAB／BA各2 pair | §7の性能条件未達なら終了 |
 | 6 | 採用前の全target回帰 | regression record | 差が1件でもあれば終了 |
 | 7 | 不要分岐の削除、統合、後始末 | decision、main commit | 不採用コードをmainへ残さない |
 
@@ -426,6 +444,7 @@ CPU 単体の直接測定（baseline 中央値 124.963556 MHz）と実アプリ�
   device側モデルへの影響を確認していない。採用前の全target回帰に
   `picocalc-clock-i2c-env-e5`を含めるが、gate通過は事後確認であり、
   述語の十分性を先に示したものではない。
-- §7 の測定計画は wall 時間のみを主指標とする。CPU 高速化計画が CPU-time を主指標に
-  切り替えた経緯と契約が異なるため、両者の結果を同じ表に並べない。
+- §7 の測定計画は固定guest cycle数あたりのprocess CPU-timeを主指標とし、wall時間をUX副指標とする。
+  CPU 高速化計画が CPU-time を主指標に切り替えた経緯と同じ測定契約を使い、両者の結果を同じ
+  「PicoCalc全体のwall改善率」として混同しない。
 - §1 の 8.93 秒 / 4.47 秒は先行提案が記録した実測値であり、本書で再測定していない。

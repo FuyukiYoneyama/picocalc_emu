@@ -25,7 +25,9 @@
 周辺装置が何も観測できない区間で、同じcycle進行を処理するhost側のscheduler呼出しをまとめる。
 内部の関数呼出し回数counterは変化し得るが、命令境界、device event順序、UART、framebuffer、audio、
 SD／PSRAM、keyboard、interrupt結果は同じにする。これが「結果を変えずに簡略化して速くする」の
-具体的な方針である。
+具体的な方針である。性能比較ではartifact、scenario、入力、停止理由、guest cycle数を固定し、
+既存の`--host-timing`が測るemulation区間のprocess CPU時間を主指標にする。runner起動・report出力・
+host待ちを含むwall時間は、利用者の待ち時間を確認する副指標として別に記録する。
 
 ## 1. 何を速くするのか
 
@@ -41,9 +43,18 @@ SD／PSRAM、keyboard、interrupt結果は同じにする。これが「結果�
 固定し、cleanなbaseline backendとcandidate backendだけを実験record内で差し替える。採用前に
 registry revisionや既存validation recordを更新しない。
 
-主指標は、固定scenarioを開始して終了するまでの**ホストwall時間**とする。emulated
-cycles/second、process CPU time、CPU-only MHz相当、subsystem counterは原因帰属の補助指標であり、
-実アプリの待ち時間を置き換えない。
+性能の主指標は、固定したguest処理量に対する**emulation区間のprocess CPU時間**とする。
+具体的には`emulation_cpu_ns / guest_cycles`（小さいほどよい）、または同値の
+`cycles_per_emulation_cpu_second`（大きいほどよい）を使う。計測区間は既存`--host-timing`の
+`run_loop`直前・直後であり、runner起動、初期化、report出力、subprocess待ち、cooldownを含めない。
+guest cycle数、stop reason、guest-visible observationが一致しないrunは性能比較から除外し、成功扱いに
+しない。
+
+wall時間は**end-to-endのUX副指標**として必ず記録する。ただしhostのスケジューリング、VM、I/Oを
+含むため、1%程度の性能改善をwall時間だけで認定しない。process CPU時間が改善してもwall時間での
+利用者待ち時間短縮が確認できない場合は、「emulator計算コスト改善、UX効果未確認」と表記する。
+emulated cycles/second、CPU-only MHz相当、subsystem counterは原因帰属の補助指標であり、主指標や
+wall時間の代用にはしない。
 
 LOAD-0（最大級の継続負荷性能テスト0番、内部ID `VRP-LOAD-0`）は人工的なstress fixtureとして
 保存するが、この高速化プロジェクトのbaseline、開始gate、性能合否には使用しない。3回
@@ -60,11 +71,16 @@ determinism、10 virtual分run、1倍qualificationは再開しない。
   CPU-only `self-invalidate`で+15.324225%だったが、Tetris（軽ゲーム実装）と
   PicoEdit（テキスト編集実装）の実アプリCPU-time combined rawは+1.218973%だった。
   CPU単体の大きな効果が、実アプリ全体には小さく現れることが確認できた。
+- 同じP1-A実アプリrecordのwall pairは、20件で約-13.31%〜+3.77%に振れ、幾何平均効果は約+0.249%に
+  とどまった。一方、process CPU-timeのcombined効果は+1.218973%、95% CIは+0.437619%〜+2.006406%
+  だった。wall時間を1%級の主判定へ使わない根拠は、既存recordで確認済みである。
 - `--psram`によりrun全体が`step_quantum=1`となる一方、TetrisのPSRAM実通信は7 transaction、
   58 byteに限られる。周辺装置が観測していない時間にも1-cycle scheduler costを支払っている
   可能性が高い。
+- `picoem-picocalc`には既に`CLOCK_PROCESS_CPUTIME_ID`を使う`--host-timing`経路がある。今回の候補の
+  ために新しいwall時計や新しい測定器を作らず、この既存経路を固定guest cycle数と組み合わせて使う。
 - OPT2、OPT3、OPT4の過去候補は、小改善、退行、exactness差、または効果未確認として判断済みで
-  ある。新しいwall-time帰属または新しい安全機構がない限り、同じ候補を再実装・再測定しない。
+  ある。新しいprocess CPU-time帰属または新しい安全機構がない限り、同じ候補を再実装・再測定しない。
 
 性能指標とCPU最適化数値の定義・出典は
 [`RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](RP2040_CPU_MEASUREMENT_LEDGER_20260903.md)
@@ -83,8 +99,10 @@ determinism、10 virtual分run、1倍qualificationは再開しない。
 6. **一度に一候補だけ変える。** candidateの実装、計測器、baseline更新を同じ差分へ混ぜない。
 7. **不採用コードを残さない。** `default-off`を理由に候補実装をmainへ恒久保存しない。
 8. **既存recordを直さない。** 過去の測定、invalid判定、1倍中断記録はその時点の証拠として保持する。
-9. **計画完了を成果に数えない。** 成果は、正確性gateを通ってmainへ統合されたwall時間短縮、
-   または高コストな誤候補を安価に棄却した記録である。
+9. **計画完了を成果に数えない。** 成果は、正確性gateを通ってmainへ統合されたemulator計算コスト
+   または利用者待ち時間の短縮、または高コストな誤候補を安価に棄却した記録である。
+10. **測定validityと効果を混同しない。** validity gateに失敗したrecordのraw効果は診断値として保持
+    するが、性能改善の採用根拠へ戻さない。validity失敗を結果の解釈で帳消しにしない。
 
 既存backend `main`には、不採用P2-Aの`pending-exception-fast-reject`が既定オフで残っている。
 これは原則7に対する既知の負債である。PERF-Q0は妨げないが、production候補を作るPERF-Q1より前に、
@@ -176,27 +194,43 @@ counter系fieldを棚卸しし、既存`dma_quantum_invariance`が`audio_sink`�
 不変性を要求していることから導出した。結果を見て除外を追加しない。full report diffも保存し、
 除外した2 fieldの変化理由と再定義後の値を記録する。
 
-### PERF-Q3 — 効果screening
+### PERF-Q3 — 効果screening（process CPU-time主指標）
 
-PERF-Q2合格後に、二つの実アプリでbaseline／candidateをAB・BAの2 pairずつ実行する。開始前に、
-P2-A cleanup後のclean baseline commitとcandidateの派生元が同一であることを再確認する。hostで
-利用可能な単一vCPUを一つ選び、baseline／candidateの全runを`--cpu`相当の同一affinityへ固定する。
-選択したvCPUと固定方法をrecordへ保存し、affinityを固定できないhostではPERF-Q3を開始しない。
+PERF-Q2合格後に、二つの実アプリでbaseline／candidateをAB・BAの2 pairずつ実行する。これは
+効果のscreeningであり、1%級の改善をこのrun数だけで確定する確認試験ではない。開始前に、P2-A
+cleanup後のclean baseline commitとcandidateの派生元が同一であることを再確認する。artifact、
+scenario、入力、stop reason、guest cycle数も固定し、これらが一致しないrunは性能比較に使わない。
+
+測定は既存`picocalc-run --host-timing`のemulation interval（`CLOCK_PROCESS_CPUTIME_ID`）を使い、
+`cycles_per_emulation_cpu_second`を主指標とする。wall時間、`emulation_cpu_ns`、guest cycle数、
+stop reason、guest observation digestを全runへ併記する。起動、初期化、report出力、cooldownをCPU
+主指標へ混ぜない。
+
+hostで利用可能な単一vCPUを一つ選び、baseline／candidateの全runを`--cpu`相当の同一affinityへ固定する。
+選択したvCPUと実効affinityをrecordへ保存し、affinityを固定できないhostではPERF-Q3を開始しない。
 これは同一host内の比較条件を揃えるものであり、物理coreの占有や完全なnoise排除を意味しない。
-warm-up、60秒cooldown、calibration anchorは使わない。wall時間を主指標とし、全runを保存する。
+warm-up、60秒cooldown、calibration anchorは使わない。
 
-各アプリの短縮率は、そのアプリのcandidate 2 run合計とbaseline 2 run合計から計算する。
-`combined wall短縮`は2アプリを合わせたcandidate 4 run合計とbaseline 4 run合計の比とし、計算式を
-recordへ保存する。
+各アプリのCPU-time効果とcombined効果はpaired log ratioから計算し、95% CIと計算式をrecordへ保存する。
+validity gate（同一guest work、正のCPU／wall clock、実効affinity、実行エラーなし、correctness
+projection一致）のいずれかに失敗したrecordは、raw値を診断資料として保持するだけで、性能採用の
+根拠にしない。
 
-- combined wall短縮が5%未満: 棄却
-- combined wall短縮が5%以上10%未満: 実装が既存コードを削減・単純化する場合だけ採用候補。
-  純増または複雑化するなら棄却
-- combined wall短縮が10%以上: 全target回帰へ進む
-- いずれかの実アプリが3%を超えて退行: combined値にかかわらず棄却
+以下の5%は測定誤差の境界ではない。新しい構造的複雑性を追加する候補に対して、保守・回帰リスクに
+見合う実用的な効果を要求する費用対効果の基準である。測定誤差の扱いはvalidity gateとCPU-timeの
+95% CIで別に判定する。
 
-結果が境界から2 percentage point以内の場合だけ、同じ事前条件で1 pairを追加できる。それ以外で
-run数を増やして有意差を探さない。
+- combined CPU-time効果の95% CI下限が0以下: **性能改善は未証明**。数値を理由に候補を採用しない
+- CI下限が0を超え、候補がコード量・複雑性を増やさない: 1〜5%でも小改善の採用候補にできる。
+  ただし1〜5%を性能効果として認定するには、run数を結果後に追加せず、別途事前固定した確認protocol
+  で同じCPU-time効果を確認する
+- CI下限が0を超え、候補が新しい構造的複雑性を追加する: combined効果が5%未満なら棄却、5%以上
+  10%未満ならコード削減・単純化がない限り棄却、10%以上なら全target回帰へ進む
+- wall時間はUX副指標とし、CPU-time改善をwall時間の改善と読み替えない。wall時間に明確な実アプリ
+  退行があれば、CPU-time効果があってもUX改善候補としては棄却する
+
+2 pairのscreening結果を見て、都合のよい方向へrun数を増やしたり、5%を測定後に変更したりしない。
+小改善の確認が必要な場合のprotocol、run数、判定を候補実装前に別recordへ固定する。
 
 ### PERF-Q4 — 採用前の全回帰
 
@@ -222,27 +256,28 @@ main統合後に作業branchを残さない。
 
 ## 5. PERF-Qが不成立だった場合
 
-次の候補を推測で選ばず、TetrisとPicoEditを各1回だけ使ったwall-time帰属を先に取得する。
-CPU core、scheduler、PIO、GPIO/device observation、DMA、report／presentationの大分類だけを測り、
-細かなcounterを最初から追加しない。
+次の候補を推測で選ばず、TetrisとPicoEditを各1回だけ使ったprocess CPU-time帰属を先に取得する。
+wall時間は副指標として併記する。CPU core、scheduler、PIO、GPIO/device observation、DMA、report／
+presentationの大分類だけを測り、細かなcounterを最初から追加しない。
 
-次候補は、両アプリのcombined wall時間を10%以上短縮できる説明があるものに限定する。
+次候補は、両アプリのcombined process CPU-timeを10%以上短縮できる説明があるものに限定する。
 
-- OPT2-C `bounded-exact-batching`（旧候補を新しいwall-time帰属に基づいて再評価する場合に限る）:
+- OPT2-C `bounded-exact-batching`（旧候補を新しいCPU-time帰属に基づいて再評価する場合に限る）:
   peripheral scheduler／PIO／GPIOのexact batching
 - PSRAM transaction外の観測呼出し削減
 - 実アプリで支配的と確認されたCPU hot path
 
-上記OPT2-Cは新案ではなく、登録済み旧候補の条件付き再開である。新しいwall-time帰属が旧不採用理由を
-覆し、combined wall時間の10%以上を説明する場合だけ、旧recordを参照して再開判断を別途記録する。
+上記OPT2-Cは新案ではなく、登録済み旧候補の条件付き再開である。新しいCPU-time帰属が旧不採用理由を
+覆し、combined CPU-timeを10%以上短縮できる説明がある場合だけ、旧recordを参照して再開判断を別途記録する。
 
 Threaded execution、basic-block JIT、PGO、`ux` semantic shortcutは現時点の次候補にしない。
 ThreadedはPicoCalcのPSRAM／UART／SPI／I2C／PWM／DMA意味論が未完了で、CPU候補は実アプリ全体の
 寄与が小さい可能性が高く、`ux`モードは1倍UX中断判断の範囲にあるためである。
 
-wall-time帰属でcombined wall時間の10%以上を説明できる大分類が見つからなければ、候補コードを
+process CPU-time帰属でcombined CPU-timeの10%以上を説明できる大分類が見つからなければ、候補コードを
 作らずプロジェクトを一時停止する。小さなmicro-optを無期限に積み上げる計画へ戻さない。
-採用改善が出た場合だけ、その採用commitを次のbaselineとして絶対wall時間と累積短縮率を更新する。
+採用改善が出た場合だけ、その採用commitを次のbaselineとしてCPU-timeとwall時間の両方を記録し、
+累積短縮率をCPU-time基準で更新する。
 
 ## 6. 明示的に停止する作業
 
