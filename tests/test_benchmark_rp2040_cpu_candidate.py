@@ -1715,6 +1715,8 @@ class CandidateRunnerTests(unittest.TestCase):
         report = {
             "backend_build": {"commit": "a" * 40, "dirty": False},
             "backend_commit": "a" * 40,
+            "step_quantum": 16,
+            "psram": {"tick_count": 99, "bytes_read": 2},
             "audio_sink": {
                 "expected_count": 49152,
                 "expected_sha256": "b" * 64,
@@ -1728,8 +1730,16 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertNotIn("backend_commit", projection)
         self.assertNotIn("expected_count", projection["audio_sink"])
         self.assertNotIn("expected_sha256", projection["audio_sink"])
+        self.assertEqual(projection["step_quantum"], 16)
+        self.assertEqual(projection["psram"]["tick_count"], 99)
         self.assertEqual(projection["audio_sink"]["dma_write_count"], 49152)
         self.assertEqual(projection["audio_sink"]["pcm_sha256"], "c" * 64)
+        dynamic_projection = verifier._rp2040_guest_observation_projection(
+            report, exclude_dynamic_scheduler_fields=True
+        )
+        self.assertNotIn("step_quantum", dynamic_projection)
+        self.assertNotIn("tick_count", dynamic_projection["psram"])
+        self.assertEqual(dynamic_projection["psram"]["bytes_read"], 2)
 
     def test_admission_gate_rechecks_receipts_and_full_workload_identity(self):
         import picocalc

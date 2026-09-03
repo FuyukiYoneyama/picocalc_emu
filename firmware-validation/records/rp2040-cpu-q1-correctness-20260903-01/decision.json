@@ -1,0 +1,159 @@
+{
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "dirty": false,
+      "feature_set": [
+        "decode-invalidation-tag-guard",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882"
+    },
+    "baseline_trace": {
+      "build_provenance_sha256": "381e6129fdfcc810df20d1feb17c20dcc0c69932d8b2adae6236672a4ad9b9f7",
+      "commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "decode-invalidation-tag-guard",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_trace",
+      "role": "baseline_trace",
+      "runner_sha256": "61993cc5e8687f2d26c06845ece6a559b4e737b21a178a0bcefde222077ed716"
+    },
+    "candidate_production": {
+      "build_provenance_sha256": "420cc3169de56679d42d9ceedafe23116192b11898c060d051603fc326c27a59",
+      "commit": "dade6492e525959ecd8d4b87beeb6a78ff430853",
+      "dirty": false,
+      "feature_set": [
+        "decode-invalidation-tag-guard",
+        "dynamic-quantum-prototype",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_production",
+      "role": "candidate_production",
+      "runner_sha256": "dd7a0d2b19db5129cb792fd451eeeac1b4f3829e761a6d7655f16dc9b5c4d121"
+    },
+    "candidate_trace": {
+      "build_provenance_sha256": "ee60494cebbfb33cd27849ae20d9851f36526fea04c1c03d51a45bea33c171e3",
+      "commit": "dade6492e525959ecd8d4b87beeb6a78ff430853",
+      "dirty": false,
+      "feature_set": [
+        "behavior-trace",
+        "decode-invalidation-tag-guard",
+        "dynamic-quantum-prototype",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "candidate_trace",
+      "role": "candidate_trace",
+      "runner_sha256": "7bc1e700041425c2914a6f0d389b227471e3edbebc624ca14e613475e826db1c"
+    }
+  },
+  "candidate_id": "PERF-Q1",
+  "correctness": {
+    "status": "pass",
+    "workloads": [
+      "picotetris-opt1b-vrp5",
+      "picoedit-r1-vrp2f"
+    ]
+  },
+  "decision_kind": "correctness",
+  "feature_set": [
+    "behavior-trace",
+    "decode-invalidation-tag-guard",
+    "dynamic-quantum-prototype",
+    "sd-gen1-multiblock"
+  ],
+  "host": {
+    "allowed_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "cgroup_cpu_stat": {
+      "burst_usec": 0,
+      "nice_usec": 3700000,
+      "nr_bursts": 0,
+      "nr_periods": 0,
+      "nr_throttled": 0,
+      "system_usec": 1745452000,
+      "throttled_usec": 0,
+      "usage_usec": 3560024000,
+      "user_usec": 1814572000
+    },
+    "cpu_pressure": {
+      "full": {
+        "avg10": 0.0,
+        "avg300": 0.0,
+        "avg60": 0.0,
+        "total": 0.0
+      },
+      "some": {
+        "avg10": 1.14,
+        "avg300": 0.53,
+        "avg60": 1.02,
+        "total": 25157385.0
+      }
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "loadavg": [
+      2.455078125,
+      2.99609375,
+      2.47802734375
+    ],
+    "logical_cpus": 12,
+    "model": "AMD Ryzen 5 5600X 6-Core Processor",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "proc_cpu_stat": {
+      "guest": 0,
+      "guest_nice": 0,
+      "idle": 17577312,
+      "iowait": 10060,
+      "irq": 0,
+      "nice": 370,
+      "softirq": 74598,
+      "steal": 0,
+      "system": 99946,
+      "user": 181087
+    },
+    "reported_mhz": 3693.101,
+    "scheduler": {
+      "nice": 0,
+      "policy": 0,
+      "priority": 0
+    }
+  },
+  "record_id": "rp2040-cpu-q1-correctness-20260903-01",
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "status": "pass",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}

@@ -2093,7 +2093,9 @@ def _canonical_json_sha256(value: object) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def _rp2040_guest_observation_projection(report: object) -> Dict[str, Any]:
+def _rp2040_guest_observation_projection(
+    report: object, *, exclude_dynamic_scheduler_fields: bool = False
+) -> Dict[str, Any]:
     """Return the projection used by the RP2040 CPU candidate runner.
 
     Backend identity is deliberately excluded because candidate and
@@ -2103,6 +2105,9 @@ def _rp2040_guest_observation_projection(report: object) -> Dict[str, Any]:
     Keep this definition in lockstep with
     ``benchmark_rp2040_cpu_candidate.guest_observation_projection`` so the
     environment verifier validates the artifacts the runner actually writes.
+    Historical records use the original projection. New dynamic-quantum
+    records set ``exclude_dynamic_scheduler_fields`` so the two fixed
+    host-scheduler fields are normalized in the same way as the runner.
     """
     if not isinstance(report, dict):
         return {}
@@ -2118,6 +2123,13 @@ def _rp2040_guest_observation_projection(report: object) -> Dict[str, Any]:
             for key, value in audio_sink.items()
             if key not in {"expected_count", "expected_sha256"}
         }
+    if exclude_dynamic_scheduler_fields:
+        projection.pop("step_quantum", None)
+        psram = projection.get("psram")
+        if isinstance(psram, dict):
+            normalized_psram = dict(psram)
+            normalized_psram.pop("tick_count", None)
+            projection["psram"] = normalized_psram
     return projection
 
 
@@ -3881,6 +3893,7 @@ def _verify_interleaved_anchor_summary(
 def _verify_rp2040_cpu_behavior_pair(
     baseline_path: Path, candidate_path: Path, comparison: Mapping[str, Any], problems: List[str],
     expected_commits: Optional[Mapping[str, str]] = None,
+    exclude_dynamic_scheduler_fields: bool = False,
 ) -> None:
     artifacts = {}
     for role, path in (("baseline", baseline_path), ("candidate", candidate_path)):
@@ -3970,8 +3983,14 @@ def _verify_rp2040_cpu_behavior_pair(
         artifacts[role] = artifact
     if set(artifacts) != {"baseline", "candidate"}:
         return
-    left = artifacts["baseline"].get("behavior_projection")
-    right = artifacts["candidate"].get("behavior_projection")
+    left = _rp2040_guest_observation_projection(
+        artifacts["baseline"].get("behavior_projection"),
+        exclude_dynamic_scheduler_fields=exclude_dynamic_scheduler_fields,
+    )
+    right = _rp2040_guest_observation_projection(
+        artifacts["candidate"].get("behavior_projection"),
+        exclude_dynamic_scheduler_fields=exclude_dynamic_scheduler_fields,
+    )
     if left != right:
         problems.append("behavior projections differ for {}".format(comparison.get("workload")))
     recorded = comparison.get("behavior")
@@ -3987,6 +4006,11 @@ def _verify_rp2040_cpu_behavior_pair(
             "projection": projection,
             "domain_summary": artifact.get("_verified_domain_summary", []),
         }
+        if exclude_dynamic_scheduler_fields:
+            expected_summary["comparison_projection"] = _rp2040_guest_observation_projection(
+                projection,
+                exclude_dynamic_scheduler_fields=True,
+            )
         if summary != expected_summary:
             problems.append("recorded behavior summary differs for {} {}".format(comparison.get("workload"), role))
 
@@ -4859,7 +4883,14 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                             if not isinstance(report, dict) or not isinstance(projection, dict):
                                 problems.append("{} {} report/projection is not an object".format(workload_dir, role))
                                 continue
-                            expected_projection = _rp2040_guest_observation_projection(report)
+                            use_dynamic_scheduler_projection = (
+                                isinstance(manifest.get("feature_set"), list)
+                                and "dynamic-quantum-prototype" in manifest["feature_set"]
+                            )
+                            expected_projection = _rp2040_guest_observation_projection(
+                                report,
+                                exclude_dynamic_scheduler_fields=use_dynamic_scheduler_projection,
+                            )
                             if projection != expected_projection:
                                 problems.append("{} {} projection differs from report".format(workload_dir, role))
                             digest = _canonical_json_sha256(projection)
@@ -4928,6 +4959,7 @@ def verify_rp2040_cpu_application_records(checks: List[Check], root: Path) -> No
                                 _verify_rp2040_cpu_behavior_pair(
                                     behavior_paths[0], behavior_paths[1], comparison, problems,
                                     expected_commits=expected_behavior_commits,
+                                    exclude_dynamic_scheduler_fields=use_dynamic_scheduler_projection,
                                 )
 
         sums_path = record_dir / "SHA256SUMS"

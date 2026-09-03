@@ -1,0 +1,171 @@
+{
+  "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+  "backend_identities": {
+    "baseline_production": {
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "dirty": false,
+      "feature_set": [
+        "decode-invalidation-tag-guard",
+        "sd-gen1-multiblock"
+      ],
+      "provenance_role": "baseline_production",
+      "role": "baseline_production",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882"
+    }
+  },
+  "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+  "candidate_id": "P0-0",
+  "correctness": {
+    "status": "pass",
+    "workload": "picoedit-r1-vrp2f"
+  },
+  "decision_kind": "admission",
+  "evidence": [
+    {
+      "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "cycles": 827799818,
+      "cycles_per_emulation_cpu_second": 4679690.682247646,
+      "cycles_per_emulation_wall_second": 4526214.364526658,
+      "elapsed_us": 3320000,
+      "emulated_cycles_per_wall_second": 4526068.921813904,
+      "emulation_cpu_ns": 176891994409,
+      "emulation_cpu_seconds": 176.891994409,
+      "emulation_wall_ns": 182890104474,
+      "emulation_wall_seconds": 182.890104474,
+      "guest_observation_sha256": "d7d3068682d3843956a825252ac910da26c16a9cdb6dbb2e76ab9b196e65ff7c",
+      "host_usage_delta": {
+        "max_rss_platform_units": 35744,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.0038699999999999915,
+        "user_seconds": 176.89365300000003
+      },
+      "report_sha256": "bef2e67820e52ea73387357c562699e02d36dba465cd6d6dcc8809d7ea913bd4",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+      "snapshot_sha256": {
+        "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+      "wall_ns": 182895981546,
+      "wall_seconds": 182.895981546
+    },
+    {
+      "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "cycles": 827799818,
+      "cycles_per_emulation_cpu_second": 4599126.752001005,
+      "cycles_per_emulation_wall_second": 4449755.075214897,
+      "elapsed_us": 3320000,
+      "emulated_cycles_per_wall_second": 4449612.77592359,
+      "emulation_cpu_ns": 179990650973,
+      "emulation_cpu_seconds": 179.990650973,
+      "emulation_wall_ns": 186032670115,
+      "emulation_wall_seconds": 186.032670115,
+      "guest_observation_sha256": "d7d3068682d3843956a825252ac910da26c16a9cdb6dbb2e76ab9b196e65ff7c",
+      "host_usage_delta": {
+        "max_rss_platform_units": 35744,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.0038699999999999984,
+        "user_seconds": 179.99237800000003
+      },
+      "report_sha256": "bef2e67820e52ea73387357c562699e02d36dba465cd6d6dcc8809d7ea913bd4",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+      "snapshot_sha256": {
+        "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+      "wall_ns": 186038619468,
+      "wall_seconds": 186.038619468
+    }
+  ],
+  "feature_set": [
+    "decode-invalidation-tag-guard",
+    "sd-gen1-multiblock"
+  ],
+  "record_id": "rp2040-cpu-q1-admission-20260903-01",
+  "registered_guest_observation_sha256": "d7d3068682d3843956a825252ac910da26c16a9cdb6dbb2e76ab9b196e65ff7c",
+  "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+  "runs": [
+    {
+      "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "cycles": 827799818,
+      "cycles_per_emulation_cpu_second": 4679690.682247646,
+      "cycles_per_emulation_wall_second": 4526214.364526658,
+      "elapsed_us": 3320000,
+      "emulated_cycles_per_wall_second": 4526068.921813904,
+      "emulation_cpu_ns": 176891994409,
+      "emulation_cpu_seconds": 176.891994409,
+      "emulation_wall_ns": 182890104474,
+      "emulation_wall_seconds": 182.890104474,
+      "guest_observation_sha256": "d7d3068682d3843956a825252ac910da26c16a9cdb6dbb2e76ab9b196e65ff7c",
+      "host_usage_delta": {
+        "max_rss_platform_units": 35744,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.0038699999999999915,
+        "user_seconds": 176.89365300000003
+      },
+      "report_sha256": "bef2e67820e52ea73387357c562699e02d36dba465cd6d6dcc8809d7ea913bd4",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+      "snapshot_sha256": {
+        "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+      "wall_ns": 182895981546,
+      "wall_seconds": 182.895981546
+    },
+    {
+      "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+      "cycles": 827799818,
+      "cycles_per_emulation_cpu_second": 4599126.752001005,
+      "cycles_per_emulation_wall_second": 4449755.075214897,
+      "elapsed_us": 3320000,
+      "emulated_cycles_per_wall_second": 4449612.77592359,
+      "emulation_cpu_ns": 179990650973,
+      "emulation_cpu_seconds": 179.990650973,
+      "emulation_wall_ns": 186032670115,
+      "emulation_wall_seconds": 186.032670115,
+      "guest_observation_sha256": "d7d3068682d3843956a825252ac910da26c16a9cdb6dbb2e76ab9b196e65ff7c",
+      "host_usage_delta": {
+        "max_rss_platform_units": 35744,
+        "max_rss_scope": "children_cumulative",
+        "system_seconds": 0.0038699999999999984,
+        "user_seconds": 179.99237800000003
+      },
+      "report_sha256": "bef2e67820e52ea73387357c562699e02d36dba465cd6d6dcc8809d7ea913bd4",
+      "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+      "snapshot_sha256": {
+        "picoedit-final.png": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69"
+      },
+      "stop_reason": "scenario_done",
+      "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+      "wall_ns": 186038619468,
+      "wall_seconds": 186.038619468
+    }
+  ],
+  "schema_id": "picocalc.rp2040-cpu-decision",
+  "schema_version": 1,
+  "status": "pass",
+  "workload": "picoedit-r1-vrp2f",
+  "workloads": [
+    {
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "id": "picotetris-opt1b-vrp5",
+      "revision": 10,
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208"
+    },
+    {
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "id": "picoedit-r1-vrp2f",
+      "revision": 4,
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718"
+    }
+  ]
+}
