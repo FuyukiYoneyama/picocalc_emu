@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 高速化 — 現行計画
 
-- Status: **current / PERF-Q0 complete / opportunity not rejected, step-start-only policy rejected**
+- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 baseline fixed**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -104,12 +104,13 @@ determinism、10 virtual分run、1倍qualificationは再開しない。
 10. **測定validityと効果を混同しない。** validity gateに失敗したrecordのraw効果は診断値として保持
     するが、性能改善の採用根拠へ戻さない。validity失敗を結果の解釈で帳消しにしない。
 
-既存backend `main`には、不採用P2-Aの`pending-exception-fast-reject`が既定オフで残っている。
-これは原則7に対する既知の負債である。PERF-Q0は妨げないが、production候補を作るPERF-Q1より前に、
-backendから候補runtime／featureを独立cleanupとして削除する。P2-Aのcommitと測定record、過去recordを
-検証する`picocalc_emu`側のreaderは履歴再現用に保持し、P2-Aを再測定しない。PERF-Q0で記録する
-backend commitは機会量を観測したsourceであり、PERF-Q3の性能baselineではない。cleanup完了後の
-clean commitを新しい共通baselineとして固定し、PERF-Q1候補は必ずそのcommitから作る。PERF-Q3の
+既存backend `main`に残っていた不採用P2-Aの`pending-exception-fast-reject`は、commit
+`f32eba1878aeabc6dfc8954b363230ef1e4c2b52`で候補runtime／featureを独立cleanupした。P2-Aのcommitと
+測定record、過去recordを検証する`picocalc_emu`側のreaderは履歴再現用に保持し、P2-Aを再測定しない。
+PERF-Q0で記録するbackend commitは機会量を観測したsourceであり、PERF-Q3の性能baselineではない。
+cleanup後のclean commitから作ったPERF-Q1共通baseline runnerは
+[`firmware-validation/evidence/perf-q1-baseline-20260903-01/`](../firmware-validation/evidence/perf-q1-baseline-20260903-01/)
+に固定した。PERF-Q1候補は必ずそのcommitから作る。PERF-Q3の
 開始直前にもbaseline commitとcandidateの派生元を照合し、cleanup差分を性能差へ混入させない。
 
 ## 3.1 外部プロジェクトと公開の境界
@@ -295,8 +296,10 @@ PERF-Q0（dynamic quantumの機会量上限とmid-quantum遷移危険の確認�
 transition barrierが必要であることを確認した。deadlineはTIMER／PWM／外部境界のexact候補と、
 PIO／DMA／SysTick等の1-cycle fallbackに分かれる。Q0の証拠は
 [`firmware-validation/evidence/quantum-engagement-20260903-01/`](../firmware-validation/evidence/quantum-engagement-20260903-01/)
-に保存した。次はこの記録をreviewし、P2-A cleanup後に新しいclean performance baselineを固定してから
-PERF-Q1へ進む。番号だけで報告せず、毎回
+に保存した。P2-A cleanupはbackend commit `f32eba1`で完了し、PERF-Q1用clean baselineは
+[`firmware-validation/evidence/perf-q1-baseline-20260903-01/`](../firmware-validation/evidence/perf-q1-baseline-20260903-01/)
+に固定した。次はこのbaselineからtransition barrier／deadline cap候補を作り、Q2の小さい正確性gateへ
+進む。番号だけで報告せず、毎回
 「PicoCalc firmware backendのどの待ち時間を、何を守りながら減らす作業か」を併記する。
 
 1倍速UXの旧計画と関連概念は

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "perf_q1_clean_baseline",
+  "record_id": "perf-q1-baseline-20260903-01",
+  "recorded_on": "2026-09-03",
+  "status": "fixed_for_candidate_comparison",
+  "role": "Clean source and runner identity for the future PERF-Q1 transition-barrier candidate; no performance effect is claimed by this record.",
+  "backend": {
+    "repository": "picoem-picocalc",
+    "commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+    "parent_before_cleanup": "58e73010636bb1b60fdb1ccace40db29b5bb96cc",
+    "dirty": false,
+    "cleanup": "Removed rejected P2-A pending-exception-fast-reject runtime and Cargo feature; historical P2-A records remain immutable in picocalc_emu."
+  },
+  "runner": {
+    "name": "picocalc-run",
+    "build_mode": "release",
+    "command": "CARGO_TARGET_DIR=/tmp/picocalc-perf-q1.I2gZTd/baseline cargo build --locked --release -p picocalc-harness --bin picocalc-run",
+    "sha256": "282d27c79caef9f8a74abdd02e2cb84fa34b0b6ffaac6b10ec58f74d8f39e2b7",
+    "effective_default_features": ["sd-gen1-multiblock", "decode-invalidation-tag-guard"],
+    "rejected_feature_absent": "pending-exception-fast-reject"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "llvm": "22.1.6",
+    "cargo_lock_sha256": "2496607b2d2460231543814e57441f1ed1e5d6460d7517c7d895e959f0f710e6"
+  },
+  "validation": {
+    "after_commit": [
+      {
+        "command": "cargo test --locked -p rp2040-emu --test dma_quantum_invariance",
+        "result": "10 passed, 0 failed"
+      },
+      {
+        "command": "cargo test --locked -p picocalc-harness --bin picocalc-run",
+        "result": "78 passed, 0 failed"
+      }
+    ],
+    "cleanup_tree_full_suite_before_commit": {
+      "rp2040_unit": "1264 passed, 0 failed",
+      "dma_quantum_invariance": "10 passed, 0 failed",
+      "firmware": "9 passed, 0 failed",
+      "multicore": "9 passed, 0 failed",
+      "psram_pio_edge_interleave": "4 passed, 0 failed",
+      "smoke": "8 passed, 0 failed",
+      "wfe_irq_wake": "5 passed, 0 failed",
+      "harness_runner": "78 passed, 0 failed"
+    },
+    "git_diff_check": "pass",
+    "source_feature_search": "no pending-exception-fast-reject references remain in backend source or Cargo manifests"
+  },
+  "not_started": [
+    "PERF-Q1 production candidate",
+    "CPU-time A/B screening",
+    "long-running qualification",
+    "formal target revision or release update"
+  ],
+  "next": "Implement only the transition-barrier/deadline-cap candidate from this baseline after the Q0 record review; compare it against this exact runner identity and fixed artifacts."
+}
