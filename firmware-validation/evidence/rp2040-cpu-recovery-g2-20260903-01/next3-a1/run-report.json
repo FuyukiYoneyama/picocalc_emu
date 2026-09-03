@@ -1,0 +1,79 @@
+{
+  "schema_version": 8,
+  "backend_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+  "backend_build": {"commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6", "dirty": false},
+  "firmware": {"basename": "picocalc_app.bin", "sha256": "d3b8ae7244d8374149fe29e6ffb8939d814a42bfa4cb8b5c1b3ebcd7d1f2d99d"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "hwspi-rgb888",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 700000000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 700000000,
+  "elapsed_us": 5604808,
+  "pc": "0x100017d2",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "cycle_limit", "required_uart_markers": ["[NEXT3][LCD_CS_V2_A1][EVIDENCE] app_git=untracked bsp_git=168a65d9f820 solid=pass pattern=pass mismatches=0 app=pass sd=pass"], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 1, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": false, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x66",
+    "caset": 23, "raset": 23, "ramwr": 17, "ramrd": 6,
+    "pixels_written": 806212, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x04", "count": 6},
+      {"code": "0x09", "count": 6},
+      {"code": "0xb0", "count": 1},
+      {"code": "0xb1", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb6", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xe9", "count": 1},
+      {"code": "0xf7", "count": 1}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "fad83ca09aa4d5956b84776d7a778916df24b22d6a6eba43641431b319a71dc8", "non_black_pixels": 59936, "png": "final.png"},
+  "psram": {
+    "attached": true,
+    "tick_count": 177959588, "cs_falling_count": 6,
+    "bytes_written": 24, "bytes_read": 34,
+    "cmd_counts": {"write": 1, "fast_read": 1, "reset_enable": 1, "reset": 1, "unknown": 0},
+    "verify": null
+  },
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 131072,
+    "commands_seen": 28, "blocks_read": 9, "blocks_written": 10,
+    "unknown_commands": []
+  },
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 334, "key_events_delivered": 2, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 0, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": [
+      {"slice": 5, "csr": "0x00000001", "top": 255, "cc": "0x00800080"}
+    ]
+  },
+  "pio": [
+    {"block": 1, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [23, 0, 0, 0]}
+  ],
+  "uart": {"bytes": 7215, "sha256": "66e71679a4ab080cc8ef347905feb503a04cf9b073eb343bcb7834741a790158"}
+}

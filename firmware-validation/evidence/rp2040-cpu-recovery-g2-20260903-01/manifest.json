@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g2-20260903-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1 complete; G0 clean verification complete; G1 candidate pass; G2 candidate pass; G3 pending",
+  "group": {
+    "id": "G2",
+    "display_name": "LCD・PIO・PSRAM正確性（最小移植）",
+    "purpose": "現行LCD readbackとPSRAM/PIO guest-visible behaviorに必要な修正だけを高速Serial起点へ戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "e785e02596eab17f50ba55a72cda2e7e7741b499",
+    "candidate_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+    "restored_history": [
+      "fc4a62272fff2a7ebbc5bd77a4677c2c4ed7bf87",
+      "4a90864816ef58286f2b292df0e7fe44fbcd4809"
+    ],
+    "source_diff": "g2-source-diff.patch",
+    "source_diff_sha256": "5ed111792768f46c4e94d2e14a1a5b7acd68e4163afab9b017d968c3ab2574ca",
+    "source_files_changed": 3,
+    "insertions": 123,
+    "deletions": 33,
+    "worktree": "temporary /tmp worktree; not a remote branch"
+  },
+  "tests": {
+    "picocalc_board": {
+      "command": "cargo test --locked -p picocalc-board",
+      "passed": [74],
+      "doctests": 1,
+      "status": "pass"
+    },
+    "rp2040_emu": {
+      "command": "cargo test --locked -p rp2040-emu",
+      "passed": [1232, 9, 9, 4, 6, 5],
+      "doctests": 0,
+      "status": "pass"
+    },
+    "picocalc_harness": {
+      "command": "cargo test --locked -p picocalc-harness",
+      "passed": [2, 39],
+      "status": "pass"
+    }
+  },
+  "tetris_short_screening": {
+    "display_name": "Tetris（軽ゲーム実装）",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "scenario": "r0-scenario-probe.json",
+    "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+    "execution_model": "Serial",
+    "cpu_affinity": 11,
+    "step_quantum": 1,
+    "measurement": "temporary host-timing sidecar; one-run screening, not a qualification average",
+    "measurement_patch": "../rp2040-cpu-recovery-r0-20260903-01/tetris-e985/host-timing-sidecar.patch",
+    "measurement_patch_sha256": "4d5fc3f54677795644c85b50c105125e1623a50ce2c22540c3a781f37c7fb185",
+    "g1_control": {
+      "backend_commit": "e785e02596eab17f50ba55a72cda2e7e7741b499",
+      "cycles": 187528656,
+      "cpu_seconds": 4.954513817,
+      "wall_seconds": 4.951456021,
+      "stop_reason": "scenario_done",
+      "report_sha256": "d1ad71e5a4e432ceeffb8f8ee0738f45de6bdaff80d4b47c7fb563ff8b5a2e20",
+      "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"
+    },
+    "g2_candidate": {
+      "backend_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+      "backend_dirty": true,
+      "cycles": 187528656,
+      "cpu_seconds": 4.958608351,
+      "wall_seconds": 4.962682779,
+      "stop_reason": "scenario_done",
+      "report_sha256": "747fd97ea10faaaf167884746d51d9734b14df7a5bcddaa49e53f6b01a8603c8",
+      "host_timing_sha256": "455c9b33389741f0bda6aba086b39362df9d27bb6fe5e297bbb9310902144aaa",
+      "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+      "guest_visible_report_identical_to_g1": true,
+      "interpretation": "sidecar makes the runner intentionally dirty; source candidate commit is recorded separately and this is not a performance claim"
+    }
+  },
+  "next3_a1_screening": {
+    "display_name": "NEXT-3 A1（LCD readback・SD・PSRAM positive-control）",
+    "external_repository": "picocalc-next3-lcd-fault",
+    "external_source_commit": "168a65d9f8206d2767641c589f21f359c1ce7b1b",
+    "external_source_changed": false,
+    "firmware_sha256": "d3b8ae7244d8374149fe29e6ffb8939d814a42bfa4cb8b5c1b3ebcd7d1f2d99d",
+    "firmware_uf2_sha256": "43dca88b16898d8c14d58ad5dc5aa1b1101cc5f45cbb923696fb4a4d84e98554",
+    "runner_backend_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+    "runner_backend_dirty": false,
+    "runner_sha256": "461a2b1f9f60069c5401b49282d558437da296c4574e1b46daf03a11e783fbbe",
+    "run": {
+      "cycles": 700000000,
+      "stop_reason": "cycle_limit",
+      "verdict": "pass",
+      "report_sha256": "bc75bc58aa4cf3fb8c8de1c3d7036c0909e2c638e109705d3603c28873ba2316",
+      "uart_sha256": "66e71679a4ab080cc8ef347905feb503a04cf9b073eb343bcb7834741a790158",
+      "final_png_sha256": "04e32eee96c8d586117db4d841e1c051fd07a13919357368ef7c9507d760d376",
+      "uart_marker": "[NEXT3][LCD_CS_V2_A1][EVIDENCE] app_git=untracked bsp_git=168a65d9f820 solid=pass pattern=pass mismatches=0 app=pass sd=pass",
+      "exception": null,
+      "unsupported_mmio": 0,
+      "lcd": {"ramrd": 6, "ramwr": 17, "pixels_dropped": 0},
+      "framebuffer_rgb565_sha256": "fad83ca09aa4d5956b84776d7a778916df24b22d6a6eba43641431b319a71dc8",
+      "psram": {"cs_falling_count": 6, "bytes_written": 24, "bytes_read": 34, "unknown_commands": 0},
+      "sd": {"format": "fat32", "commands_seen": 28, "blocks_read": 9, "blocks_written": 10, "unknown_commands": 0},
+      "keyboard": {"key_events_delivered": 2, "key_events_dropped": 0}
+    }
+  },
+  "scope": {
+    "production_source_changed": false,
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "qualification_started": false
+  },
+  "next_step": {
+    "id": "G3",
+    "display_name": "DMA・audio正確性の最小移植",
+    "start_condition": "G2 candidate evidence recorded; use one group, target tests first, then short Tetris screening"
+  }
+}

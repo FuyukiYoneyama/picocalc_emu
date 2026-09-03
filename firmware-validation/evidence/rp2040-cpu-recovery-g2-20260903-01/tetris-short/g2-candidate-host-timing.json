@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "artifact_type": "in-process-host-timing",
+  "timing_scope": "picocalc-harness::run_loop",
+  "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+  "firmware": {"basename": "PicoTetris.bin", "sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62"},
+  "backend_build": {"commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6", "dirty": true},
+  "board": "picocalc",
+  "step_quantum": 1,
+  "cycles": 187528656,
+  "stop_reason": "scenario_done",
+  "emulation_wall_ns": 4962682779,
+  "emulation_cpu_ns": 4958608351,
+  "emulation_cpu_seconds": 4.958608351,
+  "cycles_per_emulation_cpu_second": 37818807.763307460,
+  "cycles_per_emulation_wall_second": 37787758.023451135
+}

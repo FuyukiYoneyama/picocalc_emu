@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1 candidate pass / G2 pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2 candidate pass / G3 pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -253,7 +253,11 @@ e985のクリーンbackendの`rp2040-emu`テストと、既存PicoEdit（テキ�
 通過した。記録は[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)
 にある。
 
-G1候補はbackend `main`へまだ統合していない。既受入artifactとのcycle差16は未丸めで記録し、性能改善とは
-扱わない。再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
-record、remote branchは変更していない。次はG2（LCD・PIO・PSRAM正確性）の最小移植であり、対象testと短probeを
-通過し、性能差を説明できる場合だけ次へ進む。
+G1・G2候補はbackend `main`へまだ統合していない。G1の既受入artifactとのcycle差16は未丸めで記録し、性能改善とは
+扱わない。G2はLCD・PIO・PSRAMの必要部分だけを移植し、board／emu／harnessの対象test、Tetris（軽ゲーム実装）
+短screening、NEXT-3 A1（LCD readback・SD・PSRAM positive-control）を通過した。G2短screeningのguest-visible
+report、UART、framebuffer digest、PSRAM観測は直前G1 controlと一致し、CPU時間は一回screeningのため改善値として
+扱わない。記録は[`rp2040-cpu-recovery-g2-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/)
+にある。再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
+record、remote branchは変更していない。次はG3（DMA・audio正確性）の最小移植であり、対象testと短probeを通過し、
+性能差を説明できる場合だけ次へ進む。

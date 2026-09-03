@@ -1,0 +1,13 @@
+a03a45e9307235b1a555ef6b73475e29f49e1491f7625fcfe988acea52033537  ./README.md
+5ed111792768f46c4e94d2e14a1a5b7acd68e4163afab9b017d968c3ab2574ca  ./g2-source-diff.patch
+320129f289fa8547ef9b716ce26daa7f811488537b3fe53a0afa5227035a89e0  ./manifest.json
+04e32eee96c8d586117db4d841e1c051fd07a13919357368ef7c9507d760d376  ./next3-a1/final.png
+bc75bc58aa4cf3fb8c8de1c3d7036c0909e2c638e109705d3603c28873ba2316  ./next3-a1/run-report.json
+66e71679a4ab080cc8ef347905feb503a04cf9b073eb343bcb7834741a790158  ./next3-a1/uart.log
+697ac145b8a0574265aeffb2727dfc1d7809d6371fbbe21f67281ddf92c7baa6  ./tetris-short/g1-control-host-timing.json
+d1ad71e5a4e432ceeffb8f8ee0738f45de6bdaff80d4b47c7fb563ff8b5a2e20  ./tetris-short/g1-control-report.json
+db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a  ./tetris-short/g1-control-uart.bin
+455c9b33389741f0bda6aba086b39362df9d27bb6fe5e297bbb9310902144aaa  ./tetris-short/g2-candidate-host-timing.json
+747fd97ea10faaaf167884746d51d9734b14df7a5bcddaa49e53f6b01a8603c8  ./tetris-short/g2-candidate-report.json
+db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a  ./tetris-short/g2-candidate-uart.bin
+49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3  ./tetris-short/r0-scenario-probe.json

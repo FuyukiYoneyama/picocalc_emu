@@ -246,10 +246,13 @@ snapshotを使い、runnerへhost directoryを直接mountするものではな�
 を正典とし、R0（高速出発点と退行比較点の固定）とR1（必要機能の棚卸し）は完了しました。G0では
 e985のクリーンbackend testとPicoEdit（テキスト編集実装）のsourceを変更しないクリーンbuildを確認し、
 G1（CPU・multicore・割込み正確性）は一時worktreeで最小移植、対象test、Tetris（軽ゲーム実装）短screening、
-NEXT-2A（マルチコア割込み受入実装）scenarioを通過しました。G1候補はまだbackend `main`へ統合しておらず、
-現行backend `main`とtarget registryは変更していません。詳細は
-[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)を参照してください。
-次はG2（LCD・PIO・PSRAM正確性）の最小移植です。
+NEXT-2A（マルチコア割込み受入実装）scenarioを通過しました。続くG2（LCD・PIO・PSRAM正確性）は、必要部分の
+最小移植、board／emu／harnessの対象test、Tetris短screening、NEXT-3 A1（LCD readback・SD・PSRAM positive-control）
+を通過しました。G2短screeningでは直前G1 controlとguest-visible report、UART、framebuffer digest、PSRAM観測が
+一致しています。G1・G2候補はまだbackend `main`へ統合しておらず、現行backend `main`とtarget registryは変更して
+いません。詳細は[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)、
+[`rp2040-cpu-recovery-g2-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/)を参照してください。
+次はG3（DMA・audio正確性）の最小移植です。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、
