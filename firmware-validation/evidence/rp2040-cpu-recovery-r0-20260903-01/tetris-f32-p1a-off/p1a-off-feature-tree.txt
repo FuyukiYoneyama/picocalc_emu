@@ -1,0 +1,161 @@
+picocalc-harness v0.1.0 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/picocalc-harness)
+├── picocalc-board v0.1.0 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/picocalc-board)
+│   ├── rp2040-emu v0.1.5 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/rp2040-emu)
+│   │   ├── picoem-devices feature "default"
+│   │   │   └── picoem-devices v0.1.3 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/picoem-devices)
+│   │   │       └── tracing feature "default"
+│   │   │           ├── tracing v0.1.44
+│   │   │           │   ├── tracing-core v0.1.36
+│   │   │           │   │   └── once_cell feature "default"
+│   │   │           │   │       ├── once_cell v1.21.4
+│   │   │           │   │       └── once_cell feature "std"
+│   │   │           │   │           ├── once_cell v1.21.4
+│   │   │           │   │           └── once_cell feature "alloc"
+│   │   │           │   │               ├── once_cell v1.21.4
+│   │   │           │   │               └── once_cell feature "race"
+│   │   │           │   │                   └── once_cell v1.21.4
+│   │   │           │   ├── pin-project-lite feature "default"
+│   │   │           │   │   └── pin-project-lite v0.2.17
+│   │   │           │   └── tracing-attributes feature "default"
+│   │   │           │       └── tracing-attributes v0.1.31 (proc-macro)
+│   │   │           │           ├── proc-macro2 feature "default"
+│   │   │           │           │   ├── proc-macro2 v1.0.106
+│   │   │           │           │   │   └── unicode-ident feature "default"
+│   │   │           │           │   │       └── unicode-ident v1.0.24
+│   │   │           │           │   └── proc-macro2 feature "proc-macro"
+│   │   │           │           │       └── proc-macro2 v1.0.106 (*)
+│   │   │           │           ├── quote feature "default"
+│   │   │           │           │   ├── quote v1.0.45
+│   │   │           │           │   │   └── proc-macro2 v1.0.106 (*)
+│   │   │           │           │   └── quote feature "proc-macro"
+│   │   │           │           │       ├── quote v1.0.45 (*)
+│   │   │           │           │       └── proc-macro2 feature "proc-macro" (*)
+│   │   │           │           ├── syn feature "clone-impls"
+│   │   │           │           │   └── syn v2.0.117
+│   │   │           │           │       ├── proc-macro2 v1.0.106 (*)
+│   │   │           │           │       ├── quote v1.0.45 (*)
+│   │   │           │           │       └── unicode-ident feature "default" (*)
+│   │   │           │           ├── syn feature "extra-traits"
+│   │   │           │           │   └── syn v2.0.117 (*)
+│   │   │           │           ├── syn feature "full"
+│   │   │           │           │   └── syn v2.0.117 (*)
+│   │   │           │           ├── syn feature "parsing"
+│   │   │           │           │   └── syn v2.0.117 (*)
+│   │   │           │           ├── syn feature "printing"
+│   │   │           │           │   └── syn v2.0.117 (*)
+│   │   │           │           ├── syn feature "proc-macro"
+│   │   │           │           │   ├── syn v2.0.117 (*)
+│   │   │           │           │   ├── proc-macro2 feature "proc-macro" (*)
+│   │   │           │           │   └── quote feature "proc-macro" (*)
+│   │   │           │           └── syn feature "visit-mut"
+│   │   │           │               └── syn v2.0.117 (*)
+│   │   │           ├── tracing feature "attributes"
+│   │   │           │   ├── tracing v0.1.44 (*)
+│   │   │           │   └── tracing feature "tracing-attributes"
+│   │   │           │       └── tracing v0.1.44 (*)
+│   │   │           └── tracing feature "std"
+│   │   │               ├── tracing v0.1.44 (*)
+│   │   │               └── tracing-core feature "std"
+│   │   │                   ├── tracing-core v0.1.36 (*)
+│   │   │                   └── tracing-core feature "once_cell"
+│   │   │                       └── tracing-core v0.1.36 (*)
+│   │   ├── tracing feature "default" (*)
+│   │   ├── picoem-common feature "default"
+│   │   │   └── picoem-common v0.2.2 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/picoem-common)
+│   │   │       ├── libc feature "default"
+│   │   │       │   ├── libc v0.2.185
+│   │   │       │   └── libc feature "std"
+│   │   │       │       └── libc v0.2.185
+│   │   │       └── tracing feature "default" (*)
+│   │   └── sha2 feature "default"
+│   │       ├── sha2 v0.10.9
+│   │       │   ├── cfg-if feature "default"
+│   │       │   │   └── cfg-if v1.0.4
+│   │       │   ├── cpufeatures feature "default"
+│   │       │   │   └── cpufeatures v0.2.17
+│   │       │   └── digest feature "default"
+│   │       │       ├── digest v0.10.7
+│   │       │       │   ├── block-buffer feature "default"
+│   │       │       │   │   └── block-buffer v0.10.4
+│   │       │       │   │       └── generic-array feature "default"
+│   │       │       │   │           └── generic-array v0.14.7
+│   │       │       │   │               └── typenum feature "default"
+│   │       │       │   │                   └── typenum v1.20.0
+│   │       │       │   │               [build-dependencies]
+│   │       │       │   │               └── version_check feature "default"
+│   │       │       │   │                   └── version_check v0.9.5
+│   │       │       │   └── crypto-common feature "default"
+│   │       │       │       └── crypto-common v0.1.7
+│   │       │       │           ├── generic-array feature "default" (*)
+│   │       │       │           ├── generic-array feature "more_lengths"
+│   │       │       │           │   └── generic-array v0.14.7 (*)
+│   │       │       │           └── typenum feature "default" (*)
+│   │       │       └── digest feature "core-api"
+│   │       │           ├── digest v0.10.7 (*)
+│   │       │           └── digest feature "block-buffer"
+│   │       │               └── digest v0.10.7 (*)
+│   │       └── sha2 feature "std"
+│   │           ├── sha2 v0.10.9 (*)
+│   │           └── digest feature "std"
+│   │               ├── digest v0.10.7 (*)
+│   │               ├── digest feature "alloc"
+│   │               │   └── digest v0.10.7 (*)
+│   │               └── crypto-common feature "std"
+│   │                   └── crypto-common v0.1.7 (*)
+│   ├── picoem-devices feature "default" (*)
+│   └── png feature "default"
+│       └── png v0.18.1
+│           ├── bitflags feature "default"
+│           │   └── bitflags v2.11.1
+│           ├── crc32fast feature "default"
+│           │   ├── crc32fast v1.5.0
+│           │   │   └── cfg-if feature "default" (*)
+│           │   └── crc32fast feature "std"
+│           │       └── crc32fast v1.5.0 (*)
+│           ├── fdeflate feature "default"
+│           │   └── fdeflate v0.3.7
+│           │       └── simd-adler32 feature "default"
+│           │           ├── simd-adler32 v0.3.9
+│           │           ├── simd-adler32 feature "const-generics"
+│           │           │   └── simd-adler32 v0.3.9
+│           │           └── simd-adler32 feature "std"
+│           │               └── simd-adler32 v0.3.9
+│           ├── flate2 feature "default"
+│           │   ├── flate2 v1.1.9
+│           │   │   ├── crc32fast feature "default" (*)
+│           │   │   ├── miniz_oxide feature "simd"
+│           │   │   │   ├── miniz_oxide v0.8.9
+│           │   │   │   │   ├── adler2 v2.0.1
+│           │   │   │   │   └── simd-adler32 v0.3.9
+│           │   │   │   └── miniz_oxide feature "simd-adler32"
+│           │   │   │       └── miniz_oxide v0.8.9 (*)
+│           │   │   └── miniz_oxide feature "with-alloc"
+│           │   │       └── miniz_oxide v0.8.9 (*)
+│           │   └── flate2 feature "rust_backend"
+│           │       ├── flate2 v1.1.9 (*)
+│           │       ├── flate2 feature "any_impl"
+│           │       │   └── flate2 v1.1.9 (*)
+│           │       └── flate2 feature "miniz_oxide"
+│           │           ├── flate2 v1.1.9 (*)
+│           │           └── flate2 feature "any_impl" (*)
+│           ├── miniz_oxide feature "default"
+│           │   ├── miniz_oxide v0.8.9 (*)
+│           │   └── miniz_oxide feature "with-alloc" (*)
+│           └── miniz_oxide feature "simd" (*)
+├── rp2040-emu v0.1.5 (/tmp/picocalc-baseline-compare.ROxMgj/backend-f32-off-worktree/crates/rp2040-emu) (*)
+├── libc feature "default" (*)
+├── picoem-common feature "default" (*)
+└── serde_json feature "std"
+    ├── serde_json v1.0.149
+    │   ├── memchr v2.8.0
+    │   ├── serde_core v1.0.228
+    │   ├── itoa feature "default"
+    │   │   └── itoa v1.0.18
+    │   └── zmij feature "default"
+    │       └── zmij v1.0.21
+    ├── memchr feature "std"
+    │   ├── memchr v2.8.0
+    │   └── memchr feature "alloc"
+    │       └── memchr v2.8.0
+    └── serde_core feature "std"
+        └── serde_core v1.0.228

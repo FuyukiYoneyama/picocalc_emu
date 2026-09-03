@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-r0-20260903-01",
+  "status": "complete",
+  "decision_kind": "performance-recovery-anchor",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1 complete; G0 clean verification complete; G1 implementation pending",
+  "workload": {
+    "display_name": "Tetris（軽ゲーム実装）",
+    "internal_id": "picotetris-opt1b-vrp5",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+    "board": "picocalc",
+    "execution_model": "Serial",
+    "full_scenario_stop_reason": "scenario_done"
+  },
+  "measurement": {
+    "primary_metric": "emulation_cpu_ns / guest_cycles",
+    "timing_scope": "picocalc-harness::run_loop",
+    "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+    "affinity_cpu": 11,
+    "fast_anchor": {
+      "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+      "source_base_exact": true,
+      "measurement_patch": "tetris-e985/host-timing-sidecar.patch",
+      "measurement_patch_sha256": "4d5fc3f54677795644c85b50c105125e1623a50ce2c22540c3a781f37c7fb185",
+      "runs": [
+        {
+          "run": 1,
+          "cycles": 927528660,
+          "cpu_seconds": 26.112960110,
+          "wall_seconds": 26.611114518
+        },
+        {
+          "run": 2,
+          "cycles": 927528660,
+          "cpu_seconds": 25.606484192,
+          "wall_seconds": 26.101495375
+        },
+        {
+          "run": 3,
+          "cycles": 927528660,
+          "cpu_seconds": 25.448460049,
+          "wall_seconds": 25.938108311
+        }
+      ],
+      "cpu_seconds_median": 25.606484192,
+      "cycles_per_cpu_second_median": 36222413.551399581
+    },
+    "slow_reference": {
+      "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+      "feature_set": ["sd-gen1-multiblock"],
+      "p1a_disabled_at_dependency_level": true,
+      "feature_config_patch": "tetris-f32-p1a-off/p1a-off-feature-config.patch",
+      "feature_config_patch_sha256": "f4cf8f5a75e98eff3522e723220b35cfdd43ba3c01d88b782aec592cd747f077",
+      "feature_tree": "tetris-f32-p1a-off/p1a-off-feature-tree.txt",
+      "feature_tree_sha256": "62d7377b91bee4f650c8ad721757789f97658e3359270e74933e2510cff9adc9",
+      "runs": [
+        {
+          "run": 1,
+          "cycles": 927528659,
+          "cpu_seconds": 190.172394647,
+          "wall_seconds": 193.368972271
+        }
+      ],
+      "cycles_per_cpu_second": 4877304.409621010
+    },
+    "short_probes": {
+      "scenario_free_cycle_limit": {
+        "cycle_limit": 100000000,
+        "scenario_sha256": null,
+        "fast_anchor": {
+          "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+          "cpu_seconds": 0.968871112,
+          "wall_seconds": 0.984504657,
+          "cycles": 100000000,
+          "stop_reason": "cycle_limit"
+        },
+        "slow_reference": {
+          "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+          "cpu_seconds": 2.162936577,
+          "wall_seconds": 2.194337238,
+          "cycles": 100000000,
+          "stop_reason": "cycle_limit"
+        },
+        "slow_to_fast_cpu_time_ratio": 2.232429629
+      },
+      "three_placement_scenario": {
+        "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+        "scenario_steps": 7,
+        "fast_anchor": {
+          "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+          "cpu_seconds": 4.641699414,
+          "wall_seconds": 4.710422135,
+          "cycles": 187528660,
+          "stop_reason": "scenario_done"
+        },
+        "slow_reference": {
+          "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+          "cpu_seconds": 19.648377229,
+          "wall_seconds": 19.943735708,
+          "cycles": 187528659,
+          "stop_reason": "scenario_done"
+        },
+        "slow_to_fast_cpu_time_ratio": 4.233013704
+      }
+    }
+  },
+  "pending": [
+    "G1 minimal migration and targeted verification"
+  ],
+  "interpretation": {
+    "fast_to_slow_cpu_cost_ratio": 7.426743,
+    "short_probe_separates_fast_and_slow": true,
+    "p1a_is_not_the_7x_cause": true,
+    "current_f32_is_not_an_accepted_performance_baseline": true,
+    "historical_records_immutable": true,
+    "production_target_updated": false,
+    "r0_complete": true
+  }
+}

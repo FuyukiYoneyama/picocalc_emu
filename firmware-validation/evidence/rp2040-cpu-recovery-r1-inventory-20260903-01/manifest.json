@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-r1-inventory-20260903-01",
+  "status": "complete",
+  "decision_kind": "capability-inventory",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "reconstruction_base": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "display_name": "Tetris（軽ゲーム実装）／PicoEdit（テキスト編集実装）の高速Serial起点"
+  },
+  "carry_groups": ["G0", "G1", "G2", "G3", "G4", "G5", "G6"],
+  "deferred_group": {
+    "id": "G7",
+    "display_name": "preview API（中断済み1倍UXとは別）",
+    "reason": "現在の通常利用で必要と確認されるまで持ち帰らない"
+  },
+  "excluded_candidate_families": [
+    "P1-A",
+    "P1-B",
+    "P2-A",
+    "dynamic-quantum",
+    "OPT2-OPT4-micro-opt",
+    "profiler-and-measurement-only-runtime",
+    "1x-UX",
+    "LOAD-0",
+    "external-project-source-changes"
+  ],
+  "next_step": {
+    "id": "G1",
+    "display_name": "CPU・multicore・割込み正確性の最小移植",
+    "start_condition": "G0 clean build、Tetris／PicoEdit最小run、R0 short probe再現"
+  },
+  "production_source_changed": false,
+  "target_registry_changed": false,
+  "remote_branch_created": false
+}

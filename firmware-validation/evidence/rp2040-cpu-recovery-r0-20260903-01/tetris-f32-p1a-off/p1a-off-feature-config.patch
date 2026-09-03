@@ -1,0 +1,26 @@
+diff --git a/crates/picocalc-board/Cargo.toml b/crates/picocalc-board/Cargo.toml
+index 25a7173..e331570 100644
+--- a/crates/picocalc-board/Cargo.toml
++++ b/crates/picocalc-board/Cargo.toml
+@@ -21,7 +21,7 @@ sd-gen1-multiblock = []
+ workspace = true
+ 
+ [dependencies]
+-rp2040-emu = { path = "../rp2040-emu" }
++rp2040-emu = { path = "../rp2040-emu", default-features = false }
+ # Off-chip PSRAM model (APS6404L). PicoCalc-specific pin wiring lives in
+ # this crate (`pins::psram_picocalc`); the model itself is board-agnostic.
+ picoem-devices = { path = "../picoem-devices" }
+diff --git a/crates/picocalc-harness/Cargo.toml b/crates/picocalc-harness/Cargo.toml
+index 9af8a4c..68e23e0 100644
+--- a/crates/picocalc-harness/Cargo.toml
++++ b/crates/picocalc-harness/Cargo.toml
+@@ -55,7 +55,7 @@ workspace = true
+ # Serial execution model only — the PicoCalc conformance track uses
+ # Serial as the correctness reference (see picocalc_emu
+ # docs/IMPLEMENTATION_PLAN.md §3.1). No `threading` feature.
+-rp2040-emu = { path = "../rp2040-emu" }
++rp2040-emu = { path = "../rp2040-emu", default-features = false }
+ # The realtime preview reuses the workspace pacer; it does not own an
+ # emulator clock or add pacing semantics to the authoritative runner.
+ picoem-common = { path = "../picoem-common" }

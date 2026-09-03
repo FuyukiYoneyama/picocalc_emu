@@ -243,7 +243,10 @@ snapshotを使い、runnerへhost directoryを直接mountするものではな�
 現行の性能作業は、Tetris（軽ゲーム実装）が約14%で動作していたbackend `e985a9d...`から、
 現在必要な正確性と機能だけを性能確認しながら積み直す退行復旧計画です。実施順序と停止条件は
 [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
-を正典とし、現在は計画作成済み・実装未着手です。
+を正典とし、R0（高速出発点と退行比較点の固定）とR1（必要機能の棚卸し）は完了しました。G0では
+e985のクリーンbackend testとPicoEdit（テキスト編集実装）のsourceを変更しないクリーンbuildを確認し、
+現在はG1（CPU・multicore・割込み正確性）の最小移植開始前です。再構築laneは`/tmp`の一時worktreeで
+行い、現行backend `main`とtarget registryは変更しません。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

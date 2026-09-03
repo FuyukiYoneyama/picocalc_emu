@@ -1,0 +1,161 @@
+{
+  "determinism": {
+    "all_reports_identical": true,
+    "all_snapshots_identical": true,
+    "all_uart_identical": true,
+    "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+    "snapshot_sha256": {
+      "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+    },
+    "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c"
+  },
+  "environment": {
+    "cpu": {
+      "logical_cpus": 12,
+      "model": "AMD Ryzen 5 5600X 6-Core Processor",
+      "reported_mhz": 3693.101
+    },
+    "cpu_affinity_before": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "measurement_cpu": 11,
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39"
+  },
+  "measurements": [
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 35604731.951864,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.26064604851938,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 1,
+      "slowdown": 7.012305028802153,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 26050713182,
+      "wall_seconds": 26.050713182
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 35747985.53364497,
+      "emulated_us": 3715000,
+      "real_time_percent": 14.318022933921098,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 2,
+      "slowdown": 6.984204485598924,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 25946319664,
+      "wall_seconds": 25.946319664
+    },
+    {
+      "cycles": 927528660,
+      "emulated_cycles_per_wall_second": 34757666.63420065,
+      "emulated_us": 3715000,
+      "real_time_percent": 13.921373766073753,
+      "report_sha256": "2749f0313347f72eea8515fedc492463e4e1d627f497d77a3a7203c2ddbf56ec",
+      "run": 3,
+      "slowdown": 7.1831991353970395,
+      "snapshot_sha256": {
+        "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+      },
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "wall_ns": 26685584788,
+      "wall_seconds": 26.685584788
+    }
+  ],
+  "method": {
+    "build_time_included": false,
+    "measured_runs": 3,
+    "runner_startup_and_artifact_writes_included": true,
+    "target_validation_included": false,
+    "timer": "time.perf_counter_ns around the release runner process",
+    "warmup_runs_excluded": 1
+  },
+  "metric": "emulated-time-to-wall-time",
+  "schema_version": 1,
+  "statistics": {
+    "emulated_cycles_per_wall_second": {
+      "maximum": 35747985.53364497,
+      "mean": 35370128.0399032,
+      "mean_ci95": [
+        34040456.64761069,
+        36699799.432195716
+      ],
+      "median": 35604731.951864,
+      "minimum": 34757666.63420065,
+      "sample_stddev": 535221.5683991375
+    },
+    "real_time_percent": {
+      "maximum": 14.318022933921098,
+      "mean": 14.16668091617141,
+      "mean_ci95": [
+        13.634112011792036,
+        14.699249820550785
+      ],
+      "median": 14.26064604851938,
+      "minimum": 13.921373766073753,
+      "sample_stddev": 0.21437053239980633
+    },
+    "slowdown": {
+      "maximum": 7.1831991353970395,
+      "mean": 7.059902883266039,
+      "mean_ci95": [
+        6.792344335443859,
+        7.327461431088219
+      ],
+      "median": 7.012305028802153,
+      "minimum": 6.984204485598924,
+      "sample_stddev": 0.10769811731986129
+    },
+    "wall_seconds": {
+      "maximum": 26.685584788,
+      "mean": 26.227539211333333,
+      "mean_ci95": [
+        25.233559206173936,
+        27.22151921649273
+      ],
+      "median": 26.050713182,
+      "minimum": 25.946319664,
+      "sample_stddev": 0.40009850584328405
+    }
+  },
+  "target": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "cycles": 927528660,
+    "emulated_us": 3715000,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "id": "picotetris-opt1b",
+    "revision": 5,
+    "runner_sha256": "0e955f6fbaad67fe2d1a9dbf79f3a1930ce0b164af8aa526919b83f5c0708aa2",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "step_quantum": 1
+  },
+  "theory": {
+    "ceiling_note": "An unattainable instruction-count lower bound, not a performance prediction.",
+    "definition": "real_time_percent = emulated_seconds / wall_seconds * 100",
+    "host_cycles_per_dispatch_budget_at_100_percent": 14.791855827937434,
+    "host_reported_hz": 3693101000.0,
+    "ideal_wall_seconds": 3.715,
+    "one_host_cycle_per_dispatch_ceiling_percent": 1479.1855827937434,
+    "real_time_target_percent": 100.0,
+    "required_emulated_cycles_per_wall_second": 249671240.91520864,
+    "step_quantum": 1
+  }
+}

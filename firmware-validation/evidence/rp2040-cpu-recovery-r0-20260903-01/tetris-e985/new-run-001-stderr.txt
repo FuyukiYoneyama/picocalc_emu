@@ -1,0 +1,86 @@
+scenario 'tetris-line-clear': pass
+  [pass]      515 ms  game started — 1387 UART bytes seen
+  [pass]      515 ms  drop 0 — sent 4 key event(s)
+  [pass]      595 ms  wait — waited 80 ms
+  [pass]      595 ms  drop 1 — sent 2 key event(s)
+  [pass]      675 ms  wait — waited 80 ms
+  [pass]      675 ms  drop 2 — sent 2 key event(s)
+  [pass]      755 ms  wait — waited 80 ms
+  [pass]      755 ms  drop 3 — sent 4 key event(s)
+  [pass]      835 ms  wait — waited 80 ms
+  [pass]      835 ms  drop 4 — sent 2 key event(s)
+  [pass]      915 ms  wait — waited 80 ms
+  [pass]      915 ms  drop 5 — sent 1 key event(s)
+  [pass]      995 ms  wait — waited 80 ms
+  [pass]      995 ms  drop 6 — sent 4 key event(s)
+  [pass]     1075 ms  wait — waited 80 ms
+  [pass]     1075 ms  drop 7 (clears 1) — sent 7 key event(s)
+  [pass]     1155 ms  wait — waited 80 ms
+  [pass]     1155 ms  drop 8 — sent 9 key event(s)
+  [pass]     1235 ms  wait — waited 80 ms
+  [pass]     1235 ms  drop 9 (clears 1) — sent 6 key event(s)
+  [pass]     1315 ms  wait — waited 80 ms
+  [pass]     1315 ms  drop 10 (clears 1) — sent 5 key event(s)
+  [pass]     1395 ms  wait — waited 80 ms
+  [pass]     1395 ms  drop 11 — sent 1 key event(s)
+  [pass]     1475 ms  wait — waited 80 ms
+  [pass]     1475 ms  drop 12 — sent 4 key event(s)
+  [pass]     1555 ms  wait — waited 80 ms
+  [pass]     1555 ms  drop 13 — sent 3 key event(s)
+  [pass]     1635 ms  wait — waited 80 ms
+  [pass]     1635 ms  drop 14 — sent 4 key event(s)
+  [pass]     1715 ms  wait — waited 80 ms
+  [pass]     1715 ms  drop 15 (clears 2) — sent 9 key event(s)
+  [pass]     1795 ms  wait — waited 80 ms
+  [pass]     1795 ms  drop 16 — sent 5 key event(s)
+  [pass]     1875 ms  wait — waited 80 ms
+  [pass]     1875 ms  drop 17 — sent 4 key event(s)
+  [pass]     1955 ms  wait — waited 80 ms
+  [pass]     1955 ms  drop 18 — sent 7 key event(s)
+  [pass]     2035 ms  wait — waited 80 ms
+  [pass]     2035 ms  drop 19 (clears 1) — sent 2 key event(s)
+  [pass]     2115 ms  wait — waited 80 ms
+  [pass]     2115 ms  drop 20 — sent 6 key event(s)
+  [pass]     2195 ms  wait — waited 80 ms
+  [pass]     2195 ms  drop 21 — sent 2 key event(s)
+  [pass]     2275 ms  wait — waited 80 ms
+  [pass]     2275 ms  drop 22 — sent 3 key event(s)
+  [pass]     2355 ms  wait — waited 80 ms
+  [pass]     2355 ms  drop 23 (clears 1) — sent 9 key event(s)
+  [pass]     2435 ms  wait — waited 80 ms
+  [pass]     2435 ms  drop 24 (clears 1) — sent 2 key event(s)
+  [pass]     2515 ms  wait — waited 80 ms
+  [pass]     2515 ms  drop 25 (clears 1) — sent 2 key event(s)
+  [pass]     2595 ms  wait — waited 80 ms
+  [pass]     2595 ms  drop 26 (clears 1) — sent 8 key event(s)
+  [pass]     2675 ms  wait — waited 80 ms
+  [pass]     2675 ms  drop 27 — sent 4 key event(s)
+  [pass]     2755 ms  wait — waited 80 ms
+  [pass]     2755 ms  drop 28 — sent 2 key event(s)
+  [pass]     2835 ms  wait — waited 80 ms
+  [pass]     2835 ms  drop 29 — sent 6 key event(s)
+  [pass]     2915 ms  wait — waited 80 ms
+  [pass]     2915 ms  drop 30 — sent 6 key event(s)
+  [pass]     2995 ms  wait — waited 80 ms
+  [pass]     2995 ms  drop 31 — sent 3 key event(s)
+  [pass]     3075 ms  wait — waited 80 ms
+  [pass]     3075 ms  drop 32 — sent 9 key event(s)
+  [pass]     3155 ms  wait — waited 80 ms
+  [pass]     3155 ms  drop 33 (clears 1) — sent 6 key event(s)
+  [pass]     3235 ms  wait — waited 80 ms
+  [pass]     3235 ms  drop 34 (clears 1) — sent 5 key event(s)
+  [pass]     3315 ms  wait — waited 80 ms
+  [pass]     3315 ms  drop 35 — sent 4 key event(s)
+  [pass]     3395 ms  wait — waited 80 ms
+  [pass]     3395 ms  drop 36 — sent 2 key event(s)
+  [pass]     3475 ms  wait — waited 80 ms
+  [pass]     3475 ms  drop 37 (clears 1) — sent 9 key event(s)
+  [pass]     3555 ms  wait — waited 80 ms
+  [pass]     3555 ms  drop 38 — sent 2 key event(s)
+  [pass]     3635 ms  wait — waited 80 ms
+  [pass]     3635 ms  drop 39 — sent 6 key event(s)
+  [pass]     3715 ms  wait — waited 80 ms
+  [pass]     3715 ms  well at the end of the plan — 18804 non-black pixels
+  [pass]     3715 ms  the line-clearing path ran — 1852 UART bytes seen
+  [pass]     3715 ms  the score the plan predicts — 1852 UART bytes seen
+  [pass]     3715 ms  the stack stayed low (planned max height 4) — 4160 non-black pixels in (8,104) 140x112 (want ..4160)

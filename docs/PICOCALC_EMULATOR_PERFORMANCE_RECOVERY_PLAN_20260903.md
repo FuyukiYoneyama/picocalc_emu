@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / plan only / implementation not started**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1 implementation pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -246,5 +246,9 @@ Git管理下へ残す。不採用candidate codeをdefault-offで`main`へ残さ�
 
 ## 9. 着手境界
 
-本書作成時点では計画だけであり、backend source、branch、worktree、target registry、validation recordを
-変更しない。人間が本計画を承認した後、R0（高速出発点と退行比較点の固定）から開始する。
+本計画は承認後にR0（高速出発点と退行比較点の固定）、R1（必要機能の選別）を完了した。G0では
+e985のクリーンbackendの`rp2040-emu`テストと、既存PicoEdit（テキスト編集実装）のsourceを変更しない
+クリーンhost／RP2040 buildを確認した。次はG1（CPU・multicore・割込み正確性）の最小移植である。
+再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
+record、remote branchは変更しない。G1のproduction source移植は、対象履歴の差分と既存testを確認した
+うえで開始し、移植後に短probeと正確性testを通過しなければ次の機能群へ進まない。
