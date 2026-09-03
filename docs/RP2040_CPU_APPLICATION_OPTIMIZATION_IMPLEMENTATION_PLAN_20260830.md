@@ -788,7 +788,7 @@ cargo test --locked -p picocalc-harness --features executable-sram-invalidation-
 - self-modifying SRAM code、wide instruction 上書き、両 Serial core の fetch による共有 bitmap 更新を含む単体試験が一致する。P1-B は Serial-only とし、threading の cross-core self-modifying-code eviction は P2-T の別契約で扱う。
 - 二つの実アプリで correctness gate を通る。
 - P1-A、P1-B、A+B の三つを別々に A/B 測定する。P1-B は P1-A 採否記録が閉じ、profile-only 拡張で定義した workload別 `filterable_request_rate` と等重み combined ratio が gate を満たす場合だけ開始する。
-- feature-gated 実験後、採用候補は通常 pathへ統合する。P1-Aは通常版の Cargo default feature として有効化し、`--no-default-features` に比較用の旧pathを残す。P1-Bは候補ブランチにのみ保持して`main`へ統合せず、P2-Aは`main`にコードを残すが featureを既定オフにする。統合・保留の理由、correctness、provenance、A/Bの効果値・校正注記を decision recordへ固定する。
+- feature-gated 実験後、採用候補は通常 pathへ統合する。P1-Aは通常版の Cargo default feature として有効化し、`--no-default-features` に比較用の旧pathを残す。P1-Bは候補ブランチにのみ保持して`main`へ統合せず、プロジェクト完了時に非採用記録を確認してブランチ参照を削除する。P2-Aは`main`にコードを残すが featureを既定オフにする。統合・保留・ブランチ削除の理由、correctness、provenance、A/Bの効果値・校正注記を decision recordへ固定する。
 
 ### P2. pending exception の common-case fast reject
 
@@ -1315,7 +1315,7 @@ A/Bの `summary.status=invalid` / `decision.status=invalid` は、`local residua
 
 ### 他候補の扱い
 
-- **P1-B**: combined raw CPU-time point estimate **-2.177466%**（95% CI -3.285333%〜-1.056909%）のため採用しない。最終実装は `codex/p1b-executable-sram-filter` ブランチにのみ保持し、`main`へは統合していない。
+- **P1-B**: combined raw CPU-time point estimate **-2.177466%**（95% CI -3.285333%〜-1.056909%）のため採用しない。最終実装は一時候補ブランチ `codex/p1b-executable-sram-filter` にのみ存在し、`main`へは統合していない。プロジェクト完了時にこのdecisionと検証記録を確認したうえで、ブランチ参照を削除する。
 - **P2-A**: combined raw point estimate **+0.204677%**（95% CI -1.792089%〜+2.242041%）だが、CIがゼロをまたぐ。今回の変更では明示的な採用決定を行わず、featureは既定オフのまま保持する。これはP1-Aの採用を取り消す理由ではない。
 
 ### 統合後の検証

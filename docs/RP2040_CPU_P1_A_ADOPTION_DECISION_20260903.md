@@ -28,7 +28,7 @@ production A/B は CPU 11、`interleaved-anchor-v3`、5 AB＋5 BAの10 pair/work
 - `rp2040-emu` の default feature に `decode-invalidation-tag-guard` を追加した。
 - `picocalc-harness` の default featureにも追加し、build provenanceへ採用feature名を出力する。
 - 比較用の歴史的 index-only path は `--no-default-features` で再現できる。
-- P1-B (`executable-sram-invalidation-filter`) の最終実装は `codex/p1b-executable-sram-filter` ブランチにのみ保持し、`main`へは統合していない。P2-A (`pending-exception-fast-reject`) は `main`にコードを残すが既定オフのまま保持する。
+- P1-B (`executable-sram-invalidation-filter`) の最終実装は一時候補ブランチ `codex/p1b-executable-sram-filter` にのみ存在し、`main`へは統合していない。プロジェクト完了時にこのdecisionと検証記録を確認したうえで、ブランチ参照を削除する。P2-A (`pending-exception-fast-reject`) は `main`にコードを残すが既定オフのまま保持する。
 
 ## 検証
 
