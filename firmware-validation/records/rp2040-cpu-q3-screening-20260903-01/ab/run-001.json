@@ -1,0 +1,42 @@
+{
+  "artifact_type": "run",
+  "backend_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+  "build_provenance_sha256": "5cf3803aa390f70a3b65658cc9324ce803b8d09e203e54b0185e6398a32cf7b2",
+  "candidate_id": "PERF-Q1",
+  "cycles": 927528659,
+  "cycles_per_emulation_cpu_second": 4824942.95505973,
+  "cycles_per_emulation_wall_second": 4707069.072802524,
+  "elapsed_us": 3715000,
+  "emulated_cycles_per_wall_second": 4706923.339853391,
+  "emulation_cpu_ns": 192236191731,
+  "emulation_cpu_seconds": 192.236191731,
+  "emulation_wall_ns": 197050148331,
+  "emulation_wall_seconds": 197.050148331,
+  "guest_observation_sha256": "67d7724b01951a8061e6a471997c75803b3f827f163db0fea8c363d1e5a9898a",
+  "host_usage_delta": {
+    "max_rss_platform_units": 37360,
+    "max_rss_scope": "children_cumulative",
+    "system_seconds": 0.027317999999999995,
+    "user_seconds": 192.214061
+  },
+  "measurement_cpu": 11,
+  "order": "AB",
+  "pair": 1,
+  "primary_metric": "cpu-time",
+  "primary_throughput": 4824942.95505973,
+  "record_id": "rp2040-cpu-q3-screening-20260903-01",
+  "report_sha256": "7dc18c57a672b3aed23f4ef28b3a29d1228c859b720a395f68fe314256c2b3c2",
+  "role": "baseline",
+  "run_id": "run-001",
+  "runner_sha256": "43bea96548b38b25fa14ed776e2f813c874469d0257352de7fcf105d5c680882",
+  "schema_id": "picocalc.rp2040-cpu-ab",
+  "schema_version": 1,
+  "snapshot_sha256": {
+    "tetris-line-clear.png": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958"
+  },
+  "stop_reason": "scenario_done",
+  "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+  "wall_ns": 197056249280,
+  "wall_seconds": 197.05624928,
+  "workload": "picotetris-opt1b-vrp5"
+}

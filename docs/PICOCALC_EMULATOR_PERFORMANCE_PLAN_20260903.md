@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 高速化 — 現行計画
 
-- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 candidate Q2 correctness complete / PERF-Q3 ready**
+- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 candidate Q2 correctness complete / PERF-Q3 screening complete / PERF-Q4 not started**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -308,9 +308,26 @@ admissionとcorrectnessの記録は、それぞれ
 observation projection、UART／framebuffer／audio／SD／PSRAMを含むbehavior traceは両方passした。
 dynamic候補で変化するhost schedulerの`step_quantum`と`psram.tick_count`だけを事前固定どおり比較から除外し、
 独立verifierも37/37 passした。これは候補の正確性を示す記録であり、速度改善を示す記録ではない。
-比較対象のbaseline identityは確定済みだが、速度baseline（process CPU time）はまだ未計測である。
-次はPERF-Q3として、同じ2アプリでCPU affinityを固定し、baseline／candidateをAB・BAの2 pairずつ
-screeningする。番号だけで報告せず、毎回
+比較対象のbaseline identityは確定済みであり、PERF-Q3で速度baseline（process CPU time）も記録した。
+結果は
+[`firmware-validation/records/rp2040-cpu-q3-screening-20260903-01/`](../firmware-validation/records/rp2040-cpu-q3-screening-20260903-01/)
+に保存している。CPU affinity 11番、2アプリ、AB・BA各2 pair、合計8 run、guest work一致、
+実効affinity一致、実行エラーなしで、screening validityはpassだった。
+
+Q3で記録したbaseline中央値は次のとおりである。これは今後の候補比較の出発点であり、
+2 pairだけのscreeningなので、1%級の差を確定する精密測定値ではない。raw値と計算式は上記recordに保存する。
+
+| 対象 | 固定guest cycles | baseline CPU時間中央値 | baseline throughput中央値 |
+|---|---:|---:|---:|
+| Tetris（軽ゲーム実装） | 927,528,659 | 約189.415 CPU秒 | 約4.898M cycles/CPU秒 |
+| PicoEdit（テキスト編集実装） | 827,799,818 | 約169.401 CPU秒 | 約4.887M cycles/CPU秒 |
+
+同じrecordで候補のcombined CPU-time効果は約-1.88%、95% CIは約-14.8%〜+12.9%だった。
+CI下限が0を超えないため、PERF-Q3の規則により性能改善は未証明であり、候補は採用しない。
+wall時間も副指標として記録したが、候補採用の根拠にはしない。したがってPERF-Q4全回帰は開始せず、
+次は§5の規則に従い、process CPU-timeで支配的な大分類を先に帰属し、10%以上の改善を説明できる
+候補だけを次の一時prototypeとして検討する。
+番号だけで報告せず、毎回
 「PicoCalc firmware backendのどの待ち時間を、何を守りながら減らす作業か」を併記する。
 
 1倍速UXの旧計画と関連概念は
