@@ -31,6 +31,8 @@ production A/B は CPU 11、`interleaved-anchor-v3`、5 AB＋5 BAの10 pair/work
 
 raw log、metadata、集計、診断profileは [`rp2040-cpu-p1-a-cpu-only-direct-20260903-01`](../firmware-validation/evidence/rp2040-cpu-p1-a-cpu-only-direct-20260903-01/) に保存した。診断profileでも、250M-cycle runの invalidation request **83,333,396** に対して candidate の decode miss **5**（baseline **83,333,399**）を確認しており、速度差が意図した無関係slot eviction抑止経路に由来することを確認した。profiler有効バイナリは経路確認専用で、速度値の算出には使っていない。
 
+CPU性能値の出典、測定スコープ、旧111.7 MHz記載の扱いは、[`RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](RP2040_CPU_MEASUREMENT_LEDGER_20260903.md)に統一した。CPU単体の現在値をこの直接測定の範囲で述べる場合は、P1-A **142.810288 MHz相当**である。これは実アプリの combined raw **+1.218973%** や、PicoCalc全体の実時間比を置き換えない。
+
 P1-A再測定前のbaseline-only CPU時間診断と、P2-A A/Bで参照したhost-stability sentinelは、元の一時領域から[`firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/`](../firmware-validation/evidence/rp2040-cpu-diagnostics-20260903-01/)へ保存した。元パス、record ID、SHA-256、診断専用であることを同ディレクトリの`manifest.json`と`README.md`に記録している。
 
 ## ソース統合

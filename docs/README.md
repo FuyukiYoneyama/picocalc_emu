@@ -20,6 +20,10 @@
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |
 | VRP-LOAD-0のrepository-owned sustained-load計画 | [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md) |
 | VRP-NES-0の歴史資料・非適格fixture/evidence | [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md) |
+| `ux`モード（体感評価用の高速実行）の概念設計。**未採用・未実装** | [`validated-realtime-preview/UX_MODE_CONCEPT_20260830.md`](validated-realtime-preview/UX_MODE_CONCEPT_20260830.md) |
+| CPU単体経路の旧`basic`差分分析（履歴。111.7 MHzは出典未確定） | [`validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md`](validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md) |
+| RP2040 CPU性能値の正典台帳（現行直接測定値、実アプリ値、旧111.7 MHzの出典訂正） | [`RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](RP2040_CPU_MEASUREMENT_LEDGER_20260903.md) |
+| 1倍前提の誤りと2バージョン構成への是正助言。**未採用** | [`VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md`](VRP_DUAL_BUILD_CORRECTION_ADVICE_20260830.md) |
 | 完了済みI2C-EXTのoptional capability（RTC/環境sensor） | [`I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md`](I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md) |
 | 改造・backend変更・AI開発の入口 | [`../DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) |
 | M-NESCO拡張の実行証拠・完了記録 | [`M-NESCO evidence`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)、[`完了済み契約`](history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md) |
