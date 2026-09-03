@@ -1,0 +1,10 @@
+76260ecc92d41cdd801eeb86b541e474586b3cb941872fda8a320945f70529c3  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/README.md
+fe7199278ec2821d0a70c9a62774a1ab58fdae305b997ce17ff9d113d86f7bba  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/audio/final.png
+53442aa0c5fe41515dcc5a92004d80af50410e185448ef7dad49b14534119f10  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/audio/next2-audio-v3.json
+7ace05cd286355ecfb114b1d85da36df2139f763a7bcfee923ab6e89aeaa7b55  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/audio/run-report.json
+e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/audio/uart.log
+851b13738472aa797efaee4d458080da4bb46a4c145a7c839165635f4e14836e  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/g3-source-diff.patch
+aa37004e48f793e07dcd62fc846590c9f8abd28540007176ee83b52780687a08  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/manifest.json
+ba08f07350c1c6853364aaf96a1d0deeff8290d66fac6ae404a4aa3eef08c2c2  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/tetris-short/g3-candidate-report.json
+db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/tetris-short/g3-candidate-uart.bin
+49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3  firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/tetris-short/r0-scenario-probe.json

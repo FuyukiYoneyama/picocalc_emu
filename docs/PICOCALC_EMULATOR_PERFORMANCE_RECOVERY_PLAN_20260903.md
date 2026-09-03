@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2 candidate pass / G3 pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3 candidate pass / G4 pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -147,7 +147,7 @@ commit全体をcherry-pickせず、必要部分だけを再実装する。
 |---|---|---|---|
 | G1 | CPU・割込み正確性 | multicore IRQ、level IRQ、watchdog handoffなど | 現行accepted targetが依存する修正だけ |
 | G2 | LCD・PIO・PSRAM正確性 | LCD readback、RAMRD、PIO／PSRAM edge semantics | 現行accepted observationに必要な修正だけ |
-| G3 | DMA・audio | DMA-paced audio、priority、timer競合、capture | 現行audio targetの契約を満たす最小実装 |
+| G3 | DMA・audio（音声DMA実装） | DMA-paced audio、priority、timer競合、capture | 現行audio targetの契約を満たす最小実装 |
 | G4 | headless実行基盤 | stable machine API、heartbeat、report入口 | 現行利用者の実行経路に必要で、emulation hot pathへ不要なcostを加えないこと |
 | G5 | flash・SD・boot | RAW SD、flash mutation、UF2 boot、multiblock | 現行公開capabilityを維持する最小実装 |
 | G6 | 外部I2C module | RTC、EEPROM、AHT20、BMP280、観測値 | capabilityを維持する場合だけ。未使用時costを加えないこと |
@@ -253,11 +253,18 @@ e985のクリーンbackendの`rp2040-emu`テストと、既存PicoEdit（テキ�
 通過した。記録は[`rp2040-cpu-recovery-g1-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/)
 にある。
 
-G1・G2候補はbackend `main`へまだ統合していない。G1の既受入artifactとのcycle差16は未丸めで記録し、性能改善とは
+G1・G2・G3候補はbackend `main`へまだ統合していない。G1の既受入artifactとのcycle差16は未丸めで記録し、性能改善とは
 扱わない。G2はLCD・PIO・PSRAMの必要部分だけを移植し、board／emu／harnessの対象test、Tetris（軽ゲーム実装）
 短screening、NEXT-3 A1（LCD readback・SD・PSRAM positive-control）を通過した。G2短screeningのguest-visible
 report、UART、framebuffer digest、PSRAM観測は直前G1 controlと一致し、CPU時間は一回screeningのため改善値として
 扱わない。記録は[`rp2040-cpu-recovery-g2-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/)
-にある。再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation
-record、remote branchは変更していない。次はG3（DMA・audio正確性）の最小移植であり、対象testと短probeを通過し、
-性能差を説明できる場合だけ次へ進む。
+にある。
+
+G3（DMA・audio正確性）は、現行`picocalc-audio-r1`のDMA-to-PWM5_CC契約、PCM／due-cycle／block boundary／
+service-latency観測、UART authority markerをclean candidateで通過した。Tetris（軽ゲーム実装）短screeningは
+passしたが、G2比で完了cycleが3増えた。この差は復元したaudio timer pacingに由来する候補境界差として記録し、
+性能改善とは扱わない。audio sinkは期待値指定runだけで有効にし、通常Tetris runへ常時hashコストを加えていない。
+記録は[`rp2040-cpu-recovery-g3-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/)にある。
+再構築laneは`/tmp`の一時worktreeだけを使用し、現行backend `main`、target registry、既存validation record、
+remote branchは変更していない。次はG4（headless実行基盤）の必要部分の棚卸しであり、対象testと短probeを通過し、
+未説明のcostがない場合だけ次へ進む。

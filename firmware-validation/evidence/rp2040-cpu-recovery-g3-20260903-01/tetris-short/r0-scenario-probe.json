@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "name": "r0-scenario-probe",
+  "description": "R0 short scenario probe: startup and first three placements only.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "game started",
+      "timeout_ms": 20000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[TETRIS] start"
+      }
+    },
+    {
+      "op": "key",
+      "label": "drop 0",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 1",
+      "text": "a "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 2",
+      "text": "d "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    }
+  ]
+}

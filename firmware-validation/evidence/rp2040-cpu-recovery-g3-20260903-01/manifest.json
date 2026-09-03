@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g3-20260903-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2 complete; G3 candidate pass; G4 pending",
+  "group": {
+    "id": "G3",
+    "display_name": "DMA・audio正確性（最小移植）",
+    "purpose": "現在のpicocalc-audio-r1契約に必要なDMA・audio経路だけを高速Serial起点へ戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+    "candidate_commit": "151cbc0574756a3c76e2314bd46afb2dcd101c96",
+    "source_diff": "g3-source-diff.patch",
+    "source_diff_sha256": "851b13738472aa797efaee4d458080da4bb46a4c145a7c839165635f4e14836e",
+    "source_files_changed": 6,
+    "insertions": 1213,
+    "deletions": 19,
+    "worktree": "temporary /tmp worktree; detached candidate; no remote branch"
+  },
+  "runner": {
+    "binary_sha256": "73253a3e251d3cb0de9a10d0164208fda51ecb333a6c76e449a66f57a73c0bd2",
+    "backend_commit": "151cbc0574756a3c76e2314bd46afb2dcd101c96",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "step_quantum": 1
+  },
+  "tests": {
+    "picocalc_board": {
+      "command": "cargo test --locked -p picocalc-board",
+      "passed": 74,
+      "doctests": 1,
+      "status": "pass"
+    },
+    "rp2040_emu": {
+      "command": "cargo test --locked -p rp2040-emu",
+      "passed": [1240, 9, 9, 4, 6, 5],
+      "doctests": 0,
+      "status": "pass"
+    },
+    "picocalc_harness": {
+      "command": "cargo test --locked -p picocalc-harness",
+      "passed": [2, 41],
+      "status": "pass"
+    }
+  },
+  "audio_target": {
+    "display_name": "PicoCalc audio（音声DMA実装）",
+    "target_id": "picocalc-audio-r1",
+    "target_revision": 1,
+    "source_repository": "picocalc-audio",
+    "source_commit": "724b3ac74f1401a19d6310af387c65ad1e5476a4",
+    "source_dirty": false,
+    "pico_sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+    "scenario": "next2-audio-v3.json",
+    "scenario_sha256": "53442aa0c5fe41515dcc5a92004d80af50410e185448ef7dad49b14534119f10",
+    "firmware_bin_sha256": "acaaf220fa9912a4cbd09de923f002ffe1fc0748d7c295ea997c1d28319b0cb6",
+    "firmware_uf2_sha256": "d6986103e74e153fd23ea7ce25111bba0a5752331959367b0aa63f6eb1c28677",
+    "existing_accepted_record": "firmware-validation/records/next2-audio-r1-20260809-01/record.json",
+    "run": {
+      "backend_commit": "151cbc0574756a3c76e2314bd46afb2dcd101c96",
+      "backend_dirty": false,
+      "verdict": "pass",
+      "stop_reason": "scenario_done",
+      "cycles": 405523032,
+      "elapsed_us": 1627000,
+      "uart_markers": 5,
+      "dma_write_count": 49152,
+      "target_write_attempt_count": 49152,
+      "wrong_width_count": 0,
+      "wrong_treq_count": 0,
+      "missing_due_cycle_count": 0,
+      "pcm_sha256": "1b1798dbe461b5a4b59964f8cf5b7c3ec12d2c4b34b2bc1dba9783d7f1b9876f",
+      "timer_fraction": "3/15625",
+      "timer_event_count": 54758,
+      "timer_miss_count": 5606,
+      "timer_due_cycle_sha256": "28337d71e91fd6e68a4c5d7521557152c8468ef64cbf2e2b34f1da4892890d32",
+      "block_start_count": 384,
+      "malformed_block_count": 0,
+      "block_boundary_gap_count": 383,
+      "block_boundary_gap_min_cycles": 5209,
+      "block_boundary_gap_max_cycles": 10417,
+      "block_boundary_gap_sha256": "bb5372879a362de7eff7283322d1eb30b5879660cd87a90b379904253301bc06",
+      "gap_5208_count": 32640,
+      "gap_5209_count": 16128,
+      "unexpected_gap_count": 0,
+      "service_latency_min_cycles": 0,
+      "service_latency_max_cycles": 6,
+      "service_latency_sha256": "7c496ba3791e33ef5ae6071a6ec07956f6d1d1bd79f66d728a9acc230590a7a8",
+      "framebuffer_rgb565_sha256": "2cedd826abc8da63d5e42f614332f9d4ebf8704a87a787ee76a21b16a2381740",
+      "non_black_pixels": 61700,
+      "exception": null,
+      "unsupported_mmio": 0
+    },
+    "evidence": {
+      "report": "audio/run-report.json",
+      "report_sha256": "7ace05cd286355ecfb114b1d85da36df2139f763a7bcfee923ab6e89aeaa7b55",
+      "uart": "audio/uart.log",
+      "uart_sha256": "e497f944f694fb28d0ce094585103731c12512283baa6184daa7b9061e33918d",
+      "snapshot": "audio/final.png",
+      "snapshot_sha256": "fe7199278ec2821d0a70c9a62774a1ab58fdae305b997ce17ff9d113d86f7bba"
+    }
+  },
+  "tetris_short_screening": {
+    "display_name": "Tetris（軽ゲーム実装）",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "firmware_uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+    "source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+    "scenario": "r0-scenario-probe.json",
+    "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+    "execution_model": "Serial",
+    "cpu_affinity": 11,
+    "step_quantum": 1,
+    "host_timing": "not collected; one-run functional screening only",
+    "audio_sink_expectation": "not supplied; sink observation inactive",
+    "g2_control": {
+      "backend_commit": "aa9c868576f02c7bc6e3e450f5224143f09b93a6",
+      "cycles": 187528656,
+      "elapsed_us": 755000,
+      "framebuffer_rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+      "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"
+    },
+    "g3_candidate": {
+      "backend_commit": "151cbc0574756a3c76e2314bd46afb2dcd101c96",
+      "backend_dirty": false,
+      "verdict": "pass",
+      "stop_reason": "scenario_done",
+      "cycles": 187528659,
+      "elapsed_us": 755000,
+      "cycle_delta_from_g2": 3,
+      "framebuffer_rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+      "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+      "psram_guest_observation_matches_g2": true,
+      "psram_tick_count": 62265291,
+      "psram_tick_count_interpretation": "host invocation counter, not guest-visible transaction count",
+      "audio_sink_report": null,
+      "performance_claim": "none"
+    },
+    "evidence": {
+      "report": "tetris-short/g3-candidate-report.json",
+      "report_sha256": "ba08f07350c1c6853364aaf96a1d0deeff8290d66fac6ae404a4aa3eef08c2c2",
+      "uart": "tetris-short/g3-candidate-uart.bin",
+      "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+      "scenario_copy": "tetris-short/r0-scenario-probe.json"
+    }
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "Audio target contract and DMA sink observations pass; Tetris short screening has no guest-visible regression, and its +3 cycle boundary is explicitly recorded and attributable to restored audio timer pacing.",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "G4",
+    "next_group_display_name": "headless実行基盤（machine API・heartbeat・report入口の必要部分）"
+  }
+}
