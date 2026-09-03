@@ -1,0 +1,78 @@
+   Compiling picocalc-harness v0.1.0 (/tmp/picocalc-performance-recovery.QMNRcP/g5-e985/crates/picocalc-harness)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.69s
+     Running unittests src/bin/opt0_blocked_baseline.rs (target/debug/deps/opt0_blocked_baseline-b49eabbca57a92ce)
+
+running 2 tests
+test tests::arguments_require_output_and_sensible_bounds ... ok
+test tests::median_handles_even_and_odd_samples ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/picocalc_run-9b99cbab0d979234)
+
+running 62 tests
+test machine_protocol::tests::every_contract_error_code_has_its_stable_spelling ... ok
+test machine_protocol::tests::error_response_is_one_line_with_stable_code_and_nullable_id ... ok
+test machine_protocol::tests::id_rejects_negative_fractional_and_other_types ... ok
+test machine_protocol::tests::malformed_json_has_the_stable_invalid_json_code ... ok
+test machine_protocol::tests::operation_field_allow_list_accepts_a_complete_request ... ok
+test machine_protocol::tests::operation_must_be_a_string ... ok
+test machine_protocol::tests::request_root_and_required_fields_are_fail_closed ... ok
+test machine_protocol::tests::schema_must_be_the_integer_one ... ok
+test machine_protocol::tests::string_and_integer_ids_are_preserved_without_coercion ... ok
+test machine_protocol::tests::success_response_is_one_line_and_keeps_id_type ... ok
+test machine_protocol::tests::unknown_field_helper_adds_common_fields_and_sorts_failures ... ok
+test machine_protocol::tests::unknown_operation_is_left_for_the_dispatcher ... ok
+test machine_protocol::tests::valid_id_can_be_echo_correlated_when_another_field_is_bad ... ok
+test scenario::tests::a_failed_assertion_does_not_stop_the_rest ... ok
+test scenario::tests::a_finished_scenario_is_not_disturbed_by_finish_incomplete ... ok
+test scenario::tests::a_hash_must_look_like_a_digest ... ok
+test scenario::tests::a_key_step_without_a_keyboard_is_an_error_not_a_silent_pass ... ok
+test scenario::tests::a_minimal_scenario_parses ... ok
+test scenario::tests::a_non_black_bound_above_the_region_area_is_rejected ... ok
+test scenario::tests::a_pixel_condition_needs_exactly_one_bound ... ok
+test scenario::tests::a_wait_finishes_at_its_deadline_and_not_before ... ok
+test scenario::tests::a_wrong_schema_version_is_named_in_the_error ... ok
+test scenario::tests::an_unfinished_run_marks_every_remaining_step_incomplete ... ok
+test scenario::tests::an_unknown_operation_lists_the_known_ones ... ok
+test scenario::tests::colours_take_hex_strings_or_numbers ... ok
+test scenario::tests::errors_point_at_the_step_and_field ... ok
+test scenario::tests::errors_point_inside_a_condition ... ok
+test scenario::tests::instantaneous_steps_chain_in_one_poll ... ok
+test scenario::tests::key_events_must_not_be_empty ... ok
+test scenario::tests::key_events_sequence_is_delivered_in_order_and_holds_remain_held ... ok
+test scenario::tests::key_events_step_without_a_keyboard_is_an_error_not_a_silent_pass ... ok
+test scenario::tests::key_events_validates_state_code_and_gap ... ok
+test scenario::tests::rectangles_must_fit_the_viewport ... ok
+test scenario::tests::stateful_conditions_are_accepted_in_wait_until ... ok
+test scenario::tests::wait_until_reports_the_timeout_at_the_moment_it_expires ... ok
+test scenario::tests::wait_until_passes_as_soon_as_the_condition_holds ... ok
+test tests::a_marker_without_an_accepted_stop_cannot_pass ... ok
+test scenario::tests::stateful_conditions_are_rejected_in_assert ... ok
+test scenario::tests::wide_characters_are_refused_rather_than_substituted ... ok
+test tests::a_failed_scenario_is_a_judged_failure ... ok
+test tests::an_explicit_cycle_limit_and_present_markers_pass ... ok
+test tests::a_raw_cycle_limit_is_not_a_pass ... ok
+test tests::an_explicit_sd_format_requires_an_attached_card ... ok
+test tests::an_unrunnable_scenario_is_cannot_judge ... ok
+test tests::a_core1_hardfault_stops_the_run_fail_closed ... ok
+test tests::audio_sink_expectation_failure_forces_verdict_fail ... ok
+test tests::audio_sink_report_matches_only_on_exact_count_and_sha ... ok
+test tests::backend_identity_must_match_the_clean_compiled_source ... ok
+test tests::json_escaping_covers_the_dangerous_bytes ... ok
+test tests::missing_uart_marker_and_stop_mismatch_fail ... ok
+test tests::only_nmi_and_hardfault_are_fatal ... ok
+test tests::progress_interval_validation_rejects_zero_and_clock_overflow ... ok
+test tests::run_id_validation_accepts_safe_identifiers ... ok
+test tests::machine_api_rejects_unknown_fields_before_advancing ... ok
+test tests::machine_api_input_makes_fifo_drop_explicit ... ok
+test tests::machine_api_run_is_bounded_and_reports_actual_cycles ... ok
+test tests::sd_report_names_the_selected_format ... ok
+test tests::stop_reason_strings_are_stable ... ok
+test tests::unsafe_observations_always_fail ... ok
+test tests::verdict_exit_codes_are_stable ... ok
+test tests::run_id_validation_rejects_ambiguous_or_injectable_identifiers ... ok
+test tests::machine_api_snapshot_cannot_escape_its_output_directory ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

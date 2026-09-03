@@ -1,0 +1,1881 @@
+diff --git a/crates/picocalc-board/src/lib.rs b/crates/picocalc-board/src/lib.rs
+index b3ce7c8..01c61cd 100644
+--- a/crates/picocalc-board/src/lib.rs
++++ b/crates/picocalc-board/src/lib.rs
+@@ -40,6 +40,6 @@ pub use framebuffer::{Framebuffer, PngError};
+ pub use keyboard::{KeyEvent, KeyState, Keyboard, KeyboardWire};
+ pub use lcd_pio_wire::LcdPioWire;
+ pub use sd_wire::SdCardWire;
+-pub use sdcard::{SdCard, SdFormat};
++pub use sdcard::{RawMetadata, SdCard, SdFormat};
+ pub use st7365p::{Colmod, St7365p};
+ pub use wire::St7365pWire;
+diff --git a/crates/picocalc-board/src/sd_wire.rs b/crates/picocalc-board/src/sd_wire.rs
+index 64761d1..1f49377 100644
+--- a/crates/picocalc-board/src/sd_wire.rs
++++ b/crates/picocalc-board/src/sd_wire.rs
+@@ -70,17 +70,26 @@ mod tests {
+         (SdCardWire::new(Arc::clone(&card)), card)
+     }
+ 
+-    /// Send a command frame and collect the reply bytes the driver would
+-    /// see while polling.
+-    fn command(wire: &mut SdCardWire, index: u8, arg: u32) -> Vec<u8> {
++    /// Send a command frame with an explicit CRC and collect the reply bytes
++    /// the driver would see while polling.
++    fn command_with_crc(wire: &mut SdCardWire, index: u8, arg: u32, crc: u8) -> Vec<u8> {
+         wire.transfer(0x40 | index as u16, 8);
+         for shift in [24, 16, 8, 0] {
+             wire.transfer(((arg >> shift) & 0xFF) as u16, 8);
+         }
+-        wire.transfer(0x95, 8); // CRC, ignored in SPI mode
++        wire.transfer(crc as u16, 8);
+         (0..8).map(|_| wire.transfer(0xFF, 8) as u8).collect()
+     }
+ 
++    fn command(wire: &mut SdCardWire, index: u8, arg: u32) -> Vec<u8> {
++        let crc = match index {
++            0 => 0x95,
++            8 => 0x87,
++            _ => 0x01, // dummy end-bit CRC while general CRC is disabled
++        };
++        command_with_crc(wire, index, arg, crc)
++    }
++
+     /// First byte with bit 7 clear is the R1 response.
+     fn r1(reply: &[u8]) -> u8 {
+         reply
+@@ -108,6 +117,29 @@ mod tests {
+         assert_eq!(reply[start + 4], 0xAA, "check pattern");
+     }
+ 
++    #[test]
++    fn send_if_cond_rejects_bad_crc_without_r7() {
++        let (mut w, _card) = wire();
++        let reply = command_with_crc(&mut w, 8, 0x0000_01AA, 0x85);
++        let start = reply.iter().position(|b| b & 0x80 == 0).unwrap();
++        assert_eq!(reply[start], 0x09, "idle plus COM_CRC_ERROR");
++        assert!(
++            reply[start + 1..].iter().all(|byte| *byte == 0xFF),
++            "CRC error must not carry an R7 payload: {reply:02x?}"
++        );
++    }
++
++    #[test]
++    fn go_idle_state_rejects_bad_crc_and_accepts_a_retry() {
++        let (mut w, _card) = wire();
++        assert_eq!(
++            r1(&command_with_crc(&mut w, 0, 0, 0x97)),
++            0x09,
++            "idle plus COM_CRC_ERROR"
++        );
++        assert_eq!(r1(&command(&mut w, 0, 0)), 0x01);
++    }
++
+     #[test]
+     fn acmd41_reports_busy_then_ready() {
+         let (mut w, _card) = wire();
+@@ -187,6 +219,7 @@ mod tests {
+     #[test]
+     fn releasing_cs_abandons_a_partial_command() {
+         let (mut w, _card) = wire();
++        w.observe_pins(0); // select the card before starting the frame
+         w.transfer(0x40, 8); // CMD0, then interrupted
+         w.observe_pins(1 << SD_PIN_CS);
+         w.observe_pins(0);
+diff --git a/crates/picocalc-board/src/sdcard.rs b/crates/picocalc-board/src/sdcard.rs
+index 0d93ff3..7741461 100644
+--- a/crates/picocalc-board/src/sdcard.rs
++++ b/crates/picocalc-board/src/sdcard.rs
+@@ -20,9 +20,11 @@
+ //! Command framing follows the driver's own shape: six bytes (`0x40 |
+ //! index`, four argument bytes, CRC), then the card holds MISO high for
+ //! a few bytes before answering. R1 is one byte; R3 and R7 add four
+-//! trailing bytes. Data blocks arrive after a `0xFE` token and end with
+-//! two CRC bytes the model accepts and ignores, because SPI mode leaves
+-//! CRC off by default and the driver never turns it on.
++//! trailing bytes. CMD0 and CMD8 command CRCs are checked even while
++//! general SPI-mode CRC is disabled, as required by the SD protocol.
++//! Data blocks arrive after a `0xFE` token and end with two CRC bytes the
++//! model accepts and ignores, because the driver never enables general
++//! CRC checking.
+ //!
+ //! # What is not modelled
+ //!
+@@ -33,6 +35,11 @@
+ //! exercises those, and a half-modelled busy state would be harder to
+ //! reason about than its absence.
+ 
++use std::collections::HashMap;
++use std::fs::{File, OpenOptions};
++use std::io::{self, Read, Seek, SeekFrom, Write};
++use std::path::{Path, PathBuf};
++
+ /// Bytes per block. SDHC addresses in blocks, not bytes.
+ pub const BLOCK_SIZE: usize = 512;
+ 
+@@ -77,10 +84,23 @@ impl std::str::FromStr for SdFormat {
+     }
+ }
+ 
++/// Stable, path-free metadata for a RAW-backed card. The source path is
++/// intentionally omitted so callers can report provenance without leaking
++/// host-specific absolute paths.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct RawMetadata {
++    pub bytes: u64,
++    pub blocks: usize,
++    pub dirty_blocks: usize,
++    pub source_sha256: String,
++}
++
+ /// Idle byte. The card leaves MISO high when it has nothing to say.
+ const IDLE: u8 = 0xFF;
+ /// R1 bit 0: the card is in idle state (still initialising).
+ const R1_IDLE: u8 = 0x01;
++/// R1 bit 3: the received command frame failed its mandatory CRC check.
++const R1_COM_CRC_ERROR: u8 = 0x08;
+ /// R1 with no bits set: ready.
+ const R1_READY: u8 = 0x00;
+ /// Start token for a single block, both directions.
+@@ -105,9 +125,142 @@ enum Phase {
+     DataResponse,
+ }
+ 
++struct RawBacking {
++    file: File,
++    source_path: PathBuf,
++    source_sha256: String,
++    block_count: usize,
++    /// Only sectors written by the emulated card are kept here. The input
++    /// file remains read-only and is never changed by a run.
++    overlay: HashMap<usize, Box<[u8; BLOCK_SIZE]>>,
++}
++
++impl RawBacking {
++    fn open(path: &Path) -> io::Result<Self> {
++        let mut file = File::open(path)?;
++        let metadata = file.metadata()?;
++        if !metadata.is_file() {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD RAW backing must be a regular file",
++            ));
++        }
++        let length = metadata.len();
++        if length == 0 || length % BLOCK_SIZE as u64 != 0 {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD RAW image must be non-empty and a multiple of 512 bytes",
++            ));
++        }
++        let block_count = usize::try_from(length / BLOCK_SIZE as u64).map_err(|_| {
++            io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD RAW image is too large for this host",
++            )
++        })?;
++        let source_sha256 = crate::sha256::sha256_reader_hex(&mut file)?;
++        file.seek(SeekFrom::Start(0))?;
++        Ok(Self {
++            file,
++            source_path: std::fs::canonicalize(path)?,
++            block_count,
++            source_sha256,
++            overlay: HashMap::new(),
++        })
++    }
++
++    fn read_sector(&mut self, block: usize) -> io::Result<[u8; BLOCK_SIZE]> {
++        if let Some(sector) = self.overlay.get(&block) {
++            return Ok(**sector);
++        }
++        let offset = (block as u64)
++            .checked_mul(BLOCK_SIZE as u64)
++            .ok_or_else(|| {
++                io::Error::new(io::ErrorKind::InvalidInput, "SD block offset overflow")
++            })?;
++        self.file.seek(SeekFrom::Start(offset))?;
++        let mut sector = [0u8; BLOCK_SIZE];
++        self.file.read_exact(&mut sector)?;
++        Ok(sector)
++    }
++
++    fn write_sector(&mut self, block: usize, data: &[u8]) -> io::Result<()> {
++        if block >= self.block_count {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD block is outside the RAW image",
++            ));
++        }
++        if data.len() != BLOCK_SIZE {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD sector writes must be exactly 512 bytes",
++            ));
++        }
++        let mut sector = [0u8; BLOCK_SIZE];
++        sector.copy_from_slice(data);
++        self.overlay.insert(block, Box::new(sector));
++        Ok(())
++    }
++
++    fn export_raw(&mut self, output: &Path) -> io::Result<()> {
++        // `output` is normally a new path, so canonicalize its existing
++        // parent as well as an already-existing file.  Comparing only
++        // `canonicalize(output)` misses alternate spellings when the final
++        // component does not exist yet, and could let a same-file export
++        // bypass the policy check.  Reject symlink output paths explicitly;
++        // the export is an atomic rename, never a write through a link.
++        if let Ok(metadata) = std::fs::symlink_metadata(output) {
++            if metadata.file_type().is_symlink() {
++                return Err(io::Error::new(
++                    io::ErrorKind::InvalidInput,
++                    "SD RAW output must not be a symlink",
++                ));
++            }
++        }
++        let output_canonical = if output.exists() {
++            std::fs::canonicalize(output)
++        } else {
++            let parent = output.parent().unwrap_or_else(|| Path::new("."));
++            let name = output.file_name().ok_or_else(|| {
++                io::Error::new(
++                    io::ErrorKind::InvalidInput,
++                    "SD RAW output must name a file",
++                )
++            })?;
++            std::fs::canonicalize(parent).map(|parent| parent.join(name))
++        };
++        if matches!(
++            output_canonical.as_deref(),
++            Ok(path) if path == self.source_path.as_path()
++        ) {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "SD RAW input and output must be different files",
++            ));
++        }
++        let temporary =
++            output.with_extension(format!("tmp-{}-{}", std::process::id(), self.overlay.len()));
++        let mut sink = OpenOptions::new()
++            .write(true)
++            .create(true)
++            .truncate(true)
++            .open(&temporary)?;
++        for block in 0..self.block_count {
++            let sector = self.read_sector(block)?;
++            sink.write_all(&sector)?;
++        }
++        sink.flush()?;
++        sink.sync_all()?;
++        std::fs::rename(&temporary, output)?;
++        Ok(())
++    }
++}
++
+ /// SD card in SPI mode.
+ pub struct SdCard {
+     blocks: Vec<u8>,
++    raw: Option<RawBacking>,
+     format: SdFormat,
+     phase: Phase,
+     /// Argument bytes of the command being assembled.
+@@ -153,6 +306,7 @@ impl SdCard {
+     pub fn new_with_format(block_count: usize, format: SdFormat) -> Self {
+         let mut card = Self {
+             blocks: vec![0u8; block_count * BLOCK_SIZE],
++            raw: None,
+             format,
+             phase: Phase::Idle,
+             arg: [0; 4],
+@@ -177,6 +331,59 @@ impl SdCard {
+         card
+     }
+ 
++    /// Open a non-empty, 512-byte-aligned RAW image as a read-only card
++    /// backing. Writes are kept in a sector-sized copy-on-write overlay.
++    /// The default format label is FAT32 for compatibility with the normal
++    /// in-memory card; the RAW bytes themselves are not reformatted.
++    pub fn from_raw_file(path: impl AsRef<Path>) -> io::Result<Self> {
++        Self::from_raw_file_with_format(path, SdFormat::default())
++    }
++
++    /// Open a RAW image and retain an explicit format label for reports.
++    /// The selected format does not modify or validate the image contents.
++    pub fn from_raw_file_with_format(path: impl AsRef<Path>, format: SdFormat) -> io::Result<Self> {
++        let raw = RawBacking::open(path.as_ref())?;
++        Ok(Self {
++            blocks: Vec::new(),
++            raw: Some(raw),
++            format,
++            phase: Phase::Idle,
++            arg: [0; 4],
++            reply: std::collections::VecDeque::new(),
++            app_cmd_pending: false,
++            initialised: false,
++            acmd41_busy_left: 2,
++            write_block: 0,
++            write_pending: false,
++            write_buf: Vec::with_capacity(BLOCK_SIZE),
++            commands_seen: 0,
++            blocks_read: 0,
++            blocks_written: 0,
++            unknown_commands: Vec::new(),
++        })
++    }
++
++    /// Export the complete RAW image, applying any dirty overlay sectors.
++    /// Memory-backed cards do not have an input image to export.
++    pub fn export_raw(&mut self, path: impl AsRef<Path>) -> io::Result<()> {
++        self.raw
++            .as_mut()
++            .ok_or_else(|| io::Error::new(io::ErrorKind::Unsupported, "card has no RAW backing"))?
++            .export_raw(path.as_ref())
++    }
++
++    /// Return path-free RAW metadata, or `None` for the legacy in-memory
++    /// backing. Dirty blocks are the sectors currently held by the COW
++    /// overlay and have not been written to the input file.
++    pub fn raw_metadata(&self) -> Option<RawMetadata> {
++        self.raw.as_ref().map(|raw| RawMetadata {
++            bytes: (raw.block_count as u64) * BLOCK_SIZE as u64,
++            blocks: raw.block_count,
++            dirty_blocks: raw.overlay.len(),
++            source_sha256: raw.source_sha256.clone(),
++        })
++    }
++
+     /// Initial filesystem profile selected for this card.
+     pub const fn format(&self) -> SdFormat {
+         self.format
+@@ -367,7 +574,36 @@ impl SdCard {
+ 
+     /// Capacity in blocks.
+     pub fn block_count(&self) -> usize {
+-        self.blocks.len() / BLOCK_SIZE
++        self.raw
++            .as_ref()
++            .map_or(self.blocks.len() / BLOCK_SIZE, |raw| raw.block_count)
++    }
++
++    fn read_sector(&mut self, block: usize) -> io::Result<[u8; BLOCK_SIZE]> {
++        if let Some(raw) = self.raw.as_mut() {
++            if block >= raw.block_count {
++                return Err(io::Error::new(
++                    io::ErrorKind::UnexpectedEof,
++                    "SD block is outside the RAW image",
++                ));
++            }
++            return raw.read_sector(block);
++        }
++        let offset = block.checked_mul(BLOCK_SIZE).ok_or_else(|| {
++            io::Error::new(io::ErrorKind::InvalidInput, "SD block offset overflow")
++        })?;
++        let end = offset.checked_add(BLOCK_SIZE).ok_or_else(|| {
++            io::Error::new(io::ErrorKind::InvalidInput, "SD block offset overflow")
++        })?;
++        if end > self.blocks.len() {
++            return Err(io::Error::new(
++                io::ErrorKind::UnexpectedEof,
++                "SD block is outside the card",
++            ));
++        }
++        let mut sector = [0u8; BLOCK_SIZE];
++        sector.copy_from_slice(&self.blocks[offset..end]);
++        Ok(sector)
+     }
+ 
+     /// Chip select released: abandon whatever was in flight.
+@@ -398,10 +634,9 @@ impl SdCard {
+                         taken: taken + 1,
+                     };
+                 } else {
+-                    // Fifth byte is the CRC; SPI mode ignores it unless
+-                    // CRC checking was turned on, which this driver
+-                    // never does.
+-                    self.begin_reply(index);
++                    // CMD0 and CMD8 retain mandatory command-CRC checking
++                    // even while general SPI-mode CRC is disabled.
++                    self.begin_reply(index, byte);
+                 }
+                 IDLE
+             }
+@@ -461,9 +696,19 @@ impl SdCard {
+     }
+ 
+     fn commit_write(&mut self) {
+-        let offset = self.write_block as usize * BLOCK_SIZE;
+-        if offset + BLOCK_SIZE <= self.blocks.len() {
+-            self.blocks[offset..offset + BLOCK_SIZE].copy_from_slice(&self.write_buf);
++        let block = self.write_block as usize;
++        let committed = if let Some(raw) = self.raw.as_mut() {
++            block < raw.block_count && raw.write_sector(block, &self.write_buf).is_ok()
++        } else {
++            let offset = block * BLOCK_SIZE;
++            if offset + BLOCK_SIZE <= self.blocks.len() {
++                self.blocks[offset..offset + BLOCK_SIZE].copy_from_slice(&self.write_buf);
++                true
++            } else {
++                false
++            }
++        };
++        if committed {
+             self.blocks_written += 1;
+         }
+         self.write_buf.clear();
+@@ -474,15 +719,26 @@ impl SdCard {
+         u32::from_be_bytes(self.arg)
+     }
+ 
+-    fn begin_reply(&mut self, index: u8) {
++    fn begin_reply(&mut self, index: u8, received_crc: u8) {
+         self.commands_seen += 1;
+-        let is_app = std::mem::take(&mut self.app_cmd_pending);
+         self.reply.clear();
+         // The card takes a byte or two to answer; the driver polls for
+         // the first byte with bit 7 clear, so one idle byte in front is
+         // both realistic and harmless.
+         self.reply.push_back(IDLE);
+ 
++        if matches!(index, 0 | 8) && received_crc != self.command_crc(index) {
++            // A rejected command has no R3/R7 extension and must not
++            // otherwise change card state. In particular, do not consume
++            // a pending APP_CMD prefix for a frame that was never accepted.
++            let state = if self.initialised { R1_READY } else { R1_IDLE };
++            self.reply.push_back(state | R1_COM_CRC_ERROR);
++            self.phase = Phase::Reply;
++            return;
++        }
++
++        let is_app = std::mem::take(&mut self.app_cmd_pending);
++
+         if is_app {
+             match index {
+                 41 => {
+@@ -551,17 +807,40 @@ impl SdCard {
+         self.phase = Phase::Reply;
+     }
+ 
+-    fn queue_block_read(&mut self, block: u32) {
+-        let offset = block as usize * BLOCK_SIZE;
+-        if offset + BLOCK_SIZE > self.blocks.len() {
+-            // Out of range: leave the host polling for a token that
+-            // never comes rather than inventing data.
+-            return;
++    /// CRC byte for a command frame: CRC7 over command+argument, shifted
++    /// left with the required end bit set.
++    fn command_crc(&self, index: u8) -> u8 {
++        let mut crc = 0u8;
++        for mut byte in [
++            0x40 | index,
++            self.arg[0],
++            self.arg[1],
++            self.arg[2],
++            self.arg[3],
++        ] {
++            for _ in 0..8 {
++                crc <<= 1;
++                if (byte ^ crc) & 0x80 != 0 {
++                    crc ^= 0x09;
++                }
++                byte <<= 1;
++            }
+         }
++        (crc << 1) | 1
++    }
++
++    fn queue_block_read(&mut self, block: u32) {
++        let block = block as usize;
++        let sector = match self.read_sector(block) {
++            Ok(sector) => sector,
++            Err(_) => {
++                // Out of range or unreadable: leave the host polling for a
++                // token that never comes rather than inventing data.
++                return;
++            }
++        };
+         self.reply.push_back(TOKEN_START);
+-        for i in 0..BLOCK_SIZE {
+-            self.reply.push_back(self.blocks[offset + i]);
+-        }
++        self.reply.extend(sector);
+         // Two CRC bytes the driver reads and discards.
+         self.reply.push_back(0xFF);
+         self.reply.push_back(0xFF);
+@@ -584,11 +863,25 @@ impl SdCard {
+ #[cfg(test)]
+ mod format_tests {
+     use super::{BLOCK_SIZE, DEFAULT_BLOCKS, SdCard, SdFormat};
++    use std::path::PathBuf;
++
++    fn temp_path(label: &str) -> PathBuf {
++        std::env::temp_dir().join(format!("picocalc-sdcard-{label}-{}", std::process::id()))
++    }
+ 
+     fn u16_at(bytes: &[u8], offset: usize) -> u16 {
+         u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap())
+     }
+ 
++    #[test]
++    fn mandatory_command_crc_known_vectors_match_sd_protocol() {
++        let mut card = SdCard::new_with_format(64, SdFormat::Fat16);
++        card.arg = [0x00, 0x00, 0x00, 0x00];
++        assert_eq!(card.command_crc(0), 0x95);
++        card.arg = [0x00, 0x00, 0x01, 0xAA];
++        assert_eq!(card.command_crc(8), 0x87);
++    }
++
+     fn u32_at(bytes: &[u8], offset: usize) -> u32 {
+         u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap())
+     }
+@@ -658,4 +951,80 @@ mod format_tests {
+         assert_eq!("FAT32".parse(), Ok(SdFormat::Fat32));
+         assert!("exfat".parse::<SdFormat>().is_err());
+     }
++
++    #[test]
++    fn raw_backing_reads_through_and_exports_cow_sectors() {
++        let input = temp_path("raw-input");
++        let output = temp_path("raw-output");
++        let original: Vec<u8> = (0..(2 * BLOCK_SIZE)).map(|value| value as u8).collect();
++        std::fs::write(&input, &original).unwrap();
++
++        let mut card = SdCard::from_raw_file(&input).unwrap();
++        assert_eq!(card.block_count(), 2);
++        assert_eq!(
++            card.read_sector(0).unwrap().as_slice(),
++            &original[..BLOCK_SIZE]
++        );
++
++        let replacement = [0xA5u8; BLOCK_SIZE];
++        card.raw
++            .as_mut()
++            .unwrap()
++            .write_sector(1, &replacement)
++            .unwrap();
++        assert_eq!(card.read_sector(1).unwrap(), replacement);
++        card.export_raw(&output).unwrap();
++
++        assert_eq!(std::fs::read(&input).unwrap(), original);
++        let mut expected = original;
++        expected[BLOCK_SIZE..].copy_from_slice(&replacement);
++        assert_eq!(std::fs::read(&output).unwrap(), expected);
++
++        let _ = std::fs::remove_file(input);
++        let _ = std::fs::remove_file(output);
++    }
++
++    #[test]
++    fn raw_backing_rejects_empty_and_unaligned_inputs() {
++        let empty = temp_path("raw-empty");
++        let unaligned = temp_path("raw-unaligned");
++        std::fs::write(&empty, []).unwrap();
++        std::fs::write(&unaligned, [0u8; BLOCK_SIZE - 1]).unwrap();
++
++        assert!(SdCard::from_raw_file(&empty).is_err());
++        assert!(SdCard::from_raw_file(&unaligned).is_err());
++
++        let _ = std::fs::remove_file(empty);
++        let _ = std::fs::remove_file(unaligned);
++    }
++
++    #[test]
++    fn raw_export_rejects_the_input_path_and_memory_cards() {
++        let input = temp_path("raw-same-path");
++        std::fs::write(&input, [0u8; BLOCK_SIZE]).unwrap();
++        let mut raw = SdCard::from_raw_file(&input).unwrap();
++        assert!(raw.export_raw(&input).is_err());
++        let dotted = input
++            .parent()
++            .unwrap()
++            .join(".")
++            .join(input.file_name().unwrap());
++        assert!(raw.export_raw(&dotted).is_err());
++        #[cfg(unix)]
++        {
++            let alias_dir = temp_path("raw-same-path-alias-dir");
++            std::fs::create_dir(&alias_dir).unwrap();
++            let alias = alias_dir.join(input.file_name().unwrap());
++            std::fs::remove_dir(&alias_dir).unwrap();
++            std::os::unix::fs::symlink(input.parent().unwrap(), &alias_dir).unwrap();
++            assert!(raw.export_raw(&alias).is_err());
++            std::fs::remove_file(&alias_dir).unwrap();
++        }
++        assert!(
++            SdCard::new_with_format(1024, SdFormat::Fat16)
++                .export_raw(temp_path("memory-output"))
++                .is_err()
++        );
++        let _ = std::fs::remove_file(input);
++    }
+ }
+diff --git a/crates/picocalc-board/src/sha256.rs b/crates/picocalc-board/src/sha256.rs
+index 1fa6d3e..337388e 100644
+--- a/crates/picocalc-board/src/sha256.rs
++++ b/crates/picocalc-board/src/sha256.rs
+@@ -25,6 +25,8 @@ const H0: [u32; 8] = [
+     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+ ];
+ 
++use std::io::{self, Read};
++
+ /// Lowercase hex SHA-256 digest of `data`.
+ pub fn sha256_hex(data: &[u8]) -> String {
+     let mut h = H0;
+@@ -56,6 +58,63 @@ pub fn sha256_hex(data: &[u8]) -> String {
+     out
+ }
+ 
++/// SHA-256 of a reader, consumed in bounded chunks. This is used for
++/// RAW SD provenance so a large image is never materialised in memory.
++pub fn sha256_reader_hex<R: Read>(mut reader: R) -> io::Result<String> {
++    let mut h = H0;
++    let mut block = [0u8; 64];
++    let mut buffered = 0usize;
++    let mut total = 0u64;
++    let mut input = [0u8; 64 * 1024];
++
++    loop {
++        let read = reader.read(&mut input)?;
++        if read == 0 {
++            break;
++        }
++        total = total.wrapping_add(read as u64);
++        let mut cursor = 0usize;
++        if buffered != 0 {
++            let take = (64 - buffered).min(read);
++            block[buffered..buffered + take].copy_from_slice(&input[..take]);
++            buffered += take;
++            cursor += take;
++            if buffered == 64 {
++                compress(&mut h, &block);
++                buffered = 0;
++            }
++        }
++        while cursor + 64 <= read {
++            compress(
++                &mut h,
++                input[cursor..cursor + 64]
++                    .try_into()
++                    .expect("64-byte block"),
++            );
++            cursor += 64;
++        }
++        if cursor < read {
++            buffered = read - cursor;
++            block[..buffered].copy_from_slice(&input[cursor..read]);
++        }
++    }
++
++    block[buffered..].fill(0);
++    block[buffered] = 0x80;
++    if buffered >= 56 {
++        compress(&mut h, &block);
++        block = [0u8; 64];
++    }
++    block[56..64].copy_from_slice(&total.wrapping_mul(8).to_be_bytes());
++    compress(&mut h, &block);
++
++    let mut out = String::with_capacity(64);
++    for word in h {
++        out.push_str(&format!("{word:08x}"));
++    }
++    Ok(out)
++}
++
+ fn compress(h: &mut [u32; 8], block: &[u8; 64]) {
+     let mut w = [0u32; 64];
+     for i in 0..16 {
+@@ -110,7 +169,8 @@ fn compress(h: &mut [u32; 8], block: &[u8; 64]) {
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::sha256_hex;
++    use super::{sha256_hex, sha256_reader_hex};
++    use std::io::Cursor;
+ 
+     #[test]
+     fn known_vectors() {
+@@ -138,4 +198,13 @@ mod tests {
+             "4e4c294b331f7a2099a379bec34b9f9fc03dc46ab465d998f4d683da53487e6d"
+         );
+     }
++
++    #[test]
++    fn reader_matches_slice() {
++        let data: Vec<u8> = (0..100_000u32).map(|i| (i % 251) as u8).collect();
++        assert_eq!(
++            sha256_reader_hex(Cursor::new(&data)).unwrap(),
++            sha256_hex(&data)
++        );
++    }
+ }
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 5afd441..17f69b1 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -227,6 +227,7 @@ struct Args {
+     stop_pc: Option<u32>,
+     json: Option<PathBuf>,
+     uart: Option<PathBuf>,
++    flash_image_out: Option<PathBuf>,
+     expected_backend_commit: Option<String>,
+     board: Board,
+     lcd_variant: LcdVariant,
+@@ -236,6 +237,8 @@ struct Args {
+     psram_verify_range: Option<(u32, u32)>,
+     keyboard: bool,
+     sd: bool,
++    sd_image: Option<PathBuf>,
++    sd_image_out: Option<PathBuf>,
+     sd_format: SdFormat,
+     keys: Option<String>,
+     scenario: Option<PathBuf>,
+@@ -421,7 +424,18 @@ fn parse_range(raw: &str) -> Result<(u32, u32), String> {
+     Ok((parse_num(start_raw)?, parse_num(len_raw)?))
+ }
+ 
+-fn validate_sd_selection(sd: bool, format_explicit: bool) -> Result<(), String> {
++fn validate_sd_selection(
++    sd: bool,
++    sd_image: Option<&Path>,
++    sd_image_out: Option<&Path>,
++    format_explicit: bool,
++) -> Result<(), String> {
++    if sd && sd_image.is_some() {
++        return Err("--sd and --sd-image are mutually exclusive".to_string());
++    }
++    if sd_image_out.is_some() && sd_image.is_none() {
++        return Err("--sd-image-out requires --sd-image".to_string());
++    }
+     if format_explicit && !sd {
+         return Err("--sd-format requires --sd".to_string());
+     }
+@@ -443,9 +457,10 @@ fn print_usage() {
+                                   this address (e.g. 0x10000ca8). Forces a 1-cycle step\n\
+                                   quantum so every instruction boundary is observed.\n\
+          --json <path>            Write the JSON report here. Default: stdout.\n\
+-         --uart <path>            Write raw UART0 TX bytes here. Default: discarded\n\
+-                                  (byte count + sha256 still reported).\n\
+-         --backend-commit <str>   Require the runner's compile-time Git identity to match.\n\
++        --uart <path>            Write raw UART0 TX bytes here. Default: discarded\n\
++                                 (byte count + sha256 still reported).\n\
++         --flash-image-out <path> Export the final 2 MiB XIP image after SSI erase/program.\n\
++        --backend-commit <str>   Require the runner's compile-time Git identity to match.\n\
+          --board <none|picocalc>  Attach an off-chip board model. 'picocalc' hangs the\n\
+                                   ST7365P display off SPI1 (CS=GP13, DC=GP14, RST=GP15)\n\
+                                   and adds the 'lcd' + 'framebuffer' report sections.\n\
+@@ -469,8 +484,12 @@ fn print_usage() {
+          --keys <string>          Queue these characters as key events before the run\n\
+                                   starts. Implies --keyboard. For input that has to be\n\
+                                   timed against what the program is doing, use --scenario.\n\
+-         --sd                     Attach an SD card on SPI0, pre-formatted FAT32 by default.\n\
+-         --sd-format <fat32|fat16>\n\
++        --sd                     Attach an SD card on SPI0, pre-formatted FAT32 by default.\n\
++         --sd-image <path>        Attach a non-empty 512-byte-aligned RAW SD image read-only;\n\
++                                  emulated writes use a sector copy-on-write overlay.\n\
++         --sd-image-out <path>    Atomically export the RAW image plus COW writes after the run.\n\
++                                  Requires --sd-image and must differ from the input path.\n\
++        --sd-format <fat32|fat16>\n\
+                                   Initial filesystem profile. FAT32 is the default, matching\n\
+                                   PicoCalc's bundled 32 GB card. Requires --sd.\n\
+          --scenario <path>        Run a JSON scenario: timed key input, and pixel / region\n\
+@@ -511,6 +530,7 @@ fn parse_args() -> Result<Args, String> {
+     let mut stop_pc: Option<u32> = None;
+     let mut json: Option<PathBuf> = None;
+     let mut uart: Option<PathBuf> = None;
++    let mut flash_image_out: Option<PathBuf> = None;
+     let mut expected_backend_commit: Option<String> = None;
+     let mut board = Board::None;
+     // Variant B is the Canonical BSP default; variant A is what the
+@@ -530,6 +550,8 @@ fn parse_args() -> Result<Args, String> {
+     let mut psram_verify_range: Option<(u32, u32)> = None;
+     let mut keyboard = false;
+     let mut sd = false;
++    let mut sd_image: Option<PathBuf> = None;
++    let mut sd_image_out: Option<PathBuf> = None;
+     let mut sd_format = SdFormat::default();
+     let mut sd_format_explicit = false;
+     let mut keys: Option<String> = None;
+@@ -578,6 +600,12 @@ fn parse_args() -> Result<Args, String> {
+             }
+             "--json" => json = Some(PathBuf::from(value("--json")?)),
+             "--uart" => uart = Some(PathBuf::from(value("--uart")?)),
++            "--flash-image-out" => {
++                if flash_image_out.is_some() {
++                    return Err("--flash-image-out may be specified only once".to_string());
++                }
++                flash_image_out = Some(PathBuf::from(value("--flash-image-out")?));
++            }
+             "--backend-commit" => expected_backend_commit = Some(value("--backend-commit")?),
+             "--board" => board = Board::parse(&value("--board")?)?,
+             "--lcd-variant" => lcd_variant = LcdVariant::parse(&value("--lcd-variant")?)?,
+@@ -595,6 +623,8 @@ fn parse_args() -> Result<Args, String> {
+             "--psram" => psram = true,
+             "--keyboard" => keyboard = true,
+             "--sd" => sd = true,
++            "--sd-image" => sd_image = Some(PathBuf::from(value("--sd-image")?)),
++            "--sd-image-out" => sd_image_out = Some(PathBuf::from(value("--sd-image-out")?)),
+             "--sd-format" => {
+                 let raw = value("--sd-format")?;
+                 sd_format = raw.parse::<SdFormat>()?;
+@@ -684,7 +714,12 @@ fn parse_args() -> Result<Args, String> {
+     if psram_verify_range.is_some() && !psram {
+         return Err("--psram-verify-range requires --psram".to_string());
+     }
+-    validate_sd_selection(sd, sd_format_explicit)?;
++    validate_sd_selection(
++        sd,
++        sd_image.as_deref(),
++        sd_image_out.as_deref(),
++        sd_format_explicit,
++    )?;
+     // Queueing keys implies the controller they arrive through.
+     if keys.is_some() {
+         keyboard = true;
+@@ -732,6 +767,7 @@ fn parse_args() -> Result<Args, String> {
+             (stop_pc.is_some(), "--stop-pc"),
+             (json.is_some(), "--json"),
+             (uart.is_some(), "--uart"),
++            (flash_image_out.is_some(), "--flash-image-out"),
+             (fb_png.is_some(), "--fb-png"),
+             (expected_stop.is_some(), "--expect-stop"),
+             (!expected_uart.is_empty(), "--expect-uart"),
+@@ -740,6 +776,7 @@ fn parse_args() -> Result<Args, String> {
+                 "audio sink expectations",
+             ),
+             (keys.is_some(), "--keys"),
++            (sd_image_out.is_some(), "--sd-image-out"),
+             (run_id.is_some(), "--run-id"),
+             (progress_interval.is_some(), "--progress-interval"),
+         ];
+@@ -769,6 +806,7 @@ fn parse_args() -> Result<Args, String> {
+         stop_pc,
+         json,
+         uart,
++        flash_image_out,
+         expected_backend_commit,
+         board,
+         lcd_variant,
+@@ -778,6 +816,8 @@ fn parse_args() -> Result<Args, String> {
+         psram_verify_range,
+         keyboard,
+         sd,
++        sd_image,
++        sd_image_out,
+         sd_format,
+         keys,
+         scenario,
+@@ -2427,6 +2467,14 @@ fn json_string(s: &str) -> String {
+     format!("\"{}\"", json_escape(s))
+ }
+ 
++fn json_array_strings(values: &[String]) -> String {
++    values
++        .iter()
++        .map(|value| json_string(value))
++        .collect::<Vec<_>>()
++        .join(", ")
++}
++
+ #[cfg(feature = "idle-profiler")]
+ fn u64_json_array(values: &[u64]) -> String {
+     values
+@@ -3011,6 +3059,14 @@ impl AudioSinkReport {
+     }
+ }
+ 
++fn write_flash_image(path: &Path, image: &[u8]) -> Result<(), String> {
++    let temporary = path.with_extension(format!("tmp-{}", std::process::id()));
++    std::fs::write(&temporary, image)
++        .map_err(|error| format!("writing flash image {}: {error}", temporary.display()))?;
++    std::fs::rename(&temporary, path)
++        .map_err(|error| format!("publishing flash image {}: {error}", path.display()))
++}
++
+ /// TOP register reset value; a slice still holding it was never given a
+ /// wrap point.
+ const TOP_RESET_VALUE: u16 = 0xFFFF;
+@@ -3023,6 +3079,7 @@ struct SdReport {
+     blocks_read: u64,
+     blocks_written: u64,
+     unknown_commands: Vec<(u8, u32)>,
++    raw: Option<picocalc_board::sdcard::RawMetadata>,
+ }
+ 
+ impl SdReport {
+@@ -3036,6 +3093,7 @@ impl SdReport {
+             blocks_read: card.blocks_read,
+             blocks_written: card.blocks_written,
+             unknown_commands,
++            raw: card.raw_metadata(),
+         }
+     }
+ 
+@@ -3052,6 +3110,15 @@ impl SdReport {
+             "    \"commands_seen\": {}, \"blocks_read\": {}, \"blocks_written\": {},\n",
+             self.commands_seen, self.blocks_read, self.blocks_written
+         ));
++        if let Some(raw) = self.raw.as_ref() {
++            s.push_str(&format!(
++                "    \"raw_image\": {{\"bytes\": {}, \"blocks\": {}, \"dirty_blocks\": {}, \"source_sha256\": {} }},\n",
++                raw.bytes,
++                raw.blocks,
++                raw.dirty_blocks,
++                json_string(&raw.source_sha256),
++            ));
++        }
+         s.push_str("    \"unknown_commands\": [");
+         if self.unknown_commands.is_empty() {
+             s.push_str("]\n");
+@@ -3199,6 +3266,43 @@ impl PsramReport {
+     }
+ }
+ 
++struct FlashReport {
++    image_bytes: usize,
++    erase_count: u64,
++    program_count: u64,
++    program_bytes: u64,
++    command_counts: Vec<(u8, u32)>,
++    unknown_commands: Vec<(u8, u32)>,
++    errors: Vec<String>,
++}
++
++impl FlashReport {
++    fn to_json(&self) -> String {
++        let unknown = self
++            .unknown_commands
++            .iter()
++            .map(|(command, count)| format!("{{\"command\": {command}, \"count\": {count}}}"))
++            .collect::<Vec<_>>()
++            .join(", ");
++        let commands = self
++            .command_counts
++            .iter()
++            .map(|(command, count)| format!("{{\"command\": {command}, \"count\": {count}}}"))
++            .collect::<Vec<_>>()
++            .join(", ");
++        format!(
++            "  \"flash\": {{\"image_bytes\": {}, \"erase_count\": {}, \"program_count\": {}, \"program_bytes\": {}, \"command_counts\": [{}], \"unknown_commands\": [{}], \"errors\": [{}]}},\n",
++            self.image_bytes,
++            self.erase_count,
++            self.program_count,
++            self.program_bytes,
++            commands,
++            unknown,
++            json_array_strings(&self.errors),
++        )
++    }
++}
++
+ #[allow(clippy::too_many_arguments)]
+ fn build_report(
+     backend_commit: &str,
+@@ -3220,6 +3324,7 @@ fn build_report(
+     lcd: Option<&LcdReport>,
+     fb: Option<&FramebufferReport>,
+     psram: Option<&PsramReport>,
++    flash: Option<&FlashReport>,
+     sd: Option<&SdReport>,
+     keyboard: Option<&KeyboardReport>,
+     pwm: Option<&PwmReport>,
+@@ -3335,6 +3440,9 @@ fn build_report(
+     if let Some(psram) = psram {
+         s.push_str(&psram.to_json());
+     }
++    if let Some(flash) = flash {
++        s.push_str(&flash.to_json());
++    }
+     if let Some(sd) = sd {
+         s.push_str(&sd.to_json());
+     }
+@@ -3409,6 +3517,7 @@ fn behavior_projection(
+         "unsupported_mmio_truncated",
+         "lcd",
+         "psram",
++        "flash",
+         "sd",
+         "keyboard",
+         "pwm",
+@@ -3667,12 +3776,18 @@ fn run() -> Result<Verdict, String> {
+     // The BSP mounts but does not format (FF_USE_MKFS=0), so the card
+     // constructor supplies the selected pre-formatted volume. FAT32 is
+     // the default; FAT16 is retained for compatibility targets.
+-    let sd_card = args.sd.then(|| {
+-        Arc::new(Mutex::new(SdCard::new_with_format(
++    let sd_card = if args.sd {
++        Some(Arc::new(Mutex::new(SdCard::new_with_format(
+             picocalc_board::sdcard::DEFAULT_BLOCKS,
+             args.sd_format,
+-        )))
+-    });
++        ))))
++    } else if let Some(path) = args.sd_image.as_deref() {
++        let card = SdCard::from_raw_file_with_format(path, args.sd_format)
++            .map_err(|e| format!("opening SD RAW image {}: {e}", path.display()))?;
++        Some(Arc::new(Mutex::new(card)))
++    } else {
++        None
++    };
+ 
+     let (mut emu, boot_mode, lcd) = boot(
+         firmware,
+@@ -3732,6 +3847,38 @@ fn run() -> Result<Verdict, String> {
+     // session ends. Moving it back out preserves the existing schema bytes.
+     let MachineSession { mut emu, .. } = machine;
+ 
++    let flash_image = emu.bus.flash_image();
++    if let Some(path) = args.flash_image_out.as_deref() {
++        let input_canonical = std::fs::canonicalize(&args.bin).ok();
++        let output_canonical = std::fs::canonicalize(path).ok();
++        if input_canonical.is_some() && input_canonical == output_canonical {
++            return Err("--flash-image-out must differ from --bin".to_string());
++        }
++        write_flash_image(path, &flash_image)?;
++    }
++    let flash_unknown_commands = emu.bus.flash_unknown_commands().to_vec();
++    let flash_command_counts = emu.bus.flash_command_counts().to_vec();
++    let flash_errors = emu.bus.flash_mutation_errors().to_vec();
++    let flash_report = if args.flash_image_out.is_some()
++        || emu.bus.flash_erase_count() != 0
++        || emu.bus.flash_program_count() != 0
++        || !flash_command_counts.is_empty()
++        || !flash_unknown_commands.is_empty()
++        || !flash_errors.is_empty()
++    {
++        Some(FlashReport {
++            image_bytes: flash_image.len(),
++            erase_count: emu.bus.flash_erase_count(),
++            program_count: emu.bus.flash_program_count(),
++            program_bytes: emu.bus.flash_program_bytes(),
++            command_counts: flash_command_counts,
++            unknown_commands: flash_unknown_commands,
++            errors: flash_errors,
++        })
++    } else {
++        None
++    };
++
+     #[cfg(feature = "idle-profiler")]
+     if let Some(path) = &args.idle_profile {
+         let snapshot = emu
+@@ -3821,6 +3968,15 @@ fn run() -> Result<Verdict, String> {
+         SdReport::snapshot(&card)
+     });
+ 
++    if let Some(path) = args.sd_image_out.as_deref() {
++        let card = sd_card
++            .as_ref()
++            .ok_or_else(|| "--sd-image-out requires an attached RAW SD image".to_string())?;
++        let mut card = card.lock().expect("SD mutex");
++        card.export_raw(path)
++            .map_err(|e| format!("exporting SD RAW image {}: {e}", path.display()))?;
++    }
++
+     let keyboard_report = keyboard.as_ref().map(|kbd| {
+         let k = kbd.lock().expect("keyboard mutex");
+         KeyboardReport {
+@@ -3921,6 +4077,7 @@ fn run() -> Result<Verdict, String> {
+         lcd_report.as_ref(),
+         fb_report.as_ref(),
+         psram_report.as_ref(),
++        flash_report.as_ref(),
+         sd_report.as_ref(),
+         keyboard_report.as_ref(),
+         pwm_report.as_ref(),
+@@ -4404,13 +4561,21 @@ mod tests {
+ 
+     #[test]
+     fn an_explicit_sd_format_requires_an_attached_card() {
+-        assert_eq!(validate_sd_selection(true, true), Ok(()));
+-        assert_eq!(validate_sd_selection(true, false), Ok(()));
+-        assert_eq!(validate_sd_selection(false, false), Ok(()));
++        assert_eq!(validate_sd_selection(true, None, None, true), Ok(()));
++        assert_eq!(validate_sd_selection(true, None, None, false), Ok(()));
++        assert_eq!(validate_sd_selection(false, None, None, false), Ok(()));
+         assert_eq!(
+-            validate_sd_selection(false, true),
++            validate_sd_selection(false, None, None, true),
+             Err("--sd-format requires --sd".to_string())
+         );
++        assert_eq!(
++            validate_sd_selection(true, Some(Path::new("input.raw")), None, false),
++            Err("--sd and --sd-image are mutually exclusive".to_string())
++        );
++        assert_eq!(
++            validate_sd_selection(false, None, Some(Path::new("output.raw")), false),
++            Err("--sd-image-out requires --sd-image".to_string())
++        );
+     }
+ 
+     #[test]
+@@ -4422,6 +4587,7 @@ mod tests {
+             blocks_read: 2,
+             blocks_written: 1,
+             unknown_commands: Vec::new(),
++            raw: None,
+         }
+         .to_json();
+         assert!(report.contains("\"format\": \"fat32\""));
+diff --git a/crates/picoem-common/src/memory.rs b/crates/picoem-common/src/memory.rs
+index e229b6e..dc0f411 100644
+--- a/crates/picoem-common/src/memory.rs
++++ b/crates/picoem-common/src/memory.rs
+@@ -193,6 +193,39 @@ impl Memory {
+         }
+     }
+ 
++    /// Read a byte from the fixed XIP backing store without bus decoding.
++    /// Used by the SSI flash model when applying a program operation.
++    pub fn xip_byte(&self, offset: usize) -> Option<u8> {
++        self.xip.get(offset).copied()
++    }
++
++    /// Apply the physical NOR-flash transition for one byte. Programming
++    /// can only clear bits (1 -> 0); callers validate range and policy.
++    pub fn xip_program_byte(&mut self, offset: usize, value: u8) -> Option<u8> {
++        let current = *self.xip.get(offset)?;
++        let programmed = current & value;
++        self.xip[offset] = programmed;
++        Some(programmed)
++    }
++
++    /// Erase a range of the XIP backing store to the NOR erased state.
++    /// Returns false when the requested range is outside the fixed window.
++    pub fn xip_erase(&mut self, offset: usize, len: usize) -> bool {
++        let Some(end) = offset.checked_add(len) else {
++            return false;
++        };
++        if end > self.xip.len() {
++            return false;
++        }
++        self.xip[offset..end].fill(0xFF);
++        true
++    }
++
++    /// Snapshot the current XIP image for a diagnostic/export operation.
++    pub fn xip_image(&self) -> Vec<u8> {
++        self.xip.clone()
++    }
++
+     // --- Direct access (for test / debug, bypasses bus) ---
+ 
+     pub fn peek8(&self, addr: u32) -> u8 {
+diff --git a/crates/rp2040-emu/src/bus/mod.rs b/crates/rp2040-emu/src/bus/mod.rs
+index 4915061..1f04b76 100644
+--- a/crates/rp2040-emu/src/bus/mod.rs
++++ b/crates/rp2040-emu/src/bus/mod.rs
+@@ -104,6 +104,14 @@ pub const TIMER_BASE: u32 = 0x4005_4000;
+ pub const WATCHDOG_BASE: u32 = 0x4005_8000;
+ pub const XIP_CTRL_BASE: u32 = 0x1400_0000;
+ pub const SSI_BASE: u32 = 0x1800_0000;
++/// IO_QSPI GPIO1 (QSPI_SS_N) control register. The RP2040 ROM flash
++/// helpers force this output low/high around command transfers instead of
++/// toggling SSIENR, so it is also the flash transaction boundary.
++const IO_QSPI_SS_CTRL: u32 = 0x0C;
++const IO_QSPI_OUTOVER_SHIFT: u32 = 8;
++const IO_QSPI_OUTOVER_MASK: u32 = 0x3 << IO_QSPI_OUTOVER_SHIFT;
++const IO_QSPI_OUTOVER_LOW: u32 = 0x2 << IO_QSPI_OUTOVER_SHIFT;
++const IO_QSPI_OUTOVER_HIGH: u32 = 0x3 << IO_QSPI_OUTOVER_SHIFT;
+ /// XIP_SSI register offsets touched by the boot-time flash helpers.
+ const SSI_SSIENR: u32 = 0x08;
+ const SSI_TXFLR: u32 = 0x20;
+@@ -723,6 +731,40 @@ impl Bus {
+         self.pending_invalidation_regions |= invalidation_regions::XIP;
+     }
+ 
++    /// Snapshot the current XIP flash image, including SSI erase/program
++    /// mutations performed by firmware during the run.
++    pub fn flash_image(&self) -> Vec<u8> {
++        self.memory.xip_image()
++    }
++
++    /// SSI flash protocol/range errors accumulated during the run.
++    pub fn flash_mutation_errors(&self) -> &[String] {
++        &self.ssi_flash.errors
++    }
++
++    /// Unknown SSI opcodes observed during the run.
++    pub fn flash_unknown_commands(&self) -> &[(u8, u32)] {
++        &self.ssi_flash.unknown_commands
++    }
++
++    /// Every SSI flash opcode observed, including commands the model does
++    /// not yet implement. Counts are bounded by opcode, not transaction.
++    pub fn flash_command_counts(&self) -> &[(u8, u32)] {
++        &self.ssi_flash.command_counts
++    }
++
++    pub fn flash_erase_count(&self) -> u64 {
++        self.ssi_flash.erase_count
++    }
++
++    pub fn flash_program_count(&self) -> u64 {
++        self.ssi_flash.program_count
++    }
++
++    pub fn flash_program_bytes(&self) -> u64 {
++        self.ssi_flash.program_bytes
++    }
++
+     // --- Bus-fault plumbing -----------------------------------------------
+ 
+     pub fn bus_fault(&self) -> bool {
+@@ -1013,6 +1055,7 @@ impl Bus {
+             ),
+             ROSC_BASE => self.rosc_regs.read32(offset),
+             IO_BANK0_BASE => self.io_bank0.read32(offset),
++            IO_QSPI_BASE | PADS_QSPI_BASE => *self.peripheral_regs.get(&canonical).unwrap_or(&0),
+             PADS_BANK0_BASE => self.pads_bank0.read32(offset),
+             PIO0_BASE => pio_read_rp2040(&mut self.pio[0], offset),
+             PIO1_BASE => pio_read_rp2040(&mut self.pio[1], offset),
+@@ -1077,7 +1120,41 @@ impl Bus {
+             }
+             ROSC_BASE => self.rosc_regs.write32(offset, val, alias),
+             IO_BANK0_BASE => self.io_bank0.write32(offset, val, alias),
++            IO_QSPI_BASE => {
++                let old = *self.peripheral_regs.get(&canonical).unwrap_or(&0);
++                let new = match alias {
++                    0 => val,
++                    1 => old ^ val,
++                    2 => old | val,
++                    3 => old & !val,
++                    _ => val,
++                };
++                if offset == IO_QSPI_SS_CTRL {
++                    let old_out = old & IO_QSPI_OUTOVER_MASK;
++                    let new_out = new & IO_QSPI_OUTOVER_MASK;
++                    // ROM flash_cs_force() drives active-low CS low to
++                    // begin a command and high to commit it. End the
++                    // parser transaction on the rising edge; relying only
++                    // on SSIENR misses the SDK/bootrom path entirely.
++                    if old_out == IO_QSPI_OUTOVER_LOW && new_out == IO_QSPI_OUTOVER_HIGH {
++                        self.ssi_flash.end_transaction();
++                        self.apply_ssi_flash_mutations();
++                    }
++                }
++                self.peripheral_regs.insert(canonical, new);
++            }
+             PADS_BANK0_BASE => self.pads_bank0.write32(offset, val, alias),
++            PADS_QSPI_BASE => {
++                let old = *self.peripheral_regs.get(&canonical).unwrap_or(&0);
++                let new = match alias {
++                    0 => val,
++                    1 => old ^ val,
++                    2 => old | val,
++                    3 => old & !val,
++                    _ => val,
++                };
++                self.peripheral_regs.insert(canonical, new);
++            }
+             PIO0_BASE => self.pio[0].write32(pio_rp2040_to_internal(offset), val, alias),
+             PIO1_BASE => self.pio[1].write32(pio_rp2040_to_internal(offset), val, alias),
+             DMA_BASE => self.dma.write32(offset, val, alias),
+@@ -1171,16 +1248,80 @@ impl Bus {
+             SSI_SSIENR => {
+                 if val & 1 == 0 {
+                     self.ssi_flash.end_transaction();
++                    self.apply_ssi_flash_mutations();
+                 }
+                 self.ssi_regs.insert(offset, val);
+             }
+-            SSI_DR0 => self.ssi_flash.push_tx(val as u8),
++            SSI_DR0 => {
++                self.ssi_flash.push_tx(val as u8);
++                // A transaction normally commits at SSIENR=0. Applying
++                // here as well keeps the model correct for firmware that
++                // leaves the controller enabled between commands.
++                self.apply_ssi_flash_mutations();
++            }
+             _ => {
+                 self.ssi_regs.insert(offset, val);
+             }
+         }
+     }
+ 
++    /// Apply completed SSI NOR operations to the executable XIP image.
++    /// The SSI parser deliberately emits operations instead of borrowing
++    /// `Memory`, so the bus can update XIP and invalidate decode caches at
++    /// one well-defined boundary.
++    fn apply_ssi_flash_mutations(&mut self) {
++        use ssi_flash::FlashMutation;
++
++        let mutations = self.ssi_flash.take_mutations();
++        for mutation in mutations {
++            match mutation {
++                FlashMutation::Erase { offset, len } => {
++                    let start = offset as usize;
++                    let erase_len = if len == 0 {
++                        self.memory.flash_size().saturating_sub(start)
++                    } else {
++                        len as usize
++                    };
++                    if !self.memory.xip_erase(start, erase_len) {
++                        self.ssi_flash.errors.push(format!(
++                            "erase_out_of_range:offset=0x{offset:08x}:len=0x{len:08x}"
++                        ));
++                    } else {
++                        self.pending_invalidation_regions |= invalidation_regions::XIP;
++                    }
++                }
++                FlashMutation::Program { offset, data } => {
++                    let start = offset as usize;
++                    let Some(end) = start.checked_add(data.len()) else {
++                        self.ssi_flash.errors.push("program_range_overflow".into());
++                        continue;
++                    };
++                    if end > self.memory.flash_size() {
++                        self.ssi_flash.errors.push(format!(
++                            "program_out_of_range:offset=0x{offset:08x}:len=0x{:x}",
++                            data.len()
++                        ));
++                        continue;
++                    }
++                    for (index, requested) in data.into_iter().enumerate() {
++                        let address = start + index;
++                        let current = self.memory.xip_byte(address).unwrap_or(0);
++                        // NOR programming cannot change a zero back to one.
++                        // Do not silently accept a firmware bug: retain the
++                        // physical AND result but record a fail-closed error.
++                        if (requested & !current) != 0 {
++                            self.ssi_flash.errors.push(format!(
++                                "program_attempted_0_to_1:offset=0x{address:08x}:old=0x{current:02x}:requested=0x{requested:02x}"
++                            ));
++                        }
++                        let _ = self.memory.xip_program_byte(address, requested);
++                    }
++                    self.pending_invalidation_regions |= invalidation_regions::XIP;
++                }
++            }
++        }
++    }
++
+     // ----------------------------------------------------------------
+     // Narrow-access dispatch for byte/halfword-significant peripheral
+     // registers (UART_DR, SSPDR, IC_DATA_CMD). Returns `Some(val)` /
+@@ -2616,6 +2757,47 @@ mod tests {
+         assert_eq!(bus.read32(XIP_SRAM_BASE), 0xCAFE_BABE);
+     }
+ 
++    #[test]
++    fn ssi_erase_program_mutates_xip_and_records_zero_to_one() {
++        let mut bus = Bus::new();
++        bus.load_flash(&[0x00; 0x2000]);
++        let tx = |bus: &mut Bus, bytes: &[u8]| {
++            bus.write32(SSI_BASE + SSI_SSIENR, 1);
++            for &byte in bytes {
++                bus.write32(SSI_BASE + SSI_DR0, u32::from(byte));
++                let _ = bus.read32(SSI_BASE + SSI_DR0);
++            }
++            bus.write32(SSI_BASE + SSI_SSIENR, 0);
++        };
++
++        tx(&mut bus, &[0x06]); // WREN
++        tx(&mut bus, &[0x20, 0x00, 0x00, 0x00]); // sector erase
++        assert_eq!(bus.read8(0x1000_0000), 0xFF);
++        assert!(
++            bus.flash_mutation_errors().is_empty(),
++            "errors: {:?}",
++            bus.flash_mutation_errors()
++        );
++
++        tx(&mut bus, &[0x06]);
++        tx(&mut bus, &[0x02, 0x00, 0x00, 0x00, 0xA5]);
++        assert_eq!(bus.read8(0x1000_0000), 0xA5);
++        assert!(
++            bus.flash_mutation_errors().is_empty(),
++            "errors: {:?}",
++            bus.flash_mutation_errors()
++        );
++
++        tx(&mut bus, &[0x06]);
++        tx(&mut bus, &[0x02, 0x00, 0x00, 0x00, 0xFF]);
++        assert_eq!(bus.read8(0x1000_0000), 0xA5);
++        assert!(
++            bus.flash_mutation_errors()
++                .iter()
++                .any(|error| error.starts_with("program_attempted_0_to_1"))
++        );
++    }
++
+     #[test]
+     fn xip_ctrl_roundtrip() {
+         let mut bus = Bus::new();
+diff --git a/crates/rp2040-emu/src/bus/ssi_flash.rs b/crates/rp2040-emu/src/bus/ssi_flash.rs
+index a59aec2..a5ac3c9 100644
+--- a/crates/rp2040-emu/src/bus/ssi_flash.rs
++++ b/crates/rp2040-emu/src/bus/ssi_flash.rs
+@@ -1,64 +1,67 @@
+-//! Minimal SPI flash behind XIP_SSI, for commands the boot path issues.
++//! Deterministic SPI-NOR flash behind XIP_SSI.
+ //!
+-//! The emulator maps the flash image directly into the XIP window and
+-//! does not model QSPI pads, so `Bus` normally treats XIP_SSI as a set
+-//! of scratch registers. That is enough right up until firmware asks
+-//! the flash chip a question rather than reading from it.
+-//!
+-//! `pico_unique_id` does exactly that at startup: its constructor runs
+-//! `flash_get_unique_id`, which drops out of XIP, clocks a Read Unique
+-//! ID (`0x4B`) command through SSI, and reads eight bytes back. With
+-//! the register stub the receive FIFO never fills, so the bootrom
+-//! helper waits forever — firmware built from the standard template
+-//! hung before reaching `main`, while the official sample (which does
+-//! not link `pico_unique_id`) ran fine.
+-//!
+-//! What is modelled is the command/response shape, not the wire. Each
+-//! byte written to `DR0` produces one response byte, matching the
+-//! full-duplex SSI the boot helpers drive with `SSIENR` toggles around
+-//! each transaction.
+-//!
+-//! | Command | Response |
+-//! |---------|----------|
+-//! | `0x4B` Read Unique ID | 4 dummy bytes, then 8 ID bytes |
+-//! | `0x9F` JEDEC ID | 3 ID bytes |
+-//! | `0x05` Read Status 1 | `0x00` — never busy, nothing to wait for |
+-//! | `0x35` Read Status 2 | `0x00` |
+-//! | anything else | zeros, and the opcode is counted |
+-//!
+-//! Erase and program are deliberately absent: nothing in the
+-//! conformance track writes flash, and a half-modelled program path
+-//! would corrupt the XIP image rather than fail visibly.
++//! The XIP window is backed by [`Memory`](crate::memory::Memory).  This
++//! device models the small command subset used by the RP2040 SDK's flash
++//! helpers and emits mutations for `Bus` to apply to that XIP window.  The
++//! separation is intentional: the flash command parser owns wire protocol
++//! state while the bus owns the executable image and cache invalidation.
+ 
+ use std::collections::VecDeque;
+ 
+ /// Bytes of unique ID a `0x4B` command returns.
+ pub const UNIQUE_ID_LEN: usize = 8;
+ 
++const CMD_READ: u8 = 0x03;
++const CMD_FAST_READ: u8 = 0x0B;
+ const CMD_READ_UNIQUE_ID: u8 = 0x4B;
+ const CMD_JEDEC_ID: u8 = 0x9F;
+ const CMD_READ_STATUS1: u8 = 0x05;
+ const CMD_READ_STATUS2: u8 = 0x35;
++const CMD_WRITE_ENABLE: u8 = 0x06;
++const CMD_WRITE_DISABLE: u8 = 0x04;
++const CMD_PAGE_PROGRAM: u8 = 0x02;
++const CMD_QUAD_IO_READ: u8 = 0xEB;
++const CMD_SECTOR_ERASE: u8 = 0x20;
++const CMD_BLOCK_ERASE: u8 = 0xD8;
++const CMD_CHIP_ERASE: u8 = 0xC7;
++const CMD_CHIP_ERASE_ALT: u8 = 0x60;
+ 
+-/// Dummy bytes between the `0x4B` opcode and the ID itself.
+ const UNIQUE_ID_DUMMY: usize = 4;
+ 
++/// A completed flash operation waiting for the bus to apply it to XIP.
++#[derive(Debug, PartialEq, Eq)]
++pub enum FlashMutation {
++    Erase { offset: u32, len: u32 },
++    Program { offset: u32, data: Vec<u8> },
++}
++
+ /// SPI flash chip as seen through XIP_SSI.
+ pub struct SsiFlash {
+-    /// Reported by `0x4B`. Fixed so runs stay reproducible; the real
+-    /// value is per-chip and no conformance target depends on it.
++    /// Reported by `0x4B`. Fixed so runs stay reproducible.
+     pub unique_id: [u8; UNIQUE_ID_LEN],
+     /// Reported by `0x9F`: manufacturer, type, capacity.
+     pub jedec_id: [u8; 3],
+     rx: VecDeque<u8>,
+-    /// Opcode of the transaction in flight, if any.
+     command: Option<u8>,
+     /// Bytes seen since the opcode.
+     index: usize,
+-    /// Opcodes this model does not answer, with their counts. Kept so a
+-    /// hang caused by an unmodelled command is diagnosable rather than
+-    /// silent.
++    address: u32,
++    program_data: Vec<u8>,
++    write_enable_latch: bool,
++    write_in_progress: bool,
++    mutations: VecDeque<FlashMutation>,
++    /// Protocol violations are kept as deterministic diagnostics.  The
++    /// runner can fail a mutation gate when this list is non-empty.
++    pub errors: Vec<String>,
++    pub erase_count: u64,
++    pub program_count: u64,
++    pub program_bytes: u64,
++    /// Opcodes this model does not answer, with their counts.
+     pub unknown_commands: Vec<(u8, u32)>,
++    /// All command opcodes observed, with counts. This is intentionally
++    /// bounded to opcode counts rather than retaining raw transactions, so
++    /// a long firmware run cannot turn diagnostics into an unbounded trace.
++    pub command_counts: Vec<(u8, u32)>,
+ }
+ 
+ impl Default for SsiFlash {
+@@ -70,72 +73,130 @@ impl Default for SsiFlash {
+ impl SsiFlash {
+     pub fn new() -> Self {
+         Self {
+-            // Deterministic stand-in, distinguishable from all-zero or
+-            // all-ones so firmware that prints it shows something real.
+             unique_id: [0xE6, 0x60, 0x58, 0x38, 0x93, 0x0D, 0x2A, 0x11],
+-            // W25Q16JV (Winbond, 2 MB) — the part the Pico ships with.
+             jedec_id: [0xEF, 0x40, 0x15],
+             rx: VecDeque::new(),
+             command: None,
+             index: 0,
++            address: 0,
++            program_data: Vec::new(),
++            write_enable_latch: false,
++            write_in_progress: false,
++            mutations: VecDeque::new(),
++            errors: Vec::new(),
++            erase_count: 0,
++            program_count: 0,
++            program_bytes: 0,
+             unknown_commands: Vec::new(),
++            command_counts: Vec::new(),
+         }
+     }
+ 
+-    /// Chip select released, or the controller disabled: whatever was in
+-    /// flight is abandoned.
++    /// Chip select released, or the controller disabled.  Mutating
++    /// commands commit at CS release, matching SPI-NOR command framing.
+     pub fn end_transaction(&mut self) {
++        self.finish_mutating_command();
+         self.command = None;
+         self.index = 0;
++        self.address = 0;
++        self.program_data.clear();
+         self.rx.clear();
+     }
+ 
+-    /// True while a response byte is waiting to be read.
+     pub fn has_rx(&self) -> bool {
+         !self.rx.is_empty()
+     }
+-
+-    /// Bytes waiting in the receive FIFO, for `RXFLR`. The bootrom's
+-    /// transfer loop reads the FIFO level registers rather than the
+-    /// status flags, so this has to track the queue.
+     pub fn rx_len(&self) -> u32 {
+         self.rx.len() as u32
+     }
+-
+-    /// Read one response byte; zero if the firmware over-reads.
+     pub fn pop_rx(&mut self) -> u8 {
+         self.rx.pop_front().unwrap_or(0)
+     }
+ 
+-    /// One byte clocked out by the controller. The reply is queued for
+-    /// the matching read, as full-duplex SPI would deliver it.
++    /// Drain completed erase/program operations.
++    pub fn take_mutations(&mut self) -> Vec<FlashMutation> {
++        self.mutations.drain(..).collect()
++    }
++
++    /// One byte clocked out by the controller.  The reply is queued for the
++    /// matching read, as full-duplex SPI would deliver it.
+     pub fn push_tx(&mut self, byte: u8) {
+         let reply = match self.command {
+             None => {
+                 self.command = Some(byte);
++                self.note_command(byte);
+                 self.index = 0;
++                self.address = 0;
++                self.program_data.clear();
+                 match byte {
+-                    CMD_READ_UNIQUE_ID | CMD_JEDEC_ID | CMD_READ_STATUS1 | CMD_READ_STATUS2 => {}
++                    0x00 | 0xFF | CMD_READ | CMD_FAST_READ | CMD_READ_UNIQUE_ID | CMD_JEDEC_ID
++                    | CMD_READ_STATUS1 | CMD_READ_STATUS2 | CMD_WRITE_ENABLE
++                    | CMD_WRITE_DISABLE | CMD_PAGE_PROGRAM | CMD_QUAD_IO_READ
++                    | CMD_SECTOR_ERASE | CMD_BLOCK_ERASE | CMD_CHIP_ERASE | CMD_CHIP_ERASE_ALT => {}
+                     other => self.note_unknown(other),
+                 }
+-                // The opcode byte itself reads back as zero.
+                 0
+             }
+             Some(command) => {
+                 let position = self.index;
+-                self.index += 1;
++                self.index = self.index.saturating_add(1);
+                 match command {
+                     CMD_READ_UNIQUE_ID => {
+                         if position < UNIQUE_ID_DUMMY {
+                             0
+                         } else {
+-                            let i = position - UNIQUE_ID_DUMMY;
+-                            self.unique_id.get(i).copied().unwrap_or(0)
++                            self.unique_id
++                                .get(position - UNIQUE_ID_DUMMY)
++                                .copied()
++                                .unwrap_or(0)
+                         }
+                     }
+                     CMD_JEDEC_ID => self.jedec_id.get(position).copied().unwrap_or(0),
+-                    // Status registers: not busy, not write-enabled.
+-                    CMD_READ_STATUS1 | CMD_READ_STATUS2 => 0,
++                    CMD_READ_STATUS1 => {
++                        (self.write_in_progress as u8) | ((self.write_enable_latch as u8) << 1)
++                    }
++                    CMD_READ_STATUS2 => 0,
++                    CMD_READ | CMD_FAST_READ => {
++                        if position < 3 {
++                            self.address = (self.address << 8) | u32::from(byte);
++                            0
++                        } else if command == CMD_FAST_READ && position == 3 {
++                            0
++                        } else {
++                            // XIP reads are normally used for execution; the
++                            // SSI read path is provided for boot helpers and
++                            // returns a deterministic placeholder here.  A
++                            // future bus-backed read hook can replace it.
++                            0
++                        }
++                    }
++                    CMD_QUAD_IO_READ => {
++                        // RP2040 boot2 re-enters XIP with 0xEB quad-I/O
++                        // reads. The executable XIP window is already the
++                        // authoritative data source, but the command still
++                        // needs correct address/mode/dummy framing so the
++                        // CS transaction is consumed without a false
++                        // unsupported-command diagnostic.
++                        if position < 3 {
++                            self.address = (self.address << 8) | u32::from(byte);
++                        }
++                        0
++                    }
++                    CMD_PAGE_PROGRAM => {
++                        if position < 3 {
++                            self.address = (self.address << 8) | u32::from(byte);
++                        } else {
++                            self.program_data.push(byte);
++                        }
++                        0
++                    }
++                    CMD_SECTOR_ERASE | CMD_BLOCK_ERASE => {
++                        if position < 3 {
++                            self.address = (self.address << 8) | u32::from(byte);
++                        }
++                        0
++                    }
++                    CMD_CHIP_ERASE | CMD_WRITE_ENABLE | CMD_WRITE_DISABLE => 0,
+                     _ => 0,
+                 }
+             }
+@@ -143,6 +204,71 @@ impl SsiFlash {
+         self.rx.push_back(reply);
+     }
+ 
++    fn finish_mutating_command(&mut self) {
++        let Some(command) = self.command else { return };
++        match command {
++            CMD_WRITE_ENABLE => self.write_enable_latch = true,
++            CMD_WRITE_DISABLE => self.write_enable_latch = false,
++            CMD_PAGE_PROGRAM => {
++                if !self.write_enable_latch {
++                    self.errors.push("page_program_without_wren".into());
++                } else if self.program_data.is_empty() {
++                    self.errors.push("page_program_without_data".into());
++                } else if self.program_data.len() > 256
++                    || (self.address & 0xFF) + self.program_data.len() as u32 > 256
++                {
++                    self.errors
++                        .push("page_program_crosses_256_byte_page".into());
++                } else {
++                    self.write_in_progress = true;
++                    let data = std::mem::take(&mut self.program_data);
++                    self.program_count += 1;
++                    self.program_bytes += data.len() as u64;
++                    self.mutations.push_back(FlashMutation::Program {
++                        offset: self.address,
++                        data,
++                    });
++                    self.write_in_progress = false;
++                    self.write_enable_latch = false;
++                }
++            }
++            CMD_SECTOR_ERASE => self.finish_erase(0x1000),
++            CMD_BLOCK_ERASE => self.finish_erase(0x1_0000),
++            CMD_CHIP_ERASE | CMD_CHIP_ERASE_ALT => {
++                if !self.write_enable_latch {
++                    self.errors.push("chip_erase_without_wren".into());
++                } else {
++                    self.write_in_progress = true;
++                    self.mutations
++                        .push_back(FlashMutation::Erase { offset: 0, len: 0 });
++                    self.erase_count += 1;
++                    self.write_in_progress = false;
++                    self.write_enable_latch = false;
++                }
++            }
++            _ => {}
++        }
++    }
++
++    fn finish_erase(&mut self, len: u32) {
++        if !self.write_enable_latch {
++            self.errors.push("erase_without_wren".into());
++            return;
++        }
++        if self.address % len != 0 {
++            self.errors.push("erase_address_not_aligned".into());
++            return;
++        }
++        self.write_in_progress = true;
++        self.mutations.push_back(FlashMutation::Erase {
++            offset: self.address,
++            len,
++        });
++        self.erase_count += 1;
++        self.write_in_progress = false;
++        self.write_enable_latch = false;
++    }
++
+     fn note_unknown(&mut self, code: u8) {
+         if let Some(entry) = self
+             .unknown_commands
+@@ -154,73 +280,104 @@ impl SsiFlash {
+             self.unknown_commands.push((code, 1));
+         }
+     }
++
++    fn note_command(&mut self, code: u8) {
++        if let Some(entry) = self
++            .command_counts
++            .iter_mut()
++            .find(|(existing, _)| *existing == code)
++        {
++            entry.1 = entry.1.saturating_add(1);
++        } else {
++            self.command_counts.push((code, 1));
++        }
++    }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+-
+-    /// Clock `bytes` through and collect the replies, the way
+-    /// `flash_do_cmd` drives a full-duplex transfer.
+     fn transfer(flash: &mut SsiFlash, bytes: &[u8]) -> Vec<u8> {
+-        let mut out = Vec::new();
+-        for &b in bytes {
+-            flash.push_tx(b);
+-            out.push(flash.pop_rx());
+-        }
+-        out
++        bytes
++            .iter()
++            .map(|&b| {
++                flash.push_tx(b);
++                flash.pop_rx()
++            })
++            .collect()
+     }
+ 
+     #[test]
+-    fn read_unique_id_matches_the_sdk_frame() {
++    fn read_unique_id_matches_sdk_frame() {
+         let mut flash = SsiFlash::new();
+-        // pico_unique_id sends 1 opcode + 4 dummy + 8 data bytes.
+-        let reply = transfer(&mut flash, &[CMD_READ_UNIQUE_ID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+-        assert_eq!(reply.len(), 13);
++        let reply = transfer(
++            &mut flash,
++            &[CMD_READ_UNIQUE_ID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
++        );
+         assert_eq!(&reply[5..13], &flash.unique_id[..]);
+     }
+ 
+     #[test]
+-    fn dummy_bytes_before_the_id_read_as_zero() {
+-        let mut flash = SsiFlash::new();
+-        let reply = transfer(&mut flash, &[CMD_READ_UNIQUE_ID, 0, 0, 0, 0]);
+-        assert_eq!(&reply[..5], &[0, 0, 0, 0, 0]);
+-    }
+-
+-    #[test]
+-    fn jedec_id_reports_the_pinned_part() {
++    fn jedec_and_status_are_deterministic() {
+         let mut flash = SsiFlash::new();
+         let reply = transfer(&mut flash, &[CMD_JEDEC_ID, 0, 0, 0]);
+         assert_eq!(&reply[1..4], &[0xEF, 0x40, 0x15]);
++        flash.end_transaction();
++        let _ = transfer(&mut flash, &[CMD_WRITE_ENABLE]);
++        flash.end_transaction();
++        let status = transfer(&mut flash, &[CMD_READ_STATUS1, 0]);
++        assert_eq!(status[1] & 0x02, 0x02);
+     }
+ 
+     #[test]
+-    fn status_reads_are_never_busy() {
+-        let mut flash = SsiFlash::new();
+-        let reply = transfer(&mut flash, &[CMD_READ_STATUS1, 0]);
+-        assert_eq!(reply[1] & 0x01, 0, "BUSY must stay clear or firmware spins");
+-    }
+-
+-    #[test]
+-    fn a_new_transaction_starts_a_new_command() {
++    fn wren_program_emits_page_mutation() {
+         let mut flash = SsiFlash::new();
+-        let _ = transfer(&mut flash, &[CMD_READ_UNIQUE_ID, 0, 0]);
++        let _ = transfer(&mut flash, &[CMD_WRITE_ENABLE]);
++        flash.end_transaction();
++        let mut frame = vec![CMD_PAGE_PROGRAM, 0, 1, 0];
++        frame.extend_from_slice(&[0xAA, 0x55]);
++        let _ = transfer(&mut flash, &frame);
+         flash.end_transaction();
+-        let reply = transfer(&mut flash, &[CMD_JEDEC_ID, 0]);
+-        assert_eq!(reply[1], 0xEF, "second command must not continue the first");
++        assert_eq!(
++            flash.take_mutations(),
++            vec![FlashMutation::Program {
++                offset: 0x100,
++                data: vec![0xAA, 0x55]
++            }]
++        );
++        assert!(flash.errors.is_empty());
+     }
+ 
+     #[test]
+-    fn unknown_opcodes_are_counted_not_swallowed() {
++    fn erase_requires_wren_and_alignment() {
+         let mut flash = SsiFlash::new();
+-        let _ = transfer(&mut flash, &[0x77, 0, 0]);
+-        assert_eq!(flash.unknown_commands, vec![(0x77, 1)]);
++        let _ = transfer(&mut flash, &[CMD_SECTOR_ERASE, 0, 0, 1]);
++        flash.end_transaction();
++        assert_eq!(flash.errors, vec!["erase_without_wren"]);
++        flash.errors.clear();
++        let _ = transfer(&mut flash, &[CMD_WRITE_ENABLE]);
++        flash.end_transaction();
++        let _ = transfer(&mut flash, &[CMD_SECTOR_ERASE, 0, 0, 1]);
++        flash.end_transaction();
++        assert_eq!(flash.errors, vec!["erase_address_not_aligned"]);
+     }
+ 
+     #[test]
+-    fn over_reading_past_the_id_yields_zero() {
++    fn boot2_quad_read_and_dummy_frames_are_known_commands() {
+         let mut flash = SsiFlash::new();
+-        let reply = transfer(&mut flash, &[CMD_READ_UNIQUE_ID, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+-        assert_eq!(&reply[13..], &[0, 0]);
++        let _ = transfer(&mut flash, &[CMD_QUAD_IO_READ, 0, 1, 2, 0, 0, 0, 0, 0]);
++        flash.end_transaction();
++        let _ = transfer(&mut flash, &[0x00, 0xFF]);
++        flash.end_transaction();
++        assert!(flash.errors.is_empty());
++        assert!(flash.unknown_commands.is_empty());
++        assert_eq!(
++            flash
++                .command_counts
++                .iter()
++                .find(|(command, _)| *command == CMD_QUAD_IO_READ)
++                .map(|(_, count)| *count),
++            Some(1)
++        );
+     }
+ }

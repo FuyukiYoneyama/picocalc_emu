@@ -1,0 +1,17 @@
+6f97af1b3c2f36280eba8545e6a32bdcb0544a4b144aaa14766fd18c863e812b  ./README.md
+1c43d56105a8704ec83b92308ab92fe19064d5a7924c3d4e459c59b95d74ab93  ./g5a-source-diff.patch
+01cf262315f9bf540f4e8f89e435fe610930af3db6baabe0b2b3c8074053be0f  ./manifest.json
+28d1b234ad6b6ce79f2c2149fd79ec81397ca6951a17e028299a8f1449e814f0  ./raw/flash-output.bin
+5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef  ./raw/input.img
+5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef  ./raw/output.img
+df33ffa4ac97636700fced759fdf822c7ca00b7d1eacd44aa908010841a01ea1  ./raw/report.json
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./tests/fmt-picocalc-board.log
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./tests/fmt-picocalc-harness.log
+4b3dad315082dc648b3c00acee1dcdf6f74ac60fc276436aa7cffabaabeb9a3b  ./tests/picocalc-board.log
+6ccbcf06c28dd1c963de6887787f54e855c213c3e69963f0c2946f58abc5f4b4  ./tests/picocalc-harness.log
+4b941781d49f2c0e204d24a90908cbfd7113147d7b7a0f692c62ecb90f9fe3f6  ./tests/release-build.log
+7b753cb130b1af987e7e1ff20e65eb05654ad23545ac3b436fca08bc4a967815  ./tests/rp2040-emu.log
+fe658ee07415b6d55799e250c09e6997fe9ac98dcd43140efb452fcb4bed4da5  ./tetris/candidate-normalized.json
+fe658ee07415b6d55799e250c09e6997fe9ac98dcd43140efb452fcb4bed4da5  ./tetris/g4-control-normalized.json
+49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3  ./tetris/r0-scenario-probe.json
+7c2b4f8ecfc8a16dca3fe0873d92798801eff1a596d7658355be0d1aa932459f  ./tetris/report.json

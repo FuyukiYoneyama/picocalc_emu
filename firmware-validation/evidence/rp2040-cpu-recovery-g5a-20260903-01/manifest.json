@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g5a-20260903-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3/G4 complete; G5 inventory and G5-A candidate pass; G5-B pending",
+  "group": {
+    "id": "G5-A",
+    "display_name": "保存領域基盤（RAW SD・NOR flash mutation）",
+    "purpose": "現在の公開利用経路に必要なRAW SDとNOR flash mutationを高速地点へ最小限戻す"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "f2d4d52711af70cd7f4e1c74ffda667966df15cb",
+    "candidate_commit": "70533db18830e5935ac7bdc6b659ad01a22236c9",
+    "source_diff": "g5a-source-diff.patch",
+    "source_diff_sha256": "1c43d56105a8704ec83b92308ab92fe19064d5a7924c3d4e459c59b95d74ab93",
+    "source_files_changed": 8,
+    "insertions": 1149,
+    "deletions": 140,
+    "worktree": "temporary /tmp worktree; detached candidate; no remote branch"
+  },
+  "runner": {
+    "binary_sha256": "64c6163895b273da93ceefa609792e7faf694eb303a22ac1073bb08ad17787de",
+    "backend_commit": "70533db18830e5935ac7bdc6b659ad01a22236c9",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "step_quantum": 1
+  },
+  "tests": {
+    "picocalc_board": {
+      "command": "cargo test --locked -p picocalc-board",
+      "passed": {
+        "library": 81,
+        "doctests": 1
+      },
+      "status": "pass",
+      "log": "tests/picocalc-board.log"
+    },
+    "rp2040_emu": {
+      "command": "cargo test --locked -p rp2040-emu",
+      "passed": {
+        "library": 1239,
+        "firmware": 9,
+        "multicore": 9,
+        "psram_pio_edge": 4,
+        "smoke": 6,
+        "wfe_irq_wake": 5,
+        "doctests": 0
+      },
+      "status": "pass",
+      "log": "tests/rp2040-emu.log"
+    },
+    "picocalc_harness": {
+      "command": "cargo test --locked -p picocalc-harness",
+      "passed": {
+        "opt0_blocked_baseline": 2,
+        "runner": 62
+      },
+      "status": "pass",
+      "log": "tests/picocalc-harness.log"
+    },
+    "format": [
+      {
+        "command": "cargo fmt --package picocalc-board -- --check",
+        "status": "pass",
+        "log": "tests/fmt-picocalc-board.log"
+      },
+      {
+        "command": "cargo fmt --package picocalc-harness -- --check",
+        "status": "pass",
+        "log": "tests/fmt-picocalc-harness.log"
+      }
+    ],
+    "release_build": {
+      "command": "cargo build --locked --release -p picocalc-harness",
+      "status": "pass",
+      "log": "tests/release-build.log"
+    }
+  },
+  "raw_sd": {
+    "firmware": {
+      "basename": "uart_hello.bin",
+      "sha256": "ec8a0ec651f408ed4d13ba3591dd9b5895182bf3685c287247868a2762677a28"
+    },
+    "bootrom": {
+      "basename": "bootrom.bin",
+      "sha256": "32bc7e998937576c090ef504ec61f5f1431b78b1fbf99cc683175af3b140c3c4"
+    },
+    "input": "raw/input.img",
+    "input_bytes": 1024,
+    "input_blocks": 2,
+    "input_sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+    "output": "raw/output.img",
+    "output_sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+    "report": "raw/report.json",
+    "report_sha256": "df33ffa4ac97636700fced759fdf822c7ca00b7d1eacd44aa908010841a01ea1",
+    "verdict": "pass",
+    "stop_reason": "cycle_limit",
+    "cycles_requested": 10000,
+    "cycles_reported": 10032,
+    "dirty_blocks": 0,
+    "flash_output": "raw/flash-output.bin",
+    "flash_output_sha256": "28d1b234ad6b6ce79f2c2149fd79ec81397ca6951a17e028299a8f1449e814f0",
+    "flash_erase_count": 0,
+    "flash_program_count": 0,
+    "flash_errors": []
+  },
+  "tetris_short_screening": {
+    "display_name": "Tetris（軽ゲーム実装）短scenario",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+    "scenario": "tetris/r0-scenario-probe.json",
+    "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+    "report": "tetris/report.json",
+    "report_sha256": "7c2b4f8ecfc8a16dca3fe0873d92798801eff1a596d7658355be0d1aa932459f",
+    "backend_commit": "70533db18830e5935ac7bdc6b659ad01a22236c9",
+    "backend_dirty": false,
+    "cpu_affinity": 11,
+    "step_quantum": 1,
+    "verdict": "pass",
+    "stop_reason": "scenario_done",
+    "cycles": 187528659,
+    "guest_elapsed_us": 755000,
+    "uart_bytes": 1387,
+    "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+    "framebuffer_rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+    "normalized_candidate": "tetris/candidate-normalized.json",
+    "normalized_control": "tetris/g4-control-normalized.json",
+    "normalized_sha256": "fe658ee07415b6d55799e250c09e6997fe9ac98dcd43140efb452fcb4bed4da5",
+    "performance_claim": "none"
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_record_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "G5-A storage tests, clean release build, RAW SD export smoke, NOR mutation unit tests, and Tetris shortscreening passed; G4 normalized guest-visible fields are byte-identical.",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "G5-B",
+    "next_group_display_name": "loader起動（boot2・watchdog warm reset）"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 8,
+  "backend_commit": "70533db18830e5935ac7bdc6b659ad01a22236c9",
+  "backend_build": {"commit": "70533db18830e5935ac7bdc6b659ad01a22236c9", "dirty": false},
+  "firmware": {"basename": "uart_hello.bin", "sha256": "ec8a0ec651f408ed4d13ba3591dd9b5895182bf3685c287247868a2762677a28"},
+  "bootrom": {"basename": "bootrom.bin", "sha256": "32bc7e998937576c090ef504ec61f5f1431b78b1fbf99cc683175af3b140c3c4", "executed": false},
+  "execution_model": "Serial",
+  "board": "none",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "bootrom_reset_vector", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 64,
+  "cycle_limit": 10000,
+  "stop_pc": null,
+  "stop_reason": "cycle_limit",
+  "cycles": 10032,
+  "elapsed_us": 1543,
+  "pc": "0x10000024",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "cycle_limit", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "flash": {"image_bytes": 2097152, "erase_count": 0, "program_count": 0, "program_bytes": 0, "command_counts": [], "unknown_commands": [], "errors": []},
+  "sd": {
+    "attached": true, "format": "fat32", "block_size": 512, "block_count": 2,
+    "commands_seen": 0, "blocks_read": 0, "blocks_written": 0,
+    "raw_image": {"bytes": 1024, "blocks": 2, "dirty_blocks": 0, "source_sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef" },
+    "unknown_commands": []
+  },
+  "uart": {"bytes": 6, "sha256": "3b09aeb6f5f5336beb205d7f720371bc927cd46c21922e334d47ba264acb5ba4"}
+}
