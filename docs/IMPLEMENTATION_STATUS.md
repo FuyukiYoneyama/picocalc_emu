@@ -260,7 +260,8 @@ guest-visible結果は一致しています。この差は復元したaudio time
 [`rp2040-cpu-recovery-g4-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g4-20260903-01/)を参照してください。
 G4ではmachine API golden 8要求を3回再生し、応答JSONLとsnapshotの一致、Tetris（軽ゲーム実装）のheartbeat 15回と
 正常finishを確認しました。heartbeatは長時間実行の監視機能であり、性能改善値へ使っていません。次はG5
-（flash・SD・boot）の必要部分の棚卸しです。
+（flash・SD・boot）の必要部分の棚卸しは完了しました。G5-A（保存領域基盤：RAW SD・NOR flash mutation）の
+実装は未着手です。棚卸し記録は[`rp2040-cpu-recovery-g5-inventory-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5-inventory-20260903-01/)を参照してください。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

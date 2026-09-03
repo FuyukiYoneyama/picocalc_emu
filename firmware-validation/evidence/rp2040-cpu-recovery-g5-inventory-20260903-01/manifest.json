@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g5-inventory-20260903-01",
+  "status": "complete",
+  "decision_kind": "capability-inventory",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3/G4 complete; G5 inventory complete; G5-A implementation pending",
+  "inventory_commit": "d7b9364",
+  "reconstruction_base": {
+    "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "candidate_commit": "f2d4d52711af70cd7f4e1c74ffda667966df15cb",
+    "display_name": "Tetris（軽ゲーム実装）／PicoEdit（テキスト編集実装）の高速Serial起点からの段階復旧"
+  },
+  "registry": {
+    "path": "reference-projects/firmware-targets.json",
+    "sha256": "7b83c7ef0befc812e2b4cb3bba227096185f11b67ff1235a01b6953acfc7d14b",
+    "schema_version": 3,
+    "target_count": 22,
+    "active_count": 21,
+    "pending_count": 1,
+    "active_sd_attached_count": 18,
+    "active_sd_attached_targets": [
+      "picocalc-template-b",
+      "picotetris-r3",
+      "picotetris-r4",
+      "picotetris-opt1a",
+      "picotetris-r5",
+      "picotetris-opt1b",
+      "picoedit-r1",
+      "picocalc-multicore-r1",
+      "picocalc-multicore-r2",
+      "picocalc-audio-r1",
+      "picotetris-opt1b-vrp2",
+      "picoedit-r1-vrp2",
+      "picotetris-opt1b-vrp2e",
+      "picoedit-r1-vrp2e",
+      "picotetris-opt1b-vrp2f",
+      "picotetris-opt1b-vrp4",
+      "picoedit-r1-vrp2f",
+      "picotetris-opt1b-vrp5"
+    ],
+    "active_boot2_declared_count": 0,
+    "pending_target": "vrp-nes0-synthetic-nrom"
+  },
+  "capability_source": {
+    "path": "firmware-validation/capability.json",
+    "sha256": "63a56d5e3b4eecdb57f74122f3e9bdf70e400f46ba53c1b3071762f8f519fc29",
+    "supported_g5_capabilities": [
+      "flash-chip-commands",
+      "sd-card",
+      "sd-multi-block",
+      "raw-sd-image",
+      "directory-snapshot-import",
+      "flash-erase-program",
+      "uf2loader-e2e"
+    ],
+    "unsupported_boundaries": [
+      "bootrom-execution",
+      "USB BOOTSEL/MSC",
+      "complete SD compatibility",
+      "live directory synchronization",
+      "arbitrary UF2 compatibility"
+    ]
+  },
+  "groups": [
+    {
+      "id": "G5-A",
+      "display_name": "保存領域基盤（RAW SD・NOR flash mutation）",
+      "required_by": [
+        "raw-sd-image",
+        "directory-snapshot-import",
+        "flash-chip-commands",
+        "flash-erase-program"
+      ],
+      "history_commits": [
+        "ae49c6c090dbd26c08c8360821cc6b2cc2c66dbe",
+        "749ba884f78a37a6c2c7adece341ef7068e16e49",
+        "5edca80ae3cd9f73d381399628a7cc1ab801bdf3"
+      ],
+      "candidate_source_scope": [
+        "crates/picocalc-board/src/sdcard.rs",
+        "crates/picocalc-board/src/sd_wire.rs",
+        "crates/picocalc-board/src/sha256.rs",
+        "crates/rp2040-emu/src/bus/ssi_flash.rs",
+        "crates/rp2040-emu/src/bus/mod.rs",
+        "crates/picoem-common/src/memory.rs",
+        "crates/picocalc-harness/src/main.rs"
+      ],
+      "tetris_activity": "raw export／flash mutation inactive in the short scenario; SD attach remains active",
+      "acceptance_inputs": [
+        "raw backing unit tests",
+        "flash mutation unit tests",
+        "direct-boot Tetris short screening",
+        "existing RAW SD／flash evidence as regression boundary"
+      ],
+      "start_condition": "G4 candidate clean and G4 evidence fixed",
+      "implementation_status": "pending"
+    },
+    {
+      "id": "G5-B",
+      "display_name": "loader起動（boot2・watchdog warm reset）",
+      "required_by": ["uf2loader-e2e"],
+      "history_commits": ["d1360cbb13fd807661474b49a1b5516b12567d00"],
+      "candidate_source_scope": [
+        "crates/rp2040-emu/src/lib.rs",
+        "crates/rp2040-emu/src/peripherals/watchdog_tick.rs",
+        "crates/picocalc-board/src/sdcard.rs",
+        "crates/picocalc-board/src/sd_wire.rs",
+        "crates/picocalc-harness/src/main.rs",
+        "crates/rp2040-emu/tests/smoke.rs"
+      ],
+      "tetris_activity": "inactive; normal app mode must remain unchanged",
+      "acceptance_inputs": [
+        "boot2 entry unit tests",
+        "watchdog scratch／reset unit tests",
+        "existing uf2loader U6 fixed evidence／artifact regression"
+      ],
+      "start_condition": "G5-A storage and flash mutation pass",
+      "implementation_status": "pending"
+    },
+    {
+      "id": "G5-C",
+      "display_name": "SD protocol（bounded multiblock）",
+      "required_by": ["sd-multi-block", "SD-GEN-1-P5"],
+      "history_commits": [
+        "0e1288e4c516b7da3ad21f3cf1ec3532374ab8da",
+        "f6cd89dda7e8bcaf2cdc23d574a1794067f7c302",
+        "84162a3171c19f76271674b612e4c47c1631c051",
+        "0126d1bd08495fa157cd038b68465937a74f7abe",
+        "b0a4c05bb53ae043a70cf531bd7413849f494bcf",
+        "4ee4d1df20a69f023b9697fd51fb28d3a7723f88",
+        "e805f1c1752eb2e6e0a26e68db4e330a08e4a9d2"
+      ],
+      "candidate_source_scope": [
+        "crates/picocalc-board/Cargo.toml",
+        "crates/picocalc-board/src/sd_wire.rs",
+        "crates/picocalc-board/src/sdcard.rs",
+        "crates/picocalc-harness/Cargo.toml",
+        "crates/picocalc-harness/src/main.rs",
+        "crates/picocalc-harness/tests/cli_sd_multiblock_e2e.rs"
+      ],
+      "tetris_activity": "normally inactive in the short scenario; active only in dedicated SD capability runs",
+      "acceptance_inputs": [
+        "SD-GEN-1 unit and negative tests",
+        "default synthetic CMD18／CMD12／CMD23／CMD25／CMD17 E2E",
+        "three deterministic runs",
+        "legacy single-block regression"
+      ],
+      "start_condition": "G5-A and G5-B pass, or an explicit dependency review permits independent feature work",
+      "implementation_status": "pending"
+    }
+  ],
+  "existing_evidence": [
+    {
+      "path": "firmware-validation/evidence/sd-gen1-p5-20260823-01/manifest.json",
+      "sha256": "472b0af9c5740e75cf350d0c3dbb27a13ceb8e8877f7fa1a46aacc384f480c50",
+      "role": "bounded SD multiblock contract; do not rewrite"
+    },
+    {
+      "path": "firmware-validation/evidence/sd-gen1-p4-20260823-01/manifest.json",
+      "sha256": "8850bfe983838a6c3cf4d7f6c96dba1cbc4e9cee25e36c6b338b723bc093aa20",
+      "role": "default SD runtime／RAW export predecessor; re-run as candidate input"
+    },
+    {
+      "path": "firmware-validation/evidence/uf2loader-u6-20260822-01/u6-gate.json",
+      "sha256": "629af1a77abdb5988e60c4003c03b0502130d8eaeb12f27e30d66e2e84884973",
+      "role": "fixed external loader boot2／warm-reset predecessor; do not rewrite"
+    },
+    {
+      "path": "firmware-validation/evidence/vrp-nes0-synthetic-nrom-20260829-01/record.json",
+      "sha256": "d3db202da8c710e96f7f7f6603b22b2dccdcda406a2c90c373cb8a7cae953bc0",
+      "role": "historical pending NESco boundary only; no new dependency"
+    }
+  ],
+  "external_boundary": {
+    "picocalc_nesco_source_changed": false,
+    "picocalc_nesco_branch_created": false,
+    "uf2loader_source_changed": false,
+    "uf2loader_branch_created": false,
+    "hardware_run": false
+  },
+  "decision": {
+    "status": "inventory-complete",
+    "reason": "G5 is split into storage, explicit loader boot, and bounded SD protocol groups. The public capability and existing evidence boundaries are known before implementation.",
+    "next_group": "G5-A",
+    "next_group_display_name": "保存領域基盤（RAW SD・NOR flash mutation）",
+    "production_implementation_started": false,
+    "performance_baseline_updated": false
+  }
+}

@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4 candidate pass / G5 pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4 candidate pass / G5 inventory complete / G5-A pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -270,5 +270,6 @@ remote branchは変更していない。G4（ヘッドレス実行基盤）はsc
 応答JSONLとsnapshotを完全一致させ、Tetris（軽ゲーム実装）の短scenarioで1秒間隔heartbeat 15回と正常finishを
 確認した。G3比のguest-visible差はなく、heartbeatは性能改善値へ使っていない。記録は
 [`rp2040-cpu-recovery-g4-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g4-20260903-01/)にある。
-次はG5（flash・SD・boot）の必要部分の棚卸しであり、対象testと短probeを通過し、未説明のcostがない場合だけ
-次へ進む。
+G5（保存領域・起動経路）の棚卸しは完了した。G5-A（RAW SD・NOR flash mutation）の必要範囲、既存record、
+外部projectを変更しない境界を[`rp2040-cpu-recovery-g5-inventory-20260903-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g5-inventory-20260903-01/)へ固定した。
+次はG5-Aの移植であり、対象testとTetris短probeを通過し、未説明のcostがない場合だけG5-Bへ進む。
