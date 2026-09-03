@@ -122,6 +122,22 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertNotIn("a" * 40, command)
         self.assertIn("--scenario", command) if target.get("scenario") else None
 
+    def test_dynamic_quantum_candidate_overrides_only_psram_runner_maximum(self):
+        target = self.fixture_target()
+        command = self.module.target_command(
+            target, Path("firmware.bin"), Path("runner"), Path("report"),
+            Path("uart"), Path("snapshots"), backend_commit="b" * 40,
+            feature_set=["dynamic-quantum-prototype"],
+        )
+        self.assertEqual(command[command.index("--quantum") + 1], "16")
+        target["runner"]["psram"] = False
+        with self.assertRaisesRegex(ValueError, "restricted to a PSRAM"):
+            self.module.target_command(
+                target, Path("firmware.bin"), Path("runner"), Path("report"),
+                Path("uart"), Path("snapshots"), backend_commit="b" * 40,
+                feature_set=["dynamic-quantum-prototype"],
+            )
+
     def test_target_command_preserves_registered_audio_observation_contract(self):
         import picocalc
 
@@ -394,11 +410,13 @@ class CandidateRunnerTests(unittest.TestCase):
                 "production",
             )
 
-    def test_projection_removes_only_top_level_backend_identity(self):
+    def test_projection_removes_backend_oracle_and_host_scheduler_fields(self):
         report = {
             "backend_build": {"commit": "a" * 40, "dirty": False},
             "backend_commit": "a" * 40,
             "cycles": 10,
+            "step_quantum": 16,
+            "psram": {"bytes_read": 2, "tick_count": 99},
             "audio_sink": {
                 "dma_write_count": 1000,
                 "pcm_sha256": "b" * 64,
@@ -412,6 +430,9 @@ class CandidateRunnerTests(unittest.TestCase):
         self.assertNotIn("backend_commit", projection)
         self.assertNotIn("expected_count", projection["audio_sink"])
         self.assertNotIn("expected_sha256", projection["audio_sink"])
+        self.assertNotIn("step_quantum", projection)
+        self.assertNotIn("tick_count", projection["psram"])
+        self.assertEqual(projection["psram"]["bytes_read"], 2)
         self.assertEqual(projection["audio_sink"]["dma_write_count"], 1000)
         self.assertEqual(projection["nested"]["backend_commit"], "guest-visible")
         changed = dict(report)
@@ -768,6 +789,7 @@ class CandidateRunnerTests(unittest.TestCase):
                 "domains": [{"name": "clock", "events": 1, "sha256": "a" * 64}],
             },
             "cycles": 10,
+            "psram": {"tick_count": 1, "bytes_read": 3},
         }
         artifact = {
             "schema_version": 1,
@@ -780,6 +802,15 @@ class CandidateRunnerTests(unittest.TestCase):
             "behavior_sha256": self.module.canonical_json_sha256(projection),
         }
         self.module.validate_behavior_pair(artifact, artifact)
+        candidate_projection = dict(projection)
+        candidate_projection["step_quantum"] = 16
+        candidate_projection["psram"] = {"tick_count": 42, "bytes_read": 3}
+        candidate_artifact = dict(artifact)
+        candidate_artifact["behavior_projection"] = candidate_projection
+        candidate_artifact["behavior_sha256"] = self.module.canonical_json_sha256(
+            candidate_projection
+        )
+        self.module.validate_behavior_pair(artifact, candidate_artifact)
         changed = dict(artifact)
         changed["behavior_sha256"] = "b" * 64
         with self.assertRaisesRegex(ValueError, "does not match projection"):
@@ -804,6 +835,30 @@ class CandidateRunnerTests(unittest.TestCase):
             "stop_reason": "scenario_done",
         }
         self.module.validate_report(workload, report, "b" * 40)
+
+    def test_report_validation_accepts_q16_only_for_dynamic_psram_candidate(self):
+        target = self.fixture_target()
+        workload = {
+            "target": target,
+            "firmware_sha256": "f" * 64,
+        }
+        report = {
+            "schema_version": 8,
+            "verdict": {"status": "pass"},
+            "backend_build": {"commit": "b" * 40, "dirty": False},
+            "firmware": {"sha256": "f" * 64},
+            "step_quantum": 16,
+            "cycle_limit": 123,
+            "exception": None,
+            "error": None,
+            "unsupported_mmio": [],
+            "stop_reason": "scenario_done",
+        }
+        self.module.validate_report(
+            workload, report, "b" * 40, ["dynamic-quantum-prototype"]
+        )
+        with self.assertRaisesRegex(ValueError, "step_quantum"):
+            self.module.validate_report(workload, dict(report, step_quantum=16), "b" * 40)
 
     def test_calibration_drift_invalidates_above_two_percent(self):
         valid = self.module.calibration_drift([100.0, 101.0, 99.0], [101.0, 100.0, 102.0])

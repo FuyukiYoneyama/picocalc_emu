@@ -97,6 +97,7 @@ KNOWN_FEATURES = frozenset(
         "compact-dispatch-key-prototype",
         "cpu-application-profiler",
         "decode-invalidation-tag-guard",
+        "dynamic-quantum-prototype",
         "decoded-op-8byte-prototype",
         "diagnostic-pc-compile-out-prototype",
         "event-horizon-profiler",
@@ -115,6 +116,8 @@ KNOWN_FEATURES = frozenset(
 # provenance record therefore carries the effective Cargo set, not merely the
 # candidate-specific additions supplied on the CLI.
 DEFAULT_EFFECTIVE_FEATURES = ("sd-gen1-multiblock",)
+DYNAMIC_QUANTUM_FEATURE = "dynamic-quantum-prototype"
+DYNAMIC_QUANTUM_MAX = 16
 BUILD_PROVENANCE_SCHEMA_ID = "picocalc.rp2040-build-provenance"
 BUILD_PROVENANCE_VERSION = 1
 T_CRITICAL_95 = {
@@ -204,6 +207,31 @@ def effective_feature_set(features: Sequence[str]) -> List[str]:
     """Return the sorted Cargo feature set actually expected in a build."""
     requested = normalize_feature_set(features)
     return sorted(set(DEFAULT_EFFECTIVE_FEATURES).union(requested))
+
+
+def runner_step_quantum(target: Mapping[str, Any], feature_set: Sequence[str] = ()) -> int:
+    """Resolve the configured runner quantum for a normal or Q1 candidate.
+
+    Registered targets retain their historical q1 contract. The experimental
+    dynamic-quantum candidate is the one explicit exception: it uses the
+    registered PSRAM target with a q16 maximum and falls back to q1 whenever
+    the backend policy says that the device is engaged or a transition is
+    possible.
+    """
+    contract = target["runner"]
+    registered_quantum = int(contract["quantum"])
+    requested = normalize_feature_set(feature_set)
+    if DYNAMIC_QUANTUM_FEATURE not in requested:
+        return registered_quantum
+    if contract.get("psram") is not True:
+        raise ValueError(
+            "dynamic-quantum-prototype is restricted to a PSRAM workload"
+        )
+    if registered_quantum != 1:
+        raise ValueError(
+            "dynamic-quantum-prototype requires the registered q1 PSRAM contract"
+        )
+    return DYNAMIC_QUANTUM_MAX
 
 
 def validate_profile_feature_set(candidate_id: str, features: Sequence[str]) -> List[str]:
@@ -520,7 +548,14 @@ def write_runner_provenance(args: argparse.Namespace) -> int:
 
 
 def guest_observation_projection(report: Mapping[str, Any]) -> Dict[str, Any]:
-    """Remove backend identity and harness-only audio oracle metadata."""
+    """Remove backend and host-scheduler metadata from guest observations.
+
+    ``step_quantum`` is a runner configuration scalar, while
+    ``psram.tick_count`` counts host calls to the PSRAM model. Neither is a
+    guest-visible result, and the dynamic candidate is expected to change
+    both. The exclusions are fixed by PERF-Q2 before candidate measurements;
+    all other report fields remain part of the comparison.
+    """
     if not isinstance(report, Mapping):
         raise ValueError("schema-8 report must be an object")
     projection = {
@@ -535,6 +570,12 @@ def guest_observation_projection(report: Mapping[str, Any]) -> Dict[str, Any]:
             for key, value in audio_sink.items()
             if key not in ("expected_count", "expected_sha256")
         }
+    projection.pop("step_quantum", None)
+    psram = projection.get("psram")
+    if isinstance(psram, Mapping):
+        normalized_psram = dict(psram)
+        normalized_psram.pop("tick_count", None)
+        projection["psram"] = normalized_psram
     return projection
 
 
@@ -760,6 +801,7 @@ def target_command(
     snapshots: Path,
     *,
     backend_commit: Optional[str],
+    feature_set: Sequence[str] = (),
     behavior_trace: Optional[Path] = None,
     cpu_application_profile: Optional[Path] = None,
     host_timing: Optional[Path] = None,
@@ -770,12 +812,13 @@ def target_command(
             "backend_commit override is required; never use the registry accepted pin"
         )
     contract = target["runner"]
+    quantum = runner_step_quantum(target, feature_set)
     command = [
         str(runner),
         "--bin", str(firmware),
         "--board", contract["board"],
         "--lcd-variant", contract["lcd_variant"],
-        "--quantum", str(contract["quantum"]),
+        "--quantum", str(quantum),
         "--cycles", str(contract["cycles"]),
         "--json", str(report),
         "--uart", str(uart),
@@ -922,7 +965,8 @@ def _without_backend_commit_checks(checks: Iterable[Mapping[str, Any]]) -> List[
 
 
 def validate_report(
-    workload: Mapping[str, Any], report: Mapping[str, Any], backend_commit: str
+    workload: Mapping[str, Any], report: Mapping[str, Any], backend_commit: str,
+    feature_set: Sequence[str] = (),
 ) -> None:
     """Validate report acceptance while allowing backend identity to differ."""
     target = workload["target"]
@@ -932,7 +976,7 @@ def validate_report(
         {"path": "backend_build.commit", "op": "eq", "value": backend_commit},
         {"path": "backend_build.dirty", "op": "eq", "value": False},
         {"path": "firmware.sha256", "op": "eq", "value": workload["firmware_sha256"]},
-        {"path": "step_quantum", "op": "eq", "value": target["runner"]["quantum"]},
+        {"path": "step_quantum", "op": "eq", "value": runner_step_quantum(target, feature_set)},
         {"path": "cycle_limit", "op": "eq", "value": target["runner"]["cycles"]},
         {"path": "exception", "op": "eq", "value": None},
         {"path": "error", "op": "eq", "value": None},
@@ -1035,6 +1079,7 @@ def behavior_summary(
     return {
         "behavior_sha256": digest,
         "projection": projection,
+        "comparison_projection": guest_observation_projection(projection),
         "domain_summary": domain_summary,
     }
 
@@ -1046,10 +1091,8 @@ def validate_behavior_pair(
 ) -> None:
     left = behavior_summary(baseline_artifact, baseline_backend_commit)
     right = behavior_summary(candidate_artifact, candidate_backend_commit)
-    if left["projection"] != right["projection"]:
+    if left["comparison_projection"] != right["comparison_projection"]:
         raise ValueError("behavior projection mismatch")
-    if left["behavior_sha256"] != right["behavior_sha256"]:
-        raise ValueError("behavior SHA-256 mismatch")
     if left["domain_summary"] != right["domain_summary"]:
         raise ValueError("behavior domain summary mismatch")
 
@@ -2716,6 +2759,7 @@ def run_guest(
     validate_runner_embedded_commit(runner, backend_identity["commit"])
     runner_sha256 = sha256_file(runner)
     provenance: Optional[Dict[str, Any]] = None
+    expected_feature_set: Sequence[str] = ()
     if expected_backend_identity is not None:
         expected_feature_set = expected_backend_identity.get("feature_set", [])
         provenance = validate_runner_provenance(
@@ -2750,6 +2794,7 @@ def run_guest(
         command = target_command(
             workload["target"], workload["firmware"], runner, report_path, uart_path, snapshots,
             backend_commit=backend_identity["commit"],
+            feature_set=expected_feature_set,
             behavior_trace=trace_path if behavior_trace is not None else None,
             cpu_application_profile=profile_path,
             host_timing=host_timing_path,
@@ -2771,7 +2816,9 @@ def run_guest(
             raise ValueError("runner did not write report: {}".format(report_path))
         report_bytes = report_path.read_bytes()
         report = json.loads(report_bytes)
-        validate_report(workload, report, backend_identity["commit"])
+        validate_report(
+            workload, report, backend_identity["commit"], expected_feature_set
+        )
         if behavior_trace is not None and not behavior_trace.is_file():
             raise ValueError("runner did not write behavior trace: {}".format(behavior_trace))
         if cpu_application_profile is not None and not cpu_application_profile.is_file():
@@ -5198,7 +5245,12 @@ def _require_correctness_gate(
                 failures.append("{} correctness backend commit is missing for {}".format(role, workload_id))
             else:
                 try:
-                    validate_report(workload, report, commit)
+                    identity_features = (
+                        identity.get("feature_set", [])
+                        if isinstance(identity, Mapping)
+                        else ()
+                    )
+                    validate_report(workload, report, commit, identity_features)
                 except (KeyError, OSError, UnicodeError, ValueError, TypeError, IndexError) as error:
                     failures.append(
                         "{} correctness report failed validation for {}: {}".format(
