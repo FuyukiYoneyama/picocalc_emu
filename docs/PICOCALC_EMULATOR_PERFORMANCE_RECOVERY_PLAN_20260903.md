@@ -1,6 +1,6 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4・G5-A・G5-B・G5-C・G6 candidate pass / G5 complete / G7 pending**
+- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4・G5-A・G5-B・G5-C・G6・G7 candidate pass / G5 complete / integration review pending**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
@@ -163,6 +163,24 @@ commit全体をcherry-pickせず、必要部分だけを再実装する。
 必要性を説明できない機能は移植しない。文書、format-only変更、profiler、過去にrevertされたprototype、
 P1-A／P2-Aなどの性能候補はこの棚卸しの移植対象へ含めない。
 
+### G7棚卸し（2026-09-04）
+
+G7は中断した1倍速計画を再開する段階ではなく、現行のactive VRP targetが要求するpreview境界を
+失わないための機能群である。registry上の対象は`picotetris-opt1b-vrp2`／`vrp2e`／`vrp2f`／`vrp4`／`vrp5`
+と`picoedit-r1-vrp2`／`vrp2e`／`vrp2f`であり、これらのtarget contractを維持するために、次を候補移植の対象とする。
+
+| G7機能 | 必要性 | 移植しない場合 | 既存gate／Tetrisでの扱い |
+|---|---|---|---|
+| preview API／protocol | active VRP targetのpreview invocationとversioned observationを維持する | preview targetを既存のmachine APIだけで代用することになり、VRP-2〜4の契約を失う | `preview_api_e2e`、machine schema-1 golden、既存VRP-2E／VRP-4 record。preview commandでのみactive、通常のTetris実行ではinactive |
+| replay／shared session | preview、machine、batchの同一cycle観測境界を維持する | 三者の再現可能な比較と既存replay contractが失われる | `machine_api_schema1_golden`および三者digest gate。通常のTetris pathには追加のreplayを自動起動しない |
+| bounded audio transport | VRP-4のpreview monitorに必要な上限付き音声経路を維持する | preview monitorのdrop／underrun／epoch契約を失う | VRP-4 off／on／forced-drop record。authoritative batch runnerのaudio oracleや通常Tetrisの経路は変更しない |
+
+G4で復元済みのmachine API／heartbeatはG7でやり直さない。`vrp-load0-r1-vslice`と
+`vrp-nes0-synthetic-nrom`はpreview-only／歴史資料であり、G7のactive target復元対象から除外する。
+旧preview commitの一括cherry-pickは行わず、G6 candidateの現行APIへ必要な境界だけを手動移植する。
+候補record作成後もactive target registryは変更せず、統合判断の前にpreview E2E、既存machine golden、
+三者観測digest、Tetris短screeningを実行する。
+
 ## 7. 実施段階
 
 ### R0 — 高速出発点と退行比較点の固定
@@ -293,4 +311,13 @@ report／I2C sidecar／UART／framebufferをbyte-identicalで確認した。I2C 
 短screeningもG5-C normalized projectionと一致し、feature有効／無効のunit testとrelease buildも通過した。
 記録は[`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)にある。
 G6 candidateはbackend `main`、active target registry、既存E5 recordへ未統合であり、速度改善や1倍速は主張しない。
-次はG7（preview境界／延期機能）の必要性と、G0〜G6 candidateを統合する前提を棚卸しする。
+次のG7（preview境界／延期機能）は、active VRP targetに必要なpreview protocol、shared replay／session、
+bounded audio transportだけをG6 candidateへ戻した。preview API E2E 5件、rp2040-emu 1,254件、UART／
+audio focused test、release buildを通過し、登録済みPicoTetris binaryの通常batch screeningではG6と
+normalized guest-visible projectionが一致した。さらに同じPicoTetris binaryを共通replay境界から
+実際のpreview processへ接続し、PCRP 14 frame、status 3件、RGB565 frame 1件、PCM frame 8件、Goodbye、
+return code 0、backend／IPC drop 0を確認した。記録は
+[`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)にある。
+これはpreview境界のcandidate-passであり、audio fidelity oracleのpass、性能改善、1倍速、LOAD-0（最大級の
+継続負荷性能テスト0番）完走を意味しない。G7 candidateもbackend `main`、active target registry、既存
+validation recordへ未統合である。次はG0〜G7 candidate差分と既存target契約をまとめ、統合可否を判断する。

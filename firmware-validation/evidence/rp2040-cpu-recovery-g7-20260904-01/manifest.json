@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "record_id": "rp2040-cpu-recovery-g7-20260904-01",
+  "status": "candidate-pass",
+  "decision_kind": "reconstruction-group",
+  "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
+  "plan_status": "R0/R1/G0/G1/G2/G3/G4/G5-A/G5-B/G5-C/G6 candidate pass; G7 candidate pass; integration pending",
+  "group": {
+    "id": "G7",
+    "display_name": "preview境界／bounded transport（実アプリpreview接続）",
+    "purpose": "現行VRP targetに必要なpreview protocol、shared replay/session、bounded audio transportを高速起点へ戻し、実アプリのpreview process接続を候補で確認する"
+  },
+  "reconstruction": {
+    "fast_base_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+    "previous_candidate_commit": "091c371df0baa664f8a082f44d1256f112152798",
+    "candidate_commit": "9db10c0313547e9463510ffe3ae6d7474e008494",
+    "source_diff": "g7-source-diff.patch",
+    "source_diff_sha256": "3d84204955c157c55e28646b45e1fdc853d6c44fcd41b3b80946aeca46c2be67",
+    "source_files_changed": 13,
+    "insertions": 2797,
+    "deletions": 204,
+    "worktree": "temporary /tmp worktree; detached candidate; clean; no remote branch"
+  },
+  "runner": {
+    "binary": "picocalc-run",
+    "binary_sha256": "78d0124f730d40022fbf262f67e32da9a4b13ce143fa122cd31d39f7a2c875c4",
+    "backend_commit": "9db10c0313547e9463510ffe3ae6d7474e008494",
+    "backend_dirty": false,
+    "execution_model": "Serial",
+    "host_affinity": 11,
+    "tetris_step_quantum": 1,
+    "bootrom_sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81"
+  },
+  "tests": {
+    "status": "pass",
+    "preview_api_e2e": 5,
+    "rp2040_emu_lib": 1254,
+    "audio_sink_focused": 4,
+    "uart_focused": 25,
+    "release_build": "pass",
+    "changed_file_rustfmt": "pass",
+    "git_diff_check": "pass",
+    "workspace_format_check": "not_claimed; unrelated existing formatting drift remains",
+    "summary": "tests-summary.md"
+  },
+  "tetris_screening": {
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario": "tetris/r0-scenario-probe.json",
+    "scenario_sha256": "49740dab5069cd3f056ab4c9e0a46323d5b18e1f7ff21e4e6a0ce58aa6f8a7f3",
+    "record": "tetris/report.json",
+    "report_sha256": "fed2551c90d815a30f89319cfd7a7acb4a593d05a2c167104df76196091fce33",
+    "normalized_record": "tetris/normalized.json",
+    "normalized_sha256": "fe658ee07415b6d55799e250c09e6997fe9ac98dcd43140efb452fcb4bed4da5",
+    "cycles": 187528659,
+    "elapsed_us": 755000,
+    "uart_sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a",
+    "framebuffer_rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+    "psram_cs_falling_count": 7,
+    "psram_bytes_written": 24,
+    "psram_bytes_read": 34,
+    "normalized_matches_g6": true,
+    "guest_visible_regression": "not observed in normalized projection",
+    "performance_improvement_claimed": false,
+    "status": "pass"
+  },
+  "preview_smoke": {
+    "summary": "preview/preview-summary.json",
+    "summary_sha256": "e5324e668e1383021bf1bfdccfb0d9e0826d6514db46e3127153dc04ea5fe682",
+    "return_code": 0,
+    "stderr": "",
+    "frames": 14,
+    "sequences": "0..13",
+    "status_count": 3,
+    "frame_rgb565_count": 1,
+    "audio_frame_count": 8,
+    "goodbye_seen": true,
+    "replay_virtual_cycle": 187528659,
+    "observation_digest_sha256": "e49ea1fcfd5b210bf7943a3e17ec8d872041932141bcc43ed8bfd6926cc0d7a9",
+    "audio_monitor": {
+      "source_sample_rate_hz": 48000,
+      "capacity_blocks": 8,
+      "produced_blocks_at_first_status": 7,
+      "queue_frames_at_first_status": 1000,
+      "backend_drop_count": 0,
+      "ipc_drop_count": 0,
+      "state_at_first_status": "streaming"
+    },
+    "authoritative_audio_projection_status": "fail",
+    "authoritative_audio_status_note": "G7 does not claim audio fidelity or oracle pass; the preview transport exposes the existing projection and bounded monitor counters without hiding it"
+  },
+  "scope": {
+    "backend_main_changed": false,
+    "target_registry_changed": false,
+    "existing_validation_records_changed": false,
+    "external_project_changed": false,
+    "remote_branch_created": false,
+    "hardware_run": false,
+    "qualification_started": false,
+    "performance_baseline_updated": false,
+    "load0_completion_claimed": false,
+    "one_x_claimed": false
+  },
+  "decision": {
+    "status": "candidate-pass",
+    "reason": "preview API/protocol, shared replay/session, bounded audio transport, local tests, and actual Tetris preview process smoke passed within the declared G7 scope",
+    "performance_improvement_claimed": false,
+    "production_integration": "not yet",
+    "next_group": "integration review",
+    "next_group_display_name": "G0〜G7 candidate差分と既存target契約の統合可否判断"
+  }
+}

@@ -32,9 +32,17 @@ G0〜G5-Cに続くG6（外部I²C module：RTC／EEPROM／AHT20／BMP280）はca
 外部I²C profileを使う既存E5相当firmwareを3回実行し、I²C sidecar・UART・framebufferをbyte-identicalで
 確認し、profileなしTetris（軽ゲーム実装）のnormalized projectionもG5-Cと一致しました。記録は
 [`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)です。
-G6はまだbackend `main`、active target registry、既存E5 recordへ統合していません。次はG7（preview境界／
-延期機能）の必要性を棚卸しし、その後にG0〜G6 candidateの統合可否を判断します。production高速化の
-新規実装、性能改善値の更新、1倍速qualificationはまだ開始していません。
+G6はまだbackend `main`、active target registry、既存E5 recordへ統合していません。続くG7（preview境界／
+延期機能）は、active VRP targetに必要なpreview protocol、shared replay／session、bounded audio transport
+だけをG6 candidateへ戻しました。preview API E2E 5件、rp2040-emu 1,254件、UART／audio focused test、
+release buildを通過し、登録済みPicoTetris binaryの通常batch normalized projectionがG6と一致しました。
+さらに同じbinaryを共通replay境界からpreview processへ接続し、PCRP 14 frame、Goodbye、return code 0、
+backend／IPC drop 0を確認しました。記録は
+[`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)です。
+G7 candidateもbackend `main`、active target registry、既存validation recordへ未統合です。これはpreview境界の
+candidate-passであり、性能改善、1倍速、LOAD-0（最大級の継続負荷性能テスト0番）完走、audio fidelity oracle
+passを意味しません。production高速化の性能値更新と1倍速qualificationはまだ開始していません。次はG0〜G7
+candidate差分と既存target契約の統合可否を判断します。
 
 ## 利用できる経路
 
@@ -283,7 +291,10 @@ I2C sidecar／UART／framebufferをbyte-identicalで確認しました。profile
 もG5-C normalized projectionと一致し、feature有効／無効のunit testとrelease buildもpassしています。記録は
 [`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)です。
 G6 candidateはbackend `main`、active target registry、既存E5 recordへ未統合であり、速度改善や1倍速は主張しません。
-次はG7（preview境界／延期機能）の必要性を棚卸しします。
+G7（preview境界／延期機能）はcandidate-passまで進みました。preview API／protocol、shared replay／session、
+bounded audio transportのcandidate source差分、local test、Tetris（軽ゲーム実装）通常batch normalized projection、
+実アプリpreview process smokeを[`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)へ固定しています。
+G7 candidateも未統合で、性能改善や1倍速は主張しません。次はG0〜G7 candidate差分と既存target契約を統合レビューします。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

@@ -1,0 +1,185 @@
+{
+  "audio_frame_count": 8,
+  "command": [
+    "taskset",
+    "-c",
+    "11",
+    "/tmp/picocalc-performance-recovery.QMNRcP/g7/target/release/picocalc-run",
+    "--bin",
+    "/tmp/picotetris-g7-sdk22.LBNhwI/src/build/PicoTetris.bin",
+    "--bootrom",
+    "/home/fuyuki/pico_dvl/codex/picoem-picocalc/roms/rp2040/bootrom-rp2040-b2.bin",
+    "--backend-commit",
+    "9db10c0313547e9463510ffe3ae6d7474e008494",
+    "--board",
+    "picocalc",
+    "--lcd-variant",
+    "pio-rgb565",
+    "--psram",
+    "--keyboard",
+    "--sd",
+    "--cycles",
+    "400000000",
+    "--replay-scenario",
+    "/home/fuyuki/pico_dvl/codex/picocalc_emu/firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/tetris/r0-scenario-probe.json",
+    "--preview-api"
+  ],
+  "first_post_replay_status": {
+    "audio": {
+      "queue_frames": 0,
+      "state": "not_streamed"
+    },
+    "audio_monitor": {
+      "capacity_blocks": 8,
+      "capacity_frames": 1024,
+      "channels": 2,
+      "drained_blocks": 0,
+      "drained_frames": 0,
+      "drop_count": 0,
+      "dropped_blocks": 0,
+      "enabled": true,
+      "ipc_dropped_audio_blocks": 0,
+      "ipc_dropped_frame_count": 0,
+      "ipc_dropped_status_count": 0,
+      "overrun_count": 0,
+      "produced_blocks": 7,
+      "queue_frames": 1000,
+      "queued_blocks": 7,
+      "source_sample_rate_hz": 48000,
+      "state": "streaming",
+      "underrun_count": 0
+    },
+    "coverage": "ok",
+    "framebuffer": {
+      "updates": 1
+    },
+    "observation": {
+      "digest_sha256": "e49ea1fcfd5b210bf7943a3e17ec8d872041932141bcc43ed8bfd6926cc0d7a9",
+      "projection": {
+        "audio": {
+          "block_boundary_gap_count": 7,
+          "block_boundary_gap_max_cycles": 20834,
+          "block_boundary_gap_min_cycles": 20833,
+          "block_boundary_gap_sha256": "7e6d1b1dbd60c77ea8cd74989ee6b5dc6cb660498393f70139c3423b75de3fdc",
+          "block_start_count": 8,
+          "dma_write_count": 1000,
+          "first_words": [
+            8388736,
+            8913032,
+            9437328,
+            9961624,
+            10420383,
+            10944679,
+            11337901,
+            11665586
+          ],
+          "gap_5208_count": 662,
+          "gap_5209_count": 330,
+          "last_words": [
+            4718664,
+            4522053,
+            4259905,
+            4259905,
+            4128831,
+            4194368,
+            4325442,
+            4522053
+          ],
+          "malformed_block_count": 0,
+          "missing_due_cycle_count": 0,
+          "other_pwm_cc_write_count": 0,
+          "pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+          "service_latency_max_cycles": 5,
+          "service_latency_min_cycles": 0,
+          "service_latency_sha256": "dbf5899c24205855d5082562436029dd2392d468c377c45b35c2513b573a7b7c",
+          "status": "fail",
+          "target_write_attempt_count": 1000,
+          "timer_due_cycle_sha256": "cb17d6bdb5643b3abe64e1d96f3b2590b954347ed46e6f81e182cc842b065054",
+          "timer_event_count": 12951,
+          "timer_fraction_x": 3,
+          "timer_fraction_y": 15625,
+          "timer_index": 0,
+          "timer_miss_count": 11951,
+          "treq": 59,
+          "unexpected_gap_count": 0,
+          "wrong_treq_count": 0,
+          "wrong_width_count": 0
+        },
+        "framebuffer": {
+          "height": 320,
+          "non_black_pixels": 16020,
+          "rgb565_sha256": "21738024c789675f1d2a7299004618dc648cc1d5af6f4971c33e392c2bac0162",
+          "width": 320
+        },
+        "schema_version": 1,
+        "uart": {
+          "bytes": 1387,
+          "sha256": "db430d62e3e6164709d30ff7ebaac033408ef36f8261a4f313b478e3f8e8155a"
+        },
+        "unsupported_mmio": {
+          "entries": [],
+          "truncated": false
+        }
+      },
+      "schema_version": 1
+    },
+    "pacer": {
+      "behind_count": 0,
+      "emulated_cycles": 0,
+      "emulation_ns": 0,
+      "lag_ns": 755000083,
+      "ratio_ppm": 0,
+      "spin_ns": 0,
+      "wall_ns": 0
+    },
+    "uart": {
+      "rx_accepted": 0,
+      "rx_disabled": 0,
+      "rx_fifo": 0,
+      "rx_overrun": 0,
+      "rx_raw_interrupt_status": 32,
+      "tx_bytes": 0
+    },
+    "virtual_cycle": 187528659,
+    "virtual_ns": 755000083
+  },
+  "frame_rgb565_count": 1,
+  "frames": 14,
+  "goodbye_seen": true,
+  "kinds": [
+    1,
+    3,
+    2,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    2,
+    2,
+    4,
+    11
+  ],
+  "return_code": 0,
+  "sequences": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "status_count": 3,
+  "stderr": "",
+  "uart_tx_frame_count": 0
+}

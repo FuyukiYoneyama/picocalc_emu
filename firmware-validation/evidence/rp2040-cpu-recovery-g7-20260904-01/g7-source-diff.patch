@@ -1,0 +1,3491 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index afe9445..4ac9e25 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1849,6 +1849,7 @@ name = "picocalc-harness"
+ version = "0.1.0"
+ dependencies = [
+  "picocalc-board",
++ "picoem-common",
+  "rp2040-emu",
+  "serde_json",
+ ]
+diff --git a/crates/picocalc-harness/Cargo.toml b/crates/picocalc-harness/Cargo.toml
+index 942c2c6..b1f740d 100644
+--- a/crates/picocalc-harness/Cargo.toml
++++ b/crates/picocalc-harness/Cargo.toml
+@@ -31,6 +31,10 @@ workspace = true
+ # Serial as the correctness reference (see picocalc_emu
+ # docs/IMPLEMENTATION_PLAN.md §3.1). No `threading` feature.
+ rp2040-emu = { path = "../rp2040-emu" }
++# The preview adapter uses the workspace pacer only when --preview-api is
++# explicitly selected; the authoritative batch runner keeps its existing
++# cycle-driven path.
++picoem-common = { path = "../picoem-common" }
+ # Board models (ST7365P display, pin map, framebuffer/PNG, shared sha256).
+ picocalc-board = { path = "../picocalc-board", default-features = false }
+ # Scenario files are JSON *input*. Reports stay hand-written so field
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index c81aa88..fa44592 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -53,7 +53,15 @@ use rp2040_emu::{
+ };
+ 
+ mod machine_protocol;
++mod preview_api;
++mod preview_protocol;
+ mod scenario;
++mod session;
++
++use session::{
++    MachineSession, PREVIEW_OBSERVATION_SCHEMA_VERSION, ScenarioReplay, ScenarioReplayStep,
++    SessionStop,
++};
+ 
+ /// Report schema version. Bump on any breaking field change.
+ ///
+@@ -270,8 +278,10 @@ struct Args {
+     sd_format: SdFormat,
+     keys: Option<String>,
+     scenario: Option<PathBuf>,
++    replay_scenario: Option<PathBuf>,
+     snapshot_dir: PathBuf,
+     machine_api: bool,
++    preview_api: bool,
+     run_id: Option<String>,
+     progress_interval: Option<u64>,
+     expected_stop: Option<StopReason>,
+@@ -533,10 +543,15 @@ fn print_usage() {
+                                   'scenario' report section. Exit 1 if any step fails.\n\
+                                   Milliseconds are virtual, derived from the system clock\n\
+                                   the firmware has programmed.\n\
++         --replay-scenario <path> Replay a JSON scenario to completion before serving\n\
++                                  --machine-api or --preview-api. Uses the same shared\n\
++                                  session boundary and emits no schema-8 report.\n\
+          --snapshot-dir <path>    Where scenario 'snapshot' steps write their PNGs.\n\
+                                   Default: the current directory.\n\
+          --machine-api            NEXT-4 JSON Lines API on stdin/stdout. Uses the same\n\
+                                   startup artifact/device options; no scenario/final report.\n\
++         --preview-api            PCRP realtime preview backend on stdin/stdout. Uses the\n\
++                                  shared session; no scenario/final report or qualification.\n\
+          --run-id <ID>            Optional diagnostic ID; requires --progress-interval.\n\
+          --progress-interval <N> Emit stderr heartbeat lines every N seconds (opt-in).\n\
+          --expect-stop <reason>   Required stop: cycle_limit, pc_match, or scenario_done.\n\
+@@ -603,8 +618,10 @@ fn parse_args() -> Result<Args, String> {
+     let mut sd_format_explicit = false;
+     let mut keys: Option<String> = None;
+     let mut scenario: Option<PathBuf> = None;
++    let mut replay_scenario: Option<PathBuf> = None;
+     let mut snapshot_dir: Option<PathBuf> = None;
+     let mut machine_api = false;
++    let mut preview_api = false;
+     let mut run_id: Option<String> = None;
+     let mut progress_interval: Option<u64> = None;
+     let mut expected_stop: Option<StopReason> = None;
+@@ -704,8 +721,15 @@ fn parse_args() -> Result<Args, String> {
+             }
+             "--keys" => keys = Some(value("--keys")?),
+             "--scenario" => scenario = Some(PathBuf::from(value("--scenario")?)),
++            "--replay-scenario" => {
++                if replay_scenario.is_some() {
++                    return Err("--replay-scenario may be specified only once".to_string());
++                }
++                replay_scenario = Some(PathBuf::from(value("--replay-scenario")?));
++            }
+             "--snapshot-dir" => snapshot_dir = Some(PathBuf::from(value("--snapshot-dir")?)),
+             "--machine-api" => machine_api = true,
++            "--preview-api" => preview_api = true,
+             "--run-id" => {
+                 if run_id.is_some() {
+                     return Err("--run-id may be specified only once".to_string());
+@@ -812,18 +836,45 @@ fn parse_args() -> Result<Args, String> {
+     if keys.is_some() {
+         keyboard = true;
+     }
+-    if snapshot_dir.is_some() && scenario.is_none() && !machine_api {
+-        return Err("--snapshot-dir requires --scenario or --machine-api".to_string());
++    if snapshot_dir.is_some()
++        && scenario.is_none()
++        && replay_scenario.is_none()
++        && !machine_api
++        && !preview_api
++    {
++        return Err(
++            "--snapshot-dir requires --scenario, --replay-scenario or --machine-api".to_string(),
++        );
+     }
+     if expected_stop == Some(StopReason::PcMatch) && stop_pc.is_none() {
+         return Err("--expect-stop pc_match requires --stop-pc".to_string());
+     }
+-    if expected_stop == Some(StopReason::ScenarioDone) && scenario.is_none() {
++    if expected_stop == Some(StopReason::ScenarioDone)
++        && scenario.is_none()
++        && replay_scenario.is_none()
++    {
+         return Err("--expect-stop scenario_done requires --scenario".to_string());
+     }
+     if scenario.is_some() && stop_pc.is_some() {
+         return Err("--scenario and --stop-pc define competing successful stops".to_string());
+     }
++    if scenario.is_some() && replay_scenario.is_some() {
++        return Err("--scenario and --replay-scenario are mutually exclusive".to_string());
++    }
++    if replay_scenario.is_some() && !machine_api && !preview_api {
++        return Err("--replay-scenario requires --machine-api or --preview-api".to_string());
++    }
++    if replay_scenario.is_some() && stop_pc.is_some() {
++        return Err("--replay-scenario cannot be combined with --stop-pc".to_string());
++    }
++    if replay_scenario.is_some() && expected_stop.is_some() {
++        return Err("--replay-scenario cannot be combined with --expect-stop".to_string());
++    }
++    if replay_scenario.is_some()
++        && (!expected_uart.is_empty() || expected_audio_sink_count.is_some())
++    {
++        return Err("--replay-scenario cannot be combined with report expectations".to_string());
++    }
+     if scenario.is_some()
+         && expected_stop.is_some()
+         && expected_stop != Some(StopReason::ScenarioDone)
+@@ -879,6 +930,39 @@ fn parse_args() -> Result<Args, String> {
+             return Err(format!("--machine-api cannot be combined with {name}"));
+         }
+     }
++    if preview_api {
++        if machine_api {
++            return Err("--preview-api cannot be combined with --machine-api".to_string());
++        }
++        if boot_mode == BootRequest::Boot2 {
++            return Err("--preview-api cannot be combined with --boot-mode boot2".to_string());
++        }
++        let conflicts = [
++            (scenario.is_some(), "--scenario"),
++            (stop_pc.is_some(), "--stop-pc"),
++            (json.is_some(), "--json"),
++            (uart.is_some(), "--uart"),
++            (flash_image_out.is_some(), "--flash-image-out"),
++            (fb_png.is_some(), "--fb-png"),
++            (expected_stop.is_some(), "--expect-stop"),
++            (!expected_uart.is_empty(), "--expect-uart"),
++            (
++                expected_audio_sink_count.is_some(),
++                "audio sink expectations",
++            ),
++            (keys.is_some(), "--keys"),
++            (sd_image_out.is_some(), "--sd-image-out"),
++            (sd_trace.is_some(), "--sd-trace"),
++            (i2c_profile.is_some(), "--i2c-profile"),
++            (i2c_fixture.is_some(), "--i2c-fixture"),
++            (i2c_report.is_some(), "--i2c-report"),
++            (run_id.is_some(), "--run-id"),
++            (progress_interval.is_some(), "--progress-interval"),
++        ];
++        if let Some((_, name)) = conflicts.into_iter().find(|(present, _)| *present) {
++            return Err(format!("--preview-api cannot be combined with {name}"));
++        }
++    }
+     #[cfg(feature = "idle-profiler")]
+     if machine_api && idle_profile.is_some() {
+         return Err("--machine-api cannot be combined with --idle-profile".to_string());
+@@ -887,6 +971,14 @@ fn parse_args() -> Result<Args, String> {
+     if machine_api && behavior_trace.is_some() {
+         return Err("--machine-api cannot be combined with --behavior-trace".to_string());
+     }
++    #[cfg(feature = "idle-profiler")]
++    if preview_api && idle_profile.is_some() {
++        return Err("--preview-api cannot be combined with --idle-profile".to_string());
++    }
++    #[cfg(feature = "behavior-trace")]
++    if preview_api && behavior_trace.is_some() {
++        return Err("--preview-api cannot be combined with --behavior-trace".to_string());
++    }
+     #[cfg(all(feature = "idle-profiler", feature = "behavior-trace"))]
+     if idle_profile.is_some() && behavior_trace.is_some() {
+         return Err(
+@@ -921,8 +1013,10 @@ fn parse_args() -> Result<Args, String> {
+         sd_format,
+         keys,
+         scenario,
++        replay_scenario,
+         snapshot_dir: snapshot_dir.unwrap_or_else(|| PathBuf::from(".")),
+         machine_api,
++        preview_api,
+         run_id,
+         progress_interval,
+         expected_stop,
+@@ -1963,166 +2057,6 @@ struct BoardHandles {
+     sd: Option<Arc<Mutex<SdCard>>>,
+ }
+ 
+-/// One persistent, deterministic headless machine session.
+-///
+-/// This is the shared execution boundary for the batch scenario runner and
+-/// NEXT-4's JSONL adapter.  Keeping UART accumulation and the virtual clock
+-/// here prevents either client from inventing subtly different stepping,
+-/// clock-rebase, or observation semantics.
+-struct MachineSession {
+-    emu: Emulator,
+-    uart_bytes: Vec<u8>,
+-    dispatches: u64,
+-    board: BoardHandles,
+-    boot_mode: Option<BootMode>,
+-    watchdog_resets: Vec<WatchdogResetEvent>,
+-    sticky_stop: Option<SessionStop>,
+-}
+-
+-#[derive(Clone)]
+-enum SessionStop {
+-    Exception(&'static str),
+-    Error(String),
+-}
+-
+-impl MachineSession {
+-    #[inline]
+-    fn new(emu: Emulator, board: BoardHandles) -> Self {
+-        Self {
+-            emu,
+-            uart_bytes: Vec::new(),
+-            dispatches: 0,
+-            board,
+-            boot_mode: None,
+-            watchdog_resets: Vec::new(),
+-            sticky_stop: None,
+-        }
+-    }
+-
+-    #[inline]
+-    fn set_boot_mode(&mut self, boot_mode: BootMode) {
+-        self.boot_mode = Some(boot_mode);
+-    }
+-
+-    /// Re-enter the selected firmware handoff after an emulated watchdog
+-    /// warm reset. Flash, SD backing, and watchdog scratch were retained by
+-    /// the emulator; this only selects the same entry path as the initial
+-    /// boot and records the reset event for the report.
+-    fn handle_watchdog_reset(&mut self) -> Result<bool, String> {
+-        let Some(event) = self.emu.take_watchdog_reset_event() else {
+-            return Ok(false);
+-        };
+-        self.watchdog_resets.push(event);
+-        match self.boot_mode {
+-            Some(BootMode::Boot2FromFlash) => self
+-                .emu
+-                .boot2_from_flash(RP2040_SRAM_TOP, 0)
+-                .map_err(|error| {
+-                    format!("re-entering flash boot2 after watchdog reset: {error}")
+-                })?,
+-            Some(BootMode::DirectBootFromFlash) => {
+-                self.emu.direct_boot_from_flash(SDK_VTOR_FLASH_OFFSET);
+-            }
+-            Some(BootMode::BootromResetVector) | None => {}
+-        }
+-        Ok(true)
+-    }
+-
+-    #[inline(always)]
+-    fn cycles(&self) -> u64 {
+-        self.emu.clock.cycles
+-    }
+-
+-    #[inline(always)]
+-    fn elapsed_ns(&self) -> u64 {
+-        self.emu.bus.virtual_time_ns()
+-    }
+-
+-    fn fatal_exception(&self) -> Option<&'static str> {
+-        self.emu
+-            .cores
+-            .iter()
+-            .enumerate()
+-            .find_map(|(core, state)| fatal_exception_name(core, state.regs.xpsr & 0x1FF))
+-    }
+-
+-    fn refresh_sticky_stop(&mut self) {
+-        if self.sticky_stop.is_none()
+-            && let Some(exception) = self.fatal_exception()
+-        {
+-            self.sticky_stop = Some(SessionStop::Exception(exception));
+-        }
+-    }
+-
+-    fn stopped(&self) -> Option<&SessionStop> {
+-        self.sticky_stop.as_ref()
+-    }
+-
+-    #[inline(always)]
+-    fn drain_uart(&mut self) {
+-        self.uart_bytes
+-            .extend_from_slice(&self.emu.drain_uart0_tx_log());
+-    }
+-
+-    fn poll_scenario(&mut self, engine: &mut scenario::Engine) {
+-        self.drain_uart();
+-        engine.poll(&scenario::Observation {
+-            now_ns: self.elapsed_ns(),
+-            cycles: self.cycles(),
+-            lcd: self.board.lcd.as_deref(),
+-            keyboard: self.board.keyboard.as_deref(),
+-            uart: &self.uart_bytes,
+-        });
+-    }
+-
+-    /// Execute one scheduler dispatch without crossing a proven idle
+-    /// external boundary. Returns `(cycles_consumed, clock_rate_changed)`.
+-    #[inline(always)]
+-    fn advance_once(&mut self, external_event_cycle: u64) -> Result<(u64, bool), String> {
+-        let previous_hz = self.emu.bus.clock_tree.sys_clk_hz;
+-        let consumed = self.emu.step_until(external_event_cycle).map_err(|error| {
+-            let message = error.to_string();
+-            self.sticky_stop = Some(SessionStop::Error(message.clone()));
+-            message
+-        })?;
+-        self.handle_watchdog_reset()?;
+-        self.dispatches = self.dispatches.saturating_add(1);
+-        if self.dispatches.is_multiple_of(UART_DRAIN_INTERVAL) {
+-            self.drain_uart();
+-        }
+-        let rate_changed = self.emu.bus.clock_tree.sys_clk_hz != previous_hz;
+-        Ok((consumed, rate_changed))
+-    }
+-
+-    fn mark_clock_stalled(&mut self) {
+-        let detail = format!(
+-            "clock stalled: core0 {}, core1 {} — no wake source can fire while the master clock is frozen",
+-            park_state(&self.emu, 0),
+-            park_state(&self.emu, 1)
+-        );
+-        self.sticky_stop = Some(SessionStop::Error(detail));
+-    }
+-
+-    fn finish(
+-        &mut self,
+-        stop_reason: StopReason,
+-        exception: Option<&'static str>,
+-        error: Option<String>,
+-    ) -> RunOutcome {
+-        self.drain_uart();
+-        RunOutcome {
+-            stop_reason,
+-            cycles: self.cycles(),
+-            elapsed_ns: self.elapsed_ns(),
+-            pc: self.emu.cores[0].regs.pc(),
+-            exception,
+-            error,
+-            uart_bytes: std::mem::take(&mut self.uart_bytes),
+-            watchdog_resets: std::mem::take(&mut self.watchdog_resets),
+-        }
+-    }
+-}
+-
+ fn run_loop(
+     machine: &mut MachineSession,
+     cycle_limit: u64,
+@@ -2246,6 +2180,26 @@ fn run_loop(
+     }
+ }
+ 
++/// Drive a registered scenario to completion using the shared session before
++/// handing observation control to machine API or preview. This keeps replay
++/// timing identical to the batch scenario engine while avoiding a second
++/// report or an unbounded replay trace.
++fn run_replay_to_completion(
++    machine: &mut MachineSession,
++    replay: &mut ScenarioReplay,
++) -> Result<(), String> {
++    loop {
++        match replay.step(machine)? {
++            ScenarioReplayStep::Advanced => {}
++            ScenarioReplayStep::Complete => {
++                machine.drain_uart();
++                return Ok(());
++            }
++            ScenarioReplayStep::Failed(error) => return Err(error),
++        }
++    }
++}
++
+ const MACHINE_MAX_DISPATCHES: u64 = 1_000_000;
+ const MACHINE_MAX_CYCLES: u64 = 100_000_000_000;
+ const MACHINE_MAX_REQUEST_BYTES: usize = 1_048_576;
+@@ -2393,6 +2347,22 @@ fn observe_domain(
+             }))
+         }
+         "framebuffer" => framebuffer_json(machine),
++        "preview" => {
++            machine.drain_uart();
++            let projection = machine.preview_observation_projection();
++            let canonical = serde_json::to_vec(&projection).map_err(|error| {
++                protocol_error(
++                    machine_protocol::ErrorCode::ModelError,
++                    format!("serializing preview observation: {error}"),
++                )
++            })?;
++            Ok(serde_json::json!({
++                "digest_sha256": sha256_hex(&canonical),
++                "projection": projection,
++                "schema_version": PREVIEW_OBSERVATION_SCHEMA_VERSION,
++                "virtual_cycle": machine.cycles(),
++            }))
++        }
+         "keyboard" => {
+             let keyboard = machine.board.keyboard.as_ref().ok_or_else(|| {
+                 protocol_error(
+@@ -4581,7 +4551,11 @@ fn run() -> Result<Verdict, String> {
+         Some(path) => Some(scenario::load(path)?),
+         None => None,
+     };
+-    if let Some(s) = &scenario {
++    let replay_scenario = match &args.replay_scenario {
++        Some(path) => Some(scenario::load(path)?),
++        None => None,
++    };
++    if let Some(s) = scenario.as_ref().or(replay_scenario.as_ref()) {
+         if s.needs_lcd() && args.board != Board::PicoCalc {
+             return Err(format!(
+                 "scenario '{}' looks at the panel, which needs --board picocalc",
+@@ -4707,6 +4681,19 @@ fn run() -> Result<Verdict, String> {
+     };
+     let mut machine = MachineSession::new(emu, handles);
+     machine.set_boot_mode(boot_mode);
++    let mut replay = replay_scenario
++        .map(|scenario| ScenarioReplay::new(scenario, args.snapshot_dir.clone(), args.cycles));
++    if args.preview_api {
++        machine.enable_preview_uart_cycle_tap();
++        machine.emu.bus.enable_audio_preview_tap();
++    }
++    if let Some(replay) = replay.as_mut() {
++        run_replay_to_completion(&mut machine, replay)?;
++    }
++    if args.preview_api {
++        preview_api::run(&mut machine)?;
++        return Ok(Verdict::Pass);
++    }
+     if args.machine_api {
+         run_machine_api(&mut machine, &args.snapshot_dir)?;
+         return Ok(Verdict::Pass);
+diff --git a/crates/picocalc-harness/src/preview_api.rs b/crates/picocalc-harness/src/preview_api.rs
+new file mode 100644
+index 0000000..33aa4db
+--- /dev/null
++++ b/crates/picocalc-harness/src/preview_api.rs
+@@ -0,0 +1,734 @@
++//! Realtime preview backend adapter.
++//!
++//! The adapter owns no emulator state of its own.  It drives the shared
++//! `MachineSession`, keeps the authoritative serial execution path intact,
++//! and exposes only the frozen local preview IPC wire.  The frontend is
++//! expected to be a separate process; stdout is therefore reserved for
++//! framed protocol bytes and diagnostics stay on stderr.
++
++use std::io::{self, BufWriter, Write};
++use std::sync::mpsc::{self, SyncSender, TryRecvError, TrySendError};
++use std::sync::{Arc, Mutex};
++use std::thread::{self, JoinHandle};
++use std::time::Duration;
++
++use picoem_common::{Pacer, PacerSnapshot};
++use serde_json::{Value, json};
++
++use crate::MachineSession;
++use crate::preview_protocol::{Direction, Frame, FrameReader, FrameWriter, Kind, ProtocolError};
++use crate::session::PREVIEW_OBSERVATION_SCHEMA_VERSION;
++
++const PACER_QUANTUM_CYCLES: u64 = 150;
++const FRAME_POLL_QUANTA: u64 = 1_000;
++const INPUT_QUEUE_CAPACITY: usize = 512;
++const OUTPUT_QUEUE_CAPACITY: usize = 256;
++
++type InputMessage = Result<Option<Frame>, String>;
++
++struct OutboundFrame {
++    frame: Frame,
++}
++
++/// Serialize preview output off the emulation thread. Presentation frames
++/// are lossy under backpressure; control and diagnostic frames fail closed.
++struct PreviewWriter {
++    sender: Option<mpsc::SyncSender<OutboundFrame>>,
++    writer: Option<JoinHandle<()>>,
++    error: Arc<Mutex<Option<String>>>,
++    next_sequence: u32,
++    dropped_audio_blocks: u64,
++    dropped_frames: u64,
++    dropped_status: u64,
++}
++
++impl PreviewWriter {
++    fn new() -> Self {
++        Self::with_capacity_writer(OUTPUT_QUEUE_CAPACITY, Box::new(io::stdout()))
++    }
++
++    fn with_capacity_writer(capacity: usize, writer: Box<dyn Write + Send>) -> Self {
++        let (sender, receiver) = mpsc::sync_channel::<OutboundFrame>(capacity);
++        let error = Arc::new(Mutex::new(None));
++        let thread_error = Arc::clone(&error);
++        let writer = thread::spawn(move || {
++            let mut frame_writer =
++                FrameWriter::new(BufWriter::new(writer), Direction::RunnerToPreview);
++            while let Ok(outbound) = receiver.recv() {
++                if let Err(protocol_error) = frame_writer.write_frame(outbound.frame) {
++                    if let Ok(mut slot) = thread_error.lock() {
++                        *slot = Some(protocol_error.to_string());
++                    }
++                    break;
++                }
++            }
++        });
++        Self {
++            sender: Some(sender),
++            writer: Some(writer),
++            error,
++            next_sequence: 0,
++            dropped_audio_blocks: 0,
++            dropped_frames: 0,
++            dropped_status: 0,
++        }
++    }
++
++    fn stored_error(&self) -> Option<ProtocolError> {
++        self.error
++            .lock()
++            .ok()
++            .and_then(|slot| slot.clone())
++            .map(ProtocolError::new)
++    }
++
++    fn enqueue(
++        &mut self,
++        kind: Kind,
++        payload: Vec<u8>,
++        droppable: bool,
++    ) -> Result<bool, ProtocolError> {
++        if let Some(error) = self.stored_error() {
++            return Err(error);
++        }
++        let sequence = self.next_sequence;
++        let next_sequence = sequence
++            .checked_add(1)
++            .ok_or_else(|| ProtocolError::new("preview sequence exhausted"))?;
++        let frame = Frame::new(kind, sequence, payload)?;
++        frame.validate_for_direction(Direction::RunnerToPreview)?;
++        let sender = self
++            .sender
++            .as_ref()
++            .ok_or_else(|| ProtocolError::new("preview output writer is closed"))?;
++        match sender.try_send(OutboundFrame { frame }) {
++            Ok(()) => {
++                self.next_sequence = next_sequence;
++                Ok(true)
++            }
++            Err(TrySendError::Full(_)) if droppable => {
++                match kind {
++                    Kind::AudioPcmS16 => {
++                        self.dropped_audio_blocks = self.dropped_audio_blocks.saturating_add(1)
++                    }
++                    Kind::FrameRgb565 => {
++                        self.dropped_frames = self.dropped_frames.saturating_add(1)
++                    }
++                    Kind::Status => self.dropped_status = self.dropped_status.saturating_add(1),
++                    _ => {}
++                }
++                Ok(false)
++            }
++            Err(TrySendError::Full(_)) => Err(ProtocolError::new(
++                "preview output queue is full for a non-droppable frame",
++            )),
++            Err(TrySendError::Disconnected(_)) => {
++                Err(ProtocolError::new("preview output writer disconnected"))
++            }
++        }
++    }
++
++    fn write_json(&mut self, kind: Kind, value: &Value) -> Result<u32, ProtocolError> {
++        let payload = serde_json::to_vec(value)
++            .map_err(|error| ProtocolError::new(format!("serializing preview JSON: {error}")))?;
++        let sequence = self.next_sequence;
++        let _ = self.enqueue(kind, payload, matches!(kind, Kind::Status))?;
++        Ok(sequence)
++    }
++
++    fn write_bytes(&mut self, kind: Kind, payload: Vec<u8>) -> Result<u32, ProtocolError> {
++        let sequence = self.next_sequence;
++        let droppable = matches!(kind, Kind::FrameRgb565 | Kind::Status | Kind::AudioPcmS16);
++        let _ = self.enqueue(kind, payload, droppable)?;
++        Ok(sequence)
++    }
++
++    fn write_audio_bytes(&mut self, payload: Vec<u8>) -> Result<bool, ProtocolError> {
++        self.enqueue(Kind::AudioPcmS16, payload, true)
++    }
++
++    fn dropped_audio_blocks(&self) -> u64 {
++        self.dropped_audio_blocks
++    }
++
++    fn dropped_frames(&self) -> u64 {
++        self.dropped_frames
++    }
++
++    fn dropped_status(&self) -> u64 {
++        self.dropped_status
++    }
++
++    fn finish(mut self) -> Result<(), String> {
++        self.sender.take();
++        if let Some(writer) = self.writer.take() {
++            writer
++                .join()
++                .map_err(|_| "preview output writer thread panicked".to_string())?;
++        }
++        if let Some(error) = self.stored_error() {
++            return Err(error.to_string());
++        }
++        Ok(())
++    }
++}
++
++impl Drop for PreviewWriter {
++    fn drop(&mut self) {
++        self.sender.take();
++    }
++}
++
++/// Run the preview wire until the frontend sends `quit`, closes stdin, or a
++/// malformed frame is received.  This function is intentionally separate
++/// from the report-producing batch path: it never writes a schema-8 report.
++pub(crate) fn run(machine: &mut MachineSession) -> Result<(), String> {
++    // Preview presentation is opt-in. Enabling it also enables the existing
++    // authoritative DMA audio observer, so status and PCM blocks describe
++    // the same guest-visible source stream.
++    machine.emu.bus.enable_audio_preview_tap();
++    let (input_tx, input_rx) = mpsc::sync_channel(INPUT_QUEUE_CAPACITY);
++    spawn_input_reader(input_tx);
++
++    let mut output = PreviewWriter::new();
++    output
++        .write_json(
++            Kind::Hello,
++            &json!({
++                "protocol": "preview-ipc",
++                "role": "runner",
++                "schema": 1,
++            }),
++        )
++        .map_err(protocol_message)?;
++
++    let initial_frame = machine.preview_framebuffer();
++    let mut last_frame_sha = None;
++    let mut frame_updates = 0u64;
++    if let Some(framebuffer) = initial_frame {
++        last_frame_sha = Some(framebuffer.rgb565_sha256());
++        write_frame(&mut output, machine.cycles(), &framebuffer)?;
++        frame_updates = 1;
++    }
++
++    let initial_hz = machine.preview_sys_clk_hz().max(1);
++    let mut pacer = Pacer::with_quantum(initial_hz, PACER_QUANTUM_CYCLES);
++    let stats = pacer.stats();
++    let mut quanta = 0u64;
++    let mut uart_tx_bytes = 0u64;
++    let mut uart_rx_accepted = 0u64;
++    let mut uart_rx_disabled = 0u64;
++    let mut uart_rx_overrun = 0u64;
++    let mut last_status_cycle = machine.cycles();
++    write_status(
++        &mut output,
++        machine,
++        &stats.snapshot(),
++        frame_updates,
++        uart_tx_bytes,
++        uart_rx_accepted,
++        uart_rx_disabled,
++        uart_rx_overrun,
++    )?;
++
++    let mut running = true;
++    let mut termination_error = None;
++    while running {
++        loop {
++            match input_rx.try_recv() {
++                Ok(message) => match message {
++                    Ok(Some(frame)) => {
++                        handle_input_frame(
++                            frame,
++                            machine,
++                            &mut output,
++                            &mut last_frame_sha,
++                            &mut frame_updates,
++                            &mut uart_rx_accepted,
++                            &mut uart_rx_disabled,
++                            &mut uart_rx_overrun,
++                            &mut running,
++                        )?;
++                        if !running {
++                            break;
++                        }
++                    }
++                    Ok(None) => {
++                        termination_error =
++                            Some("preview input closed without an explicit quit frame".to_string());
++                        running = false;
++                        break;
++                    }
++                    Err(error) => {
++                        eprintln!("picocalc-preview: protocol error: {error}");
++                        termination_error = Some(error);
++                        running = false;
++                        break;
++                    }
++                },
++                Err(TryRecvError::Empty) => break,
++                Err(TryRecvError::Disconnected) => {
++                    running = false;
++                    break;
++                }
++            }
++        }
++        if !running {
++            break;
++        }
++
++        machine.refresh_sticky_stop();
++        if machine.stopped().is_some() {
++            // A stopped machine cannot advance virtual time.  Keep consuming
++            // operator commands (notably reset/quit) without a hot spin.
++            if machine.cycles() != last_status_cycle {
++                write_status(
++                    &mut output,
++                    machine,
++                    &stats.snapshot(),
++                    frame_updates,
++                    uart_tx_bytes,
++                    uart_rx_accepted,
++                    uart_rx_disabled,
++                    uart_rx_overrun,
++                )?;
++                last_status_cycle = machine.cycles();
++            }
++            thread::sleep(Duration::from_millis(1));
++            continue;
++        }
++
++        let previous_hz = machine.preview_sys_clk_hz();
++        pacer.begin_quantum();
++        let target = machine.cycles().saturating_add(pacer.quantum_cycles());
++        let advance = machine.advance_once(target);
++        let (consumed, _) = advance.map_err(|error| format!("preview emulation: {error}"))?;
++        pacer.end_quantum_for_cycles(consumed);
++        if consumed == 0 {
++            machine.mark_clock_stalled();
++            write_error(&mut output, "clock_stalled", "emulator clock stopped")?;
++            continue;
++        }
++        let current_hz = machine.preview_sys_clk_hz();
++        if current_hz != previous_hz {
++            pacer.update_sys_clk_hz(current_hz);
++        }
++
++        let new_uart = machine.drain_uart_new_with_cycles();
++        let had_uart = !new_uart.is_empty();
++        for (cycle, byte) in new_uart {
++            let mut payload = Vec::with_capacity(9);
++            payload.extend_from_slice(&cycle.to_le_bytes());
++            payload.push(byte);
++            output
++                .write_bytes(Kind::UartTx, payload)
++                .map_err(protocol_message)?;
++            uart_tx_bytes = uart_tx_bytes.saturating_add(1);
++        }
++
++        let audio_blocks = machine.emu.bus.drain_audio_preview_blocks();
++        let had_audio = !audio_blocks.is_empty();
++        write_audio_blocks(&mut output, audio_blocks)?;
++
++        quanta = quanta.saturating_add(1);
++        if quanta.is_multiple_of(FRAME_POLL_QUANTA)
++            && let Some(framebuffer) = machine.preview_framebuffer()
++        {
++            let sha = framebuffer.rgb565_sha256();
++            if last_frame_sha.as_deref() != Some(sha.as_str()) {
++                write_frame(&mut output, machine.cycles(), &framebuffer)?;
++                last_frame_sha = Some(sha);
++                frame_updates = frame_updates.saturating_add(1);
++            }
++        }
++        if had_uart || had_audio || quanta.is_multiple_of(FRAME_POLL_QUANTA) {
++            write_status(
++                &mut output,
++                machine,
++                &stats.snapshot(),
++                frame_updates,
++                uart_tx_bytes,
++                uart_rx_accepted,
++                uart_rx_disabled,
++                uart_rx_overrun,
++            )?;
++            last_status_cycle = machine.cycles();
++        }
++    }
++
++    if let Some(error) = termination_error {
++        // The output worker owns the pipe. Join it before returning the
++        // protocol error so already-enqueued hello/status frames are not
++        // discarded by Drop while the child exits.
++        let flush_error = output.finish().err();
++        if let Some(flush_error) = flush_error {
++            return Err(flush_error);
++        }
++        return Err(error);
++    }
++
++    write_audio_blocks(&mut output, machine.emu.bus.finish_audio_preview_blocks())?;
++    output
++        .write_json(Kind::Goodbye, &json!({"reason": "quit"}))
++        .map_err(protocol_message)?;
++    output.finish()
++}
++
++fn write_audio_blocks(
++    output: &mut PreviewWriter,
++    blocks: Vec<rp2040_emu::AudioPreviewBlock>,
++) -> Result<(), String> {
++    for block in blocks {
++        let payload = audio_block_payload(&block)?;
++        let _ = output
++            .write_audio_bytes(payload)
++            .map_err(protocol_message)?;
++    }
++    Ok(())
++}
++
++fn audio_block_payload(block: &rp2040_emu::AudioPreviewBlock) -> Result<Vec<u8>, String> {
++    let channels = usize::from(block.channels);
++    if channels == 0 || !block.samples.len().is_multiple_of(channels) {
++        return Err("preview audio block has invalid channel/sample shape".to_string());
++    }
++    let frame_count = block.samples.len() / channels;
++    if frame_count > rp2040_emu::PREVIEW_AUDIO_BLOCK_FRAMES {
++        return Err(format!(
++            "preview audio block has {frame_count} frames, limit is {}",
++            rp2040_emu::PREVIEW_AUDIO_BLOCK_FRAMES
++        ));
++    }
++    let frames = u16::try_from(frame_count)
++        .map_err(|_| "preview audio block has too many frames".to_string())?;
++    let mut payload = Vec::with_capacity(16 + block.samples.len() * 2);
++    payload.extend_from_slice(&block.cycle.to_le_bytes());
++    payload.extend_from_slice(&block.sample_rate_hz.to_le_bytes());
++    payload.extend_from_slice(&u16::from(block.channels).to_le_bytes());
++    payload.extend_from_slice(&frames.to_le_bytes());
++    for sample in &block.samples {
++        payload.extend_from_slice(&sample.to_le_bytes());
++    }
++    Ok(payload)
++}
++
++fn spawn_input_reader(sender: SyncSender<InputMessage>) {
++    thread::spawn(move || {
++        let stdin = io::stdin();
++        let mut reader = FrameReader::new(stdin.lock(), Direction::PreviewToRunner);
++        let result = loop {
++            match reader.read_frame() {
++                Ok(Some(frame)) => {
++                    if sender.send(Ok(Some(frame))).is_err() {
++                        return;
++                    }
++                }
++                Ok(None) => break Ok(None),
++                Err(error) => break Err(error.to_string()),
++            }
++        };
++        let _ = sender.send(result);
++    });
++}
++
++#[allow(clippy::too_many_arguments)]
++fn handle_input_frame(
++    frame: Frame,
++    machine: &mut MachineSession,
++    output: &mut PreviewWriter,
++    last_frame_sha: &mut Option<String>,
++    frame_updates: &mut u64,
++    uart_rx_accepted: &mut u64,
++    uart_rx_disabled: &mut u64,
++    uart_rx_overrun: &mut u64,
++    running: &mut bool,
++) -> Result<(), String> {
++    match frame.kind {
++        Kind::KeyEvent => {
++            let object = frame.json_value().map_err(protocol_message)?;
++            let key = object
++                .get("key")
++                .and_then(Value::as_str)
++                .unwrap_or_default();
++            let state = object
++                .get("state")
++                .and_then(Value::as_str)
++                .unwrap_or_default();
++            match machine.preview_key_event(key, state) {
++                Ok((_events, dropped)) => {
++                    if dropped != 0 {
++                        write_error(output, "keyboard_event_dropped", "keyboard queue is full")?;
++                    }
++                }
++                Err(error) => write_error(output, "key_rejected", &error)?,
++            }
++        }
++        Kind::UartRx => match machine.preview_uart_rx(frame.payload[0]) {
++            rp2040_emu::peripherals::uart::UartRxResult::Accepted => {
++                *uart_rx_accepted = uart_rx_accepted.saturating_add(1);
++            }
++            rp2040_emu::peripherals::uart::UartRxResult::Disabled => {
++                *uart_rx_disabled = uart_rx_disabled.saturating_add(1);
++                write_error(output, "uart_rx_disabled", "UART0 RX is not enabled")?;
++            }
++            rp2040_emu::peripherals::uart::UartRxResult::Overrun => {
++                *uart_rx_overrun = uart_rx_overrun.saturating_add(1);
++                write_error(output, "uart_rx_overrun", "UART0 RX FIFO is full")?;
++            }
++        },
++        Kind::Reset => {
++            machine.reset_for_preview()?;
++            machine.emu.bus.enable_audio_preview_tap();
++            *last_frame_sha = None;
++            if let Some(framebuffer) = machine.preview_framebuffer() {
++                *last_frame_sha = Some(framebuffer.rgb565_sha256());
++                write_frame(output, machine.cycles(), &framebuffer)?;
++                *frame_updates = frame_updates.saturating_add(1);
++            }
++        }
++        Kind::Quit => *running = false,
++        other => {
++            // FrameReader already rejects direction mismatches.  This branch
++            // is kept defensive so a future Kind cannot silently mutate the
++            // machine when this dispatcher is not updated with it.
++            write_error(
++                output,
++                "unsupported_command",
++                &format!("message kind {other:?} is not a preview command"),
++            )?;
++        }
++    }
++    Ok(())
++}
++
++fn write_frame(
++    output: &mut PreviewWriter,
++    cycle: u64,
++    framebuffer: &picocalc_board::Framebuffer,
++) -> Result<(), String> {
++    let width = u16::try_from(framebuffer.width)
++        .map_err(|_| "framebuffer width does not fit preview protocol".to_string())?;
++    let height = u16::try_from(framebuffer.height)
++        .map_err(|_| "framebuffer height does not fit preview protocol".to_string())?;
++    let pixels = framebuffer.to_rgb565_le_bytes();
++    let mut payload = Vec::with_capacity(12 + pixels.len());
++    payload.extend_from_slice(&cycle.to_le_bytes());
++    payload.extend_from_slice(&width.to_le_bytes());
++    payload.extend_from_slice(&height.to_le_bytes());
++    payload.extend_from_slice(&pixels);
++    output
++        .write_bytes(Kind::FrameRgb565, payload)
++        .map_err(protocol_message)?;
++    Ok(())
++}
++
++#[allow(clippy::too_many_arguments)]
++fn write_status(
++    output: &mut PreviewWriter,
++    machine: &MachineSession,
++    snapshot: &PacerSnapshot,
++    frame_updates: u64,
++    uart_tx_bytes: u64,
++    uart_rx_accepted: u64,
++    uart_rx_disabled: u64,
++    uart_rx_overrun: u64,
++) -> Result<(), String> {
++    let virtual_ns = machine.elapsed_ns();
++    let wall_ns = snapshot.wall_ns;
++    let ratio_ppm = if wall_ns == 0 {
++        0
++    } else {
++        ((virtual_ns as u128 * 1_000_000) / wall_ns as u128) as u64
++    };
++    let lag_ns =
++        (virtual_ns as i128 - wall_ns as i128).clamp(i64::MIN as i128, i64::MAX as i128) as i64;
++    let observation_projection = machine.preview_observation_projection();
++    let observation_digest = machine.preview_observation_digest();
++    let audio_preview = machine.emu.bus.audio_preview_snapshot();
++    let ipc_audio_drops = output.dropped_audio_blocks();
++    let audio_state = if audio_preview.dropped_blocks != 0 || ipc_audio_drops != 0 {
++        "degraded"
++    } else if audio_preview.produced_blocks != 0 {
++        "streaming"
++    } else {
++        "inactive"
++    };
++    output
++        .write_json(
++            Kind::Status,
++            &json!({
++                "audio": {"queue_frames": 0, "state": "not_streamed"},
++                "audio_monitor": {
++                    "capacity_blocks": audio_preview.capacity_blocks,
++                    "capacity_frames": audio_preview.capacity_frames,
++                    "channels": audio_preview.channels,
++                    "drained_blocks": audio_preview.drained_blocks,
++                    "drained_frames": audio_preview.drained_frames,
++                    "drop_count": audio_preview.dropped_blocks,
++                    "dropped_blocks": audio_preview.dropped_blocks,
++                    "enabled": audio_preview.enabled,
++                    "ipc_dropped_audio_blocks": ipc_audio_drops,
++                    "ipc_dropped_frame_count": output.dropped_frames(),
++                    "ipc_dropped_status_count": output.dropped_status(),
++                    "produced_blocks": audio_preview.produced_blocks,
++                    "queue_frames": audio_preview.queued_frames,
++                    "queued_blocks": audio_preview.queued_blocks,
++                    "overrun_count": audio_preview.dropped_blocks,
++                    "source_sample_rate_hz": audio_preview.source_sample_rate_hz,
++                    "state": audio_state,
++                    "underrun_count": 0,
++                },
++                "coverage": if machine.stopped().is_some() { "stopped" } else { "ok" },
++                "framebuffer": {"updates": frame_updates},
++                "observation": {
++                    "digest_sha256": observation_digest,
++                    "projection": observation_projection,
++                    "schema_version": PREVIEW_OBSERVATION_SCHEMA_VERSION,
++                },
++                "pacer": {
++                    "behind_count": snapshot.behind_count,
++                    "emulated_cycles": snapshot.emulated_cycles,
++                    "emulation_ns": snapshot.emulation_ns,
++                    "lag_ns": lag_ns,
++                    "ratio_ppm": ratio_ppm,
++                    "spin_ns": snapshot.spin_ns,
++                    "wall_ns": wall_ns,
++                },
++                "uart": {
++                    "rx_accepted": uart_rx_accepted,
++                    "rx_disabled": uart_rx_disabled,
++                    "rx_fifo": machine.preview_uart_rx_fifo_len(),
++                    "rx_overrun": uart_rx_overrun,
++                    "rx_raw_interrupt_status": machine.preview_uart_raw_status(),
++                    "tx_bytes": uart_tx_bytes,
++                },
++                "virtual_cycle": machine.cycles(),
++                "virtual_ns": virtual_ns,
++            }),
++        )
++        .map_err(protocol_message)?;
++    Ok(())
++}
++
++fn write_error(output: &mut PreviewWriter, code: &str, message: &str) -> Result<(), String> {
++    output
++        .write_json(Kind::Error, &json!({"code": code, "message": message}))
++        .map_err(protocol_message)?;
++    Ok(())
++}
++
++fn protocol_message(error: ProtocolError) -> String {
++    error.to_string()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::io::Cursor;
++    use std::sync::atomic::{AtomicBool, Ordering};
++
++    #[test]
++    fn audio_preview_block_is_encoded_as_schema_one_pcm() {
++        let block = rp2040_emu::AudioPreviewBlock {
++            cycle: 42,
++            sample_rate_hz: 22_050,
++            channels: 2,
++            samples: vec![-1, 2, 3, -4],
++        };
++        let payload = audio_block_payload(&block).expect("encode audio block");
++        let mut bytes = Vec::new();
++        {
++            let mut writer = FrameWriter::new(&mut bytes, Direction::RunnerToPreview);
++            writer
++                .write_frame(Frame::new(Kind::AudioPcmS16, 0, payload).expect("audio frame"))
++                .expect("write audio block");
++        }
++        let mut reader = FrameReader::new(Cursor::new(bytes), Direction::RunnerToPreview);
++        let frame = reader
++            .read_frame()
++            .expect("read audio frame")
++            .expect("frame");
++        assert_eq!(frame.kind, Kind::AudioPcmS16);
++        assert_eq!(
++            u64::from_le_bytes(frame.payload[0..8].try_into().unwrap()),
++            42
++        );
++        assert_eq!(
++            u32::from_le_bytes(frame.payload[8..12].try_into().unwrap()),
++            22_050
++        );
++        assert_eq!(
++            u16::from_le_bytes(frame.payload[12..14].try_into().unwrap()),
++            2
++        );
++        assert_eq!(
++            u16::from_le_bytes(frame.payload[14..16].try_into().unwrap()),
++            2
++        );
++        assert_eq!(
++            &frame.payload[16..],
++            &[
++                (-1i16).to_le_bytes(),
++                2i16.to_le_bytes(),
++                3i16.to_le_bytes(),
++                (-4i16).to_le_bytes(),
++            ]
++            .concat()
++        );
++    }
++
++    #[test]
++    fn malformed_audio_block_is_rejected_before_writing() {
++        let block = rp2040_emu::AudioPreviewBlock {
++            cycle: 0,
++            sample_rate_hz: 48_000,
++            channels: 0,
++            samples: vec![0],
++        };
++        assert!(audio_block_payload(&block).is_err());
++    }
++
++    #[test]
++    fn output_queue_drops_presentation_frames_without_waiting_for_sink() {
++        struct BlockingWriter {
++            started: Arc<AtomicBool>,
++            release: Arc<AtomicBool>,
++        }
++
++        impl Write for BlockingWriter {
++            fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
++                self.started.store(true, Ordering::SeqCst);
++                while !self.release.load(Ordering::SeqCst) {
++                    thread::yield_now();
++                }
++                Ok(bytes.len())
++            }
++
++            fn flush(&mut self) -> io::Result<()> {
++                Ok(())
++            }
++        }
++
++        let started = Arc::new(AtomicBool::new(false));
++        let release = Arc::new(AtomicBool::new(false));
++        let mut output = PreviewWriter::with_capacity_writer(
++            1,
++            Box::new(BlockingWriter {
++                started: Arc::clone(&started),
++                release: Arc::clone(&release),
++            }),
++        );
++
++        let payload = b"{}".to_vec();
++        assert!(output.enqueue(Kind::Status, payload.clone(), true).unwrap());
++        while !started.load(Ordering::SeqCst) {
++            thread::yield_now();
++        }
++        assert!(output.enqueue(Kind::Status, payload.clone(), true).unwrap());
++        assert!(!output.enqueue(Kind::Status, payload, true).unwrap());
++        assert_eq!(output.dropped_status(), 1);
++
++        release.store(true, Ordering::SeqCst);
++        output.finish().expect("blocking output writer finishes");
++    }
++}
+diff --git a/crates/picocalc-harness/src/preview_protocol.rs b/crates/picocalc-harness/src/preview_protocol.rs
+new file mode 100644
+index 0000000..55db7c7
+--- /dev/null
++++ b/crates/picocalc-harness/src/preview_protocol.rs
+@@ -0,0 +1,465 @@
++//! Versioned local IPC framing for the validated realtime preview.
++//!
++//! This is deliberately independent of the emulator and of the GUI.  The
++//! wire contract is frozen by `picocalc_emu/docs/validated-realtime-preview/`
++//! (schema 1): a 16-byte little-endian header followed by a bounded payload.
++//! A reader validates the complete frame before returning it, so malformed
++//! input can never be reinterpreted as another message kind.
++
++use std::io::{self, Read, Write};
++
++use serde_json::Value;
++
++pub const MAGIC: [u8; 4] = *b"PCRP";
++pub const VERSION: u16 = 1;
++pub const HEADER_SIZE: usize = 16;
++pub const MAX_PAYLOAD: usize = 8 * 1024 * 1024;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum Direction {
++    RunnerToPreview,
++    PreviewToRunner,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++#[repr(u16)]
++pub enum Kind {
++    Hello = 1,
++    Status = 2,
++    FrameRgb565 = 3,
++    AudioPcmS16 = 4,
++    KeyEvent = 5,
++    Reset = 6,
++    Quit = 7,
++    UartTx = 8,
++    UartRx = 9,
++    Error = 10,
++    Goodbye = 11,
++}
++
++impl Kind {
++    pub fn from_u16(value: u16) -> Result<Self, ProtocolError> {
++        match value {
++            1 => Ok(Self::Hello),
++            2 => Ok(Self::Status),
++            3 => Ok(Self::FrameRgb565),
++            4 => Ok(Self::AudioPcmS16),
++            5 => Ok(Self::KeyEvent),
++            6 => Ok(Self::Reset),
++            7 => Ok(Self::Quit),
++            8 => Ok(Self::UartTx),
++            9 => Ok(Self::UartRx),
++            10 => Ok(Self::Error),
++            11 => Ok(Self::Goodbye),
++            other => Err(ProtocolError::new(format!(
++                "unknown preview message kind {other}"
++            ))),
++        }
++    }
++
++    fn accepts(self, direction: Direction) -> bool {
++        match direction {
++            Direction::RunnerToPreview => matches!(
++                self,
++                Self::Hello
++                    | Self::Status
++                    | Self::FrameRgb565
++                    | Self::AudioPcmS16
++                    | Self::UartTx
++                    | Self::Error
++                    | Self::Goodbye
++            ),
++            Direction::PreviewToRunner => {
++                matches!(
++                    self,
++                    Self::KeyEvent | Self::Reset | Self::Quit | Self::UartRx
++                )
++            }
++        }
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct Frame {
++    pub kind: Kind,
++    pub sequence: u32,
++    pub payload: Vec<u8>,
++}
++
++impl Frame {
++    pub fn new(kind: Kind, sequence: u32, payload: Vec<u8>) -> Result<Self, ProtocolError> {
++        let frame = Self {
++            kind,
++            sequence,
++            payload,
++        };
++        frame.validate_payload()?;
++        Ok(frame)
++    }
++
++    #[allow(dead_code)]
++    pub fn json(kind: Kind, sequence: u32, value: &Value) -> Result<Self, ProtocolError> {
++        let payload = canonical_json(value)?;
++        Self::new(kind, sequence, payload)
++    }
++
++    pub fn json_value(&self) -> Result<Value, ProtocolError> {
++        match self.kind {
++            Kind::Hello | Kind::Status | Kind::KeyEvent | Kind::Error | Kind::Goodbye => {
++                parse_canonical_json(&self.payload)
++            }
++            _ => Err(ProtocolError::new(format!(
++                "message kind {:?} does not carry JSON",
++                self.kind
++            ))),
++        }
++    }
++
++    pub(crate) fn validate_for_direction(&self, direction: Direction) -> Result<(), ProtocolError> {
++        if !self.kind.accepts(direction) {
++            return Err(ProtocolError::new(format!(
++                "message kind {:?} is invalid for {:?}",
++                self.kind, direction
++            )));
++        }
++        self.validate_payload()
++    }
++
++    fn validate_payload(&self) -> Result<(), ProtocolError> {
++        if self.payload.len() > MAX_PAYLOAD {
++            return Err(ProtocolError::new(format!(
++                "payload is {} bytes, limit is {MAX_PAYLOAD}",
++                self.payload.len()
++            )));
++        }
++        match self.kind {
++            Kind::Hello => {
++                let value = parse_canonical_json(&self.payload)?;
++                let object = value
++                    .as_object()
++                    .ok_or_else(|| ProtocolError::new("hello payload must be an object"))?;
++                if object.get("protocol").and_then(Value::as_str) != Some("preview-ipc")
++                    || object.get("role").and_then(Value::as_str) != Some("runner")
++                    || object.get("schema").and_then(Value::as_u64) != Some(1)
++                {
++                    return Err(ProtocolError::new(
++                        "hello must declare protocol=preview-ipc, role=runner, schema=1",
++                    ));
++                }
++            }
++            Kind::Status | Kind::Error | Kind::Goodbye => {
++                let _ = parse_canonical_json(&self.payload)?;
++            }
++            Kind::KeyEvent => {
++                let value = parse_canonical_json(&self.payload)?;
++                let object = value
++                    .as_object()
++                    .ok_or_else(|| ProtocolError::new("key_event payload must be an object"))?;
++                if object.get("key").and_then(Value::as_str).is_none() {
++                    return Err(ProtocolError::new("key_event requires string field 'key'"));
++                }
++                match object.get("state").and_then(Value::as_str) {
++                    Some("down" | "held" | "up") => {}
++                    _ => {
++                        return Err(ProtocolError::new(
++                            "key_event state must be down, held, or up",
++                        ));
++                    }
++                }
++            }
++            Kind::FrameRgb565 => {
++                if self.payload.len() < 12 {
++                    return Err(ProtocolError::new(
++                        "frame_rgb565 payload is shorter than its prefix",
++                    ));
++                }
++                let width = u16::from_le_bytes([self.payload[8], self.payload[9]]) as usize;
++                let height = u16::from_le_bytes([self.payload[10], self.payload[11]]) as usize;
++                let pixels = width
++                    .checked_mul(height)
++                    .and_then(|n| n.checked_mul(2))
++                    .ok_or_else(|| ProtocolError::new("frame_rgb565 dimensions overflow"))?;
++                let expected = 12usize
++                    .checked_add(pixels)
++                    .ok_or_else(|| ProtocolError::new("frame_rgb565 payload length overflow"))?;
++                if self.payload.len() != expected {
++                    return Err(ProtocolError::new(format!(
++                        "frame_rgb565 payload length {} does not match {expected}",
++                        self.payload.len()
++                    )));
++                }
++            }
++            Kind::AudioPcmS16 => {
++                if self.payload.len() < 16 {
++                    return Err(ProtocolError::new(
++                        "audio_pcm_s16 payload is shorter than its prefix",
++                    ));
++                }
++                let channels = u16::from_le_bytes([self.payload[12], self.payload[13]]) as usize;
++                let frames = u16::from_le_bytes([self.payload[14], self.payload[15]]) as usize;
++                if channels == 0 {
++                    return Err(ProtocolError::new(
++                        "audio_pcm_s16 channels must be non-zero",
++                    ));
++                }
++                let samples = frames
++                    .checked_mul(channels)
++                    .and_then(|n| n.checked_mul(2))
++                    .ok_or_else(|| ProtocolError::new("audio_pcm_s16 dimensions overflow"))?;
++                let expected = 16usize
++                    .checked_add(samples)
++                    .ok_or_else(|| ProtocolError::new("audio_pcm_s16 payload length overflow"))?;
++                if self.payload.len() != expected {
++                    return Err(ProtocolError::new(format!(
++                        "audio_pcm_s16 payload length {} does not match {expected}",
++                        self.payload.len()
++                    )));
++                }
++            }
++            Kind::UartTx => {
++                if self.payload.len() != 9 {
++                    return Err(ProtocolError::new("uart_tx payload must be 9 bytes"));
++                }
++            }
++            Kind::UartRx => {
++                if self.payload.len() != 1 {
++                    return Err(ProtocolError::new("uart_rx payload must be 1 byte"));
++                }
++            }
++            Kind::Reset | Kind::Quit => {
++                if !self.payload.is_empty() {
++                    return Err(ProtocolError::new(format!(
++                        "message kind {:?} must have an empty payload",
++                        self.kind
++                    )));
++                }
++            }
++        }
++        Ok(())
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct ProtocolError {
++    message: String,
++}
++
++impl ProtocolError {
++    pub(crate) fn new(message: impl Into<String>) -> Self {
++        Self {
++            message: message.into(),
++        }
++    }
++}
++
++impl std::fmt::Display for ProtocolError {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        f.write_str(&self.message)
++    }
++}
++
++impl std::error::Error for ProtocolError {}
++
++pub struct FrameReader<R> {
++    reader: R,
++    direction: Direction,
++    next_sequence: u32,
++}
++
++impl<R: Read> FrameReader<R> {
++    pub fn new(reader: R, direction: Direction) -> Self {
++        Self {
++            reader,
++            direction,
++            next_sequence: 0,
++        }
++    }
++
++    pub fn read_frame(&mut self) -> Result<Option<Frame>, ProtocolError> {
++        let mut header = [0u8; HEADER_SIZE];
++        let mut first = [0u8; 1];
++        match self.reader.read(&mut first) {
++            Ok(0) => return Ok(None),
++            Ok(1) => header[0] = first[0],
++            Ok(_) => unreachable!(),
++            Err(error) => {
++                return Err(ProtocolError::new(format!(
++                    "reading preview header: {error}"
++                )));
++            }
++        }
++        self.reader
++            .read_exact(&mut header[1..])
++            .map_err(|error| ProtocolError::new(format!("truncated preview header: {error}")))?;
++        if header[0..4] != MAGIC {
++            return Err(ProtocolError::new("bad preview IPC magic"));
++        }
++        let version = u16::from_le_bytes([header[4], header[5]]);
++        if version != VERSION {
++            return Err(ProtocolError::new(format!(
++                "unsupported preview IPC version {version}"
++            )));
++        }
++        let kind = Kind::from_u16(u16::from_le_bytes([header[6], header[7]]))?;
++        let length = u32::from_le_bytes([header[8], header[9], header[10], header[11]]) as usize;
++        if length > MAX_PAYLOAD {
++            return Err(ProtocolError::new(format!(
++                "preview payload is {length} bytes, limit is {MAX_PAYLOAD}"
++            )));
++        }
++        let sequence = u32::from_le_bytes([header[12], header[13], header[14], header[15]]);
++        if sequence != self.next_sequence {
++            return Err(ProtocolError::new(format!(
++                "preview sequence discontinuity: expected {}, got {sequence}",
++                self.next_sequence
++            )));
++        }
++        let mut payload = vec![0u8; length];
++        self.reader
++            .read_exact(&mut payload)
++            .map_err(|error| ProtocolError::new(format!("truncated preview payload: {error}")))?;
++        let frame = Frame {
++            kind,
++            sequence,
++            payload,
++        };
++        frame.validate_for_direction(self.direction)?;
++        self.next_sequence = self
++            .next_sequence
++            .checked_add(1)
++            .ok_or_else(|| ProtocolError::new("preview sequence exhausted"))?;
++        Ok(Some(frame))
++    }
++}
++
++pub struct FrameWriter<W> {
++    writer: W,
++    direction: Direction,
++    next_sequence: u32,
++}
++
++impl<W: Write> FrameWriter<W> {
++    pub fn new(writer: W, direction: Direction) -> Self {
++        Self {
++            writer,
++            direction,
++            next_sequence: 0,
++        }
++    }
++
++    pub fn write_frame(&mut self, mut frame: Frame) -> Result<u32, ProtocolError> {
++        frame.sequence = self.next_sequence;
++        frame.validate_for_direction(self.direction)?;
++        let length = u32::try_from(frame.payload.len())
++            .map_err(|_| ProtocolError::new("preview payload does not fit in u32"))?;
++        let mut header = [0u8; HEADER_SIZE];
++        header[0..4].copy_from_slice(&MAGIC);
++        header[4..6].copy_from_slice(&VERSION.to_le_bytes());
++        header[6..8].copy_from_slice(&(frame.kind as u16).to_le_bytes());
++        header[8..12].copy_from_slice(&length.to_le_bytes());
++        header[12..16].copy_from_slice(&frame.sequence.to_le_bytes());
++        self.writer
++            .write_all(&header)
++            .and_then(|_| self.writer.write_all(&frame.payload))
++            .and_then(|_| self.writer.flush())
++            .map_err(|error| ProtocolError::new(format!("writing preview frame: {error}")))?;
++        let sequence = self.next_sequence;
++        self.next_sequence = self
++            .next_sequence
++            .checked_add(1)
++            .ok_or_else(|| ProtocolError::new("preview sequence exhausted"))?;
++        Ok(sequence)
++    }
++
++    #[allow(dead_code)]
++    pub fn write_json(&mut self, kind: Kind, value: &Value) -> Result<u32, ProtocolError> {
++        self.write_frame(Frame::json(kind, 0, value)?)
++    }
++
++    #[allow(dead_code)]
++    pub fn write_bytes(&mut self, kind: Kind, payload: Vec<u8>) -> Result<u32, ProtocolError> {
++        self.write_frame(Frame::new(kind, 0, payload)?)
++    }
++}
++
++fn canonical_json(value: &Value) -> Result<Vec<u8>, ProtocolError> {
++    serde_json::to_vec(value)
++        .map_err(|error| ProtocolError::new(format!("serializing preview JSON: {error}")))
++}
++
++fn parse_canonical_json(bytes: &[u8]) -> Result<Value, ProtocolError> {
++    let value: Value = serde_json::from_slice(bytes)
++        .map_err(|error| ProtocolError::new(format!("malformed preview JSON: {error}")))?;
++    let canonical = canonical_json(&value)?;
++    if canonical != bytes {
++        return Err(ProtocolError::new(
++            "preview JSON is not canonical (sorted compact UTF-8 form required)",
++        ));
++    }
++    Ok(value)
++}
++
++impl From<ProtocolError> for io::Error {
++    fn from(error: ProtocolError) -> Self {
++        io::Error::new(io::ErrorKind::InvalidData, error)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::io::Cursor;
++
++    fn frame_hex(hex: &str) -> Vec<u8> {
++        (0..hex.len())
++            .step_by(2)
++            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
++            .collect()
++    }
++
++    #[test]
++    fn fixture_hello_round_trips_exactly() {
++        let bytes = frame_hex(
++            "504352500100010035000000000000007b2270726f746f636f6c223a22707265766965772d697063222c22726f6c65223a2272756e6e6572222c22736368656d61223a317d",
++        );
++        let mut reader = FrameReader::new(Cursor::new(bytes.clone()), Direction::RunnerToPreview);
++        let frame = reader.read_frame().unwrap().unwrap();
++        assert_eq!(frame.kind, Kind::Hello);
++        assert_eq!(frame.sequence, 0);
++        let mut output = Vec::new();
++        let mut writer = FrameWriter::new(&mut output, Direction::RunnerToPreview);
++        writer.write_frame(frame).unwrap();
++        assert_eq!(output, bytes);
++    }
++
++    #[test]
++    fn fixture_key_event_is_rejected_in_runner_direction() {
++        let bytes = frame_hex(
++            "50435250010005001e000000000000007b226b6579223a22456e746572222c227374617465223a22646f776e227d",
++        );
++        let mut reader = FrameReader::new(Cursor::new(bytes), Direction::RunnerToPreview);
++        let error = reader.read_frame().unwrap_err();
++        assert!(error.to_string().contains("invalid"));
++    }
++
++    #[test]
++    fn malformed_and_truncated_frames_fail_closed() {
++        let unknown = frame_hex("504352500100ffff0000000007000000");
++        let mut reader = FrameReader::new(Cursor::new(unknown), Direction::RunnerToPreview);
++        assert!(reader.read_frame().is_err());
++
++        let truncated = frame_hex(
++            "504352500100020023000000080000007b22636f766572616765223a226f6b222c227669727475616c5f6379636c65223a30",
++        );
++        let mut reader = FrameReader::new(Cursor::new(truncated), Direction::RunnerToPreview);
++        assert!(reader.read_frame().is_err());
++    }
++
++    #[test]
++    fn json_must_be_canonical() {
++        let value = serde_json::json!({"b": 2, "a": 1});
++        let canonical = canonical_json(&value).unwrap();
++        assert!(parse_canonical_json(&canonical).is_ok());
++        assert!(parse_canonical_json(br#"{"b":2,"a":1}"#).is_err());
++    }
++}
+diff --git a/crates/picocalc-harness/src/session.rs b/crates/picocalc-harness/src/session.rs
+new file mode 100644
+index 0000000..62731a2
+--- /dev/null
++++ b/crates/picocalc-harness/src/session.rs
+@@ -0,0 +1,511 @@
++//! Shared deterministic machine session used by every harness frontend.
++//!
++//! Keeping the emulator, board handles, boot handoff, UART accumulation, and
++//! scheduler boundary in one module is intentional.  Batch scenarios,
++//! machine API clients, and the realtime preview adapter must all observe the
++//! same state transitions; a frontend-specific session would make their
++//! reports incomparable.
++
++use picocalc_board::sha256::sha256_hex;
++use picocalc_board::{Framebuffer, KeyEvent, KeyState, pins};
++use rp2040_emu::{Emulator, RP2040_SRAM_TOP, WatchdogResetEvent};
++use serde_json::{Value, json};
++use std::path::PathBuf;
++
++use super::{
++    BoardHandles, BootMode, RunOutcome, SDK_VTOR_FLASH_OFFSET, StopReason, UART_DRAIN_INTERVAL,
++    fatal_exception_name, park_state,
++};
++
++/// One persistent, deterministic headless machine session.
++///
++/// This is the shared execution boundary for the batch scenario runner,
++/// machine API, and preview API.  Keeping UART accumulation and the virtual
++/// clock here prevents clients from inventing subtly different stepping,
++/// clock-rebase, or observation semantics.
++pub(crate) struct MachineSession {
++    pub(crate) emu: Emulator,
++    pub(crate) uart_bytes: Vec<u8>,
++    pub(crate) dispatches: u64,
++    pub(crate) board: BoardHandles,
++    pub(crate) boot_mode: Option<BootMode>,
++    pub(crate) watchdog_resets: Vec<WatchdogResetEvent>,
++    /// When true, the preview loop owns UART draining so the cycle-rich tap
++    /// cannot be consumed by the legacy periodic batch drain.
++    preview_uart_cycle_tap: bool,
++    pub(crate) sticky_stop: Option<SessionStop>,
++}
++
++/// Version of the read-only observation projection used by the preview
++/// backend and the machine API.  This is deliberately separate from the
++/// schema-8 batch report: changing the preview projection must not rewrite
++/// historical validation report bytes.
++pub(crate) const PREVIEW_OBSERVATION_SCHEMA_VERSION: u32 = 1;
++
++/// Deterministic driver for the registered preview digest boundary. It uses
++/// the same scenario engine and machine session as the batch runner; replay
++/// is therefore a comparison aid, not a second emulator execution model.
++pub(crate) struct ScenarioReplay {
++    pub(crate) engine: super::scenario::Engine,
++    cycle_limit: u64,
++    next_poll_cycles: u64,
++    initialized: bool,
++}
++
++pub(crate) enum ScenarioReplayStep {
++    Advanced,
++    Complete,
++    Failed(String),
++}
++
++impl ScenarioReplay {
++    pub(crate) fn new(
++        scenario: super::scenario::Scenario,
++        snapshot_dir: PathBuf,
++        cycle_limit: u64,
++    ) -> Self {
++        Self {
++            engine: super::scenario::Engine::new(scenario, snapshot_dir),
++            cycle_limit,
++            next_poll_cycles: 0,
++            initialized: false,
++        }
++    }
++
++    pub(crate) fn step(
++        &mut self,
++        machine: &mut MachineSession,
++    ) -> Result<ScenarioReplayStep, String> {
++        if !self.initialized {
++            self.next_poll_cycles = machine
++                .emu
++                .bus
++                .virtual_time_cycles_at(self.engine.next_poll_ns());
++            self.initialized = true;
++        }
++
++        if machine.cycles() >= self.next_poll_cycles {
++            machine.poll_scenario(&mut self.engine);
++            if self.engine.is_done() {
++                return if self.engine.passed() {
++                    Ok(ScenarioReplayStep::Complete)
++                } else {
++                    Ok(ScenarioReplayStep::Failed(format!(
++                        "scenario '{}' ended with status {}",
++                        self.engine.name(),
++                        self.engine.status()
++                    )))
++                };
++            }
++            self.next_poll_cycles = machine
++                .emu
++                .bus
++                .virtual_time_cycles_at(self.engine.next_poll_ns())
++                .max(machine.cycles().saturating_add(1));
++        }
++
++        machine.refresh_sticky_stop();
++        if let Some(stop) = machine.stopped() {
++            let reason = match stop {
++                SessionStop::Exception(exception) => format!("exception {exception}"),
++                SessionStop::Error(error) => format!("error {error}"),
++            };
++            return Ok(ScenarioReplayStep::Failed(format!(
++                "scenario '{}' stopped before completion: {reason}",
++                self.engine.name()
++            )));
++        }
++        if machine.cycles() >= self.cycle_limit {
++            return Ok(ScenarioReplayStep::Failed(format!(
++                "scenario '{}' reached replay cycle limit {}",
++                self.engine.name(),
++                self.cycle_limit
++            )));
++        }
++
++        let external_event_cycle = self.next_poll_cycles.min(self.cycle_limit);
++        let (consumed, rate_changed) = machine.advance_once(external_event_cycle)?;
++        if consumed == 0 {
++            machine.mark_clock_stalled();
++            return Ok(ScenarioReplayStep::Failed(format!(
++                "scenario '{}' replay clock stalled",
++                self.engine.name()
++            )));
++        }
++        if rate_changed {
++            self.next_poll_cycles = machine
++                .emu
++                .bus
++                .virtual_time_cycles_at(self.engine.next_poll_ns())
++                .max(machine.cycles().saturating_add(1));
++        }
++        let _ = (consumed, rate_changed);
++        Ok(ScenarioReplayStep::Advanced)
++    }
++}
++
++#[derive(Clone)]
++pub(crate) enum SessionStop {
++    Exception(&'static str),
++    Error(String),
++}
++
++impl MachineSession {
++    #[inline]
++    pub(crate) fn new(emu: Emulator, board: BoardHandles) -> Self {
++        Self {
++            emu,
++            uart_bytes: Vec::new(),
++            dispatches: 0,
++            board,
++            boot_mode: None,
++            watchdog_resets: Vec::new(),
++            preview_uart_cycle_tap: false,
++            sticky_stop: None,
++        }
++    }
++
++    #[inline]
++    pub(crate) fn set_boot_mode(&mut self, boot_mode: BootMode) {
++        self.boot_mode = Some(boot_mode);
++    }
++
++    /// Opt in to the cycle-rich UART tap used by the preview wire. Keeping
++    /// this explicit avoids adding a second unbounded event queue to normal
++    /// batch/report runs.
++    pub(crate) fn enable_preview_uart_cycle_tap(&mut self) {
++        self.emu.enable_uart0_tx_cycle_tap();
++        self.preview_uart_cycle_tap = true;
++    }
++
++    /// Re-enter the selected firmware handoff after an emulated watchdog
++    /// bite.  The emulator has already performed the MCU warm reset and
++    /// retained flash/SD/scratch; this method only selects the same entry
++    /// path that was used for the initial run.
++    pub(crate) fn handle_watchdog_reset(&mut self) -> Result<bool, String> {
++        let Some(event) = self.emu.take_watchdog_reset_event() else {
++            return Ok(false);
++        };
++        self.watchdog_resets.push(event);
++        match self.boot_mode {
++            Some(BootMode::Boot2FromFlash) => self
++                .emu
++                .boot2_from_flash(RP2040_SRAM_TOP, 0)
++                .map_err(|error| {
++                    format!("re-entering flash boot2 after watchdog reset: {error}")
++                })?,
++            Some(BootMode::DirectBootFromFlash) => {
++                self.emu.direct_boot_from_flash(SDK_VTOR_FLASH_OFFSET);
++            }
++            Some(BootMode::BootromResetVector) | None => {}
++        }
++        Ok(true)
++    }
++
++    #[inline(always)]
++    pub(crate) fn cycles(&self) -> u64 {
++        self.emu.clock.cycles
++    }
++
++    #[inline(always)]
++    pub(crate) fn elapsed_ns(&self) -> u64 {
++        self.emu.bus.virtual_time_ns()
++    }
++
++    pub(crate) fn fatal_exception(&self) -> Option<&'static str> {
++        self.emu
++            .cores
++            .iter()
++            .enumerate()
++            .find_map(|(core, state)| fatal_exception_name(core, state.regs.xpsr & 0x1FF))
++    }
++
++    pub(crate) fn refresh_sticky_stop(&mut self) {
++        if self.sticky_stop.is_none()
++            && let Some(exception) = self.fatal_exception()
++        {
++            self.sticky_stop = Some(SessionStop::Exception(exception));
++        }
++    }
++
++    pub(crate) fn stopped(&self) -> Option<&SessionStop> {
++        self.sticky_stop.as_ref()
++    }
++
++    #[inline(always)]
++    pub(crate) fn drain_uart(&mut self) {
++        let _ = self.drain_uart_new();
++    }
++
++    /// Drain the guest UART TX tap and return only bytes not previously
++    /// exposed to a consumer. Batch and machine API callers keep using this
++    /// byte-only path; the preview wire uses
++    /// [`Self::drain_uart_new_with_cycles`] to attach virtual-time metadata.
++    pub(crate) fn drain_uart_new(&mut self) -> Vec<u8> {
++        // Keep the authoritative batch/machine path on the original byte
++        // drain. The cycle-rich accessor intentionally clears the legacy
++        // queue as part of its bounded diagnostic contract, so calling it
++        // while the preview tap is disabled would silently discard UART
++        // output from normal reports.
++        let bytes = self.emu.drain_uart0_tx_log();
++        self.uart_bytes.extend_from_slice(&bytes);
++        bytes
++    }
++
++    /// Drain the guest UART TX tap with the exact bus cycle at which each
++    /// UARTDR write happened. The byte-only report accumulation is updated in
++    /// the same operation, so no consumer can observe two different streams.
++    pub(crate) fn drain_uart_new_with_cycles(&mut self) -> Vec<(u64, u8)> {
++        let events = self.emu.drain_uart0_tx_log_with_cycles();
++        for &(_, byte) in &events {
++            self.uart_bytes.push(byte);
++        }
++        events
++    }
++
++    pub(crate) fn poll_scenario(&mut self, engine: &mut super::scenario::Engine) {
++        self.drain_uart();
++        engine.poll(&super::scenario::Observation {
++            now_ns: self.elapsed_ns(),
++            cycles: self.cycles(),
++            lcd: self.board.lcd.as_deref(),
++            keyboard: self.board.keyboard.as_deref(),
++            uart: &self.uart_bytes,
++        });
++    }
++
++    /// Execute one scheduler dispatch without crossing a proven idle
++    /// external boundary. Returns `(cycles_consumed, clock_rate_changed)`.
++    #[inline(always)]
++    pub(crate) fn advance_once(
++        &mut self,
++        external_event_cycle: u64,
++    ) -> Result<(u64, bool), String> {
++        let previous_hz = self.emu.bus.clock_tree.sys_clk_hz;
++        let consumed = self.emu.step_until(external_event_cycle).map_err(|error| {
++            let message = error.to_string();
++            self.sticky_stop = Some(SessionStop::Error(message.clone()));
++            message
++        })?;
++        self.handle_watchdog_reset()?;
++        self.dispatches = self.dispatches.saturating_add(1);
++        if self.dispatches.is_multiple_of(UART_DRAIN_INTERVAL) && !self.preview_uart_cycle_tap {
++            self.drain_uart();
++        }
++        let rate_changed = self.emu.bus.clock_tree.sys_clk_hz != previous_hz;
++        Ok((consumed, rate_changed))
++    }
++
++    pub(crate) fn mark_clock_stalled(&mut self) {
++        let detail = format!(
++            "clock stalled: core0 {}, core1 {} — no wake source can fire while the master clock is frozen",
++            park_state(&self.emu, 0),
++            park_state(&self.emu, 1)
++        );
++        self.sticky_stop = Some(SessionStop::Error(detail));
++    }
++
++    pub(crate) fn finish(
++        &mut self,
++        stop_reason: StopReason,
++        exception: Option<&'static str>,
++        error: Option<String>,
++    ) -> RunOutcome {
++        self.drain_uart();
++        RunOutcome {
++            stop_reason,
++            cycles: self.cycles(),
++            elapsed_ns: self.elapsed_ns(),
++            pc: self.emu.cores[0].regs.pc(),
++            exception,
++            error,
++            uart_bytes: std::mem::take(&mut self.uart_bytes),
++            watchdog_resets: std::mem::take(&mut self.watchdog_resets),
++        }
++    }
++
++    /// Reset the serial machine for an interactive preview operator.  Flash
++    /// contents and attached media remain in the emulator; CPU/peripheral
++    /// state is reset and the originally selected boot handoff is replayed.
++    /// This is deliberately separate from a guest watchdog reset, which is
++    /// recorded in the authoritative run outcome.
++    pub(crate) fn reset_for_preview(&mut self) -> Result<(), String> {
++        self.emu.reset();
++        self.enable_preview_uart_cycle_tap();
++        self.uart_bytes.clear();
++        self.dispatches = 0;
++        self.watchdog_resets.clear();
++        self.sticky_stop = None;
++        if self.board.sd.is_some() {
++            let detect = 1u32 << pins::SD_PIN_DETECT;
++            self.emu.bus.external_gpio_in_mask |= detect;
++            self.emu.bus.external_gpio_in_override &= !detect;
++            self.emu.bus.gpio_in &= !detect;
++        }
++        match self.boot_mode {
++            Some(BootMode::Boot2FromFlash) => self
++                .emu
++                .boot2_from_flash(RP2040_SRAM_TOP, 0)
++                .map_err(|error| format!("re-entering flash boot2 after preview reset: {error}"))?,
++            Some(BootMode::DirectBootFromFlash) => {
++                self.emu.direct_boot_from_flash(SDK_VTOR_FLASH_OFFSET);
++            }
++            Some(BootMode::BootromResetVector) | None => {}
++        }
++        Ok(())
++    }
++
++    pub(crate) fn preview_framebuffer(&self) -> Option<Framebuffer> {
++        let lcd = self.board.lcd.as_ref()?;
++        Some(lcd.lock().expect("LCD model mutex").framebuffer())
++    }
++
++    pub(crate) fn preview_uart_rx(
++        &mut self,
++        byte: u8,
++    ) -> rp2040_emu::peripherals::uart::UartRxResult {
++        self.emu.inject_uart0_rx(byte)
++    }
++
++    pub(crate) fn preview_uart_rx_fifo_len(&self) -> usize {
++        self.emu.uart0_rx_fifo_len()
++    }
++
++    pub(crate) fn preview_uart_raw_status(&self) -> u32 {
++        self.emu.uart0_raw_interrupt_status()
++    }
++
++    pub(crate) fn preview_sys_clk_hz(&self) -> u32 {
++        self.emu.bus.clock_tree.sys_clk_hz
++    }
++
++    /// Return the deterministic, provenance-free observation surface shared
++    /// by preview and machine API consumers.  The projection intentionally
++    /// contains only device-visible values; virtual cycle is carried by the
++    /// surrounding status/response so callers can compare two projections at
++    /// an explicitly chosen boundary.
++    pub(crate) fn preview_observation_projection(&self) -> Value {
++        let framebuffer = self.preview_framebuffer().map(|framebuffer| {
++            json!({
++                "height": framebuffer.height,
++                "non_black_pixels": framebuffer.non_black_pixels(),
++                "rgb565_sha256": framebuffer.rgb565_sha256(),
++                "width": framebuffer.width,
++            })
++        });
++        let unsupported = self
++            .emu
++            .bus
++            .unsupported_mmio_log()
++            .into_iter()
++            .map(|(addr, pc, count)| {
++                json!({
++                    "addr": addr,
++                    "count": count,
++                    "pc": pc,
++                })
++            })
++            .collect::<Vec<_>>();
++        let audio = audio_observation_json(&self.emu.bus.audio_sink_snapshot());
++        json!({
++            "audio": audio,
++            "framebuffer": framebuffer,
++            "schema_version": PREVIEW_OBSERVATION_SCHEMA_VERSION,
++            "uart": {
++                "bytes": self.uart_bytes.len(),
++                "sha256": sha256_hex(&self.uart_bytes),
++            },
++            "unsupported_mmio": {
++                "entries": unsupported,
++                "truncated": self.emu.bus.unsupported_mmio_log_truncated(),
++            },
++        })
++    }
++
++    /// Hash the canonical JSON encoding of [`Self::preview_observation_projection`].
++    /// `serde_json::Map` uses sorted keys in this workspace, so the bytes and
++    /// digest are stable across processes and hosts.
++    pub(crate) fn preview_observation_digest(&self) -> String {
++        let projection = self.preview_observation_projection();
++        let canonical = serde_json::to_vec(&projection)
++            .expect("preview observation JSON serialization is infallible");
++        sha256_hex(&canonical)
++    }
++
++    pub(crate) fn preview_key_event(
++        &mut self,
++        key: &str,
++        state: &str,
++    ) -> Result<(usize, u64), String> {
++        let code = match key {
++            "Enter" => b'\r',
++            "Escape" | "Esc" => 0x1b,
++            "Space" => b' ',
++            "Tab" => b'\t',
++            "Backspace" => 0x08,
++            value if value.chars().count() == 1 => {
++                let character = value.chars().next().expect("one-character key");
++                u8::try_from(character as u32)
++                    .map_err(|_| format!("preview key {key:?} is not an 8-bit code"))?
++            }
++            _ => return Err(format!("unsupported preview key {key:?}")),
++        };
++        let state = match state {
++            "down" => KeyState::Pressed,
++            "held" => KeyState::Held,
++            "up" => KeyState::Released,
++            _ => return Err(format!("unsupported preview key state {state:?}")),
++        };
++        let keyboard = self
++            .board
++            .keyboard
++            .as_ref()
++            .ok_or_else(|| "preview key input requires --keyboard".to_string())?;
++        let mut keyboard = keyboard
++            .lock()
++            .map_err(|_| "keyboard mutex poisoned".to_string())?;
++        let dropped_before = keyboard.key_events_dropped;
++        keyboard.push_event(KeyEvent { state, code });
++        Ok((
++            1,
++            keyboard.key_events_dropped.saturating_sub(dropped_before),
++        ))
++    }
++}
++
++fn audio_observation_json(snapshot: &rp2040_emu::AudioSinkSnapshot) -> Value {
++    // Keep the projection exactly aligned with the current authoritative
++    // AudioSinkSnapshot. These values are bounded counters, hashes, and edge
++    // samples; preview status never retains the full PCM stream.
++    json!({
++        "block_boundary_gap_count": snapshot.block_boundary_gap_count,
++        "block_boundary_gap_max_cycles": snapshot.block_boundary_gap_max_cycles,
++        "block_boundary_gap_min_cycles": snapshot.block_boundary_gap_min_cycles,
++        "block_boundary_gap_sha256": snapshot.block_boundary_gap_sha256,
++        "block_start_count": snapshot.block_start_count,
++        "dma_write_count": snapshot.dma_write_count,
++        "first_words": snapshot.first_words,
++        "gap_5208_count": snapshot.gap_5208_count,
++        "gap_5209_count": snapshot.gap_5209_count,
++        "last_words": snapshot.last_words,
++        "malformed_block_count": snapshot.malformed_block_count,
++        "missing_due_cycle_count": snapshot.missing_due_cycle_count,
++        "other_pwm_cc_write_count": snapshot.other_pwm_cc_write_count,
++        "pcm_sha256": snapshot.pcm_sha256,
++        "service_latency_max_cycles": snapshot.service_latency_max_cycles,
++        "service_latency_min_cycles": snapshot.service_latency_min_cycles,
++        "service_latency_sha256": snapshot.service_latency_sha256,
++        "status": snapshot.status,
++        "target_write_attempt_count": snapshot.target_write_attempt_count,
++        "timer_due_cycle_sha256": snapshot.timer_due_cycle_sha256,
++        "timer_event_count": snapshot.timer_event_count,
++        "timer_fraction_x": snapshot.timer_fraction_x,
++        "timer_fraction_y": snapshot.timer_fraction_y,
++        "timer_index": snapshot.timer_index,
++        "timer_miss_count": snapshot.timer_miss_count,
++        "treq": snapshot.treq,
++        "unexpected_gap_count": snapshot.unexpected_gap_count,
++        "wrong_treq_count": snapshot.wrong_treq_count,
++        "wrong_width_count": snapshot.wrong_width_count,
++    })
++}
+diff --git a/crates/picocalc-harness/tests/preview_api_e2e.rs b/crates/picocalc-harness/tests/preview_api_e2e.rs
+new file mode 100644
+index 0000000..f76cdd0
+--- /dev/null
++++ b/crates/picocalc-harness/tests/preview_api_e2e.rs
+@@ -0,0 +1,385 @@
++//! Process-boundary coverage for the G7 validated preview backend.
++//!
++//! These tests exercise only the explicit preview API. They do not alter the
++//! authoritative batch report path or claim a realtime-performance result.
++
++use std::io::{BufRead, Read, Write};
++use std::path::Path;
++use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, Stdio};
++
++use serde_json::Value;
++
++const MAGIC: &[u8; 4] = b"PCRP";
++const VERSION: u16 = 1;
++const HELLO: u16 = 1;
++const STATUS: u16 = 2;
++const FRAME_RGB565: u16 = 3;
++const KEY_EVENT: u16 = 5;
++const RESET: u16 = 6;
++const QUIT: u16 = 7;
++const UART_RX: u16 = 9;
++const ERROR: u16 = 10;
++const GOODBYE: u16 = 11;
++const UNKNOWN: u16 = u16::MAX;
++
++fn path(relative: &str) -> String {
++    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
++        .join("../../")
++        .join(relative)
++        .to_string_lossy()
++        .into_owned()
++}
++
++fn runner(board: bool) -> Child {
++    let mut command = Command::new(env!("CARGO_BIN_EXE_picocalc-run"));
++    command.args([
++        "--bin",
++        &path("roms/rp2040/uart_hello.bin"),
++        "--bootrom",
++        &path("roms/rp2040/bootrom.bin"),
++        "--preview-api",
++    ]);
++    if board {
++        command.args(["--board", "picocalc", "--lcd-variant", "pio-rgb565"]);
++    }
++    command
++        .stdin(Stdio::piped())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .spawn()
++        .expect("spawn preview backend")
++}
++
++fn machine_api_runner(board: bool) -> Child {
++    let mut command = Command::new(env!("CARGO_BIN_EXE_picocalc-run"));
++    command.args([
++        "--bin",
++        &path("roms/rp2040/uart_hello.bin"),
++        "--bootrom",
++        &path("roms/rp2040/bootrom.bin"),
++        "--machine-api",
++    ]);
++    if board {
++        command.args(["--board", "picocalc", "--lcd-variant", "pio-rgb565"]);
++    }
++    command
++        .stdin(Stdio::piped())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .spawn()
++        .expect("spawn machine API")
++}
++
++fn replay_preview_runner(scenario: &Path) -> Child {
++    let mut command = Command::new(env!("CARGO_BIN_EXE_picocalc-run"));
++    command.args([
++        "--bin",
++        &path("roms/rp2040/uart_hello.bin"),
++        "--bootrom",
++        &path("roms/rp2040/bootrom.bin"),
++        "--cycles",
++        "1000000",
++        "--replay-scenario",
++        scenario.to_str().expect("scenario path is UTF-8"),
++        "--preview-api",
++    ]);
++    command
++        .stdin(Stdio::piped())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .spawn()
++        .expect("spawn replay preview backend")
++}
++
++fn read_frame(stdout: &mut ChildStdout) -> (u16, u32, Vec<u8>) {
++    let mut header = [0u8; 16];
++    stdout.read_exact(&mut header).expect("read preview header");
++    assert_eq!(&header[0..4], MAGIC);
++    assert_eq!(u16::from_le_bytes([header[4], header[5]]), VERSION);
++    let kind = u16::from_le_bytes([header[6], header[7]]);
++    let length = u32::from_le_bytes([header[8], header[9], header[10], header[11]]) as usize;
++    let sequence = u32::from_le_bytes([header[12], header[13], header[14], header[15]]);
++    let mut payload = vec![0u8; length];
++    stdout
++        .read_exact(&mut payload)
++        .expect("read preview payload");
++    (kind, sequence, payload)
++}
++
++fn read_frame_with_failure_diagnostic(
++    child: &mut Child,
++    stdout: &mut ChildStdout,
++    stderr: &mut ChildStderr,
++) -> (u16, u32, Vec<u8>) {
++    let mut header = [0u8; 16];
++    if let Err(error) = stdout.read_exact(&mut header) {
++        let status = child.wait().expect("wait after preview EOF");
++        let mut diagnostics = String::new();
++        stderr
++            .read_to_string(&mut diagnostics)
++            .expect("read preview stderr after EOF");
++        panic!("preview EOF ({error}), child status {status}, stderr: {diagnostics}");
++    }
++    assert_eq!(&header[0..4], MAGIC);
++    assert_eq!(u16::from_le_bytes([header[4], header[5]]), VERSION);
++    let kind = u16::from_le_bytes([header[6], header[7]]);
++    let length = u32::from_le_bytes([header[8], header[9], header[10], header[11]]) as usize;
++    let sequence = u32::from_le_bytes([header[12], header[13], header[14], header[15]]);
++    let mut payload = vec![0u8; length];
++    stdout
++        .read_exact(&mut payload)
++        .expect("read preview payload");
++    (kind, sequence, payload)
++}
++
++fn send_frame(stdin: &mut ChildStdin, kind: u16, sequence: u32, payload: &[u8]) {
++    let mut header = [0u8; 16];
++    header[0..4].copy_from_slice(MAGIC);
++    header[4..6].copy_from_slice(&VERSION.to_le_bytes());
++    header[6..8].copy_from_slice(&kind.to_le_bytes());
++    header[8..12].copy_from_slice(&(payload.len() as u32).to_le_bytes());
++    header[12..16].copy_from_slice(&sequence.to_le_bytes());
++    stdin.write_all(&header).expect("write preview header");
++    stdin.write_all(payload).expect("write preview payload");
++    stdin.flush().expect("flush preview command");
++}
++
++fn wait_for_goodbye(
++    child: &mut Child,
++    stdin: &mut ChildStdin,
++    stdout: &mut ChildStdout,
++    sequence: u32,
++) {
++    send_frame(stdin, QUIT, sequence, &[]);
++    loop {
++        let (kind, _, _) = read_frame(stdout);
++        if kind == GOODBYE {
++            break;
++        }
++    }
++    let status = child.wait().expect("wait for preview backend");
++    assert!(status.success(), "preview backend exited with {status}");
++}
++
++#[test]
++fn preview_uart_rx_rejection_and_quit_are_explicit() {
++    let mut child = runner(false);
++    let mut stdin = child.stdin.take().expect("preview stdin");
++    let mut stdout = child.stdout.take().expect("preview stdout");
++
++    let (kind, sequence, payload) = read_frame(&mut stdout);
++    assert_eq!((kind, sequence), (HELLO, 0));
++    let hello: Value = serde_json::from_slice(&payload).expect("hello JSON");
++    assert_eq!(hello["protocol"], "preview-ipc");
++    assert_eq!(hello["schema"], 1);
++
++    let (kind, sequence, payload) = read_frame(&mut stdout);
++    assert_eq!((kind, sequence), (STATUS, 1));
++    let status: Value = serde_json::from_slice(&payload).expect("status JSON");
++    assert_eq!(status["virtual_cycle"], 0);
++    assert_eq!(status["observation"]["projection"]["uart"]["bytes"], 0);
++
++    send_frame(&mut stdin, UART_RX, 0, b"Z");
++    let mut last_sequence = sequence;
++    loop {
++        let (kind, sequence, payload) = read_frame(&mut stdout);
++        assert_eq!(sequence, last_sequence + 1);
++        last_sequence = sequence;
++        if kind == ERROR {
++            let error: Value = serde_json::from_slice(&payload).expect("error JSON");
++            assert_eq!(error["code"], "uart_rx_disabled");
++            break;
++        }
++    }
++
++    wait_for_goodbye(&mut child, &mut stdin, &mut stdout, 1);
++}
++
++#[test]
++fn preview_protocol_unknown_kind_fails_closed() {
++    let mut child = runner(false);
++    let mut stdin = child.stdin.take().expect("preview stdin");
++    let mut stdout = child.stdout.take().expect("preview stdout");
++
++    assert_eq!(read_frame(&mut stdout).0, HELLO);
++    assert_eq!(read_frame(&mut stdout).0, STATUS);
++    send_frame(&mut stdin, UNKNOWN, 0, &[]);
++    drop(stdin);
++
++    let output = child
++        .wait_with_output()
++        .expect("wait for malformed preview backend");
++    assert_eq!(output.status.code(), Some(2));
++    assert!(
++        String::from_utf8_lossy(&output.stderr).contains("protocol error"),
++        "stderr did not identify protocol failure: {}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++}
++
++#[test]
++fn preview_replay_uses_the_shared_scenario_boundary_before_serving() {
++    let scenario = std::env::temp_dir().join(format!(
++        "picocalc-preview-replay-{}-{}.json",
++        std::process::id(),
++        std::thread::current().name().unwrap_or("test")
++    ));
++    std::fs::write(
++        &scenario,
++        r#"{"schema":1,"name":"preview-replay-smoke","poll_ms":5,"steps":[{"op":"wait","ms":1}]}"#,
++    )
++    .expect("write replay scenario");
++
++    let mut child = replay_preview_runner(&scenario);
++    let mut stdin = child.stdin.take().expect("preview stdin");
++    let mut stdout = child.stdout.take().expect("preview stdout");
++    let mut stderr = child.stderr.take().expect("preview stderr");
++    assert_eq!(
++        read_frame_with_failure_diagnostic(&mut child, &mut stdout, &mut stderr).0,
++        HELLO
++    );
++    let (kind, _sequence, payload) =
++        read_frame_with_failure_diagnostic(&mut child, &mut stdout, &mut stderr);
++    assert_eq!(kind, STATUS);
++    let status: Value = serde_json::from_slice(&payload).expect("replay status JSON");
++    assert!(
++        status["virtual_cycle"].as_u64().expect("replay cycle") > 0,
++        "replay must advance the shared machine before preview starts"
++    );
++
++    send_frame(&mut stdin, QUIT, 0, &[]);
++    loop {
++        let (kind, _, _) = read_frame_with_failure_diagnostic(&mut child, &mut stdout, &mut stderr);
++        if kind == GOODBYE {
++            break;
++        }
++    }
++    let status = child.wait().expect("wait for replay preview backend");
++    assert!(
++        status.success(),
++        "replay preview backend exited with {status}"
++    );
++    std::fs::remove_file(&scenario).expect("remove replay scenario fixture");
++}
++
++#[test]
++fn preview_key_rejection_and_reset_are_explicit() {
++    let mut child = runner(true);
++    let mut stdin = child.stdin.take().expect("preview stdin");
++    let mut stdout = child.stdout.take().expect("preview stdout");
++
++    assert_eq!(read_frame(&mut stdout).0, HELLO);
++    let (kind, _, payload) = read_frame(&mut stdout);
++    assert_eq!(kind, FRAME_RGB565);
++    assert_eq!(payload.len(), 12 + 320 * 320 * 2);
++    let (kind, sequence, _) = read_frame(&mut stdout);
++    assert_eq!(kind, STATUS);
++    let mut last_sequence = sequence;
++
++    let key = serde_json::to_vec(&serde_json::json!({"key": "X", "state": "down"}))
++        .expect("serialize key event");
++    send_frame(&mut stdin, KEY_EVENT, 0, &key);
++    loop {
++        let (kind, sequence, payload) = read_frame(&mut stdout);
++        assert_eq!(sequence, last_sequence + 1);
++        last_sequence = sequence;
++        if kind == ERROR {
++            let error: Value = serde_json::from_slice(&payload).expect("key error JSON");
++            assert_eq!(error["code"], "key_rejected");
++            break;
++        }
++    }
++
++    send_frame(&mut stdin, RESET, 1, &[]);
++    loop {
++        let (kind, sequence, payload) = read_frame(&mut stdout);
++        assert_eq!(sequence, last_sequence + 1);
++        last_sequence = sequence;
++        if kind == FRAME_RGB565 {
++            assert_eq!(
++                u64::from_le_bytes(payload[0..8].try_into().expect("frame cycle bytes")),
++                0
++            );
++            break;
++        }
++    }
++
++    wait_for_goodbye(&mut child, &mut stdin, &mut stdout, 2);
++}
++
++#[test]
++fn preview_and_machine_api_share_observation_at_a_cycle_boundary() {
++    let mut preview = runner(true);
++    let mut preview_stdin = preview.stdin.take().expect("preview stdin");
++    let mut preview_stdout = preview.stdout.take().expect("preview stdout");
++
++    assert_eq!(read_frame(&mut preview_stdout).0, HELLO);
++    assert_eq!(read_frame(&mut preview_stdout).0, FRAME_RGB565);
++    assert_eq!(read_frame(&mut preview_stdout).0, STATUS);
++
++    let (target_cycle, digest, projection) = loop {
++        let (kind, _, payload) = read_frame(&mut preview_stdout);
++        if kind != STATUS {
++            continue;
++        }
++        let status: Value = serde_json::from_slice(&payload).expect("preview status JSON");
++        let cycle = status["virtual_cycle"].as_u64().expect("preview cycle");
++        if cycle == 0 || status["observation"]["projection"]["uart"]["bytes"] == 0 {
++            continue;
++        }
++        break (
++            cycle,
++            status["observation"]["digest_sha256"]
++                .as_str()
++                .expect("preview digest")
++                .to_owned(),
++            status["observation"]["projection"].clone(),
++        );
++    };
++
++    wait_for_goodbye(&mut preview, &mut preview_stdin, &mut preview_stdout, 0);
++
++    let mut machine = machine_api_runner(true);
++    let mut machine_stdin = machine.stdin.take().expect("machine API stdin");
++    let machine_stdout = machine.stdout.take().expect("machine API stdout");
++    let mut machine_stdout = std::io::BufReader::new(machine_stdout);
++
++    writeln!(
++        machine_stdin,
++        "{{\"schema\":1,\"id\":\"run\",\"op\":\"run\",\"max_cycles\":{target_cycle}}}"
++    )
++    .expect("write machine run");
++    machine_stdin.flush().expect("flush machine run");
++    let mut line = String::new();
++    machine_stdout
++        .read_line(&mut line)
++        .expect("read machine run");
++    let response: Value = serde_json::from_str(&line).expect("machine run JSON");
++    assert_eq!(response["ok"], true);
++    assert_eq!(response["cycle"], target_cycle);
++
++    writeln!(
++        machine_stdin,
++        "{{\"schema\":1,\"id\":\"observe\",\"op\":\"observe\",\"domains\":[\"preview\"]}}"
++    )
++    .expect("write machine observe");
++    machine_stdin.flush().expect("flush machine observe");
++    line.clear();
++    machine_stdout
++        .read_line(&mut line)
++        .expect("read machine observe");
++    let observe: Value = serde_json::from_str(&line).expect("machine observe JSON");
++    assert_eq!(observe["ok"], true);
++    let machine_preview = &observe["result"]["preview"];
++    assert_eq!(machine_preview["virtual_cycle"], target_cycle);
++    assert_eq!(machine_preview["digest_sha256"], digest);
++    assert_eq!(machine_preview["projection"], projection);
++
++    drop(machine_stdin);
++    let output = machine.wait_with_output().expect("wait for machine API");
++    assert!(
++        output.status.success(),
++        "machine API failed: {}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++}
+diff --git a/crates/picoem-common/src/pacer.rs b/crates/picoem-common/src/pacer.rs
+index 4651dad..80ec919 100644
+--- a/crates/picoem-common/src/pacer.rs
++++ b/crates/picoem-common/src/pacer.rs
+@@ -448,19 +448,28 @@ impl Pacer {
+     /// Call after stepping the emulator for `quantum_cycles()` cycles.
+     #[inline(always)]
+     pub fn end_quantum(&mut self) {
++        self.end_quantum_for_cycles(self.quantum_cycles);
++    }
++
++    /// End a quantum while recording the number of cycles actually consumed.
++    /// Preview can stop at an external boundary before the nominal quantum;
++    /// this keeps pacing statistics tied to virtual progress rather than
++    /// inventing a full quantum for a short advance.
++    #[inline(always)]
++    pub fn end_quantum_for_cycles(&mut self, emulated_cycles: u64) {
+         #[cfg(target_arch = "x86_64")]
+         {
+-            self.end_quantum_tsc();
++            self.end_quantum_tsc(emulated_cycles);
+         }
+         #[cfg(not(target_arch = "x86_64"))]
+         {
+-            self.end_quantum_instant();
++            self.end_quantum_instant(emulated_cycles);
+         }
+     }
+ 
+     #[cfg(target_arch = "x86_64")]
+     #[inline(always)]
+-    fn end_quantum_tsc(&mut self) {
++    fn end_quantum_tsc(&mut self, emulated_cycles: u64) {
+         debug_assert!(
+             self.quantum_start_tsc != 0,
+             "begin_quantum() must be called before end_quantum()"
+@@ -472,10 +481,18 @@ impl Pacer {
+         let emu_end = rdtscp();
+         let emulation_tsc = emu_end - self.quantum_start_tsc;
+ 
+-        let final_tsc = if emulation_tsc < self.quantum_tsc_ticks {
++        let target_ticks = if emulated_cycles == self.quantum_cycles {
++            self.quantum_tsc_ticks
++        } else {
++            let nominal = (self.tsc_freq_hz as u128 * emulated_cycles as u128
++                / self.sys_clk_hz as u128) as u64;
++            let effective_overhead = self.overhead.min(nominal / 4);
++            nominal.saturating_sub(effective_overhead)
++        };
++        let final_tsc = if target_ticks > 0 && emulation_tsc < target_ticks {
+             // Ahead of real-time — spin wait.
+             // Capture exit TSC inside the loop to avoid post-loop measurement skew.
+-            let target_tsc = self.quantum_start_tsc + self.quantum_tsc_ticks;
++            let target_tsc = self.quantum_start_tsc + target_ticks;
+             let mut now = emu_end;
+             while now < target_tsc {
+                 std::hint::spin_loop();
+@@ -502,20 +519,25 @@ impl Pacer {
+             .expect("begin_quantum() must be called before end_quantum()");
+         let wall_tsc = final_tsc - first;
+         self.stats.set_wall_ns(self.tsc_to_ns(wall_tsc));
+-        self.stats.add_emulated_cycles(self.quantum_cycles);
++        self.stats.add_emulated_cycles(emulated_cycles);
+     }
+ 
+     #[cfg(not(target_arch = "x86_64"))]
+     #[inline(always)]
+-    fn end_quantum_instant(&mut self) {
++    fn end_quantum_instant(&mut self, emulated_cycles: u64) {
+         let start = self
+             .quantum_start
+             .expect("begin_quantum() must be called before end_quantum()");
+         let emu_end = Instant::now();
+         let emulation_ns = duration_ns(emu_end.duration_since(start));
+ 
+-        let final_time = if emulation_ns < self.quantum_ns {
+-            let target = start + Duration::from_nanos(self.quantum_ns);
++        let target_ns = if emulated_cycles == self.quantum_cycles {
++            self.quantum_ns
++        } else {
++            (1_000_000_000u128 * emulated_cycles as u128 / self.sys_clk_hz as u128) as u64
++        };
++        let final_time = if target_ns > 0 && emulation_ns < target_ns {
++            let target = start + Duration::from_nanos(target_ns);
+             let mut now = emu_end;
+             while now < target {
+                 std::hint::spin_loop();
+@@ -536,7 +558,7 @@ impl Pacer {
+             .expect("begin_quantum() must be called before end_quantum()");
+         self.stats
+             .set_wall_ns(duration_ns(final_time.duration_since(first)));
+-        self.stats.add_emulated_cycles(self.quantum_cycles);
++        self.stats.add_emulated_cycles(emulated_cycles);
+     }
+ 
+     /// Convert TSC ticks to nanoseconds.
+diff --git a/crates/rp2040-emu/src/audio_sink.rs b/crates/rp2040-emu/src/audio_sink.rs
+index 4f456fb..c0b728d 100644
+--- a/crates/rp2040-emu/src/audio_sink.rs
++++ b/crates/rp2040-emu/src/audio_sink.rs
+@@ -4,6 +4,8 @@
+ //! value that the DMA engine actually commits to PWM slice 5 CC. CPU setup writes and
+ //! producer buffers are deliberately outside this boundary.
+ 
++use std::collections::VecDeque;
++
+ use sha2::{Digest, Sha256};
+ 
+ use crate::bus::PWM_BASE;
+@@ -16,6 +18,47 @@ pub(crate) const PICOCALC_AUDIO_TIMER_TREQ: u8 = 59;
+ pub(crate) const PICOCALC_AUDIO_HALF_FRAMES: u64 = 128;
+ 
+ const EDGE_WORDS: usize = 8;
++const PWM_MAX_DUTY: u16 = 255;
++const PCM_CHANNELS: u8 = 2;
++
++/// Preview PCM blocks are intentionally bounded.  They are presentation
++/// data, not an additional authoritative audio oracle.
++pub const PREVIEW_AUDIO_BLOCK_FRAMES: usize = 128;
++pub const PREVIEW_AUDIO_QUEUE_BLOCKS: usize = 8;
++
++/// One finite PCM block produced by the emulated DMA-to-PWM audio boundary.
++/// `cycle` identifies the virtual cycle of its first frame.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct AudioPreviewBlock {
++    pub cycle: u64,
++    pub sample_rate_hz: u32,
++    pub channels: u8,
++    pub samples: Vec<i16>,
++}
++
++impl AudioPreviewBlock {
++    pub fn frames(&self) -> usize {
++        self.samples.len() / usize::from(self.channels.max(1))
++    }
++}
++
++/// Bounded presentation-transport counters.  These fields are deliberately
++/// separate from `AudioSinkSnapshot`, whose values are used by exactness
++/// validation and historical schema projections.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct AudioPreviewSnapshot {
++    pub enabled: bool,
++    pub queued_blocks: usize,
++    pub queued_frames: usize,
++    pub capacity_blocks: usize,
++    pub capacity_frames: usize,
++    pub produced_blocks: u64,
++    pub drained_blocks: u64,
++    pub drained_frames: u64,
++    pub dropped_blocks: u64,
++    pub source_sample_rate_hz: u32,
++    pub channels: u8,
++}
+ 
+ /// Stable, clone-free report projection of the streaming audio sink.
+ #[derive(Clone, Debug, PartialEq, Eq)]
+@@ -80,6 +123,16 @@ pub(crate) struct AudioSink {
+     service_latency_max_cycles: Option<u64>,
+     timer_fraction_x: u16,
+     timer_fraction_y: u16,
++    preview_source_sample_rate_hz: u32,
++    preview_enabled: bool,
++    preview_blocks: VecDeque<AudioPreviewBlock>,
++    preview_current_cycle: Option<u64>,
++    preview_current_rate: u32,
++    preview_current: Vec<i16>,
++    preview_produced_blocks: u64,
++    preview_drained_blocks: u64,
++    preview_drained_frames: u64,
++    preview_dropped_blocks: u64,
+ }
+ 
+ impl Default for AudioSink {
+@@ -113,17 +166,76 @@ impl Default for AudioSink {
+             service_latency_max_cycles: None,
+             timer_fraction_x: 0,
+             timer_fraction_y: 0,
++            preview_source_sample_rate_hz: 0,
++            preview_enabled: false,
++            preview_blocks: VecDeque::with_capacity(PREVIEW_AUDIO_QUEUE_BLOCKS),
++            preview_current_cycle: None,
++            preview_current_rate: 0,
++            preview_current: Vec::with_capacity(PREVIEW_AUDIO_BLOCK_FRAMES * PCM_CHANNELS as usize),
++            preview_produced_blocks: 0,
++            preview_drained_blocks: 0,
++            preview_drained_frames: 0,
++            preview_dropped_blocks: 0,
+         }
+     }
+ }
+ 
+ impl AudioSink {
++    /// Enable the bounded presentation tap used only by the realtime
++    /// preview.  The authoritative sink remains the same observer.
++    pub(crate) fn enable_preview_pcm_tap(&mut self) {
++        self.preview_enabled = true;
++    }
++
++    /// Remove all complete blocks currently waiting for the host preview.
++    pub(crate) fn drain_preview_pcm_blocks(&mut self) -> Vec<AudioPreviewBlock> {
++        let mut blocks = Vec::with_capacity(self.preview_blocks.len());
++        while let Some(block) = self.preview_blocks.pop_front() {
++            self.preview_drained_blocks = self.preview_drained_blocks.saturating_add(1);
++            self.preview_drained_frames = self
++                .preview_drained_frames
++                .saturating_add(block.frames() as u64);
++            blocks.push(block);
++        }
++        blocks
++    }
++
++    /// Flush the partial block at reset/shutdown and then drain the bounded
++    /// queue.  No partial data is retained across a preview reset.
++    pub(crate) fn finish_preview_pcm_blocks(&mut self) -> Vec<AudioPreviewBlock> {
++        self.flush_preview_block();
++        self.drain_preview_pcm_blocks()
++    }
++
++    pub(crate) fn preview_pcm_snapshot(&self) -> AudioPreviewSnapshot {
++        let queued_frames = self
++            .preview_blocks
++            .iter()
++            .map(AudioPreviewBlock::frames)
++            .sum::<usize>()
++            .saturating_add(self.preview_current.len() / usize::from(PCM_CHANNELS));
++        AudioPreviewSnapshot {
++            enabled: self.preview_enabled,
++            queued_blocks: self.preview_blocks.len(),
++            queued_frames,
++            capacity_blocks: PREVIEW_AUDIO_QUEUE_BLOCKS,
++            capacity_frames: PREVIEW_AUDIO_QUEUE_BLOCKS * PREVIEW_AUDIO_BLOCK_FRAMES,
++            produced_blocks: self.preview_produced_blocks,
++            drained_blocks: self.preview_drained_blocks,
++            drained_frames: self.preview_drained_frames,
++            dropped_blocks: self.preview_dropped_blocks,
++            source_sample_rate_hz: self.preview_source_sample_rate_hz,
++            channels: PCM_CHANNELS,
++        }
++    }
++
+     #[inline]
+     fn is_pwm_cc_address(address: u32) -> bool {
+         (0..8).any(|slice| address == PWM_BASE + slice * 0x14 + 0x0c)
+     }
+ 
+     #[allow(clippy::too_many_arguments)]
++    #[cfg(test)]
+     pub(crate) fn observe_dma_write(
+         &mut self,
+         address: u32,
+@@ -134,6 +246,32 @@ impl AudioSink {
+         timer_due_cycle: Option<u64>,
+         service_cycle: u64,
+         block_start: bool,
++    ) {
++        self.observe_dma_write_at_clock(
++            address,
++            width_bytes,
++            value,
++            treq,
++            timer_fraction,
++            250_000_000,
++            timer_due_cycle,
++            service_cycle,
++            block_start,
++        );
++    }
++
++    #[allow(clippy::too_many_arguments)]
++    pub(crate) fn observe_dma_write_at_clock(
++        &mut self,
++        address: u32,
++        width_bytes: u32,
++        value: u32,
++        treq: u8,
++        timer_fraction: Option<(u16, u16)>,
++        sys_clk_hz: u32,
++        timer_due_cycle: Option<u64>,
++        service_cycle: u64,
++        block_start: bool,
+     ) {
+         if address != PICOCALC_AUDIO_PWM_CC {
+             if Self::is_pwm_cc_address(address) {
+@@ -219,6 +357,53 @@ impl AudioSink {
+             self.service_latency_max_cycles
+                 .map_or(latency, |current| current.max(latency)),
+         );
++        let (x, y) = timer_fraction.unwrap_or((0, 0));
++        let sample_rate_hz = sample_rate_hz(sys_clk_hz, x, y);
++        self.preview_source_sample_rate_hz = sample_rate_hz;
++        let (left, right) = pcm_from_pwm(value);
++        self.enqueue_preview_frame(left, right, due_cycle, sample_rate_hz);
++    }
++
++    fn enqueue_preview_frame(&mut self, left: i16, right: i16, cycle: u64, sample_rate_hz: u32) {
++        if !self.preview_enabled {
++            return;
++        }
++        let current_frames = self.preview_current.len() / usize::from(PCM_CHANNELS);
++        let rate_changed =
++            self.preview_current_cycle.is_some() && self.preview_current_rate != sample_rate_hz;
++        if rate_changed || current_frames >= PREVIEW_AUDIO_BLOCK_FRAMES {
++            self.flush_preview_block();
++        }
++        if self.preview_current_cycle.is_none() {
++            self.preview_current_cycle = Some(cycle);
++            self.preview_current_rate = sample_rate_hz;
++        }
++        self.preview_current.push(left);
++        self.preview_current.push(right);
++        if self.preview_current.len() / usize::from(PCM_CHANNELS) == PREVIEW_AUDIO_BLOCK_FRAMES {
++            self.flush_preview_block();
++        }
++    }
++
++    fn flush_preview_block(&mut self) {
++        if self.preview_current.is_empty() {
++            return;
++        }
++        let block = AudioPreviewBlock {
++            cycle: self.preview_current_cycle.take().unwrap_or_default(),
++            sample_rate_hz: self.preview_current_rate,
++            channels: PCM_CHANNELS,
++            samples: std::mem::replace(
++                &mut self.preview_current,
++                Vec::with_capacity(PREVIEW_AUDIO_BLOCK_FRAMES * PCM_CHANNELS as usize),
++            ),
++        };
++        self.preview_produced_blocks = self.preview_produced_blocks.saturating_add(1);
++        if self.preview_blocks.len() >= PREVIEW_AUDIO_QUEUE_BLOCKS {
++            self.preview_dropped_blocks = self.preview_dropped_blocks.saturating_add(1);
++        } else {
++            self.preview_blocks.push_back(block);
++        }
+     }
+ 
+     pub(crate) fn snapshot(&self) -> AudioSinkSnapshot {
+@@ -289,6 +474,23 @@ impl AudioSink {
+     }
+ }
+ 
++fn pcm_from_pwm(value: u32) -> (i16, i16) {
++    let left = (value as u16).min(PWM_MAX_DUTY);
++    let right = ((value >> 16) as u16).min(PWM_MAX_DUTY);
++    (
++        (i32::from(left) * 257 - 32_768) as i16,
++        (i32::from(right) * 257 - 32_768) as i16,
++    )
++}
++
++fn sample_rate_hz(sys_clk_hz: u32, x: u16, y: u16) -> u32 {
++    if sys_clk_hz == 0 || x == 0 || y == 0 {
++        return 0;
++    }
++    let numerator = u128::from(sys_clk_hz) * u128::from(x);
++    ((numerator + u128::from(y / 2)) / u128::from(y)).min(u128::from(u32::MAX)) as u32
++}
++
+ fn hex(bytes: &[u8]) -> String {
+     let mut output = String::with_capacity(bytes.len() * 2);
+     for byte in bytes {
+@@ -347,6 +549,58 @@ mod tests {
+         assert_eq!(snapshot.service_latency_max_cycles, Some(2));
+     }
+ 
++    #[test]
++    fn preview_audio_tap_is_bounded_and_separate_from_authoritative_snapshot() {
++        let mut sink = AudioSink::default();
++        sink.enable_preview_pcm_tap();
++        for index in 0..(PREVIEW_AUDIO_BLOCK_FRAMES * 10) as u64 {
++            let due = 5_208 + index * 5_208;
++            sink.observe_dma_write(
++                PICOCALC_AUDIO_PWM_CC,
++                4,
++                0x0080_0080,
++                PICOCALC_AUDIO_TIMER_TREQ,
++                Some((3, 15_625)),
++                Some(due),
++                due,
++                index as usize % PREVIEW_AUDIO_BLOCK_FRAMES == 0,
++            );
++        }
++
++        let authoritative_before = sink.snapshot();
++        let preview = sink.preview_pcm_snapshot();
++        assert!(preview.enabled);
++        assert_eq!(preview.capacity_blocks, PREVIEW_AUDIO_QUEUE_BLOCKS);
++        assert_eq!(preview.queued_blocks, PREVIEW_AUDIO_QUEUE_BLOCKS);
++        assert_eq!(
++            preview.queued_frames,
++            PREVIEW_AUDIO_QUEUE_BLOCKS * PREVIEW_AUDIO_BLOCK_FRAMES
++        );
++        assert_eq!(preview.produced_blocks, 10);
++        assert_eq!(preview.dropped_blocks, 2);
++        assert_eq!(preview.source_sample_rate_hz, 48_000);
++
++        let blocks = sink.drain_preview_pcm_blocks();
++        assert_eq!(blocks.len(), PREVIEW_AUDIO_QUEUE_BLOCKS);
++        assert_eq!(blocks[0].frames(), PREVIEW_AUDIO_BLOCK_FRAMES);
++        assert_eq!(blocks[0].sample_rate_hz, 48_000);
++        assert_eq!(blocks[0].channels, 2);
++        assert_eq!(
++            blocks[0].samples,
++            vec![128, 128].repeat(PREVIEW_AUDIO_BLOCK_FRAMES)
++        );
++        let preview_after = sink.preview_pcm_snapshot();
++        assert_eq!(
++            preview_after.drained_blocks,
++            PREVIEW_AUDIO_QUEUE_BLOCKS as u64
++        );
++        assert_eq!(
++            preview_after.drained_frames,
++            (PREVIEW_AUDIO_QUEUE_BLOCKS * PREVIEW_AUDIO_BLOCK_FRAMES) as u64
++        );
++        assert_eq!(authoritative_before, sink.snapshot());
++    }
++
+     #[test]
+     fn wrong_width_treq_and_gap_fail_closed() {
+         let mut sink = AudioSink::default();
+diff --git a/crates/rp2040-emu/src/bus/mod.rs b/crates/rp2040-emu/src/bus/mod.rs
+index ce051ef..b62e2a2 100644
+--- a/crates/rp2040-emu/src/bus/mod.rs
++++ b/crates/rp2040-emu/src/bus/mod.rs
+@@ -47,7 +47,7 @@ use crate::peripherals::i2c::I2cRegs;
+ use crate::peripherals::pwm::PwmRegs;
+ use crate::peripherals::spi::SpiRegs;
+ use crate::peripherals::timer::TimerRegs;
+-use crate::peripherals::uart::UartRegs;
++use crate::peripherals::uart::{UartRegs, UartRxResult};
+ use crate::peripherals::watchdog_tick::WatchdogTickRegs;
+ use crate::virtual_time::VirtualClock;
+ use clocks::{ClockTree, ClocksRegs, PLL_RESET, PllRegs, ROSC_FREQ_HZ, RoscRegs, XoscRegs};
+@@ -748,11 +748,8 @@ impl Bus {
+     /// module state remains attached, so elapsed time must not jump back to
+     /// zero merely because the MCU reset domain did.
+     pub(crate) fn restore_virtual_time_after_reset(&mut self, ns: u64) {
+-        self.virtual_time.restore_after_reset(
+-            self.master_cycle,
+-            ns,
+-            self.clock_tree.sys_clk_hz,
+-        );
++        self.virtual_time
++            .restore_after_reset(self.master_cycle, ns, self.clock_tree.sys_clk_hz);
+     }
+ 
+     /// Advance the shared snapshot once and deliver the resulting delta to
+@@ -971,6 +968,33 @@ impl Bus {
+         self.uart0.drain_tx_log()
+     }
+ 
++    /// Drain UART0 TX writes with the exact virtual bus cycle at which the
++    /// guest wrote each byte. Preview-only diagnostic path.
++    pub fn drain_uart0_tx_log_with_cycles(&mut self) -> Vec<(u64, u8)> {
++        self.uart0.drain_tx_log_with_cycles()
++    }
++
++    /// Enable the cycle-rich UART0 TX tap. Ordinary batch/report runs leave
++    /// it disabled and retain the byte-only path.
++    pub fn enable_uart0_tx_cycle_tap(&mut self) {
++        self.uart0.enable_wire_cycle_tap();
++    }
++
++    /// Inject one byte on the host-facing UART0 RX wire.
++    pub fn inject_uart0_rx(&mut self, byte: u8) -> UartRxResult {
++        self.uart0.inject_rx(byte, &mut self.irq_pending)
++    }
++
++    /// Number of bytes currently waiting in UART0's RX FIFO.
++    pub fn uart0_rx_fifo_len(&self) -> usize {
++        self.uart0.rx_fifo_len()
++    }
++
++    /// UART0 raw interrupt status for preview diagnostics.
++    pub fn uart0_raw_interrupt_status(&self) -> u32 {
++        self.uart0.raw_interrupt_status()
++    }
++
+     #[cfg(feature = "behavior-trace")]
+     pub(crate) fn drain_uart0_behavior_tx_log(&mut self) -> Vec<u8> {
+         self.uart0.drain_behavior_tx_log()
+@@ -1015,6 +1039,28 @@ impl Bus {
+         self.dma.enable_audio_sink();
+     }
+ 
++    /// Enable the bounded PCM transport used by the realtime preview.
++    /// Ordinary batch runs continue to use the opt-in authoritative sink
++    /// only when their audio expectation gate requests it.
++    pub fn enable_audio_preview_tap(&mut self) {
++        self.dma.enable_audio_preview_tap();
++    }
++
++    /// Drain complete bounded PCM blocks produced by the preview tap.
++    pub fn drain_audio_preview_blocks(&mut self) -> Vec<crate::AudioPreviewBlock> {
++        self.dma.drain_audio_preview_blocks()
++    }
++
++    /// Flush and drain a final partial preview block at reset/shutdown.
++    pub fn finish_audio_preview_blocks(&mut self) -> Vec<crate::AudioPreviewBlock> {
++        self.dma.finish_audio_preview_blocks()
++    }
++
++    /// Read bounded preview transport counters without affecting emulation.
++    pub fn audio_preview_snapshot(&self) -> crate::AudioPreviewSnapshot {
++        self.dma.audio_preview_snapshot()
++    }
++
+     /// Base read latency for an address region (cycles).
+     #[inline]
+     fn read_latency(region: u32) -> u32 {
+@@ -1234,12 +1280,16 @@ impl Bus {
+                     self.watchdog_reset_requested = true;
+                 }
+             }
+-            UART0_BASE => self
+-                .uart0
+-                .write32(offset, val, alias, &mut self.irq_pending),
+-            UART1_BASE => self
+-                .uart1
+-                .write32(offset, val, alias, &mut self.irq_pending),
++            UART0_BASE => {
++                self.uart0.set_wire_cycle(self.master_cycle);
++                self.uart0
++                    .write32(offset, val, alias, &mut self.irq_pending);
++            }
++            UART1_BASE => {
++                self.uart1.set_wire_cycle(self.master_cycle);
++                self.uart1
++                    .write32(offset, val, alias, &mut self.irq_pending);
++            }
+             SPI0_BASE => self.spi0.write32(offset, val, alias, &mut self.irq_pending),
+             SPI1_BASE => self.spi1.write32(offset, val, alias, &mut self.irq_pending),
+             I2C0_BASE => self.i2c0.write32(offset, val, alias, &mut self.irq_pending),
+@@ -1471,8 +1521,14 @@ impl Bus {
+             return;
+         }
+         match base {
+-            UART0_BASE => self.uart0.write8(offset, val, &mut self.irq_pending),
+-            UART1_BASE => self.uart1.write8(offset, val, &mut self.irq_pending),
++            UART0_BASE => {
++                self.uart0.set_wire_cycle(self.master_cycle);
++                self.uart0.write8(offset, val, &mut self.irq_pending);
++            }
++            UART1_BASE => {
++                self.uart1.set_wire_cycle(self.master_cycle);
++                self.uart1.write8(offset, val, &mut self.irq_pending);
++            }
+             SPI0_BASE => self.spi0.write8(offset, val, &mut self.irq_pending),
+             SPI1_BASE => self.spi1.write8(offset, val, &mut self.irq_pending),
+             I2C0_BASE => self.i2c0.write8(offset, val, &mut self.irq_pending),
+@@ -1491,8 +1547,14 @@ impl Bus {
+         match base {
+             SPI0_BASE => self.spi0.write16(offset, val, &mut self.irq_pending),
+             SPI1_BASE => self.spi1.write16(offset, val, &mut self.irq_pending),
+-            UART0_BASE => self.uart0.write8(offset, val as u8, &mut self.irq_pending),
+-            UART1_BASE => self.uart1.write8(offset, val as u8, &mut self.irq_pending),
++            UART0_BASE => {
++                self.uart0.set_wire_cycle(self.master_cycle);
++                self.uart0.write8(offset, val as u8, &mut self.irq_pending);
++            }
++            UART1_BASE => {
++                self.uart1.set_wire_cycle(self.master_cycle);
++                self.uart1.write8(offset, val as u8, &mut self.irq_pending);
++            }
+             I2C0_BASE => self
+                 .i2c0
+                 .write32(offset, val as u32, 0, &mut self.irq_pending),
+@@ -2659,10 +2721,7 @@ mod tests {
+ 
+         fn transaction_end(&mut self) {}
+ 
+-        fn advance_virtual_time(
+-            &mut self,
+-            delta: crate::peripherals::i2c::I2cVirtualTimeDelta,
+-        ) {
++        fn advance_virtual_time(&mut self, delta: crate::peripherals::i2c::I2cVirtualTimeDelta) {
+             self.deltas
+                 .lock()
+                 .expect("time probe lock")
+diff --git a/crates/rp2040-emu/src/dma.rs b/crates/rp2040-emu/src/dma.rs
+index 5e822cf..8e545b6 100644
+--- a/crates/rp2040-emu/src/dma.rs
++++ b/crates/rp2040-emu/src/dma.rs
+@@ -42,8 +42,8 @@ use crate::bus::Bus;
+ use crate::dreq::DREQ_FORCE;
+ use crate::irq::{IRQ_DMA_IRQ_0, IRQ_DMA_IRQ_1};
+ use crate::{
+-    audio_sink::{AudioSink, PICOCALC_AUDIO_TIMER_INDEX},
+     AudioSinkSnapshot,
++    audio_sink::{AudioPreviewBlock, AudioPreviewSnapshot, AudioSink, PICOCALC_AUDIO_TIMER_INDEX},
+ };
+ 
+ /// Total number of DMA channels on RP2040 (datasheet §2.5).
+@@ -398,6 +398,26 @@ impl Dma {
+         self.audio_sink_enabled = true;
+     }
+ 
++    /// Enable the bounded PCM presentation tap for the realtime preview.
++    /// This also enables the existing authoritative audio observer because
++    /// the preview projection reports the same DMA-origin stream.
++    pub fn enable_audio_preview_tap(&mut self) {
++        self.audio_sink_enabled = true;
++        self.audio_sink.enable_preview_pcm_tap();
++    }
++
++    pub fn drain_audio_preview_blocks(&mut self) -> Vec<AudioPreviewBlock> {
++        self.audio_sink.drain_preview_pcm_blocks()
++    }
++
++    pub fn finish_audio_preview_blocks(&mut self) -> Vec<AudioPreviewBlock> {
++        self.audio_sink.finish_preview_pcm_blocks()
++    }
++
++    pub fn audio_preview_snapshot(&self) -> AudioPreviewSnapshot {
++        self.audio_sink.preview_pcm_snapshot()
++    }
++
+     /// True iff no channel is currently transferring (no `BUSY`) and no
+     /// IRQ is latched. Consulted by the fast-path gate in
+     /// [`crate::Emulator::step`] — when false, the slow path runs so
+@@ -859,12 +879,13 @@ impl Dma {
+             _ => bus.write32(write_addr, value),
+         }
+         if let Some((treq, timer_fraction, timer_due_cycle, block_start)) = audio_observation {
+-            self.audio_sink.observe_dma_write(
++            self.audio_sink.observe_dma_write_at_clock(
+                 write_addr,
+                 size,
+                 value,
+                 treq,
+                 timer_fraction,
++                bus.clock_tree.sys_clk_hz,
+                 timer_due_cycle,
+                 bus.master_cycle,
+                 block_start,
+diff --git a/crates/rp2040-emu/src/lib.rs b/crates/rp2040-emu/src/lib.rs
+index c142bbc..50858d0 100644
+--- a/crates/rp2040-emu/src/lib.rs
++++ b/crates/rp2040-emu/src/lib.rs
+@@ -25,7 +25,10 @@ pub mod irq;
+ pub mod memory;
+ pub mod peripherals;
+ 
+-pub use audio_sink::AudioSinkSnapshot;
++pub use audio_sink::{
++    AudioPreviewBlock, AudioPreviewSnapshot, AudioSinkSnapshot, PREVIEW_AUDIO_BLOCK_FRAMES,
++    PREVIEW_AUDIO_QUEUE_BLOCKS,
++};
+ 
+ mod idle_profile;
+ mod virtual_time;
+@@ -1942,6 +1945,37 @@ impl Emulator {
+         self.bus.drain_uart0_tx_log()
+     }
+ 
++    /// Drain UART0 TX writes with their exact virtual bus cycles. This is the
++    /// preview diagnostic path; the byte-only accessor remains unchanged.
++    pub fn drain_uart0_tx_log_with_cycles(&mut self) -> Vec<(u64, u8)> {
++        self.assert_not_placeholder();
++        self.bus.drain_uart0_tx_log_with_cycles()
++    }
++
++    /// Enable exact virtual-cycle metadata on the UART0 preview tap.
++    pub fn enable_uart0_tx_cycle_tap(&mut self) {
++        self.assert_not_placeholder();
++        self.bus.enable_uart0_tx_cycle_tap();
++    }
++
++    /// Inject one byte on the external UART0 RX wire for preview use.
++    pub fn inject_uart0_rx(&mut self, byte: u8) -> peripherals::uart::UartRxResult {
++        self.assert_not_placeholder();
++        self.bus.inject_uart0_rx(byte)
++    }
++
++    /// Number of bytes currently waiting in UART0's guest RX FIFO.
++    pub fn uart0_rx_fifo_len(&self) -> usize {
++        self.assert_not_placeholder();
++        self.bus.uart0_rx_fifo_len()
++    }
++
++    /// UART0 raw interrupt status, exposed for preview diagnostics.
++    pub fn uart0_raw_interrupt_status(&self) -> u32 {
++        self.assert_not_placeholder();
++        self.bus.uart0_raw_interrupt_status()
++    }
++
+     /// Enable and reset the OPT0-B streaming event trace.
+     ///
+     /// Only Serial mode is accepted. The initial observable state is
+diff --git a/crates/rp2040-emu/src/peripherals/uart.rs b/crates/rp2040-emu/src/peripherals/uart.rs
+index cee18d7..954a340 100644
+--- a/crates/rp2040-emu/src/peripherals/uart.rs
++++ b/crates/rp2040-emu/src/peripherals/uart.rs
+@@ -48,9 +48,10 @@
+ //!
+ //! # Receive model
+ //!
+-//! RX FIFO is present as `VecDeque<u8>` but no stimulus source is wired
+-//! in Phase 2 (per the plan's deferral). Reads of `UARTDR` return 0 with
+-//! `UARTFR.RXFE=1`. External RX stimulus belongs to a future phase.
++//! RX FIFO is present as `VecDeque<u8>`. Firmware-facing reads retain the
++//! normal PL011 FIFO semantics; harnesses may inject a bounded host byte via
++//! [`UartRegs::inject_rx`]. Injection is explicit and does not occur during
++//! ordinary conformance runs.
+ //!
+ //! # IRQ line aggregation
+ //!
+@@ -61,7 +62,6 @@
+ //!
+ //! # Deferred from Phase 2
+ //!
+-//! * External RX stimulus path (FIFO source).
+ //! * CTS / DCD / DSR / RI modem-flow-control pins.
+ //! * Break-condition timing (`LBE` in `UARTLCR_H.BRK`).
+ //! * DMA DREQ generation (`UARTDMACR` is storage-only; Phase 4).
+@@ -115,7 +115,6 @@ pub const UARTPCELLID3: u32 = 0xFFC;
+ // --- UARTCR bits ------------------------------------------------------
+ const UARTCR_UARTEN: u32 = 1 << 0;
+ const UARTCR_TXE: u32 = 1 << 8;
+-#[allow(dead_code)] // documented bit; RX path not yet wired (Phase 2 deferral)
+ const UARTCR_RXE: u32 = 1 << 9;
+ 
+ // --- UARTLCR_H bits ---------------------------------------------------
+@@ -162,6 +161,17 @@ const UART_INT_MASK: u32 = UART_INT_CTS
+ /// FIFO depth (both TX and RX) when `UARTLCR_H.FEN=1`.
+ pub const UART_FIFO_DEPTH: usize = 16;
+ 
++/// Result of injecting one byte at the host-facing UART RX wire.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum UartRxResult {
++    /// The byte entered the guest-visible RX FIFO.
++    Accepted,
++    /// UARTEN/RXE was not enabled, so the external byte was ignored.
++    Disabled,
++    /// The guest-visible RX FIFO was full; the byte was dropped and OE set.
++    Overrun,
++}
++
+ /// PL011 peripheral ID bytes (PID0..3). PL011 r1p5 canonical values.
+ const PERIPH_ID: [u32; 4] = [0x11, 0x10, 0x34, 0x00];
+ /// PrimeCell ID constants — identical across all PrimeCell peripherals.
+@@ -188,10 +198,18 @@ pub struct UartRegs {
+     /// NVIC IRQ number this UART raises into `bus.irq_pending`
+     /// (UART0=20, UART1=21).
+     nvic_irq: u32,
++    /// Bus master cycle associated with the next diagnostic TX event.
++    wire_cycle: u64,
++    /// The richer cycle tap is opt-in so ordinary batch/report runs retain
++    /// the byte-only path and do not accumulate a second event queue.
++    wire_cycle_tap_enabled: bool,
+     /// Diagnostic tap — every byte firmware writes to `UARTDR` (after the
+     /// enable gate) is appended here so harnesses can mirror the wire to
+     /// stderr. Drained by `drain_tx_log`. Invisible to guest software.
+     tx_wire_log: VecDeque<u8>,
++    /// The same diagnostic TX events with the virtual bus cycle at which the
++    /// guest wrote UARTDR.
++    tx_wire_cycle_log: VecDeque<(u64, u8)>,
+     #[cfg(feature = "behavior-trace")]
+     /// Canonical serial-event tap — drained as behavior events by
+     /// `drain_behavior_tx_log`.
+@@ -218,7 +236,10 @@ impl UartRegs {
+             rx_fifo: VecDeque::with_capacity(UART_FIFO_DEPTH),
+             tx_cycle_accum: 0,
+             nvic_irq,
++            wire_cycle: 0,
++            wire_cycle_tap_enabled: false,
+             tx_wire_log: VecDeque::new(),
++            tx_wire_cycle_log: VecDeque::new(),
+             #[cfg(feature = "behavior-trace")]
+             tx_behavior_log: VecDeque::new(),
+         }
+@@ -228,7 +249,28 @@ impl UartRegs {
+     /// call. Harness-only diagnostic; returns empty if nothing was
+     /// written. Does not affect the real TX FIFO / baud-rate model.
+     pub fn drain_tx_log(&mut self) -> Vec<u8> {
+-        self.tx_wire_log.drain(..).collect()
++        let bytes = self.tx_wire_log.drain(..).collect();
++        self.tx_wire_cycle_log.clear();
++        bytes
++    }
++
++    /// Drain TX writes together with their virtual bus cycles. This is a
++    /// preview diagnostic tap and does not alter guest-visible UART timing.
++    pub fn drain_tx_log_with_cycles(&mut self) -> Vec<(u64, u8)> {
++        self.tx_wire_log.clear();
++        self.tx_wire_cycle_log.drain(..).collect()
++    }
++
++    /// Enable the cycle-rich TX tap for the realtime preview adapter.
++    pub(crate) fn enable_wire_cycle_tap(&mut self) {
++        self.wire_cycle_tap_enabled = true;
++    }
++
++    /// Associate the next diagnostic TX write with a bus master cycle.
++    pub(crate) fn set_wire_cycle(&mut self, cycle: u64) {
++        if self.wire_cycle_tap_enabled {
++            self.wire_cycle = cycle;
++        }
+     }
+ 
+     #[cfg(feature = "behavior-trace")]
+@@ -289,6 +331,37 @@ impl UartRegs {
+         self.is_enabled() && !self.rx_fifo.is_empty()
+     }
+ 
++    /// Inject one externally received byte into the guest-visible RX FIFO.
++    /// This is a harness-facing wire operation, not an MMIO shortcut.
++    pub fn inject_rx(&mut self, byte: u8, irqs: &mut u32) -> UartRxResult {
++        if !self.is_enabled() || (self.cr & UARTCR_RXE) == 0 {
++            return UartRxResult::Disabled;
++        }
++        let cap = self.tx_capacity();
++        if self.rx_fifo.len() >= cap {
++            self.rsr_ecr |= 1 << 3;
++            self.ris |= UART_INT_OE;
++            self.route_irq(irqs);
++            return UartRxResult::Overrun;
++        }
++        self.rx_fifo.push_back(byte);
++        if self.rx_fifo.len() > self.tx_fill_threshold() {
++            self.ris |= UART_INT_RX;
++        }
++        self.route_irq(irqs);
++        UartRxResult::Accepted
++    }
++
++    /// Number of bytes currently waiting in the guest-visible RX FIFO.
++    pub fn rx_fifo_len(&self) -> usize {
++        self.rx_fifo.len()
++    }
++
++    /// Current raw receive/error interrupt status, for preview diagnostics.
++    pub fn raw_interrupt_status(&self) -> u32 {
++        self.ris
++    }
++
+     /// Enabled state: UARTEN bit in UARTCR.
+     #[inline]
+     fn is_enabled(&self) -> bool {
+@@ -364,7 +437,7 @@ impl UartRegs {
+     /// the FIFO level drops to at or below the configured trigger level.
+     /// RX interrupt latches when FIFO level rises above the threshold.
+     ///
+-    /// Phase 2 only models TX. RX path is deferred.
++    /// RX bytes are inserted explicitly through [`Self::inject_rx`].
+     fn refresh_tx_interrupt(&mut self) {
+         let lvl = self.tx_fifo.len();
+         let thresh = self.tx_fill_threshold();
+@@ -561,6 +634,9 @@ impl UartRegs {
+         // Tap the byte before the overflow check so the diagnostic log
+         // captures firmware *intent* even under simulated FIFO drops.
+         self.tx_wire_log.push_back(byte);
++        if self.wire_cycle_tap_enabled {
++            self.tx_wire_cycle_log.push_back((self.wire_cycle, byte));
++        }
+         #[cfg(feature = "behavior-trace")]
+         self.tx_behavior_log.push_back(byte);
+         let cap = self.tx_capacity();
+@@ -727,6 +803,46 @@ mod tests {
+         assert_eq!(u.tx_fifo.front().copied(), Some(0x5A));
+     }
+ 
++    #[test]
++    fn cycle_tap_preserves_wire_order_and_bus_cycles() {
++        let mut u = UartRegs::new(UART0_IRQ);
++        let mut irqs = 0;
++        u.enable_wire_cycle_tap();
++        u.write32(UARTLCR_H, UARTLCR_H_FEN, 0, &mut irqs);
++        u.write32(UARTCR, UARTCR_UARTEN | UARTCR_TXE, 0, &mut irqs);
++
++        u.set_wire_cycle(42);
++        u.write32(UARTDR, 0xA1, 0, &mut irqs);
++        u.set_wire_cycle(57);
++        u.write8(UARTDR, 0xB2, &mut irqs);
++
++        assert_eq!(
++            u.drain_tx_log_with_cycles(),
++            vec![(42, 0xA1), (57, 0xB2)],
++            "the preview tap must preserve guest write order and its cycle boundary"
++        );
++        assert!(u.drain_tx_log().is_empty());
++    }
++
++    #[test]
++    fn injected_rx_is_explicit_and_reports_fifo_overrun() {
++        let mut u = UartRegs::new(UART0_IRQ);
++        let mut irqs = 0;
++
++        assert_eq!(u.inject_rx(0x10, &mut irqs), UartRxResult::Disabled);
++        assert_eq!(u.rx_fifo_len(), 0);
++
++        u.write32(UARTLCR_H, UARTLCR_H_FEN, 0, &mut irqs);
++        u.write32(UARTCR, UARTCR_UARTEN | UARTCR_RXE, 0, &mut irqs);
++        for byte in 0..UART_FIFO_DEPTH as u8 {
++            assert_eq!(u.inject_rx(byte, &mut irqs), UartRxResult::Accepted);
++        }
++        assert_eq!(u.rx_fifo_len(), UART_FIFO_DEPTH);
++        assert_eq!(u.inject_rx(0xFF, &mut irqs), UartRxResult::Overrun);
++        assert_eq!(u.rx_fifo_len(), UART_FIFO_DEPTH);
++        assert_ne!(u.raw_interrupt_status() & UART_INT_OE, 0);
++    }
++
+     #[test]
+     fn tx_fifo_caps_at_16_when_fen_set() {
+         let mut u = UartRegs::new(UART0_IRQ);
