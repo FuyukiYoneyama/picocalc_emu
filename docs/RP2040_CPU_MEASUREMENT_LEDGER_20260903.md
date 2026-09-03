@@ -41,6 +41,23 @@ CPU天井を表す値ではない。
 P1-Aの採用判断は実アプリ combined rawがマイナスでなかったことに基づく。詳細は
 [`RP2040_CPU_P1_A_ADOPTION_DECISION_20260903.md`](RP2040_CPU_P1_A_ADOPTION_DECISION_20260903.md)を参照する。
 
+## 現行実アプリ性能基準（PERF-Q3 screening）
+
+現在の高速化候補を比較するための、実アプリ2件のprocess CPU-time基準を確定した。
+これはPicoTetrisとPicoEditを固定guest cycle数で実行したPERF-Q3のscreening referenceであり、
+1%級の差を確定する精密測定値や、PicoCalcの実時間比ではない。基準backendは、P2-A cleanup後の
+clean commit `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`、CPU affinityは11番である。
+
+| 対象 | 固定guest cycles | baseline CPU時間中央値 | baseline throughput中央値 |
+|---|---:|---:|---:|
+| Tetris（軽ゲーム実装） | 927,528,659 | **189.414729529秒** | **4,897,900.540143 cycles/CPU秒** |
+| PicoEdit（テキスト編集実装） | 827,799,818 | **169.401137809秒** | **4,886,837.447292 cycles/CPU秒** |
+
+同じQ3で評価したdynamic quantum候補はcombined CPU-time効果が約**-1.88%**、95% CIが約
+**-14.8%〜+12.9%**となり、改善のCI下限が0を超えなかったため採用していない。したがって、
+この表の値を候補比較の出発点として使い、候補未採用を含むQ3のraw run・計算式・判定は
+[`rp2040-cpu-q3-screening-20260903-01`](../firmware-validation/records/rp2040-cpu-q3-screening-20260903-01/)に保存する。
+
 ## 111.7 MHz（資料上の旧値）の出典訂正
 
 これまで一部資料に現れた数値は **117 MHzではなく111.7 MHz** である。調査時点で確認できたのは、
