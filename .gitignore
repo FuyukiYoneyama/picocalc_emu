@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 artifacts/
 .picocalc-build-history.json
+
+# Local-only incomplete LOAD-0 material; publish only after a complete review package.
+/docs/validated-realtime-preview/LOAD0_HARDWARE_TEST_RUNBOOK.md
+/firmware-validation/records/vrp-load0-determinism-20260830-01/
