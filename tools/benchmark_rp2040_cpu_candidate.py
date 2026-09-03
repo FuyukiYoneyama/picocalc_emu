@@ -112,10 +112,14 @@ KNOWN_FEATURES = frozenset(
         "unconditional-cache-lookup-prototype",
     }
 )
-# ``picocalc-harness`` enables this feature by default.  Every build
-# provenance record therefore carries the effective Cargo set, not merely the
-# candidate-specific additions supplied on the CLI.
-DEFAULT_EFFECTIVE_FEATURES = ("sd-gen1-multiblock",)
+# ``picocalc-harness`` enables both features by default on the current clean
+# baseline. Every build provenance record therefore carries this effective
+# Cargo set, not merely the candidate-specific additions supplied on the CLI.
+# Historical records retain their original identities and are not rewritten.
+DEFAULT_EFFECTIVE_FEATURES = (
+    "decode-invalidation-tag-guard",
+    "sd-gen1-multiblock",
+)
 DYNAMIC_QUANTUM_FEATURE = "dynamic-quantum-prototype"
 DYNAMIC_QUANTUM_MAX = 16
 BUILD_PROVENANCE_SCHEMA_ID = "picocalc.rp2040-build-provenance"

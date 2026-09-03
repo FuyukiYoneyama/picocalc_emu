@@ -358,12 +358,12 @@ class CandidateRunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             tree = Path(temporary) / "tree.txt"
             tree.write_text(
-                "picocalc-harness v0.1.0 (/tmp/backend) behavior-trace,default,sd-gen1-multiblock\n",
+                "picocalc-harness v0.1.0 (/tmp/backend) behavior-trace,default,decode-invalidation-tag-guard,sd-gen1-multiblock\n",
                 encoding="utf-8",
             )
             self.assertEqual(
                 self.module.cargo_tree_root_features(tree),
-                ["behavior-trace", "sd-gen1-multiblock"],
+                ["behavior-trace", "decode-invalidation-tag-guard", "sd-gen1-multiblock"],
             )
             tree.write_text(
                 "picocalc-harness v0.1.0 (/tmp/backend) default\n",
@@ -1555,7 +1555,12 @@ class CandidateRunnerTests(unittest.TestCase):
             self.assertEqual(set(context["backend_identities"]), {"baseline_production", "candidate_production"})
             self.assertEqual(
                 context["feature_set"],
-                ["behavior-trace", "cpu-application-profiler", "sd-gen1-multiblock"],
+                [
+                    "behavior-trace",
+                    "cpu-application-profiler",
+                    "decode-invalidation-tag-guard",
+                    "sd-gen1-multiblock",
+                ],
             )
 
     def test_base_manifest_records_measurement_policy(self):
@@ -1734,7 +1739,10 @@ class CandidateRunnerTests(unittest.TestCase):
             "dirty": False,
             "runner_sha256": "b" * 64,
             "build_provenance_sha256": "c" * 64,
-            "feature_set": ["sd-gen1-multiblock"],
+            "feature_set": [
+                "decode-invalidation-tag-guard",
+                "sd-gen1-multiblock",
+            ],
             "role": "baseline_production",
             "provenance_role": "baseline_production",
         }
