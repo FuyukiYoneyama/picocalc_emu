@@ -1,10 +1,16 @@
-# PicoCalc firmware emulator 高速化 — 現行計画
+# PicoCalc firmware emulator 高速化 — PERF-Q履歴計画
 
-- Status: **current / PERF-Q0 complete / P2-A cleanup complete / PERF-Q1 candidate Q2 correctness complete / PERF-Q3 screening complete / PERF-Q4 not started**
+- Status: **superseded after PERF-Q3 / no further execution**
 - Decision date: 2026-09-03
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
 - Active execution model: `Serial`（PicoCalc firmware検証の正確性基準）
+
+> **2026-09-03 性能退行判明後の訂正:** `f32eba1...`のPERF-Q3値は、次候補を積むための
+> accepted baselineではなく、旧`e985a9d...`よりhost計算コストが約7.4倍大きい退行比較点として扱う。
+> PERF-Q4と§5以降を実行せず、現在作業は
+> [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
+> に従って高速地点から必要機能を再構築する。以下はPERF-Q3までの設計・実施記録として保持する。
 
 ## 0. 決定
 

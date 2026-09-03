@@ -1,8 +1,8 @@
 # 作業計画の完了状態
 
 **この文書は完了・終了した作業の台帳です。** R0〜NEXT-4は完了または正式終了しています。
-現在の高速化の目的、実施順序、採否条件は
-[`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
+現在の性能退行復旧の目的、実施順序、採否条件は
+[`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
 を正典とします。
 表示名として、`VRP-LOAD-0`は **LOAD-0（最大級の継続負荷性能テスト0番）**、
 `picotetris-opt1b`は **Tetris（軽ゲーム実装）** と記載します。内部IDと証拠のパスは変更しません。
@@ -47,7 +47,8 @@ recordなどの入力識別情報と検証記録だけである。SHA-256は同�
 | R5 | 同一artifact PicoCalc実機相関 | 完了 2026-08-08 |
 | R6 | 文書・配布状態確定 | 完了 2026-08-08 |
 | R6-M | backend role／回帰境界の分離 | 完了 2026-08-09 |
-| PERF | PicoCalc emulator高速化 | **現行。実アプリwall時間短縮が目的。PERF-Q0（dynamic quantumの機会量・危険遷移調査）から開始** |
+| PERF | PicoCalc emulator高速化 | **PERF-Q3まで完了後、約7.4倍の性能退行判明により以後を停止。履歴として保持** |
+| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。`e985a9d...`から必要な正確性・機能だけを段階再構築。実装未着手** |
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |

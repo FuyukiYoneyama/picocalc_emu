@@ -15,7 +15,8 @@
 | 高度なAI監督・実機依頼の規則 | [`../AI_START_HERE.md`](../AI_START_HERE.md) |
 | 現在できること／できないこと | [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) |
 | 現行計画の完了状態 | [`MILESTONES.md`](MILESTONES.md) |
-| **現在の高速化計画（実アプリの検証待ち時間を、Serialの正確性を保って短縮）** | [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md) |
+| **現在の性能退行復旧計画（約14%の高速地点から必要機能だけを再構築）** | [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md) |
+| PERF-Q3まで実施した旧高速化計画（退行判明により以後の実行を停止） | [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md) |
 | 中断済み1倍速UX計画の実装履歴（現行作業ではない） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | VRP-2 backendのrunner実装・IPC境界・ローカル検証 | [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md) |
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |

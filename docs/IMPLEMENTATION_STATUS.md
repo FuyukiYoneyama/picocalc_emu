@@ -240,11 +240,17 @@ snapshotを使い、runnerへhost directoryを直接mountするものではな�
 
 ## 性能
 
-現行の性能作業は、実アプリの検証待ち時間をSerialの正確性を維持して短縮する計画です。
+現行の性能作業は、Tetris（軽ゲーム実装）が約14%で動作していたbackend `e985a9d...`から、
+現在必要な正確性と機能だけを性能確認しながら積み直す退行復旧計画です。実施順序と停止条件は
+[`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
+を正典とし、現在は計画作成済み・実装未着手です。
+
+旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、
 PERF-Q3のprocess CPU-time screeningまで完了しました。Q3の比較基準は、P2-A cleanup後のclean
 backend `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`、CPU affinity 11番、実アプリ2件の固定guest
-cycle実行で確定しています。LOAD-0、1倍速、CPU-only MHzは採否指標に使いません。
+cycle実行で記録されています。ただし性能退行判明後は、これを追加最適化のaccepted baselineではなく
+現行退行点として扱います。LOAD-0、1倍速、CPU-only MHzは採否指標に使いません。
 
 Q3 baselineの中央値は、Tetris（軽ゲーム実装）が927,528,659 guest cyclesに対して
 189.414729529 process CPU秒、PicoEdit（テキスト編集実装）が827,799,818 guest cyclesに対して
@@ -252,12 +258,16 @@ Q3 baselineの中央値は、Tetris（軽ゲーム実装）が927,528,659 guest 
 [`RP2040_CPU_MEASUREMENT_LEDGER_20260903.md`](RP2040_CPU_MEASUREMENT_LEDGER_20260903.md)と
 [`rp2040-cpu-q3-screening-20260903-01`](../firmware-validation/records/rp2040-cpu-q3-screening-20260903-01/)を参照してください。
 Q3候補のcombined効果は約-1.88%（95% CI約-14.8%〜+12.9%）で改善未証明のため、候補は採用せず、
-Q4全target回帰も開始していません。現在は10%以上の改善を説明できる処理分類の切り分け中です。
+Q4全target回帰も開始していません。10%以上の新候補探索も停止し、まず`e985a9d...`の高速地点と
+現行退行点を同じprocess CPU計測で固定する復旧計画R0から再開します。
 
 歴史的なpromoted PicoTetris値はwall中央値**25.381594秒**、実時間比**14.636593%**で、
 R5前baseline 63.247秒から約2.492倍高速化しました。これは当時のbackend／targetに対する値で、
-現在のbackendを再測定した値ではありません。採用済みP1-Aは実アプリCPU-time combined rawで
-**+1.218973%**でした。CPU-only fixtureの大きな改善を実アプリ全体の改善と呼び替えません。
+現在のbackendを再測定した値ではありません。旧decisionで採用としたP1-Aの実アプリCPU-time
+combined rawは**+1.218973%**でしたが、その元recordは事前固定validity gateでinvalidでした。
+さらに現行backendの一時的なP1-Aあり／なし1回診断では実質的な改善を確認できていません。
+復旧計画ではP1-Aを移植対象にせず、既存recordを変更しない新しいdecisionで最終扱いを決めます。
+CPU-only fixtureの大きな改善を実アプリ全体の改善と呼び替えません。
 
 OPT2候補は追加promotionなし、OPT3-Bは退行、OPT3-Cは当時のbaselineに対して4.1542%改善でしたが
 5%採用基準未達でrevertしました。OPT4 micro-opt bankをfeature-gated候補として評価しましたが、
