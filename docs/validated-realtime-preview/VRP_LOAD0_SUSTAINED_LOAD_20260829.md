@@ -1,7 +1,10 @@
-# VRP-LOAD-0: repository-owned sustained-load profile
+# LOAD-0（最大級の継続負荷性能テスト0番）: repository-owned sustained-load profile
 
 Status: **prototype implemented; 1- and 2-virtual-second clean-clone runtime/input smokes passed; 120-second vertical slice and preview-only target admission passed; three-run determinism and preparation gate pending**
 Date: 2026-08-30
+Display name: **LOAD-0（最大級の継続負荷性能テスト0番）**. Stable internal workload ID: `VRP-LOAD-0`.
+Interpretation status: the 120-second result requires a role/adoption review before any longer preparation run.
+Project state: **1x UX qualification suspended at this preparation boundary; `ux` remains concept-only and unimplemented.** See [`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md).
 
 ## Purpose
 
@@ -11,6 +14,19 @@ preview preserves UX timing under continuous display, audio, CPU, and virtual
 time pressure.  The qualification requirement is therefore a load profile,
 not a dependency on the semantics or implementation of an external emulator
 project.
+
+LOAD-0 is the name of that fixed workload/test case; it is not a numeric
+baseline and it is not the current emulator's overall performance. A baseline
+is the measurement result obtained when a fixed workload is run through a
+fixed measurement path. The 120-second result recorded below is a
+preparation-stage observation for this artificial profile. It is not the
+project-wide 1x UX baseline, does not represent Tetris（軽ゲーム実装）, and
+does not itself show that 1x is achievable.
+
+This document describes a measurement and qualification input, not an
+optimization implementation. No speedup is produced by completing LOAD-0.
+The actual optimization work is a separate, conditional VRP-7 step after the
+VRP-5 qualification decision.
 
 ## Current implementation status
 
@@ -30,8 +46,8 @@ passed the vertical-slice run and is now connected to the preview-only target
 receipt/admission path and the headless preview consumer. This target is only
 an admission-path record; it does not close the three-run 10-minute
 preparation gate. The slice observed a high frame lag and report-wide
-timer-miss diagnostic; these remain inputs to the later baseline and threshold
-decision, not an unrecorded pass or failure.
+timer-miss diagnostic; these are recorded observations, not an unrecorded pass
+or failure.
 
 The non-formal slice record is
 `firmware-validation/records/vrp-load0-vslice-120s-20260829-01/record.json`.
@@ -40,15 +56,17 @@ microseconds and preserves the report, audio-analysis, and UART artifacts.
 The run produced 3,600 scheduled frames with zero presentation drops, 0
 firmware audio underruns, 0 audio write drops, 48,000 Hz audio observation,
 and four delivered fixed keyboard events. Both CPU cores reported sustained
-work. The measured virtual/wall ratio was `0.019292827826945906`, so this is
-not a 1x result. The report-wide audio timer-miss and block-boundary counters
+work. The canonical `real_time_percent` was `1.929283%` (`100%` is wall-clock
+1x), so this is not a 1x result. The report-wide audio timer-miss and
+block-boundary counters
 are retained as observations rather than being hidden or converted into a
 threshold pass.
 
 The formal VRP-5 workload pair is defined at the logical-workload level as:
 
-- `picotetris-opt1b` revision 5 as the baseline workload identity
-- `VRP-LOAD-0`
+- `picotetris-opt1b` revision 5 as the representative Tetris（軽ゲーム実装）
+  application workload identity
+- `VRP-LOAD-0` as the repository-owned artificial sustained-load workload
 
 The launch record must additionally name a reachable, clean, versioned target
 id/revision for the `picotetris-opt1b` workload.  The old
@@ -123,13 +141,22 @@ interval to an event boundary.  This is not automatically an invalid shortcut;
 the profile must explicitly state whether it is allowed and how semantic
 equivalence and sustained timing pressure are evidenced.
 
+## Review gate before longer runs
+
+The 120-second vertical slice is an implementation-path check. Its completion
+does not mechanically trigger three repeated runs or a 10-virtual-minute run.
+Before proceeding, record whether LOAD-0 will remain a formal comparison
+workload, be retained only as an artificial sustained-load regression test, or
+be deferred while a representative UX workload is measured. A result that is
+far below the 1x goal must not be repeated only to obtain more decimal places.
+
 ## Preparation gate
 
 Before VRP-5 qualification, execute the same input at least three times and
 record:
 
 - source, fixture, firmware BIN, runner, backend, and toolchain identity;
-- virtual and wall-clock duration, session ratio, and rolling ratio;
+- virtual and wall-clock duration, session／rolling `real_time_percent`;
 - pacer backlog/overrun, presentation drops, and audio underrun/overrun;
 - authoritative observation projection and digest;
 - CPU/RSS as supplementary measurements; and

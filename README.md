@@ -12,6 +12,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 
 ## 現在の状態
 
+- workloadの表示名: **LOAD-0（最大級の継続負荷性能テスト0番）**（内部ID: `VRP-LOAD-0`）、**Tetris（軽ゲーム実装）**（内部target ID: `picotetris-opt1b`）。表示名は計測内容を示し、内部ID・証拠ファイル名は再現性のため保持します
+- LOAD-0は数値の基準値ではなく、画面・音声・CPU・virtual timeを同時に継続させる人工的な固定試験ケースです。120秒sliceの`1.929283%`はLOAD-0に対する準備段階の観測値であり、現行エミュレーター全体やTetris（軽ゲーム実装）の性能値ではありません
 - 現行BSP source: **0.9.0**
 - 標準BSP機能の実機相関baseline: **0.8.8**
 - 推奨LCD: `pio-rgb565`（PIO0、RGB565、LCD DMAなし）
@@ -19,7 +21,8 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 - SD RAWの標準pack／extract: [`USER_GUIDE/SD_IMAGES.md`](USER_GUIDE/SD_IMAGES.md)
 - 対話型preview GUI（PicoCalc skin／LCD／UART0／入力）: [`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)
 - bounded host audio monitor（可変rate／drop診断／非同期transport）: [`docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md`](docs/validated-realtime-preview/VRP4_AUDIO_MONITOR_20260829.md)
-- 1倍UX qualification workload: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定するr1 prototypeを実装済みで、固定条件BIN／UF2再現性と1秒／2秒のruntime／input smoke（公式scenarioを含む）を確認済みです。1〜2 virtual分のvertical slice、admission／receipt、10 virtual分以上の準備run、VRP-5 formal qualificationは未完了です
+- 1倍速判定用の人工高負荷試験ケース: [`docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](docs/validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md)。`VRP-LOAD-0`はrepository-ownedな320x320 RGB565全画面、48 kHz DMA音声、継続CPU負荷、clean clone再現性を固定するr1 prototypeを実装済みで、固定条件BIN／UF2再現性、1秒／2秒のruntime／input smoke、120秒のnon-formal vertical slice、preview-only targetのadmission／receipt／headless consumerまで確認済みです。これはLOAD-0の試験経路確認であり、数値の基準値や現行エミュレーター全体の性能値ではありません。LOAD-0の役割レビュー、3回determinism、10 virtual分以上の準備run、VRP-5 formal qualificationは未完了です
+- 1倍速UXプロジェクトの判断: [`docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)。LOAD-0 r1の120秒sliceを準備段階の停止点とし、`ux`は未採用・未実装、1倍速qualificationは未完了として扱います
 - 通常のfirmware回帰backend: OPT1-B promoted commitをtargetごとに固定
 - R0〜R6、NEXT-1〜NEXT-4: **完了**
 - OPT2／OPT3: 正確性を確認したうえで性能条件未達として終了。候補はrevert済み

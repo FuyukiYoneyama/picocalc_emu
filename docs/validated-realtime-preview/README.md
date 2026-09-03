@@ -10,6 +10,18 @@ the latter are existing validation evidence, while these files describe the
 preview transport, admission receipt, and thin frontend that consumes an
 already validated run.
 
+LOAD-0 is a fixed artificial sustained-load test case, not a numeric baseline
+and not the current emulator's overall performance. A measurement obtained by
+running LOAD-0 is meaningful only as a result for that fixed profile. The
+120-second vertical slice is a preparation-stage path check; it does not by
+itself establish a 1x UX baseline or trigger longer preparation runs
+automatically.
+
+The 1x UX project is explicitly suspended at this preparation boundary. The
+`ux` mode remains concept-only and unimplemented; the suspension decision and
+resume conditions are recorded in
+[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md).
+
 ## Canonical files
 
 | File | Purpose |
@@ -29,7 +41,10 @@ already validated run.
 | [`VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](VRP2E_REGISTERED_DIGEST_GATE_20260829.md) | Registered-target batch/machine/preview complete-digest gate (implementation and acceptance boundary) |
 | [`VRP3_GUI_20260829.md`](VRP3_GUI_20260829.md) | Tk GUI, PicoCalc skin/LCD composition, UART0 console, input, reset/reload, and local WSLg acceptance |
 | [`VRP4_AUDIO_MONITOR_20260829.md`](VRP4_AUDIO_MONITOR_20260829.md) | Bounded host PCM monitor, resampling, drop accounting, and local acceptance boundary |
-| [`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](VRP_LOAD0_SUSTAINED_LOAD_20260829.md) | Repository-owned sustained-load profile planned for the future 1x qualification |
+| [`VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](VRP_LOAD0_SUSTAINED_LOAD_20260829.md) | LOAD-0 r1のrepository-owned sustained-load profile。120秒vertical sliceまで確認済み、formal qualificationは中断 |
+| [`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md) | 1倍速UXプロジェクトの中断判断、未完了gate、再開条件、commit／push境界 |
+| [`UX_MODE_CONCEPT_20260830.md`](UX_MODE_CONCEPT_20260830.md) | `ux`モードの概念設計。検証用と体感評価用を分離し、LCD転送とCPU待機を一体で畳む方針。**概念のみで未採用・未実装**であり、採用には正典計画の§3／§9／VRP-5判定対象の修正を要する |
+| [`CPU_HOTPATH_MEASUREMENT_20260830.md`](CPU_HOTPATH_MEASUREMENT_20260830.md) | `exact`モードCPU単体経路の差分測定結果。`step()`内側が2/3・外側ループが1/3、例外ポーリングが単独15〜17%。**約半分が未帰属**で、サンプリングプロファイルには`perf_event_paranoid`の緩和が必要 |
 | [`../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json`](../../firmware-validation/records/vrp4-picotetris-20260829-01/vrp4-audio-gate.json) | Formal VRP-4 `off`/`on`/`forced-drop` registered-target evidence |
 
 ## VRP-2-e real-target closure

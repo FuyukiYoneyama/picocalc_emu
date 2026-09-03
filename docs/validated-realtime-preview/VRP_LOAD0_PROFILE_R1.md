@@ -1,13 +1,37 @@
-# VRP-LOAD-0 profile r1
+# LOAD-0（最大級の継続負荷性能テスト0番）— profile r1
 
 Status: **prototype implemented; clean-clone build reproducible; 1- and 2-virtual-second runtime/input smokes passed; 120-second vertical slice and preview-only target admission passed; three-run determinism and preparation gate pending**
 Recorded: 2026-08-30
+Display name: **LOAD-0（最大級の継続負荷性能テスト0番）**. Stable internal fixture ID: `VRP-LOAD-0`.
+Interpretation status: the 120-second result requires a role/adoption review before any longer preparation run.
+Project state: **1x UX qualification suspended at this preparation boundary; `ux` remains concept-only and unimplemented.** See [`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md).
 
 This is the first versioned implementation contract for the repository-owned
 sustained-load fixture. It is not a `realtime-1x-qualified` verdict. The
 preview-only vertical-slice target `vrp-load0-r1-vslice` revision 1 is active
 only to exercise the existing receipt/admission/headless-preview path; it is
 not the final LOAD-0 qualification target and does not claim 1x UX.
+
+## Role in the performance plan
+
+LOAD-0 is a fixed workload and test case, not a numeric baseline. It is an
+artificial maximum sustained-load profile owned by `picocalc_emu`, intended to
+exercise the display, audio, CPU, multicore, and virtual-time paths together.
+It is not the current emulator as a whole, a game workload, or a claim that
+the current implementation can reach 1x.
+
+The baseline is the measurement result obtained by running a fixed workload
+through a fixed measurement path. In this document, the 120-second result is
+a preparation-stage observation for LOAD-0. It can be used as a comparison
+point for the same profile only after the workload's role has been reviewed;
+it is not the project-wide 1x UX baseline, and it does not replace the
+Tetris（軽ゲーム実装）application workload baseline.
+
+The 120-second vertical slice verifies the clean-clone build/run and the
+report, receipt, admission, and headless-preview path. It is not a formal
+LOAD-0 completion, a qualification run, or an optimization run. The plan must
+review this result before starting repeated preparation runs; those runs are
+not an automatic next step merely because the 120-second command completed.
 
 ## Identity
 
@@ -128,10 +152,15 @@ not silently relabelled as underruns or discarded. The firmware RESULT line
 and the `unexpected_gap_count=0` observation are kept separate from any later
 threshold decision.
 
-The measured runner wall-clock finish interval was 6,219.928 s for 120.0
-virtual seconds: virtual/wall ratio `0.019292827826945906` (about 51.83 wall
-seconds per virtual second). This is a load-profile observation, not a 1x
-result.
+The canonical performance value is `real_time_percent`, defined as virtual
+execution seconds divided by host wall-clock seconds, multiplied by 100. The
+runner finished 120.0 virtual seconds in 6,219.928 wall-clock seconds, giving
+`real_time_percent=1.929283%`. This is the current implementation's result for
+this artificial LOAD-0 profile. Since `100%` means wall-clock 1x, it is
+not the performance of the current emulator in general, not the Tetris
+baseline, and not a 1x result. The raw record may retain the derived
+virtual/wall ratio for machine compatibility, but it is not the headline
+performance notation.
 
 The complete non-formal artifact record is
 `firmware-validation/records/vrp-load0-vslice-120s-20260829-01/record.json`.
@@ -301,3 +330,8 @@ yet claim `1x UX`: the headless runner's wall-clock timer is not an
 input-to-visible-response measurement. A same-BIN preview API/GUI smoke and a
 separate input-to-visible-response metric must be added before any UI-facing
 label uses that term.
+
+The r1 scenario's four raw keyboard events (`0x04`, `0x05` press/release
+pairs) are synthetic emulator inputs. They are not evidence of a human
+operating the physical PicoCalc keyboard, and this record must not be used as
+physical-input UX evidence.

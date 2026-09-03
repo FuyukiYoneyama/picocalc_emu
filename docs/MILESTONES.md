@@ -1,8 +1,13 @@
 # 現行計画の完了状態
 
 **この文書が番号付き作業計画の正典です。** R0〜NEXT-4は完了または正式終了しています。
+表示名として、`VRP-LOAD-0`は **LOAD-0（最大級の継続負荷性能テスト0番）**、
+`picotetris-opt1b`は **Tetris（軽ゲーム実装）** と記載します。内部IDと証拠のパスは変更しません。
+LOAD-0は数値の基準値ではなく、正式判定に使う人工的な固定負荷の試験ケースです。120秒sliceの
+測定値はLOAD-0固有の準備段階の観測値であり、現行エミュレーター全体の性能値ではありません。
 性能改善については、旧OPT3終了後の現行計画としてOPT4 micro-opt bankを定義しています。
 直近の完了済み機能計画だった任意I2C外部moduleを扱うI2C-EXTは、E0〜E6まで完了しています。E5では同一UF2を通常のuf2loader経路で実機起動し、E6ではその証拠をversioned validationとbounded capabilityへ固定しました。Validated Realtime PreviewはVRP-0〜VRP-4を受入し、VRP-5 reusable backend pin preflightも完了しています。VRP-2-eではclean backend・実BIN・fresh complete audio reportによるregistered-target四者digest gateを2つのversioned targetで受入、VRP-3ではTk薄型GUI・PicoCalc skin・LCD・keyboard・UART0 console・reset/reloadをWSLgで受入、VRP-4では同一registered targetのmonitor off／on／forced-drop formal evidenceを固定しました。VRP-5〜VRP-7、正式qualificationとcapability昇格は未完了です。NEScoに依存しないrepository-ownedな継続負荷workload `VRP-LOAD-0`をVRP-5の正式qualification前提として計画し、r1のpreview-only targetによるreceipt／admission／headless経路まで受入しました。既存VRP-NES-0のfixture・target・evidenceは歴史資料として保持します。提案の安全境界をソース監査で補正した実施順序は[`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md)を正典とします。
+1倍速UXプロジェクトは、LOAD-0 r1の120秒non-formal vertical sliceを準備段階の停止点として中断しています。3回determinism、10 virtual分以上の準備run、threshold decision、input-to-visible-response、hardware correlation、正式qualificationは未完了です。判断と再開条件は[`validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)を参照してください。
 
 ## 状態
 

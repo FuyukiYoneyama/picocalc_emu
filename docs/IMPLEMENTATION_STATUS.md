@@ -23,6 +23,15 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 ## 利用できる経路
 
+この文書でいう **LOAD-0（最大級の継続負荷性能テスト0番）** は内部ID
+`VRP-LOAD-0`、**Tetris（軽ゲーム実装）** は内部target ID
+`picotetris-opt1b`に対応します。表示名は計測対象の意味を示し、registryや証拠のIDは変更しません。
+
+LOAD-0は数値の基準値ではなく、1倍速判定へ投入する人工的な固定負荷試験ケースです。
+LOAD-0を実行して得た数値が、そのLOAD-0に対する測定結果です。120秒vertical sliceの
+`1.929283%`は準備段階のLOAD-0観測値であり、現行エミュレーター全体の性能値や、1倍速の
+達成可能性を示すものではありません。
+
 ### Canonical BSP
 
 - 実機確認済みのLCD A/B、keyboard、SD/FatFs、PSRAM、audio API
@@ -52,7 +61,9 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 - 複数firmware run用のstderr heartbeat（`picocalc-run`の明示pair、`picocalc.py test --mode firmware`
   の既定10秒、run ID、finish exit、artifact分離手順）。heartbeatはreport／verdict／hashへ入らない
 
-### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-5 reusable backend pin preflight完了、VRP-LOAD-0 completion／VRP-5 qualification以降未完了）
+### Validated Realtime Preview（VRP-0〜VRP-4 formal evidence完了、VRP-5 reusable backend pin preflight完了、1倍速UX qualificationは中断）
+
+1倍速UXプロジェクトは、LOAD-0 r1のprototypeと120秒non-formal vertical sliceで停止しています。これはVRP実装の失敗や既存formal evidenceの取消しではなく、役割レビュー前に準備runを増やさないための明示的な中断です。`ux`モードは未採用・未実装であり、再開条件と未完了gateは[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)に固定しています。
 
 Firmware backendでPASSした同一raw BINと、validationで実際に使ったbyte-identicalな
 `picocalc-run`だけをwall-clock 1倍目標で対話観測する提案があります。2026-08-29時点では

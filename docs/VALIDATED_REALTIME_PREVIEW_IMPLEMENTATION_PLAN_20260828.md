@@ -1,9 +1,11 @@
 # Validated Realtime Preview 実装計画
 
-Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 preview-only target, receipt/admission, and headless path complete; LOAD-0 completion, preparation, threshold, and VRP-5 qualification remain**
-Date: 2026-08-28 (updated 2026-08-30)
+Status: **Current implementation plan / VRP-0〜VRP-4 formal evidence complete; VRP-5 reusable backend-pin preflight complete; VRP-LOAD-0 preview-only target, receipt/admission, and headless path complete; 1x UX qualification suspended before LOAD-0 completion, preparation, threshold, and VRP-5 qualification**
+Date: 2026-08-28 (updated 2026-09-03)
+表示名の規則: `VRP-LOAD-0`は、利用者向けには **LOAD-0（最大級の継続負荷性能テスト0番）**（英: *Maximum Sustained-Load Performance Test #0*）と表記する。`VRP-LOAD-0`はregistry・validation record・receipt・証拠パスに使う変更しない内部IDである。また、`picotetris-opt1b`は利用者向けには **Tetris（軽ゲーム実装）** と表記する。これらの表示名は計測対象の意味を補足し、machine-readableなIDは変更しない。
 Proposal: [VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md](VALIDATED_REALTIME_PREVIEW_PROPOSAL_20260828.md)
 Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md)
+Suspension decision: [VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)
 
 ## 1. 判定
 
@@ -18,19 +20,57 @@ Firmware input: [VALIDATED_REALTIME_PREVIEW_BIN_INPUT.md](VALIDATED_REALTIME_PRE
    結び直す。
 4. 提案が固定するdevice 6項目は現行の標準targetには使用できるが、optional I2C profile等を
    暗黙に無視してはならない。初版は未知のsemantics-affecting optionをfail-closedで拒否する。
-5. 既存promoted PicoTetris記録は実時間比14.636593%であり、仮想1秒にwall約6.83秒を要した。
+5. 既存promoted **Tetris（軽ゲーム実装）** の記録は実時間比14.636593%であり、仮想1秒にwall約6.83秒を要した。
    現行backendを再測定するまでは参考値だが、GUIを付けるだけで1倍になるとは見込まない。
    初回成果を「正直な計測付きpreview」、1倍到達を別のqualification gateとして扱う。
-6. VRP-0の既存workloadは、曖昧な「active PicoTetris」ではなく、現在のpromoted target
-   **`picotetris-opt1b`（revision 5）**と、性質の異なる再現可能な
+6. VRP-0の既存workloadは、曖昧な「active Tetris」ではなく、現在のpromoted target
+   **Tetris（軽ゲーム実装）=`picotetris-opt1b`（revision 5）**と、性質の異なる再現可能な
    **`picoedit-r1`（revision 1）**に固定する。`picocalc-audio-r1`はVRP-4のaudio検証用fixtureとして扱う。
 7. 正式な1倍判定で必要なのはNESの意味論ではなく、全画面描画・音声・CPU・virtual timeを
    継続させる負荷特性である。したがって外部`Picocalc_NESco`はVRP-5の必須依存にせず、
-   repository-ownedな`VRP-LOAD-0`負荷プロファイルを正式workloadとして別途準備する。
+   repository-ownedな`LOAD-0（最大級の継続負荷性能テスト0番、内部ID: VRP-LOAD-0）`負荷プロファイルを正式workloadとして別途準備する。
    既存の`VRP-NES-0` fixture／evidenceは歴史資料として保持し、資格判定には使用しない。
 8. preview IPC schema 1はVRP-0の最初の成果物として、具体的なwire fixtureとともに凍結する。
    magic、version、endian、field幅、message kind、payload上限、異常系を未定義のままproduction
    codeへ進まない。
+
+### 性能値の表記
+
+本計画と現行のstatus／利用者向け資料では、性能の主表記を
+`実時間比（real_time_percent）`に統一する。定義は
+`仮想実行秒 / host wall-clock秒 × 100`であり、`100%`を実時間の1倍とする。
+たとえばpromoted PicoTetrisの`14.636593%`は、仮想1秒をwall約6.83秒で実行した値である。
+「何倍遅い」という換算値は新しい本文・status・UIの見出しには使わない。
+既存のmachine-readable recordにある`slowdown`やvirtual/wall ratioは、後方互換性と
+証拠保全のため残すが、主判定値にはしない。
+
+### LOAD-0、基準値、120秒vertical sliceの役割
+
+この計画では、試験条件と測定結果を同じ「基準」という言葉で呼ばない。
+
+- **LOAD-0（最大級の継続負荷性能テスト0番）**は、`picocalc_emu`が所有する固定された
+  負荷プロファイル／試験ケースである。画面、音声、CPU、virtual timeを同時に継続させる
+  ための人工的なworkloadであり、性能値でも、現行エミュレーターそのものでもない。
+- **120秒vertical slice**は、そのLOAD-0を120仮想秒動かし、clean cloneからのbuild、run、
+  report、receipt、admission、headless previewの経路と観測項目が通ることを確認する準備試験で
+  ある。正式なLOAD-0 completion、1倍判定、または高速化実装ではない。
+- **基準値（baseline）**は、固定したworkloadを固定した測定経路で実行して得た測定結果である。
+  LOAD-0自体が基準値なのではなく、LOAD-0に対する測定結果を、採用を決めた場合に将来の同一
+  workloadとの比較基準として記録する。
+- 120秒sliceで得た`real_time_percent=1.929283%`は、LOAD-0に対する現行実装の準備段階の
+  観測値である。現行エミュレーター全体の性能値でも、Tetris（軽ゲーム実装）の性能値でも、
+  1倍速達成可能性の証明でもない。
+
+この計画の実体は、previewの実装・測定経路を先に整え、`Tetris（軽ゲーム実装）`とLOAD-0を
+ それぞれ固定条件で測定し、VRP-5で判定する**検証・qualification計画**である。98%の高速化を
+ 自動的に実現する計画ではない。実際の高速化実装は、VRP-5で未達を確認した場合に限って
+ 条件付きで開始するVRP-7に分離している。
+
+120秒sliceの終了後は、3回determinismや10 virtual分以上の準備runへ自動的に進めない。
+ まず、LOAD-0をこのプロジェクトの比較試験として採用し続けるか、人工高負荷の回帰試験として
+ 保持するか、別の代表UX workloadを先に測るかをレビュー記録へ明記する。結果の桁を細かくする
+ だけの反復は、高速化の進捗を意味しない。準備runおよびVRP-5 qualificationは、このレビュー
+ で継続を明示した後に限って開始する。
 
 9. VRP-0で固定したtargetのbackend pinと、preview APIを実装した現在のbackendは同一とは限らない。
    既存のvalidation record／target revisionを上書きせず、VRP-2のregistered-target gateへ入る前に、
@@ -56,7 +96,7 @@ targetを追加できるが、既存entryを上書きしてはならない。pre
 | `MachineSession` | `picocalc-harness/src/session.rs`のcrate内共有型 | batch scenario、machine API、preview APIが同じsessionとstep境界を共有する |
 | 既存TUI | 独自の簡易LCD/GPIO経路 | PicoCalc previewのdevice modelとして流用しない |
 | wall-clock pacer | `picoem-common::Pacer`として実装済み | core semanticsを変えず再利用する |
-| pacer metric | cycle、wall、emulation、spin、behind count | rolling ratioとlagはcold pathで導出・追加する |
+| pacer metric | cycle、wall、emulation、spin、behind count | rolling実時間比とlagはcold pathで導出・追加する |
 | framebuffer | PicoCalc LCD modelからRGB565 snapshotを取得可能 | presentation cadenceでのみcopyする |
 | keyboard | `MachineSession`のpressed/held/released入力が存在 | OS auto-repeatだけfrontendで抑止する |
 | audio | run終了時captureに加え、VRP-4でbounded preview PCM tapを実装 | host monitorはpresentation専用。emulated sink／exactness digestは独立 |
@@ -284,7 +324,7 @@ codeとRust GUI/audio dependencyを変更しない。VRP-1でも依存追加は�
 VRP-2/VRP-3で最初にlockfileを変更する前に別記録する。実測結果は[`VRP0_HOST_SPIKE_20260828.md`](validated-realtime-preview/VRP0_HOST_SPIKE_20260828.md)、
 基準値は[`VRP0_BASELINE_20260828.json`](validated-realtime-preview/VRP0_BASELINE_20260828.json)を参照する。
 
-### VRP-LOAD-0: repository-owned sustained-load target/fixture（10〜20時間、正式qualificationの前提）
+### LOAD-0（最大級の継続負荷性能テスト0番、内部ID: VRP-LOAD-0）: repository-owned sustained-load target/fixture（10〜20時間、正式qualificationの前提）
 
 VRP-5が必要とするのはNES-classの意味論ではなく、1倍UXを判定できる継続負荷である。
 `VRP-LOAD-0`は外部プロジェクトの機能を借りるのではなく、`picocalc_emu`が所有・公開できる
@@ -335,13 +375,13 @@ build → run → report／receipt → existing admission／preview pathまで�
 これはcycleを捨てる不正なshortcutとは限らないため、「idle fast-forward禁止」は実装者の印象で判定せず、
 許可範囲と観測証拠を上記CPU／multicore contractへ明記する。
 
-準備gateでは同じ入力を少なくとも3回実行し、source／fixture／artifactのSHA、wall-clock ratio、
-rolling ratio、pacer backlog／overrun、presentation drop、audio underrun／overrun、
+準備gateでは同じ入力を少なくとも3回実行し、source／fixture／artifactのSHA、実時間比
+（`real_time_percent`）、rolling実時間比、pacer backlog／overrun、presentation drop、audio underrun／overrun、
 authoritative observation digestを保存する。1倍の許容幅とlag上限は、測定結果を見た後に変更
 できないよう、VRP-5 qualificationの前に別decision recordで固定する。
 
 このdecision recordは、qualification結果を通すための後付け閾値になってはならない。drop／underrun／
-digest不一致などの絶対条件、ratio／lagの統計方法、run数、許容値の選択根拠、`REALTIME OK`／
+digest不一致などの絶対条件、実時間比／lagの統計方法、run数、許容値の選択根拠、`REALTIME OK`／
 `REALTIME NOT MET`の機械的判定式を記載し、準備baselineの閲覧後かつqualification run開始前に凍結する。
 baselineを見て決めてよいのは、事前に定めた選択規則の範囲に限る。各runの結果を見て閾値や対象runを
 変更してはならない。
@@ -651,7 +691,7 @@ authoritative projectionは不変だった。証拠は`firmware-validation/recor
 いずれも次を保存する。
 
 - host/OS/CPU、backend/BIN/receipt SHA
-- session ratioとrolling ratio
+- session／rollingの実時間比（`real_time_percent`）
 - lag/backlog、behind count
 - presentation drop
 - audio underrun/overrun/drop
@@ -666,7 +706,7 @@ API／GUIを別途実行し、固定入力に対するkey down／held／upから
 
 screeningは各workload 10 wall分以上でよい。qualificationは既存baselineが定めた逐次10-run／95% CI
 手順を維持し、各workload **10 virtual分以上を各runで要求する**。並列runは行わない。run数、統計方法、
-ratio／lag／drop／underrunの合格条件は、qualification開始前にdecision recordへ凍結する。
+実時間比／lag／drop／underrunの合格条件は、qualification開始前にdecision recordへ凍結する。
 `VRP-LOAD-0`またはreusable backend pinが未整備の場合、existing workloadの測定を完了しても正式な
 1倍qualificationは未完了とする。1倍未達なら`REALTIME NOT MET`を正式結果として記録し、機能preview、
 realtime candidate、realtime-qualifiedを混同しない。
@@ -691,7 +731,7 @@ qualification evidenceが必要である。GUIの入力応答観測を行わな�
 - supported host、known limitation、audio fidelity、hardware verdictなしを明記
 - receipt/IPC schemaをversioned contractとして固定
 - 利用者向けには、`機能preview`、`継続負荷timing`、`1倍UX`、`hardware correlation`を別の状態として
-  最短の起動手順とともに表示し、ratio／lag／behind／drop／`timing-only`／`degraded`の意味を平易に説明する
+  最短の起動手順とともに表示し、実時間比／lag／behind／drop／`timing-only`／`degraded`の意味を平易に説明する
 
 release tagはこの計画だけでは作らない。commit/push/tagは所有者の個別指示に従う。
 
@@ -797,7 +837,7 @@ workflow追加・trigger/job変更・CI実行増加は所有者の事前許可�
 - 上記に加え、到達可能なclean backend pinで再受入した`picotetris-opt1b` launch targetと、
   repository-owned `VRP-LOAD-0`の2 workload/host/thresholdでVRP-5 qualificationに合格
 - 凍結済みdecision recordに従う逐次10-run／95% CIのqualification evidenceがあり、各runで10 virtual分以上の
-  ratio／lag／presentation／audio metricを保存
+  実時間比（`real_time_percent`）／lag／presentation／audio metricを保存
 - `1倍UX`と表示する場合は、同じadmitted BINを使うGUI経路で固定入力のinput-to-visible-response観測も保存する。
   それを行わない場合は、表示名を`継続負荷timing`に限定する
 - capabilityにqualified範囲だけを明示

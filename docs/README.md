@@ -18,7 +18,8 @@
 | 現在の計画（Validated Realtime Preview／VRP-LOAD-0・VRP-5以降。VRP-0〜VRP-4 formal evidenceまで完了） | [`VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md`](VALIDATED_REALTIME_PREVIEW_IMPLEMENTATION_PLAN_20260828.md) |
 | VRP-2 backendのrunner実装・IPC境界・ローカル検証 | [`picoem-picocalc/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md`](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/main/docs/VALIDATED_REALTIME_PREVIEW_BACKEND.md) |
 | Validated Realtime PreviewのVRP-0〜VRP-4契約・基準値・admission・完全digest gate・GUI・bounded audio monitor記録 | [`validated-realtime-preview/`](validated-realtime-preview/) |
-| VRP-LOAD-0のrepository-owned sustained-load計画 | [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md) |
+| LOAD-0 r1のrepository-owned sustained-load計画と120秒準備slice（formal qualificationは中断） | [`validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md`](validated-realtime-preview/VRP_LOAD0_SUSTAINED_LOAD_20260829.md) |
+| 1倍速UXプロジェクトの中断判断と再開条件 | [`validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md) |
 | VRP-NES-0の歴史資料・非適格fixture/evidence | [`validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md`](validated-realtime-preview/VRP_NES0_NES_CLASS_FIXTURE_20260829.md) |
 | `ux`モード（体感評価用の高速実行）の概念設計。**未採用・未実装** | [`validated-realtime-preview/UX_MODE_CONCEPT_20260830.md`](validated-realtime-preview/UX_MODE_CONCEPT_20260830.md) |
 | CPU単体経路の旧`basic`差分分析（履歴。111.7 MHzは出典未確定） | [`validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md`](validated-realtime-preview/CPU_HOTPATH_MEASUREMENT_20260830.md) |
