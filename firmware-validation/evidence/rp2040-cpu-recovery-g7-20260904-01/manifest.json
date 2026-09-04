@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "record_id": "rp2040-cpu-recovery-g7-20260904-01",
-  "status": "candidate-pass",
+  "status": "stopped-critical-regression",
   "decision_kind": "reconstruction-group",
   "plan": "PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md",
-  "plan_status": "R0/R1/G0/G1/G2/G3/G4/G5-A/G5-B/G5-C/G6 candidate pass; G7 candidate pass; integration pending",
+  "plan_status": "R0/R1/G0 complete; G1-G7 functional evidence provisional; G7 whole-system performance checkpoint failed; R2 stopped; R3/R4/R5 not complete",
   "group": {
     "id": "G7",
     "display_name": "preview境界／bounded transport（実アプリpreview接続）",
@@ -63,6 +63,103 @@
     "performance_improvement_claimed": false,
     "status": "pass"
   },
+  "r3_application_acceptance": {
+    "scope": "G7 candidateで現行アプリtargetの正式scenarioを各1回受入。性能qualificationではない",
+    "runner_backend_commit": "9db10c0313547e9463510ffe3ae6d7474e008494",
+    "host_affinity": 11,
+    "tetris": {
+      "display_name": "Tetris（軽ゲーム実装）",
+      "target_id": "picotetris-opt1b-vrp5",
+      "target_revision": 10,
+      "source_commit": "fed84f358d7dcadb1457752e687355ddb1875c48",
+      "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "scenario": "tetris-formal/scenario.json",
+      "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+      "contract_sha256": "1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f",
+      "report": "tetris-formal/report.json",
+      "report_sha256": "89326fbad5e8051170df96e6839e9512ceee8359538731912f3e1f20bb4d2306",
+      "uart": "tetris-formal/uart.raw",
+      "uart_sha256": "bff1f2452ee65a2279a805c828a6c3afc75bb238fd1859f43962f8e1f6e9266c",
+      "framebuffer": "tetris-formal/framebuffer.png",
+      "framebuffer_png_sha256": "e3a90df645eba0bb11eb642190dea5dda9928394cf4aa7880c7a552d815d4958",
+      "framebuffer_rgb565_sha256": "f63b598fb0e00e2e0ab0b39d0304ef341a4a30393b77f41d56e534945054e4a2",
+      "cycles": 927528659,
+      "elapsed_us": 3715000,
+      "psram": {"cs_falling_count": 7, "bytes_written": 24, "bytes_read": 34},
+      "keyboard_events": 362,
+      "sd_blocks_read": 0,
+      "sd_blocks_written": 0,
+      "verdict": "pass"
+    },
+    "picoedit": {
+      "display_name": "PicoEdit（テキスト編集実装）",
+      "target_id": "picoedit-r1-vrp2f",
+      "target_revision": 4,
+      "source_commit": "82a6e4c76272e8f520d2f8cba42f1a7e549d4933",
+      "firmware_sha256": "17cb513b8dd3ea6525ce6bd92d1ce3081bb6ea9730c590c2afb86a9fa085e8f6",
+      "scenario": "picoedit-formal/scenario.json",
+      "scenario_sha256": "d7af28965f49cd7363ca5ac68678572d3e6975eb426b6af828dd09a70505b718",
+      "contract_sha256": "ad3b795ca89a9350766a6be7a833c09c35113c2bddebc0a3b6cc458e81b8a6c9",
+      "report": "picoedit-formal/report.json",
+      "report_sha256": "80319fc04719ce4c9d33ff54f7b432562b7116997eab19f23a21e111377f4bb1",
+      "uart": "picoedit-formal/uart.raw",
+      "uart_sha256": "2a37433c341bacf59ec0cbcafae6d4f29eb83cc7da17bb2237f0addc0009de33",
+      "framebuffer": "picoedit-formal/framebuffer.png",
+      "framebuffer_png_sha256": "df614d4a7453fc408197afcce6a5b5f2f1292c1ea32a152d662528db3da52e69",
+      "framebuffer_rgb565_sha256": "18d0809edef49bbc085f21aa3212bf47d9344b4eb9845e96f24f1fb768b920b9",
+      "cycles": 827799818,
+      "elapsed_us": 3320000,
+      "psram": {"cs_falling_count": 250, "bytes_written": 154, "bytes_read": 2471},
+      "keyboard_events": 30,
+      "sd_blocks_read": 12,
+      "sd_blocks_written": 13,
+      "verdict": "pass"
+    },
+    "audio_oracle_diagnostic": {
+      "status": "not_pass",
+      "meaning": "Tetris app acceptanceから除外したauthoritative audio probe。PCM count/SHAは一致したがtimer missを理由にsnapshot fail",
+      "report": "tetris-audio-diagnostic/report.json",
+      "report_sha256": "590934a60747e3db8e6eac42b528958033963b6233087380a2fb7c0f1420b4bb",
+      "timer_miss_count": 154031,
+      "dma_write_count": 1000,
+      "pcm_sha256": "c978c5173c975f841e2b886d5f9af5f71e07fa3f6dc400b0697dc261758bc356",
+      "handled_by": "G3／VRP-4 audio contract; no audio-pass claim"
+    },
+    "remaining": ["R3 representative completion is blocked by the whole-system performance failure", "R4 integration candidate"]
+  },
+  "whole_system_performance_checkpoint": {
+    "display_name": "全体性能checkpoint（高速化開始原点の確定・G7候補停止記録）",
+    "record": "whole-system-checkpoint/checkpoint.json",
+    "metric_definition": "real_time_percent = emulated_seconds / emulation_wall_seconds * 100",
+    "minimum_maintained_percent": 14.0,
+    "critical_regression_percent": 10.0,
+    "host_affinity": 11,
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "fast_anchor": {
+      "role": "accepted-optimization-start-origin",
+      "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+      "runner": "whole-system-checkpoint/g0-timing-runner",
+      "runner_sha256": "f93206c92464298fabc795efd2eff6b059c3e54c4a0b7413e903110c2006d8f7",
+      "cycles": 927528660,
+      "emulation_cpu_seconds": 27.064558677,
+      "emulation_wall_seconds": 25.969372348,
+      "real_time_percent": 14.305313006,
+      "status": "accepted-as-recovery-origin"
+    },
+    "g7_candidate": {
+      "backend_commit": "9db10c0313547e9463510ffe3ae6d7474e008494",
+      "runner": "whole-system-checkpoint/g7-timing-runner",
+      "runner_sha256": "838d17239785b2a4f08e2afc4cf901844c973a43f63f3c7f6010d386e417ab7f",
+      "cycles": 927528659,
+      "emulation_cpu_seconds": 167.759749206,
+      "emulation_wall_seconds": 160.262119737,
+      "real_time_percent": 2.318077413,
+      "cpu_slowdown_vs_fast_anchor": 6.198503039,
+      "status": "critical-regression"
+    },
+    "decision": "stop before R4; do not treat G7 functional candidate-pass as overall pass"
+  },
   "preview_smoke": {
     "summary": "preview/preview-summary.json",
     "summary_sha256": "e5324e668e1383021bf1bfdccfb0d9e0826d6514db46e3127153dc04ea5fe682",
@@ -101,11 +198,11 @@
     "one_x_claimed": false
   },
   "decision": {
-    "status": "candidate-pass",
-    "reason": "preview API/protocol, shared replay/session, bounded audio transport, local tests, and actual Tetris preview process smoke passed within the declared G7 scope",
+    "status": "stopped-critical-regression",
+    "reason": "G7 functional checks passed locally, but the mandatory whole-system Tetris checkpoint measured 2.318077413%, below the 14.0% minimum and 10.0% critical-regression threshold",
     "performance_improvement_claimed": false,
     "production_integration": "not yet",
-    "next_group": "integration review",
-    "next_group_display_name": "G0〜G7 candidate差分と既存target契約の統合可否判断"
+    "next_group": "return-to-last-14-percent-checkpoint",
+    "next_group_display_name": "14.0%以上だった最後の全体checkpointへ戻り、退行差分を切り分ける"
   }
 }

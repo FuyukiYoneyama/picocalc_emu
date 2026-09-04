@@ -1,0 +1,410 @@
+{
+  "schema": 1,
+  "name": "tetris-line-clear",
+  "description": "Placements computed offline from the game's seeded xorshift, which makes the piece sequence known in advance. The final score and line count are asserted against what the plan predicts, so the emulator has to agree with the rules the planner used, not merely reach some clear.",
+  "poll_ms": 5,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "game started",
+      "timeout_ms": 20000,
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[TETRIS] start"
+      }
+    },
+    {
+      "op": "key",
+      "label": "drop 0",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 1",
+      "text": "a "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 2",
+      "text": "d "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 3",
+      "text": "wdd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 4",
+      "text": "a "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 5",
+      "text": " "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 6",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 7 (clears 1)",
+      "text": "wwdddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 8",
+      "text": "wwwddddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 9 (clears 1)",
+      "text": "waaaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 10 (clears 1)",
+      "text": "wddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 11",
+      "text": " "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 12",
+      "text": "wwa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 13",
+      "text": "dd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 14",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 15 (clears 2)",
+      "text": "wwwddddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 16",
+      "text": "wwaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 17",
+      "text": "ddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 18",
+      "text": "waaaaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 19 (clears 1)",
+      "text": "w "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 20",
+      "text": "wwddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 21",
+      "text": "d "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 22",
+      "text": "aa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 23 (clears 1)",
+      "text": "wwwddddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 24 (clears 1)",
+      "text": "a "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 25 (clears 1)",
+      "text": "w "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 26 (clears 1)",
+      "text": "wwwdddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 27",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 28",
+      "text": "a "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 29",
+      "text": "waaaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 30",
+      "text": "wwwaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 31",
+      "text": "wa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 32",
+      "text": "wwwddddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 33 (clears 1)",
+      "text": "wwwdd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 34 (clears 1)",
+      "text": "wddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 35",
+      "text": "aaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 36",
+      "text": "d "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 37 (clears 1)",
+      "text": "wwwddddd "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 38",
+      "text": "d "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "key",
+      "label": "drop 39",
+      "text": "wwaaa "
+    },
+    {
+      "op": "wait",
+      "ms": 80
+    },
+    {
+      "op": "snapshot",
+      "label": "well at the end of the plan",
+      "png": "tetris-line-clear.png"
+    },
+    {
+      "op": "assert",
+      "label": "the line-clearing path ran",
+      "condition": {
+        "kind": "uart_contains",
+        "text": "[TETRIS] cleared="
+      }
+    },
+    {
+      "op": "assert",
+      "label": "the score the plan predicts",
+      "condition": {
+        "kind": "uart_contains",
+        "text": "score=1400 lines=13"
+      }
+    },
+    {
+      "op": "assert",
+      "label": "the stack stayed low (planned max height 4)",
+      "condition": {
+        "kind": "region_non_black",
+        "x": 8,
+        "y": 104,
+        "w": 140,
+        "h": 112,
+        "max": 4160
+      }
+    }
+  ]
+}

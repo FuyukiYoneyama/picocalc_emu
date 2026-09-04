@@ -28,6 +28,11 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 です。1倍速qualificationやUX用の近似backendではなく、`e985a9d...`の高速地点へ必要なguest-visible
 機能を一つずつ戻し、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を回復します。
 
+この性能作業の高速化開始原点は、R0（高速出発点と退行比較点の固定）で固定した`e985a9d...`です。
+Tetris（軽ゲーム実装）の同一firmware／scenario、PicoCalc、Serial、step quantum 1、host CPU affinity 11で
+今回確認した全体性能は**14.305313006%**（process CPU 27.064558677秒、wall 25.969372348秒）でした。
+この値を以後の比較原点とし、14.0%未満のcandidateは原則失敗として扱います。
+
 G0〜G5-Cに続くG6（外部I²C module：RTC／EEPROM／AHT20／BMP280）はcandidate-passまで進みました。
 外部I²C profileを使う既存E5相当firmwareを3回実行し、I²C sidecar・UART・framebufferをbyte-identicalで
 確認し、profileなしTetris（軽ゲーム実装）のnormalized projectionもG5-Cと一致しました。記録は
@@ -40,9 +45,14 @@ release buildを通過し、登録済みPicoTetris binaryの通常batch normaliz
 backend／IPC drop 0を確認しました。記録は
 [`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)です。
 G7 candidateもbackend `main`、active target registry、既存validation recordへ未統合です。これはpreview境界の
-candidate-passであり、性能改善、1倍速、LOAD-0（最大級の継続負荷性能テスト0番）完走、audio fidelity oracle
-passを意味しません。production高速化の性能値更新と1倍速qualificationはまだ開始していません。次はG0〜G7
-candidate差分と既存target契約の統合可否を判断します。
+機能candidate-passであり、性能改善、1倍速、LOAD-0（最大級の継続負荷性能テスト0番）完走、audio fidelity oracle
+passを意味しません。統合前の必須全体性能checkpointでは、同じTetris（軽ゲーム実装）正式scenarioを
+高速出発点とG7 candidateへ実行し、高速出発点14.305313006%、G7 candidate 2.318077413%となりました。
+14.0%最低維持値と10.0%重大退行赤旗をともに下回ったため、G7 candidateは全体性能として失敗・停止し、
+R4（Recovery 4：現行mainへの統合可能性確認）へ進みません。詳細はG7 recordの
+[`whole-system-checkpoint`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/whole-system-checkpoint/)
+です。次の作業はcandidateを統合することではなく、14.0%以上だった最後の全体checkpointへ戻り、退行差分を
+一群ずつ切り分けることです。
 
 ## 利用できる経路
 
@@ -291,10 +301,11 @@ I2C sidecar／UART／framebufferをbyte-identicalで確認しました。profile
 もG5-C normalized projectionと一致し、feature有効／無効のunit testとrelease buildもpassしています。記録は
 [`rp2040-cpu-recovery-g6-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g6-20260904-01/)です。
 G6 candidateはbackend `main`、active target registry、既存E5 recordへ未統合であり、速度改善や1倍速は主張しません。
-G7（preview境界／延期機能）はcandidate-passまで進みました。preview API／protocol、shared replay／session、
-bounded audio transportのcandidate source差分、local test、Tetris（軽ゲーム実装）通常batch normalized projection、
-実アプリpreview process smokeを[`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)へ固定しています。
-G7 candidateも未統合で、性能改善や1倍速は主張しません。次はG0〜G7 candidate差分と既存target契約を統合レビューします。
+G7（preview境界／延期機能）は、preview API／protocol、shared replay／session、bounded audio transportの
+candidate source差分、local test、Tetris（軽ゲーム実装）通常batch normalized projection、実アプリpreview process
+smokeを[`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)へ固定しています。
+G7の機能範囲はcandidate-passですが、全体性能checkpointは2.318077413%で重大退行となったため、G7 candidateは
+未統合のまま停止しています。性能改善や1倍速は主張せず、G0〜G7 candidate差分の統合レビューも開始しません。
 
 旧PERF-Q計画では、
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、

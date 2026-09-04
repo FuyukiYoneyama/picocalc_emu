@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "record_type": "whole-system-performance-checkpoint",
+  "purpose": "fix the recovery performance origin and stop before proceeding beyond G7 candidate",
+  "display_name": "全体性能checkpoint（高速化開始原点の確定・G7候補停止記録）",
+  "workload": {
+    "display_name": "Tetris（軽ゲーム実装）",
+    "firmware_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+    "scenario_sha256": "b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208",
+    "virtual_seconds": 3.715,
+    "board": "picocalc",
+    "lcd_variant": "pio-rgb565",
+    "psram": true,
+    "keyboard": true,
+    "sd": true,
+    "sd_format": "fat32",
+    "execution_model": "Serial",
+    "step_quantum": 1,
+    "host_affinity": 11,
+    "cycle_budget": 1000000000
+  },
+  "metric": {
+    "definition": "real_time_percent = emulated_seconds / emulation_wall_seconds * 100",
+    "timing_scope": "picocalc-harness::run_loop",
+    "cpu_clock": "CLOCK_PROCESS_CPUTIME_ID",
+    "minimum_maintained_percent": 14.0,
+    "critical_regression_percent": 10.0
+  },
+  "runs": {
+    "fast_anchor": {
+      "label": "T_fast",
+      "role": "accepted-optimization-start-origin",
+      "backend_commit": "e985a9d7ecb51ef760506a105edd34e31cf9b5f1",
+      "runner": "g0-timing-runner",
+      "runner_sha256": "f93206c92464298fabc795efd2eff6b059c3e54c4a0b7413e903110c2006d8f7",
+      "backend_dirty": true,
+      "firmware": "PicoTetris.bin",
+      "cycles": 927528660,
+      "stop_reason": "scenario_done",
+      "emulation_cpu_ns": 27064558677,
+      "emulation_cpu_seconds": 27.064558677,
+      "emulation_wall_ns": 25969372348,
+      "emulation_wall_seconds": 25.969372348,
+      "real_time_percent": 14.305313006,
+      "report": "g0-report.json",
+      "host_timing": "g0-host-timing.json",
+      "status": "accepted-as-recovery-origin"
+    },
+    "g7_candidate": {
+      "label": "T_regressed",
+      "backend_commit": "9db10c0313547e9463510ffe3ae6d7474e008494",
+      "runner": "g7-timing-runner",
+      "runner_sha256": "838d17239785b2a4f08e2afc4cf901844c973a43f63f3c7f6010d386e417ab7f",
+      "backend_dirty": true,
+      "firmware": "PicoTetris.bin",
+      "cycles": 927528659,
+      "stop_reason": "scenario_done",
+      "emulation_cpu_ns": 167759749206,
+      "emulation_cpu_seconds": 167.759749206,
+      "emulation_wall_ns": 160262119737,
+      "emulation_wall_seconds": 160.262119737,
+      "real_time_percent": 2.318077413,
+      "cpu_slowdown_vs_fast_anchor": 6.198503039,
+      "report": "g7-report.json",
+      "host_timing": "g7-host-timing.json",
+      "status": "critical-regression"
+    }
+  },
+  "decision": {
+    "status": "stop",
+    "reason": "G7 candidate is below both 14.0% minimum maintained performance and 10.0% critical regression threshold",
+    "g7_candidate_pass": false,
+    "r4_started": false,
+    "one_x_claimed": false,
+    "load0_claimed": false,
+    "next_action": "inspect G7 cumulative diff and return to the last whole-system checkpoint at or above 14.0%"
+  }
+}

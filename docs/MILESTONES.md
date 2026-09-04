@@ -48,7 +48,7 @@ recordなどの入力識別情報と検証記録だけである。SHA-256は同�
 | R6 | 文書・配布状態確定 | 完了 2026-08-08 |
 | R6-M | backend role／回帰境界の分離 | 完了 2026-08-09 |
 | PERF | PicoCalc emulator高速化 | **PERF-Q3まで完了後、約7.4倍の性能退行判明により以後を停止。履歴として保持** |
-| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0・R1完了、G0クリーン検証完了、G1（CPU・multicore・割込み正確性）・G2（LCD・PIO・PSRAM正確性）・G3（DMA・audio正確性）・G4（ヘッドレス実行基盤）・G5-A（保存領域基盤：RAW SD・NOR flash mutation）・G5-B（loader起動：boot2・watchdog warm reset）・G5-C（SD protocol：bounded multiblock）・G6（外部I2C module：RTC／EEPROM／AHT20／BMP280）・G7（preview境界／bounded transport）candidate pass。G5完了、G0〜G7 candidateは未統合。次はcandidate差分と既存target契約の統合レビュー** |
+| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0（高速出発点と退行比較点の固定）・R1完了。R0で`e985a9d...`の全体性能14.305313006%を高速化開始原点として固定した。G0クリーン検証完了、G1（CPU・multicore・割込み正確性）〜G7（preview境界／bounded transport）の機能candidate evidenceは保持しているが、G7直後の全体性能checkpointは2.318077413%となり、14.0%最低維持値と10.0%重大退行赤旗を下回ったためR2を停止。G7機能passは全体性能passではなく、candidateは未統合。R4統合レビューへ進まず、固定したR0原点から退行差分を切り分ける** |
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |

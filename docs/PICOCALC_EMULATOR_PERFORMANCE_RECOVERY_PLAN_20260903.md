@@ -1,7 +1,8 @@
 # PicoCalc firmware emulator 性能退行復旧・再構築計画
 
-- Status: **current / R0・R1 complete / G0 clean verification complete / G1・G2・G3・G4・G5-A・G5-B・G5-C・G6・G7 candidate pass / G5 complete / integration review pending**
+- Status: **current / R0（高速化開始原点）・R1 complete / G0 clean verification complete / G1〜G7 candidate evidence provisional / G7全体性能checkpointで重大退行を検出しR2停止 / R3・R4・R5未完了**
 - Decision date: 2026-09-03
+- 高速化開始原点の固定日: 2026-09-04
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
 - 高速な出発点: backend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`
@@ -22,6 +23,25 @@ source差分だけを、現行backend `main`から派生した統合候補へ適
 はPERF-Q3までの実施記録として保持するが、PERF-Q4、同文書§5の新規候補探索、P1-Aの追加測定を
 実行しない。本書を現在の性能作業の正典とする。
 
+### 0.1 高速化開始原点の固定
+
+今後の高速化は、R0（高速出発点と退行比較点の固定）で確認した`e985a9d...`を開始原点とする。
+開始原点は、単なるcommit名ではなく、次の組み合わせで固定する。
+
+- backend commit: `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`
+- workload: Tetris（軽ゲーム実装）
+- firmware SHA-256: `0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62`
+- scenario SHA-256: `b1cefa5c24eb20739e67f60980898b45e4feba00846c61ef5092bff341aaf208`
+- configuration: PicoCalc、PIO RGB565、PSRAM、keyboard、SD FAT32、Serial、step quantum 1、host CPU affinity 11
+- canonical whole-system checkpoint: process CPU `27.064558677`秒、wall `25.969372348`秒、
+  `real_time_percent = 14.305313006%`
+
+この14.305313006%を、今回の再構築で比較する開始時の実測値として一旦確定する。歴史的なOPT1-Bの
+14.636593%は過去の別計測protocolによる参考値として保持し、今回の原点値へ混ぜない。R0の別runで
+観測された13.960%は環境・runばらつきとして記録済みだが、今後のcandidate checkpointで14.0%未満を
+合格へ丸める根拠にはしない。以後、14.0%未満のcandidateは、事前に登録した一段階限定の回復例を除き
+失敗とする。G7候補の2.318077413%は原点へ繰り込まず、不採用の退行証拠として保持する。
+
 ## 1. この手戻りが必要な理由
 
 確認済みの値は次のとおりである。
@@ -29,7 +49,7 @@ source差分だけを、現行backend `main`から派生した統合候補へ適
 | 比較点 | Tetris（軽ゲーム実装）の処理量 | process CPU時間 | wall時間 | 証拠区分 |
 |---|---:|---:|---:|---|
 | `e985a9d...` 当時の正式値 | 927,528,660 cycles | 当時は未記録 | 25.381594秒 | immutableな既存record |
-| `e985a9d...` 現行sidecarの一時backport | 927,528,660 cycles | 中央値25.606484秒 | 中央値26.101495秒 | `/tmp`診断。R0で正式化が必要 |
+| `e985a9d...` R0 sidecar再計測 | 927,528,660 cycles | 中央値25.606484秒 | 中央値26.101495秒 | R0のばらつき記録。開始原点は別途固定したcanonical checkpoint |
 | `f32eba1...` PERF-Q3 baseline | 927,528,659 cycles | 中央値189.414730秒 | recordへ保存済み | immutableな既存record |
 | `f32eba1...` P1-Aなし | 927,528,659 cycles | 190.172395秒 | 193.368972秒 | `/tmp`の1回診断 |
 | `f32eba1...` P1-Aあり | 927,528,659 cycles | 191.252047秒 | 194.785231秒 | `/tmp`の1回診断 |
@@ -99,8 +119,12 @@ P1-A効果量とは呼ばないが、約7.4倍の退行原因をP1-Aの局所比
 - current contract SHA-256: `1a296b1faa9088e22f9939bc61b3963475af7005343038361cf1db4ddcb28a5f`
 - execution model: `Serial`
 - host affinity: 一つの同じvCPUへ固定し、番号と実効affinityを記録
-- 主性能値: `emulation_cpu_ns / guest_cycles`。小さいほどよい
-- UX確認値: emulation区間のwall時間。性能の主判定へ代用しない
+- 全体性能の主判定値: `real_time_percent = emulated_seconds / emulation_wall_seconds * 100`。14.0%を最低維持値とする
+- 実装コストの補助値: `emulation_cpu_ns / guest_cycles`。wall時間の変動要因を切り分けるために同時記録する
+
+ここでいう14.0%は、1倍速の合格率ではない。高速化開始原点であるR0の全体性能を再構築中に
+下回らせないための最低維持値である。固定したcanonical originの測定条件で原点を再確認して
+14.0%未満になった場合は、candidateの作業へ進まず、計測条件または原点recordを再審査する。
 
 scenario完了cycleは旧地点927,528,660、現行地点927,528,659という既知の1 cycle差があるため、
 値を丸めて同一とは書かない。正確性比較では各段階の理由とguest-visible observationを確認し、性能の
@@ -110,11 +134,50 @@ PicoEdit（テキスト編集実装）は`e985a9d...`時点に同じ現在契約
 しない。PicoEditが初めて現在契約で動作する段階を同アプリの`T_picoedit_first`として固定し、以後の
 段階でbaselineを無断更新しない。
 
+### 5.1.1 機能群ごとの全体性能checkpoint
+
+局所的なunit test、peripheral test、またはtarget固有のpassだけでは、次の機能群へ進めない。各G段階の
+candidateを作った直後、次のG段階へ入る前に、同じTetris（軽ゲーム実装）の**全体scenario**を1回実行し、
+全体の性能を確認する。これは機能群の局所的な効果を測るrunではなく、emulator全体の速度が高速出発点から
+退行していないかを検出するための停止gateである。
+
+全checkpointは次の条件を固定する。
+
+1. firmware BIN、scenario、device configuration、runner executable、toolchain、host CPU affinityを
+   R0と同じにする。変更が必要な場合は、変更理由と新しいanchorを先に記録する。
+2. 同じ一時host-timing harnessで、process CPU時間とemulation区間のwall時間を同じrun-loop境界から取得する。
+   14.0%最低維持値の判定には固定式`real_time_percent = emulated_seconds / emulation_wall_seconds * 100`を使い、
+   CPU時間`emulation_cpu_ns / guest_cycles`は環境変動と実装差を切り分ける補助値として同時に記録する。
+   `report.elapsed_us`だけ、またはrun全体の外部経過時間だけを性能値にしない。
+3. `T_fast`（高速出発点）、`T_prev`（直前checkpoint）、`T_regressed`（現行退行点）を同じ表に置く。
+   candidateの値を単独で「速くなった」と解釈しない。
+4. 直前checkpointからの増加が測定ばらつきの範囲を超えた場合、増加理由を機能群の必須`delta_i`として説明し、
+   人間が承認するまで次の機能群へ進めない。未説明の増加は性能退行として扱う。
+5. checkpointは原則1回で判定する。平均値を作るための3回、10回、長時間runは行わない。値が判定境界に
+   入った場合だけ、原因を明示した確認runを人間が承認する。
+
+全体速度の判定は次のように固定する。
+
+- `R_candidate >= 14.0%`で、正確性も満たした場合だけ、そのcheckpointを通常の合格とする。
+- `R_candidate < 14.0%`は原則すべて失敗であり、candidateを通常のbaselineへ更新しない。
+- ただし、次の機能群で回復することを**測定前に**予見できる、必須機能の一時的な低速化だけは、
+  「暫定受入」として一段階だけ保留できる。暫定受入recordには、低速化の原因、対象target、予想する
+  `delta_i`、回復を担当する次の機能群、回復後に戻す最低値`14.0%`、失敗時のrollback地点を先に記録する。
+- 暫定受入は合格ではない。次の一段階の直後に同じ全体checkpointを実行し、`R >= 14.0%`へ戻らなければ、
+  その機能群を不採用として直前の14.0%以上のcheckpointへ戻る。暫定受入を二段階以上積み重ねない。
+- `R_candidate < 10.0%`は重大退行の赤旗とし、予見済みであっても自動的な暫定受入を認めない。直ちに停止し、
+  実装差分、artifact、harness、affinity、環境を再確認する。
+
+各checkpointにはwall-clock上限を設ける。まず短い固定cycleのpilotで実行可能性を確認し、全体scenarioの
+本runは**1回5分を上限**とする。5分を超えたrunは「遅いが継続」とせず、結果を保存して停止し、測定経路・
+candidate差分・計画を再審査する。上限は性能合格値ではなく、無制限に次の試験へ進まないための運用gateである。
+
 ### 5.2 短い段階screening
 
-各機能群の後にfull scenarioを何度も実行しない。まずscenarioを付けない固定guest-cycleのTetris
-probeを、`cycle_limit`停止として使用する。R0で高速地点と現行退行点を各1回実行し、同じ短いprobeが
-両者を明確に分離できることを人間が確認した後に固定する。
+各機能群の実装中は、まずscenarioを付けない固定guest-cycleのTetris probeを、`cycle_limit`停止として使用する。
+R0で高速地点と現行退行点を各1回実行し、同じ短いprobeが両者を明確に分離できることを人間が確認した後に固定する。
+ただしprobeは実装中の早期screeningに限る。機能群candidateを次へ進める前には、§5.1.1の全体scenario
+checkpointを必ず1回実行し、14.0%維持判定を行う。
 
 短いprobeで差が分離しなければ、次の長さを自動実行しない。どのguest phaseが不足しているかを確認し、
 probeを一度だけ修正して再審査する。これにより「短い試験が終わったから次は長い試験」という自動進行を
@@ -133,6 +196,9 @@ probeを一度だけ修正して再審査する。これにより「短い試験
 - 使用している必須機能のCPU時間増加について、処理内容と必要性を説明できない
 - 計測器、feature set、artifact、scenario、toolchain、affinityが前段階から変わっている
 - 結果の検討と人間の続行判断を行わず、次の機能群または長時間試験へ進もうとしている
+- 全体scenario checkpointが未実施、または全体速度が14.0%未満なのに、§5.1.1の暫定受入条件を
+  事前記録せず次へ進もうとしている
+- 全体scenario checkpointが5分のwall-clock上限を超えた
 
 必須機能に避けられないコストがある場合は、機能名、利用target、絶対CPU秒、直前比、高速出発点からの
 累積値を示し、人間が代償を承認した後にだけ`delta_i`へ追加する。
@@ -213,9 +279,10 @@ R0は精密なP1-A比較や平均値作成ではない。約7倍の両端と、�
 プロジェクト全体では、必要な正確性と機能を一つずつ取り戻し、性能退行を混入した地点で止める段階である。
 
 G1から承認済み順序で一群ずつ移植する。各群について、対象unit／integration test、target固有の
-正確性確認、短いTetris性能screening、結果の人間レビューをこの順で行う。複数群を一つのcandidateへ
-混ぜない。停止条件に該当した群は、同じ実装を残したまま次へ進まず、inactive fast pathまたは
-event-driven設計へ直す。
+正確性確認、短いTetris性能screening、**Tetris（軽ゲーム実装）全体scenario checkpoint**、結果の
+人間レビューをこの順で行う。複数群を一つのcandidateへ混ぜない。全体速度が14.0%未満なら、事前に
+記録した一段階限定の暫定受入に該当する場合を除き失敗として止める。停止条件に該当した群は、同じ
+実装を残したまま次へ進まず、inactive fast pathまたはevent-driven設計へ直す。
 
 ### R3 — 現行機能契約の受入
 
@@ -223,7 +290,8 @@ event-driven設計へ直す。
 確認する段階である。
 
 承認した機能群を積み終えた後に初めて、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の
-正式scenarioを各1回実行する。続いてmulticore、audio、SD、I2C、PSRAMの代表targetを各1回実行する。
+正式scenarioを各1回実行する。R2最終candidateからR3へ入る前にも、Tetris全体scenario checkpointを
+実行し、14.0%以上を確認する。続いてmulticore、audio、SD、I2C、PSRAMの代表targetを各1回実行する。
 差があれば全target回帰へ進まない。代表集合が合格し、性能内訳が説明可能な場合だけ、登録target全件の
 最終回帰を各1回行う。
 
@@ -233,7 +301,8 @@ event-driven設計へ直す。
 
 現行backend `main`から作った一時統合candidateへ、再構築後のproduction sourceと必要testのnet diffを
 適用する。再構築lane固有の診断、worktree path、測定用patchは含めない。R3と同じ代表正確性、全target、
-Tetris／PicoEdit性能を再確認する。結果が再構築laneと一致しなければ統合しない。
+Tetris／PicoEdit性能を再確認する。統合candidateを作った直後、代表正確性へ進む前にTetris全体scenario
+checkpointを実行し、14.0%以上を確認する。結果が再構築laneと一致しなければ統合しない。
 
 ### R5 — 採用、文書訂正、後始末
 
@@ -318,6 +387,12 @@ normalized guest-visible projectionが一致した。さらに同じPicoTetris b
 実際のpreview processへ接続し、PCRP 14 frame、status 3件、RGB565 frame 1件、PCM frame 8件、Goodbye、
 return code 0、backend／IPC drop 0を確認した。記録は
 [`rp2040-cpu-recovery-g7-20260904-01`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/)にある。
-これはpreview境界のcandidate-passであり、audio fidelity oracleのpass、性能改善、1倍速、LOAD-0（最大級の
+これはpreview境界の機能candidate-passであり、audio fidelity oracleのpass、性能改善、1倍速、LOAD-0（最大級の
 継続負荷性能テスト0番）完走を意味しない。G7 candidateもbackend `main`、active target registry、既存
-validation recordへ未統合である。次はG0〜G7 candidate差分と既存target契約をまとめ、統合可否を判断する。
+validation recordへ未統合である。その後、R2の停止gateとして同じTetris（軽ゲーム実装）全体scenarioを
+高速出発点とG7 candidateで計測した結果、高速出発点は14.305313006%、G7 candidateは2.318077413%だった。
+G7は14.0%最低維持値と10.0%重大退行赤旗の両方を下回ったため、G7機能candidateを全体性能の合格とは
+扱わず、R2をここで停止する。R3（現行機能契約の受入）の代表target evidenceは機能確認資料として保持するが、
+R3完了、R4（現行mainへの統合可能性確認）、または統合可否判断へは進まない。全体性能evidenceは
+[`whole-system-checkpoint`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/whole-system-checkpoint/)
+にある。
