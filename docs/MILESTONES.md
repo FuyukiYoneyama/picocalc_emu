@@ -6,9 +6,12 @@
 を正典とします。
 2026-09-11のDMA音声確保限定検証（同計画§0.2）は不採用として終了しました。
 Tetris全6 runは観測一致、CPU時間短縮率中央値9.851846%、candidate real-time比率中央値2.120190237%。
-事前の継続条件と14%復旧gateが未達のため、追加回帰・main統合・別の最適化へは進んでいません。
+事前の継続条件と14%復旧gateが未達のため、追加回帰・candidate統合・別の最適化へは進んでいません。
 候補と判断は[`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
 に保存しています。
+その後、利用者保護を優先してbackend公開`main`を復旧commit
+`32d27ff4179a993ae9fac6ff4a1d5e8999570fa9`へ戻し、promoted高速baseline
+`e985a9d...`と同じtreeに固定してpushしました。
 表示名として、`VRP-LOAD-0`は **LOAD-0（最大級の継続負荷性能テスト0番）**、
 `picotetris-opt1b`は **Tetris（軽ゲーム実装）** と記載します。内部IDと証拠のパスは変更しません。
 LOAD-0は数値の基準値や高速化gateではなく、保存済みの人工stress fixtureです。120秒sliceの
@@ -53,7 +56,7 @@ recordなどの入力識別情報と検証記録だけである。SHA-256は同�
 | R6 | 文書・配布状態確定 | 完了 2026-08-08 |
 | R6-M | backend role／回帰境界の分離 | 完了 2026-08-09 |
 | PERF | PicoCalc emulator高速化 | **PERF-Q3まで完了後、約7.4倍の性能退行判明により以後を停止。履歴として保持** |
-| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0（高速出発点と退行比較点の固定）・R1完了。R0で`e985a9d...`の全体性能14.305313006%を高速化開始原点として固定した。G0クリーン検証完了、G1（CPU・multicore・割込み正確性）〜G7（preview境界／bounded transport）の機能candidate evidenceは保持しているが、G7直後の全体性能checkpointは2.318077413%となり、14.0%最低維持値と10.0%重大退行赤旗を下回ったためR2を停止。G7機能passは全体性能passではなく、candidateは未統合。R4統合レビューへ進まず、固定したR0原点から退行差分を切り分ける** |
+| PERF-RECOVERY | 高速地点からの性能退行復旧 | **現行計画。R0（高速出発点と退行比較点の固定）・R1完了。R0で`e985a9d...`の全体性能14.305313006%を高速化開始原点として固定した。G0クリーン検証完了、G1（CPU・multicore・割込み正確性）〜G7（preview境界／bounded transport）の機能candidate evidenceは保持しているが、G7直後の全体性能checkpointは2.318077413%となり、14.0%最低維持値と10.0%重大退行赤旗を下回ったためR2を停止。G7機能passは全体性能passではなく、candidateは未統合。2026-09-11に利用者保護のため公開backend `main`を`32d27ff...`へ復旧し、treeを`e985a9d...`へ固定。R4統合レビューと追加最適化は開始しない** |
 | OPT1-B | Serial fast-path gate | promoted完了 2026-08-08 |
 | OPT2 | exact event batching | 性能条件未達。追加promotionなしで終了 2026-08-09 |
 | OPT3 | CPU/decode高速化 | OPT3-Cまで評価。5%条件未達でrevert、終了 2026-08-09 |
