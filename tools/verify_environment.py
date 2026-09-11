@@ -549,6 +549,40 @@ def validation_shape_errors(record: Any, completed: bool) -> List[str]:
     return errors
 
 
+def retained_binary_paths(root: Path) -> Tuple[set, List[str]]:
+    """Allow only explicitly reviewed, byte-identical experimental evidence."""
+    allowed = set()
+    errors = []
+    manifest = root / "firmware-validation/retained-binaries.json"
+    if not manifest.exists():
+        return allowed, errors
+    try:
+        document = json.loads(manifest.read_text(encoding="utf-8"))
+        if document["schema_version"] != 1 or not isinstance(document["files"], list):
+            raise ValueError("invalid retained binary manifest")
+        seen = set()
+        for entry in document["files"]:
+            name = entry["path"]
+            path = Path(name)
+            if (path.is_absolute() or ".." in path.parts
+                    or path.as_posix() != name
+                    or path.parts[:2] != ("firmware-validation", "evidence")
+                    or name in seen
+                    or entry["kind"] not in {"uart-capture", "flash-export", "reproduction-firmware"}
+                    or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])):
+                raise ValueError(f"invalid retained binary entry: {name}")
+            seen.add(name)
+            target = root / path
+            if (not target.resolve().is_relative_to((root / "firmware-validation/evidence").resolve())
+                    or not target.is_file() or sha256(target) != entry["sha256"]):
+                errors.append(f"retained binary missing or changed: {name}")
+            else:
+                allowed.add(name)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        errors.append(str(error))
+    return allowed, errors
+
+
 def verify_release_conditions(checks: List[Check], root: Path) -> None:
     """Check the automatable parts of docs/RELEASE_CHECKLIST.md.
 
@@ -561,8 +595,12 @@ def verify_release_conditions(checks: List[Check], root: Path) -> None:
     # Firmware images belonging to the conformance track. Hardware
     # evidence for this project's own builds lives under
     # `hardware-validation/` and is out of scope here — what must never
-    # appear is the official sample, or any firmware image inside the
-    # emulator-side ledger and the target identity records.
+    # appear is the official sample, or an unreviewed firmware image inside
+    # the emulator-side ledger and the target identity records.
+    # A reviewed path/hash ledger distinguishes retained experimental inputs
+    # and outputs from accidentally vendored firmware. Never ignore evidence
+    # directories or UART filenames wholesale.
+    retained, retention_errors = retained_binary_paths(root)
     binary_suffixes = {".elf", ".bin", ".uf2", ".hex"}
     watched_dirs = ("firmware-validation", "reference-projects", "docs", "tools")
     strays: List[str] = []
@@ -576,6 +614,8 @@ def verify_release_conditions(checks: List[Check], root: Path) -> None:
                 continue
             relative = path.relative_to(root)
             if any(part in skip_dirs for part in relative.parts):
+                continue
+            if relative.as_posix() in retained:
                 continue
             strays.append(str(relative))
     # Anything named after the sample, anywhere.
@@ -594,9 +634,10 @@ def verify_release_conditions(checks: List[Check], root: Path) -> None:
     add_check(
         checks,
         "release:no-conformance-target",
-        not strays and not sample_dirs,
+        not strays and not sample_dirs and not retention_errors,
         firmware_images=strays,
         sample_directories=sample_dirs,
+        retention_errors=retention_errors,
     )
 
     # The portable checks must not need the backend. They run from this

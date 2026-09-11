@@ -36,9 +36,10 @@ previewは[追加経路の手順](../USER_GUIDE/PREVIEW_GUI.md)を参照しま�
 
 ## 検証の既知の制約
 
-portable verify／release-layout検査には、既存evidenceのUART bin等を
-配布物として誤判定する既知の不整合が記録されています。
-[切り分け記録](../firmware-validation/evidence/dma-audio-allocation-20260911-01/validation-checks/README.md)を参照してください。
+portable verify／release-layout検査で既存evidenceのUART bin等を誤判定する
+不整合は、個別path・用途・SHA-256の保全台帳で修正しました。
+JSON Schema依存のCI導入も明示しました。過去の失敗結果は
+[切り分け記録](../firmware-validation/evidence/dma-audio-allocation-20260911-01/validation-checks/README.md)に原本のまま残します。
 文書の整理やGitのcleanを、全テストの合格として扱いません。
 
 ## 性能と終了した取り組み

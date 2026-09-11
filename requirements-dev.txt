@@ -1,0 +1,2 @@
+# Draft 2020-12 validation used by portable verification and fail-closed tests.
+jsonschema==4.10.3

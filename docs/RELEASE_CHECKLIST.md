@@ -2,15 +2,15 @@
 
 `picocalc_emu`を公開リポジトリにする時点で満たすべき条件をまとめる。
 
-**現状（2026-08-11）:** `picocalc_emu`と`picoem-picocalc`はどちらもprivateである。
+**現状（2026-09-11）:** `picocalc_emu`と`picoem-picocalc`はどちらもpublicである。
 公開準備では、通常利用の依存性、同梱第三者物、実機証拠の扱い、ライセンス境界を確認する。
 LCD adapterについては、GPL-3.0のソースを同梱せず独立実装をMITで配布する方針を
 [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)に固定した。これは法的助言ではなく、
 公開物のエンジニアリング上のprovenance判断である。公開操作の時期は人間が決める。
 （[`history/IMPLEMENTATION_PLAN.md`](history/IMPLEMENTATION_PLAN.md) Gate 6参照）。
 
-両方がprivateである限り`FIRMWARE_BACKEND.md`の公開条件と矛盾しない。矛盾が生じる
-のは「`picocalc_emu`だけを公開し、backendがprivateのまま」という状態である。
+CIは公開HTTPSからbackendを取得し、各targetの固定commitを検証する。
+deploy keyやprivate repositoryへのアクセス権は要求しない。
 
 ## 0. 利用者向けバージョン目印
 
@@ -64,6 +64,16 @@ fixtureが必要になった場合も公式サンプルを同梱せず、契約�
 ```sh
 python3 tools/picocalc.py verify
 ```
+
+事前に`python3 -m pip install -r requirements-dev.txt`でJSON Schema検証の依存を導入する。
+仮想環境での利用を推奨する。CIも同じ依存ファイルを使用する。
+
+実験の生UART、flash export、再現用の固定PicoTetris入力は、公式conformance
+sampleとは区別する。`firmware-validation/retained-binaries.json`で個別のpath・用途・
+SHA-256を登録した原本だけを保持できる。未登録binary、欠損、hash不一致、
+evidence外のpathは失敗とする。公式`picocalc_helloworld`は登録しても禁止する。
+追加時は由来と公開可能性をレビューし、台帳を更新する。directory全体や拡張子の
+一括除外で通過させない。既存の測定原本・SHA256SUMSは書き換えない。
 
 `release:no-conformance-target`と`release:portable-without-backend`の2項目が
 これに対応する。前者はリポジトリ内にconformance targetのソースや成果物が
