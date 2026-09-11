@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "successful_builds": [
+    {
+      "built_at": "2026-08-06T00:00:00Z",
+      "bsp_version": "0.8.8",
+      "app_version": "picotetris-r3",
+      "lcd_variant": "pio-rgb565",
+      "coexistence_test": false,
+      "diagnostic_mode": false,
+      "hardware_validation_mode": false,
+      "uf2": "/tmp/picoem-evidence-XXmlyb/firmware/build/PicoTetris.uf2",
+      "uf2_sha256": "44ec62270175aac16add07ca8d7c99abb0942bcff341c4c36c0d884fc857e274",
+      "bin_sha256": "0784d80d0d00c9bf86d06e903234bc022db5bda2ff193e17533c65b9c2546e62",
+      "elf_sha256": "79eedf7c75ec487833f4f70f0c38b0c5335bfd6a7c871701c196203627a1d82d",
+      "app_git": "fed84f358d7d",
+      "bsp_git": "cbfc90467e2b",
+      "generator": "Ninja"
+    }
+  ]
+}
