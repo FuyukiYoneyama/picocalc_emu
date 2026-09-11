@@ -1,0 +1,224 @@
+From e83759f68e4d6ee58731fc98e26e84838a8170bd Mon Sep 17 00:00:00 2001
+From: Fuyuki Yoneyama <46615217+FuyukiYoneyama@users.noreply.github.com>
+Date: Fri, 11 Sep 2026 20:10:33 +0900
+Subject: [PATCH] perf: defer DMA audio sink buffer allocations
+
+---
+ crates/rp2040-emu/src/audio_sink.rs           | 102 +++++++++++++++++-
+ .../rp2040-emu/tests/dma_idle_allocations.rs  |  64 +++++++++++
+ 2 files changed, 163 insertions(+), 3 deletions(-)
+ create mode 100644 crates/rp2040-emu/tests/dma_idle_allocations.rs
+
+diff --git a/crates/rp2040-emu/src/audio_sink.rs b/crates/rp2040-emu/src/audio_sink.rs
+index bb91810..1803e86 100644
+--- a/crates/rp2040-emu/src/audio_sink.rs
++++ b/crates/rp2040-emu/src/audio_sink.rs
+@@ -200,7 +200,9 @@ impl Default for AudioSink {
+             due_cycles: Sha256::new(),
+             block_boundary_gaps: Sha256::new(),
+             service_latencies: Sha256::new(),
+-            first_words: Vec::with_capacity(EDGE_WORDS),
++            // DMA temporarily installs a default sink on every bus tick.
++            // Keep that unused placeholder free of heap allocations.
++            first_words: Vec::new(),
+             last_words: [0; EDGE_WORDS],
+             last_words_count: 0,
+             last_words_cursor: 0,
+@@ -237,10 +239,10 @@ impl Default for AudioSink {
+             out_of_range_duty_sample_count: 0,
+             captured_pcm: None,
+             preview_enabled: false,
+-            preview_blocks: VecDeque::with_capacity(PREVIEW_AUDIO_QUEUE_BLOCKS),
++            preview_blocks: VecDeque::new(),
+             preview_current_cycle: None,
+             preview_current_rate: 0,
+-            preview_current: Vec::with_capacity(PREVIEW_AUDIO_BLOCK_FRAMES * 2),
++            preview_current: Vec::new(),
+             preview_queue_capacity: PREVIEW_AUDIO_QUEUE_BLOCKS,
+             preview_produced_blocks: 0,
+             preview_drained_blocks: 0,
+@@ -264,6 +266,11 @@ impl AudioSink {
+     /// Enable the bounded preview tap. This is intentionally independent of
+     /// the diagnostic whole-run PCM capture used by `--audio-wav`.
+     pub(crate) fn enable_preview_pcm_tap(&mut self) {
++        if self.preview_enabled {
++            return;
++        }
++        self.preview_blocks.reserve(PREVIEW_AUDIO_QUEUE_BLOCKS);
++        self.preview_current.reserve(PREVIEW_AUDIO_BLOCK_FRAMES * 2);
+         self.preview_enabled = true;
+     }
+ 
+@@ -393,6 +400,9 @@ impl AudioSink {
+         self.pcm.update(value.to_le_bytes());
+         let (left, right) = self.observe_audio_frame(value);
+         if self.first_words.len() < EDGE_WORDS {
++            if self.first_words.is_empty() {
++                self.first_words.reserve(EDGE_WORDS);
++            }
+             self.first_words.push(value);
+         }
+         self.last_words[self.last_words_cursor] = value;
+@@ -772,6 +782,92 @@ fn hex(bytes: &[u8]) -> String {
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn default_sink_defers_all_three_buffer_allocations() {
++        let sink = AudioSink::default();
++        assert_eq!(sink.first_words.capacity(), 0);
++        assert_eq!(sink.preview_blocks.capacity(), 0);
++        assert_eq!(sink.preview_current.capacity(), 0);
++        assert!(!sink.preview_enabled);
++        assert!(sink.captured_pcm.is_none());
++        assert_eq!(
++            sink.preview_pcm_snapshot().capacity_blocks,
++            PREVIEW_AUDIO_QUEUE_BLOCKS
++        );
++    }
++
++    #[test]
++    fn first_words_are_recorded_without_enabling_capture_or_preview() {
++        let mut sink = AudioSink::default();
++        for index in 0..(EDGE_WORDS + 2) as u64 {
++            let due = 5_208 + index * 5_208;
++            sink.observe_dma_write(
++                PICOCALC_AUDIO_PWM_CC,
++                4,
++                index as u32,
++                PICOCALC_AUDIO_TIMER_TREQ,
++                Some((3, 15_625)),
++                Some(due),
++                due,
++                index == 0,
++            );
++        }
++        assert_eq!(
++            sink.snapshot().first_words,
++            (0..EDGE_WORDS as u32).collect::<Vec<_>>()
++        );
++        assert!(sink.first_words.capacity() >= EDGE_WORDS);
++        assert_eq!(sink.preview_blocks.capacity(), 0);
++        assert_eq!(sink.preview_current.capacity(), 0);
++        assert!(sink.captured_pcm.is_none());
++    }
++
++    #[test]
++    fn repeated_preview_enable_preserves_queued_and_partial_audio() {
++        let mut sink = AudioSink::default();
++        sink.enable_preview_pcm_tap();
++        assert!(sink.preview_blocks.capacity() >= PREVIEW_AUDIO_QUEUE_BLOCKS);
++        assert!(sink.preview_current.capacity() >= PREVIEW_AUDIO_BLOCK_FRAMES * 2);
++        for index in 0..(PREVIEW_AUDIO_BLOCK_FRAMES + 3) as u64 {
++            let due = 5_208 + index * 5_208;
++            sink.observe_dma_write(
++                PICOCALC_AUDIO_PWM_CC,
++                4,
++                0x0080_0080,
++                PICOCALC_AUDIO_TIMER_TREQ,
++                Some((3, 15_625)),
++                Some(due),
++                due,
++                index == 0,
++            );
++        }
++        let authoritative = sink.snapshot();
++        let preview = sink.preview_pcm_snapshot();
++        let capacities = (
++            sink.preview_blocks.capacity(),
++            sink.preview_current.capacity(),
++        );
++        sink.enable_preview_pcm_tap();
++        assert_eq!(sink.snapshot(), authoritative);
++        assert_eq!(sink.preview_pcm_snapshot(), preview);
++        assert_eq!(
++            (
++                sink.preview_blocks.capacity(),
++                sink.preview_current.capacity()
++            ),
++            capacities
++        );
++        let blocks = sink.finish_preview_pcm_blocks();
++        assert_eq!(blocks.len(), 2);
++        assert_eq!(blocks[0].samples, vec![128; PREVIEW_AUDIO_BLOCK_FRAMES * 2]);
++        assert_eq!(blocks[1].samples, vec![128; 6]);
++        assert_eq!(
++            blocks[1].cycle,
++            5_208 + PREVIEW_AUDIO_BLOCK_FRAMES as u64 * 5_208
++        );
++        assert_eq!(sink.snapshot(), authoritative);
++    }
++
+     #[test]
+     fn hashes_only_dma_writes_to_the_picocalc_audio_cc_register() {
+         let mut sink = AudioSink::default();
+diff --git a/crates/rp2040-emu/tests/dma_idle_allocations.rs b/crates/rp2040-emu/tests/dma_idle_allocations.rs
+new file mode 100644
+index 0000000..99ded33
+--- /dev/null
++++ b/crates/rp2040-emu/tests/dma_idle_allocations.rs
+@@ -0,0 +1,64 @@
++//! A dormant DMA tick must not allocate a disposable audio sink on the host.
++use rp2040_emu::bus::Bus;
++use std::alloc::{GlobalAlloc, Layout, System};
++use std::cell::Cell;
++use std::hint::black_box;
++
++struct CountingAllocator;
++
++thread_local! {
++    static TRACKING: Cell<bool> = const { Cell::new(false) };
++    static COUNTS: Cell<(usize, usize)> = const { Cell::new((0, 0)) };
++}
++
++fn count(allocations: usize, frees: usize) {
++    let _ = TRACKING.try_with(|tracking| {
++        if tracking.get() {
++            COUNTS.with(|counts| {
++                let (old_allocations, old_frees) = counts.get();
++                counts.set((old_allocations + allocations, old_frees + frees));
++            });
++        }
++    });
++}
++
++unsafe impl GlobalAlloc for CountingAllocator {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        let result = unsafe { System.alloc(layout) };
++        if !result.is_null() {
++            count(1, 0);
++        }
++        result
++    }
++
++    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
++        count(0, 1);
++        unsafe { System.dealloc(ptr, layout) }
++    }
++}
++
++#[global_allocator]
++static ALLOCATOR: CountingAllocator = CountingAllocator;
++
++fn allocation_counts(mut operation: impl FnMut()) -> (usize, usize) {
++    COUNTS.with(|counts| counts.set((0, 0)));
++    TRACKING.with(|tracking| tracking.set(true));
++    for _ in 0..1_000 {
++        operation();
++    }
++    TRACKING.with(|tracking| tracking.set(false));
++    COUNTS.with(Cell::get)
++}
++
++#[test]
++fn dormant_dma_updates_do_not_allocate_or_free_audio_buffers() {
++    let mut bus = Bus::new();
++    // Exclude bus initialization, tracing initialization and report creation.
++    bus.tick_peripherals(1);
++    let before = bus.audio_sink_snapshot();
++    let direct = allocation_counts(|| black_box(&mut bus).tick_dma_with_cycles(black_box(1)));
++    let peripherals = allocation_counts(|| black_box(&mut bus).tick_peripherals(black_box(1)));
++    assert_eq!(bus.audio_sink_snapshot(), before);
++    assert_eq!(direct, (0, 0), "1,000 direct DMA updates");
++    assert_eq!(peripherals, (0, 0), "1,000 peripheral updates");
++}

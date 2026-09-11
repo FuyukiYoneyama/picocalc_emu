@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "record_id": "dma-audio-allocation-20260911-01",
+  "status": "complete-not-adopted",
+  "baseline_commit": "f32eba1878aeabc6dfc8954b363230ef1e4c2b52",
+  "candidate_commit": "e83759f68e4d6ee58731fc98e26e84838a8170bd",
+  "scope": "defer only three AudioSink default buffer allocations",
+  "observations_equal_all_six_runs": true,
+  "median_paired_cpu_reduction": 0.09851846114409146,
+  "continuation_gate": {
+    "required_all_pairs_improve": true,
+    "required_median_cpu_reduction": 0.20,
+    "passed": false
+  },
+  "recovery_14_percent_reached": false,
+  "backend_main_changed": false,
+  "registry_or_capability_changed": false,
+  "additional_firmware_regressions_started": false,
+  "additional_optimization_started": false,
+  "one_x_claimed": false,
+  "reason": "One pair reversed and median paired CPU reduction was below the predeclared 20% continuation gate; candidate real-time speed remained about 2%, below the unchanged 14% recovery gate.",
+  "retained_candidate": [
+    "backend-candidate.bundle",
+    "0001-perf-defer-DMA-audio-sink-buffer-allocations.patch"
+  ],
+  "next_action": "Stop this bounded experiment. No automatic merge, reconstruction restart, or further optimization. Any follow-up requires a separately scoped decision."
+}

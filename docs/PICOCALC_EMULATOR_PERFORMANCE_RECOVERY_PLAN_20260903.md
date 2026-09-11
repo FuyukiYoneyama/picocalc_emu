@@ -10,6 +10,9 @@
 
 ## 0. 決定
 
+2026-09-11の最新判断は§0.2。DMA音声確保の限定検証は不採用として終了した。
+以下のG0〜G7再構築手順は停止したままであり、自動的に再開しない。
+
 現行backendを約2%の速度から少しずつ最適化する作業を停止する。先に、Tetris（軽ゲーム実装）が
 約14%で動作していたbackend `e985a9d...`を高速な出発点として、現在も必要な正確性修正と機能だけを
 段階的に積み直す。
@@ -41,6 +44,43 @@ source差分だけを、現行backend `main`から派生した統合候補へ適
 観測された13.960%は環境・runばらつきとして記録済みだが、今後のcandidate checkpointで14.0%未満を
 合格へ丸める根拠にはしない。以後、14.0%未満のcandidateは、事前に登録した一段階限定の回復例を除き
 失敗とする。G7候補の2.318077413%は原点へ繰り込まず、不採用の退行証拠として保持する。
+
+### 0.2 2026-09-11: DMA音声状態の一時確保だけを対象にした限定検証
+
+人間の指示により、G0〜G7の再構築は停止したまま、現行clean backend
+`f32eba1878aeabc6dfc8954b363230ef1e4c2b52`との単一差分比較を行う。
+これは§0の再構築再開でも、約2%を新しい高速化開始原点へ変更する決定でもない。
+対象はDMA更新の`mem::take`が生成する`AudioSink::default()`の三つの先行バッファ確保だけである。
+
+測定前に次の範囲・停止条件を固定する。
+
+1. `picotetris-opt1b`の固定source／SDK／toolchain／timestampでBINを復元し、§0.1のSHAに
+   一致することを確認する。不一致BINで正式比較を代替しない。
+2. `first_words`は最初の実音声サンプルで、preview用バッファはpreview有効化時に確保する。
+   観測サンプル、PCM、キュー上限、reset、CPU／PIO／DMAの時刻・実行単位は変えない。
+3. clean committed baseline／candidateを同じlocked release設定でbuildし、同じ全体Tetris
+   scenarioをAB／BA／ABの3組で逐次実行する。1 runは5分上限、host CPU affinityは11。
+   測定中にbuildや別の負荷試験を並行しない。既存`--host-timing`のCPU／wall時間を保存する。
+4. backend provenanceと出力先pathだけを除きreportを厳密比較する。今回の変更では
+   guest cycles、step quantum、PSRAM tick countも一致を要求する。UART／画面も照合する。
+5. 次の回帰検証へ進む条件は、全3組でCPU時間が短縮し、組ごとの短縮率の中央値が20%以上、
+   かつ正確性比較が全て一致することとする。この20%は検証範囲を広げる条件であり、復旧合格率ではない。
+   成立時だけ固定BINによるPicoEdit、音声、multicoreと関連release testsへ進む。
+6. 14%の復旧gateは緩和しない。14%未達、入力不足、正確性不一致なら自動的にmainへ統合せず、
+   結果と候補差分を記録して人間へ返す。無関係な最適化候補や1倍速計画へは進まない。
+
+実施結果は本書から参照する単一のevidenceにまとめ、既存target registry、過去の測定値、
+G7の音声非合格記録を上書きしない。
+
+**結果: 限定検証完了・不採用。** 固定BIN／UF2の再生成はSHA一致。候補`e83759f...`で
+更新1,000回の確保／解放は`3000 / 3000`から`0 / 0`になり、局所音声testsも合格した。
+全体Tetrisは全6 runで観測が一致したが、組ごとのCPU時間短縮率は
+`-2.105178%, +9.903361%, +9.851846%`、中央値`9.851846%`で継続条件を満たさなかった。
+candidateのreal-time比率中央値は`2.120190237%`で、14%の復旧gateも未達。
+追加firmware回帰や別の最適化へ進まず終了し、backend mainとtarget registryは変更しない。
+候補commitはbundle／patchとともに
+[`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
+へ保存する。約10%の観測を安定した改善や復旧完了へ読み替えず、以後は別途限定した判断なしに進めない。
 
 ## 1. この手戻りが必要な理由
 

@@ -3,7 +3,7 @@
 この文書は現在値だけを示します。実装経緯や当時の「次の作業」は
 [`history/`](history/README.md)へ分離しています。
 
-更新日: 2026-09-04
+更新日: 2026-09-11
 
 ## 版とbackend
 
@@ -25,8 +25,19 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 
 現行計画は
 [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
-です。1倍速qualificationやUX用の近似backendではなく、`e985a9d...`の高速地点へ必要なguest-visible
-機能を一つずつ戻し、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を回復します。
+です。`e985a9d...`からの段階再構築はG7全体性能退行により停止しています。
+2026-09-11は同計画§0.2に基づき、現行main `f32eba1...`のDMA音声バッファ先行確保だけを対象に
+単一差分を検証しました。確保／解放は除去でき、Tetris全6 runの観測は一致しましたが、
+組ごとのCPU時間短縮率中央値9.851846%（1組は逆転）は事前の継続条件を満たさず不採用です。
+candidateのreal-time比率中央値2.120190237%は14%復旧gateも未達。backend mainは未変更で、
+候補・生データ・採否は[`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
+へ保存しました。追加回帰、再構築、dynamic quantum、1倍速qualificationは開始しません。
+
+別件として、既存recovery evidence内のUART `.bin`等13 pathとrelease-layout検査の不整合があります。
+portable verifyは85 pass／1 fail、Python testsは239 pass／3 failuresで、未変更`c7e7975`でも再現しました。
+今回の変更による回帰ではありませんが、全体gateはgreenではありません。凍結evidenceを変更せず、
+[`検査の切り分け記録`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/validation-checks/README.md)
+へ保存して別scopeとして保留しています。
 
 この性能作業の高速化開始原点は、R0（高速出発点と退行比較点の固定）で固定した`e985a9d...`です。
 Tetris（軽ゲーム実装）の同一firmware／scenario、PicoCalc、Serial、step quantum 1、host CPU affinity 11で
@@ -51,8 +62,8 @@ passを意味しません。統合前の必須全体性能checkpointでは、同
 14.0%最低維持値と10.0%重大退行赤旗をともに下回ったため、G7 candidateは全体性能として失敗・停止し、
 R4（Recovery 4：現行mainへの統合可能性確認）へ進みません。詳細はG7 recordの
 [`whole-system-checkpoint`](../firmware-validation/evidence/rp2040-cpu-recovery-g7-20260904-01/whole-system-checkpoint/)
-です。次の作業はcandidateを統合することではなく、14.0%以上だった最後の全体checkpointへ戻り、退行差分を
-一群ずつ切り分けることです。
+です。このG7 candidateを統合せず、復旧計画§0.2の限定検証も終了しました。
+別途限定した判断なしに次の最適化へ進みません。
 
 ## 利用できる経路
 

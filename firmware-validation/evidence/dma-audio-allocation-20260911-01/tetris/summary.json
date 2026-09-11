@@ -1,0 +1,24 @@
+{
+  "observations_equal": true,
+  "cpu_reduction_fractions": [
+    -0.021051776886229057,
+    0.09903361427189006,
+    0.09851846114409146
+  ],
+  "median_paired_cpu_reduction": 0.09851846114409146,
+  "continue_to_regressions": false,
+  "medians": {
+    "baseline": {
+      "cpu_seconds": 199.030480175,
+      "wall_seconds": 194.441687972,
+      "real_time_percent": 1.9105985134910817
+    },
+    "candidate": {
+      "cpu_seconds": 179.319772373,
+      "wall_seconds": 175.220125745,
+      "real_time_percent": 2.1201902373968644
+    }
+  },
+  "recovery_14_percent_reached": false,
+  "main_integration_authorized_by_this_record": false
+}

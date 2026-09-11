@@ -12,7 +12,7 @@ headless machine API、同一artifact実機相関の証拠を一つの流れと�
 
 ## 現在の状態
 
-- 現行の高速化計画: [`docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)。1倍速qualificationではなく、Serialの正確性を維持しながら、Tetris（軽ゲーム実装）とPicoEdit（テキスト編集実装）の検証wall時間を短縮します。次に許可される作業はdynamic quantum候補の機会量と危険遷移を調べるPERF-Q0だけです
+- 性能作業の正典: [`docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)。G7全体性能退行により再構築は停止中です。同書§0.2のDMA音声バッファ限定検証は2026-09-11に不採用として終了しました。PERF-Q0、G0〜G7再構築、1倍速qualificationは再開しません
 - workloadの表示名: **LOAD-0（最大級の継続負荷性能テスト0番）**（内部ID: `VRP-LOAD-0`）、**Tetris（軽ゲーム実装）**（内部target ID: `picotetris-opt1b`）。表示名は計測内容を示し、内部ID・証拠ファイル名は再現性のため保持します
 - LOAD-0は数値の基準値や高速化gateではなく、画面・音声・CPU・virtual timeを同時に継続させる保存済みの人工stress fixtureです。120秒sliceの`1.929283%`はLOAD-0固有の歴史的観測値であり、追加の3回determinism、10 virtual分run、1倍判定は行いません
 - 現行BSP source: **0.9.0**

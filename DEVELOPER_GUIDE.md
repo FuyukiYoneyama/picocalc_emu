@@ -13,7 +13,7 @@
 2. [`AI_START_HERE.md`](AI_START_HERE.md) — AIの責任境界、実機依頼、CI節約規則
 3. [`README.md`](README.md) — 公開範囲と5分の概要
 4. [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、[`docs/MILESTONES.md`](docs/MILESTONES.md)、[`firmware-validation/capability.json`](firmware-validation/capability.json) — 現在の対応範囲
-5. 性能作業では[`docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md) — 現行目的、実施順序、採否条件
+5. 性能作業では[`docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md) — 復旧原点、停止条件、§0.2の単一DMA音声確保検証
 6. [`reference-projects/firmware-targets.json`](reference-projects/firmware-targets.json) — targetのsource／BIN／backend／scenario pin
 7. `docs/history/`、`firmware-validation/records/`、`hardware-validation/records/` — 書き換えない時点証拠
 
@@ -55,8 +55,10 @@ git clone --recursive https://github.com/FuyukiYoneyama/picoem-picocalc.git ../p
 `Cargo.lock`を使い、`--locked`を付けます。
 
 性能作業では1倍速、LOAD-0、旧OPT4、未完了VRP gateを開始条件にしません。同じfirmware
-artifact／scenarioを使い、clean baseline backendとcandidate backendだけを比較します。最初に許可される
-作業は、dynamic quantumの機会量と量子途中のdevice開始を調べるPERF-Q0です。
+artifact／scenarioを使い、clean baseline backendとcandidate backendだけを比較します。PERF-Q0〜Q3は
+実施済みで、G0〜G7再構築も重大退行により停止中です。2026-09-11の作業は復旧計画§0.2の
+DMA音声バッファ先行確保だけを対象とした限定検証で、不採用として終了しました。
+結果と停止判断を同書§0.2で確認し、旧計画を再開しません。
 
 外部アプリを再ビルドしない新規開発では、`picocalc_emu_ext`、PicoTetris、PicoEdit、speaker校正
 workspaceは不要です。既存targetのsourceから再生成したり、過去の実機相関を再現する場合だけ、

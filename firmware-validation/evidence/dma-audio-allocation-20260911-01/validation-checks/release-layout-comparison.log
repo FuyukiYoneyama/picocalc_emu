@@ -1,0 +1,61 @@
+{
+  "unchanged_c7e7975": [
+    {
+      "name": "release:no-conformance-target",
+      "status": "fail",
+      "firmware_images": [
+        "firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/tetris-short/g1-control-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/tetris-short/g2-candidate-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g5a-20260903-01/raw/flash-output.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-combined-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-38683-only-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-c184-only-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/tetris-short/g3-candidate-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/scenario-probe-f32-p1a-off/r0-scenario-f32-p1a-off-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-002-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-003-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-001-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-f32-p1a-off/p1a-true-off-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/scenario-probe-e985/r0-scenario-e985-uart.bin"
+      ],
+      "sample_directories": []
+    },
+    {
+      "name": "release:portable-without-backend",
+      "status": "pass",
+      "capability_snapshot": "firmware-validation/capability.json",
+      "backend_env_set": false,
+      "note": "portable verification reads the snapshot, never the backend checkout"
+    }
+  ],
+  "current_changes": [
+    {
+      "name": "release:no-conformance-target",
+      "status": "fail",
+      "firmware_images": [
+        "firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/tetris-short/g1-control-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g2-20260903-01/tetris-short/g2-candidate-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g5a-20260903-01/raw/flash-output.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-combined-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-38683-only-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g1-20260903-01/tetris-short/g1-c184-only-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-g3-20260903-01/tetris-short/g3-candidate-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/scenario-probe-f32-p1a-off/r0-scenario-f32-p1a-off-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-002-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-003-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-e985/new-run-001-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/tetris-f32-p1a-off/p1a-true-off-uart.bin",
+        "firmware-validation/evidence/rp2040-cpu-recovery-r0-20260903-01/scenario-probe-e985/r0-scenario-e985-uart.bin"
+      ],
+      "sample_directories": []
+    },
+    {
+      "name": "release:portable-without-backend",
+      "status": "pass",
+      "capability_snapshot": "firmware-validation/capability.json",
+      "backend_env_set": false,
+      "note": "portable verification reads the snapshot, never the backend checkout"
+    }
+  ]
+}
+Identical pre-existing release-layout violations

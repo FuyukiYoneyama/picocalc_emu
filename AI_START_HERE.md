@@ -26,7 +26,7 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 - R0〜R6、NEXT-1〜NEXT-4: 完了
 - OPT1-B: promoted
 - OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
-- 現行高速化: [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)。1倍速ではなく、Serialの正確性を保った実アプリwall時間短縮が目的。次に許可されるのはPERF-Q0の機会量・危険遷移調査だけ
+- 性能作業の正典: [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)。G7全体性能退行により再構築は停止中。同書§0.2のDMA音声バッファ限定検証は2026-09-11に不採用として終了。PERF-Q0、G0〜G7再構築、1倍速qualificationは再開しない
 - 既存R/NEXT/U/SD-GEN番号付き作業: すべて完了または正式終了。Validated Realtime PreviewはVRP-0〜VRP-4、VRP-5 reusable backend-pin preflight、repository-owned `LOAD-0（最大級の継続負荷性能テスト0番）` r1 prototypeの120秒non-formal vertical sliceまで完了しています。1倍速UXプロジェクトは2026-09-03にqualification suspendedと判断し、3回determinism、10 virtual分以上の準備run、threshold decision、input-to-visible-response、hardware correlation、formal qualificationは未完了です。判断の正典は[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)です
 - LOAD-0は保存済みの人工stress fixtureであり、現行高速化のbaseline／開始gate／性能合否には使いません。追加の長時間runも開始しません
 - UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了

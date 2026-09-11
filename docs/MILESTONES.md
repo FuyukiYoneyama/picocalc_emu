@@ -4,6 +4,11 @@
 現在の性能退行復旧の目的、実施順序、採否条件は
 [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
 を正典とします。
+2026-09-11のDMA音声確保限定検証（同計画§0.2）は不採用として終了しました。
+Tetris全6 runは観測一致、CPU時間短縮率中央値9.851846%、candidate real-time比率中央値2.120190237%。
+事前の継続条件と14%復旧gateが未達のため、追加回帰・main統合・別の最適化へは進んでいません。
+候補と判断は[`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
+に保存しています。
 表示名として、`VRP-LOAD-0`は **LOAD-0（最大級の継続負荷性能テスト0番）**、
 `picotetris-opt1b`は **Tetris（軽ゲーム実装）** と記載します。内部IDと証拠のパスは変更しません。
 LOAD-0は数値の基準値や高速化gateではなく、保存済みの人工stress fixtureです。120秒sliceの
