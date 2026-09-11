@@ -19,14 +19,17 @@ SD、keyboard、exception、unsupported MMIO、structured reportを観測しま�
 ## Backend identity
 
 branch名や最新commitは受入レベルではありません。targetごとに正確なcommitを固定します。
+利用者向けの公開`main`は、2026-09-11に旧高速・promoted treeへ復旧しました。後続機能は履歴上の
+commitとして残っており、対応targetが指定する固定commitで利用します。
 
 | 役割 | commit | 意味 |
 |---|---|---|
+| public main | `32d27ff...0fa9` | `e985a9d...5f1`と同一treeへ復旧した、利用者保護の公開main |
 | hardware-correlated | `612b485...f66` | R5同一artifact実機相関に使った不変証拠 |
 | promoted | `e985a9d...5f1` | 通常PicoTetris回帰に使うOPT1-B accepted backend |
 | bounded audio acceptance | `d92db1b...1a3` | NEXT-2Bの凍結audio targetで受入済み |
 | last CI-observed experimental main | `d92db1b...1a3` | capability.jsonの`experimental_main`。CIで観測された最後のunpromoted anchor |
-| local development main | `f810d05` | I2C-EXT E0〜E6のmodel／profile／sidecar／target接続と実機相関を含む現在の開発HEAD。Actionsは実行せずローカル検証のみ。general promotedとは別。SD-GEN-1 P4/P5時点の旧checkpointは`d96f73b` |
+| historical development main | `f32eba1...b52` | 復旧前に性能退行を記録した開発HEAD。後続のI2C／preview／診断機能は各固定commitと証拠で保持。 |
 
 新しいmainが既存targetを自動的に置き換えることはありません。backend更新時は新しいtarget revision、
 validation、recordを作り、旧実機証拠を書き換えません。

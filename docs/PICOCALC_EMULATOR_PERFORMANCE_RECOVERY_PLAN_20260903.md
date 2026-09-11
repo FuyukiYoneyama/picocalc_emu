@@ -6,20 +6,22 @@
 - Validation repository: `picocalc_emu`
 - Implementation repository: `picoem-picocalc`
 - 高速な出発点: backend `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`
-- 現行比較点: backend `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`
+- 復旧前の比較点: backend `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`
+- 2026-09-11公開main復旧: backend `32d27ff4179a993ae9fac6ff4a1d5e8999570fa9`（treeは`e985a9d...`と一致）
 
 ## 0. 決定
 
 2026-09-11の最新判断は§0.2。DMA音声確保の限定検証は不採用として終了した。
 以下のG0〜G7再構築手順は停止したままであり、自動的に再開しない。
 
-現行backendを約2%の速度から少しずつ最適化する作業を停止する。先に、Tetris（軽ゲーム実装）が
-約14%で動作していたbackend `e985a9d...`を高速な出発点として、現在も必要な正確性修正と機能だけを
-段階的に積み直す。
+復旧前の開発backendを約2%の速度から少しずつ最適化する作業を停止する。利用者保護を優先し、
+Tetris（軽ゲーム実装）が約14%で動作していたbackend `e985a9d...`と同じtreeへ公開mainを戻して、
+いったん固定する。必要な追加機能の再導入は、確立した比較手順とtarget単位の受入を先に整えてから
+別途判断する。
 
-これは公開履歴や現在の`main`を過去へresetする作業ではない。現在のbackend、既存target、validation、
-測定recordは不変の証拠として保持する。再構築は`/tmp`の一時worktreeで行い、完成した候補の最終的な
-source差分だけを、現行backend `main`から派生した統合候補へ適用する。候補branchはremoteへ公開しない。
+既存履歴やvalidation、測定recordは不変の証拠として保持する。公開mainはforce pushせず、
+復旧commit `32d27ff...`で旧高速treeへ戻した。後続機能のcommitは履歴から参照できるが、公開mainへ
+自動的に戻さない。
 
 従来の
 [`PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md)
@@ -47,7 +49,7 @@ source差分だけを、現行backend `main`から派生した統合候補へ適
 
 ### 0.2 2026-09-11: DMA音声状態の一時確保だけを対象にした限定検証
 
-人間の指示により、G0〜G7の再構築は停止したまま、現行clean backend
+人間の指示により、G0〜G7の再構築は停止したまま、復旧前のclean backend
 `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`との単一差分比較を行う。
 これは§0の再構築再開でも、約2%を新しい高速化開始原点へ変更する決定でもない。
 対象はDMA更新の`mem::take`が生成する`AudioSink::default()`の三つの先行バッファ確保だけである。
@@ -77,7 +79,9 @@ G7の音声非合格記録を上書きしない。
 全体Tetrisは全6 runで観測が一致したが、組ごとのCPU時間短縮率は
 `-2.105178%, +9.903361%, +9.851846%`、中央値`9.851846%`で継続条件を満たさなかった。
 candidateのreal-time比率中央値は`2.120190237%`で、14%の復旧gateも未達。
-追加firmware回帰や別の最適化へ進まず終了し、backend mainとtarget registryは変更しない。
+追加firmware回帰や別の最適化へ進まず終了した。この時点ではbackend mainを変更しない判断だったが、
+その後、利用者保護の指示により公開mainを`32d27ff...`へ復旧した。target registryのaccepted pinは
+従来どおり`e985a9d...`で変更していない。
 候補commitはbundle／patchとともに
 [`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
 へ保存する。約10%の観測を安定した改善や復旧完了へ読み替えず、以後は別途限定した判断なしに進めない。
@@ -94,8 +98,9 @@ candidateのreal-time比率中央値は`2.120190237%`で、14%の復旧gateも�
 | `f32eba1...` P1-Aなし | 927,528,659 cycles | 190.172395秒 | 193.368972秒 | `/tmp`の1回診断 |
 | `f32eba1...` P1-Aあり | 927,528,659 cycles | 191.252047秒 | 194.785231秒 | `/tmp`の1回診断 |
 
-旧地点と現行地点では、同じTetris firmware／scenarioに対するhost計算コストが約7.4倍になっている。
-一方、現行地点でのP1-A有無は約0.6%差で、P1-Aなしがわずかに速かった。この1回診断を精密な
+旧地点と復旧前の開発地点では、同じTetris firmware／scenarioに対する保存済みhost計算コストが約7.4倍
+だった。この比較は復旧前の開発地点に対する歴史的記録であり、復旧後の公開mainの現在値ではない。
+一方、復旧前地点でのP1-A有無は約0.6%差で、P1-Aなしがわずかに速かった。この1回診断を精密な
 P1-A効果量とは呼ばないが、約7.4倍の退行原因をP1-Aの局所比較へ求める根拠はない。
 
 現行計画は`f32eba1...`を次候補のbaselineとしていたため、仮に10%改善しても約170 CPU秒であり、

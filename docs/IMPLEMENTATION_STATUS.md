@@ -17,7 +17,8 @@
 | 正確性基準 | Firmware backend `ExecutionModel::Serial` |
 | 通常promoted backend | `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`（OPT1-B） |
 | 実機相関済みR5 backend | `612b48510452d4012e4ac6639960ca3983b48f66`（不変証拠） |
-| backend開発main | transientなbranch headであり、正確性の権威ではない。各targetの固定commitを使用 |
+| backend公開main | `32d27ff4179a993ae9fac6ff4a1d5e8999570fa9`（旧高速・promoted `e985a9d...` と同一treeへ復旧） |
+| backend開発履歴 | `f32eba1...` などの後続commitは履歴・検証証拠として保持。各targetは固定commitを使用 |
 
 targetはそれぞれ正確なbackend commitを固定します。branch headやローカルmainを自動採用しません。
 
@@ -26,12 +27,14 @@ targetはそれぞれ正確なbackend commitを固定します。branch headや�
 現行計画は
 [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)
 です。`e985a9d...`からの段階再構築はG7全体性能退行により停止しています。
-2026-09-11は同計画§0.2に基づき、現行main `f32eba1...`のDMA音声バッファ先行確保だけを対象に
+2026-09-11は同計画§0.2に基づき、復旧前の開発main `f32eba1...`のDMA音声バッファ先行確保だけを対象に
 単一差分を検証しました。確保／解放は除去でき、Tetris全6 runの観測は一致しましたが、
 組ごとのCPU時間短縮率中央値9.851846%（1組は逆転）は事前の継続条件を満たさず不採用です。
-candidateのreal-time比率中央値2.120190237%は14%復旧gateも未達。backend mainは未変更で、
+candidateのreal-time比率中央値2.120190237%は14%復旧gateも未達。その後、利用者保護を優先して
+backend公開mainを復旧commit `32d27ff...`へ戻し、treeを高速出発点`e985a9d...`と一致させました。
 候補・生データ・採否は[`dma-audio-allocation-20260911-01`](../firmware-validation/evidence/dma-audio-allocation-20260911-01/)
-へ保存しました。追加回帰、再構築、dynamic quantum、1倍速qualificationは開始しません。
+へ保存しました。復旧commitはclean release buildと対象backend test 1,229件を通過しています。
+追加回帰、再構築、dynamic quantum、1倍速qualificationは開始しません。
 
 別件として、既存recovery evidence内のUART `.bin`等13 pathとrelease-layout検査の不整合があります。
 portable verifyは85 pass／1 fail、Python testsは239 pass／3 failuresで、未変更`c7e7975`でも再現しました。
@@ -322,8 +325,8 @@ G7の機能範囲はcandidate-passですが、全体性能checkpointは2.3180774
 PERF-Q0（dynamic quantumの機会量と遷移危険の調査）、P2-A cleanup、PERF-Q1候補のQ2正確性gate、
 PERF-Q3のprocess CPU-time screeningまで完了しました。Q3の比較基準は、P2-A cleanup後のclean
 backend `f32eba1878aeabc6dfc8954b363230ef1e4c2b52`、CPU affinity 11番、実アプリ2件の固定guest
-cycle実行で記録されています。ただし性能退行判明後は、これを追加最適化のaccepted baselineではなく
-現行退行点として扱います。LOAD-0、1倍速、CPU-only MHzは採否指標に使いません。
+cycle実行で記録されています。これは復旧前の開発mainに対する歴史的な退行測定であり、公開mainの
+現在値ではありません。LOAD-0、1倍速、CPU-only MHzは採否指標に使いません。
 
 Q3 baselineの中央値は、Tetris（軽ゲーム実装）が927,528,659 guest cyclesに対して
 189.414729529 process CPU秒、PicoEdit（テキスト編集実装）が827,799,818 guest cyclesに対して
