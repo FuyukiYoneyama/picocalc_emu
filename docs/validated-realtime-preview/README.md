@@ -17,13 +17,12 @@ running LOAD-0 is meaningful only as a result for that fixed profile. The
 itself establish a 1x UX baseline or trigger longer preparation runs
 automatically.
 
-The 1x UX project is explicitly suspended at this preparation boundary. The
-`ux` mode remains concept-only and unimplemented; the suspension decision and
-resume conditions are recorded in
-[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md).
-The unfinished VRP gates are not the current work queue. Current performance
-work preserves Serial guest-visible behavior and follows
-[`../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md`](../PICOCALC_EMULATOR_PERFORMANCE_PLAN_20260903.md).
+The 1x UX and performance project ended in failure on 2026-09-11.
+The final [retrospective](../history/performance/README.md) supersedes the earlier suspension/resumption guidance.
+The original suspension decision remains a historical record.
+These schemas and implementation records stay at their existing paths for compatibility.
+Preview requires its pinned backend and receipt; restored public main 32d27ff does not provide the preview API.
+The main project is [PicoCalc application development using emulation](../PROJECT_OVERVIEW.md).
 
 ## Canonical files
 

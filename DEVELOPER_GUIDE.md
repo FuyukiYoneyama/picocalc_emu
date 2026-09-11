@@ -13,7 +13,7 @@
 2. [`AI_START_HERE.md`](AI_START_HERE.md) — AIの責任境界、実機依頼、CI節約規則
 3. [`README.md`](README.md) — 公開範囲と5分の概要
 4. [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、[`docs/MILESTONES.md`](docs/MILESTONES.md)、[`firmware-validation/capability.json`](firmware-validation/capability.json) — 現在の対応範囲
-5. 性能作業では[`docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md) — 復旧原点、停止条件、§0.2の単一DMA音声確保検証
+5. [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) — 開発環境の目的・構成・完了条件。終了した高速化は[`履歴`](docs/history/performance/README.md)
 6. [`reference-projects/firmware-targets.json`](reference-projects/firmware-targets.json) — targetのsource／BIN／backend／scenario pin
 7. `docs/history/`、`firmware-validation/records/`、`hardware-validation/records/` — 書き換えない時点証拠
 
@@ -36,7 +36,7 @@ machine-readable capabilityを確認します。文書とsourceのどちらか�
 現在のbackendの役割は次の通りです。
 
 - 一般のpromoted target: `e985a9d7ecb51ef760506a105edd34e31cf9b5f1`
-- development `main`: transientであり、targetの正確性pinとして自動採用しない。性能実験は開始時のclean commitをrecordへ固定する。2026-09-03のP1-A採用commitは`58e73010636bb1b60fdb1ccace40db29b5bb96cc`
+- 公開`main`: 2026-09-11時点では`32d27ff`（旧`e985a9d`と同一tree）。登録targetのpinとして自動採用しない。後続機能は対応する固定版を使う
 - OPT4時点の`d96f73b`や`a67e81c9`は凍結した過去の測定値であり、現在のHEADではありません
 
 ## 3. 最小セットアップ
@@ -54,11 +54,9 @@ git clone --recursive https://github.com/FuyukiYoneyama/picoem-picocalc.git ../p
 `PICO_SDK_PATH`を設定します。Rust backendを変更する場合は、repositoryが要求するstable toolchainと
 `Cargo.lock`を使い、`--locked`を付けます。
 
-性能作業では1倍速、LOAD-0、旧OPT4、未完了VRP gateを開始条件にしません。同じfirmware
-artifact／scenarioを使い、clean baseline backendとcandidate backendだけを比較します。PERF-Q0〜Q3は
-実施済みで、G0〜G7再構築も重大退行により停止中です。2026-09-11の作業は復旧計画§0.2の
-DMA音声バッファ先行確保だけを対象とした限定検証で、不採用として終了しました。
-結果と停止判断を同書§0.2で確認し、旧計画を再開しません。
+高速化・UX 1倍速プロジェクトは失敗・終了しました。[総括](docs/history/performance/README.md)を参照してください。
+通常の保守はPicoCalcアプリの開発・検証を支える変更として目的を定義します。
+測定する場合は、使用版・入力・実行条件・原本をGit管理下へ保全してから一時buildを片付けます。
 
 外部アプリを再ビルドしない新規開発では、`picocalc_emu_ext`、PicoTetris、PicoEdit、speaker校正
 workspaceは不要です。既存targetのsourceから再生成したり、過去の実機相関を再現する場合だけ、
@@ -161,8 +159,8 @@ device options、scenario、stop reason、UART、report checks、sidecar checks�
 
 新しい機能を始める場合は、最初に目的、対象repo、既定経路への影響、受入条件、ローカル検証、
 実機操作、CI予算を`docs/`直下の計画書へ書きます。作業中の計画は`docs/`直下とREADME／MILESTONESから
-参照できる状態に保ち、完了後にだけ`docs/history/`へ移して完了証拠とリンクを残します。`history/`に
-未完了の計画を置いて、次のAIから見えなくしてはいけません。
+参照できる状態に保ち、成功・失敗・中止の最終判断後に`docs/history/`へ移し、終了理由と証拠を残します。
+失敗して終了した計画は未達項目を明記して履歴化します。進行中の作業を履歴へ隠してはいけません。
 
 新規アプリの最小ループは次です。
 

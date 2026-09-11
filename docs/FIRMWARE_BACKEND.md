@@ -1,5 +1,10 @@
 # Firmware backend
 
+> **backend版の前提（2026-09-11）:** 公開mainは旧e985a9dと同一treeの32d27ffです。
+> 後続のmachine API、preview、heartbeat、audio解析、SD／loader拡張等は対応する固定版で使います。
+> target・receiptのbackend pinを優先し、公開mainを代入しません。
+> 使用版の詳細は[実装状況](IMPLEMENTATION_STATUS.md)を参照してください。
+
 `picocalc_emu`のRP2040 firmware backendは、独立リポジトリ
 [`FuyukiYoneyama/picoem-picocalc`](https://github.com/FuyukiYoneyama/picoem-picocalc)です。
 `0x4D44/picoem`の履歴と`MIT OR Apache-2.0`を維持した派生であり、sourceを本リポジトリへ

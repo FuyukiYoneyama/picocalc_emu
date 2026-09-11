@@ -8,6 +8,14 @@
 実装の経緯、却下した最適化、実機相関の時点記録、検証器が読む凍結契約は、通常利用の前提では
 ありません。必要な場合だけ、本文のリンクから個別に参照してください。
 
+## 基本の流れ
+
+BSPからアプリを生成 → hostでロジック確認 → BINをビルド → エミュレーターで実行 →
+scenario・UART・画面で検証 → 必要な項目を実機で確認、の順で進めます。
+[プロジェクト体系](../docs/PROJECT_OVERVIEW.md)と[使用版の境界](../docs/IMPLEMENTATION_STATUS.md)を参照してください。
+preview、machine API、loader等の追加機能は対応する固定backendが必要です。
+高速化・UX 1倍速は失敗・終了した履歴であり、通常開発の前提ではありません。
+
 ## 目的別に読む順番
 
 | やりたいこと | 読む文書 |
@@ -95,34 +103,5 @@ SD RAW imageの標準的な作成・取り出し手順は[`SD_IMAGES.md`](SD_IMA
 現在の状態だけを確認したい場合は[`IMPLEMENTATION_STATUS.md`](../docs/IMPLEMENTATION_STATUS.md)、
 公開版の選択は[`VERSIONING.md`](../docs/VERSIONING.md)を参照します。
 
-UF2Loader計画ではU0〜U6、M-NESCO-S1、M-NESCO拡張受入まで完了しています。
-host側のU3-A（directory ↔ RAW pack/extract）とU3-B（runner-integrated directory snapshot）も完了しています。
-M-NESCO-S1は、`--sd-image`と`--flash-image-out`を使うbackend診断経路を提供し、U3-Bでは
-`picocalc.py test --mode firmware --sd-dir`を追加しました。`--sd-dir`は起動時の一回限りの
-FAT32 snapshotであり、live directory mountではありません。実施順序と証拠は
-[`../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)を参照してください。
-U4-P2では`picocalc-run --sd-trace <path>`によるdiagnostic-only SD traceをclean loaderで3回取得し、
-CMD17のみ（CMD18／CMD12／CMD23／CMD24／CMD25は未観測）と判定しました。CMD17のR1順序だけを修正しました。
-SD-GEN-1-P4でmulti-block production codeをdefault runtimeへ接続し、CMD18/CMD12 read、CMD23/CMD25 write、CMD17 readbackの実SPI0 synthetic
-E2Eを追加しています。U5-B watchdog warm reset、U6実uf2loader end-to-end
-Gateまで完了しています。M-NESCO拡張受入も計画4ケース＋追加mapper 1のローカルA/B deterministic gateを完了しています。
-trace取得条件と実装判断表は完了済み履歴の[`../docs/history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md`](../docs/history/uf2loader/UF2LOADER_U4_PREFLIGHT_20260822.md)、
-boot2の実装境界は[`../docs/history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md`](../docs/history/uf2loader/UF2LOADER_U5A_BOOT2_PREFLIGHT_20260822.md)にあります。
-U5-Bの受入後に行う、複数mapper／ROM容量、PRG／CHR境界、CPU／core 1／DMA read、flash export後の再attachの
-M-NESCO拡張受入の契約と結果は
-[`../docs/history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md`](../docs/history/uf2loader/UF2LOADER_M_NESCO_EXT_PREFLIGHT_20260822.md)です。
-実行証拠は[`../firmware-validation/evidence/m-nesco-ext-20260822-01/`](../firmware-validation/evidence/m-nesco-ext-20260822-01/)です。
-このgateは`uf2loader-e2e`へ昇格するものではありません。U6は固定LCD fixtureで先に
-Gateを閉じています。
-M-NESCO拡張受入後のSD-GEN-1（uf2loader以外のアプリも対象にした汎用SD protocol）は、複数ブロック、
-CRC／token／CS境界、read/write、unknown/errorのfail-closed、代表アプリ回帰まで実装・回帰済みです。
-実装順序と受入条件は[`../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../docs/SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)を正典とし、
-P0〜P5は完了しました。P5でboundedな`sd-multi-block` capabilityを追加しました。versioned targetと固定版`uf2loader-e2e`は変更していません。
-U6の実装前契約と詳細判定は、完了済み履歴の[`../docs/history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md`](../docs/history/uf2loader/UF2LOADER_U6_PREFLIGHT_20260822.md)です。
-U6-P0の標準 `picocalc.py uf2 inspect/assemble` は実装済みで、UF2からraw XIP flash imageを
-決定的に生成できます。U6 Gateは`python3 tools/picocalc.py uf2 e2e`で実行し、cleanなexternal
-uf2loader source／artifactとbackendを明示して同一入力を3回検証します。UF2 strict検査、loader／boot2
-保護領域、erase/program readback、watchdog reset、SD trace、UART、report、framebuffer、flash SHA、
-再attachを合格させた証拠は[`../firmware-validation/evidence/uf2loader-u6-20260822-01/`](../firmware-validation/evidence/uf2loader-u6-20260822-01/)にあります。
-これは固定source／artifactの限定経路であり、USB BOOTSEL/MSCや任意UF2互換を意味しません。
-実装状況は常に[`capability.json`](../firmware-validation/capability.json)を優先します。
+追加SD／loader機能の過去の受入は、[作業台帳](../docs/MILESTONES.md)から固定版の記録を参照します。
+公開mainの基本BIN実行と、後続版の拡張CLIを混同しないでください。

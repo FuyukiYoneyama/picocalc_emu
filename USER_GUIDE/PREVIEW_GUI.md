@@ -1,5 +1,10 @@
 # 対話型 Validated Preview GUI
 
+> **backend版の前提（2026-09-11）:** 公開mainは旧e985a9dと同一treeの32d27ffです。
+> 後続のmachine API、preview、heartbeat、audio解析、SD／loader拡張等は対応する固定版で使います。
+> target・receiptのbackend pinを優先し、公開mainを代入しません。
+> 使用版の詳細は[実装状況](../docs/IMPLEMENTATION_STATUS.md)を参照してください。
+
 firmware backendでPASSした同一BINを画面・キー・UARTで対話的に確認するための
 薄型frontendです。エミュレーターをGUIへ再実装せず、`preview`が生成したadmitted
 descriptorに記録されたrunnerをそのまま子processとして起動します。これはfirmware

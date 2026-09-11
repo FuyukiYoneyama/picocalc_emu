@@ -7,7 +7,15 @@
 [`../IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md)、現在計画は
 [`../MILESTONES.md`](../MILESTONES.md)を優先してください。
 
+## 高速化・UX 1倍速：失敗・終了
+
+[総括と計画一覧](performance/README.md)に集約しました。
+公開版の原状回復、未達事項、計測管理と公開判断の失敗、保全した再測定証拠を記録しています。
+旧計画の「現行」「hold」「再開条件」は当時の判断であり、現行作業ではありません。
+
 ## 全体履歴・初期計画
+
+- [PicoCalc開発を中心にした文書再編（2026-09-11）](DOCUMENT_REORGANIZATION_20260911.md)
 
 - [`MILESTONES_DETAIL_20260810.md`](MILESTONES_DETAIL_20260810.md)
 - [`IMPLEMENTATION_STATUS_DETAIL_20260810.md`](IMPLEMENTATION_STATUS_DETAIL_20260810.md)
@@ -43,8 +51,8 @@
 - [`OPT3_B_XIP_DECODE_CURSOR.md`](OPT3_B_XIP_DECODE_CURSOR.md)
 - [`OPT3_C_COMPACT_DISPATCH_KEY.md`](OPT3_C_COMPACT_DISPATCH_KEY.md)
 
-OPT4の候補単位の試作・A/B・revert記録は、現行の採否判断文書と分離して
-[`opt4/`](opt4/)へ移しています。現行の採否規則とhold判断は
+OPT4の候補単位の試作・A/B・revert記録は、当時の採否判断文書と分離して
+[`opt4/`](opt4/)へ移しています。当時の採否規則とhold判断は
 [`../OPT4_MICRO_OPT_PLAN.md`](../OPT4_MICRO_OPT_PLAN.md)と
 [`../OPT4_BANK_DECISION.md`](../OPT4_BANK_DECISION.md)を参照してください。
 
@@ -81,12 +89,12 @@ NEXT-4は現在利用するAPI仕様なので、歴史資料ではなく
 quantum動的化提案も、この履歴直下（[`MACHINE_API_DEBUG_OBSERVABILITY_REQUEST_20260813.md`](MACHINE_API_DEBUG_OBSERVABILITY_REQUEST_20260813.md)、
 [`PSRAM_QUANTUM_DYNAMIC_GATING_PROPOSAL_20260816.md`](PSRAM_QUANTUM_DYNAMIC_GATING_PROPOSAL_20260816.md)）に保存しています。
 
-UF2LoaderのSD／flash統合計画本体は歴史資料ではなく、現行計画として
+UF2LoaderのSD／flash統合計画本体は完了した固定版の受入記録として
 [`../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](../UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)に置いています。
 U0〜U6、M-NESCO拡張、SD-GEN-1 P0〜P5は完了しています。このディレクトリにある
 `NESCO_FLASH_WRITE_AND_SD_DIRECTORY_REQUEST_20260813.md`は、計画へ統合される前の要求時点記録です。
 完了済みUF2Loaderのpreflightは[`uf2loader/`](uf2loader/)へ移しました。
 
 SD-GEN-1のP0〜P2作業記録は[`sd-gen1/`](sd-gen1/)へ移しました。P3〜P5のmachine-readable
-contractと実行証拠は`../firmware-validation/`にあり、現行計画は
+contractと実行証拠は`../../firmware-validation/`にあり、完了した計画は
 [`../SD_GEN1_IMPLEMENTATION_PLAN_20260823.md`](../SD_GEN1_IMPLEMENTATION_PLAN_20260823.md)です。

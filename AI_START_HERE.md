@@ -17,65 +17,21 @@ R/OPT/NEXT文書は、この現在手順を上書きしません。
 書き込みは明示的な許可とloader保護検査が必要です。LCDの見え方、音声の聴感、キーの物理操作、
 電源条件の確認は人間に依頼します。詳細は[`実機HIL手順`](docs/HARDWARE_IN_THE_LOOP.md)を参照します。
 
-## 現在地
+## 現在地と作業の目的
 
-- Canonical BSP source current: **0.9.0**
-- 標準機能の実機相関baseline: **0.8.8**
-- 推奨LCD: `pio-rgb565`
-- SD: FAT32既定、FAT16明示
-- R0〜R6、NEXT-1〜NEXT-4: 完了
-- OPT1-B: promoted
-- OPT2／OPT3: 性能gate不合格として終了、候補はrevert済み
-- 性能作業の正典: [`PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md`](docs/PICOCALC_EMULATOR_PERFORMANCE_RECOVERY_PLAN_20260903.md)。G7全体性能退行により再構築は停止中。同書§0.2のDMA音声バッファ限定検証は2026-09-11に不採用として終了し、利用者保護のため公開backend `main`は復旧commit `32d27ff...`で高速baseline `e985a9d...`と同じtreeへ固定済み。PERF-Q0、G0〜G7再構築、1倍速qualificationは再開しない
-- 既存R/NEXT/U/SD-GEN番号付き作業: すべて完了または正式終了。Validated Realtime PreviewはVRP-0〜VRP-4、VRP-5 reusable backend-pin preflight、repository-owned `LOAD-0（最大級の継続負荷性能テスト0番）` r1 prototypeの120秒non-formal vertical sliceまで完了しています。1倍速UXプロジェクトは2026-09-03にqualification suspendedと判断し、3回determinism、10 virtual分以上の準備run、threshold decision、input-to-visible-response、hardware correlation、formal qualificationは未完了です。判断の正典は[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)です
-- LOAD-0は保存済みの人工stress fixtureであり、現行高速化のbaseline／開始gate／性能合否には使いません。追加の長時間runも開始しません
-- UF2Loader U0〜U6、M-NESCO拡張受入、SD-GEN-1 P0〜P5: 完了
-- SD-GEN-1 P5: boundedな`sd-multi-block` capabilityをversioned validationとして受入
-- OPT4 micro-opt bank: 現行mainのcycle差によりhold。promoted targetはOPT1-Bのまま
-- I2C-EXT: E0〜E6完了。E5は同一BIN 3回のemulator回帰と同一UF2の実機startup probeを合格。E6はactive target、versioned validation、`i2c-external-rtc-env-v1` bounded capabilityを固定
-- Validated Realtime Preview: **VRP-0／VRP-1／VRP-2-a〜e／VRP-3／VRP-4完了**。既存のadmission、GUI、audio monitorは利用可能ですが、1倍速qualificationは中断済みで、VRP-5以降は現行作業ではありません
+本プロジェクトは、エミュレーターを使ってPicoCalcアプリを開発・検証する環境です。
+[プロジェクト体系](docs/PROJECT_OVERVIEW.md)と[現在の対応範囲](docs/IMPLEMENTATION_STATUS.md)を確認します。
 
-VRP-2-eの到達不能なbackend pinは当時の不変evidenceとして保持します。VRP-5 reusable backend-pin preflightも完了していますが、1倍速中断により追加qualificationの開始条件には使いません。判断は[`VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md`](docs/validated-realtime-preview/VRP_1X_PROJECT_SUSPENSION_DECISION_20260903.md)に固定しています。
+- 通常の流れは、BSPから生成、host確認、BIN build、firmware実行、scenario検証、必要な実機確認です。
+- 公開backendは2026-09-11時点で32d27ff（旧e985a9dと同一tree）。登録targetは個別のbackend pinを使います。
+- 後続版のmachine API、preview、音声解析、I2C、loader等の契約は対応版で再現します。公開mainに全機能があると説明しません。
+- 高速化・UX 1倍速・性能復旧は**失敗・終了**です。[総括](docs/history/performance/README.md)に履歴化しました。
+- 旧計画の未完了項目や再開条件を現行作業として開始しません。
+- 判定に使う測定・実行の原本、使用版、入力hashを保存します。Gitのcleanと依頼の完了を区別します。
 
-**VRP-NES-0の補足:** synthetic NROMと3回local evidenceは削除せず、`historical / non-qualifying`として
-保持します。診断NESco sourceは独立プロジェクトのローカルcheckoutにのみ存在するため、`picocalc_emu`は
-NEScoのbranch作成・改造・公開・pushを行いません。NES固有の適合性を将来確認する場合だけ、所有者が提供する
-未改変公開clean refまたは再現可能なartifactをoptional conformance入力として扱います。
-
-UF2LoaderのSD／flash統合、M-NESCO拡張、SD-GEN-1汎用SD protocolは完了しています。
-現在の境界と証拠は[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)、
-[`docs/MILESTONES.md`](docs/MILESTONES.md)、
-[`firmware-validation/capability.json`](firmware-validation/capability.json)を正典とします。
-統合計画の全履歴と最終状態は
-[`docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md`](docs/UF2LOADER_SD_FLASH_IMPLEMENTATION_PLAN_20260813.md)
-にあります。これらの完了済み計画を再開せず、I2C-EXTは固定されたoptional profileとして利用できます。
-
-現在の新規機能計画はValidated Realtime Previewです。これはfirmware validationの代替ではなく、
-PASS済みの同一BINと同一backend executableだけを対話観測する層です。VRP-1でreceipt生成と共通admission
-（再検証＋admitted descriptor出力）まで実装済みです。VRP-2 backendの`--preview-api`は固定PCRP
-IPC、UART0 TX/RX、RGB565 frame、reset/quit、pacer status、fail-closed入力、shared session分離、
-versioned observation projection/digestまで実装済みです。board-backed synthetic UART fixtureのbatch／machine／preview
-を同一cycleで比較するreport-compatible observation digest smoke gate（初期RGB565 LCD frameを含む）に加え、
-実targetへ接続した完全digest gateも完了しています。VRP-3ではTk GUI、PicoCalc skin／LCD合成、自動UART0 console、key down/held/up・auto-repeat抑止、reset/reload、F12 screenshot、sticky UX-invalidを受入済みです。host streaming audioと1倍qualificationは未完了です。受入済みtargetと証拠は[`docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md`](docs/validated-realtime-preview/VRP2E_REGISTERED_DIGEST_GATE_20260829.md)、GUIの実装記録は[`docs/validated-realtime-preview/VRP3_GUI_20260829.md`](docs/validated-realtime-preview/VRP3_GUI_20260829.md)を参照してください。
-通常のfirmware検証やmachine APIをpreviewまたは1倍対応済みと説明してはいけません。VRP-2-c/dのローカル証拠だけではregistered-target digest gateを完了したことになりません。
-
-直近の完了済み正式計画は、共有I2C1上の外付けRTC/EEPROM/環境sensorを任意profileとして扱う
-[`I2C-EXT`](docs/I2C_EXTERNAL_MODULE_EMULATION_PLAN_20260823.md)です。実module/profileの
-E0のsource/provenanceとwire contract固定、E1のcontroller/mux/shared virtual-time基盤、
-DS3231/AT24C32/AHT20/BMP280 model core、picocalc-rtc-v1／picocalc-rtc-env-v1 profileのfixture検証・I2C1 attachは完了しています。
-E4のschema 2 sidecar／target contract接続、E5 emulator回帰3回と同一UF2実機相関、E6 active target／versioned validation／bounded capabilityまで完了しています。RTC directoryの
-sourceを直接変更してemulatorの動作へ合わせてはいけません。E0の固定証拠は
-[`firmware-validation/evidence/i2c-ext-e0-20260823-01/`](firmware-validation/evidence/i2c-ext-e0-20260823-01/)
-を参照します。
-
-NEXT-2Aで固定したSerial multicore範囲と、NEXT-2Bで固定した48 kHz DMA-paced audio範囲は
-対応済みです。ただしThreaded、両core同時device access、core relaunch、任意の音声構成は
-対応済みとはみなしません。正確な境界は
-[`firmware-validation/capability.json`](firmware-validation/capability.json)を確認します。
-
-音声を出すアプリは、転送count/hashだけで完成扱いにしません。PicoCalcの物理ボリュームを前提に
-デジタルレンジを十分使い、短い飽和は許容しつつ、小さすぎる区間音量と極端なrail張り付きを
-[`音量品質手順`](docs/AUDIO_LEVEL_QUALITY.md)で検査します。
+BSP sourceは0.9.0、実機相関baselineは0.8.8、標準LCDはpio-rgb565、SDはFAT32です。
+独立した外部アプリをエミュレーターの都合で変更しません。
+機能の固定版受入履歴は[作業台帳](docs/MILESTONES.md)から参照します。
 
 ## 監督と分担
 
