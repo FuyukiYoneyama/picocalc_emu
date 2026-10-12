@@ -1,0 +1,43 @@
+[PICOCALC][RUN] event=start run=clockcalc-v077-clock pid=8 budget=3000000000
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=1 cycles=234871880 budget=3000000000 pct=7.829 elapsed_s=10.000 rate_mcycles_s=23.487
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=2 cycles=555159019 budget=3000000000 pct=18.505 elapsed_s=20.000 rate_mcycles_s=27.758
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=3 cycles=626600319 budget=3000000000 pct=20.887 elapsed_s=30.000 rate_mcycles_s=20.887
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=4 cycles=699697573 budget=3000000000 pct=23.323 elapsed_s=40.000 rate_mcycles_s=17.492
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=5 cycles=772186041 budget=3000000000 pct=25.740 elapsed_s=50.000 rate_mcycles_s=15.444
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=6 cycles=842345871 budget=3000000000 pct=28.078 elapsed_s=60.000 rate_mcycles_s=14.039
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=7 cycles=915388141 budget=3000000000 pct=30.513 elapsed_s=70.000 rate_mcycles_s=13.077
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=8 cycles=987485777 budget=3000000000 pct=32.916 elapsed_s=80.000 rate_mcycles_s=12.344
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=9 cycles=1058204363 budget=3000000000 pct=35.273 elapsed_s=90.000 rate_mcycles_s=11.758
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=10 cycles=1131244651 budget=3000000000 pct=37.708 elapsed_s=100.000 rate_mcycles_s=11.312
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=11 cycles=1204007047 budget=3000000000 pct=40.134 elapsed_s=110.000 rate_mcycles_s=10.946
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=12 cycles=1274400683 budget=3000000000 pct=42.480 elapsed_s=120.000 rate_mcycles_s=10.620
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=13 cycles=1346713301 budget=3000000000 pct=44.890 elapsed_s=130.000 rate_mcycles_s=10.359
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=14 cycles=1419089325 budget=3000000000 pct=47.303 elapsed_s=140.000 rate_mcycles_s=10.136
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v077-clock pid=8 seq=15 cycles=1489595901 budget=3000000000 pct=49.653 elapsed_s=150.000 rate_mcycles_s=9.931
+scenario 'clockcalc-calculator-clock-transition': fail
+  [pass]      670 ms  startup completed — 580 UART bytes seen
+  [pass]     1670 ms  calculator initial render — waited 1000 ms
+  [pass]     1670 ms  calculator-initial — 33324 non-black pixels
+  [pass]     1670 ms  calculator content — 33324 non-black pixels in (0,0) 320x320 (want 500..)
+  [pass]     2420 ms  calculate 1 plus 2 — sent 4 key event(s)
+  [pass]     3420 ms  calculator result render — waited 1000 ms
+  [pass]     3420 ms  calculator-result — 34073 non-black pixels
+  [pass]     3420 ms  calculator result content — 34073 non-black pixels in (0,0) 320x320 (want 500..)
+  [pass]     3420 ms  physical Escape code — sent 1 key event(s)
+  [pass]     3430 ms  clock mode entered — 661 UART bytes seen
+  [pass]     4430 ms  clock render completed — waited 1000 ms
+  [pass]     4430 ms  clock-first — 323 non-black pixels
+  [fail]     4430 ms  clock time content — 0 non-black pixels in (24,112) 272x96 (want 500..)
+  [pass]     6430 ms  clock continues for two seconds — waited 2000 ms
+  [pass]     6430 ms  clock-running — 323 non-black pixels
+  [fail]     6430 ms  clock continues drawing — 0 non-black pixels in (24,112) 272x96 (want 500..)
+  [pass]     6430 ms  Break returns calculator — sent 1 key event(s)
+  [fail]    10430 ms  calculator restored — timed out after 4000 ms — 832 UART bytes seen
+  [pass]    11130 ms  restored calculator render — waited 700 ms
+  [pass]    11130 ms  calculator-restored — 323 non-black pixels
+  [fail]    11130 ms  restored calculator content — 323 non-black pixels in (0,0) 320x320 (want 500..)
+  [pass]    11130 ms  Escape returns clock again — sent 1 key event(s)
+  [pass]    12130 ms  second clock render — waited 1000 ms
+  [pass]    12130 ms  clock-second — 323 non-black pixels
+  [fail]    12130 ms  second clock time content — 0 non-black pixels in (24,112) 272x96 (want 500..)
+[PICOCALC][RUN] event=finish run=clockcalc-v077-clock pid=8 cycles=1509845699 elapsed_s=152.871 stop=scenario_done exit=1

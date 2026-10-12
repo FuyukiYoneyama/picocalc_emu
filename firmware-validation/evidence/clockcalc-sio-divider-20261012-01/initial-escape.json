@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "name": "clockcalc-initial-escape-display",
+  "poll_ms": 10,
+  "steps": [
+    {
+      "op": "wait_until",
+      "label": "startup completed",
+      "condition": {
+        "kind": "uart_contains",
+        "text": "UART poll="
+      },
+      "timeout_ms": 4000
+    },
+    {
+      "op": "wait",
+      "label": "calculator initial render",
+      "ms": 1000
+    },
+    {
+      "op": "snapshot",
+      "label": "calculator-initial",
+      "png": "calculator-initial.png"
+    },
+    {
+      "op": "assert",
+      "label": "calculator content",
+      "condition": {
+        "kind": "region_non_black",
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 320,
+        "min": 500
+      }
+    },
+    {
+      "op": "key",
+      "label": "physical Escape code",
+      "text": "\u00b1",
+      "gap_ms": 250
+    },
+    {
+      "op": "wait_until",
+      "label": "clock mode entered",
+      "condition": {
+        "kind": "uart_contains",
+        "text": "UI mode=clock"
+      },
+      "timeout_ms": 4000
+    },
+    {
+      "op": "wait",
+      "label": "clock render completed",
+      "ms": 1000
+    },
+    {
+      "op": "snapshot",
+      "label": "clock-first",
+      "png": "clock-first.png"
+    },
+    {
+      "op": "assert",
+      "label": "clock time content",
+      "condition": {
+        "kind": "region_non_black",
+        "x": 24,
+        "y": 112,
+        "w": 272,
+        "h": 96,
+        "min": 500
+      }
+    }
+  ]
+}

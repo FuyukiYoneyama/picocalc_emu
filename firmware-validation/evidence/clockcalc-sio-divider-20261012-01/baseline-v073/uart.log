@@ -1,0 +1,17 @@
+
+Picocalc_ClockCalc version 0.8.73 build release
+BUILD ID git=966a0c0 dirty=1 time="2026-10-12 08:49:57 +0900" purpose="0.8.73-amida-freeze-trace"
+ClockCalc init display -> keyboard -> i2c probes -> rtc/calculator
+STARTUP PROBE rtc=PASS eeprom=PASS keyboard=PASS rtc_status=0x00
+STARTUP BATTERY PASS raw=0x64 percent=100 charging=0
+STARTUP VBUS gpio=24 present=0
+SETTINGS eeprom load default slotA=invalid slotB=invalid
+Commands:
+  help
+  ?
+  sensors
+  set yyyy-mm-dd
+  set HH:MM:SS
+Current: 2024-01-01 Mon 00:00:00
+UART poll=on reason=full source=startup percent=100 charging=0
+> UI mode=clock

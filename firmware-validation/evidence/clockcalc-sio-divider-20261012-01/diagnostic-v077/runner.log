@@ -1,0 +1,11 @@
+[CLOCKCALC][REGISTERS] {"registers":[7669439,0,908444932,917283564,597560748,6,0,26,597560748,0,0,0,597560748,537140052,0,268528842],"stack_words":[1,537140472,3447519876,1,268487353,0,536877896,2100773,0,3447519876,1,0,6000,2855,140,65529,15500,3005685760,4294967291,50936,415148,402661928,536884056,2126535269,2390556909,198235715,9177895,1015873529,393266936,2000748,0,536879656,1990,537140936,537140540,0,537140628,0,268482631,10,900,0,0,0,0,12623040,1622,536877719]}
+scenario 'clockcalc-initial-escape-display': fail
+  [pass]      670 ms  startup completed — 580 UART bytes seen
+  [pass]     1670 ms  calculator initial render — waited 1000 ms
+  [pass]     1670 ms  calculator-initial — 33324 non-black pixels
+  [pass]     1670 ms  calculator content — 33324 non-black pixels in (0,0) 320x320 (want 500..)
+  [pass]     1670 ms  physical Escape code — sent 1 key event(s)
+  [pass]     1680 ms  clock mode entered — 661 UART bytes seen
+  [pass]     2680 ms  clock render completed — waited 1000 ms
+  [pass]     2680 ms  clock-first — 721 non-black pixels
+  [fail]     2680 ms  clock time content — 66 non-black pixels in (24,112) 272x96 (want 500..)

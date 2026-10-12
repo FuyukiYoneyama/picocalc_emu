@@ -22,6 +22,7 @@
 
 ## エミュレーター・検証基盤を保守する
 
+- [RP2040 SIO除算器の未修正不具合・保存証拠（2026-10-12）](RP2040_SIO_DIVIDER_BUG_20261012.md)
 - [DEVELOPER_GUIDE](../DEVELOPER_GUIDE.md)、[AI_START_HERE](../AI_START_HERE.md)、[運用](DEVELOPMENT_WORKFLOW.md)
 - [要求仕様](../REQUIREMENTS.md)、[版管理](VERSIONING.md)、[公開手順](PUBLIC_RELEASE.md)、[release checklist](RELEASE_CHECKLIST.md)
 - [target registry](../reference-projects/firmware-targets.json)、[versioned validation](VERSIONED_VALIDATION.md)、[capability registry](../firmware-validation/capability.json)

@@ -1,0 +1,81 @@
+{
+  "schema_version": 8,
+  "backend_commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+  "backend_build": {"commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f", "dirty": false},
+  "firmware": {"basename": "Picocalc_ClockCalc.bin", "sha256": "e61c45b3e772138d535647d814435de34060b87ec78b6c482ddd2c4dc40d2802"},
+  "bootrom": {"basename": "bootrom-rp2040-b2.bin", "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81", "executed": false},
+  "execution_model": "Serial",
+  "board": "picocalc",
+  "lcd_variant": "pio-rgb565",
+  "boot": {"mode": "direct_boot_from_flash", "vtor_flash_offset": "0x0100"},
+  "step_quantum": 1,
+  "cycle_limit": 1200000000,
+  "stop_pc": null,
+  "stop_reason": "scenario_done",
+  "cycles": 328569442,
+  "elapsed_us": 2680000,
+  "pc": "0x100168d6",
+  "exception": null,
+  "error": null,
+  "verdict": {"status": "pass", "reasons": [], "expected_stop_reason": "scenario_done", "required_uart_markers": [], "missing_uart_markers": []},
+  "unsupported_mmio": [],
+  "unsupported_mmio_truncated": false,
+  "lcd": {
+    "reset_pulses": 2,
+    "init": {"swreset": 0, "slpout": 0, "slpin": 0, "dispon": 1, "dispoff": 0},
+    "state": {"sleeping": true, "display_on": true, "inverted": true},
+    "madctl": "0x48",
+    "colmod": "0x1a",
+    "caset": 496, "raset": 496, "ramwr": 741, "ramrd": 0,
+    "pixels_written": 541882, "pixels_dropped": 0, "orphan_data_bytes": 0,
+    "unknown_commands": [
+      {"code": "0x35", "count": 1},
+      {"code": "0xb4", "count": 1},
+      {"code": "0xb7", "count": 1},
+      {"code": "0xc0", "count": 1},
+      {"code": "0xc1", "count": 1},
+      {"code": "0xc2", "count": 1},
+      {"code": "0xc5", "count": 1},
+      {"code": "0xe0", "count": 1},
+      {"code": "0xe1", "count": 1},
+      {"code": "0xf0", "count": 2}
+    ]
+  },
+  "framebuffer": {"width": 320, "height": 320, "rgb565_sha256": "361d5472f6320c9c5610768eaa57455f9599ca44d57f47154da429d57c3c7d16", "non_black_pixels": 32517, "png": null},
+  "keyboard": {
+    "attached": true, "addr": "0x1f",
+    "reg_selects": 100, "key_events_delivered": 2, "key_events_remaining": 0,
+    "key_events_dropped": 0, "key_events_overwritten": 0,
+    "battery_reads": 3, "backlight_writes": 0, "backlight": 0, "lcd_backlight": 32,
+    "config": "0xd2", "interrupt_status": "0x08", "caps_lock": false, "num_lock": false,
+    "unknown_reg_selects": 0, "unknown_reg_writes": 0, "last_unknown_reg": null
+  },
+  "pwm": {
+    "inte": "0x00",
+    "configured_slices": []
+  },
+  "pio": [
+    {"block": 0, "fstat": "0x0f000f00", "sm_enabled": [true, false, false, false], "sm_pc": [30, 0, 0, 0]}
+  ],
+  "scenario": {
+    "file": "initial-escape.json",
+    "name": "clockcalc-initial-escape-display",
+    "description": null,
+    "status": "pass",
+    "poll_ms": 10,
+    "steps_total": 9,
+    "error": null,
+    "steps": [
+      {"index": 0, "op": "wait_until", "label": "startup completed", "status": "pass", "at_ms": 670, "at_cycles": 77319441, "detail": "581 UART bytes seen"},
+      {"index": 1, "op": "wait", "label": "calculator initial render", "status": "pass", "at_ms": 1670, "at_cycles": 202319441, "detail": "waited 1000 ms"},
+      {"index": 2, "op": "snapshot", "label": "calculator-initial", "status": "pass", "at_ms": 1670, "at_cycles": 202319441, "detail": "32623 non-black pixels", "rgb565_sha256": "f6ef507a2eaf9fbf821f67297d661f3766f08f00e56c2b31af7e2a1c092f38ae", "png_basename": "calculator-initial.png"},
+      {"index": 3, "op": "assert", "label": "calculator content", "status": "pass", "at_ms": 1670, "at_cycles": 202319441, "detail": "32623 non-black pixels in (0,0) 320x320 (want 500..)"},
+      {"index": 4, "op": "key", "label": "physical Escape code", "status": "pass", "at_ms": 1670, "at_cycles": 202319441, "detail": "sent 1 key event(s)"},
+      {"index": 5, "op": "wait_until", "label": "clock mode entered", "status": "pass", "at_ms": 1680, "at_cycles": 203569442, "detail": "612 UART bytes seen"},
+      {"index": 6, "op": "wait", "label": "clock render completed", "status": "pass", "at_ms": 2680, "at_cycles": 328569442, "detail": "waited 1000 ms"},
+      {"index": 7, "op": "snapshot", "label": "clock-first", "status": "pass", "at_ms": 2680, "at_cycles": 328569442, "detail": "32517 non-black pixels", "rgb565_sha256": "361d5472f6320c9c5610768eaa57455f9599ca44d57f47154da429d57c3c7d16", "png_basename": "clock-first.png"},
+      {"index": 8, "op": "assert", "label": "clock time content", "status": "pass", "at_ms": 2680, "at_cycles": 328569442, "detail": "6150 non-black pixels in (24,112) 272x96 (want 500..)"}
+    ]
+  },
+  "uart": {"bytes": 612, "sha256": "091857315e16c5e71e7d3e4c816245734a999608f618e2810f6d7c27999b62da"}
+}

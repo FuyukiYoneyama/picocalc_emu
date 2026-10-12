@@ -36,6 +36,12 @@ previewは[追加経路の手順](../USER_GUIDE/PREVIEW_GUI.md)を参照しま�
 
 ## 検証の既知の制約
 
+2026-10-12にRP2040 SIO除算器の被除数書き込みで再計算されない不具合を確認しました。
+公開backend 32d27ffと環境センサー観測用f810d059の両方に該当します。
+SDKの64bit除算で古い結果を使い、補正ループが長時間進む可能性があります。
+[詳細と保存証拠](RP2040_SIO_DIVIDER_BUG_20261012.md)を参照してください。
+未修正であり、修正版の比較runは未実施です。実機LCDの故障原因とは断定しません。
+
 portable verify／release-layout検査で既存evidenceのUART bin等を誤判定する
 不整合は、個別path・用途・SHA-256の保全台帳で修正しました。
 JSON Schema依存のCI導入も明示しました。過去の失敗結果は

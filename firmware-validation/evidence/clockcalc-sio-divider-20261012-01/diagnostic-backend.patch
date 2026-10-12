@@ -1,0 +1,19 @@
+diff --git a/crates/picocalc-harness/src/main.rs b/crates/picocalc-harness/src/main.rs
+index 7a62251..0d66f79 100644
+--- a/crates/picocalc-harness/src/main.rs
++++ b/crates/picocalc-harness/src/main.rs
+@@ -5196,6 +5196,14 @@ fn run() -> Result<Verdict, String> {
+         engine.as_mut(),
+         progress.as_mut(),
+     );
++    let diagnostic_sp = machine.emu.cores[0].regs.sp();
++    let diagnostic_stack: Vec<u32> = (0..48)
++        .map(|i| machine.emu.bus.read32(diagnostic_sp.wrapping_add(i * 4)))
++        .collect();
++    eprintln!("[CLOCKCALC][REGISTERS] {}", serde_json::json!({
++        "registers": machine.emu.cores[0].regs.r,
++        "stack_words": diagnostic_stack,
++    }));
+     // Report generation still consumes the emulator after the shared
+     // session ends. Moving it back out preserves the existing schema bytes.
+     #[cfg(feature = "event-horizon-profiler")]

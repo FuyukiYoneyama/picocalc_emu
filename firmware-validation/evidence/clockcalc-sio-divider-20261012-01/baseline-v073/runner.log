@@ -1,0 +1,14 @@
+[PICOCALC][RUN] event=start run=clockcalc-v073-baseline pid=8 budget=1200000000
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v073-baseline pid=8 seq=1 cycles=120845948 budget=1200000000 pct=10.070 elapsed_s=10.000 rate_mcycles_s=12.085
+[PICOCALC][RUN] event=heartbeat run=clockcalc-v073-baseline pid=8 seq=2 cycles=313382177 budget=1200000000 pct=26.115 elapsed_s=20.000 rate_mcycles_s=15.669
+scenario 'clockcalc-initial-escape-display': pass
+  [pass]      670 ms  startup completed — 581 UART bytes seen
+  [pass]     1670 ms  calculator initial render — waited 1000 ms
+  [pass]     1670 ms  calculator-initial — 32623 non-black pixels
+  [pass]     1670 ms  calculator content — 32623 non-black pixels in (0,0) 320x320 (want 500..)
+  [pass]     1670 ms  physical Escape code — sent 1 key event(s)
+  [pass]     1680 ms  clock mode entered — 612 UART bytes seen
+  [pass]     2680 ms  clock render completed — waited 1000 ms
+  [pass]     2680 ms  clock-first — 32517 non-black pixels
+  [pass]     2680 ms  clock time content — 6150 non-black pixels in (24,112) 272x96 (want 500..)
+[PICOCALC][RUN] event=finish run=clockcalc-v073-baseline pid=8 cycles=328569442 elapsed_s=22.564 stop=scenario_done exit=0

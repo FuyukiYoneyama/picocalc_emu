@@ -1,0 +1,293 @@
+{
+  "kind": "diagnostic_issue_evidence",
+  "recorded_date": "2026-10-12",
+  "issue_status": "open_not_fixed",
+  "new_emulator_runs": false,
+  "backend_commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+  "also_source_inspected": "32d27ff4179a993ae9fac6ff4a1d5e8999570fa9",
+  "sdk_commit": "a1438dff1d38bd9c65dbd693f0e5db4b9ae91779",
+  "fixture": {
+    "path": "firmware-validation/fixtures/i2c-ext-e5-env-v1.json",
+    "sha256": "1a2849a79f5e76872d6eee436228d9b5af9fdd5deaef1dc30f8e5c1f8bb8278a"
+  },
+  "firmware_binaries_included": false,
+  "uf2_v078_sha256": "2a424475c43aea4220be83bcfeb40bd3bf5917b02515347b36bdf6939e78d2cb",
+  "runs": {
+    "baseline-v073": {
+      "backend_build": {
+        "commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+        "dirty": false
+      },
+      "firmware": {
+        "basename": "Picocalc_ClockCalc.bin",
+        "sha256": "e61c45b3e772138d535647d814435de34060b87ec78b6c482ddd2c4dc40d2802"
+      },
+      "bootrom": {
+        "basename": "bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+        "executed": false
+      },
+      "execution_model": "Serial",
+      "step_quantum": 1,
+      "cycle_limit": 1200000000,
+      "stop_reason": "scenario_done",
+      "pc": "0x100168d6",
+      "verdict": {
+        "status": "pass",
+        "reasons": [],
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [],
+        "missing_uart_markers": []
+      }
+    },
+    "clock-run": {
+      "backend_build": {
+        "commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+        "dirty": false
+      },
+      "firmware": {
+        "basename": "Picocalc_ClockCalc.bin",
+        "sha256": "10c6f888658cb9f9e62d68ffe148d503078925860deb21efd7bb9b9bd07de445"
+      },
+      "bootrom": {
+        "basename": "bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+        "executed": false
+      },
+      "execution_model": "Serial",
+      "step_quantum": 1,
+      "cycle_limit": 3000000000,
+      "stop_reason": "scenario_done",
+      "pc": "0x10016cc4",
+      "verdict": {
+        "status": "fail",
+        "reasons": [
+          "scenario_failed"
+        ],
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [],
+        "missing_uart_markers": []
+      }
+    },
+    "diagnostic-v077": {
+      "backend_build": {
+        "commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+        "dirty": true
+      },
+      "firmware": {
+        "basename": "Picocalc_ClockCalc.bin",
+        "sha256": "10c6f888658cb9f9e62d68ffe148d503078925860deb21efd7bb9b9bd07de445"
+      },
+      "bootrom": {
+        "basename": "bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+        "executed": false
+      },
+      "execution_model": "Serial",
+      "step_quantum": 1,
+      "cycle_limit": 1200000000,
+      "stop_reason": "scenario_done",
+      "pc": "0x10016cca",
+      "verdict": {
+        "status": "fail",
+        "reasons": [
+          "scenario_failed"
+        ],
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [],
+        "missing_uart_markers": []
+      }
+    },
+    "framing-v078": {
+      "backend_build": {
+        "commit": "f810d059958773d1b42a1c6d03cc15183cdc1a4f",
+        "dirty": false
+      },
+      "firmware": {
+        "basename": "Picocalc_ClockCalc.bin",
+        "sha256": "4ef69d45aa7e6159ec34afc80a4269876ec8d38a64c6ddc27db3ee34be3619d3"
+      },
+      "bootrom": {
+        "basename": "bootrom-rp2040-b2.bin",
+        "sha256": "9c19b46f068c21f90d200c514faad4a0d5cecfc978f155b8c9d25cb6bc2efd81",
+        "executed": false
+      },
+      "execution_model": "Serial",
+      "step_quantum": 1,
+      "cycle_limit": 1200000000,
+      "stop_reason": "scenario_done",
+      "pc": "0x10016e40",
+      "verdict": {
+        "status": "fail",
+        "reasons": [
+          "scenario_failed"
+        ],
+        "expected_stop_reason": "scenario_done",
+        "required_uart_markers": [],
+        "missing_uart_markers": []
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "path": "baseline-v073/calculator-initial.png",
+      "size_bytes": 3734,
+      "sha256": "2b05b3c5980f751433c9cda1696d64c5b8db2ec9a1abfb6da458e6182acf6b8b"
+    },
+    {
+      "path": "baseline-v073/clock-first.png",
+      "size_bytes": 3630,
+      "sha256": "4fc6990630c670e8624127e8fa0bef39a1273cca57016ea310d62ad5a1658a4a"
+    },
+    {
+      "path": "baseline-v073/i2c.json",
+      "size_bytes": 2461,
+      "sha256": "49817eb327b6d8244875139ec019ca728f381ca3d5fd83108c349ab143e2a300"
+    },
+    {
+      "path": "baseline-v073/report.json",
+      "size_bytes": 4678,
+      "sha256": "63a96022972161b4e004a2fecffba25cb4c51a6934af0dfd81ff1fc28fa47f32"
+    },
+    {
+      "path": "baseline-v073/runner.log",
+      "size_bytes": 1220,
+      "sha256": "ee7297ab1cf3416b6b51c3dad6505621b75afa7000c2099949ebad062843b2b4"
+    },
+    {
+      "path": "baseline-v073/uart.log",
+      "size_bytes": 612,
+      "sha256": "091857315e16c5e71e7d3e4c816245734a999608f618e2810f6d7c27999b62da"
+    },
+    {
+      "path": "build-info-v078.h",
+      "size_bytes": 284,
+      "sha256": "7ae31803bdeed2b1e7ab64ceef62cecbff2757ef64e4ae40fa61d135b61ec8b2"
+    },
+    {
+      "path": "clock-run/calculator-initial.png",
+      "size_bytes": 4666,
+      "sha256": "9e54b3b56a7ac3189eeda077024f4e05d1fbd6d96fa21646f4d1ee254d345df9"
+    },
+    {
+      "path": "clock-run/calculator-restored.png",
+      "size_bytes": 1353,
+      "sha256": "3933e2b3fe186ff20489883f23803c5e34fb5b5718f26a9438f34ed70a92b74a"
+    },
+    {
+      "path": "clock-run/calculator-result.png",
+      "size_bytes": 4866,
+      "sha256": "8c8949dd9a0b15f95834370cddee2aae34e0cc1413da1842fa66fd165893caef"
+    },
+    {
+      "path": "clock-run/clock-first.png",
+      "size_bytes": 1353,
+      "sha256": "3933e2b3fe186ff20489883f23803c5e34fb5b5718f26a9438f34ed70a92b74a"
+    },
+    {
+      "path": "clock-run/clock-running.png",
+      "size_bytes": 1353,
+      "sha256": "3933e2b3fe186ff20489883f23803c5e34fb5b5718f26a9438f34ed70a92b74a"
+    },
+    {
+      "path": "clock-run/clock-second.png",
+      "size_bytes": 1353,
+      "sha256": "3933e2b3fe186ff20489883f23803c5e34fb5b5718f26a9438f34ed70a92b74a"
+    },
+    {
+      "path": "clock-run/i2c.json",
+      "size_bytes": 2483,
+      "sha256": "22ef793d50d1429ade4bd9d89f3fb4bcf76be1a01eabe1326442b78880f9b3a6"
+    },
+    {
+      "path": "clock-run/report.json",
+      "size_bytes": 7933,
+      "sha256": "02bbd0efd7f376b8211c1da2d15774895f27069e279ef3e2b07ab823873112c1"
+    },
+    {
+      "path": "clock-run/runner.log",
+      "size_bytes": 4468,
+      "sha256": "48c74dc4d697cb2d10dc56b0c6e1775a96be1f49cc9839b5d9a2032aaa5e18b2"
+    },
+    {
+      "path": "clock-run/uart.log",
+      "size_bytes": 832,
+      "sha256": "540b48417db6bf9385bf470fceb2d917a46f04d9cd47b5458dc6be6e4a300787"
+    },
+    {
+      "path": "clock-transition.json",
+      "size_bytes": 3734,
+      "sha256": "edd1dd8779a5f75cebbb74bff474f8c4d1537794b346858ac0edc976fc363723"
+    },
+    {
+      "path": "diagnostic-backend.patch",
+      "size_bytes": 889,
+      "sha256": "38d28b0dae51878093be33f248f4e861660ca6db562d763c2e913fba2dc46d98"
+    },
+    {
+      "path": "diagnostic-v077/calculator-initial.png",
+      "size_bytes": 4666,
+      "sha256": "9e54b3b56a7ac3189eeda077024f4e05d1fbd6d96fa21646f4d1ee254d345df9"
+    },
+    {
+      "path": "diagnostic-v077/clock-first.png",
+      "size_bytes": 1669,
+      "sha256": "3d9136c165bf71f96dbe8ee9e9a29a69eca0ac315cf8f13b4ffcf86ec3a478cb"
+    },
+    {
+      "path": "diagnostic-v077/i2c.json",
+      "size_bytes": 2477,
+      "sha256": "fab936609701deec1f03fb3950e6a644eebbb953a82bee6a84368b2f115fd00b"
+    },
+    {
+      "path": "diagnostic-v077/report.json",
+      "size_bytes": 4687,
+      "sha256": "830686f421b91158bd80007b8f053ceeb77d71505d21e19020648ef3b7c9a2c1"
+    },
+    {
+      "path": "diagnostic-v077/runner.log",
+      "size_bytes": 1171,
+      "sha256": "65659b05782cd2d54af28e7a3212a8d4085ac407795569e914c108650348cda7"
+    },
+    {
+      "path": "diagnostic-v077/uart.log",
+      "size_bytes": 832,
+      "sha256": "33cc74cfdba917d814031da800f7a4929da31e93a9e2a684b7cd135e6ca933b2"
+    },
+    {
+      "path": "framing-v078/calculator-initial.png",
+      "size_bytes": 4280,
+      "sha256": "f4eca9c99012b468876e9344e5b2338be9d18b8a5f9671443c2e4868e97c1f95"
+    },
+    {
+      "path": "framing-v078/clock-first.png",
+      "size_bytes": 1309,
+      "sha256": "4c7c2e9eee072f9034cae5db1c2f391dc5f7128e9188b6d6126b6136c23a9423"
+    },
+    {
+      "path": "framing-v078/i2c.json",
+      "size_bytes": 2476,
+      "sha256": "90a8a8bcb2ad85e1d63b451e25bf04f06f9df54cf2409862a22a0a9284e9256a"
+    },
+    {
+      "path": "framing-v078/report.json",
+      "size_bytes": 4797,
+      "sha256": "4a2686c3f896576cf0f98ca5c4d2acf99e136c938f32a061f2801703378a4c65"
+    },
+    {
+      "path": "framing-v078/runner.log",
+      "size_bytes": 1211,
+      "sha256": "9c40b0360928968e909df4ae9f33ba11def1139964e724b5edede5f5f0fdf507"
+    },
+    {
+      "path": "framing-v078/uart.log",
+      "size_bytes": 1003,
+      "sha256": "7ab882ca4fbdb5cf05bcaeb2bc8fd2cd761ab3614c8b75e90b15915b50828efd"
+    },
+    {
+      "path": "initial-escape.json",
+      "size_bytes": 1446,
+      "sha256": "2a9f5c2be7a92d881a646f611a162916e28f194c8c3c0543964024b65f08a684"
+    }
+  ]
+}
