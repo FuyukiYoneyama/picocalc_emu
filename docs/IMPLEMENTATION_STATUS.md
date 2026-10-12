@@ -40,7 +40,11 @@ previewは[追加経路の手順](../USER_GUIDE/PREVIEW_GUI.md)を参照しま�
 公開backend 32d27ffと環境センサー観測用f810d059の両方に該当します。
 SDKの64bit除算で古い結果を使い、補正ループが長時間進む可能性があります。
 [詳細と保存証拠](RP2040_SIO_DIVIDER_BUG_20261012.md)を参照してください。
-未修正であり、修正版の比較runは未実施です。実機LCDの故障原因とは断定しません。
+main 121d649での追検証後、公開backend main d91f2bbで再計算、DIRTY、8cycleのREADY、
+Threadedの状態引継ぎを修正しました。レジスター・CPU・実際のSDK除算を
+両実行経路・両coreで回帰確認済みです。accepted backend pinは未更新です。
+[本体の修正記録](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/d91f2bb7189b3a534cec01f8ae3670fd3a22297a/docs/rp2040_sio_divider_fix_20261012.md)
+を参照してください。過去のアプリ観測は本体修正の受入条件に含めません。
 
 portable verify／release-layout検査で既存evidenceのUART bin等を誤判定する
 不整合は、個別path・用途・SHA-256の保全台帳で修正しました。

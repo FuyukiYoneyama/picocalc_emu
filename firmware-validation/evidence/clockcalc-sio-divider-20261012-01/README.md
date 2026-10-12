@@ -24,8 +24,8 @@ and [the backend issue](https://github.com/FuyukiYoneyama/picoem-picocalc/blob/m
 | --- | --- | --- |
 | baseline-v073 | clean f810d059 | Runner pass, but clock PNG retains calculator graphics; broad pixel assertion gives a false visual acceptance |
 | clock-run | clean f810d059 | 0.8.77 fail; bad LCD command decoding and clock content; later input not processed |
-| diagnostic-v077 | f810d059 with register-dump patch | 0.8.77 fail; division-loop PC `0x10016cca`, saved LR maps to pressure-compensation caller |
-| framing-v078 | clean f810d059 | 0.8.78 fail; LCD COLMOD `0x65`, SLPOUT 1, but zero pixels in time region; division-loop PC `0x10016e40` |
+| diagnostic-v077 | f810d059 with register-dump patch | 0.8.77 fail; recorded PC `0x10016cca`; original investigation associated PC/LR with division and pressure compensation, subject to the mapping evidence limit below |
+| framing-v078 | clean f810d059 | 0.8.78 fail; LCD COLMOD `0x65`, SLPOUT 1, but zero pixels in time region; recorded PC `0x10016e40`, originally associated with division, subject to the mapping evidence limit below |
 
 Firmware source base: `814f346ec66f1c6ac66e43cd27f6d538fbb1535f`
 in the external Picocalc_ClockCalc repository. The 0.8.77/0.8.78 builds were
@@ -70,9 +70,22 @@ used 1,200,000,000. Exact limits and stop reasons are in each report.
 Source inspection establishes omitted recalculation on DIV_UDIVIDEND and
 DIV_SDIVIDEND in both inspected backend revisions. SDK documentation and its
 divisor-first reciprocal sequence establish why that implementation is wrong.
-The saved pressure-compensation PC/UART/register state supports the stall
-explanation, but no corrected-divider run was performed. This evidence is
-not proof of the cause or recovery of the user's physical LCD failure.
+The reports/register dump preserve PC `0x10016e40` (0.8.78), PC `0x10016cca`
+(0.8.77) and the saved stack value identified as LR `0x1000cab9` during the
+original investigation. That investigation associated the PCs with SDK
+division and the saved LR with the BMP280 pressure-compensation caller.
+The matching ELF, its SHA-256, map/symbol table and mapping/disassembly output
+are not included. These associations are recorded investigation results that
+cannot be independently checked from this bundle. The later direct register
+diagnostic does not establish these firmware address mappings. Preserve the
+matching ELF's hash and mapping command/output if they can be recovered;
+addresses from a newly rebuilt firmware are not substitutes.
+
+The saved UART and original address analysis support the stall hypothesis,
+with the mapping evidence limit above. No corrected-divider run was performed.
+This evidence is not proof of the cause or recovery of the user's physical
+LCD failure. This clarification changes only the evidence guide; the raw
+artifacts and original manifest are retained unchanged.
 
 Before accepting a correction, verify both operand orders and aliases,
 per-core isolation and SDK 64-bit division. Then require sensor completion,
