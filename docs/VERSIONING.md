@@ -28,6 +28,12 @@ GitHub の `Latest` 表示は利便性のために使えるが、再現性が必
 - `MINOR`: 後方互換な機能追加、target や対応範囲の追加
 - `MAJOR`: report schema、machine API、target 契約などの互換性を壊す変更
 
+`0.y.z` は技術プレビューとして扱う。[SemVer §4とFAQ](https://semver.org/spec/v2.0.0.html)
+に従い、安定APIを宣言する前の対応範囲変更・非互換変更はMINORを上げ、移行条件を
+Release notesへ明記する。同じMINOR内のPATCHは互換な修正に限る。
+上記のMAJOR規則は安定APIを宣言する `1.0.0` 以降に適用する。
+`v0.2.0` は旧基準版への復旧によるbackend機能の削除を含むため、`v0.1.1` とはしない。
+
 毎回の commit や push で番号を上げる必要はない。開発中の細かな commit は
 `main` に積み、利用者へ提供する基準点を作るときだけタグと Release を作る。
 

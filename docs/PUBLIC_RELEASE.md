@@ -14,10 +14,9 @@ rebuilding historical external applications and hardware records.
 
 The public versioning policy is defined in
 [`VERSIONING.md`](VERSIONING.md). In short, `main` is the development head,
-while users select a GitHub Release backed by an immutable SemVer tag. The
-first public technical-preview pair is intended to be `v0.1.0`; creating that
-tag is a separate release action and is not implied by ordinary commits or
-pushes.
+while users select a GitHub Release backed by an immutable SemVer tag. The first public technical-preview pair was `v0.1.0`. Creating an updated
+tag and Release is a separate action and is not implied by ordinary commits
+or pushes.
 
 Each paired release records both repository tags and full commit SHAs, the BSP
 version, report and machine-API schemas, the registry-pinned backend commit,
@@ -86,30 +85,25 @@ separate visibility decision; no backend history rewrite is implied by the
 JPEG sanitisation. Any future sensitive-data rewrite must be separately
 reviewed and completed before creating a release tag.
 
-## Publication order
+## Publication order for updates
 
-1. Complete and review this document, `RELEASE_CHECKLIST.md`, and
-   `VERSIONING.md` locally.
-2. Run the local gates and confirm both working trees are clean.
-3. Commit the release-preparation changes in each repository.
-4. Choose the release number and create matching annotated tags on the exact
-   paired commits. Do not move or force-push these tags.
-5. Push the paired commits and tags while the repositories are still private;
-   do not publish the GitHub Release yet. This fixes the public starting point
-   without exposing an untagged release candidate.
-6. Change `picoem-picocalc` to public first, then change `picocalc_emu` to
-   public. Confirm that the two tagged repositories are anonymously reachable.
-7. From a fresh unauthenticated clone of each tag, run the portable local
-   checks and confirm the README, licenses, notices, and dependency URLs.
-8. Create and publish the primary GitHub Release for the `picocalc_emu` tag,
-   including the compatibility table, exact SHAs, known limitations, and
-   acquisition instructions. A private draft may be prepared earlier, but
-   the user-facing Release is published only after repository visibility is
-   public.
-9. Do not use a push or a workflow run as a substitute for the local gate
-   above. Do not re-run Actions merely because visibility changed.
+Both repositories are already public. The initial private-to-public transition
+is complete; an update does not change repository visibility.
 
-The existing `picocalc_emu` firmware workflows use a read-only deploy key for
-the pinned backend. Keeping that secret is compatible with public visibility;
-changing the workflows to HTTPS or changing their triggers requires a separate
-explicit approval because it affects GitHub Actions usage.
+1. Review the changes since the previous public tag, license/provenance changes,
+   migration requirements, and the canonical `VERSIONING.md` policy.
+2. Run the local gates and record the commands, results and tested source identity.
+3. Commit the release-preparation documents to `main`; confirm both trees are clean.
+   Rebuild the backend from the final commit so its embedded identity is clean.
+4. Create matching annotated tags on the exact paired commits. Never move or
+   force-push a published tag. Push the release commits and tags.
+5. From fresh unauthenticated clones of the exact tags, check the source identities,
+   notices and portable verification without a sibling backend or external workspace.
+6. Publish the GitHub Releases with both full SHAs, contract versions, toolchain
+   requirements, local gate results, limitations and acquisition instructions.
+7. Confirm the public tags resolve to the intended commits and Release notes
+   describe the exact source pair. Do not manually start or re-run Actions as
+   a substitute for the local gate.
+
+The existing consumer CI uses public HTTPS checkouts at the registry's exact
+backend pins. This release procedure does not require workflow changes.

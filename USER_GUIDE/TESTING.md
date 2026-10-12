@@ -1,6 +1,7 @@
 # 検証：host backendとfirmware backend
 
-> **backend版の前提（2026-09-11）:** 公開mainは旧e985a9dと同一treeの32d27ffです。
+> **backend版の前提（v0.2.0）:** 旧基準版への復旧にRP2040 SIO除算器修正を加えた版です。
+> [リリース対応表と修正版の直接実行](../docs/RELEASE_V0.2.0.md)を確認してください。
 > 後続のmachine API、preview、heartbeat、audio解析、SD／loader拡張等は対応する固定版で使います。
 > target・receiptのbackend pinを優先し、公開mainを代入しません。
 > 使用版の詳細は[実装状況](../docs/IMPLEMENTATION_STATUS.md)を参照してください。

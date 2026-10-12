@@ -50,7 +50,8 @@ python3 tools/picocalc.py verify-project --project /absolute/path/to/MyApp
 
 - BSP sourceは0.9.0、標準機能の実機相関baselineは0.8.8。
 - 標準LCDはPIO RGB565、SDはFAT32、firmware検証の基準はSerial実行。
-- 公開backend mainは2026-09-11時点で32d27ff（旧e985a9dと同一tree）。
+- 更新版の取得点は両repoの `v0.2.0`。[対応範囲・移行条件](docs/RELEASE_V0.2.0.md)を確認してください。
+- backendは旧e985a9d相当の基準版へ復旧した32d27ffに、RP2040 SIO除算器修正d91f2bbを加えた構成です。
 - machine API、preview、追加音声解析、外部I2C、loader等の過去の受入は、それぞれの固定backendに対応します。公開mainで全部が使えるという意味ではありません。
 - 対応機能は[現在の実装状況](docs/IMPLEMENTATION_STATUS.md)とtargetの固定版で確認します。
 
